@@ -77,13 +77,21 @@ struct ShowDetailView: View {
                 onUnsubscribe: { confirmUnsubscribe() }
             )
         }
-        .confirmationDialog(
+        // `.alert` rather than `.confirmationDialog` because the dialog is
+        // anchored to the toolbar's `Menu`. iOS 26 renders confirmationDialog
+        // anchored to a menu as a popover and elides any `role: .cancel`
+        // button (the popover's tap-outside-to-dismiss is treated as the
+        // implicit cancel). That leaves the user staring at a single red
+        // "Unsubscribe" button with no visible escape — a real UX trap for a
+        // destructive action that wipes thousands of episodes. `.alert` is
+        // a centred modal and reliably renders both buttons regardless of
+        // anchor context.
+        .alert(
             "Unsubscribe from \(liveSubscription.title)?",
-            isPresented: $showUnsubscribeConfirm,
-            titleVisibility: .visible
+            isPresented: $showUnsubscribeConfirm
         ) {
-            Button("Unsubscribe", role: .destructive) { performUnsubscribe() }
             Button("Cancel", role: .cancel) {}
+            Button("Unsubscribe", role: .destructive) { performUnsubscribe() }
         } message: {
             Text("This removes the show and all of its episodes from your library.")
         }
