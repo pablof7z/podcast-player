@@ -88,11 +88,14 @@ struct RootView: View {
                 playbackState.autoMarkPlayedOnFinish = new.autoMarkPlayedAtEnd
                 playbackState.applyPreferences(from: new)
             }
-            .fullScreenCover(isPresented: $showFullPlayer) {
+            .sheet(isPresented: $showFullPlayer) {
                 PlayerView(
                     state: playbackState,
                     glassNamespace: playerNamespace
                 )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.disabled)
             }
             .onShake { handleShake() }
             .sheet(isPresented: $showFeedback) {
