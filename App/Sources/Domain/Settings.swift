@@ -10,6 +10,10 @@ enum ElevenLabsCredentialSource: String, Codable, Hashable, Sendable {
     case none, manual, byok
 }
 
+enum OllamaCredentialSource: String, Codable, Hashable, Sendable {
+    case none, manual
+}
+
 struct Settings: Codable, Hashable, Sendable {
 
     // MARK: - Defaults
@@ -33,6 +37,8 @@ struct Settings: Codable, Hashable, Sendable {
     /// as `memoryCompilationModel`.
     var wikiModel: String = Defaults.llmModel
     var wikiModelName: String = ""
+    var embeddingsModel: String = Self.defaultEmbeddingsModel
+    var embeddingsModelName: String = ""
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
     /// default to save tokens; settings UI exposes the toggle.
     var rerankerEnabled: Bool = false
@@ -43,6 +49,10 @@ struct Settings: Codable, Hashable, Sendable {
     var openRouterBYOKKeyLabel: String?
     var openRouterConnectedAt: Date?
     var legacyOpenRouterAPIKey: String?
+
+    // Ollama Cloud credentials (secret stored in Keychain; only metadata here)
+    var ollamaCredentialSource: OllamaCredentialSource = .none
+    var ollamaConnectedAt: Date?
 
     // ElevenLabs credentials (secret stored in Keychain; only metadata here)
     var elevenLabsCredentialSource: ElevenLabsCredentialSource = .none
@@ -105,10 +115,11 @@ struct Settings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
-        case wikiModel, wikiModelName, rerankerEnabled
+        case wikiModel, wikiModelName, embeddingsModel, embeddingsModelName, rerankerEnabled
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
+        case ollamaCredentialSource, ollamaConnectedAt
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
@@ -130,12 +141,16 @@ struct Settings: Codable, Hashable, Sendable {
         memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
         wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? Defaults.llmModel
         wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? ""
+        embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
+        embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
         openRouterConnectedAt = try c.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
         legacyOpenRouterAPIKey = try c.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
+        ollamaCredentialSource = try c.decodeIfPresent(OllamaCredentialSource.self, forKey: .ollamaCredentialSource) ?? .none
+        ollamaConnectedAt = try c.decodeIfPresent(Date.self, forKey: .ollamaConnectedAt)
         elevenLabsCredentialSource = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) ?? .none
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
         elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
@@ -176,11 +191,15 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(memoryCompilationModelName, forKey: .memoryCompilationModelName)
         try c.encode(wikiModel, forKey: .wikiModel)
         try c.encode(wikiModelName, forKey: .wikiModelName)
+        try c.encode(embeddingsModel, forKey: .embeddingsModel)
+        try c.encode(embeddingsModelName, forKey: .embeddingsModelName)
         try c.encode(rerankerEnabled, forKey: .rerankerEnabled)
         try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
         try c.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
+        try c.encode(ollamaCredentialSource, forKey: .ollamaCredentialSource)
+        try c.encodeIfPresent(ollamaConnectedAt, forKey: .ollamaConnectedAt)
         try c.encode(elevenLabsCredentialSource, forKey: .elevenLabsCredentialSource)
         try c.encodeIfPresent(elevenLabsBYOKKeyID, forKey: .elevenLabsBYOKKeyID)
         try c.encodeIfPresent(elevenLabsBYOKKeyLabel, forKey: .elevenLabsBYOKKeyLabel)
@@ -221,6 +240,8 @@ struct Settings: Codable, Hashable, Sendable {
         if !name.isEmpty { return name }
         let id = modelID.trimmed
         guard !id.isEmpty else { return "Not set" }
+        let reference = LLMModelReference(storedID: id)
+        if reference.provider != .openRouter { return reference.modelID }
         if let idx = id.lastIndex(of: "/") { return String(id[id.index(after: idx)...]) }
         return id
     }
@@ -247,6 +268,16 @@ struct Settings: Codable, Hashable, Sendable {
         openRouterBYOKKeyLabel = nil
         openRouterConnectedAt = nil
         legacyOpenRouterAPIKey = nil
+    }
+
+    mutating func markOllamaManual(connectedAt: Date = Date()) {
+        ollamaCredentialSource = .manual
+        ollamaConnectedAt = connectedAt
+    }
+
+    mutating func clearOllamaCredential() {
+        ollamaCredentialSource = .none
+        ollamaConnectedAt = nil
     }
 
     mutating func markElevenLabsManual(connectedAt: Date = Date()) {
@@ -278,11 +309,18 @@ struct Settings: Codable, Hashable, Sendable {
 
 extension Settings {
     /// Provider/model identifier used by `EmbeddingsClient`. The actual call site
-    /// is hardcoded in the embedding client; this constant just feeds the UI.
-    static let embeddingsModelID: String = "openai/text-embedding-3-large"
+    /// defaults to this value until the user chooses a provider-specific model.
+    static let defaultEmbeddingsModel: String = "openai/text-embedding-3-large"
+    static let embeddingsModelID: String = defaultEmbeddingsModel
     /// Truncation dimension applied to embeddings (Matryoshka). See
     /// `docs/spec/research/embeddings-rag-stack.md`.
     static let embeddingsDimensions: Int = 1024
     /// Display string mirroring `model@dim`, used directly in settings rows.
-    static var embeddingsModelDisplay: String { "text-embedding-3-large@\(embeddingsDimensions)" }
+    static func embeddingsModelDisplay(modelID: String, modelName: String = "") -> String {
+        "\(modelDisplayName(modelID: modelID, modelName: modelName))@\(embeddingsDimensions)"
+    }
+
+    static var embeddingsModelDisplay: String {
+        embeddingsModelDisplay(modelID: defaultEmbeddingsModel)
+    }
 }

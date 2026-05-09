@@ -8,7 +8,7 @@ import os.log
 /// and survive reinstalls.
 ///
 /// **What is synced.** Only portable, non-secret fields:
-///   - LLM model IDs / names (agent, memory compilation, wiki)
+///   - LLM model IDs / names (agent, memory compilation, wiki, embeddings)
 ///   - Reranker preference
 ///   - ElevenLabs TTS/STT model IDs, voice ID, and voice name
 ///   - Playback preferences (default rate, skip intervals, auto-mark-played)
@@ -23,6 +23,7 @@ import os.log
 ///   - `openRouterCredentialSource`, `*BYOKKeyID/Label`, `*ConnectedAt` — tied to
 ///     local Keychain secrets; syncing source without syncing the secret is
 ///     misleading and could make the app appear connected when it isn't
+///   - `ollamaCredentialSource`, `ollamaConnectedAt` — same local-Keychain rule
 ///   - `elevenLabsCredentialSource`, `*BYOKKeyID/Label`, `*ConnectedAt` — same
 ///     reasoning as above
 ///
@@ -124,6 +125,8 @@ final class iCloudSettingsSync {
         if let v = string(.memoryCompilationModelName)        { settings.memoryCompilationModelName = v }
         if let v = string(.wikiModel),             !v.isEmpty { settings.wikiModel = v }
         if let v = string(.wikiModelName)                     { settings.wikiModelName = v }
+        if let v = string(.embeddingsModel),       !v.isEmpty { settings.embeddingsModel = v }
+        if let v = string(.embeddingsModelName)               { settings.embeddingsModelName = v }
         if let v = bool(.rerankerEnabled)                     { settings.rerankerEnabled = v }
         if let v = string(.elevenLabsSTTModel),    !v.isEmpty { settings.elevenLabsSTTModel = v }
         if let v = string(.elevenLabsTTSModel),    !v.isEmpty { settings.elevenLabsTTSModel = v }
@@ -153,6 +156,8 @@ final class iCloudSettingsSync {
         kvs.set(settings.memoryCompilationModelName,              forKey: Key.memoryCompilationModelName.rawValue)
         kvs.set(settings.wikiModel,                               forKey: Key.wikiModel.rawValue)
         kvs.set(settings.wikiModelName,                           forKey: Key.wikiModelName.rawValue)
+        kvs.set(settings.embeddingsModel,                         forKey: Key.embeddingsModel.rawValue)
+        kvs.set(settings.embeddingsModelName,                     forKey: Key.embeddingsModelName.rawValue)
         kvs.set(settings.rerankerEnabled,                         forKey: Key.rerankerEnabled.rawValue)
         kvs.set(settings.elevenLabsSTTModel,                      forKey: Key.elevenLabsSTTModel.rawValue)
         kvs.set(settings.elevenLabsTTSModel,                      forKey: Key.elevenLabsTTSModel.rawValue)
@@ -184,6 +189,8 @@ final class iCloudSettingsSync {
         case memoryCompilationModelName          = "sync.settings.memoryCompilationModelName"
         case wikiModel                           = "sync.settings.wikiModel"
         case wikiModelName                       = "sync.settings.wikiModelName"
+        case embeddingsModel                     = "sync.settings.embeddingsModel"
+        case embeddingsModelName                 = "sync.settings.embeddingsModelName"
         case rerankerEnabled                     = "sync.settings.rerankerEnabled"
         case elevenLabsSTTModel                  = "sync.settings.elevenLabsSTTModel"
         case elevenLabsTTSModel                  = "sync.settings.elevenLabsTTSModel"

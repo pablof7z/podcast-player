@@ -4,8 +4,8 @@ import SwiftUI
 
 /// "Compile a page about X" sheet (UX-04 §6e). Drives the real compile
 /// pipeline: user types a topic, picks a kind + scope, the sheet calls
-/// `WikiGenerator` against `WikiOpenRouterClient.live` (gated on a
-/// stored OpenRouter API key) and writes the result to `WikiStorage`.
+/// `WikiGenerator` against the selected wiki model provider and writes the
+/// result to `WikiStorage`.
 ///
 /// RAG resolves through `RAGService.shared.wikiRAG`, the live sqlite-vec
 /// vector store. Pages compile against whatever transcript chunks have been
@@ -30,9 +30,7 @@ struct WikiGenerateSheet: View {
     @State private var scopeChoice: ScopeChoice = .global
     @State private var selectedPodcastID: UUID?
     @State private var phase: Phase = .input
-    @State private var hasAPIKey: Bool = OpenRouterCredentialStore.hasAPIKey()
-
-    private let model = "openai/gpt-4o-mini"
+    @State private var hasAPIKey = false
 
     /// Sheet-local UI state. Distinct from `WikiHomeViewModel` because it
     /// is owned per-presentation.
@@ -72,7 +70,7 @@ struct WikiGenerateSheet: View {
             }
         }
         .presentationDragIndicator(.visible)
-        .onAppear { hasAPIKey = OpenRouterCredentialStore.hasAPIKey() }
+        .onAppear { refreshProviderStatus() }
     }
 
     // MARK: - Sections
@@ -135,12 +133,12 @@ struct WikiGenerateSheet: View {
             switch phase {
             case .input:
                 if !hasAPIKey {
-                    Label("Connect OpenRouter in Settings to compile pages.",
+                    Label("Connect \(wikiProvider.displayName) in Settings to compile pages.",
                           systemImage: "key")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("This will use OpenRouter credits.")
+                    Text("This will use \(wikiProvider.displayName) credits.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -231,6 +229,7 @@ struct WikiGenerateSheet: View {
     @MainActor
     private func runCompile() async {
         guard canGenerate else { return }
+        let model = store.state.settings.wikiModel
         let trimmed = topic.trimmingCharacters(in: .whitespacesAndNewlines)
         let scope: WikiScope
         switch scopeChoice {
@@ -244,14 +243,14 @@ struct WikiGenerateSheet: View {
         phase = .compiling
 
         do {
-            let apiKey = try OpenRouterCredentialStore.apiKey() ?? ""
-            guard !apiKey.isEmpty else {
-                phase = .failed("Missing OpenRouter API key.")
+            let reference = LLMModelReference(storedID: model)
+            guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+                phase = .failed(LLMProviderCredentialResolver.missingCredentialMessage(for: reference.provider))
                 return
             }
             let generator = WikiGenerator(
                 rag: RAGService.shared.wikiRAG,
-                client: .live(apiKey: apiKey, model: model),
+                client: .live(model: model),
                 storage: storage,
                 model: model
             )
@@ -287,5 +286,13 @@ struct WikiGenerateSheet: View {
             return wiki.errorDescription ?? "Compile failed."
         }
         return error.localizedDescription
+    }
+
+    private var wikiProvider: LLMProvider {
+        LLMModelReference(storedID: store.state.settings.wikiModel).provider
+    }
+
+    private func refreshProviderStatus() {
+        hasAPIKey = LLMProviderCredentialResolver.hasAPIKey(for: wikiProvider)
     }
 }

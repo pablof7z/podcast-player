@@ -9,7 +9,7 @@ import Foundation
 // rather than an error envelope.
 //
 // Prompt layout uses `WikiOpenRouterClient.live` because that path already
-// forces `response_format: { type: "json_object" }` — we want a structured
+// forces structured JSON output for OpenRouter and Ollama — we want a
 // `{summary, bullets}` payload back, not a free-form chat reply.
 
 struct LiveEpisodeSummarizerAdapter: EpisodeSummarizerProtocol {
@@ -29,15 +29,19 @@ struct LiveEpisodeSummarizerAdapter: EpisodeSummarizerProtocol {
         guard !body.isEmpty else {
             return EpisodeSummary(episodeID: episodeID, summary: episode.description)
         }
-        guard let apiKey = (try? OpenRouterCredentialStore.apiKey()) ?? nil,
-              !apiKey.isEmpty else {
+        let model = await MainActor.run {
+            store?.state.settings.memoryCompilationModel ?? Settings().memoryCompilationModel
+        }
+        let reference = LLMModelReference(storedID: model)
+        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             return EpisodeSummary(episodeID: episodeID, summary: episode.description)
         }
-        let client = WikiOpenRouterClient.live(apiKey: apiKey)
+        let client = WikiOpenRouterClient.live(model: model)
         let lengthHint = (length ?? "medium").lowercased()
         let json = try await client.compile(
             systemPrompt: Self.systemPrompt(),
-            userPrompt: Self.userPrompt(title: episode.title, length: lengthHint, body: body)
+            userPrompt: Self.userPrompt(title: episode.title, length: lengthHint, body: body),
+            feature: CostFeature.episodeSummary
         )
         return Self.parseSummary(episodeID: episodeID, json: json) ??
             EpisodeSummary(episodeID: episodeID, summary: episode.description)

@@ -4,7 +4,7 @@ import os.log
 // MARK: - RAGService
 //
 // Singleton entry point for the live RAG stack: on-device sqlite-vec
-// `VectorIndex`, OpenRouter embeddings client, OpenRouter reranker, and the
+// `VectorIndex`, provider-selected embeddings client, OpenRouter reranker, and the
 // `RAGSearch` orchestrator that wires them together.
 //
 // Why a `@MainActor` singleton:
@@ -34,8 +34,8 @@ final class RAGService {
     /// On-disk vector + FTS5 store. Opens at first method call (schema is
     /// created lazily inside the actor).
     let index: VectorIndex
-    /// OpenRouter embeddings client. Constructed unconditionally — calls
-    /// throw `EmbeddingsError.missingAPIKey` until the user adds a key.
+    /// Provider-selected embeddings client. Defaults to OpenRouter, but can
+    /// route to Ollama Cloud when the user chooses an Ollama embedding model.
     let embedder: any EmbeddingsClient
     /// OpenRouter reranker. Same no-key behaviour as the embedder; handed
     /// to `RAGSearch` so the rerank stage degrades gracefully when absent.
@@ -54,11 +54,13 @@ final class RAGService {
     /// singleton is constructed; held weakly so we never extend the store's
     /// lifetime.
     private(set) weak var appStore: AppStateStore?
+    private let providerEmbedder: ProviderEmbeddingsClient
 
     /// Wire the live `AppStateStore` so the briefing adapter can resolve
     /// episode + subscription metadata at retrieval time. Idempotent.
     func attach(appStore: AppStateStore) {
         self.appStore = appStore
+        providerEmbedder.attach(appStore: appStore)
     }
 
     // MARK: Adapters (defined in RAGService+Adapters.swift)
@@ -82,7 +84,7 @@ final class RAGService {
         // functional even if Application Support is sandboxed off.
         let resolvedURL: URL?
         let openedIndex: VectorIndex
-        let embedder = OpenRouterEmbeddingsClient()
+        let embedder = ProviderEmbeddingsClient()
         let reranker = OpenRouterRerankerClient()
 
         do {
@@ -109,17 +111,17 @@ final class RAGService {
             }
         }
 
-        // Probe the OpenRouter key once so devs see a clear "no key" log
-        // line instead of waiting for the first failed embed.
-        let key = try? OpenRouterCredentialStore.apiKey()
-        if key?.isEmpty ?? true {
+        // Probe provider keys once so devs see a clear "no key" log line
+        // instead of waiting for the first failed embed.
+        if !OpenRouterCredentialStore.hasAPIKey() && !OllamaCredentialStore.hasAPIKey() {
             Self.logger.warning(
-                "OpenRouter API key not configured — RAG queries will return [] until the user adds one."
+                "No LLM provider key configured — RAG queries will return [] until the user adds one."
             )
         }
 
         self.index = openedIndex
         self.embedder = embedder
+        self.providerEmbedder = embedder
         self.reranker = reranker
         self.storeURL = resolvedURL
         self.search = RAGSearch(

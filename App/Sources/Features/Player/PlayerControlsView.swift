@@ -6,10 +6,19 @@ import SwiftUI
 /// (eventually) inside a CarPlay reflection. Buttons share `glassEffectID`s so
 /// callers can wrap them in a `GlassEffectContainer` to get the morph-on-press
 /// behaviour described in UX-01 §5.
+///
+/// **Chapter shortcuts.** Long-press on either skip button jumps to the
+/// next/previous chapter when the episode exposes navigable ones — same
+/// gesture iOS Music uses for previous/next track. Tap remains the
+/// configured-seconds skip. `chapters` is supplied by the parent so the live
+/// store is the source of truth (chapters can hydrate after playback starts).
 struct PlayerControlsView: View {
 
     @Bindable var state: PlaybackState
     let glassNamespace: Namespace.ID
+    /// Navigable chapters for the currently-loaded episode. Pass `[]` when
+    /// the episode has none — the long-press hooks become no-ops.
+    var chapters: [Episode.Chapter] = []
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.lg) {
@@ -18,15 +27,27 @@ struct PlayerControlsView: View {
             // value so the SF Symbol still resolves.
             let back = state.skipBackwardSeconds
             let forward = state.skipForwardSeconds
-            skipButton(seconds: -back, glyph: skipGlyph(back, forward: false)) {
-                state.skipBackward()
-            }
+            skipButton(
+                seconds: -back,
+                glyph: skipGlyph(back, forward: false),
+                action: { state.skipBackward() },
+                chapterAction: chapters.isEmpty ? nil : {
+                    Haptics.medium()
+                    state.seekToPreviousChapter(in: chapters)
+                }
+            )
 
             playPauseButton
 
-            skipButton(seconds: forward, glyph: skipGlyph(forward, forward: true)) {
-                state.skipForward()
-            }
+            skipButton(
+                seconds: forward,
+                glyph: skipGlyph(forward, forward: true),
+                action: { state.skipForward() },
+                chapterAction: chapters.isEmpty ? nil : {
+                    Haptics.medium()
+                    state.seekToNextChapter(in: chapters)
+                }
+            )
         }
         .frame(maxWidth: .infinity)
     }
@@ -62,16 +83,38 @@ struct PlayerControlsView: View {
         .buttonStyle(.pressable(scale: 0.94, opacity: 0.9))
     }
 
-    private func skipButton(seconds: Int, glyph: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: glyph)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 56, height: 56)
-                .glassEffect(.regular.interactive(), in: .circle)
+    @ViewBuilder
+    private func skipButton(
+        seconds: Int,
+        glyph: String,
+        action: @escaping () -> Void,
+        chapterAction: (() -> Void)? = nil
+    ) -> some View {
+        let label = Image(systemName: glyph)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(.primary)
+            .frame(width: 56, height: 56)
+            .glassEffect(.regular.interactive(), in: .circle)
+        let baseLabel = seconds < 0 ? "Skip back \(-seconds) seconds" : "Skip forward \(seconds) seconds"
+        if let chapterAction {
+            // Tap = configured-seconds skip. Long-press = chapter nav.
+            // `simultaneousGesture` keeps both gesture paths active without
+            // the Button swallowing the long-press.
+            Button(action: action) { label }
+                .buttonStyle(.pressable)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.45)
+                        .onEnded { _ in chapterAction() }
+                )
+                .accessibilityLabel(baseLabel)
+                .accessibilityAction(named: seconds < 0 ? "Previous chapter" : "Next chapter") {
+                    chapterAction()
+                }
+        } else {
+            Button(action: action) { label }
+                .buttonStyle(.pressable)
+                .accessibilityLabel(baseLabel)
         }
-        .buttonStyle(.pressable)
-        .accessibilityLabel(seconds < 0 ? "Skip back \(-seconds) seconds" : "Skip forward \(seconds) seconds")
     }
 }
 

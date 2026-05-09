@@ -180,7 +180,7 @@ struct OpenRouterModelSelectorView: View {
 
     private var customSection: some View {
         Section("Custom model ID") {
-            TextField("provider/model", text: $manualModelID)
+            TextField("provider/model or ollama:model", text: $manualModelID)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .font(AppTheme.Typography.monoBody)

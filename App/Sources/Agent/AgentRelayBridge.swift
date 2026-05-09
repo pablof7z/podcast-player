@@ -20,15 +20,9 @@ final class AgentRelayBridge {
         let trimmed = content.trimmed
         guard !trimmed.isEmpty else { return nil }
 
-        let apiKey: String
-        do {
-            guard let key = try OpenRouterCredentialStore.apiKey() else {
-                logger.warning("No OpenRouter key available for Nostr agent reply")
-                return nil
-            }
-            apiKey = key
-        } catch {
-            logger.error("Could not read OpenRouter key for Nostr agent reply: \(error, privacy: .public)")
+        let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+            logger.warning("No \(reference.provider.displayName, privacy: .public) key available for Nostr agent reply")
             return nil
         }
 
@@ -42,11 +36,11 @@ final class AgentRelayBridge {
         for _ in 0..<maxTurns {
             let result: AgentResult
             do {
-                result = try await AgentOpenRouterClient.streamCompletion(
+                result = try await AgentLLMClient.streamCompletion(
                     messages: messages,
                     tools: AgentTools.schema + AgentTools.podcastSchema,
-                    apiKey: apiKey,
                     model: store.state.settings.llmModel,
+                    feature: CostFeature.agentNostr,
                     onPartialContent: { _ in }
                 )
             } catch {

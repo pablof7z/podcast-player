@@ -66,7 +66,9 @@ let project = Project(
             deploymentTargets: deploymentTarget,
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
-            resources: [],
+            resources: [
+                "App/Resources/Assets.xcassets",
+            ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
             dependencies: [
                 .package(product: "P256K"),

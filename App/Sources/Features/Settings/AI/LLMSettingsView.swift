@@ -2,8 +2,10 @@ import SwiftUI
 
 struct LLMSettingsView: View {
     @Environment(AppStateStore.self) private var store
+    @ObservedObject private var ledger = CostLedger.shared
     @State private var agentSelectorPresented = false
     @State private var memorySelectorPresented = false
+    @State private var embeddingsSelectorPresented = false
     @State private var catalog = OpenRouterModelSelectorViewModel()
 
     var body: some View {
@@ -13,6 +15,7 @@ struct LLMSettingsView: View {
 
             List {
                 modelsSection
+                usageSection
                 connectionSection
             }
             .listStyle(.insetGrouped)
@@ -33,6 +36,12 @@ struct LLMSettingsView: View {
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
                 OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $embeddingsSelectorPresented) {
+            NavigationStack {
+                OpenRouterModelSelectorView(selectedModelID: embeddingsModelBinding, selectedModelName: embeddingsModelNameBinding, role: "Embeddings")
             }
             .presentationDragIndicator(.visible)
         }
@@ -63,23 +72,60 @@ struct LLMSettingsView: View {
                 memorySelectorPresented = true
             }
             ModelPreviewCard(model: catalogModel(for: store.state.settings.memoryCompilationModel))
+
+            modelRow(
+                icon: "rectangle.stack.fill.badge.person.crop",
+                tint: .blue,
+                role: "Embeddings",
+                modelID: store.state.settings.embeddingsModel,
+                modelName: store.state.settings.embeddingsModelName
+            ) {
+                embeddingsSelectorPresented = true
+            }
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.embeddingsModel))
         } header: {
             Text("Model Roles")
         } footer: {
-            Text("Each role can use a different model. Agent runs during conversations; Memory Compilation summarises and organises memories.")
+            Text("Each role can use a different provider and model. Agent runs during conversations; Memory Compilation and Embeddings support the knowledge pipeline.")
+        }
+    }
+
+    private var usageSection: some View {
+        Section("Usage") {
+            NavigationLink {
+                UsageCostSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "dollarsign.circle.fill",
+                    tint: .green,
+                    title: "Usage & Cost",
+                    value: usageSummary
+                )
+            }
         }
     }
 
     private var connectionSection: some View {
-        Section("OpenRouter") {
+        Section("Providers") {
             NavigationLink {
                 OpenRouterSettingsView()
             } label: {
                 SettingsRow(
                     icon: "key.viewfinder",
                     tint: .indigo,
-                    title: "Connection",
-                    value: connectionStatus
+                    title: "OpenRouter",
+                    value: openRouterStatus
+                )
+            }
+
+            NavigationLink {
+                OllamaSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "cloud.fill",
+                    tint: .green,
+                    title: "Ollama Cloud",
+                    value: ollamaStatus
                 )
             }
         }
@@ -132,6 +178,20 @@ struct LLMSettingsView: View {
         )
     }
 
+    private var embeddingsModelBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.embeddingsModel },
+            set: { v in var s = store.state.settings; s.embeddingsModel = v; store.updateSettings(s) }
+        )
+    }
+
+    private var embeddingsModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.embeddingsModelName },
+            set: { v in var s = store.state.settings; s.embeddingsModelName = v; store.updateSettings(s) }
+        )
+    }
+
     // MARK: - Helpers
 
     /// Returns the stored human-readable name when available, falling back to
@@ -153,12 +213,29 @@ struct LLMSettingsView: View {
             s.memoryCompilationModelName = match.name
             changed = true
         }
+        if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.embeddingsModel }) {
+            s.embeddingsModelName = match.name
+            changed = true
+        }
         if changed { store.updateSettings(s) }
     }
 
-    private var connectionStatus: String {
+    private var usageSummary: String? {
+        guard !ledger.records.isEmpty else { return nil }
+        let total = ledger.records.reduce(0) { $0 + $1.costUSD }
+        return "\(ledger.records.count) calls · \(CostFormatter.usd(total))"
+    }
+
+    private var openRouterStatus: String {
         switch store.state.settings.openRouterCredentialSource {
         case .byok:   return "BYOK"
+        case .manual: return "Manual"
+        case .none:   return "Not set up"
+        }
+    }
+
+    private var ollamaStatus: String {
+        switch store.state.settings.ollamaCredentialSource {
         case .manual: return "Manual"
         case .none:   return "Not set up"
         }

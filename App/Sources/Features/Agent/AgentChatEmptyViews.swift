@@ -181,25 +181,27 @@ struct AgentChatWelcomeView: View {
 
 // MARK: - Disconnected state
 
-/// Empty-state view shown when OpenRouter is not yet connected.
+/// Empty-state view shown when the selected LLM provider is not yet connected.
 struct AgentChatDisconnectedView: View {
+    @Environment(AppStateStore.self) private var store
+
     var body: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             Spacer()
             Image(systemName: "key.slash.fill")
                 .font(.system(size: Layout.disconnectedIconSize))
                 .foregroundStyle(.orange)
-            Text("Connect OpenRouter to chat")
+            Text("Connect \(provider.displayName) to chat")
                 .font(AppTheme.Typography.title)
                 .multilineTextAlignment(.center)
-            Text("The agent runs on a model of your choice via OpenRouter. Add your key in Settings to begin.")
+            Text("The agent runs on the provider selected for the Agent role. Add that key in Settings to begin.")
                 .font(AppTheme.Typography.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, AppTheme.Spacing.lg)
             NavigationLink {
-                OpenRouterSettingsView()
+                LLMSettingsView()
             } label: {
                 Label("Open AI Settings", systemImage: "slider.horizontal.3")
             }
@@ -209,5 +211,9 @@ struct AgentChatDisconnectedView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    private var provider: LLMProvider {
+        LLMModelReference(storedID: store.state.settings.llmModel).provider
     }
 }

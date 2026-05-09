@@ -19,14 +19,19 @@ struct OpenRouterModelCatalogService: Sendable {
     func fetchModels() async throws -> [OpenRouterModelOption] {
         async let openRouter = fetchOpenRouterModels()
         async let modelsDev = fetchModelsDevCatalogOptional()
+        async let ollama = fetchOllamaModelsOptional()
 
         let models = try await openRouter
         let metadata = await modelsDev
+        let ollamaModels = await ollama
 
-        return models
+        let openRouterOptions = models
             .map { OpenRouterModelOption(openRouter: $0, modelsDev: metadata) }
+
+        return (openRouterOptions + ollamaModels.map(OpenRouterModelOption.init(ollama:)))
             .sorted { lhs, rhs in
                 if lhs.isCompatible != rhs.isCompatible { return lhs.isCompatible && !rhs.isCompatible }
+                if lhs.provider != rhs.provider { return lhs.provider == .openRouter }
                 if lhs.createdAt != rhs.createdAt { return (lhs.createdAt ?? .distantPast) > (rhs.createdAt ?? .distantPast) }
                 return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
             }
@@ -62,6 +67,15 @@ struct OpenRouterModelCatalogService: Sendable {
             return nil
         }
     }
+
+    private func fetchOllamaModelsOptional() async -> [OllamaTagModel] {
+        do {
+            return try await OllamaModelCatalogService().fetchModels()
+        } catch {
+            Self.logger.warning("Ollama model catalog fetch failed (non-fatal): \(error, privacy: .public)")
+            return []
+        }
+    }
 }
 
 enum CatalogError: LocalizedError {
@@ -74,6 +88,7 @@ enum CatalogError: LocalizedError {
 // MARK: - Public model type
 
 struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
+    var provider: LLMProvider
     var id: String
     var name: String
     var providerID: String
@@ -111,7 +126,8 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         let input = model.architecture?.inputModalities ?? devModel?.modalities?.input ?? []
         let output = model.architecture?.outputModalities ?? devModel?.modalities?.output ?? []
 
-        self.id = model.id
+        self.provider = .openRouter
+        self.id = LLMModelReference(provider: .openRouter, modelID: model.id).storedID
         self.name = model.name
         self.providerID = pID
         self.providerName = Self.providerName(from: model.name, provider: provider, providerID: pID)
@@ -139,6 +155,49 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         self.knowledgeCutoff = model.knowledgeCutoff ?? devModel?.knowledge
         self.releaseDate = devModel?.releaseDate
         self.lastUpdated = devModel?.lastUpdated
+    }
+
+    init(ollama model: OllamaTagModel) {
+        let rawID = model.model ?? model.name
+        let families = model.details?.families ?? []
+        let family = model.details?.family ?? families.first ?? "ollama"
+        let detailParts = [
+            model.details?.parameterSize,
+            model.details?.quantizationLevel,
+        ].compactMap { $0 }.joined(separator: ", ")
+
+        self.provider = .ollama
+        self.id = LLMModelReference(provider: .ollama, modelID: rawID).storedID
+        self.name = model.name
+        self.providerID = "ollama-cloud"
+        self.providerName = LLMProvider.ollama.displayName
+        self.providerIconURL = nil
+        self.modelDescription = detailParts.isEmpty
+            ? "Cloud model available through Ollama's hosted API."
+            : "Cloud model available through Ollama's hosted API. \(detailParts)."
+        self.promptCostPerMillion = nil
+        self.completionCostPerMillion = nil
+        self.cacheReadCostPerMillion = nil
+        self.cacheWriteCostPerMillion = nil
+        self.requestCost = nil
+        self.imageCost = nil
+        self.webSearchCost = nil
+        self.contextLength = nil
+        self.outputLimit = nil
+        self.inputModalities = ["text"]
+        self.outputModalities = ["text"]
+        self.tokenizer = family
+        self.supportsTools = true
+        self.supportsReasoning = rawID.localizedCaseInsensitiveContains("gpt-oss")
+            || rawID.localizedCaseInsensitiveContains("qwen")
+        self.supportsStructuredOutputs = true
+        self.supportsResponseFormat = true
+        self.openWeights = true
+        self.isModerated = nil
+        self.createdAt = model.modifiedAt
+        self.knowledgeCutoff = nil
+        self.releaseDate = nil
+        self.lastUpdated = model.modifiedAt?.formatted(date: .abbreviated, time: .omitted)
     }
 
     var isFree: Bool {

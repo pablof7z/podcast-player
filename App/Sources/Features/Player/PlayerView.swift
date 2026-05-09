@@ -231,7 +231,8 @@ struct PlayerView: View {
             PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
             PlayerControlsView(
                 state: state,
-                glassNamespace: glassNamespace
+                glassNamespace: glassNamespace,
+                chapters: navigableChapters ?? []
             )
             PlayerActionClusterView(
                 state: state,

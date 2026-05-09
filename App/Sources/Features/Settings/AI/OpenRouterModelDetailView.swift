@@ -80,7 +80,7 @@ struct OpenRouterModelDetailView: View {
                             DetailLine("Knowledge cutoff", knowledgeCutoff)
                         }
                         if let createdAt = model.createdAt {
-                            DetailLine("Added to OpenRouter", createdAt.formatted(date: .abbreviated, time: .omitted))
+                            DetailLine("Catalog updated", createdAt.formatted(date: .abbreviated, time: .omitted))
                         }
                     }
                 }

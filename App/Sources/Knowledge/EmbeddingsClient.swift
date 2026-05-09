@@ -90,9 +90,14 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
             input: batch,
             dimensions: dimensions
         )
-        req.httpBody = try JSONEncoder().encode(payload)
+        let bodyData = try JSONEncoder().encode(payload)
+        req.httpBody = bodyData
+        let requestPayloadJSON = String(data: bodyData, encoding: .utf8)
 
+        let start = Date()
         let (data, response) = try await session.data(for: req)
+        let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
+
         guard let http = response as? HTTPURLResponse else {
             throw EmbeddingsError.transport(detail: "no HTTPURLResponse")
         }
@@ -115,6 +120,24 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
         } catch {
             Self.logger.error("OpenRouter embeddings decode failed: \(error, privacy: .public)")
             throw EmbeddingsError.decoding
+        }
+
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let usageRaw = json["usage"] {
+            let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
+            let usage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+            let modelUsed = (json["model"] as? String) ?? model
+            let preview = "embed: \(batch.count) input(s)"
+            Task { @MainActor in
+                CostLedger.shared.log(
+                    feature: CostFeature.embeddingsOpenRouter,
+                    model: modelUsed,
+                    usage: usage,
+                    latencyMs: latencyMs,
+                    requestPayloadJSON: requestPayloadJSON,
+                    responseContentPreview: preview
+                )
+            }
         }
 
         // Provider-side ordering is guaranteed by OpenAI-compatible schema
@@ -150,6 +173,13 @@ enum EmbeddingsError: LocalizedError {
     case transport(detail: String)
     case decoding
     case shapeMismatch(expected: Int, got: Int)
+    case providerMissingAPIKey(provider: String)
+    case providerUnauthorized(provider: String)
+    case providerRateLimited(provider: String)
+    case providerServerError(provider: String, statusCode: Int)
+    case providerTransport(provider: String, detail: String)
+    case providerDecoding(provider: String)
+    case dimensionMismatch(provider: String, expected: Int, got: Int)
 
     var errorDescription: String? {
         switch self {
@@ -167,6 +197,20 @@ enum EmbeddingsError: LocalizedError {
             return "Could not decode the OpenRouter embeddings response."
         case let .shapeMismatch(expected, got):
             return "Embeddings batch shape mismatch: expected \(expected), got \(got)."
+        case let .providerMissingAPIKey(provider):
+            return "\(provider) API key not configured. Add it in Settings -> AI."
+        case let .providerUnauthorized(provider):
+            return "\(provider) rejected the API key."
+        case let .providerRateLimited(provider):
+            return "\(provider) is rate-limiting embedding requests. Try again shortly."
+        case let .providerServerError(provider, code):
+            return "\(provider) embeddings returned HTTP \(code)."
+        case let .providerTransport(provider, detail):
+            return "Network error contacting \(provider): \(detail)."
+        case let .providerDecoding(provider):
+            return "Could not decode the \(provider) embeddings response."
+        case let .dimensionMismatch(provider, expected, got):
+            return "\(provider) embedding dimension mismatch: expected \(expected), got \(got). Choose a \(expected)-dimension embedding model or rebuild the vector index."
         }
     }
 }

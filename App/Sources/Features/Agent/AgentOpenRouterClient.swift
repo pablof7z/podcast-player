@@ -81,6 +81,7 @@ enum AgentOpenRouterClient {
         tools: [[String: Any]],
         apiKey: String,
         model: String,
+        feature: String = CostFeature.agentChat,
         onPartialContent: (String) -> Void
     ) async throws -> AgentResult {
         var request = URLRequest(url: NetworkConstants.openRouterURL)
@@ -89,9 +90,19 @@ enum AgentOpenRouterClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = NetworkConstants.requestTimeout
 
-        let body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "stream": true]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let body: [String: Any] = [
+            "model": model,
+            "messages": messages,
+            "tools": tools,
+            "stream": true,
+            "stream_options": ["include_usage": true],
+            "usage": ["include": true],
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+        request.httpBody = bodyData
+        let requestPayloadJSON = String(data: bodyData, encoding: .utf8)
 
+        let start = Date()
         let (bytes, response) = try await URLSession.shared.bytes(for: request)
 
         guard let http = response as? HTTPURLResponse else {
@@ -113,6 +124,8 @@ enum AgentOpenRouterClient {
         }
 
         var accumulator = StreamAccumulator()
+        var capturedUsage: OpenRouterUsagePayload?
+        var capturedModel: String = model
 
         for try await line in bytes.lines {
             guard line.hasPrefix("data: ") else { continue }
@@ -120,7 +133,22 @@ enum AgentOpenRouterClient {
             guard payload != "[DONE]" else { break }
             guard
                 let data = payload.data(using: .utf8),
-                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            else { continue }
+
+            if let modelField = json["model"] as? String, !modelField.isEmpty {
+                capturedModel = modelField
+            }
+
+            // Usage-only chunk (choices is empty or absent) — capture and continue.
+            if let usageRaw = json["usage"],
+               (json["choices"] as? [[String: Any]])?.isEmpty != false {
+                let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
+                capturedUsage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+                continue
+            }
+
+            guard
                 let choices = json["choices"] as? [[String: Any]],
                 let first = choices.first,
                 let delta = first["delta"] as? [String: Any]
@@ -132,7 +160,21 @@ enum AgentOpenRouterClient {
             }
         }
 
-        return accumulator.toResult()
+        let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
+        let result = accumulator.toResult()
+        let preview = (result.assistantMessage["content"] as? String)?.isEmpty == false
+            ? result.assistantMessage["content"] as? String
+            : "tool_calls: \(result.toolCalls.map(\.name).joined(separator: ", "))"
+        CostLedger.shared.log(
+            feature: feature,
+            model: capturedModel,
+            usage: capturedUsage,
+            latencyMs: latencyMs,
+            requestPayloadJSON: requestPayloadJSON,
+            responseContentPreview: preview
+        )
+
+        return result
     }
 
     /// Extracts a human-readable error message from an API error body.

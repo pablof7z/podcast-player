@@ -60,7 +60,8 @@ struct AgentChatView: View {
         .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
         .onAppear {
             if session == nil { session = AgentChatSession(store: store, playback: playback) }
-            let hasKey = OpenRouterCredentialStore.hasAPIKey()
+            let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+            let hasKey = LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
             showSettingsHint = !hasKey
             inputFocused = hasKey
         }

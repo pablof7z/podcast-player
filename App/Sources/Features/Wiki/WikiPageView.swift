@@ -272,14 +272,14 @@ struct WikiPageView: View {
         actionError = nil
         defer { isRegenerating = false }
         do {
-            let apiKey = try OpenRouterCredentialStore.apiKey() ?? ""
-            guard !apiKey.isEmpty else {
-                actionError = "Connect OpenRouter in Settings to regenerate."
+            let reference = LLMModelReference(storedID: page.model)
+            guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+                actionError = LLMProviderCredentialResolver.missingCredentialMessage(for: reference.provider)
                 return
             }
             let generator = WikiGenerator(
                 rag: RAGService.shared.wikiRAG,
-                client: .live(apiKey: apiKey, model: page.model),
+                client: .live(model: page.model),
                 storage: storage,
                 model: page.model
             )

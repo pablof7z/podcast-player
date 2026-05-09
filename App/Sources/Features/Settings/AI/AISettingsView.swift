@@ -30,7 +30,7 @@ struct AISettingsView: View {
                     tint: .purple,
                     title: "Language Models",
                     subtitle: agentModelShortName,
-                    value: openRouterStatus
+                    value: providerStatus
                 )
             }
 
@@ -62,19 +62,24 @@ struct AISettingsView: View {
         }
     }
 
-    /// "Knowledge" surfaces the on-device retrieval-augmented generation
-    /// configuration: the embeddings model used for vector search and the
-    /// optional reranker step. Embeddings are intentionally read-only — the
-    /// model is hard-coded into `EmbeddingsClient` because changing it
-    /// invalidates every persisted vector. The reranker is opt-in.
+    /// "Knowledge" surfaces the retrieval-augmented generation configuration.
+    /// Embedding model changes should be treated as an index-level choice:
+    /// the live client enforces the current 1024-d vector contract.
     private var ragSection: some View {
         Section {
-            SettingsRow(
-                icon: "rectangle.stack.fill.badge.person.crop",
-                tint: .blue,
-                title: "Embeddings",
-                value: Settings.embeddingsModelDisplay
-            )
+            NavigationLink {
+                LLMSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "rectangle.stack.fill.badge.person.crop",
+                    tint: .blue,
+                    title: "Embeddings",
+                    value: Settings.embeddingsModelDisplay(
+                        modelID: settings.embeddingsModel,
+                        modelName: settings.embeddingsModelName
+                    )
+                )
+            }
             Toggle(isOn: rerankerBinding) {
                 Label("Reranker", systemImage: "list.number")
             }
@@ -113,11 +118,14 @@ struct AISettingsView: View {
         return name == "Not set" ? nil : name
     }
 
-    private var openRouterStatus: String {
-        switch settings.openRouterCredentialSource {
-        case .byok:   return "BYOK"
-        case .manual: return "Manual"
-        case .none:   return "Not set up"
+    private var providerStatus: String {
+        let openRouterReady = settings.openRouterCredentialSource != .none
+        let ollamaReady = settings.ollamaCredentialSource != .none
+        switch (openRouterReady, ollamaReady) {
+        case (true, true):   return "2 providers"
+        case (true, false):  return "OpenRouter"
+        case (false, true):  return "Ollama"
+        case (false, false): return "Not set up"
         }
     }
 

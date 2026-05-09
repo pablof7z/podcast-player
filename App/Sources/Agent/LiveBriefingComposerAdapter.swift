@@ -49,8 +49,10 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
     @MainActor
     private static func makeComposer() throws -> BriefingComposer {
         let storage = try BriefingStorage()
-        let apiKey: String? = (try? OpenRouterCredentialStore.apiKey()) ?? nil
-        return BriefingComposer(storage: storage, apiKey: apiKey)
+        let settings = RAGService.shared.appStore?.state.settings ?? Settings()
+        let reference = LLMModelReference(storedID: settings.memoryCompilationModel)
+        let apiKey = (try? LLMProviderCredentialResolver.apiKey(for: reference.provider)) ?? nil
+        return BriefingComposer(storage: storage, apiKey: apiKey, model: reference.storedID)
     }
 
     // MARK: Mapping

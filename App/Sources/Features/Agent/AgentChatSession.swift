@@ -145,15 +145,8 @@ final class AgentChatSession {
     /// Like `send(_:)` but skips appending the user message — it's already in
     /// both `messages` and `rawMessages` from the original turn.
     private func regenerateSend(_ text: String) async {
-        let key: String
-        do {
-            guard let storedKey = try OpenRouterCredentialStore.apiKey() else {
-                phase = .failed("OpenRouter is not connected. Add a key in Settings.")
-                return
-            }
-            key = storedKey
-        } catch {
-            phase = .failed("OpenRouter credential could not be read. Reconnect in Settings.")
+        guard selectedProviderHasCredential() else {
+            phase = .failed(missingCredentialMessage())
             return
         }
 
@@ -168,7 +161,7 @@ final class AgentChatSession {
         phase = .sending
         history.save(messages)
 
-        await runAgentTurns(apiKey: key, batchID: UUID())
+        await runAgentTurns(batchID: UUID())
     }
 
     /// Begins an agent turn in a stored `Task` so the caller can cancel it via
@@ -183,15 +176,8 @@ final class AgentChatSession {
         let trimmed = text.trimmed
         guard !trimmed.isEmpty else { return }
 
-        let key: String
-        do {
-            guard let storedKey = try OpenRouterCredentialStore.apiKey() else {
-                phase = .failed("OpenRouter is not connected. Add a key in Settings.")
-                return
-            }
-            key = storedKey
-        } catch {
-            phase = .failed("OpenRouter credential could not be read. Reconnect in Settings.")
+        guard selectedProviderHasCredential() else {
+            phase = .failed(missingCredentialMessage())
             return
         }
 
@@ -220,7 +206,7 @@ final class AgentChatSession {
         phase = .sending
         history.save(messages)
 
-        await runAgentTurns(apiKey: key, batchID: UUID())
+        await runAgentTurns(batchID: UUID())
     }
 
     /// Executes the streaming agent turn-loop, processing LLM responses and tool
@@ -233,9 +219,8 @@ final class AgentChatSession {
     /// leaves `phase` in `.idle` or `.failed` and persists `messages` via `history`.
     ///
     /// - Parameters:
-    ///   - apiKey: A valid OpenRouter API key.
     ///   - batchID: Stable identifier for the tool-action batch started by this turn.
-    private func runAgentTurns(apiKey: String, batchID: UUID) async {
+    private func runAgentTurns(batchID: UUID) async {
         var batchActionCount = 0
 
         for _ in 0..<maxTurns {
@@ -243,10 +228,9 @@ final class AgentChatSession {
 
             let result: AgentResult
             do {
-                result = try await AgentOpenRouterClient.streamCompletion(
+                result = try await AgentLLMClient.streamCompletion(
                     messages: rawMessages,
                     tools: AgentTools.schema + AgentTools.podcastSchema,
-                    apiKey: apiKey,
                     model: store.state.settings.llmModel
                 ) { [weak self] partial in
                     self?.streamingContent = partial
@@ -353,6 +337,16 @@ final class AgentChatSession {
     private func resetStreamingState() {
         streamingContent = nil
         currentToolName = nil
+    }
+
+    private func selectedProviderHasCredential() -> Bool {
+        let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+        return LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
+    }
+
+    private func missingCredentialMessage() -> String {
+        let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+        return LLMProviderCredentialResolver.missingCredentialMessage(for: reference.provider)
     }
 
     /// Saves any non-empty partial streaming content as an assistant message
