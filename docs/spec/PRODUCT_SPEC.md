@@ -55,6 +55,8 @@ These five moments are the demo reel and the acceptance test for v1. If any one 
 
 A sixth story, *"What's a contrarian take on what they just said?"*, exercises `perplexity_search` and is included as the differentiator versus closed-corpus assistants. It ships at v1 if the BYOK path for Perplexity lands; otherwise v1.1.
 
+A seventh story is **in-episode voice drop**: while the episode is playing, the user taps the agent chip and speaks a one-sentence thought. The agent has full context of the current transcript window (what was just said) and the user's speech, then acts: *"rewind to where this topic started"* → seeks to the transcript anchor; *"clip that"* → builds a waveform clip card at semantically correct in/out points; *"I wonder how this applies to X"* → drops a timestamped note and optionally fires off a research thread. The user never leaves the Now Playing screen. See [docs/spec/briefs/ux-16-in-episode-agent.md](briefs/ux-16-in-episode-agent.md).
+
 ---
 
 ## 3. Information Architecture & Tab Structure (resolved)
@@ -141,6 +143,7 @@ These are what no competitor has stitched together. Each row must work in concer
 | Proactive editorial Today | UX-14 | Insight ranking job (BG), `IsightCard` taxonomy, push budget (1/day default) |
 | Nostr-mediated cross-device + friend agent | UX-12 | Existing `NostrRelayService` + `AgentRelayBridge`, new `PermissionTier`, `toolOverrides` on `Friend` |
 | Onboarding to first briefing in <90 s | UX-10 | Trial budget service, OPML detection animation |
+| In-episode voice drop — context-aware agent actions while listening | UX-16 | `InEpisodeAgentController`, `TranscriptWindowProvider`, agent tools `seek_to_topic_start`, `create_clip_semantic`, `anchor_note`, `research_inline` |
 
 ---
 
@@ -160,7 +163,7 @@ The hero surface and the user's most-stared-at screen. The transcript is the pri
 
 **Mini-bar signature.** The persistent mini-bar across tabs uniquely shows the **active transcript line**, not just the title — a 1-line ticker. This is the visual signature that signals "this app understands the audio."
 
-**Handoff contract.** Tap show name → Episode Detail (UX-03). Long-press transcript line → inline agent answer (≤3 turns); fourth turn promotes to Agent Chat (UX-05). Double-tap a noun the agent has linked → Wiki peek sheet (UX-04). Voice button on the agent chip → Voice Mode (UX-06). Queue chip → Queue sheet (UX-02 owns).
+**Handoff contract.** Tap show name → Episode Detail (UX-03). Long-press transcript line → inline agent answer (≤3 turns); fourth turn promotes to Agent Chat (UX-05). Double-tap a noun the agent has linked → Wiki peek sheet (UX-04). Voice button on the agent chip → Voice Mode (UX-06). **Tap the agent chip while an episode plays → In-Episode Agent (UX-16)**: episode ducks, orb rises, user speaks a thought, agent acts (seek / clip / note / research) without leaving the player. Queue chip → Queue sheet (UX-02 owns).
 
 **Microinteraction discipline.** Hold-to-clip is 600 ms with rising haptics (`.light` → `.medium` → `.heavy`); release before commit cancels. Scrub release snaps to the nearest sentence boundary within ±400 ms. The "Return to live" pill (Slack pattern) appears when the user manually scrolls; auto-scroll resumes only on tap. Speed dial appears on long-press of the play button (280 ms hold) — one-thumb operable, no menu dive.
 
