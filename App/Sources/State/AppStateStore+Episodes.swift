@@ -44,8 +44,14 @@ extension AppStateStore {
     /// the store are merged: the publisher fields refresh while the user-
     /// mutable playback state (`playbackPosition`, `played`, `downloadState`,
     /// `transcriptState`) is preserved.
-    func upsertEpisodes(_ incoming: [Episode], forSubscription subscriptionID: UUID) {
-        guard !incoming.isEmpty else { return }
+    ///
+    /// Triggers `EpisodeDownloadService.evaluateAutoDownload(...)` for any
+    /// genuinely new episode IDs so per-subscription `AutoDownloadPolicy`
+    /// (off / latest-N / all-new + Wi-Fi guard) fires on every feed refresh
+    /// without the refresh service having to know about the downloader.
+    @discardableResult
+    func upsertEpisodes(_ incoming: [Episode], forSubscription subscriptionID: UUID) -> [UUID] {
+        guard !incoming.isEmpty else { return [] }
         var updated = state.episodes
         let existingByGUID = Dictionary(
             updated.enumerated()
@@ -53,6 +59,7 @@ extension AppStateStore {
                 .map { ($0.element.guid, $0.offset) },
             uniquingKeysWith: { first, _ in first }
         )
+        var newlyInserted: [UUID] = []
         for episode in incoming {
             if let idx = existingByGUID[episode.guid] {
                 let prior = updated[idx]
@@ -65,9 +72,21 @@ extension AppStateStore {
                 updated[idx] = merged
             } else {
                 updated.append(episode)
+                newlyInserted.append(episode.id)
             }
         }
         state.episodes = updated
+        if !newlyInserted.isEmpty {
+            // Attach the service to this store on first reach so the
+            // download lifecycle, the auto-download path, and the AudioEngine
+            // local-file fallback all see the same `appStore`. Idempotent.
+            EpisodeDownloadService.shared.attach(appStore: self)
+            EpisodeDownloadService.shared.evaluateAutoDownload(
+                forSubscription: subscriptionID,
+                newEpisodeIDs: newlyInserted
+            )
+        }
+        return newlyInserted
     }
 
     /// Persists a playback-position update without rewriting the entire episode.

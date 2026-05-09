@@ -35,6 +35,10 @@ enum DownloadStatus: Equatable, Hashable {
 /// rail container). Cards stay matte; this little badge is the exception.
 struct DownloadStatusCapsule: View {
     let status: DownloadStatus
+    /// Optional live-progress override. When supplied, the `.downloading`
+    /// label tracks the service's `@Observable` progress map so the capsule
+    /// updates smoothly (5%/200ms) without thrashing `AppStateStore`.
+    var liveProgress: Double? = nil
 
     var body: some View {
         if let render = render {
@@ -55,6 +59,13 @@ struct DownloadStatusCapsule: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(render.accessibilityLabel)
         }
+    }
+
+    /// Resolves the displayed progress fraction: prefers the live override
+    /// when present, otherwise the value baked into the status.
+    private func displayedProgress(_ statusProgress: Double) -> Double {
+        if let live = liveProgress { return live }
+        return statusProgress
     }
 
     // MARK: - Render
@@ -82,7 +93,8 @@ struct DownloadStatusCapsule: View {
                     : "Downloaded"
             )
         case .downloading(let progress):
-            let pct = Int((progress.clamped01 * 100).rounded())
+            let resolved = displayedProgress(progress)
+            let pct = Int((resolved.clamped01 * 100).rounded())
             return Render(
                 symbol: "arrow.down.circle",
                 label: "Downloading \(pct)%",
