@@ -1,0 +1,147 @@
+import Foundation
+
+/// Fetches a `PodcastSubscription`'s feed and parses it into an updated
+/// subscription + new episodes.
+///
+/// Conditional GET: sends `If-None-Match` (ETag) and `If-Modified-Since`
+/// (Last-Modified) when the subscription has them. A `304 Not Modified` is
+/// reported via `FeedFetchResult.notModified` so callers can short-circuit
+/// without redoing parser / dedupe work — see baseline §2 (manual + scheduled
+/// refresh) and `transcription-stack.md` §5 for the upstream pipeline.
+///
+/// Pure I/O — no SwiftUI, no `AppStateStore` writes. Lane 1 (audio engine) and
+/// Lane 3 (Library) are the consumers.
+struct FeedClient: Sendable {
+
+    /// What `fetch(_:)` returned for one feed.
+    enum FeedFetchResult: Sendable {
+        /// Server returned 304 Not Modified; nothing to parse, but record the
+        /// `lastRefreshedAt` so the UI knows we checked.
+        case notModified(lastRefreshedAt: Date)
+        /// Server returned a fresh feed body; the caller receives a refreshed
+        /// subscription (with new ETag/Last-Modified) plus the parsed episodes.
+        case updated(
+            subscription: PodcastSubscription,
+            episodes: [Episode],
+            lastRefreshedAt: Date
+        )
+    }
+
+    enum FeedFetchError: Error, Sendable {
+        case transport(underlying: String)
+        case http(status: Int)
+        case parse(RSSParser.ParseError)
+    }
+
+    /// Allows tests to swap in a stub session.
+    let session: URLSession
+    private let parser: RSSParser
+
+    init(session: URLSession = .shared) {
+        self.session = session
+        self.parser = RSSParser()
+    }
+
+    /// Fetches the subscription's feed, honoring conditional-GET.
+    ///
+    /// Returns the *new* episodes from this fetch — the caller is responsible
+    /// for diffing against persistent storage by `Episode.guid`. We do not
+    /// retain state here.
+    func fetch(_ subscription: PodcastSubscription) async throws -> FeedFetchResult {
+        var request = URLRequest(url: subscription.feedURL)
+        request.httpMethod = "GET"
+        request.setValue(
+            "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+            forHTTPHeaderField: "Accept"
+        )
+        request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
+        if let etag = subscription.etag, !etag.isEmpty {
+            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        }
+        if let lastModified = subscription.lastModified, !lastModified.isEmpty {
+            request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+        }
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw FeedFetchError.transport(underlying: error.localizedDescription)
+        }
+
+        let now = Date()
+        guard let httpResponse = response as? HTTPURLResponse else {
+            // Non-HTTP scheme (file://, etc.). Treat as 200 if data parses.
+            return try parseAndAttach(
+                data: data,
+                subscription: subscription,
+                etag: nil,
+                lastModified: nil,
+                now: now
+            )
+        }
+
+        switch httpResponse.statusCode {
+        case 200:
+            let etag = (httpResponse.value(forHTTPHeaderField: "ETag")
+                ?? httpResponse.value(forHTTPHeaderField: "Etag"))
+            let lastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+            return try parseAndAttach(
+                data: data,
+                subscription: subscription,
+                etag: etag,
+                lastModified: lastModified,
+                now: now
+            )
+        case 304:
+            return .notModified(lastRefreshedAt: now)
+        default:
+            throw FeedFetchError.http(status: httpResponse.statusCode)
+        }
+    }
+
+    // MARK: Private
+
+    private func parseAndAttach(
+        data: Data,
+        subscription: PodcastSubscription,
+        etag: String?,
+        lastModified: String?,
+        now: Date
+    ) throws -> FeedFetchResult {
+        let parsed: RSSParser.ParsedFeed
+        do {
+            parsed = try parser.parse(
+                data: data,
+                feedURL: subscription.feedURL,
+                subscriptionID: subscription.id
+            )
+        } catch let parseError as RSSParser.ParseError {
+            throw FeedFetchError.parse(parseError)
+        }
+
+        // Merge: keep user-mutable fields from the existing subscription;
+        // overwrite editorial fields from the feed; refresh cache headers.
+        var merged = subscription
+        merged.title = parsed.subscription.title.isEmpty ? merged.title : parsed.subscription.title
+        merged.author = parsed.subscription.author.isEmpty ? merged.author : parsed.subscription.author
+        merged.description = parsed.subscription.description.isEmpty
+            ? merged.description
+            : parsed.subscription.description
+        merged.imageURL = parsed.subscription.imageURL ?? merged.imageURL
+        merged.language = parsed.subscription.language ?? merged.language
+        if !parsed.subscription.categories.isEmpty {
+            merged.categories = parsed.subscription.categories
+        }
+        merged.etag = etag ?? merged.etag
+        merged.lastModified = lastModified ?? merged.lastModified
+        merged.lastRefreshedAt = now
+
+        return .updated(
+            subscription: merged,
+            episodes: parsed.episodes,
+            lastRefreshedAt: now
+        )
+    }
+}
