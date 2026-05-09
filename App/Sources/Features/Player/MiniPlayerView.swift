@@ -26,6 +26,20 @@ struct MiniPlayerView: View {
         return sub.title
     }
 
+    /// Title of the chapter containing the playhead, when the live episode
+    /// has navigable chapters. Returns `nil` for chapter-less episodes so
+    /// the metadata line falls back to the show name. Reads from
+    /// `AppStateStore` rather than the cached `state.episode` so chapters
+    /// hydrated by `ChaptersHydrationService` after playback started show
+    /// up here without a re-load.
+    private var activeChapterTitle: String? {
+        guard let stateEpisode = state.episode else { return nil }
+        let live = store.episode(id: stateEpisode.id) ?? stateEpisode
+        let navigable = live.chapters?.filter(\.includeInTableOfContents) ?? []
+        guard !navigable.isEmpty else { return nil }
+        return navigable.active(at: state.currentTime)?.title
+    }
+
     var body: some View {
         Group {
             switch placement {
@@ -194,10 +208,26 @@ struct MiniPlayerView: View {
         }
     }
 
+    @ViewBuilder
     private var metadataLine: some View {
-        HStack(spacing: 6) {
-            if state.episode != nil {
-                if !showName.isEmpty {
+        if state.episode != nil {
+            HStack(spacing: 6) {
+                if let chapterTitle = activeChapterTitle {
+                    Image(systemName: "book.pages")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                    Text(chapterTitle)
+                        .font(AppTheme.Typography.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .transition(.opacity)
+                        .id(chapterTitle)
+                    Text("·")
+                        .font(AppTheme.Typography.caption2)
+                        .foregroundStyle(.tertiary)
+                } else if !showName.isEmpty {
                     Text(showName)
                         .font(AppTheme.Typography.caption2)
                         .foregroundStyle(.secondary)
@@ -211,6 +241,7 @@ struct MiniPlayerView: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
+            .animation(AppTheme.Animation.spring, value: activeChapterTitle)
         }
     }
 
@@ -248,7 +279,13 @@ struct MiniPlayerView: View {
 
     private var accessibilityLabel: String {
         let title = state.episode?.title ?? "Now playing"
-        return showName.isEmpty ? title : "\(title), \(showName)"
+        var parts: [String] = [title]
+        if let chapter = activeChapterTitle {
+            parts.append("Chapter: \(chapter)")
+        } else if !showName.isEmpty {
+            parts.append(showName)
+        }
+        return parts.joined(separator: ", ")
     }
 
     /// Picks the closest SF Symbol to the user's configured skip-forward
