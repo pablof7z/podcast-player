@@ -30,6 +30,13 @@ let project = Project(
             url: "https://github.com/GigaBitcoin/secp256k1.swift",
             requirement: .upToNextMajor(from: "0.23.1")
         ),
+        // Lane 6 — RAG: on-device vector store via sqlite-vec.
+        // Hosts both the `vec0` virtual table for embeddings and `fts5` for
+        // hybrid lexical search in a single SQLite file.
+        .remote(
+            url: "https://github.com/jkrukowski/SQLiteVec",
+            requirement: .upToNextMinor(from: "0.0.14")
+        ),
     ],
     settings: .settings(
         base: [
@@ -53,6 +60,7 @@ let project = Project(
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
             dependencies: [
                 .package(product: "P256K"),
+                .package(product: "SQLiteVec"),
                 .target(name: "\(appName)Widget"),
             ],
             settings: .settings(
