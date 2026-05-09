@@ -104,16 +104,22 @@ enum DataExport {
 
     /// Counts of non-deleted records in `state`, used for the export preview.
     struct Stats: Sendable, Hashable {
+        var subscriptions: Int
+        var episodes: Int
         var notes: Int
         var friends: Int
         var memories: Int
         var agentActivity: Int
 
-        var totalRecords: Int { notes + friends + memories + agentActivity }
+        var totalRecords: Int {
+            subscriptions + episodes + notes + friends + memories + agentActivity
+        }
     }
 
     static func stats(for state: AppState) -> Stats {
         Stats(
+            subscriptions: state.subscriptions.count,
+            episodes: state.episodes.count,
             notes: state.notes.filter { !$0.deleted }.count,
             friends: state.friends.count,
             memories: state.agentMemories.filter { !$0.deleted }.count,

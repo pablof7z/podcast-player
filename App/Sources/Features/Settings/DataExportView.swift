@@ -64,7 +64,7 @@ struct DataExportView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all notes, friends, memories, and agent activity. This action cannot be undone.")
+            Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. This action cannot be undone.")
         }
     }
 
@@ -72,6 +72,8 @@ struct DataExportView: View {
 
     private var summarySection: some View {
         Section("Contents") {
+            statRow(icon: "antenna.radiowaves.left.and.right", tint: .pink, label: "Subscriptions", count: stats.subscriptions)
+            statRow(icon: "headphones", tint: .blue, label: "Episodes", count: stats.episodes)
             statRow(icon: "note.text", tint: .indigo, label: "Notes", count: stats.notes)
             statRow(icon: "person.2.fill", tint: .green, label: "Friends", count: stats.friends)
             statRow(icon: "brain.head.profile", tint: .orange, label: "Memories", count: stats.memories)
@@ -126,7 +128,7 @@ struct DataExportView: View {
                 )
             }
         } footer: {
-            Text("Permanently deletes all notes, friends, memories, and agent activity.")
+            Text("Permanently deletes every subscription, episode, note, friend, memory, and agent activity entry.")
         }
     }
 
@@ -170,7 +172,7 @@ struct DataExportView: View {
         if let size = fileSize, let generatedAt {
             return "\(base) · \(formatBytes(size)) · Last exported \(Self.exportTimeFormatter.string(from: generatedAt))"
         }
-        return "\(base) · Bundles notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
+        return "\(base) · Bundles subscriptions, episodes, notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
     }
 
     // MARK: - Actions

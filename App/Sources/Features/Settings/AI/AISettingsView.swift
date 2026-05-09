@@ -11,6 +11,7 @@ struct AISettingsView: View {
             List {
                 llmSection
                 audioSection
+                ragSection
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -32,6 +33,17 @@ struct AISettingsView: View {
                     value: openRouterStatus
                 )
             }
+
+            NavigationLink {
+                WikiSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "book.closed.fill",
+                    tint: .indigo,
+                    title: "Wiki",
+                    subtitle: wikiModelShortName
+                )
+            }
         }
     }
 
@@ -50,10 +62,54 @@ struct AISettingsView: View {
         }
     }
 
+    /// "Knowledge" surfaces the on-device retrieval-augmented generation
+    /// configuration: the embeddings model used for vector search and the
+    /// optional reranker step. Embeddings are intentionally read-only — the
+    /// model is hard-coded into `EmbeddingsClient` because changing it
+    /// invalidates every persisted vector. The reranker is opt-in.
+    private var ragSection: some View {
+        Section {
+            SettingsRow(
+                icon: "rectangle.stack.fill.badge.person.crop",
+                tint: .blue,
+                title: "Embeddings",
+                value: Settings.embeddingsModelDisplay
+            )
+            Toggle(isOn: rerankerBinding) {
+                Label("Reranker", systemImage: "list.number")
+            }
+        } header: {
+            Text("Knowledge")
+        } footer: {
+            Text("Embeddings power on-device search and the agent's evidence retrieval. The reranker reorders top results with a cross-encoder for higher quality at extra token cost.")
+        }
+    }
+
+    // MARK: - Bindings
+
+    private var rerankerBinding: Binding<Bool> {
+        Binding(
+            get: { store.state.settings.rerankerEnabled },
+            set: { v in
+                var s = store.state.settings
+                s.rerankerEnabled = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
+        )
+    }
+
+    // MARK: - Derived
+
     private var settings: Settings { store.state.settings }
 
     private var agentModelShortName: String? {
         let name = Settings.modelDisplayName(modelID: settings.llmModel, modelName: settings.llmModelName)
+        return name == "Not set" ? nil : name
+    }
+
+    private var wikiModelShortName: String? {
+        let name = Settings.modelDisplayName(modelID: settings.wikiModel, modelName: settings.wikiModelName)
         return name == "Not set" ? nil : name
     }
 

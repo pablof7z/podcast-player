@@ -200,15 +200,15 @@ struct MiniPlayerView: View {
             .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
 
             Button {
-                state.skipForward(30)
+                state.skipForward()
             } label: {
-                Image(systemName: "goforward.30")
+                Image(systemName: forwardSkipGlyph)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.85))
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.pressable)
-            .accessibilityLabel("Skip forward 30 seconds")
+            .accessibilityLabel("Skip forward \(state.skipForwardSeconds) seconds")
         }
     }
 
@@ -220,5 +220,17 @@ struct MiniPlayerView: View {
     private var accessibilityLabel: String {
         let title = state.episode?.title ?? "Now playing"
         return showName.isEmpty ? title : "\(title), \(showName)"
+    }
+
+    /// Picks the closest SF Symbol to the user's configured skip-forward
+    /// interval. iOS only ships a numeric variant for {10, 15, 30, 45, 60, 75, 90}.
+    private var forwardSkipGlyph: String {
+        let supported = [10, 15, 30, 45, 60, 75, 90]
+        let seconds = state.skipForwardSeconds
+        guard let match = supported.min(by: { abs($0 - seconds) < abs($1 - seconds) }),
+              abs(match - seconds) <= 5 else {
+            return "goforward"
+        }
+        return "goforward.\(match)"
     }
 }

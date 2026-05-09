@@ -17,6 +17,13 @@ struct DiscoverSearchForm: View {
     let store: AppStateStore
     let onAdded: (PodcastSubscription) -> Void
 
+    /// Wait this long after the user stops typing before firing a search.
+    /// Long enough to skip mid-word taps; short enough that results feel live.
+    private static let debounceMS: UInt64 = 300
+
+    /// Auto-search only kicks in once the query is meaningful.
+    private static let minAutoSearchChars: Int = 2
+
     @State private var query: String = ""
     @State private var isSearching: Bool = false
     @State private var results: [ITunesSearchClient.Result] = []
@@ -45,6 +52,9 @@ struct DiscoverSearchForm: View {
             }
         }
         .onAppear { queryFocused = true }
+        .onChange(of: query) { _, newValue in
+            scheduleAutoSearch(for: newValue)
+        }
     }
 
     // MARK: - Search field
@@ -135,11 +145,31 @@ struct DiscoverSearchForm: View {
         return store.subscription(feedURL: url) != nil
     }
 
+    /// Submit-handler (return key on the keyboard). Skips the debounce so
+    /// users who hit Enter get instant results.
     private func runSearch() {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         searchTask?.cancel()
+        searchTask = Task { await performSearch(trimmed) }
+    }
+
+    /// Debounced as-you-type. Clears results when the field empties, skips
+    /// queries shorter than `minAutoSearchChars` (no point hitting the API
+    /// for a single letter), and cancels any in-flight task each keystroke.
+    private func scheduleAutoSearch(for raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchTask?.cancel()
+        if trimmed.isEmpty {
+            results = []
+            error = nil
+            isSearching = false
+            return
+        }
+        guard trimmed.count >= Self.minAutoSearchChars else { return }
         searchTask = Task {
+            try? await Task.sleep(nanoseconds: Self.debounceMS * 1_000_000)
+            if Task.isCancelled { return }
             await performSearch(trimmed)
         }
     }

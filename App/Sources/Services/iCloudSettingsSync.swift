@@ -8,8 +8,12 @@ import os.log
 /// and survive reinstalls.
 ///
 /// **What is synced.** Only portable, non-secret fields:
-///   - LLM model IDs / names
+///   - LLM model IDs / names (agent, memory compilation, wiki)
+///   - Reranker preference
 ///   - ElevenLabs TTS/STT model IDs, voice ID, and voice name
+///   - Playback preferences (default rate, skip intervals, auto-mark-played)
+///   - Wiki + transcript automation toggles
+///   - Per-kind notification toggles
 ///   - Nostr relay URL and profile metadata (name, about, picture)
 ///
 /// **What is NOT synced.** Fields that are device-local, security-sensitive, or
@@ -101,15 +105,39 @@ final class iCloudSettingsSync {
         func string(_ key: Key) -> String? {
             kvs.object(forKey: key.rawValue) as? String
         }
+        func bool(_ key: Key) -> Bool? {
+            // `object(forKey:)` returns nil when the key is absent (so we don't
+            // overwrite local defaults with `false`); cast to NSNumber to
+            // distinguish "not set" from "explicitly false".
+            (kvs.object(forKey: key.rawValue) as? NSNumber)?.boolValue
+        }
+        func double(_ key: Key) -> Double? {
+            (kvs.object(forKey: key.rawValue) as? NSNumber)?.doubleValue
+        }
+        func int(_ key: Key) -> Int? {
+            (kvs.object(forKey: key.rawValue) as? NSNumber)?.intValue
+        }
 
         if let v = string(.llmModel),              !v.isEmpty { settings.llmModel = v }
         if let v = string(.llmModelName)                      { settings.llmModelName = v }
         if let v = string(.memoryCompilationModel), !v.isEmpty { settings.memoryCompilationModel = v }
         if let v = string(.memoryCompilationModelName)        { settings.memoryCompilationModelName = v }
+        if let v = string(.wikiModel),             !v.isEmpty { settings.wikiModel = v }
+        if let v = string(.wikiModelName)                     { settings.wikiModelName = v }
+        if let v = bool(.rerankerEnabled)                     { settings.rerankerEnabled = v }
         if let v = string(.elevenLabsSTTModel),    !v.isEmpty { settings.elevenLabsSTTModel = v }
         if let v = string(.elevenLabsTTSModel),    !v.isEmpty { settings.elevenLabsTTSModel = v }
         if let v = string(.elevenLabsVoiceID)                 { settings.elevenLabsVoiceID = v }
         if let v = string(.elevenLabsVoiceName)               { settings.elevenLabsVoiceName = v }
+        if let v = double(.defaultPlaybackRate), v > 0        { settings.defaultPlaybackRate = v }
+        if let v = int(.skipForwardSeconds), v > 0            { settings.skipForwardSeconds = v }
+        if let v = int(.skipBackwardSeconds), v > 0           { settings.skipBackwardSeconds = v }
+        if let v = bool(.autoMarkPlayedAtEnd)                 { settings.autoMarkPlayedAtEnd = v }
+        if let v = bool(.wikiAutoGenerateOnTranscriptIngest)  { settings.wikiAutoGenerateOnTranscriptIngest = v }
+        if let v = bool(.autoIngestPublisherTranscripts)      { settings.autoIngestPublisherTranscripts = v }
+        if let v = bool(.autoFallbackToScribe)                { settings.autoFallbackToScribe = v }
+        if let v = bool(.notifyOnNewEpisodes)                 { settings.notifyOnNewEpisodes = v }
+        if let v = bool(.notifyOnBriefingReady)               { settings.notifyOnBriefingReady = v }
         if let v = string(.nostrRelayURL),         !v.isEmpty { settings.nostrRelayURL = v }
         if let v = string(.nostrProfileName)                  { settings.nostrProfileName = v }
         if let v = string(.nostrProfileAbout)                 { settings.nostrProfileAbout = v }
@@ -119,18 +147,30 @@ final class iCloudSettingsSync {
     // MARK: - Write helper
 
     private func write(_ settings: Settings, to kvs: NSUbiquitousKeyValueStore) {
-        kvs.set(settings.llmModel,                  forKey: Key.llmModel.rawValue)
-        kvs.set(settings.llmModelName,              forKey: Key.llmModelName.rawValue)
-        kvs.set(settings.memoryCompilationModel,    forKey: Key.memoryCompilationModel.rawValue)
-        kvs.set(settings.memoryCompilationModelName, forKey: Key.memoryCompilationModelName.rawValue)
-        kvs.set(settings.elevenLabsSTTModel,        forKey: Key.elevenLabsSTTModel.rawValue)
-        kvs.set(settings.elevenLabsTTSModel,        forKey: Key.elevenLabsTTSModel.rawValue)
-        kvs.set(settings.elevenLabsVoiceID,         forKey: Key.elevenLabsVoiceID.rawValue)
-        kvs.set(settings.elevenLabsVoiceName,       forKey: Key.elevenLabsVoiceName.rawValue)
-        kvs.set(settings.nostrRelayURL,             forKey: Key.nostrRelayURL.rawValue)
-        kvs.set(settings.nostrProfileName,          forKey: Key.nostrProfileName.rawValue)
-        kvs.set(settings.nostrProfileAbout,         forKey: Key.nostrProfileAbout.rawValue)
-        kvs.set(settings.nostrProfilePicture,       forKey: Key.nostrProfilePicture.rawValue)
+        kvs.set(settings.llmModel,                                forKey: Key.llmModel.rawValue)
+        kvs.set(settings.llmModelName,                            forKey: Key.llmModelName.rawValue)
+        kvs.set(settings.memoryCompilationModel,                  forKey: Key.memoryCompilationModel.rawValue)
+        kvs.set(settings.memoryCompilationModelName,              forKey: Key.memoryCompilationModelName.rawValue)
+        kvs.set(settings.wikiModel,                               forKey: Key.wikiModel.rawValue)
+        kvs.set(settings.wikiModelName,                           forKey: Key.wikiModelName.rawValue)
+        kvs.set(settings.rerankerEnabled,                         forKey: Key.rerankerEnabled.rawValue)
+        kvs.set(settings.elevenLabsSTTModel,                      forKey: Key.elevenLabsSTTModel.rawValue)
+        kvs.set(settings.elevenLabsTTSModel,                      forKey: Key.elevenLabsTTSModel.rawValue)
+        kvs.set(settings.elevenLabsVoiceID,                       forKey: Key.elevenLabsVoiceID.rawValue)
+        kvs.set(settings.elevenLabsVoiceName,                     forKey: Key.elevenLabsVoiceName.rawValue)
+        kvs.set(settings.defaultPlaybackRate,                     forKey: Key.defaultPlaybackRate.rawValue)
+        kvs.set(Int64(settings.skipForwardSeconds),               forKey: Key.skipForwardSeconds.rawValue)
+        kvs.set(Int64(settings.skipBackwardSeconds),              forKey: Key.skipBackwardSeconds.rawValue)
+        kvs.set(settings.autoMarkPlayedAtEnd,                     forKey: Key.autoMarkPlayedAtEnd.rawValue)
+        kvs.set(settings.wikiAutoGenerateOnTranscriptIngest,      forKey: Key.wikiAutoGenerateOnTranscriptIngest.rawValue)
+        kvs.set(settings.autoIngestPublisherTranscripts,          forKey: Key.autoIngestPublisherTranscripts.rawValue)
+        kvs.set(settings.autoFallbackToScribe,                    forKey: Key.autoFallbackToScribe.rawValue)
+        kvs.set(settings.notifyOnNewEpisodes,                     forKey: Key.notifyOnNewEpisodes.rawValue)
+        kvs.set(settings.notifyOnBriefingReady,                   forKey: Key.notifyOnBriefingReady.rawValue)
+        kvs.set(settings.nostrRelayURL,                           forKey: Key.nostrRelayURL.rawValue)
+        kvs.set(settings.nostrProfileName,                        forKey: Key.nostrProfileName.rawValue)
+        kvs.set(settings.nostrProfileAbout,                       forKey: Key.nostrProfileAbout.rawValue)
+        kvs.set(settings.nostrProfilePicture,                     forKey: Key.nostrProfilePicture.rawValue)
     }
 
     // MARK: - Key namespace
@@ -138,18 +178,30 @@ final class iCloudSettingsSync {
     /// Namespaced keys for `NSUbiquitousKeyValueStore` to avoid collisions
     /// with any other KV store entries.
     enum Key: String {
-        case llmModel                   = "sync.settings.llmModel"
-        case llmModelName               = "sync.settings.llmModelName"
-        case memoryCompilationModel     = "sync.settings.memoryCompilationModel"
-        case memoryCompilationModelName = "sync.settings.memoryCompilationModelName"
-        case elevenLabsSTTModel         = "sync.settings.elevenLabsSTTModel"
-        case elevenLabsTTSModel         = "sync.settings.elevenLabsTTSModel"
-        case elevenLabsVoiceID          = "sync.settings.elevenLabsVoiceID"
-        case elevenLabsVoiceName        = "sync.settings.elevenLabsVoiceName"
-        case nostrRelayURL              = "sync.settings.nostrRelayURL"
-        case nostrProfileName           = "sync.settings.nostrProfileName"
-        case nostrProfileAbout          = "sync.settings.nostrProfileAbout"
-        case nostrProfilePicture        = "sync.settings.nostrProfilePicture"
+        case llmModel                            = "sync.settings.llmModel"
+        case llmModelName                        = "sync.settings.llmModelName"
+        case memoryCompilationModel              = "sync.settings.memoryCompilationModel"
+        case memoryCompilationModelName          = "sync.settings.memoryCompilationModelName"
+        case wikiModel                           = "sync.settings.wikiModel"
+        case wikiModelName                       = "sync.settings.wikiModelName"
+        case rerankerEnabled                     = "sync.settings.rerankerEnabled"
+        case elevenLabsSTTModel                  = "sync.settings.elevenLabsSTTModel"
+        case elevenLabsTTSModel                  = "sync.settings.elevenLabsTTSModel"
+        case elevenLabsVoiceID                   = "sync.settings.elevenLabsVoiceID"
+        case elevenLabsVoiceName                 = "sync.settings.elevenLabsVoiceName"
+        case defaultPlaybackRate                 = "sync.settings.defaultPlaybackRate"
+        case skipForwardSeconds                  = "sync.settings.skipForwardSeconds"
+        case skipBackwardSeconds                 = "sync.settings.skipBackwardSeconds"
+        case autoMarkPlayedAtEnd                 = "sync.settings.autoMarkPlayedAtEnd"
+        case wikiAutoGenerateOnTranscriptIngest  = "sync.settings.wikiAutoGenerateOnTranscriptIngest"
+        case autoIngestPublisherTranscripts      = "sync.settings.autoIngestPublisherTranscripts"
+        case autoFallbackToScribe                = "sync.settings.autoFallbackToScribe"
+        case notifyOnNewEpisodes                 = "sync.settings.notifyOnNewEpisodes"
+        case notifyOnBriefingReady               = "sync.settings.notifyOnBriefingReady"
+        case nostrRelayURL                       = "sync.settings.nostrRelayURL"
+        case nostrProfileName                    = "sync.settings.nostrProfileName"
+        case nostrProfileAbout                   = "sync.settings.nostrProfileAbout"
+        case nostrProfilePicture                 = "sync.settings.nostrProfilePicture"
     }
 }
 

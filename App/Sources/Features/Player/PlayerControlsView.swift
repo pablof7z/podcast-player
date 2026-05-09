@@ -14,17 +14,36 @@ struct PlayerControlsView: View {
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.lg) {
-            skipButton(seconds: -15, glyph: "gobackward.15") {
-                state.skipBackward(15)
+            // Honour the user-configured skip intervals from Settings →
+            // Playback. Falls back to 15/30 if the engine reports an invalid
+            // value so the SF Symbol still resolves.
+            let back = state.skipBackwardSeconds
+            let forward = state.skipForwardSeconds
+            skipButton(seconds: -back, glyph: skipGlyph(back, forward: false)) {
+                state.skipBackward()
             }
 
             playPauseButton
 
-            skipButton(seconds: 30, glyph: "goforward.30") {
-                state.skipForward(30)
+            skipButton(seconds: forward, glyph: skipGlyph(forward, forward: true)) {
+                state.skipForward()
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Picks the closest SF Symbol that ships with iOS for the given seconds.
+    /// `gobackward.10/15/30/45/60/75/90` and the matching `goforward.*` are
+    /// the supported variants; anything else falls back to `gobackward` /
+    /// `goforward` (no number).
+    private func skipGlyph(_ seconds: Int, forward: Bool) -> String {
+        let supported = [10, 15, 30, 45, 60, 75, 90]
+        let prefix = forward ? "goforward" : "gobackward"
+        guard let match = supported.min(by: { abs($0 - seconds) < abs($1 - seconds) }),
+              abs(match - seconds) <= 5 else {
+            return prefix
+        }
+        return "\(prefix).\(match)"
     }
 
     // MARK: - Subviews
