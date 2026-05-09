@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import WidgetKit
 
 // MARK: - PlaybackRate
 
@@ -141,12 +142,22 @@ final class PlaybackState {
     /// should mark the episode as fully played.
     var onEpisodeFinished: (UUID) -> Void = { _ in }
 
+    /// Resolves the parent show name for a given episode. Called by the
+    /// snapshot writer so the widget can render the show subtitle without
+    /// `PlaybackState` needing to know about `AppStateStore`. Returns `""`
+    /// when the show name isn't known.
+    var resolveShowName: (Episode) -> String = { _ in "" }
+
     // MARK: - Internal
 
     /// Drives the 1-second persistence + end-detection loop.
     private var persistenceTask: Task<Void, Never>?
     /// Prevents `onEpisodeFinished` from firing twice for the same playthrough.
     private var didFireFinishedFor: UUID?
+    /// Most recent App-Group snapshot write. Used to throttle position-only
+    /// updates to once every 5 seconds — the widget's timeline refresh
+    /// granularity makes finer writes wasted I/O.
+    private var lastSnapshotWrite: Date?
 
     // MARK: - Init
 
@@ -162,12 +173,17 @@ final class PlaybackState {
     func setEpisode(_ newEpisode: Episode) {
         if episode?.id != newEpisode.id {
             didFireFinishedFor = nil
+            lastSnapshotWrite = nil
         }
         episode = newEpisode
         engine.load(newEpisode)
         if newEpisode.playbackPosition > 0 {
             engine.seek(to: newEpisode.playbackPosition)
         }
+        // Episode change is the one event that always justifies a snapshot
+        // write — title and artwork just changed, so the widget would
+        // otherwise show stale metadata until the next 5-second tick.
+        writeNowPlayingSnapshot(force: true)
         startPersistenceLoop()
     }
 
@@ -251,6 +267,10 @@ final class PlaybackState {
             onPersistPosition(episode.id, time)
         }
 
+        // Throttled snapshot write — at most once every 5 seconds. The widget
+        // re-reads on a 60s timeline, so finer writes are pure waste.
+        writeNowPlayingSnapshot(force: false)
+
         // Natural end-of-item handler in `AudioEngine+Observers` pins
         // `currentTime` to exactly `duration`. A 0.1s tolerance absorbs any
         // observer jitter without misclassifying a manual pause near the end.
@@ -259,5 +279,29 @@ final class PlaybackState {
             didFireFinishedFor = episode.id
             onEpisodeFinished(episode.id)
         }
+    }
+
+    /// Writes the current episode metadata into the App Group `UserDefaults`
+    /// the widget reads from, then nudges WidgetKit to refresh. Throttled to
+    /// once per 5s unless `force` is set (e.g. on episode change), where the
+    /// snapshot must update immediately.
+    private func writeNowPlayingSnapshot(force: Bool) {
+        guard let episode else { return }
+        let now = Date()
+        if !force, let last = lastSnapshotWrite,
+           now.timeIntervalSince(last) < 5 {
+            return
+        }
+        let snapshot = NowPlayingSnapshot(
+            episodeTitle: episode.title,
+            showName: resolveShowName(episode),
+            imageURLString: episode.imageURL?.absoluteString,
+            position: engine.currentTime,
+            duration: duration,
+            updatedAt: now
+        )
+        NowPlayingSnapshotStore.write(snapshot)
+        lastSnapshotWrite = now
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

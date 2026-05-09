@@ -54,6 +54,9 @@ struct RootView: View {
                 playbackState.onEpisodeFinished = { [store] id in
                     store.markEpisodePlayed(id)
                 }
+                playbackState.resolveShowName = { [store] episode in
+                    store.subscription(id: episode.subscriptionID)?.title ?? ""
+                }
             }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayerView(
@@ -201,6 +204,14 @@ struct RootView: View {
             Task { @MainActor in
                 store.pendingFriendInvite = PendingFriendInvite(npub: npub, name: name)
             }
+        case .episode(let uuid):
+            // Use the same Spotlight-sheet path so we don't need to mutate
+            // a NavigationPath we don't currently expose. Library and Home
+            // tabs each own their own NavigationStack; presenting the detail
+            // as a sheet lands the user on the right record either way.
+            spotlightSheet = .episode(uuid)
+        case .subscription(let uuid):
+            spotlightSheet = .subscription(uuid)
         }
     }
 
@@ -220,7 +231,29 @@ struct RootView: View {
             AgentNotesView(spotlightTargetID: id)
         case .memory(let id):
             AgentMemoriesView(spotlightTargetID: id)
+        case .subscription(let id):
+            if let subscription = store.subscription(id: id) {
+                ShowDetailView(subscription: subscription)
+            } else {
+                spotlightMissing("Show not found", "This subscription is no longer in your library.")
+            }
+        case .episode(let id):
+            if store.episode(id: id) != nil {
+                EpisodeDetailView(episodeID: id)
+            } else {
+                spotlightMissing("Episode not found", "This episode is no longer in your library.")
+            }
         }
+    }
+
+    /// Empty-state shown inside the Spotlight sheet when the targeted record
+    /// has been removed since the index was written.
+    private func spotlightMissing(_ title: String, _ subtitle: String) -> some View {
+        ContentUnavailableView(
+            title,
+            systemImage: "questionmark.folder",
+            description: Text(subtitle)
+        )
     }
 
     private func handleShake() {
@@ -259,8 +292,10 @@ struct RootView: View {
 
         var id: String {
             switch link {
-            case .note(let id):   return "note:\(id)"
-            case .memory(let id): return "memory:\(id)"
+            case .note(let id):         return "note:\(id)"
+            case .memory(let id):       return "memory:\(id)"
+            case .subscription(let id): return "subscription:\(id)"
+            case .episode(let id):      return "episode:\(id)"
             }
         }
     }
