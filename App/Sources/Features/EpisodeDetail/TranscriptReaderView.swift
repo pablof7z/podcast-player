@@ -17,7 +17,7 @@ struct TranscriptReaderView: View {
 
     // MARK: Inputs
 
-    let episode: MockTranscriptEpisode
+    let episode: Episode
     let transcript: Transcript
     let currentTime: TimeInterval?
     let followAlong: Bool
@@ -148,7 +148,7 @@ private struct TranscriptRow: View {
     var body: some View {
         Text(segment.text)
             .font(.system(size: 19, weight: .regular, design: .serif))
-            .lineSpacing(11) // approximates 30pt leading on 19pt body
+            .lineSpacing(11)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 4)
@@ -167,8 +167,31 @@ private struct TranscriptRow: View {
 // MARK: - Preview
 
 #Preview {
-    let (episode, transcript) = MockEpisodeFixture.timFerrissKeto()
-    TranscriptReaderView(
+    let subID = UUID()
+    let episode = Episode(
+        subscriptionID: subID,
+        guid: "preview-1",
+        title: "How to Think About Keto",
+        description: "",
+        pubDate: Date(timeIntervalSince1970: 1_714_780_800),
+        duration: 60 * 60 * 2,
+        enclosureURL: URL(string: "https://traffic.megaphone.fm/HSW1234567890.mp3")!
+    )
+    let tim = Speaker(label: "Tim Ferriss", displayName: "Tim Ferriss")
+    let peter = Speaker(label: "Peter Attia", displayName: "Peter Attia")
+    let transcript = Transcript(
+        episodeID: episode.id,
+        language: "en-US",
+        source: .publisher,
+        segments: [
+            Segment(start: 0, end: 6, speakerID: tim.id, text: "Welcome back to the show. Today I'm joined by my friend Dr. Peter Attia."),
+            Segment(start: 6, end: 10, speakerID: peter.id, text: "Thanks Tim, great to be here."),
+            Segment(start: 252, end: 260, speakerID: tim.id, text: "When you say metabolic flexibility, what do you actually mean?"),
+            Segment(start: 260, end: 270, speakerID: peter.id, text: "We're measuring the body's ability to switch substrate utilization on demand.")
+        ],
+        speakers: [tim, peter]
+    )
+    return TranscriptReaderView(
         episode: episode,
         transcript: transcript,
         currentTime: 260,

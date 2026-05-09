@@ -6,11 +6,15 @@ import SwiftUI
 /// hero artwork + title block, action row, italic summary lede, chapter
 /// list, show-notes prose, and the "Read transcript" CTA.
 ///
-/// Extracted from `EpisodeDetailView` to keep that file under the 300-line
-/// soft limit. Owns no state; all interactions bubble up via callbacks.
+/// Owns no state; all interactions bubble up via callbacks. The play button
+/// label flips between Play / Resume based on `playbackPosition`.
 struct EpisodeDetailHeroView: View {
-    let episode: MockTranscriptEpisode
-    let onPlayChapter: (MockTranscriptEpisode.Chapter) -> Void
+    let episode: Episode
+    let showName: String
+    let showImageURL: URL?
+    let isPlayed: Bool
+    let onPlay: () -> Void
+    let onPlayChapter: (Episode.Chapter) -> Void
     let onReadTranscript: () -> Void
 
     var body: some View {
@@ -18,9 +22,15 @@ struct EpisodeDetailHeroView: View {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                 hero
                 actionRow
-                summarySection
-                chaptersSection
-                showNotesSection
+                if !descriptionPlain.isEmpty {
+                    summarySection
+                }
+                if let chapters = navigableChapters, !chapters.isEmpty {
+                    chaptersSection(chapters)
+                }
+                if !descriptionPlain.isEmpty {
+                    showNotesSection
+                }
                 readTranscriptCTA
                 Spacer(minLength: 80)
             }
@@ -38,7 +48,7 @@ struct EpisodeDetailHeroView: View {
                 Text(episode.title.uppercased())
                     .font(.system(size: 24, weight: .semibold, design: .serif))
                     .foregroundStyle(.primary)
-                Text(episode.showName)
+                Text(showName)
                     .font(.system(.subheadline, design: .rounded).weight(.medium))
                     .foregroundStyle(.secondary)
                 Text(metadataLine)
@@ -49,14 +59,33 @@ struct EpisodeDetailHeroView: View {
     }
 
     private var artwork: some View {
+        let url = episode.imageURL ?? showImageURL
+        return Group {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        artworkPlaceholder
+                    }
+                }
+            } else {
+                artworkPlaceholder
+            }
+        }
+        .frame(width: 110, height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
+    }
+
+    private var artworkPlaceholder: some View {
         RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
             .fill(LinearGradient(
                 colors: [Color.orange.opacity(0.65), Color.purple.opacity(0.55)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             ))
-            .frame(width: 110, height: 110)
             .overlay(
-                Text(String(episode.showName.prefix(1)))
+                Text(String(showName.prefix(1)))
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .foregroundStyle(.white)
             )
@@ -64,53 +93,65 @@ struct EpisodeDetailHeroView: View {
 
     private var metadataLine: String {
         let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        let date = f.string(from: episode.publishedAt)
-        let mins = Int(episode.duration / 60)
-        return "#\(episode.episodeNumber.map(String.init) ?? "—") · \(date) · \(mins / 60)h \(mins % 60)m"
+        f.dateFormat = "MMM d, yyyy"
+        let date = f.string(from: episode.pubDate)
+        if let duration = episode.duration {
+            let mins = Int(duration / 60)
+            let h = mins / 60
+            let m = mins % 60
+            let durString = h > 0 ? "\(h)h \(m)m" : "\(m)m"
+            return "\(date) · \(durString)"
+        }
+        return date
     }
 
     // MARK: Sections
 
     private var actionRow: some View {
         HStack(spacing: AppTheme.Spacing.md) {
-            actionPill("Play", systemImage: "play.fill")
-            actionPill("Download", systemImage: "arrow.down.circle")
-            actionPill("Save", systemImage: "plus.circle")
+            Button(action: onPlay) {
+                Label(playLabel, systemImage: "play.fill")
+                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: true)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
         }
     }
 
-    private func actionPill(_ label: String, systemImage: String) -> some View {
-        Button { } label: {
-            Label(label, systemImage: systemImage)
-                .font(.system(.subheadline, design: .rounded).weight(.medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: true)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
+    private var playLabel: String {
+        if isPlayed { return "Play again" }
+        return episode.playbackPosition > 0 ? "Resume" : "Play"
     }
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Summary")
-            Text("\u{201C}\(episode.summary)\u{201D}")
+            Text("\u{201C}\(summaryLede)\u{201D}")
                 .font(.system(size: 21, weight: .medium, design: .serif).italic())
                 .lineSpacing(8)
                 .foregroundStyle(.primary)
+                .lineLimit(4)
         }
     }
 
-    private var chaptersSection: some View {
+    private var summaryLede: String {
+        let trimmed = descriptionPlain.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sentence = trimmed.split(whereSeparator: { ".!?".contains($0) }).first.map(String.init) ?? trimmed
+        return sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func chaptersSection(_ chapters: [Episode.Chapter]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Chapters")
-            ForEach(episode.chapters) { chapter in
+            ForEach(chapters) { chapter in
                 Button {
                     onPlayChapter(chapter)
                 } label: {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(formatTimestamp(chapter.start))
+                        Text(formatTimestamp(chapter.startTime))
                             .font(.system(.footnote, design: .monospaced).weight(.medium))
                             .foregroundStyle(.secondary)
                             .frame(width: 64, alignment: .leading)
@@ -126,10 +167,14 @@ struct EpisodeDetailHeroView: View {
         }
     }
 
+    private var navigableChapters: [Episode.Chapter]? {
+        episode.chapters?.filter(\.includeInTableOfContents)
+    }
+
     private var showNotesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Show notes")
-            Text(strippedShowNotes)
+            Text(descriptionPlain)
                 .font(.system(size: 17, design: .serif))
                 .lineSpacing(7)
                 .foregroundStyle(.secondary)
@@ -161,16 +206,8 @@ struct EpisodeDetailHeroView: View {
         .padding(.top, 8)
     }
 
-    /// Naive HTML strip — Lane 2 will swap in an attributed renderer.
-    private var strippedShowNotes: String {
-        var inTag = false
-        var out = ""
-        for c in episode.showNotesHTML {
-            if c == "<" { inTag = true; continue }
-            if c == ">" { inTag = false; continue }
-            if !inTag { out.append(c) }
-        }
-        return out.replacingOccurrences(of: "  ", with: " ")
+    private var descriptionPlain: String {
+        EpisodeShowNotesFormatter.plainText(from: episode.description)
     }
 
     private func formatTimestamp(_ t: TimeInterval) -> String {
@@ -181,5 +218,37 @@ struct EpisodeDetailHeroView: View {
         return h > 0
             ? String(format: "%02d:%02d:%02d", h, m, s)
             : String(format: "%02d:%02d", m, s)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    let subID = UUID()
+    let episode = Episode(
+        subscriptionID: subID,
+        guid: "preview-1",
+        title: "How to Think About Keto",
+        description: "<p>Tim sits down with <b>Peter Attia, MD</b> to revisit a topic the show has circled for years: ketones and metabolic flexibility.</p>",
+        pubDate: Date(timeIntervalSince1970: 1_714_780_800),
+        duration: 60 * 60 * 2 + 14 * 60,
+        enclosureURL: URL(string: "https://traffic.megaphone.fm/HSW1234567890.mp3")!,
+        chapters: [
+            .init(startTime: 0, title: "Cold open"),
+            .init(startTime: 252, title: "Why ketones matter"),
+            .init(startTime: 1720, title: "The Inuit objection"),
+            .init(startTime: 4810, title: "Practical protocols")
+        ]
+    )
+    return NavigationStack {
+        EpisodeDetailHeroView(
+            episode: episode,
+            showName: "The Tim Ferriss Show",
+            showImageURL: nil,
+            isPlayed: false,
+            onPlay: {},
+            onPlayChapter: { _ in },
+            onReadTranscript: {}
+        )
     }
 }

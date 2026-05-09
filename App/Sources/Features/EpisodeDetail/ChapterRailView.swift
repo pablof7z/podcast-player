@@ -9,9 +9,9 @@ import SwiftUI
 ///
 /// Tapping a chapter calls `onTap`. The parent owns the playhead.
 struct ChapterRailView: View {
-    let chapters: [MockTranscriptEpisode.Chapter]
+    let chapters: [Episode.Chapter]
     let activeID: UUID?
-    let onTap: (MockTranscriptEpisode.Chapter) -> Void
+    let onTap: (Episode.Chapter) -> Void
 
     /// Shared namespace required by `glassEffectID` for morph continuity.
     @Namespace private var glassNamespace
@@ -31,7 +31,7 @@ struct ChapterRailView: View {
     }
 
     @ViewBuilder
-    private func chapterRow(_ chapter: MockTranscriptEpisode.Chapter) -> some View {
+    private func chapterRow(_ chapter: Episode.Chapter) -> some View {
         let isActive = chapter.id == activeID
         Button {
             onTap(chapter)
@@ -64,12 +64,17 @@ struct ChapterRailView: View {
 // MARK: - Preview
 
 #Preview {
-    let (episode, _) = MockEpisodeFixture.timFerrissKeto()
-    HStack {
+    let chapters: [Episode.Chapter] = [
+        .init(startTime: 0, title: "Cold open"),
+        .init(startTime: 252, title: "Why ketones matter"),
+        .init(startTime: 1720, title: "The Inuit objection"),
+        .init(startTime: 4810, title: "Practical protocols")
+    ]
+    return HStack {
         Spacer()
         ChapterRailView(
-            chapters: episode.chapters,
-            activeID: episode.chapters[1].id,
+            chapters: chapters,
+            activeID: chapters[1].id,
             onTap: { _ in }
         )
         .padding(.trailing, AppTheme.Spacing.md)
