@@ -3,6 +3,12 @@ import Foundation
 // MARK: - AppState
 
 struct AppState: Codable, Sendable {
+    /// Podcasts the user follows. Source of truth for Library + Home + Search.
+    var subscriptions: [PodcastSubscription] = []
+    /// All known episodes across all subscriptions. Reads filter by
+    /// `subscriptionID` rather than maintaining per-subscription arrays so a
+    /// single mutation surface (`upsertEpisodes(_:)`) works for any feed.
+    var episodes: [Episode] = []
     var notes: [Note] = []
     var friends: [Friend] = []
     var agentMemories: [AgentMemory] = []
@@ -15,6 +21,7 @@ struct AppState: Codable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
+        case subscriptions, episodes
         case notes, friends, agentMemories, settings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
@@ -22,9 +29,11 @@ struct AppState: Codable, Sendable {
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
     // fields never breaks decode of older persisted state. Legacy `items` /
-    // `itemOrder` keys are silently ignored on decode.
+    // `itemOrder` keys (from the inherited todo template) are silently ignored.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        subscriptions = try c.decodeIfPresent([PodcastSubscription].self, forKey: .subscriptions) ?? []
+        episodes = try c.decodeIfPresent([Episode].self, forKey: .episodes) ?? []
         notes = try c.decodeIfPresent([Note].self, forKey: .notes) ?? []
         friends = try c.decodeIfPresent([Friend].self, forKey: .friends) ?? []
         agentMemories = try c.decodeIfPresent([AgentMemory].self, forKey: .agentMemories) ?? []
