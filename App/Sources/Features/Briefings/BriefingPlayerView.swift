@@ -1,0 +1,296 @@
+import SwiftUI
+
+// MARK: - BriefingPlayerView
+
+/// W2 — the briefing player surface. Distinctive chrome per UX-08 §4: warm
+/// brass-amber glass, editorial serif title, segment rail with glassEffectID
+/// morphing pills, *deeper into this* / *skip* / *share* per-segment actions,
+/// and a live transcript pane.
+///
+/// The view binds to a `BriefingPlayerEngine` instance for transport state.
+/// In dev / preview builds the engine is backed by `FakeBriefingPlayerHost`;
+/// production wiring will hand in Lane 1's `AudioEngine`.
+struct BriefingPlayerView: View {
+
+    // MARK: Inputs
+
+    let context: BriefingPlaybackContext
+
+    // MARK: State
+
+    @State private var engine = BriefingPlayerEngine()
+    @State private var promptDraft: String = ""
+    @State private var isShowingBranchPrompt = false
+
+    // MARK: Body
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+                editorialHeader
+                transcriptPane
+                transportControls
+                actionsRow
+                segmentRail
+                attributionStrip
+            }
+            .padding()
+        }
+        .background(background)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbar }
+        .sheet(isPresented: $isShowingBranchPrompt) {
+            BriefingBranchPromptSheet(
+                promptDraft: $promptDraft,
+                onSubmit: {
+                    Task {
+                        await engine.beginBranch(prompt: promptDraft)
+                        isShowingBranchPrompt = false
+                    }
+                }
+            )
+        }
+        .task { await prepareEngine() }
+    }
+
+    // MARK: Header (W2 lines 1-3)
+
+    private var editorialHeader: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+            Rectangle()  // editorial hairline
+                .frame(height: 1)
+                .foregroundStyle(.tertiary)
+            Text(context.script.title)
+                .font(.system(.largeTitle, design: .serif).weight(.semibold))
+                .padding(.top, AppTheme.Spacing.sm)
+            Text(context.script.subtitle.uppercased())
+                .font(.caption.weight(.medium))
+                .tracking(2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: Transcript pane
+
+    private var transcriptPane: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            if let segment = currentSegment {
+                Text(segment.bodyText)
+                    .font(.system(.body, design: .serif))
+                    .lineSpacing(6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("No segment loaded.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.lg,
+            tint: BriefingsView.brassAmber.opacity(0.18)
+        )
+    }
+
+    // MARK: Transport (W2 line 8)
+
+    private var transportControls: some View {
+        HStack(spacing: AppTheme.Spacing.lg) {
+            Button { /* prev */ } label: { Image(systemName: "backward.fill") }
+            Button {
+                Task { engine.isPlaying ? await engine.pause() : await engine.resume() }
+            } label: {
+                Image(systemName: engine.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.largeTitle)
+            }
+            Button { /* next */ } label: { Image(systemName: "forward.fill") }
+            Spacer()
+            Text(formatProgress())
+                .font(.system(.caption, design: .monospaced).weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Per-segment actions (W2 line 9)
+
+    private var actionsRow: some View {
+        HStack(spacing: AppTheme.Spacing.lg) {
+            actionButton(label: "deeper", icon: "arrow.turn.down.right") {
+                isShowingBranchPrompt = true
+            }
+            actionButton(label: "skip", icon: "arrow.down.to.line") {
+                Task { await engine.skipCurrentSegment() }
+            }
+            Spacer()
+            actionButton(label: "share", icon: "square.and.arrow.up") {
+                /* share-card composition handled by ShareSheet */
+            }
+        }
+    }
+
+    private func actionButton(
+        label: String,
+        icon: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                Text(label)
+                    .font(.caption2.weight(.medium))
+                    .tracking(1.5)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Segment rail (W2 lines 13-16, W3)
+
+    private var segmentRail: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            Text("SEGMENTS")
+                .font(.caption2.weight(.semibold))
+                .tracking(2)
+                .foregroundStyle(.secondary)
+            ForEach(context.script.segments) { segment in
+                Button {
+                    Task { await engine.jump(toSegment: segment.id) }
+                } label: {
+                    railRow(segment: segment)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func railRow(segment: BriefingSegment) -> some View {
+        let isActive = engine.activeSegmentID == segment.id
+        return HStack {
+            Text("\(segment.index + 1).")
+                .font(.system(.body, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, alignment: .trailing)
+            Text(segment.title)
+                .font(.body.weight(isActive ? .semibold : .regular))
+            Spacer()
+            Text(formatTimestamp(cumulativeStartFor(segment)))
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+        }
+        .padding(AppTheme.Spacing.sm)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.md,
+            tint: isActive ? BriefingsView.brassAmber.opacity(0.22) : Color.clear.opacity(0.0)
+        )
+    }
+
+    // MARK: Attribution strip
+
+    private var attributionStrip: some View {
+        Group {
+            if let chip = currentSegment?.attributions.first {
+                HStack {
+                    Image(systemName: "quote.bubble.fill")
+                        .foregroundStyle(.secondary)
+                    Text(chip.displayLabel)
+                        .font(.caption.weight(.medium))
+                    Spacer()
+                    Image(systemName: "arrow.up.forward")
+                        .foregroundStyle(.secondary)
+                }
+                .padding(AppTheme.Spacing.sm)
+                .glassSurface(
+                    cornerRadius: AppTheme.Corner.md,
+                    tint: BriefingsView.brassAmber.opacity(0.10)
+                )
+            }
+        }
+    }
+
+    // MARK: Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { /* share-card */ } label: {
+                Image(systemName: "square.and.arrow.up")
+            }
+        }
+    }
+
+    // MARK: Helpers
+
+    private var currentSegment: BriefingSegment? {
+        guard let id = engine.activeSegmentID else {
+            return context.script.segments.first
+        }
+        return context.script.segments.first { $0.id == id }
+    }
+
+    private func cumulativeStartFor(_ segment: BriefingSegment) -> TimeInterval {
+        var total: TimeInterval = 0
+        for s in context.script.segments {
+            if s.id == segment.id { return total }
+            total += s.targetSeconds
+        }
+        return total
+    }
+
+    private func formatTimestamp(_ seconds: TimeInterval) -> String {
+        let mm = Int(seconds) / 60
+        let ss = Int(seconds) % 60
+        return String(format: "%d:%02d", mm, ss)
+    }
+
+    private func formatProgress() -> String {
+        let total = context.script.totalDurationSeconds
+        let current = engine.tracks
+            .prefix(engine.currentTrackIndex)
+            .reduce(0.0) { $0 + $1.durationSeconds }
+        return "\(formatTimestamp(current)) / \(formatTimestamp(total))"
+    }
+
+    private var background: some View {
+        LinearGradient(
+            colors: [
+                BriefingsView.brassAmber.opacity(0.10),
+                BriefingsView.brassAmber.opacity(0.04),
+                Color(.systemBackground),
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+
+    // MARK: Engine setup
+
+    @MainActor
+    private func prepareEngine() async {
+        // Build minimal `BriefingTrack`s from segments so the engine can
+        // navigate without re-running the composer. Real builds will pass the
+        // composer's `tracks` through — for saved-on-disk briefings (which
+        // the lane spec persists at `<id>.m4a`), we synthesise a single
+        // track-per-segment placeholder pointing at the stitched audio.
+        let storage = (try? BriefingStorage())
+        let assetURL = storage?.audioURL(id: context.script.id)
+        var tracks: [BriefingTrack] = []
+        var cursor: TimeInterval = 0
+        for segment in context.script.segments {
+            let duration = segment.targetSeconds
+            let url = assetURL ?? URL(fileURLWithPath: "/dev/null")
+            tracks.append(BriefingTrack(
+                segmentID: segment.id,
+                indexInSegment: 0,
+                kind: .tts,
+                audioURL: url,
+                startInTrackSeconds: cursor,
+                endInTrackSeconds: cursor + duration,
+                transcriptText: segment.bodyText,
+                attribution: segment.attributions.first
+            ))
+            cursor += duration
+        }
+        engine.load(context.script, tracks: tracks, host: FakeBriefingPlayerHost())
+    }
+}
