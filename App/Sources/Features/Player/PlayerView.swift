@@ -98,14 +98,39 @@ struct PlayerView: View {
 
     // MARK: - Hero artwork
 
-    /// Placeholder surface — real cover art (Lane 1) will replace the fill
-    /// color once AVFoundation image extraction lands.
+    /// Episode cover art preferring per-episode `imageURL` (some shows ship
+    /// per-episode artwork) and falling back to the subscription's show
+    /// artwork. Both are populated by the RSS parser; falls back to a calm
+    /// placeholder while the image loads or if neither URL is available.
+    private var artworkURL: URL? {
+        state.episode?.imageURL ?? subscription?.imageURL
+    }
+
     private var heroArtwork: some View {
         ZStack {
             Color.secondary.opacity(0.12)
-            Image(systemName: "waveform")
-                .font(.system(size: 64, weight: .light))
-                .foregroundStyle(.secondary)
+            if let url = artworkURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .empty, .failure:
+                        Image(systemName: "waveform")
+                            .font(.system(size: 64, weight: .light))
+                            .foregroundStyle(.secondary)
+                    @unknown default:
+                        Image(systemName: "waveform")
+                            .font(.system(size: 64, weight: .light))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else {
+                Image(systemName: "waveform")
+                    .font(.system(size: 64, weight: .light))
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
         .frame(height: isScrubbing ? 180 : 260)
