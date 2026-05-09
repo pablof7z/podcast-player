@@ -7,7 +7,7 @@ import SwiftUI
 /// to `AVPlayer.rate`; nothing else here changes.
 struct PlayerSpeedSheet: View {
 
-    @Bindable var state: MockPlaybackState
+    @Bindable var state: PlaybackState
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -20,7 +20,7 @@ struct PlayerSpeedSheet: View {
                     .padding(.top, AppTheme.Spacing.lg)
                     .padding(.bottom, AppTheme.Spacing.sm)
 
-                ForEach(MockPlaybackRate.allCases) { rate in
+                ForEach(PlaybackRate.allCases) { rate in
                     rateRow(for: rate)
                 }
 
@@ -38,7 +38,7 @@ struct PlayerSpeedSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func rateRow(for rate: MockPlaybackRate) -> some View {
+    private func rateRow(for rate: PlaybackRate) -> some View {
         Button {
             state.setRate(rate)
             dismiss()

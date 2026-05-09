@@ -1,17 +1,15 @@
 import SwiftUI
 
-/// Fake waveform renderer using SwiftUI `Canvas`.
+/// Synthetic waveform renderer using SwiftUI `Canvas`.
 ///
-/// Draws (a) a synthesised amplitude curve and (b) per-line speaker-colored
-/// stripes underneath the curve, communicating "the shape of the conversation"
-/// per UX-01 §6.3. Lane 1 will replace the synthesised amplitudes with real
-/// AVFoundation sample analysis — at that point this view's API stays stable;
-/// only the `amplitudes(...)` source changes.
+/// Draws a synthesised amplitude curve as a stand-in for the real waveform —
+/// when Lane 5 lands transcripts and Lane 1 gains AVFoundation sample
+/// analysis, the speaker stripes and real amplitudes will replace this.
+/// API stays stable: only the `amplitudes(...)` source changes.
 struct PlayerWaveformView: View {
 
     let duration: TimeInterval
     let currentTime: TimeInterval
-    let transcript: [MockTranscriptLine]
     /// `true` while the user is actively dragging the scrubber — drives the
     /// 56pt → 220pt expansion described in the brief.
     let isScrubbing: Bool
@@ -23,7 +21,6 @@ struct PlayerWaveformView: View {
 
     var body: some View {
         Canvas { context, size in
-            drawStripes(in: context, size: size)
             drawWaveform(in: context, size: size)
             drawPlayhead(in: context, size: size)
         }
@@ -54,32 +51,6 @@ struct PlayerWaveformView: View {
             context.fill(
                 Path(roundedRect: rect, cornerRadius: barWidth * 0.35),
                 with: .color(color)
-            )
-        }
-    }
-
-    private func drawStripes(in context: GraphicsContext, size: CGSize) {
-        guard isScrubbing, duration > 0 else { return }
-        // Two stripes: top stripe = speaker A, bottom stripe = speaker B.
-        // Lane 5 will produce a real diarization track; here we map by
-        // alternating speakerID lanes.
-        let stripeHeight: CGFloat = 6
-        let topY = size.height * 0.86
-        let bottomY = size.height * 0.94
-        let firstSpeaker = transcript.first?.speakerID
-        for line in transcript {
-            let xStart = CGFloat(line.start / duration) * size.width
-            let xEnd = CGFloat(line.end / duration) * size.width
-            let y = line.speakerID == firstSpeaker ? topY : bottomY
-            let rect = CGRect(
-                x: xStart,
-                y: y - stripeHeight / 2,
-                width: max(2, xEnd - xStart),
-                height: stripeHeight
-            )
-            context.fill(
-                Path(roundedRect: rect, cornerRadius: stripeHeight / 2),
-                with: .color(line.speakerColor.opacity(0.78))
             )
         }
     }

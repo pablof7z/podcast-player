@@ -3,12 +3,13 @@ import SwiftUI
 /// Full-screen Now Playing surface.
 ///
 /// Layered top-down: ambient art-extracted wallpaper → hero artwork →
-/// editorial metadata → synced transcript → semantic waveform → primary
+/// editorial metadata → transcript stub → semantic waveform → primary
 /// transport → action cluster. Copper accent is reserved for player chrome
 /// per UX-15 §9.2.
 struct PlayerView: View {
 
-    @Bindable var state: MockPlaybackState
+    @Environment(AppStateStore.self) private var store
+    @Bindable var state: PlaybackState
     @Environment(\.dismiss) private var dismiss
     let glassNamespace: Namespace.ID
 
@@ -20,7 +21,15 @@ struct PlayerView: View {
     @State private var showQueueSheet: Bool = false
     @State private var showShareSheet: Bool = false
 
-    private var copperAccent: Color { state.episode?.primaryArtColor ?? .orange }
+    private var copperAccent: Color { .orange }
+    private var wallpaperPrimary: Color { .orange }
+    private var wallpaperSecondary: Color { .indigo }
+
+    private var showName: String {
+        guard let subID = state.episode?.subscriptionID,
+              let sub = store.subscription(id: subID) else { return "" }
+        return sub.title
+    }
 
     var body: some View {
         ZStack {
@@ -53,15 +62,13 @@ struct PlayerView: View {
 
     // MARK: - Layers
 
-    /// Wallpaper: art-extracted gradient + heavy blur, slow Ken-Burns drift.
-    /// Lane 1 / cover-art extraction will replace these solid colors with the
-    /// real `UIImage.dominantColors` output.
+    /// Wallpaper: gradient + heavy blur. Cover-art extraction (Lane 4) will
+    /// later swap these solid colors for the real `UIImage.dominantColors`
+    /// output.
     private var wallpaper: some View {
-        let primary = state.episode?.primaryArtColor ?? .orange
-        let secondary = state.episode?.secondaryArtColor ?? .indigo
-        return ZStack {
+        ZStack {
             LinearGradient(
-                colors: [primary, secondary, .black],
+                colors: [wallpaperPrimary, wallpaperSecondary, .black],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -109,11 +116,9 @@ struct PlayerView: View {
     }
 
     private var heroArtwork: some View {
-        let primary = state.episode?.primaryArtColor ?? .orange
-        let secondary = state.episode?.secondaryArtColor ?? .indigo
-        return ZStack {
+        ZStack {
             LinearGradient(
-                colors: [primary, secondary],
+                colors: [wallpaperPrimary, wallpaperSecondary],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -138,19 +143,16 @@ struct PlayerView: View {
     private var editorialHeader: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let episode = state.episode {
-                Text("\(episode.showName.uppercased()) · #\(episode.episodeNumber.map(String.init) ?? "")")
-                    .font(.system(size: 11, design: .default).weight(.semibold))
-                    .tracking(1.0)
-                    .foregroundStyle(.white.opacity(0.72))
+                if !showName.isEmpty {
+                    Text(showName.uppercased())
+                        .font(.system(size: 11, design: .default).weight(.semibold))
+                        .tracking(1.0)
+                        .foregroundStyle(.white.opacity(0.72))
+                }
                 Text(episode.title)
                     .font(.system(size: 22, weight: .semibold, design: .serif))
                     .foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
-                if let chapter = episode.chapterTitle {
-                    Text(chapter)
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.white.opacity(0.65))
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -182,7 +184,6 @@ struct PlayerView: View {
             PlayerWaveformView(
                 duration: state.duration,
                 currentTime: isScrubbing ? scrubTime : state.currentTime,
-                transcript: state.transcript,
                 isScrubbing: isScrubbing,
                 copperAccent: copperAccent
             )

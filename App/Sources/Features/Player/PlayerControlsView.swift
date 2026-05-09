@@ -8,7 +8,7 @@ import SwiftUI
 /// behaviour described in UX-01 §5.
 struct PlayerControlsView: View {
 
-    @Bindable var state: MockPlaybackState
+    @Bindable var state: PlaybackState
     let copperAccent: Color
     let glassNamespace: Namespace.ID
 
@@ -69,7 +69,7 @@ struct PlayerControlsView: View {
 /// the soft line limit.
 struct PlayerActionClusterView: View {
 
-    @Bindable var state: MockPlaybackState
+    @Bindable var state: PlaybackState
     @Binding var showSpeedSheet: Bool
     @Binding var showSleepSheet: Bool
     @Binding var showQueueSheet: Bool

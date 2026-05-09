@@ -3,7 +3,7 @@ import SwiftUI
 /// Bottom sheet for setting a sleep timer.
 struct PlayerSleepTimerSheet: View {
 
-    @Bindable var state: MockPlaybackState
+    @Bindable var state: PlaybackState
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -16,7 +16,7 @@ struct PlayerSleepTimerSheet: View {
                     .padding(.top, AppTheme.Spacing.lg)
                     .padding(.bottom, AppTheme.Spacing.sm)
 
-                ForEach(MockSleepTimer.presets) { preset in
+                ForEach(PlaybackSleepTimer.presets) { preset in
                     timerRow(for: preset)
                 }
 
@@ -34,7 +34,7 @@ struct PlayerSleepTimerSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func timerRow(for preset: MockSleepTimer) -> some View {
+    private func timerRow(for preset: PlaybackSleepTimer) -> some View {
         Button {
             state.setSleepTimer(preset)
             dismiss()
@@ -61,7 +61,7 @@ struct PlayerSleepTimerSheet: View {
         .buttonStyle(.pressable(scale: 0.98, opacity: 0.85))
     }
 
-    private func glyph(for preset: MockSleepTimer) -> String {
+    private func glyph(for preset: PlaybackSleepTimer) -> String {
         switch preset {
         case .off: return "moon.zzz"
         case .minutes: return "timer"
