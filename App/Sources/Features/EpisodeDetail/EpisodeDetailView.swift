@@ -88,6 +88,10 @@ struct EpisodeDetailView: View {
         }
         .task(id: episode.id) {
             await warmTranscriptIfNeeded(episode: episode)
+            ChaptersHydrationService.shared.hydrateIfNeeded(
+                episode: episode,
+                store: store
+            )
         }
     }
 

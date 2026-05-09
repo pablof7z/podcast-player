@@ -56,6 +56,17 @@ struct PlayerView: View {
                 PlayerShareSheet(state: state, episode: episode, showName: showName)
             }
         }
+        .task(id: state.episode?.id) {
+            // Best-effort hydrate Podcasting 2.0 chapters JSON when the
+            // current episode references one. Idempotent per-URL across
+            // the session, so re-opening the player is free.
+            if let episode = state.episode {
+                ChaptersHydrationService.shared.hydrateIfNeeded(
+                    episode: episode,
+                    store: store
+                )
+            }
+        }
     }
 
     // MARK: - Top bar

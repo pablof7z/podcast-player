@@ -153,4 +153,17 @@ extension AppStateStore {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         state.episodes[idx].transcriptState = newState
     }
+
+    /// Persist hydrated chapters for an episode. Used by
+    /// `ChaptersHydrationService` after asynchronously fetching the JSON
+    /// referenced by `episode.chaptersURL`. No-op when `chapters` is empty
+    /// AND the episode already has chapters — we never overwrite real data
+    /// with an empty result.
+    func setEpisodeChapters(_ id: UUID, chapters: [Episode.Chapter]) {
+        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
+        if chapters.isEmpty, let existing = state.episodes[idx].chapters, !existing.isEmpty {
+            return
+        }
+        state.episodes[idx].chapters = chapters.isEmpty ? nil : chapters
+    }
 }
