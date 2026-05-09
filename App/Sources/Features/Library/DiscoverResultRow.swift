@@ -86,7 +86,7 @@ struct DiscoverResultRow: View {
     }
 
     private var artwork: some View {
-        CachedAsyncImage(url: result.artworkURL) { phase in
+        CachedAsyncImage(url: result.artworkURL, targetSize: CGSize(width: 64, height: 64)) { phase in
             switch phase {
             case .success(let image):
                 image.resizable().aspectRatio(contentMode: .fill)

@@ -26,6 +26,12 @@ struct CachedAsyncImage<Content: View>: View {
 
     let url: URL?
     let scale: CGFloat
+    /// Optional logical-points target size. When set, the image is decoded
+    /// at the smallest pixel size that covers `targetSize × screen-scale`
+    /// instead of being kept at its source resolution. Cuts memory ~9× for
+    /// thumbnails (e.g. a 600×600 iTunes artwork tile rendered at 64pt
+    /// drops from ~1.4 MB to ~150 KB in memory).
+    let targetSize: CGSize?
     @ViewBuilder let content: (AsyncImagePhase) -> Content
 
     @State private var phase: AsyncImagePhase = .empty
@@ -34,10 +40,12 @@ struct CachedAsyncImage<Content: View>: View {
     init(
         url: URL?,
         scale: CGFloat = 1,
+        targetSize: CGSize? = nil,
         @ViewBuilder content: @escaping (AsyncImagePhase) -> Content
     ) {
         self.url = url
         self.scale = scale
+        self.targetSize = targetSize
         self.content = content
     }
 
@@ -62,8 +70,13 @@ struct CachedAsyncImage<Content: View>: View {
         // If the image is already in the memory cache, complete synchronously
         // so the view never flickers through `.empty`. Disk-cache hits still
         // go through the async path but typically resolve in one frame.
+        //
+        // The cache key includes any downsampling target size so two callers
+        // requesting different sizes for the same URL each get their own
+        // memory entry instead of fighting over one decoded variant.
         let cache = ImageCache.default
-        let cacheKey = url.absoluteString
+        let baseKey = url.absoluteString
+        let cacheKey = targetSize.map { "\(baseKey)|ds=\(Int($0.width))x\(Int($0.height))" } ?? baseKey
         if cache.isCached(forKey: cacheKey),
            let cached = cache.retrieveImageInMemoryCache(forKey: cacheKey) {
             phase = .success(Image(uiImage: cached))
@@ -71,9 +84,25 @@ struct CachedAsyncImage<Content: View>: View {
         }
 
         phase = .empty
+        var options: KingfisherOptionsInfo = [
+            .transition(.fade(0.15)),
+            .scaleFactor(scale),
+        ]
+        if let targetSize {
+            // Kingfisher's processor expects pixels; convert from points.
+            let screenScale = UIScreen.main.scale
+            let pixelSize = CGSize(
+                width: targetSize.width * screenScale,
+                height: targetSize.height * screenScale
+            )
+            options.append(.processor(DownsamplingImageProcessor(size: pixelSize)))
+            options.append(.cacheOriginalImage)
+            options.append(.cacheSerializer(FormatIndicatedCacheSerializer.png))
+        }
+
         task = KingfisherManager.shared.retrieveImage(
             with: url,
-            options: [.transition(.fade(0.15)), .scaleFactor(scale)]
+            options: options
         ) { result in
             switch result {
             case .success(let value):

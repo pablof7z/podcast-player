@@ -155,7 +155,7 @@ struct MiniPlayerView: View {
     ) -> some View {
         ZStack {
             if let url = artworkURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 64, height: 64)) { phase in
                     switch phase {
                     case .success(let image):
                         image

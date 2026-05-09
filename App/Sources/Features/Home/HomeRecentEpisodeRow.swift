@@ -70,7 +70,7 @@ struct HomeRecentEpisodeRow: View {
         ZStack {
             Color(.tertiarySystemFill)
             if let url = artworkURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 56, height: 56)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
@@ -200,7 +200,7 @@ private struct HomeEpisodePreviewCard: View {
         ZStack {
             Color(.tertiarySystemFill)
             if let url = artworkURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 56, height: 56)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
