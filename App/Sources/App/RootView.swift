@@ -148,8 +148,9 @@ struct RootView: View {
             .onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
     }
 
+    @ViewBuilder
     private var tabBar: some View {
-        TabView(selection: $selectedTab) {
+        let base = TabView(selection: $selectedTab) {
             ForEach(RootTab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
                     .tabItem { Label(tab.rawValue, systemImage: tab.icon) }
@@ -161,14 +162,20 @@ struct RootView: View {
         // between the active-tab capsule and the trailing controls — same
         // pattern Apple Music uses for its mini-player.
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
-            if playbackState.episode != nil {
+
+        // The accessory modifier itself reserves vertical space when applied,
+        // even if its closure returns EmptyView — so apply it only while an
+        // episode is loaded. Otherwise an empty bar shows above the tabs.
+        if playbackState.episode != nil {
+            base.tabViewBottomAccessory {
                 MiniPlayerView(
                     state: playbackState,
                     onTap: { showFullPlayer = true },
                     glassNamespace: playerNamespace
                 )
             }
+        } else {
+            base
         }
     }
 

@@ -46,8 +46,8 @@ struct MiniPlayerView: View {
     private var expandedBody: some View {
         Button(action: onTap) {
             VStack(spacing: 0) {
-                progressLine
                 content
+                progressLine
             }
             .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
@@ -105,10 +105,7 @@ struct MiniPlayerView: View {
                     .animation(.linear(duration: 0.15), value: state.currentTime)
             }
         }
-        .frame(height: 3)
-        .clipShape(Capsule())
-        .padding(.horizontal, AppTheme.Spacing.sm)
-        .padding(.top, AppTheme.Spacing.xs)
+        .frame(height: 2)
     }
 
     private var content: some View {
