@@ -1,0 +1,11 @@
+.DS_Store
+build/
+DerivedData/
+Derived/
+*.xcodeproj/
+*.xcworkspace/
+.worktrees/
+.claude/worktrees/
+*.ipa
+*.dSYM.zip
+*.dSYM

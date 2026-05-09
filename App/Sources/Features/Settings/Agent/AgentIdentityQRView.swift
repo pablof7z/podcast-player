@@ -1,0 +1,206 @@
+import SwiftUI
+import UIKit
+import CoreImage
+import CoreImage.CIFilterBuiltins
+
+// MARK: - QRCodeView
+
+struct QRCodeView: View {
+    let content: String
+
+    /// Shared `CIContext` — creating one per render allocates GPU resources unnecessarily.
+    /// `CIContext` is thread-safe after initialisation; `nonisolated(unsafe)` silences
+    /// the Swift 6 global-variable warning without changing runtime behaviour.
+    private nonisolated(unsafe) static let ciContext = CIContext()
+
+    /// Cache the rendered image for this content string.  The QR code for a given
+    /// npub is deterministic and never changes, so we generate it at most once per
+    /// view lifetime (i.e. once per sheet presentation).
+    @State private var cachedImage: UIImage?
+
+    var body: some View {
+        Group {
+            if let image = cachedImage {
+                Image(uiImage: image)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+            }
+        }
+        .onAppear {
+            if cachedImage == nil {
+                cachedImage = Self.generateQR(content)
+            }
+        }
+        .onChange(of: content) { _, newValue in
+            cachedImage = Self.generateQR(newValue)
+        }
+    }
+
+    private static func generateQR(_ string: String) -> UIImage? {
+        guard let data = string.data(using: .utf8),
+              let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        filter.setValue(data, forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 8, y: 8))
+        guard let cgImage = ciContext.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+}
+
+// MARK: - AgentIdentityQRView
+
+struct AgentIdentityQRView: View {
+
+    private enum Layout {
+        static let actionButtonHeight: CGFloat = 48
+        static let qrInset: CGFloat = 20
+        static let dismissIconSize: CGFloat = 14
+        static let copiedIconSize: CGFloat = 36
+        static let dismissButtonSize: CGFloat = 30
+        static let qrImageSize: CGFloat = 260
+        static let qrCardSize: CGFloat = 300
+        static let actionRowSpacing: CGFloat = 12
+        static let headerSpacing: CGFloat = 6
+    }
+
+    let npub: String
+    let name: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
+
+    var body: some View {
+        ZStack {
+            // Dimmed blurred background — tapping anywhere dismisses
+            Color.black.opacity(0.6)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
+                .accessibilityLabel("Dismiss")
+                .accessibilityAddTraits(.isButton)
+
+            VStack(spacing: AppTheme.Spacing.lg) {
+                dismissRow
+                headerText
+                qrCard
+                    .appShadow(AppTheme.Shadow.lifted)
+                    .onTapGesture { copyNpub() }
+                    .accessibilityLabel("QR code")
+                    .accessibilityHint("Tap to copy npub to clipboard")
+                    .accessibilityAddTraits(.isButton)
+                npubCaption
+                actionRow
+            }
+        }
+        .statusBarHidden(true)
+        .animation(AppTheme.Animation.spring, value: copied)
+    }
+
+    // MARK: - Subviews
+
+    private var dismissRow: some View {
+        HStack {
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: Layout.dismissIconSize, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: Layout.dismissButtonSize, height: Layout.dismissButtonSize)
+            }
+            .accessibilityLabel("Close")
+            .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    private var headerText: some View {
+        VStack(spacing: Layout.headerSpacing) {
+            if !name.isEmpty {
+                Text(name)
+                    .font(AppTheme.Typography.title.weight(.bold))
+                    .foregroundStyle(.primary)
+            }
+            Text("Scan to add as a contact")
+                .font(AppTheme.Typography.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var qrCard: some View {
+        ZStack {
+            Color.white
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.xl))
+
+            QRCodeView(content: npub)
+                .frame(width: Layout.qrImageSize, height: Layout.qrImageSize)
+                .padding(Layout.qrInset)
+
+            if copied {
+                copiedOverlay
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+            }
+        }
+        .frame(width: Layout.qrCardSize, height: Layout.qrCardSize)
+    }
+
+    private var copiedOverlay: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AppTheme.Corner.xl)
+                .fill(.black.opacity(0.55))
+            VStack(spacing: AppTheme.Spacing.sm) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: Layout.copiedIconSize))
+                    .foregroundStyle(.white)
+                Text("Copied")
+                    .font(AppTheme.Typography.headline)
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+
+    private var npubCaption: some View {
+        VStack(spacing: AppTheme.Spacing.xs) {
+            Text(npub)
+                .font(AppTheme.Typography.mono)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.horizontal, AppTheme.Spacing.xl)
+
+            Text("Tap QR to copy")
+                .font(AppTheme.Typography.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: Layout.actionRowSpacing) {
+            Button {
+                copyNpub()
+            } label: {
+                Label("Copy npub", systemImage: "doc.on.doc")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Layout.actionButtonHeight)
+            }
+            .buttonStyle(.glass)
+
+            ShareLink(item: npub) {
+                Label("Share", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Layout.actionButtonHeight)
+            }
+            .buttonStyle(.glass)
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    // MARK: - Actions
+
+    private func copyNpub() {
+        copyToClipboard(npub, isCopied: $copied, haptic: { Haptics.success() })
+    }
+}
