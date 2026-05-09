@@ -35,7 +35,7 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
     }
 
     func queryTranscripts(query: String, scope: String?, limit: Int) async throws -> [TranscriptHit] {
-        let chunkScope = Self.chunkScope(transcriptScope: scope)
+        let chunkScope = await Self.chunkScope(transcriptScope: scope, store: store)
         let opts = RAGSearch.Options(k: max(1, limit), hybrid: true, rerank: true)
         let matches = try await RAGService.shared.search.search(
             query: query,
@@ -108,11 +108,19 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
     }
 
     /// `queryTranscripts` accepts either an episode UUID or a podcast UUID in
-    /// the `scope` field. Episode wins when both parse (the agent shouldn't
-    /// be ambiguous, but defensive ordering means an episode-id never widens
-    /// to its whole show by accident).
-    static func chunkScope(transcriptScope: String?) -> ChunkScope? {
+    /// the `scope` field. We disambiguate via the live `AppStateStore`:
+    /// episode lookup wins (defensive — never widen an episode-id to its whole
+    /// show by accident); a UUID matching a subscription falls through to
+    /// `.podcast`. UUIDs that match neither are treated as episode scopes so
+    /// the search hard-fails to empty rather than silently widening to the
+    /// whole library.
+    @MainActor
+    static func chunkScope(transcriptScope: String?, store: AppStateStore?) -> ChunkScope? {
         guard let raw = transcriptScope, let uuid = UUID(uuidString: raw) else { return nil }
+        if store?.episode(id: uuid) != nil { return .episode(uuid) }
+        if store?.state.subscriptions.contains(where: { $0.id == uuid }) == true {
+            return .podcast(uuid)
+        }
         return .episode(uuid)
     }
 
