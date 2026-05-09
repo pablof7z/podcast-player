@@ -1,0 +1,182 @@
+import XCTest
+@testable import Podcastr
+
+@MainActor
+final class AgentToolsPodcastActionTests: XCTestCase {
+
+    func testPausePlaybackForwardsToPlaybackHost() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.pausePlayback,
+            args: [:],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["state"] as? String, "paused")
+        let pauseCount = await deps.playback.pauseCount
+        XCTAssertEqual(pauseCount, 1)
+    }
+
+    func testSetPlaybackRateForwardsAndReturnsClampedRate() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.setPlaybackRate,
+            args: ["rate": 4.2],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["requested_rate"] as? Double, 4.2)
+        XCTAssertEqual(decoded["rate"] as? Double, 3.0)
+        let rates = await deps.playback.recordedRates
+        XCTAssertEqual(rates, [4.2])
+    }
+
+    func testSetSleepTimerRequiresMinutesForMinutesMode() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.setSleepTimer,
+            args: ["mode": "minutes"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testSetSleepTimerForwardsEndOfEpisode() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.setSleepTimer,
+            args: ["mode": "end_of_episode"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["mode"] as? String, "end_of_episode")
+        let calls = await deps.playback.recordedSleepTimers
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(calls.first?.0, "end_of_episode")
+    }
+
+    func testMarkEpisodePlayedMutatesLibrary() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.markEpisodePlayed,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["state"] as? String, "played")
+        let playedIDs = await deps.library.playedIDs
+        XCTAssertEqual(playedIDs, ["ep1"])
+    }
+
+    func testMarkEpisodeUnplayedMutatesLibrary() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.markEpisodeUnplayed,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["state"] as? String, "unplayed")
+        let unplayedIDs = await deps.library.unplayedIDs
+        XCTAssertEqual(unplayedIDs, ["ep1"])
+    }
+
+    func testDownloadEpisodeMutatesLibrary() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.downloadEpisode,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["state"] as? String, "downloading")
+        let downloadedIDs = await deps.library.downloadedIDs
+        XCTAssertEqual(downloadedIDs, ["ep1"])
+    }
+
+    func testRequestTranscriptionStartsIngest() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.requestTranscription,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["status"] as? String, "queued")
+        let transcriptionIDs = await deps.library.transcriptionIDs
+        XCTAssertEqual(transcriptionIDs, ["ep1"])
+    }
+
+    func testRefreshFeedForwardsPodcastID() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.refreshFeed,
+            args: ["podcast_id": "pod1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["title"] as? String, "Mock Show")
+        XCTAssertEqual(decoded["new_episode_count"] as? Int, 2)
+        let refreshedPodcastIDs = await deps.library.refreshedPodcastIDs
+        XCTAssertEqual(refreshedPodcastIDs, ["pod1"])
+    }
+
+    func testDelegateUsesTenexContractAndStopsTurn() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.delegate,
+            args: ["recipient": "research", "prompt": "Review keto claims with citations."],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["delegation_event_id"] as? String, "delegation-1")
+        XCTAssertEqual(decoded["recipient"] as? String, "research")
+        XCTAssertEqual(decoded["nostr_kind"] as? Int, 1)
+        XCTAssertEqual(decoded["stop_for_turn"] as? Bool, true)
+        let lastRecipient = await deps.delegation.lastRecipient
+        XCTAssertEqual(lastRecipient, "research")
+    }
+
+    // MARK: - Helpers
+
+    private struct DepsBundle {
+        let bundle: PodcastAgentToolDeps
+        let playback: MockPlayback
+        let library: MockLibrary
+        let delegation: MockDelegation
+    }
+
+    private func makeDeps(
+        fetcher: EpisodeFetcherProtocol = MockFetcher()
+    ) -> DepsBundle {
+        let playback = MockPlayback()
+        let library = MockLibrary()
+        let delegation = MockDelegation()
+        return DepsBundle(
+            bundle: PodcastAgentToolDeps(
+                rag: MockRAG(),
+                wiki: MockWiki(),
+                briefing: MockBriefing(),
+                summarizer: MockSummarizer(),
+                fetcher: fetcher,
+                playback: playback,
+                library: library,
+                inventory: MockInventory(),
+                delegation: delegation,
+                perplexity: MockPerplexity()
+            ),
+            playback: playback,
+            library: library,
+            delegation: delegation
+        )
+    }
+
+    private func decode(_ json: String) throws -> [String: Any] {
+        let raw = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        guard let obj = raw as? [String: Any] else {
+            throw NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: "non-object JSON"])
+        }
+        return obj
+    }
+}
