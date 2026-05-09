@@ -35,7 +35,7 @@ struct OpenRouterKeyValidationService: Sendable {
     private enum Constants {
         static let authKeyURL = "https://openrouter.ai/api/v1/auth/key"
         static let timeout: TimeInterval = 15
-        static let xTitle = "iOS App Template"
+        static let xTitle = "Podcastr"
     }
 
     func validate(apiKey: String) async throws -> OpenRouterKeyInfo {

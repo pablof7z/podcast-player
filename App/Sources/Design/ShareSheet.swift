@@ -20,7 +20,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 ///
 /// Example usage:
 /// ```swift
-/// ShareButton(items: [item.title, "Shared from App Template"]) {
+/// ShareButton(items: [item.title, "Shared from Podcastr"]) {
 ///     Image(systemName: "square.and.arrow.up")
 /// }
 /// ```
