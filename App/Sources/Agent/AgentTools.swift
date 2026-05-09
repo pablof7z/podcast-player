@@ -35,8 +35,20 @@ enum AgentTools {
 
     // MARK: - Dispatcher
 
+    /// Routes a tool call to the right handler.
+    ///
+    /// When `podcastDeps` is supplied, podcast-domain tool names
+    /// (`AgentTools.PodcastNames.all`) are routed through `dispatchPodcast`.
+    /// When it's `nil`, podcast tools surface a clear "not configured" error
+    /// envelope so the agent loop continues without crashing.
     @MainActor
-    static func dispatch(name: String, argsJSON: String, store: AppStateStore, batchID: UUID) async -> String {
+    static func dispatch(
+        name: String,
+        argsJSON: String,
+        store: AppStateStore,
+        batchID: UUID,
+        podcastDeps: PodcastAgentToolDeps? = nil
+    ) async -> String {
         let args: [String: Any]
         do {
             args = try JSONSerialization.jsonObject(with: Data(argsJSON.utf8)) as? [String: Any] ?? [:]
@@ -50,6 +62,18 @@ enum AgentTools {
             return dispatchNotesMemory(name: name, args: args, store: store, batchID: batchID)
 
         default:
+            if PodcastNames.all.contains(name) {
+                guard let podcastDeps else {
+                    logger.error("AgentTools: podcast tool '\(name, privacy: .public)' invoked without PodcastAgentToolDeps — caller forgot to wire LivePodcastAgentToolDeps")
+                    return toolError("Podcast tools are not wired up in this session.")
+                }
+                logger.info("AgentTools: dispatching podcast tool '\(name, privacy: .public)'")
+                // Re-route through the JSON-string entrypoint so the
+                // `[String: Any]` payload (non-Sendable) never crosses the
+                // dispatch boundary — `dispatchPodcast(argsJSON:)` reparses on
+                // the destination side.
+                return await dispatchPodcast(name: name, argsJSON: argsJSON, deps: podcastDeps)
+            }
             return toolError("Unknown tool: \(name)")
         }
     }
