@@ -36,6 +36,9 @@ struct EpisodeDetailView: View {
 
     @State private var mode: Mode = .detail
     @State private var sharingSegment: Segment?
+    /// Live download service — observed so the toolbar's progress indicator
+    /// updates smoothly without re-persisting `AppStateStore` on every tick.
+    @State private var downloadService = EpisodeDownloadService.shared
 
     // MARK: Body
 
@@ -232,6 +235,19 @@ struct EpisodeDetailView: View {
 
     @ToolbarContentBuilder
     private func actionsToolbar(episode: Episode) -> some ToolbarContent {
+        // Inline progress indicator — only present while a download is in
+        // flight. Reads `EpisodeDownloadService.progress` directly so it
+        // updates at the throttled service cadence (5% / 200ms) instead of
+        // waiting on coarse `.downloaded` / `.failed` state writes.
+        if case .downloading = episode.downloadState {
+            ToolbarItem(placement: .topBarTrailing) {
+                let live = downloadService.progress[episode.id] ?? 0
+                ProgressView(value: live)
+                    .progressViewStyle(.circular)
+                    .controlSize(.small)
+                    .accessibilityLabel("Downloading \(Int(live * 100)) percent")
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             EpisodeDetailActionsMenu(episode: episode, store: store)
         }

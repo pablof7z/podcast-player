@@ -3,24 +3,24 @@ import SwiftUI
 // MARK: - EpisodeDetailActionsMenu
 
 /// Trailing toolbar menu shown by `EpisodeDetailView`: download / mark-played
-/// toggles. Routes every mutation through `AppStateStore` so the change
-/// persists immediately and propagates to the rest of the app.
+/// toggles. Routes every mutation through `AppStateStore` (state) plus
+/// `EpisodeDownloadService` (network) so the change persists immediately and
+/// a real `URLSession` task carries the bytes.
 ///
-/// The download toggle synthesizes a sentinel local-file URL because the
-/// download manager itself lives in another lane. Once that lane lands the
-/// `toggleDownload` body is the one place to swap.
+/// The download menu surfaces four affordances driven by `episode.downloadState`:
+///   - `.notDownloaded` → "Download"
+///   - `.downloading`  → "Cancel download"
+///   - `.downloaded`   → "Remove download" (delete confirmation)
+///   - `.failed`       → "Retry download"
 struct EpisodeDetailActionsMenu: View {
     let episode: Episode
     let store: AppStateStore
 
+    @State private var confirmDelete: Bool = false
+
     var body: some View {
         Menu {
-            Button {
-                toggleDownload()
-            } label: {
-                Label(isDownloaded ? "Remove download" : "Download",
-                      systemImage: isDownloaded ? "trash" : "arrow.down.circle")
-            }
+            downloadButton
             Button {
                 togglePlayed()
             } label: {
@@ -32,22 +32,53 @@ struct EpisodeDetailActionsMenu: View {
                 .font(.title3)
         }
         .accessibilityLabel("Episode options")
+        .confirmationDialog(
+            "Remove download?",
+            isPresented: $confirmDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.delete(episodeID: episode.id)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The local file will be deleted. You can download it again later.")
+        }
     }
 
-    private var isDownloaded: Bool {
-        if case .downloaded = episode.downloadState { return true }
-        return false
-    }
+    // MARK: - Download menu item
 
-    private func toggleDownload() {
-        if isDownloaded {
-            store.setEpisodeDownloadState(episode.id, state: .notDownloaded)
-        } else {
-            let sentinel = URL(fileURLWithPath: "/dev/null")
-            store.setEpisodeDownloadState(
-                episode.id,
-                state: .downloaded(localFileURL: sentinel, byteCount: 0)
-            )
+    @ViewBuilder
+    private var downloadButton: some View {
+        switch episode.downloadState {
+        case .notDownloaded, .queued:
+            Button {
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.download(episodeID: episode.id)
+            } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+        case .downloading:
+            Button {
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.cancel(episodeID: episode.id)
+            } label: {
+                Label("Cancel download", systemImage: "xmark.circle")
+            }
+        case .downloaded:
+            Button(role: .destructive) {
+                confirmDelete = true
+            } label: {
+                Label("Remove download", systemImage: "trash")
+            }
+        case .failed:
+            Button {
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.download(episodeID: episode.id)
+            } label: {
+                Label("Retry download", systemImage: "arrow.clockwise")
+            }
         }
     }
 

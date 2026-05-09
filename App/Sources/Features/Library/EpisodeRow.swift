@@ -24,6 +24,12 @@ struct EpisodeRow: View {
     /// mini-player without leaving the list.
     var onPlay: (() -> Void)? = nil
 
+    /// Live download service — observed so the trailing capsule's
+    /// "Downloading N%" label updates smoothly without each tick hitting
+    /// `AppStateStore` (which would re-persist + re-spotlight + reload
+    /// widgets on every progress event).
+    @State private var downloadService = EpisodeDownloadService.shared
+
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             playOrIndicator
@@ -118,7 +124,10 @@ struct EpisodeRow: View {
 
             Spacer(minLength: AppTheme.Spacing.xs)
 
-            DownloadStatusCapsule(status: episode.displayDownloadStatus)
+            DownloadStatusCapsule(
+                status: episode.displayDownloadStatus,
+                liveProgress: downloadService.progress[episode.id]
+            )
         }
     }
 

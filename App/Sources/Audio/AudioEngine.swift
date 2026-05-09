@@ -98,8 +98,19 @@ final class AudioEngine {
 
     /// Replace the current item with `episode`. Begins buffering immediately;
     /// caller must follow with `play()` to start playback.
+    ///
+    /// Prefers the locally-downloaded enclosure when available. We recompute
+    /// the local path from `EpisodeDownloadStore` (rather than trusting the
+    /// `localFileURL` baked into `DownloadState.downloaded`) because iOS may
+    /// rotate the app container path across launches, leaving the persisted
+    /// absolute URL stale. Falls back to streaming when no local file exists.
     func load(_ episode: Episode) {
-        let url = episode.enclosureURL
+        let url: URL = {
+            if EpisodeDownloadStore.shared.exists(for: episode) {
+                return EpisodeDownloadStore.shared.localFileURL(for: episode)
+            }
+            return episode.enclosureURL
+        }()
         teardownItemObservers()
         self.episode = episode
         state = .loading(episode)
