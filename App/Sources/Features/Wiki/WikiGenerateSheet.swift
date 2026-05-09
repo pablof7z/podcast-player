@@ -7,10 +7,11 @@ import SwiftUI
 /// `WikiGenerator` against `WikiOpenRouterClient.live` (gated on a
 /// stored OpenRouter API key) and writes the result to `WikiStorage`.
 ///
-/// RAG is currently a stub (`InMemoryRAGSearch(chunks: [])`) — the real
-/// `WikiRAGSearchProtocol` adapter ships from the RAGStore agent. Until
-/// then, generation will produce pages with empty sections; the verifier
-/// drops every claim and the page lands as a low-confidence skeleton.
+/// RAG resolves through `RAGService.shared.wikiRAG`, the live sqlite-vec
+/// vector store. Pages compile against whatever transcript chunks have been
+/// ingested for the user's subscriptions; if the user has no transcripts
+/// indexed yet, the verifier drops most claims and the page lands as a
+/// low-confidence skeleton.
 struct WikiGenerateSheet: View {
 
     /// Storage destination. Defaults to the shared singleton; tests pass
@@ -249,7 +250,7 @@ struct WikiGenerateSheet: View {
                 return
             }
             let generator = WikiGenerator(
-                rag: InMemoryRAGSearch(chunks: []),
+                rag: RAGService.shared.wikiRAG,
                 client: .live(apiKey: apiKey, model: model),
                 storage: storage,
                 model: model

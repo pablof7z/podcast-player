@@ -278,7 +278,7 @@ struct WikiPageView: View {
                 return
             }
             let generator = WikiGenerator(
-                rag: InMemoryRAGSearch(chunks: []),
+                rag: RAGService.shared.wikiRAG,
                 client: .live(apiKey: apiKey, model: page.model),
                 storage: storage,
                 model: page.model
