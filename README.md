@@ -2,9 +2,49 @@
 
 A next-generation iOS podcast player built around an embedded AI agent that has perfect knowledge of every podcast the user is subscribed to — including episodes they have not listened to yet.
 
-See [`.claude/PROJECT_CONTEXT.md`](.claude/PROJECT_CONTEXT.md) for the full product vision and [`AGENTS.md`](AGENTS.md) for engineering guidelines (file-size limits, etc.).
-
 > Bootstrapped from [`ios-app-template`](https://github.com/pablofernandez/ios-app-template). The sections below describe the inherited template foundations (shake-to-feedback, agent loop, friends, TestFlight CI). Podcast-specific modules live under `App/Sources/{Audio,Podcast,Transcript,Knowledge,Voice,Briefing}` and the new feature folders under `App/Sources/Features/`.
+
+See [`docs/spec/PRODUCT_SPEC.md`](docs/spec/PRODUCT_SPEC.md) for the full product spec, or [`docs/spec/PROJECT_CONTEXT.md`](docs/spec/PROJECT_CONTEXT.md) for the vision summary. Engineering guidelines (file-size limits, etc.) in [`AGENTS.md`](AGENTS.md).
+
+---
+
+## Screenshots
+
+Real data, captured on the iOS 26.4 simulator (iPhone 17 Pro Max).
+
+### Onboarding & Today
+
+| Welcome | Today (with playback in flight) |
+|---------|---------------------------------|
+| ![Welcome](docs/images/01-welcome.png) | ![Today populated](docs/images/13-today-populated.png) |
+
+### Discover — find shows on Apple Podcasts
+
+| Popular Now (default empty state) | Live search ("tim ferriss") |
+|-----------------------------------|-----------------------------|
+| ![Discover Popular Now](docs/images/04-discover-popular.png) | ![Discover search](docs/images/05-discover-search.png) |
+
+The Discover surface is the **Search** segment of *Library → Add Show*. It opens to Apple's top-podcasts feed (two-step pipeline: marketing-tools RSS → batched iTunes lookup), and as you type it debounces and hits the iTunes Search API directly. One-tap subscribe routes through the same `SubscriptionService` as paste-URL / OPML import.
+
+### Library, show detail, episode list
+
+| Library | Show detail | Episode list |
+|---------|-------------|--------------|
+| ![Library populated](docs/images/06-library-populated.png) | ![Show detail](docs/images/07-show-detail.png) | ![Episode list](docs/images/08-episode-list.png) |
+
+### Mini-player + Now Playing
+
+The mini-player adopts iOS 26's `tabViewBottomAccessory` — same pattern as Apple Music. Above the tab bar in the expanded layout; collapses to an inline pill between the active-tab capsule and the trailing toolbar controls when the bar minimizes on scroll-down.
+
+| Mini-player above tab bar | Full Now Playing |
+|---------------------------|------------------|
+| ![Mini-player expanded](docs/images/09-mini-player-expanded.png) | ![Now Playing](docs/images/10-now-playing.png) |
+
+### Wiki & Ask the Agent
+
+| Wiki tab | Ask the Agent |
+|----------|---------------|
+| ![Wiki](docs/images/11-wiki-empty.png) | ![Ask agent](docs/images/12-ask-agent.png) |
 
 ---
 
