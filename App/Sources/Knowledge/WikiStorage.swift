@@ -40,6 +40,13 @@ struct WikiStorage: Sendable {
         }
     }
 
+    // MARK: - Shared instance
+
+    /// Process-wide shared storage rooted at the default Application Support
+    /// location. UI code (the wiki tab) should read through this; tests keep
+    /// constructing their own `WikiStorage(root:)` against a temp directory.
+    static let shared = WikiStorage()
+
     // MARK: - Public API
 
     /// Persists the supplied page atomically and updates the inventory.
@@ -99,6 +106,38 @@ struct WikiStorage: Sendable {
         let inventory = try loadInventory()
         guard let scope else { return inventory.entries }
         return inventory.entries.filter { $0.scope == scope }
+    }
+
+    /// Loads every persisted page across all scopes. Walks the inventory
+    /// and decodes each referenced JSON file. Pages whose backing file is
+    /// missing or unreadable are skipped silently — the inventory will be
+    /// reconciled on the next write. Returned in inventory order; callers
+    /// sort as needed.
+    func allPages() throws -> [WikiPage] {
+        let inventory = try loadInventory()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var pages: [WikiPage] = []
+        pages.reserveCapacity(inventory.entries.count)
+        for entry in inventory.entries {
+            let url = pageURL(slug: entry.slug, scope: entry.scope)
+            guard
+                FileManager.default.fileExists(atPath: url.path),
+                let data = try? Data(contentsOf: url),
+                let page = try? decoder.decode(WikiPage.self, from: data)
+            else { continue }
+            pages.append(page)
+        }
+        return pages
+    }
+
+    /// Deletes the page with the supplied identifier. Resolves `id` to a
+    /// `(scope, slug)` by consulting the inventory then delegates to
+    /// `delete(slug:scope:)`. No-ops when no inventory entry matches.
+    func delete(pageID: UUID) throws {
+        let pages = try allPages()
+        guard let target = pages.first(where: { $0.id == pageID }) else { return }
+        try delete(slug: target.slug, scope: target.scope)
     }
 
     // MARK: - URL builders

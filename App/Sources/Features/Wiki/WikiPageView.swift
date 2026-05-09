@@ -7,17 +7,44 @@ import SwiftUI
 /// The page itself is **paper, not glass** — solid warm canvas, hairline
 /// dividers, single column at ~62 ch on phones. Glass is reserved for
 /// floating elements (the citation peek lives in `CitationPeekView`).
+///
+/// Toolbar actions: regenerate (re-runs `WikiGenerator` with the same
+/// topic + scope and atomically swaps the on-disk page) and delete
+/// (removes the page from storage).
 struct WikiPageView: View {
 
     let page: WikiPage
+    let storage: WikiStorage
+    let onDeleted: (UUID) -> Void
+    let onRegenerated: (WikiPage) -> Void
 
     @State private var peeking: WikiCitation?
+    @State private var isRegenerating = false
+    @State private var actionError: String?
+    @State private var showDeleteConfirm = false
+
+    init(
+        page: WikiPage,
+        storage: WikiStorage = .shared,
+        onDeleted: @escaping (UUID) -> Void = { _ in },
+        onRegenerated: @escaping (WikiPage) -> Void = { _ in }
+    ) {
+        self.page = page
+        self.storage = storage
+        self.onDeleted = onDeleted
+        self.onRegenerated = onRegenerated
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header
                 summary
+                if let actionError {
+                    Label(actionError, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+                }
                 ForEach(page.sections.sorted(by: { $0.ordinal < $1.ordinal })) { section in
                     sectionView(section)
                 }
@@ -32,11 +59,51 @@ struct WikiPageView: View {
         .background(paperBackground)
         .navigationTitle(page.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbar }
         .sheet(item: $peeking) { citation in
             CitationPeekView(citation: citation)
                 .presentationDetents([.fraction(0.42), .medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.regularMaterial)
+        }
+        .confirmationDialog(
+            "Delete this wiki page?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { performDelete() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\(page.title) will be removed from your library.")
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                Button {
+                    Task { await regenerate() }
+                } label: {
+                    Label("Regenerate", systemImage: "arrow.clockwise")
+                }
+                .disabled(isRegenerating)
+
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                if isRegenerating {
+                    ProgressView()
+                } else {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+            .accessibilityLabel("Page actions")
         }
     }
 
@@ -186,7 +253,7 @@ struct WikiPageView: View {
         VStack(alignment: .leading, spacing: 4) {
             Divider().overlay(Color.primary.opacity(0.10))
             HStack {
-                Text("rev \(page.compileRevision) · \(page.model)")
+                Text("rev \(page.compileRevision) \u{00B7} \(page.model)")
                 Spacer()
                 Text(page.generatedAt, format: .relative(presentation: .named))
             }
@@ -196,11 +263,49 @@ struct WikiPageView: View {
         }
     }
 
+    // MARK: - Actions
+
+    @MainActor
+    private func regenerate() async {
+        guard !isRegenerating else { return }
+        isRegenerating = true
+        actionError = nil
+        defer { isRegenerating = false }
+        do {
+            let apiKey = try OpenRouterCredentialStore.apiKey() ?? ""
+            guard !apiKey.isEmpty else {
+                actionError = "Connect OpenRouter in Settings to regenerate."
+                return
+            }
+            let generator = WikiGenerator(
+                rag: InMemoryRAGSearch(chunks: []),
+                client: .live(apiKey: apiKey, model: page.model),
+                storage: storage,
+                model: page.model
+            )
+            let result = try await generator.audit(prior: page)
+            try generator.persist(result.page)
+            onRegenerated(result.page)
+        } catch {
+            actionError = (error as? WikiClientError)?.errorDescription
+                ?? error.localizedDescription
+        }
+    }
+
+    private func performDelete() {
+        do {
+            try storage.delete(slug: page.slug, scope: page.scope)
+            onDeleted(page.id)
+        } catch {
+            actionError = "Could not delete page: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - Helpers
 
     private var metadataLine: String {
         let count = page.allClaims.flatMap(\.citations).count
-        return "\(page.kind.displayName) · \(count) citations · confidence \(Int(page.confidence * 100))%"
+        return "\(page.kind.displayName) \u{00B7} \(count) citations \u{00B7} confidence \(Int(page.confidence * 100))%"
     }
 
     private func color(for band: WikiConfidenceBand) -> Color {
@@ -230,9 +335,6 @@ private struct FlexibleChipRow<Item: Identifiable, Content: View>: View {
     @ViewBuilder let content: (Item) -> Content
 
     var body: some View {
-        // SwiftUI does not ship a built-in flow layout pre-iOS 16, but
-        // we target iOS 26, so `Layout` would also work. For simplicity
-        // we rely on `LazyVGrid` with adaptive columns.
         LazyVGrid(
             columns: [GridItem(.adaptive(minimum: 84), spacing: 6, alignment: .leading)],
             alignment: .leading,

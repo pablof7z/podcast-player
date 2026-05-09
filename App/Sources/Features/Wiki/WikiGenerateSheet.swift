@@ -2,117 +2,172 @@ import SwiftUI
 
 // MARK: - Wiki generate sheet
 
-/// "Compile a page about X" sheet (UX-04 §6e). Drives the conjure flow:
-/// user types a topic, watches a 2-second "thinking" UI, receives a
-/// fixture page that demonstrates the eventual rendered shape.
+/// "Compile a page about X" sheet (UX-04 §6e). Drives the real compile
+/// pipeline: user types a topic, picks a kind + scope, the sheet calls
+/// `WikiGenerator` against `WikiOpenRouterClient.live` (gated on a
+/// stored OpenRouter API key) and writes the result to `WikiStorage`.
 ///
-/// In lane 7 the actual `WikiGenerator` call is stubbed; the sheet
-/// returns a fixture page so the surrounding UX is reviewable. A live
-/// build wires `client: .live(apiKey:)` through `WikiGenerator` and
-/// awaits a real compile.
+/// RAG is currently a stub (`InMemoryRAGSearch(chunks: [])`) — the real
+/// `WikiRAGSearchProtocol` adapter ships from the RAGStore agent. Until
+/// then, generation will produce pages with empty sections; the verifier
+/// drops every claim and the page lands as a low-confidence skeleton.
 struct WikiGenerateSheet: View {
 
-    let scope: WikiHomeViewModel.ScopeFilter
+    /// Storage destination. Defaults to the shared singleton; tests pass
+    /// a temp-rooted instance.
+    let storage: WikiStorage
 
-    /// Called once the (mocked) compile completes with the new page.
+    /// Called once the compile completes successfully and the page has
+    /// been persisted. The host view is responsible for refreshing.
     var onCompile: (WikiPage) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var topic: String = ""
-    @State private var isCompiling = false
-    @State private var phase: Phase = .input
+    @Environment(AppStateStore.self) private var store
 
+    @State private var topic: String = ""
+    @State private var selectedKind: WikiPageKind = .topic
+    @State private var scopeChoice: ScopeChoice = .global
+    @State private var selectedPodcastID: UUID?
+    @State private var phase: Phase = .input
+    @State private var hasAPIKey: Bool = OpenRouterCredentialStore.hasAPIKey()
+
+    private let model = "openai/gpt-4o-mini"
+
+    /// Sheet-local UI state. Distinct from `WikiHomeViewModel` because it
+    /// is owned per-presentation.
     enum Phase: Equatable {
         case input
-        case searching
-        case drafting
-        case resolving
+        case compiling
         case done(WikiPage)
+        case failed(String)
+    }
+
+    /// Picker-local scope toggle. We resolve to `WikiScope` only when we
+    /// kick off the compile — that lets the podcast picker stay disabled
+    /// until the user explicitly chooses "podcast".
+    enum ScopeChoice: String, CaseIterable, Hashable {
+        case global = "Library"
+        case podcast = "Podcast"
     }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                inputField
-                phaseDisplay
-                Spacer()
-                actionRow
+            Form {
+                topicSection
+                scopeSection
+                statusSection
             }
-            .padding(20)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Compile a page")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .disabled(isCompiling)
+                        .disabled(phase == .compiling)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    generateButton
                 }
             }
         }
         .presentationDragIndicator(.visible)
+        .onAppear { hasAPIKey = OpenRouterCredentialStore.hasAPIKey() }
     }
 
-    // MARK: - Subviews
+    // MARK: - Sections
 
-    private var inputField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Topic")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.5)
+    private var topicSection: some View {
+        Section {
             TextField("e.g. mitochondrial uncoupling", text: $topic)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .font(.title3)
-                .padding(.vertical, 12)
-                .padding(.horizontal, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.thinMaterial)
-                )
-                .disabled(isCompiling)
+                .disabled(phase == .compiling)
+            Picker("Kind", selection: $selectedKind) {
+                ForEach(WikiPageKind.allCases.filter { $0 != .index }, id: \.self) { kind in
+                    Text(kind.displayName).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+            .disabled(phase == .compiling)
+        } header: {
+            Text("Topic")
+        } footer: {
+            Text("Compiling reads your transcripts, drafts a page, and verifies every claim before it lands.")
+                .font(.caption)
         }
     }
 
     @ViewBuilder
-    private var phaseDisplay: some View {
-        switch phase {
-        case .input:
-            Text("Compiling reads your transcripts, drafts a page, and verifies every claim before it lands.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-        case .searching:
-            phaseLine(symbol: "magnifyingglass", label: "Searching transcripts…", active: true)
-        case .drafting:
-            VStack(alignment: .leading, spacing: 10) {
-                phaseLine(symbol: "checkmark", label: "Searched transcripts", active: false)
-                phaseLine(symbol: "doc.text", label: "Drafting definition…", active: true)
+    private var scopeSection: some View {
+        Section {
+            Picker("Scope", selection: $scopeChoice) {
+                ForEach(ScopeChoice.allCases, id: \.self) { choice in
+                    Text(choice.rawValue).tag(choice)
+                }
             }
-        case .resolving:
-            VStack(alignment: .leading, spacing: 10) {
-                phaseLine(symbol: "checkmark", label: "Searched transcripts", active: false)
-                phaseLine(symbol: "checkmark", label: "Drafted definition", active: false)
-                phaseLine(symbol: "quote.bubble", label: "Resolving citations…", active: true)
+            .pickerStyle(.segmented)
+            .disabled(phase == .compiling)
+
+            if scopeChoice == .podcast {
+                if store.sortedSubscriptions.isEmpty {
+                    Text("Subscribe to at least one podcast to scope a page.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Podcast", selection: $selectedPodcastID) {
+                        Text("Select…").tag(UUID?.none)
+                        ForEach(store.sortedSubscriptions) { sub in
+                            Text(sub.title).tag(UUID?.some(sub.id))
+                        }
+                    }
+                    .disabled(phase == .compiling)
+                }
             }
-        case .done(let page):
-            doneCard(page: page)
+        } header: {
+            Text("Scope")
         }
     }
 
-    private func phaseLine(symbol: String, label: String, active: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .foregroundStyle(active ? Color.accentColor : .secondary)
-                .symbolEffect(.pulse, options: .repeating, isActive: active)
-            Text(label)
-                .font(.callout)
-                .foregroundStyle(active ? .primary : .secondary)
+    @ViewBuilder
+    private var statusSection: some View {
+        Section {
+            switch phase {
+            case .input:
+                if !hasAPIKey {
+                    Label("Connect OpenRouter in Settings to compile pages.",
+                          systemImage: "key")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("This will use OpenRouter credits.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            case .compiling:
+                HStack(spacing: 12) {
+                    ProgressView()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Compiling \u{201C}\(topic)\u{201D}…")
+                            .font(.callout)
+                        Text("Searching transcripts, drafting, verifying citations.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            case .done(let page):
+                doneCard(page: page)
+            case .failed(let message):
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+            }
+        } header: {
+            Text("Status")
         }
     }
 
     private func doneCard(page: WikiPage) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "checkmark.seal.fill")
                     .foregroundStyle(Color(red: 0.18, green: 0.55, blue: 0.34))
@@ -121,10 +176,12 @@ struct WikiGenerateSheet: View {
             }
             Text(page.title)
                 .font(.system(.title3, design: .serif).weight(.semibold))
-            Text(page.summary)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
+            if !page.summary.isEmpty {
+                Text(page.summary)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
             HStack(spacing: 12) {
                 Label("\(page.allClaims.count) claims", systemImage: "text.alignleft")
                 Label(
@@ -135,80 +192,99 @@ struct WikiGenerateSheet: View {
             .font(.caption)
             .foregroundStyle(.tertiary)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.regularMaterial)
-        )
+        .padding(.vertical, 4)
     }
 
-    private var actionRow: some View {
-        HStack {
-            if case .done(let page) = phase {
-                Button {
+    // MARK: - Toolbar button
+
+    @ViewBuilder
+    private var generateButton: some View {
+        switch phase {
+        case .done:
+            Button("Open") {
+                if case .done(let page) = phase {
                     onCompile(page)
                     dismiss()
-                } label: {
-                    Label("Read the page", systemImage: "book")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
                 }
-                .buttonStyle(.borderedProminent)
-            } else {
-                Button {
-                    Task { await runCompile() }
-                } label: {
-                    Label("Compile", systemImage: "wand.and.stars")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(topic.trimmingCharacters(in: .whitespaces).isEmpty || isCompiling)
             }
+            .bold()
+        default:
+            Button("Generate") {
+                Task { await runCompile() }
+            }
+            .bold()
+            .disabled(!canGenerate)
         }
     }
 
-    // MARK: - Mock compile
-
-    /// Runs the staged "compile" animation and returns a fixture page.
-    /// Total runtime ≈ 2 seconds, matching the lane-7 brief.
-    @MainActor
-    private func runCompile() async {
-        isCompiling = true
-        phase = .searching
-        try? await Task.sleep(nanoseconds: 700_000_000)
-        phase = .drafting
-        try? await Task.sleep(nanoseconds: 700_000_000)
-        phase = .resolving
-        try? await Task.sleep(nanoseconds: 600_000_000)
-
-        let page = makeFixturePage(for: topic)
-        phase = .done(page)
-        isCompiling = false
+    private var canGenerate: Bool {
+        guard hasAPIKey else { return false }
+        if phase == .compiling { return false }
+        if topic.trimmingCharacters(in: .whitespaces).isEmpty { return false }
+        if scopeChoice == .podcast && selectedPodcastID == nil { return false }
+        return true
     }
 
-    /// Builds a topic page that mirrors the requested topic. Pulls bits
-    /// from `WikiMockFixture.ozempicTopic` so the rendered surface
-    /// looks plausible end-to-end.
-    private func makeFixturePage(for rawTopic: String) -> WikiPage {
-        let trimmed = rawTopic.trimmingCharacters(in: .whitespacesAndNewlines)
-        let title = trimmed.isEmpty ? "Untitled" : trimmed
-        let scopeValue: WikiScope = {
-            switch scope {
-            case .global: .global
-            case .podcast(let id): .podcast(id)
+    // MARK: - Compile
+
+    @MainActor
+    private func runCompile() async {
+        guard canGenerate else { return }
+        let trimmed = topic.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scope: WikiScope
+        switch scopeChoice {
+        case .global:
+            scope = .global
+        case .podcast:
+            guard let id = selectedPodcastID else { return }
+            scope = .podcast(id)
+        }
+
+        phase = .compiling
+
+        do {
+            let apiKey = try OpenRouterCredentialStore.apiKey() ?? ""
+            guard !apiKey.isEmpty else {
+                phase = .failed("Missing OpenRouter API key.")
+                return
             }
-        }()
-        var template = WikiMockFixture.ozempicTopic
-        template.id = UUID()
-        template.title = title
-        template.slug = WikiPage.normalize(slug: title)
-        template.summary = "Synthesized from \(template.allClaims.flatMap(\.citations).count) cited spans across your library."
-        template.scope = scopeValue
-        template.generatedAt = Date()
-        template.compileRevision = 1
-        template.confidence = 0.62
-        return template
+            let generator = WikiGenerator(
+                rag: InMemoryRAGSearch(chunks: []),
+                client: .live(apiKey: apiKey, model: model),
+                storage: storage,
+                model: model
+            )
+            let result = try await compile(
+                generator: generator,
+                topic: trimmed,
+                scope: scope
+            )
+            try generator.persist(result.page)
+            phase = .done(result.page)
+        } catch {
+            phase = .failed(humanize(error))
+        }
+    }
+
+    private func compile(
+        generator: WikiGenerator,
+        topic: String,
+        scope: WikiScope
+    ) async throws -> WikiVerifyResult {
+        switch selectedKind {
+        case .topic, .index:
+            return try await generator.compileTopic(topic: topic, scope: scope)
+        case .person:
+            return try await generator.compilePerson(name: topic, scope: scope)
+        case .show:
+            return try await generator.compileShow(showName: topic, scope: scope)
+        }
+    }
+
+    private func humanize(_ error: Error) -> String {
+        if let wiki = error as? WikiClientError {
+            return wiki.errorDescription ?? "Compile failed."
+        }
+        return error.localizedDescription
     }
 }

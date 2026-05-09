@@ -3,118 +3,133 @@ import Observation
 
 // MARK: - Wiki home view model
 
-/// Drives `WikiView` — owns the inventory, the current scope filter,
-/// and the page-load actions.
+/// Drives `WikiView` — owns the on-disk page list, the search query, and
+/// the load lifecycle. All reads go through `WikiStorage`; there are no
+/// fixtures or mock fallbacks. An empty store renders the empty state.
 @Observable
 @MainActor
 final class WikiHomeViewModel {
 
     // MARK: - State
 
-    var entries: [WikiInventory.Entry] = []
-    var scope: ScopeFilter = .global
+    /// All pages on disk, sorted by `generatedAt` descending. Search and
+    /// grouping derive from this list. Pinned pages are not modeled in
+    /// v1 — the WikiPage model has no `isPinned` flag yet — so the
+    /// brief's `pinnedPages` is intentionally omitted.
+    private(set) var recentPages: [WikiPage] = []
 
-    /// Storage source. Tests inject a temp-directory storage; the app
-    /// uses the default Application Support root.
-    var storage: WikiStorage = WikiStorage()
+    /// Free-text query the search bar binds into. Filters `recentPages`
+    /// by title and summary, case-insensitively.
+    var searchQuery: String = ""
 
-    /// When the storage is empty, we fall back to fixtures so the home
-    /// renders something on first launch. Real users in real builds
-    /// see this until the agent compiles its first real page.
-    var allowFixtureFallback: Bool = true
+    /// `true` while `load()` is in flight. Drives the inline progress
+    /// indicator on the wiki home.
+    private(set) var isLoading: Bool = false
+
+    /// Last error surfaced by a load attempt. Cleared on the next
+    /// successful load. The view shows a small banner when non-`nil`.
+    private(set) var loadError: String?
+
+    /// Storage source. Defaults to the process-wide `WikiStorage.shared`;
+    /// tests may inject a temp-rooted instance.
+    let storage: WikiStorage
+
+    init(storage: WikiStorage = .shared) {
+        self.storage = storage
+    }
 
     // MARK: - Loading
 
-    /// Loads the inventory from disk. On empty + fallback enabled,
-    /// substitutes the mock fixture. Filters by `scope` before storing.
+    /// Reads every page from disk and stores them sorted newest-first.
+    /// Safe to call repeatedly — the view triggers it on `.task` and
+    /// after the generate sheet completes.
     func load() async {
-        let inventory: WikiInventory
-        if let loaded = try? storage.loadInventory(), !loaded.entries.isEmpty {
-            inventory = loaded
-        } else if allowFixtureFallback {
-            inventory = WikiMockFixture.inventory
-        } else {
-            inventory = WikiInventory()
-        }
-        entries = filtered(inventory.entries, by: scope)
-    }
-
-    /// Inserts the supplied page into the in-memory inventory and
-    /// re-applies the scope filter. The caller is responsible for
-    /// persisting via `WikiStorage` separately.
-    func add(_ page: WikiPage) {
-        let url = storage.pageURL(for: page)
-        let entry = WikiInventory.Entry(from: page, fileURL: url)
-        entries.removeAll { $0.slug == entry.slug && $0.scope == entry.scope }
-        entries.insert(entry, at: 0)
-    }
-
-    /// Loads the full page for the supplied entry and hands it to
-    /// `present`. Tries disk first, falls back to fixture lookup.
-    func openPage(
-        _ entry: WikiInventory.Entry,
-        present: (WikiPage) -> Void
-    ) async {
-        if let page = try? storage.read(slug: entry.slug, scope: entry.scope) {
-            present(page)
-            return
-        }
-        if let fixture = WikiMockFixture.all
-            .first(where: { $0.slug == entry.slug && $0.scope == entry.scope }) {
-            present(fixture)
-            return
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let loaded = try await Task.detached(priority: .userInitiated) { [storage] in
+                try storage.allPages()
+            }.value
+            recentPages = loaded.sorted { $0.generatedAt > $1.generatedAt }
+            loadError = nil
+        } catch {
+            recentPages = []
+            loadError = error.localizedDescription
         }
     }
 
-    // MARK: - Scope
-
-    /// The set of scopes present in the loaded inventory, used to drive
-    /// the segmented picker.
-    var podcastScopes: [ScopeFilter] {
-        let podcastScopes: [ScopeFilter] = entries
-            .compactMap { entry in
-                if case .podcast(let id) = entry.scope {
-                    return ScopeFilter.podcast(id)
-                }
-                return nil
-            }
-        var seen: Set<ScopeFilter> = []
-        return podcastScopes.filter { seen.insert($0).inserted }
+    /// Inserts the supplied page into the in-memory list (deduping on
+    /// `(scope, slug)`) and re-sorts. Lets the view show the new page
+    /// immediately while a fresh `load()` runs in the background.
+    func upsert(_ page: WikiPage) {
+        recentPages.removeAll { $0.slug == page.slug && $0.scope == page.scope }
+        recentPages.insert(page, at: 0)
+        recentPages.sort { $0.generatedAt > $1.generatedAt }
     }
 
-    /// Human-readable label for a scope chip. Real builds will resolve
-    /// the podcast name via Lane 1's catalog; in stub mode we render
-    /// the UUID prefix.
-    func label(for scope: ScopeFilter) -> String {
-        switch scope {
-        case .global: "Library"
-        case .podcast(let id):
-            "Show \(id.uuidString.prefix(4))"
+    /// Removes the page with the given id from the in-memory list.
+    /// Persistent removal is the caller's responsibility (it should call
+    /// `WikiStorage.delete(pageID:)` first).
+    func remove(pageID: UUID) {
+        recentPages.removeAll { $0.id == pageID }
+    }
+
+    // MARK: - Derived views
+
+    /// Pages filtered by `searchQuery`. Empty query returns the full
+    /// list. Match is case-insensitive against title + summary.
+    var filteredPages: [WikiPage] {
+        let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return recentPages }
+        let needle = trimmed.lowercased()
+        return recentPages.filter { page in
+            page.title.lowercased().contains(needle)
+                || page.summary.lowercased().contains(needle)
         }
     }
 
-    private func filtered(
-        _ all: [WikiInventory.Entry],
-        by scope: ScopeFilter
-    ) -> [WikiInventory.Entry] {
-        switch scope {
-        case .global:
-            return all
-        case .podcast(let id):
-            return all.filter { entry in
-                if case .podcast(let entryID) = entry.scope { return entryID == id }
-                return false
-            }
+    /// Pages grouped by recency bucket, ordered Today → Older. Empty
+    /// buckets are omitted so the list never renders an empty header.
+    var groupedPages: [(bucket: RecencyBucket, pages: [WikiPage])] {
+        let calendar = Calendar.current
+        let now = Date()
+        var buckets: [RecencyBucket: [WikiPage]] = [:]
+        for page in filteredPages {
+            buckets[RecencyBucket.bucket(for: page.generatedAt, now: now, calendar: calendar), default: []].append(page)
+        }
+        return RecencyBucket.allCases.compactMap { bucket in
+            guard let pages = buckets[bucket], !pages.isEmpty else { return nil }
+            return (bucket, pages)
         }
     }
+}
 
-    // MARK: - Scope filter
+// MARK: - Recency bucket
 
-    /// Picker-friendly scope variant. Differs from `WikiScope` because the
-    /// home wants a "Global = all pages including per-podcast" mode that
-    /// the storage scope can't express directly.
-    enum ScopeFilter: Hashable {
-        case global
-        case podcast(UUID)
+/// The four time bands the wiki home groups pages into. Order is meant
+/// to read top-down newest-first.
+enum RecencyBucket: String, CaseIterable, Hashable, Sendable {
+    case today = "Today"
+    case yesterday = "Yesterday"
+    case thisWeek = "This Week"
+    case older = "Older"
+
+    var title: String { rawValue }
+
+    /// Classifies `date` against `now`. `today` covers the current
+    /// calendar day, `yesterday` the prior calendar day, `thisWeek` the
+    /// remainder of the same calendar week (per `calendar`), and
+    /// `older` everything else.
+    static func bucket(
+        for date: Date,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> RecencyBucket {
+        if calendar.isDateInToday(date) { return .today }
+        if calendar.isDateInYesterday(date) { return .yesterday }
+        if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
+            return .thisWeek
+        }
+        return .older
     }
 }
