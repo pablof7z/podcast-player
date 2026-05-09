@@ -136,6 +136,65 @@ final class AppTests: XCTestCase {
         XCTAssertTrue(prompt.contains("User prefers mornings"))
     }
 
+    func testAgentPromptIncludesSubscriptions() {
+        var state = AppState()
+        state.subscriptions.append(makeSubscription(title: "The Tim Ferriss Show"))
+        state.subscriptions.append(makeSubscription(title: "Acquired"))
+
+        let prompt = AgentPrompt.build(for: state)
+
+        XCTAssertTrue(prompt.contains("## Subscriptions (2)"))
+        XCTAssertTrue(prompt.contains("The Tim Ferriss Show"))
+        XCTAssertTrue(prompt.contains("Acquired"))
+    }
+
+    func testAgentPromptIncludesInProgressEpisodes() {
+        var state = AppState()
+        let sub = makeSubscription(title: "Lex Fridman")
+        state.subscriptions.append(sub)
+        var ep = makeEpisode(subscriptionID: sub.id, guid: "ip-1")
+        ep.title = "Episode about something"
+        ep.playbackPosition = 600
+        state.episodes.append(ep)
+
+        let prompt = AgentPrompt.build(for: state)
+
+        XCTAssertTrue(prompt.contains("## In Progress"))
+        XCTAssertTrue(prompt.contains("Episode about something"))
+        XCTAssertTrue(prompt.contains("Lex Fridman"))
+    }
+
+    func testAgentPromptIncludesRecentUnplayedEpisodes() {
+        var state = AppState()
+        let sub = makeSubscription(title: "Recent Show")
+        state.subscriptions.append(sub)
+        var fresh = makeEpisode(subscriptionID: sub.id, guid: "fresh-1")
+        fresh.title = "Brand new episode"
+        fresh.pubDate = Date().addingTimeInterval(-3600)
+        state.episodes.append(fresh)
+
+        let prompt = AgentPrompt.build(for: state)
+
+        XCTAssertTrue(prompt.contains("## Recent"))
+        XCTAssertTrue(prompt.contains("Brand new episode"))
+    }
+
+    func testAgentPromptOmitsOldEpisodesFromRecentSection() {
+        var state = AppState()
+        let sub = makeSubscription(title: "Old Show")
+        state.subscriptions.append(sub)
+        var old = makeEpisode(subscriptionID: sub.id, guid: "old-1")
+        old.title = "Old episode title that is unique"
+        old.pubDate = Date().addingTimeInterval(-30 * 86_400)
+        state.episodes.append(old)
+
+        let prompt = AgentPrompt.build(for: state)
+
+        // Subscription should still appear, but the 30-day-old episode
+        // shouldn't surface in the 7-day recent window.
+        XCTAssertFalse(prompt.contains("Old episode title that is unique"))
+    }
+
     // MARK: - Settings
 
     func testSettingsDoesNotPersistLegacyOpenRouterAPIKey() throws {
