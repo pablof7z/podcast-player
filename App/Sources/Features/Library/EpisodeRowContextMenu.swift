@@ -217,8 +217,8 @@ struct EpisodeRowLeadingSwipeAction: View {
 /// `markEpisodePlayed` removes the episode from `recentEpisodes`
 /// (filters on `!played`) and from `inProgressEpisodes`, which is what
 /// the user actually wants when they swipe away an item they're not
-/// going to listen to. The download / mark-unplayed affordances remain
-/// available via `EpisodeRowContextMenu` (long-press).
+/// going to listen to. The mark-unplayed affordance remains available
+/// via `EpisodeRowContextMenu` (long-press).
 struct EpisodeRowTrailingSwipeAction: View {
     let episode: Episode
     let store: AppStateStore
@@ -229,6 +229,66 @@ struct EpisodeRowTrailingSwipeAction: View {
             store.markEpisodePlayed(episode.id)
         } label: {
             Label("Remove", systemImage: "trash")
+        }
+    }
+}
+
+/// Trailing-edge swipe action: state-aware Download / Cancel / Remove / Retry.
+///
+/// Pairs with `EpisodeRowTrailingSwipeAction` on the trailing edge so the
+/// download affordance is discoverable without long-pressing. Order matters:
+/// SwiftUI lays the first declared button rightmost (closest to the swipe
+/// edge), so the destructive `Remove` action sits outermost and Download
+/// occupies the inner slot — a deliberate trade-off so a quick partial
+/// swipe still surfaces the more dangerous action behind a deliberate tap
+/// while the safer Download is one tap further in.
+struct EpisodeRowDownloadSwipeAction: View {
+    let episode: Episode
+    let store: AppStateStore
+
+    var body: some View {
+        switch episode.downloadState {
+        case .notDownloaded, .queued:
+            Button {
+                Haptics.light()
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.download(episodeID: episode.id)
+            } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+            .tint(.blue)
+        case .downloading:
+            Button {
+                Haptics.light()
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.cancel(episodeID: episode.id)
+            } label: {
+                Label("Cancel", systemImage: "xmark.circle")
+            }
+            .tint(.orange)
+        case .downloaded:
+            // Not `role: .destructive` — that paints the swipe button red and
+            // makes it visually identical to the existing "Remove" (mark-played)
+            // action that sits next to it. Removing the local audio file just
+            // frees storage; the episode and its progress survive. A neutral
+            // gray tint signals "secondary cleanup" instead of "destroy data".
+            Button {
+                Haptics.light()
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.delete(episodeID: episode.id)
+            } label: {
+                Label("Free up", systemImage: "internaldrive")
+            }
+            .tint(.gray)
+        case .failed:
+            Button {
+                Haptics.light()
+                EpisodeDownloadService.shared.attach(appStore: store)
+                EpisodeDownloadService.shared.download(episodeID: episode.id)
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+            }
+            .tint(.blue)
         }
     }
 }

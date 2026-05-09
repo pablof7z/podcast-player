@@ -133,6 +133,7 @@ struct HomeView: View {
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     EpisodeRowTrailingSwipeAction(episode: episode, store: store)
+                    EpisodeRowDownloadSwipeAction(episode: episode, store: store)
                 }
             }
         }

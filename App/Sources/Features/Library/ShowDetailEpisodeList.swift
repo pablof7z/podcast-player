@@ -46,6 +46,7 @@ struct ShowDetailEpisodeList: View {
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 EpisodeRowTrailingSwipeAction(episode: ep, store: store)
+                EpisodeRowDownloadSwipeAction(episode: ep, store: store)
             }
             .contextMenu {
                 EpisodeRowContextMenu(
