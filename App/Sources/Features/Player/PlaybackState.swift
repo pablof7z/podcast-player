@@ -93,8 +93,6 @@ final class PlaybackState {
     /// The `RootView` mini-bar reads this to decide whether to render itself.
     var episode: Episode?
 
-    var isAirPlayActive: Bool = false
-
     var sleepTimer: PlaybackSleepTimer = .off
 
     /// Live label for the sleep-timer action chip. Renders the live countdown

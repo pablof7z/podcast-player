@@ -142,13 +142,7 @@ struct PlayerActionClusterView: View {
             ) {
                 showSleepSheet = true
             }
-            actionChip(
-                label: state.isAirPlayActive ? "AirPlay" : "Output",
-                glyph: "airplayaudio"
-            ) {
-                state.isAirPlayActive.toggle()
-                Haptics.selection()
-            }
+            routePickerChip
             actionChip(label: "Queue", glyph: "list.bullet") {
                 showQueueSheet = true
             }
@@ -157,6 +151,36 @@ struct PlayerActionClusterView: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Output-route chip backed by `AVRoutePickerView`. Tapping presents
+    /// the system route picker (AirPlay, Bluetooth, USB-C) — replaces the
+    /// previous fake toggle that flipped a `PlaybackState.isAirPlayActive`
+    /// bool but never actually changed the audio route.
+    private var routePickerChip: some View {
+        ZStack {
+            HStack(spacing: 6) {
+                Image(systemName: "airplayaudio")
+                    .font(.footnote.weight(.semibold))
+                Text("Output")
+                    .font(AppTheme.Typography.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .glassEffect(.regular.interactive(), in: .capsule)
+            // Invisible AVRoutePickerView overlaid to capture taps —
+            // suppress the OS-drawn glyph (tintColor + activeTintColor =
+            // .clear) so only our chip is visible. The picker still
+            // presents the system route sheet on tap.
+            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
+                .allowsHitTesting(true)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Audio output")
+        .accessibilityHint("Choose AirPlay, Bluetooth, or built-in output")
     }
 
     private func actionChip(label: String, glyph: String, action: @escaping () -> Void) -> some View {
