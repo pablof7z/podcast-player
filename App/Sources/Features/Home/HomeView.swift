@@ -37,10 +37,14 @@ struct HomeView: View {
         let recent = store.recentEpisodes(limit: 30)
         let hasAnyEpisode = !(inProgress.isEmpty && recent.isEmpty)
 
-        if !hasAnyEpisode {
-            emptyState
-        } else {
-            ScrollView {
+        // Always wrap in ScrollView so `.refreshable` attaches in every state,
+        // including the "subscribed but no episodes yet" pre-first-fetch case
+        // where the user most needs to pull down.
+        ScrollView {
+            if !hasAnyEpisode {
+                emptyState
+                    .frame(minHeight: 480)
+            } else {
                 LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.lg, pinnedViews: []) {
                     if !inProgress.isEmpty {
                         continueListeningSection(inProgress)

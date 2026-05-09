@@ -26,11 +26,6 @@ struct HomeRecentEpisodeRow: View {
         .padding(.vertical, AppTheme.Spacing.xs)
         .contextMenu {
             Button {
-                onPlay()
-            } label: {
-                Label("Play", systemImage: "play.fill")
-            }
-            Button {
                 onMarkPlayed()
             } label: {
                 Label("Mark as played", systemImage: "checkmark.circle")
