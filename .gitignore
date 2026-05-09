@@ -6,6 +6,7 @@ Derived/
 *.xcworkspace/
 .worktrees/
 .claude/worktrees/
+.claude/scheduled_tasks.lock
 *.ipa
 *.dSYM.zip
 *.dSYM

@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AppGroupIdentifier</key>
+	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>CFBundleDisplayName</key>
 	<string>$(CFBundleDisplayName)</string>
 	<key>CFBundleExecutable</key>
@@ -35,6 +37,10 @@
 	<string>$(PRODUCT_NAME) uses the microphone for voice input.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>$(PRODUCT_NAME) uses speech recognition to transcribe voice input into new items.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.podcastr.podcastr.editItem</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -45,42 +51,36 @@
 		<dict>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>plus.circle.fill</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Add Item</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
 			<string>Create a new task</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Add Item</string>
 			<key>UIApplicationShortcutItemType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).add-item</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>exclamationmark.circle.fill</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>View Overdue</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
 			<string>See past-due items</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>View Overdue</string>
 			<key>UIApplicationShortcutItemType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).view-overdue</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>sparkles</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Open Agent</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
 			<string>Chat with your AI agent</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Open Agent</string>
 			<key>UIApplicationShortcutItemType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).open-agent</string>
 		</dict>
 	</array>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>com.podcastr.podcastr.editItem</string>
-	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>AppGroupIdentifier</key>
-	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
