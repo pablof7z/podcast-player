@@ -130,7 +130,21 @@ struct LibraryView: View {
 
     // MARK: - Empty state
 
+    /// Distinguishes "the user genuinely has no subscriptions" from "the
+    /// active filter happens to match nothing." Showing the fresh-user
+    /// onboarding pitch ("Your shows live here. Search Apple Podcasts…")
+    /// to a user with 44 subs and a Transcribed filter that nothing matches
+    /// reads as if their library disappeared.
+    @ViewBuilder
     private var emptyState: some View {
+        if store.sortedSubscriptions.isEmpty {
+            firstRunEmptyState
+        } else {
+            filteredEmptyState
+        }
+    }
+
+    private var firstRunEmptyState: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
             Image(systemName: "books.vertical")
                 .font(.system(size: 48, weight: .light))
@@ -152,6 +166,33 @@ struct LibraryView: View {
                     .padding(.vertical, AppTheme.Spacing.sm)
             }
             .buttonStyle(.glassProminent)
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var filteredEmptyState: some View {
+        VStack(spacing: AppTheme.Spacing.lg) {
+            Image(systemName: filter.emptyStateGlyph)
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(.tertiary)
+            VStack(spacing: AppTheme.Spacing.xs) {
+                Text(filter.emptyStateTitle)
+                    .font(AppTheme.Typography.title)
+                Text(filter.emptyStateSubtitle)
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Button {
+                Haptics.light()
+                filter = .all
+            } label: {
+                Label("Show all", systemImage: "line.3.horizontal.decrease.circle")
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.vertical, AppTheme.Spacing.sm)
+            }
+            .buttonStyle(.glass)
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity)

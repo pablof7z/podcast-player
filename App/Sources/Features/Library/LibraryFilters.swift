@@ -39,6 +39,46 @@ enum LibraryFilter: String, CaseIterable, Identifiable, Hashable {
         case .transcribed:  return "text.bubble.fill"
         }
     }
+
+    /// Glyph for the "no shows match this filter" empty state. `.all` should
+    /// never reach the filtered-empty branch — its empty state is the
+    /// genuine fresh-user pitch — but a fallback keeps the property total.
+    var emptyStateGlyph: String {
+        switch self {
+        case .all:          return "books.vertical"
+        case .unplayed:     return "circle.dashed"
+        case .downloaded:   return "arrow.down.circle"
+        case .transcribed:  return "text.bubble"
+        }
+    }
+
+    /// Title for the filtered-empty state. Naming the filter by name avoids
+    /// the "Your shows live here" fresh-user copy showing up to a user with
+    /// 40+ subscriptions whose Transcribed filter happens to match nothing.
+    var emptyStateTitle: String {
+        switch self {
+        case .all:          return "Your shows live here."
+        case .unplayed:     return "Nothing unplayed."
+        case .downloaded:   return "No downloaded shows."
+        case .transcribed:  return "No transcribed shows yet."
+        }
+    }
+
+    /// Subtitle that explains why the filter is empty and hints at what
+    /// the user can do — distinct from the first-run copy that pitches
+    /// adding a first show.
+    var emptyStateSubtitle: String {
+        switch self {
+        case .all:
+            return "Search Apple Podcasts, paste a feed URL, or import an OPML file to begin."
+        case .unplayed:
+            return "Every subscribed show has been listened through. Tap Show all to see your library."
+        case .downloaded:
+            return "No episodes are downloaded for offline listening yet. Download from any episode row."
+        case .transcribed:
+            return "Connect ElevenLabs in Settings and request a transcript on any episode to populate this filter."
+        }
+    }
 }
 
 // MARK: - LibraryFilterChip
