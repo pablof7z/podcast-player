@@ -69,6 +69,9 @@ struct RootView: View {
                 playbackState.resolveShowName = { [store] episode in
                     store.subscription(id: episode.subscriptionID)?.title ?? ""
                 }
+                playbackState.resolveShowImage = { [store] episode in
+                    store.subscription(id: episode.subscriptionID)?.imageURL
+                }
             }
             // Re-push preferences whenever the user edits Settings so the
             // skip intervals update on the lock screen and the auto-mark

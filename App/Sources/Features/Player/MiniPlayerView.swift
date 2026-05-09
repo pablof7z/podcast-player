@@ -85,14 +85,11 @@ struct MiniPlayerView: View {
     }
 
     private var inlineArtwork: some View {
-        ZStack {
-            Color.secondary.opacity(0.2)
-            Image(systemName: "waveform")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-        }
-        .frame(width: 26, height: 26)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
+        artworkSurface(
+            size: 26,
+            cornerRadius: AppTheme.Corner.sm,
+            placeholderGlyphSize: 11
+        )
     }
 
     // MARK: - Subviews
@@ -132,14 +129,61 @@ struct MiniPlayerView: View {
     }
 
     private var artwork: some View {
+        artworkSurface(
+            size: 44,
+            cornerRadius: AppTheme.Corner.md,
+            placeholderGlyphSize: 18
+        )
+    }
+
+    /// Resolved artwork URL — episode override first, then the show-level
+    /// fallback via `PlaybackState.resolveShowImage` (the same closure the
+    /// full Player uses, wired in `RootView`).
+    private var artworkURL: URL? {
+        guard let episode = state.episode else { return nil }
+        return episode.imageURL ?? state.resolveShowImage(episode)
+    }
+
+    /// Shared artwork rendering for both the expanded (44pt) and inline
+    /// (26pt) layouts. Loading state is glyph-free so the user doesn't read
+    /// it as "no artwork"; failure state shows a subtle waveform indicator.
+    @ViewBuilder
+    private func artworkSurface(
+        size: CGFloat,
+        cornerRadius: CGFloat,
+        placeholderGlyphSize: CGFloat
+    ) -> some View {
         ZStack {
-            Color.secondary.opacity(0.2)
+            if let url = artworkURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        miniArtworkFailureFallback(glyphSize: placeholderGlyphSize)
+                    case .empty:
+                        Color.secondary.opacity(0.18)
+                    @unknown default:
+                        Color.secondary.opacity(0.18)
+                    }
+                }
+            } else {
+                miniArtworkFailureFallback(glyphSize: placeholderGlyphSize)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    private func miniArtworkFailureFallback(glyphSize: CGFloat) -> some View {
+        ZStack {
+            Color.secondary.opacity(0.18)
             Image(systemName: "waveform")
-                .font(.body.weight(.semibold))
+                .font(.system(size: glyphSize, weight: .semibold))
                 .foregroundStyle(.secondary)
         }
-        .frame(width: 44, height: 44)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous))
     }
 
     @ViewBuilder
