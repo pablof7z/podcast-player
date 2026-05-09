@@ -2,22 +2,8 @@ import SwiftUI
 
 // MARK: - LibraryView
 
-/// Root of the Library tab. Subscriptions grid + filter chips + a
-/// search-entry bar that *deep-links to the Ask tab* (this view does
-/// not implement search itself; the action is delegated through
-/// `onOpenSearch`).
-///
-/// **Lane 3 wiring caveats** (read at merge):
-///
-///   - The Library tab does not yet exist in `RootView`. The
-///     orchestrator wires it in a later lane. Until then this view is
-///     orphaned — it just needs to compile and look right in
-///     SwiftUI previews / a one-off harness.
-///   - `onOpenSearch` defaults to a no-op so the view is constructible
-///     in isolation. The orchestrator passes a closure that flips the
-///     selected `RootTab` to the Ask tab.
-///   - The mock store is created internally by default; injection via
-///     environment is supported so tests / Lane 2 swaps trivially.
+/// Root of the Library tab. Subscriptions grid + filter chips + a search-entry
+/// bar that *deep-links to the Ask tab*.
 ///
 /// **Glass usage in this file:**
 ///
@@ -26,64 +12,67 @@ import SwiftUI
 ///   - All cards (`LibraryGridCell`) are matte.
 struct LibraryView: View {
 
-    /// Closure invoked when the user taps the search-entry bar.
-    /// Defaults to a no-op so the view is constructible in any
-    /// container; the real wiring is the orchestrator's job.
+    /// Closure invoked when the user taps the search-entry bar. Defaults to
+    /// a no-op so the view is constructible in any container.
     var onOpenSearch: () -> Void = { Haptics.light() }
 
-    @State private var store = LibraryMockStore()
+    @Environment(AppStateStore.self) private var store
     @State private var filter: LibraryFilter = .all
-    @State private var showOPMLImporter: Bool = false
+    @State private var showAddShowSheet: Bool = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    searchEntryBar
-                        .padding(.horizontal, AppTheme.Spacing.md)
-                        .padding(.top, AppTheme.Spacing.sm)
+        ScrollView {
+            VStack(spacing: 0) {
+                searchEntryBar
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.top, AppTheme.Spacing.sm)
 
-                    filterRailContainer
-                        .padding(.horizontal, AppTheme.Spacing.md)
-                        .padding(.top, AppTheme.Spacing.sm)
+                filterRailContainer
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.top, AppTheme.Spacing.sm)
 
-                    if filteredSubs.isEmpty {
-                        emptyState
-                            .padding(.top, AppTheme.Spacing.xl)
-                    } else {
-                        grid
-                            .padding(.horizontal, AppTheme.Spacing.md)
-                            .padding(.top, AppTheme.Spacing.lg)
-                            .padding(.bottom, AppTheme.Spacing.xl)
-                    }
+                if filteredSubs.isEmpty {
+                    emptyState
+                        .padding(.top, AppTheme.Spacing.xl)
+                } else {
+                    grid
+                        .padding(.horizontal, AppTheme.Spacing.md)
+                        .padding(.top, AppTheme.Spacing.lg)
+                        .padding(.bottom, AppTheme.Spacing.xl)
                 }
             }
-            .navigationTitle("Library")
-            .toolbar { toolbarContent }
-            .background(Color(.systemBackground).ignoresSafeArea())
-            .navigationDestination(for: LibraryMockSubscription.self) { sub in
-                ShowDetailView(store: store, subscription: sub)
-            }
-            .sheet(isPresented: $showOPMLImporter) {
-                OPMLImportSheet(
-                    store: store,
-                    onDismiss: { showOPMLImporter = false }
-                )
-            }
+        }
+        .navigationTitle("Library")
+        .toolbar { toolbarContent }
+        .background(Color(.systemBackground).ignoresSafeArea())
+        .refreshable { await refreshAll() }
+        .navigationDestination(for: PodcastSubscription.self) { sub in
+            ShowDetailView(subscription: sub)
+        }
+        .sheet(isPresented: $showAddShowSheet) {
+            AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
         }
     }
 
-    // MARK: - Filtered subs
+    // MARK: - Filtering
 
-    private var filteredSubs: [LibraryMockSubscription] {
-        store.filteredSubscriptions(filter)
+    /// Applies the filter chip selection to the current subscription list.
+    private var filteredSubs: [PodcastSubscription] {
+        let all = store.sortedSubscriptions
+        switch filter {
+        case .all:
+            return all
+        case .unplayed:
+            return all.filter { store.unplayedCount(forSubscription: $0.id) > 0 }
+        case .downloaded:
+            return all.filter { store.hasDownloadedEpisode(forSubscription: $0.id) }
+        case .transcribed:
+            return all.filter { store.hasTranscribedEpisode(forSubscription: $0.id) }
+        }
     }
 
     // MARK: - Search entry bar
 
-    /// Tappable capsule that *opens the Ask tab*. Looks like a search
-    /// field; behaves like a route. The lane brief is explicit: do not
-    /// implement search here.
     private var searchEntryBar: some View {
         Button {
             Haptics.light()
@@ -125,7 +114,10 @@ struct LibraryView: View {
         LazyVGrid(columns: gridColumns, spacing: AppTheme.Spacing.lg) {
             ForEach(filteredSubs) { sub in
                 NavigationLink(value: sub) {
-                    LibraryGridCell(subscription: sub)
+                    LibraryGridCell(
+                        subscription: sub,
+                        unplayedCount: store.unplayedCount(forSubscription: sub.id)
+                    )
                 }
                 .buttonStyle(.plain)
             }
@@ -133,8 +125,6 @@ struct LibraryView: View {
     }
 
     private var gridColumns: [GridItem] {
-        // 3-up on iPhone (the spec); SwiftUI auto-flexes to 4 on iPad
-        // since `GridItem.adaptive(minimum:)` reflows by available width.
         [GridItem(.adaptive(minimum: 110, maximum: 160), spacing: AppTheme.Spacing.lg)]
     }
 
@@ -148,16 +138,16 @@ struct LibraryView: View {
             VStack(spacing: AppTheme.Spacing.xs) {
                 Text("Your shows live here.")
                     .font(AppTheme.Typography.title)
-                Text("Import from OPML or paste an RSS feed to begin.")
+                Text("Add a show by URL or import an OPML file to begin.")
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             Button {
                 Haptics.light()
-                showOPMLImporter = true
+                showAddShowSheet = true
             } label: {
-                Label("Import from OPML", systemImage: "square.and.arrow.down")
+                Label("Add Show", systemImage: "plus.circle.fill")
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.vertical, AppTheme.Spacing.sm)
             }
@@ -172,30 +162,27 @@ struct LibraryView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button {
-                    Haptics.light()
-                    showOPMLImporter = true
-                } label: {
-                    Label("Import OPML", systemImage: "square.and.arrow.down")
-                }
-                Button {
-                    Haptics.light()
-                    onOpenSearch()
-                } label: {
-                    Label("Ask the agent", systemImage: "sparkles")
-                }
+            Button {
+                Haptics.light()
+                showAddShowSheet = true
             } label: {
                 Image(systemName: "plus.circle")
                     .font(.title3)
             }
-            .accessibilityLabel("Add or ask")
+            .accessibilityLabel("Add show")
         }
+    }
+
+    // MARK: - Refresh
+
+    private func refreshAll() async {
+        await SubscriptionService(store: store).refreshAll()
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    LibraryView()
+    NavigationStack { LibraryView() }
+        .environment(AppStateStore())
 }

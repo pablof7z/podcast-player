@@ -2,22 +2,20 @@ import SwiftUI
 
 // MARK: - ShowDetailHeader
 
-/// Hero header for `ShowDetailView` — large square artwork (SF Symbol
-/// in Lane 3, real image in Lane 2), title, author, episode count and
-/// the "Subscribed" badge, then a row of affordances (wiki, transcripts).
+/// Hero header for `ShowDetailView` — large square artwork (real image when
+/// `imageURL` is present; SF symbol stand-in otherwise), title, author, and
+/// episode count.
 ///
 /// **Tint:** the background is a vertical gradient sourced from the
-/// subscription's `accentColor`, fading to `Color(.systemBackground)`
-/// roughly 30% down the header's height — this matches ux-02 §4
-/// ("Show-detail header inherits a dominant tint extracted from
-/// artwork, fading to background by 30% height").
+/// subscription's `accentColor`, fading to `Color(.systemBackground)` roughly
+/// 30% down the header's height — this matches ux-02 §4 ("Show-detail header
+/// inherits a dominant tint extracted from artwork, fading to background by
+/// 30% height").
 ///
-/// **Glass:** none. The header is a matte editorial surface; the only
-/// glass on this screen lives in the toolbar (system) and the
-/// "Settings for this show" sheet.
+/// **Glass:** none. The header is a matte editorial surface.
 struct ShowDetailHeader: View {
-    let subscription: LibraryMockSubscription
-    let onSubscribeToggle: () -> Void
+    let subscription: PodcastSubscription
+    let episodeCount: Int
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -32,15 +30,15 @@ struct ShowDetailHeader: View {
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
 
-                    Text(subscription.author)
-                        .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(.secondary)
+                    if !subscription.author.isEmpty {
+                        Text(subscription.author)
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)
 
                 metaRow
-                affordanceRow
-                actionRow
             }
             .padding(.bottom, AppTheme.Spacing.lg)
         }
@@ -53,7 +51,7 @@ struct ShowDetailHeader: View {
             colors: [
                 subscription.accentColor.opacity(0.55),
                 subscription.accentColor.opacity(0.18),
-                Color(.systemBackground).opacity(0.0),
+                Color(.systemBackground).opacity(0.0)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -70,78 +68,63 @@ struct ShowDetailHeader: View {
                 LinearGradient(
                     colors: [
                         subscription.accentColor.opacity(0.95),
-                        subscription.accentColor.opacity(0.55),
+                        subscription.accentColor.opacity(0.55)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
-            .overlay(
-                Image(systemName: subscription.artworkSymbol)
-                    .font(.system(size: 88, weight: .light))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .accessibilityHidden(true)
-            )
+            .overlay(artworkOverlay)
             .frame(width: 220, height: 220)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
             .appShadow(AppTheme.Shadow.lifted)
+    }
+
+    @ViewBuilder
+    private var artworkOverlay: some View {
+        if let url = subscription.imageURL {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    artworkSymbol
+                }
+            }
+        } else {
+            artworkSymbol
+        }
+    }
+
+    private var artworkSymbol: some View {
+        Image(systemName: subscription.artworkSymbol)
+            .font(.system(size: 88, weight: .light))
+            .foregroundStyle(.white.opacity(0.92))
+            .accessibilityHidden(true)
     }
 
     private var metaRow: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
-            Text("\(subscription.episodeCount) episodes")
+            Text("\(episodeCount) \(episodeCount == 1 ? "episode" : "episodes")")
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
-            if subscription.isSubscribed {
+            if let refreshed = subscription.lastRefreshedAt {
                 Text("·")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.tertiary)
-                Label("Subscribed", systemImage: "checkmark.seal.fill")
+                Text("Updated \(relative(refreshed))")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(subscription.accentColor)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.top, AppTheme.Spacing.xs)
     }
 
-    @ViewBuilder
-    private var affordanceRow: some View {
-        let items: [(symbol: String, label: String, on: Bool)] = [
-            ("sparkles", "Wiki ready", subscription.wikiReady),
-            ("text.bubble.fill", "Transcripts on", subscription.transcriptsEnabled),
-        ]
-        HStack(spacing: AppTheme.Spacing.md) {
-            ForEach(items, id: \.label) { item in
-                Label(item.label, systemImage: item.symbol)
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(item.on ? Color.primary : Color.secondary)
-                    .padding(.horizontal, AppTheme.Spacing.sm)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color(.tertiarySystemFill))
-                    )
-                    .opacity(item.on ? 1.0 : 0.55)
-            }
-        }
-    }
-
-    private var actionRow: some View {
-        HStack(spacing: AppTheme.Spacing.md) {
-            Button {
-                Haptics.medium()
-                onSubscribeToggle()
-            } label: {
-                Label(
-                    subscription.isSubscribed ? "Subscribed" : "Subscribe",
-                    systemImage: subscription.isSubscribed ? "checkmark.circle.fill" : "plus.circle.fill"
-                )
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AppTheme.Spacing.sm)
-            }
-            .buttonStyle(.glassProminent)
-            .tint(subscription.accentColor)
-        }
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .padding(.top, AppTheme.Spacing.sm)
+    private func relative(_ date: Date) -> String {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f.localizedString(for: date, relativeTo: Date())
     }
 }

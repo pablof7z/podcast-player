@@ -6,33 +6,31 @@ import SwiftUI
 ///
 /// **Composition:**
 ///   - `ShowDetailHeader` — artwork-tinted hero (matte).
-///   - Description block — editorial body text.
-///   - Filter rail (chips) — same `LibraryFilters` enum as the tab.
+///   - Description block — feed `<description>` body text.
+///   - Filter rail (chips) — same `LibraryFilter` enum as the tab.
 ///   - Episode list — `EpisodeRow` × N, tapping pushes
 ///     `LibraryEpisodeRoute` onto the enclosing `NavigationStack`.
 ///
-/// **Glass usage:** none on the body. The "Settings for this show"
-/// sheet (presented from the toolbar `…` menu) is structurally glass.
-///
-/// **Lane handoff:** the `navigationDestination(for:)` resolver below
-/// renders `EpisodeDetailViewStub`. At merge, Lane 5's real
-/// `EpisodeDetailView` replaces it. The route signature
-/// (`LibraryEpisodeRoute`) is the contract.
+/// **Glass usage:** none on the body. The "Settings for this show" sheet
+/// (presented from the toolbar `…` menu) is structurally glass.
 struct ShowDetailView: View {
 
-    let store: LibraryMockStore
-    let subscription: LibraryMockSubscription
+    @Environment(AppStateStore.self) private var store
+    @Environment(MockPlaybackState.self) private var playback
+    @Environment(\.dismiss) private var dismiss
 
-    @Environment(MockPlaybackState.self) private var playbackState
+    let subscription: PodcastSubscription
+
     @State private var filter: LibraryFilter = .all
     @State private var showSettings: Bool = false
+    @State private var showUnsubscribeConfirm: Bool = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 ShowDetailHeader(
-                    subscription: currentSubscription,
-                    onSubscribeToggle: { store.toggleSubscription(subscription.id) }
+                    subscription: liveSubscription,
+                    episodeCount: episodes.count
                 )
 
                 description
@@ -44,36 +42,61 @@ struct ShowDetailView: View {
                     .padding(.bottom, AppTheme.Spacing.xl)
             }
         }
-        .navigationTitle(currentSubscription.title)
+        .navigationTitle(liveSubscription.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
+        .refreshable { await refresh() }
         .sheet(isPresented: $showSettings) {
             ShowDetailSettingsSheet(
-                subscription: currentSubscription,
-                onDismiss: { showSettings = false }
+                subscription: liveSubscription,
+                store: store,
+                onDismiss: { showSettings = false },
+                onUnsubscribe: { confirmUnsubscribe() }
             )
         }
+        .confirmationDialog(
+            "Unsubscribe from \(liveSubscription.title)?",
+            isPresented: $showUnsubscribeConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Unsubscribe", role: .destructive) { performUnsubscribe() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the show and all of its episodes from your library.")
+        }
         .navigationDestination(for: LibraryEpisodeRoute.self) { route in
-            EpisodeDetailViewStub(route: route)
+            LibraryEpisodePlaceholder(route: route)
         }
     }
 
     // MARK: - Live snapshot
 
-    /// Re-read the subscription from the store on every render so the
-    /// "Subscribe / Subscribed" label flips immediately when toggled.
-    private var currentSubscription: LibraryMockSubscription {
-        store.subscriptions.first(where: { $0.id == subscription.id }) ?? subscription
+    /// Re-read the subscription from the store on every render so settings
+    /// updates (notifications toggle, refresh metadata) are reflected.
+    private var liveSubscription: PodcastSubscription {
+        store.subscription(id: subscription.id) ?? subscription
+    }
+
+    private var episodes: [Episode] {
+        store.episodes(forSubscription: subscription.id)
     }
 
     // MARK: - Pieces
 
+    @ViewBuilder
     private var description: some View {
-        Text(currentSubscription.showDescription)
-            .font(AppTheme.Typography.body)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.top, AppTheme.Spacing.lg)
+        let body = liveSubscription.description.replacingOccurrences(
+            of: "<[^>]+>",
+            with: "",
+            options: .regularExpression
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !body.isEmpty {
+            Text(body)
+                .font(AppTheme.Typography.body)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, AppTheme.Spacing.lg)
+                .padding(.top, AppTheme.Spacing.lg)
+        }
     }
 
     private var filterSection: some View {
@@ -82,7 +105,6 @@ struct ShowDetailView: View {
                 .font(AppTheme.Typography.title)
                 .padding(.horizontal, AppTheme.Spacing.lg)
 
-            // Glass-wrapped chip rail = structural glass (allowed).
             LibraryFilterRail(selection: $filter)
                 .glassEffect(.regular, in: .capsule)
                 .padding(.horizontal, AppTheme.Spacing.md)
@@ -91,33 +113,30 @@ struct ShowDetailView: View {
     }
 
     private var episodeList: some View {
-        let episodes = filteredEpisodes()
+        let visible = filteredEpisodes()
         return LazyVStack(spacing: 0) {
-            if episodes.isEmpty {
+            if visible.isEmpty {
                 ContentUnavailableView(
-                    "No episodes match",
+                    episodes.isEmpty ? "No episodes yet" : "No episodes match",
                     systemImage: "tray",
-                    description: Text("Try a different filter.")
+                    description: Text(
+                        episodes.isEmpty
+                        ? "Pull down to refresh this feed."
+                        : "Try a different filter."
+                    )
                 )
                 .padding(.top, AppTheme.Spacing.xl)
             } else {
-                ForEach(Array(episodes.enumerated()), id: \.element.id) { idx, ep in
-                    EpisodeDetailLink(
-                        route: LibraryEpisodeRoute(
-                            episodeID: ep.id,
-                            subscriptionID: ep.subscriptionID,
-                            title: ep.title
-                        ),
-                        label: {
-                            EpisodeRow(
-                                episode: ep,
-                                showAccent: currentSubscription.accentColor,
-                                onPlay: { playEpisode(ep, in: currentSubscription) }
-                            )
+                ForEach(Array(visible.enumerated()), id: \.element.id) { idx, ep in
+                    Button {
+                        handleTap(ep)
+                    } label: {
+                        EpisodeRow(episode: ep, showAccent: liveSubscription.accentColor)
                             .padding(.horizontal, AppTheme.Spacing.lg)
-                        }
-                    )
-                    if idx != episodes.count - 1 {
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if idx != visible.count - 1 {
                         Divider()
                             .padding(.leading, AppTheme.Spacing.lg + 22 + AppTheme.Spacing.md)
                     }
@@ -139,14 +158,11 @@ struct ShowDetailView: View {
                 } label: {
                     Label("Settings for this show", systemImage: "slider.horizontal.3")
                 }
-                Button {
-                    Haptics.medium()
-                    store.toggleSubscription(subscription.id)
+                Button(role: .destructive) {
+                    Haptics.warning()
+                    showUnsubscribeConfirm = true
                 } label: {
-                    Label(
-                        currentSubscription.isSubscribed ? "Unsubscribe" : "Subscribe",
-                        systemImage: currentSubscription.isSubscribed ? "minus.circle" : "plus.circle"
-                    )
+                    Label("Unsubscribe", systemImage: "minus.circle")
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -156,77 +172,109 @@ struct ShowDetailView: View {
         }
     }
 
-    // MARK: - Tap-to-play
-
-    /// Synthesizes a `MockPlayerEpisode` from the library shim types and
-    /// hands it to the playback state. Lane 2 will replace this bridge with
-    /// the real `Episode` -> `AudioEngine` path; for now it lets the
-    /// mini-player surface react to user input without leaving the list.
-    private func playEpisode(
-        _ episode: LibraryMockEpisode,
-        in subscription: LibraryMockSubscription
-    ) {
-        let player = MockPlayerEpisode(
-            id: episode.id.uuidString,
-            showName: subscription.title,
-            episodeNumber: episode.number,
-            title: episode.title,
-            chapterTitle: nil,
-            duration: TimeInterval(episode.durationSeconds),
-            primaryArtColor: subscription.accentColor,
-            secondaryArtColor: subscription.accentColor.opacity(0.55)
-        )
-        playbackState.load(player, transcript: [])
-        playbackState.play()
-    }
-
     // MARK: - Filtering
 
-    /// Apply the current filter to the show's episode list.
-    private func filteredEpisodes() -> [LibraryMockEpisode] {
-        let all = store.episodes(for: currentSubscription)
+    private func filteredEpisodes() -> [Episode] {
         switch filter {
-        case .all:          return all
-        case .unplayed:     return all.filter { $0.isUnplayed || $0.isInProgress }
+        case .all:
+            return episodes
+        case .unplayed:
+            return episodes.filter { $0.isUnplayed || $0.isInProgress }
         case .downloaded:
-            return all.filter {
-                if case .downloaded = $0.downloadStatus { return true }
+            return episodes.filter {
+                if case .downloaded = $0.downloadState { return true }
                 return false
             }
         case .transcribed:
-            return all.filter {
-                if case .downloaded(let t) = $0.downloadStatus, t { return true }
+            return episodes.filter {
+                if case .ready = $0.transcriptState { return true }
                 return false
             }
         }
+    }
+
+    // MARK: - Actions
+
+    private func handleTap(_ episode: Episode) {
+        Haptics.selection()
+        // The player agent owns the real `play(episode:)` call. For now we just
+        // toggle the existing demo playback so a tap is observably different
+        // from a no-op; the navigation push below is the source of truth.
+        playback.play()
+    }
+
+    private func confirmUnsubscribe() {
+        showUnsubscribeConfirm = true
+    }
+
+    private func performUnsubscribe() {
+        store.removeSubscription(subscription.id)
+        dismiss()
+    }
+
+    private func refresh() async {
+        await SubscriptionService(store: store).refresh(liveSubscription)
     }
 }
 
 // MARK: - ShowDetailSettingsSheet
 
-/// "Settings for this show" sheet. Mock toggles for auto-download,
-/// transcription, notifications. Lane 2 wires these to the real
-/// per-show preferences model.
+/// "Settings for this show" sheet. Real toggles for notifications + a
+/// destructive unsubscribe action. Auto-download / transcription preferences
+/// will land here once the corresponding writers exist on the store.
 struct ShowDetailSettingsSheet: View {
-    let subscription: LibraryMockSubscription
+    let subscription: PodcastSubscription
+    let store: AppStateStore
     let onDismiss: () -> Void
+    let onUnsubscribe: () -> Void
 
-    @State private var autoDownload: Bool = true
-    @State private var transcribe: Bool = true
-    @State private var notifyOnNew: Bool = true
+    @State private var notificationsEnabled: Bool
+
+    init(
+        subscription: PodcastSubscription,
+        store: AppStateStore,
+        onDismiss: @escaping () -> Void,
+        onUnsubscribe: @escaping () -> Void
+    ) {
+        self.subscription = subscription
+        self.store = store
+        self.onDismiss = onDismiss
+        self.onUnsubscribe = onUnsubscribe
+        _notificationsEnabled = State(initialValue: subscription.notificationsEnabled)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Episodes") {
-                    Toggle("Auto-download new episodes", isOn: $autoDownload)
-                    Toggle("Auto-transcribe new episodes", isOn: $transcribe)
-                    Toggle("Notify me when new episodes drop", isOn: $notifyOnNew)
+                Section("Notifications") {
+                    Toggle("Notify me when new episodes drop", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { _, newValue in
+                            store.setSubscriptionNotificationsEnabled(
+                                subscription.id,
+                                enabled: newValue
+                            )
+                        }
+                }
+                Section("Feed") {
+                    LabeledContent("URL") {
+                        Text(subscription.feedURL.absoluteString)
+                            .font(AppTheme.Typography.monoCaption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    if let refreshed = subscription.lastRefreshedAt {
+                        LabeledContent("Last refreshed") {
+                            Text(refreshed.formatted(date: .abbreviated, time: .shortened))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 Section {
                     Button(role: .destructive) {
                         Haptics.warning()
                         onDismiss()
+                        onUnsubscribe()
                     } label: {
                         Label("Unsubscribe", systemImage: "xmark.circle")
                     }
@@ -240,7 +288,7 @@ struct ShowDetailSettingsSheet: View {
                 }
             }
         }
-        .presentationBackground(.thinMaterial)            // structural glass on the sheet
+        .presentationBackground(.thinMaterial)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }

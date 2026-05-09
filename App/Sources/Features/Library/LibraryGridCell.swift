@@ -4,15 +4,17 @@ import SwiftUI
 
 /// One card in the Library subscriptions grid.
 ///
-/// **Glass usage:** matte (per the lane brief). The cell uses a
-/// rounded artwork tile, a title line, and an unplayed dot — no glass.
-/// The grid container itself is the only glass-allowed surface, and
-/// the brief reserves it for the chrome (filter rail, search bar).
+/// **Glass usage:** matte. The cell uses a rounded artwork tile, a title line,
+/// and an unplayed dot — no glass. The grid container itself is the only glass-
+/// allowed surface, and the brief reserves it for the chrome (filter rail,
+/// search bar).
 ///
-/// **Artwork stand-in:** Lane 3 uses an SF Symbol over a tinted gradient
-/// keyed to `subscription.accentColor`. Lane 2 swaps in real artwork.
+/// Artwork is loaded asynchronously from `subscription.imageURL`; while the
+/// image is in-flight (or absent) we render a tinted SF Symbol stand-in keyed
+/// to `subscription.accentColor`.
 struct LibraryGridCell: View {
-    let subscription: LibraryMockSubscription
+    let subscription: PodcastSubscription
+    let unplayedCount: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
@@ -25,10 +27,12 @@ struct LibraryGridCell: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
-                Text(subscription.author)
-                    .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if !subscription.author.isEmpty {
+                    Text(subscription.author)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -45,26 +49,47 @@ struct LibraryGridCell: View {
                     LinearGradient(
                         colors: [
                             subscription.accentColor.opacity(0.95),
-                            subscription.accentColor.opacity(0.55),
+                            subscription.accentColor.opacity(0.55)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .aspectRatio(1, contentMode: .fit)
-                .overlay(
-                    Image(systemName: subscription.artworkSymbol)
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundStyle(.white.opacity(0.92))
-                        .accessibilityHidden(true)
-                )
+                .overlay(artworkOverlay)
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
                 .appShadow(AppTheme.Shadow.subtle)
 
-            if subscription.hasUnplayed {
+            if unplayedCount > 0 {
                 unplayedDot
                     .padding(AppTheme.Spacing.sm)
             }
         }
+    }
+
+    @ViewBuilder
+    private var artworkOverlay: some View {
+        if let url = subscription.imageURL {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    symbolPlaceholder
+                }
+            }
+        } else {
+            symbolPlaceholder
+        }
+    }
+
+    private var symbolPlaceholder: some View {
+        Image(systemName: subscription.artworkSymbol)
+            .font(.system(size: 44, weight: .light))
+            .foregroundStyle(.white.opacity(0.92))
+            .accessibilityHidden(true)
     }
 
     private var unplayedDot: some View {
@@ -73,8 +98,8 @@ struct LibraryGridCell: View {
                 .fill(.red)
                 .frame(width: 14, height: 14)
                 .appShadow(AppTheme.Shadow.subtle)
-            if subscription.unplayedCount > 1 {
-                Text("\(min(subscription.unplayedCount, 9))")
+            if unplayedCount > 1 {
+                Text("\(min(unplayedCount, 9))")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.white)
             }
@@ -83,10 +108,9 @@ struct LibraryGridCell: View {
     }
 
     private var accessibilityLabel: String {
-        var parts = ["\(subscription.title), \(subscription.author)"]
-        if subscription.hasUnplayed {
-            parts.append("\(subscription.unplayedCount) unplayed")
-        }
+        var parts = [subscription.title]
+        if !subscription.author.isEmpty { parts.append(subscription.author) }
+        if unplayedCount > 0 { parts.append("\(unplayedCount) unplayed") }
         return parts.joined(separator: ", ")
     }
 }

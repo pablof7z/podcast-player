@@ -3,44 +3,52 @@ import UniformTypeIdentifiers
 
 // MARK: - OPMLImportPhase
 
-/// Lifecycle of the OPML import sheet. The sheet rotates the user
-/// through three single-purpose screens — `pick`, `review`, `progress` —
-/// rather than stacking everything at once. Phase changes are animated
-/// with `AppTheme.Animation.spring`.
+/// Lifecycle of the OPML import sheet. The sheet rotates the user through
+/// three single-purpose screens — `pick`, `review`, `progress` — rather than
+/// stacking everything at once.
 enum OPMLImportPhase: Equatable {
     case pick
-    case review(parsedShowCount: Int)
-    case progress(completed: Int, total: Int)
+    case review(parsed: [PodcastSubscription])
+    case progress(completed: Int, total: Int, errors: [OPMLImportRowError])
+    case done(imported: Int, skipped: Int, errors: [OPMLImportRowError])
+}
+
+// MARK: - OPMLImportRowError
+
+/// Per-row import failure surfaced under the progress bar. We track the feed
+/// URL plus the human-readable reason so the user can copy the URL out and
+/// retry manually if a single feed in their OPML is broken.
+struct OPMLImportRowError: Identifiable, Equatable {
+    let id = UUID()
+    let feedURL: URL
+    let title: String
+    let message: String
 }
 
 // MARK: - OPMLImportSheet
 
-/// File-importer + paste-OPML-text-mode + first-refresh progress.
+/// File-importer + paste-OPML-text-mode + per-row enrichment progress.
 ///
-/// **Glass usage:** the entire sheet is a structural Liquid Glass
-/// surface (per the lane brief: "structural glass on the nav chrome and
-/// the OPML import sheet only"). Cards inside the sheet remain matte;
-/// only the sheet container glows.
-///
-/// **Mock behavior:** the sheet does not parse real OPML. It pretends
-/// to count feeds, then calls `LibraryMockStore.importMockOPML` which
-/// appends a few canned subscriptions. Lane 2 swaps in the real parser.
+/// **Glass usage:** the entire sheet is a structural Liquid Glass surface
+/// (per the lane brief: "structural glass on the nav chrome and the OPML
+/// import sheet only"). Cards inside the sheet remain matte; only the sheet
+/// container glows.
 struct OPMLImportSheet: View {
 
-    let store: LibraryMockStore
+    let store: AppStateStore
     let onDismiss: () -> Void
 
     @State private var phase: OPMLImportPhase = .pick
     @State private var pastedText: String = ""
     @State private var fileImporterShown: Bool = false
-    @State private var transcribeNew: Bool = true
+    @State private var parseError: String?
 
     var body: some View {
         NavigationStack {
             content
                 .padding(AppTheme.Spacing.lg)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .background(.ultraThinMaterial)        // Liquid Glass T1 sheet
+                .background(.ultraThinMaterial)
                 .toolbar { toolbarContent }
                 .navigationTitle("Import from OPML")
                 .navigationBarTitleDisplayMode(.inline)
@@ -60,9 +68,14 @@ struct OPMLImportSheet: View {
     @ViewBuilder
     private var content: some View {
         switch phase {
-        case .pick:                  pickPhase
-        case .review(let count):     reviewPhase(parsedShowCount: count)
-        case .progress(let c, let t): progressPhase(completed: c, total: t)
+        case .pick:
+            pickPhase
+        case .review(let parsed):
+            reviewPhase(parsed: parsed)
+        case .progress(let c, let t, let errors):
+            progressPhase(completed: c, total: t, errors: errors)
+        case .done(let imported, let skipped, let errors):
+            donePhase(imported: imported, skipped: skipped, errors: errors)
         }
     }
 
@@ -113,64 +126,76 @@ struct OPMLImportSheet: View {
                 .disabled(pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
+            if let parseError {
+                Label(parseError, systemImage: "exclamationmark.triangle.fill")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.red)
+            }
+
             Spacer(minLength: 0)
         }
     }
 
     // MARK: - Review phase
 
-    @ViewBuilder
-    private func reviewPhase(parsedShowCount: Int) -> some View {
+    private func reviewPhase(parsed: [PodcastSubscription]) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text("\(parsedShowCount) feeds parsed")
+                Text("\(parsed.count) feeds parsed")
                     .font(AppTheme.Typography.title)
                 Text("Review and confirm. Existing subscriptions will be skipped.")
                     .font(AppTheme.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }
 
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                Toggle(isOn: $transcribeNew) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Auto-transcribe new shows")
-                            .font(AppTheme.Typography.headline)
-                        Text("Recommended; can be paused later.")
-                            .font(AppTheme.Typography.caption)
-                            .foregroundStyle(.secondary)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                    ForEach(parsed) { entry in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.title)
+                                .font(AppTheme.Typography.headline)
+                                .lineLimit(1)
+                            Text(entry.feedURL.absoluteString)
+                                .font(AppTheme.Typography.monoCaption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .padding(AppTheme.Spacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous)
+                                .fill(Color(.secondarySystemBackground))
+                        )
                     }
                 }
-                .tint(AppTheme.Tint.agentSurface)
-                .padding(AppTheme.Spacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous)
-                        .fill(Color(.secondarySystemBackground))
-                )
             }
+            .frame(maxHeight: 240)
 
             Button {
                 Haptics.medium()
-                Task { await runImport(total: parsedShowCount) }
+                Task { await runImport(entries: parsed) }
             } label: {
-                Label("Import \(parsedShowCount) shows", systemImage: "arrow.down.circle.fill")
+                Label("Import \(parsed.count) shows", systemImage: "arrow.down.circle.fill")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppTheme.Spacing.md)
             }
             .buttonStyle(.glassProminent)
-
-            Spacer(minLength: 0)
         }
     }
 
     // MARK: - Progress phase
 
-    private func progressPhase(completed: Int, total: Int) -> some View {
+    private func progressPhase(
+        completed: Int,
+        total: Int,
+        errors: [OPMLImportRowError]
+    ) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
             Text("Importing your library")
                 .font(AppTheme.Typography.title)
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                ProgressView(value: Double(completed), total: Double(total))
+                ProgressView(value: Double(completed), total: Double(max(total, 1)))
                     .tint(AppTheme.Tint.agentSurface)
                 Text("\(completed) / \(total) shows fetched")
                     .font(AppTheme.Typography.monoCaption)
@@ -181,6 +206,8 @@ struct OPMLImportSheet: View {
                 RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
             )
+
+            errorList(errors)
 
             Text("This continues in the background. You can close this sheet at any time.")
                 .font(AppTheme.Typography.caption)
@@ -195,8 +222,65 @@ struct OPMLImportSheet: View {
                     .padding(.vertical, AppTheme.Spacing.md)
             }
             .buttonStyle(.bordered)
+        }
+    }
 
-            Spacer(minLength: 0)
+    // MARK: - Done phase
+
+    private func donePhase(
+        imported: Int,
+        skipped: Int,
+        errors: [OPMLImportRowError]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text("Import complete")
+                    .font(AppTheme.Typography.title)
+                Text("\(imported) added, \(skipped) skipped, \(errors.count) failed.")
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            errorList(errors)
+
+            Button {
+                Haptics.success()
+                onDismiss()
+            } label: {
+                Text("Done")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppTheme.Spacing.md)
+            }
+            .buttonStyle(.glassProminent)
+        }
+    }
+
+    // MARK: - Shared error list
+
+    @ViewBuilder
+    private func errorList(_ errors: [OPMLImportRowError]) -> some View {
+        if !errors.isEmpty {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text("Errors")
+                    .font(AppTheme.Typography.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                ForEach(errors) { row in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(row.title)
+                            .font(AppTheme.Typography.caption.weight(.semibold))
+                        Text(row.message)
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(.red)
+                            .lineLimit(2)
+                    }
+                    .padding(AppTheme.Spacing.sm)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
+                            .fill(Color.red.opacity(0.08))
+                    )
+                }
+            }
         }
     }
 
@@ -224,29 +308,78 @@ struct OPMLImportSheet: View {
     }
 
     private func handleFileImport(_ result: Result<[URL], Error>) {
-        guard case .success(let urls) = result, urls.first != nil else { return }
-        // Lane 3 mock: pretend the file contained 12 shows.
-        withAnimation { phase = .review(parsedShowCount: 12) }
+        switch result {
+        case .failure(let error):
+            parseError = error.localizedDescription
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            do {
+                let needsScope = url.startAccessingSecurityScopedResource()
+                defer { if needsScope { url.stopAccessingSecurityScopedResource() } }
+                let data = try Data(contentsOf: url)
+                try parseAndAdvance(data: data)
+            } catch {
+                parseError = "Couldn't read the OPML file: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func handlePastedText() {
         let trimmed = pastedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        // Lane 3 mock: count newlines as a proxy for feed count, clamped.
-        let approx = max(1, min(64, trimmed.split(separator: "\n").count / 4))
-        withAnimation { phase = .review(parsedShowCount: approx) }
+        guard !trimmed.isEmpty,
+              let data = trimmed.data(using: .utf8)
+        else { return }
+        do {
+            try parseAndAdvance(data: data)
+        } catch {
+            parseError = error.localizedDescription
+        }
     }
 
-    private func runImport(total: Int) async {
-        // Step the progress through a small canned animation so the
-        // progress affordance reads as alive during dev review.
-        for completed in 0...total {
-            withAnimation { phase = .progress(completed: completed, total: total) }
-            try? await Task.sleep(for: .milliseconds(80))
+    private func parseAndAdvance(data: Data) throws {
+        let entries = try OPMLImport().parseOPML(data: data)
+        guard !entries.isEmpty else {
+            parseError = "No feeds found in that OPML."
+            return
         }
-        // Push 3 imported subscriptions into the store at the end.
-        await store.importMockOPML(addingShows: 3)
+        parseError = nil
+        withAnimation { phase = .review(parsed: entries) }
+    }
+
+    private func runImport(entries: [PodcastSubscription]) async {
+        let total = entries.count
+        var errors: [OPMLImportRowError] = []
+        var imported = 0
+        var skipped = 0
+        let service = SubscriptionService(store: store)
+        withAnimation { phase = .progress(completed: 0, total: total, errors: errors) }
+        for (index, entry) in entries.enumerated() {
+            do {
+                if let _ = try await service.adopt(opmlEntry: entry) {
+                    imported += 1
+                } else {
+                    skipped += 1
+                }
+            } catch let addError as SubscriptionService.AddError {
+                errors.append(.init(
+                    feedURL: entry.feedURL,
+                    title: entry.title,
+                    message: addError.localizedDescription
+                ))
+            } catch {
+                errors.append(.init(
+                    feedURL: entry.feedURL,
+                    title: entry.title,
+                    message: error.localizedDescription
+                ))
+            }
+            withAnimation {
+                phase = .progress(completed: index + 1, total: total, errors: errors)
+            }
+        }
         Haptics.success()
-        onDismiss()
+        withAnimation {
+            phase = .done(imported: imported, skipped: skipped, errors: errors)
+        }
     }
 }
