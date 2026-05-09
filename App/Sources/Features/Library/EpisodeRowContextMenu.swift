@@ -143,33 +143,11 @@ struct EpisodeRowAccessibilityActions: View {
         Button(episode.played ? "Mark as unplayed" : "Mark as played") {
             togglePlayed()
         }
-        downloadAction
-    }
-
-    @ViewBuilder
-    private var downloadAction: some View {
-        switch episode.downloadState {
-        case .notDownloaded, .queued:
-            Button("Download") {
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.download(episodeID: episode.id)
-            }
-        case .downloading:
-            Button("Cancel download") {
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.cancel(episodeID: episode.id)
-            }
-        case .downloaded:
-            Button("Remove download") {
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.delete(episodeID: episode.id)
-            }
-        case .failed:
-            Button("Retry download") {
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.download(episodeID: episode.id)
-            }
-        }
+        // Download/Cancel/Remove/Retry are now exposed via the trailing-edge
+        // swipe action (`EpisodeRowDownloadSwipeAction`), which SwiftUI mirrors
+        // into VoiceOver's custom-actions list automatically. Listing the same
+        // affordance here would render the rotor entry twice — easy to do
+        // accidentally because `.swipeActions` looks like a sighted-only API.
     }
 
     private func togglePlayed() {
