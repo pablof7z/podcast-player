@@ -2,17 +2,21 @@ import SwiftUI
 
 // MARK: - AddShowSheet
 
-/// Modal "+ Add Show" sheet for the Library tab. Two segments:
+/// Modal "+ Add Show" sheet for the Library tab. Three segments:
 ///
+///   - **Search**   — Apple Podcasts directory search → one-tap subscribe.
+///                    The default segment because most users discover by
+///                    name, not by URL.
 ///   - **From URL** — paste / type a feed URL → `SubscriptionService.addSubscription`.
-///   - **Import OPML** — hands off to `OPMLImportSheet` for the file picker
-///     + per-row enrichment flow.
+///   - **OPML**     — hands off to `OPMLImportSheet` for the file picker
+///                    + per-row enrichment flow.
 ///
 /// Surfaces all `SubscriptionService.AddError` cases inline so the user knows
 /// whether they pasted a typo, hit a network blip, or are already subscribed.
 struct AddShowSheet: View {
 
     enum Mode: String, CaseIterable, Identifiable {
+        case search = "Search"
         case url = "From URL"
         case opml = "OPML"
 
@@ -22,7 +26,7 @@ struct AddShowSheet: View {
     let store: AppStateStore
     let onDismiss: () -> Void
 
-    @State private var mode: Mode = .url
+    @State private var mode: Mode = .search
 
     var body: some View {
         NavigationStack {
@@ -38,6 +42,8 @@ struct AddShowSheet: View {
 
                 Group {
                     switch mode {
+                    case .search:
+                        DiscoverSearchForm(store: store, onAdded: handleAdded)
                     case .url:
                         AddByURLForm(store: store, onAdded: handleAdded)
                     case .opml:
