@@ -3,26 +3,19 @@ import os.log
 
 /// Concrete `PerplexityClientProtocol` — wraps the Perplexity online-search API.
 ///
-/// Reads its bearer token from the existing `KeychainStore` under
-/// `(service: "PerplexityCredentialStore", account: "perplexity_api_key")`.
+/// Reads its bearer token from `PerplexityCredentialStore`, the typed
+/// counterpart of `OpenRouterCredentialStore` / `ElevenLabsCredentialStore`.
 /// If no key is stored the client throws `PerplexityClientError.missingAPIKey`
 /// rather than calling out — callers are expected to surface a "needs setup"
 /// affordance to the user.
-///
-/// Lane 10 deliberately does **not** add a typed `PerplexityCredentialStore`
-/// alongside the existing `OpenRouterCredentialStore` / `ElevenLabsCredentialStore`.
-/// That belongs to a settings/keychain lane. The constants here are the
-/// contract a future credential store must honour. See the TODO below.
 public actor PerplexityClient: PerplexityClientProtocol {
 
-    // MARK: - Keychain contract
+    // MARK: - Keychain contract (legacy aliases)
 
-    /// Service name used for the Perplexity bearer token in the iOS Keychain.
-    /// TODO(lane-x): create a `PerplexityCredentialStore` that owns this string;
-    /// for now we read raw via `KeychainStore`.
-    public static let keychainService = "PerplexityCredentialStore"
-    /// Account name used for the Perplexity bearer token in the iOS Keychain.
-    public static let keychainAccount = "perplexity_api_key"
+    /// Legacy alias; new code should go through `PerplexityCredentialStore`.
+    public static let keychainService: String = PerplexityCredentialStore.service
+    /// Legacy alias; new code should go through `PerplexityCredentialStore`.
+    public static let keychainAccount: String = PerplexityCredentialStore.account
 
     // MARK: - Endpoint
 
@@ -85,12 +78,13 @@ public actor PerplexityClient: PerplexityClientProtocol {
 
     // MARK: - Helpers
 
-    /// Reads the API key from the Keychain. Throws if no key is present so the
-    /// agent's `perplexity_search` tool can surface a clean error to the model.
+    /// Reads the API key via `PerplexityCredentialStore`. Throws if no key
+    /// is present so the agent's `perplexity_search` tool can surface a
+    /// clean error to the model.
     static func readAPIKey() throws -> String {
         let stored: String?
         do {
-            stored = try KeychainStore.readString(service: keychainService, account: keychainAccount)
+            stored = try PerplexityCredentialStore.apiKey()
         } catch {
             throw PerplexityClientError.keychain(error.localizedDescription)
         }
