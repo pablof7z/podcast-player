@@ -4,37 +4,74 @@ import XCTest
 @MainActor
 final class AppTests: XCTestCase {
 
-    // MARK: - AppStateStore
+    // MARK: - Subscriptions
 
-    func testAddItem() throws {
+    func testAddSubscriptionAcceptsNewFeed() throws {
         let store = AppStateStore()
-        let initialCount = store.state.items.count
+        let initialCount = store.state.subscriptions.count
 
-        store.addItem(title: "Test task")
+        let sub = makeSubscription(title: "Test Show")
+        let inserted = store.addSubscription(sub)
 
-        XCTAssertEqual(store.state.items.count, initialCount + 1)
-        XCTAssertEqual(store.state.items.last?.title, "Test task")
-        XCTAssertEqual(store.state.items.last?.status, .pending)
+        XCTAssertTrue(inserted)
+        XCTAssertEqual(store.state.subscriptions.count, initialCount + 1)
+        XCTAssertEqual(store.state.subscriptions.last?.title, "Test Show")
     }
 
-    func testSetItemStatus() throws {
+    func testAddSubscriptionRejectsDuplicateFeedURL() throws {
         let store = AppStateStore()
-        let item = store.addItem(title: "Complete me")
+        let url = URL(string: "https://example.com/feed.xml")!
 
-        store.setItemStatus(item.id, status: .done)
-
-        XCTAssertEqual(store.state.items.first { $0.id == item.id }?.status, .done)
+        XCTAssertTrue(store.addSubscription(makeSubscription(feedURL: url)))
+        let countAfterFirst = store.state.subscriptions.count
+        XCTAssertFalse(store.addSubscription(makeSubscription(feedURL: url)))
+        XCTAssertEqual(store.state.subscriptions.count, countAfterFirst)
     }
 
-    func testDeleteItem() throws {
+    func testRemoveSubscriptionAlsoRemovesItsEpisodes() throws {
         let store = AppStateStore()
-        let item = store.addItem(title: "Delete me")
+        let sub = makeSubscription(title: "Drop Me")
+        store.addSubscription(sub)
 
-        store.deleteItem(item.id)
+        let ep1 = makeEpisode(subscriptionID: sub.id, guid: "a")
+        let ep2 = makeEpisode(subscriptionID: sub.id, guid: "b")
+        store.upsertEpisodes([ep1, ep2], forSubscription: sub.id)
+        XCTAssertEqual(store.state.episodes.count, 2)
 
-        XCTAssertTrue(store.state.items.first { $0.id == item.id }?.deleted == true)
-        XCTAssertFalse(store.activeItems.contains { $0.id == item.id })
+        store.removeSubscription(sub.id)
+
+        XCTAssertFalse(store.state.subscriptions.contains { $0.id == sub.id })
+        XCTAssertTrue(store.state.episodes.isEmpty)
     }
+
+    func testSetSubscriptionNotificationsToggle() throws {
+        let store = AppStateStore()
+        let sub = makeSubscription()
+        store.addSubscription(sub)
+
+        store.setSubscriptionNotificationsEnabled(sub.id, enabled: false)
+        XCTAssertEqual(store.subscription(id: sub.id)?.notificationsEnabled, false)
+
+        store.setSubscriptionNotificationsEnabled(sub.id, enabled: true)
+        XCTAssertEqual(store.subscription(id: sub.id)?.notificationsEnabled, true)
+    }
+
+    // MARK: - Episodes
+
+    func testSetEpisodePlaybackPosition() throws {
+        let store = AppStateStore()
+        let sub = makeSubscription()
+        store.addSubscription(sub)
+        let ep = makeEpisode(subscriptionID: sub.id, guid: "e1")
+        store.upsertEpisodes([ep], forSubscription: sub.id)
+
+        store.setEpisodePlaybackPosition(ep.id, position: 123.4)
+
+        let position = try XCTUnwrap(store.state.episodes.first?.playbackPosition)
+        XCTAssertEqual(position, 123.4, accuracy: 0.001)
+    }
+
+    // MARK: - Friends
 
     func testAddFriend() throws {
         let store = AppStateStore()
@@ -66,20 +103,17 @@ final class AppTests: XCTestCase {
     // MARK: - Models
 
     func testAnchorCodable() throws {
-        let anchor = Anchor.item(id: UUID())
+        let anchor = Anchor.note(id: UUID())
         let data = try JSONEncoder().encode(anchor)
         let decoded = try JSONDecoder().decode(Anchor.self, from: data)
         XCTAssertEqual(anchor, decoded)
     }
 
-    func testItemPeerAttribution() throws {
-        let store = AppStateStore()
-        let friend = store.addFriend(displayName: "Eve", identifier: "eve_id")
-
-        let item = store.addItem(title: "Shared task", source: .agent, friendID: friend.id, friendName: friend.displayName)
-
-        XCTAssertEqual(item.requestedByFriendID, friend.id)
-        XCTAssertEqual(item.requestedByDisplayName, friend.displayName)
+    func testFriendAnchorCodable() throws {
+        let anchor = Anchor.friend(id: UUID())
+        let data = try JSONEncoder().encode(anchor)
+        let decoded = try JSONDecoder().decode(Anchor.self, from: data)
+        XCTAssertEqual(anchor, decoded)
     }
 
     // MARK: - AgentPrompt
@@ -101,6 +135,8 @@ final class AppTests: XCTestCase {
 
         XCTAssertTrue(prompt.contains("User prefers mornings"))
     }
+
+    // MARK: - Settings
 
     func testSettingsDoesNotPersistLegacyOpenRouterAPIKey() throws {
         let json = """
@@ -150,7 +186,7 @@ final class AppTests: XCTestCase {
 
     func testDataExportRoundTripsCoreRecords() throws {
         var state = AppState()
-        state.items.append(Item(title: "Buy milk"))
+        state.subscriptions.append(makeSubscription(title: "Round Trip Show"))
         state.notes.append(Note(text: "Sample note"))
         state.friends.append(Friend(displayName: "Alice", identifier: "alice_id"))
 
@@ -161,18 +197,13 @@ final class AppTests: XCTestCase {
         let decoded = try decoder.decode(DataExport.Payload.self, from: data)
 
         XCTAssertEqual(decoded.schemaVersion, DataExport.currentSchemaVersion)
-        XCTAssertEqual(decoded.state.items.first?.title, "Buy milk")
+        XCTAssertEqual(decoded.state.subscriptions.first?.title, "Round Trip Show")
         XCTAssertEqual(decoded.state.notes.first?.text, "Sample note")
         XCTAssertEqual(decoded.state.friends.first?.displayName, "Alice")
     }
 
-    func testDataExportStatsExcludeDeleted() {
+    func testDataExportStatsExcludeDeletedNotes() {
         var state = AppState()
-        let liveItem = Item(title: "Live")
-        var ghost = Item(title: "Tombstone")
-        ghost.deleted = true
-        state.items = [liveItem, ghost]
-
         let liveNote = Note(text: "Live note")
         var deletedNote = Note(text: "Tombstone note")
         deletedNote.deleted = true
@@ -180,7 +211,6 @@ final class AppTests: XCTestCase {
 
         let stats = DataExport.stats(for: state)
 
-        XCTAssertEqual(stats.items, 1)
         XCTAssertEqual(stats.notes, 1)
     }
 
@@ -197,7 +227,7 @@ final class AppTests: XCTestCase {
 
     func testDataExportWriteCreatesReadableFile() throws {
         var state = AppState()
-        state.items.append(Item(title: "Persisted"))
+        state.subscriptions.append(makeSubscription(title: "Persisted"))
 
         let url = try DataExport.writeExport(of: state)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -207,6 +237,28 @@ final class AppTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode(DataExport.Payload.self, from: data)
-        XCTAssertEqual(decoded.state.items.first?.title, "Persisted")
+        XCTAssertEqual(decoded.state.subscriptions.first?.title, "Persisted")
+    }
+
+    // MARK: - Fixtures
+
+    private func makeSubscription(
+        feedURL: URL = URL(string: "https://example.com/\(UUID().uuidString).xml")!,
+        title: String = "Test Show"
+    ) -> PodcastSubscription {
+        PodcastSubscription(feedURL: feedURL, title: title)
+    }
+
+    private func makeEpisode(
+        subscriptionID: UUID,
+        guid: String
+    ) -> Episode {
+        Episode(
+            subscriptionID: subscriptionID,
+            guid: guid,
+            title: "Episode \(guid)",
+            pubDate: Date(),
+            enclosureURL: URL(string: "https://example.com/\(guid).mp3")!
+        )
     }
 }
