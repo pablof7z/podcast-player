@@ -6,7 +6,7 @@ import Foundation
 /// a verified, citation-grounded `WikiPage`.
 ///
 /// Pipeline:
-///   1. Gather candidate sources via `RAGSearchProtocol`.
+///   1. Gather candidate sources via `WikiRAGSearchProtocol`.
 ///   2. Compose the appropriate prompt (topic / person / show / audit).
 ///   3. Call `WikiOpenRouterClient.compile` (live or stubbed).
 ///   4. Parse the JSON response into a draft page.
@@ -16,13 +16,13 @@ import Foundation
 /// `WikiGenerator` is `Sendable` and stateless; instances are cheap.
 struct WikiGenerator: Sendable {
 
-    let rag: any RAGSearchProtocol
+    let rag: any WikiRAGSearchProtocol
     let client: WikiOpenRouterClient
     let storage: WikiStorage
     let model: String
 
     init(
-        rag: any RAGSearchProtocol,
+        rag: any WikiRAGSearchProtocol,
         client: WikiOpenRouterClient,
         storage: WikiStorage,
         model: String = "openai/gpt-4o-mini"

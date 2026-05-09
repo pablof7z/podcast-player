@@ -36,7 +36,6 @@ struct AgentChatView: View {
     // MARK: - State
 
     @Environment(AppStateStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
 
     @State private var session: AgentChatSession?
     @State private var draft: String = ""
@@ -50,18 +49,14 @@ struct AgentChatView: View {
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                background.ignoresSafeArea()
-                content
-            }
-            .navigationTitle("Agent")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbarItems }
-            .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
+        ZStack {
+            background.ignoresSafeArea()
+            content
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .navigationTitle("Agent")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbarItems }
+        .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
         .onAppear {
             if session == nil { session = AgentChatSession(store: store) }
             let hasKey = OpenRouterCredentialStore.hasAPIKey()
@@ -95,9 +90,6 @@ struct AgentChatView: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            Button("Done") { dismiss() }
-        }
         if let session, !session.messages.isEmpty {
             ToolbarItem(placement: .primaryAction) {
                 Button {

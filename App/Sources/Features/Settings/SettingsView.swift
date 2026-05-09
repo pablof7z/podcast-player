@@ -6,7 +6,6 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            if showMomentum { momentumSection }
             configurationSection
             destructiveSection
             versionFooterSection
@@ -21,55 +20,11 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all items, notes, friends, and memories. API credentials are preserved.")
+            Text("This will permanently delete all notes, friends, and memories. API credentials are preserved.")
         }
     }
 
     // MARK: - Sections
-
-    private var showMomentum: Bool {
-        store.completionStreak > 0 || store.weeklyCompletions.contains(where: { $0 > 0 })
-    }
-
-    private var momentumSection: some View {
-        Section {
-            HStack(spacing: 0) {
-                VStack(alignment: .center, spacing: AppTheme.Spacing.xs) {
-                    HStack(spacing: AppTheme.Spacing.xs) {
-                        Image(systemName: store.completionStreak > 0 ? "flame.fill" : "flame")
-                            .foregroundStyle(store.completionStreak > 0 ? .orange : .secondary)
-                            .accessibilityHidden(true)
-                        Text("\(store.completionStreak)")
-                            .font(AppTheme.Typography.title3)
-                            .monospacedDigit()
-                            .contentTransition(.numericText())
-                    }
-                    Text(store.completionStreak == 1 ? "day streak" : "days streak")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                Divider().frame(height: 32)
-
-                VStack(alignment: .center, spacing: AppTheme.Spacing.xs) {
-                    Text("\(store.weeklyCompletions.reduce(0, +))")
-                        .font(AppTheme.Typography.title3)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                    Text("done this week")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.vertical, AppTheme.Spacing.xs)
-            .listRowInsets(.init())
-            .listRowBackground(Color.clear)
-        } header: {
-            Text("Momentum")
-        }
-    }
 
     private var configurationSection: some View {
         Section("Configuration") {
@@ -101,8 +56,7 @@ struct SettingsView: View {
                 SettingsRow(
                     icon: "bell.badge",
                     tint: .red,
-                    title: "Notifications",
-                    value: store.remindersItemCount > 0 ? "\(store.remindersItemCount) scheduled" : nil
+                    title: "Notifications"
                 )
             }
 
@@ -125,7 +79,7 @@ struct SettingsView: View {
                 showClearConfirm = true
             }
         } footer: {
-            Text("Permanently deletes all items, notes, friends, and memories. API credentials and Nostr identity are preserved.")
+            Text("Permanently deletes all notes, friends, and memories. API credentials and Nostr identity are preserved.")
         }
     }
 
@@ -143,10 +97,7 @@ struct SettingsView: View {
 
     /// Total number of user-generated records that would be included in a data export.
     private var dataRecordCount: Int {
-        let items = store.nonDeletedItemCount
-        let notes = store.activeNotes.count
-        let memories = store.activeMemories.count
-        return items + notes + memories
+        store.activeNotes.count + store.activeMemories.count
     }
 
     private var currentModelShortName: String {
@@ -159,6 +110,6 @@ struct SettingsView: View {
     private var appVersionFooter: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "App Template  \(version)  (build \(build))"
+        return "Podcastr  \(version)  (build \(build))"
     }
 }

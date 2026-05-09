@@ -99,10 +99,7 @@ final class AudioEngine {
     /// Replace the current item with `episode`. Begins buffering immediately;
     /// caller must follow with `play()` to start playback.
     func load(_ episode: Episode) {
-        guard let url = episode.mediaURL else {
-            state = .failed(EngineError("Episode has no media URL"))
-            return
-        }
+        let url = episode.enclosureURL
         teardownItemObservers()
         self.episode = episode
         state = .loading(episode)
@@ -114,7 +111,7 @@ final class AudioEngine {
         installTimeObserver()
 
         // Best-effort known-duration fast-path from the feed.
-        if let dur = episode.durationSeconds {
+        if let dur = episode.duration {
             duration = dur
         }
         publishNowPlaying()

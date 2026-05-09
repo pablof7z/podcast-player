@@ -109,54 +109,10 @@ extension AppStateStore {
         guard let idx = state.agentActivity.firstIndex(where: { $0.id == entryID }) else { return }
         guard !state.agentActivity[idx].undone else { return }
         switch state.agentActivity[idx].kind {
-        case .itemCreated(let itemID):
-            deleteItem(itemID)
-        case .itemMarkedDone(let itemID, let priorStatus):
-            setItemStatus(itemID, status: priorStatus)
-        case .itemDeleted(let itemID):
-            restoreItem(itemID)
         case .noteCreated(let noteID):
             deleteNote(noteID)
         case .memoryRecorded(let memoryID):
             deleteAgentMemory(memoryID)
-        case .reminderSet(let itemID):
-            setReminderAt(itemID, date: nil)
-            NotificationService.cancel(for: itemID)
-        case .reminderCleared(let itemID, let priorDate):
-            setReminderAt(itemID, date: priorDate)
-            Task { await NotificationService.scheduleReminder(
-                for: itemID,
-                title: state.items.first { $0.id == itemID }?.title ?? "",
-                at: priorDate
-            )}
-        case .itemPrioritySet(let itemID, let priorPriority):
-            setItemPriority(itemID, priority: priorPriority)
-        case .itemTitleUpdated(let itemID, let priorTitle):
-            guard let idx = state.items.firstIndex(where: { $0.id == itemID }) else { return }
-            state.items[idx].title = priorTitle
-            state.items[idx].updatedAt = Date()
-        case .itemDetailsUpdated(let itemID, let priorDetails):
-            guard let idx = state.items.firstIndex(where: { $0.id == itemID }) else { return }
-            state.items[idx].details = priorDetails
-            state.items[idx].updatedAt = Date()
-        case .dueDateSet(let itemID, let priorDate):
-            setDueDate(itemID, date: priorDate)
-        case .dueDateCleared(let itemID, let priorDate):
-            setDueDate(itemID, date: priorDate)
-        case .itemTagsUpdated:
-            // Tag changes do not store prior state, so undo is not reversible.
-            // Mark as undone without mutating data — the user can re-tag manually.
-            break
-        case .itemColorTagUpdated(let itemID, let priorColorTag):
-            setItemColorTag(itemID, colorTag: priorColorTag)
-        case .itemEstimatedMinutesSet(let itemID, let priorMinutes):
-            setEstimatedMinutes(itemID, minutes: priorMinutes)
-        case .itemPinned(let itemID, let priorPinned):
-            setItemPinned(itemID, pinned: priorPinned)
-        case .tagRenamed(let priorTag, let newTag):
-            // Best-effort: rename back. May be a no-op if the user has since
-            // changed tags manually, but matches the undo pattern for other mutations.
-            renameTag(from: newTag, to: priorTag)
         }
         state.agentActivity[idx].undone = true
     }

@@ -13,9 +13,9 @@ import SwiftUI
 /// A minimal episode model the player UI binds against.
 ///
 /// Lane 2's real `Episode` should expose at least these fields; Lane 1's
-/// playback engine should publish a `MockEpisode`-shaped projection (or the
+/// playback engine should publish a `MockPlayerEpisode`-shaped projection (or the
 /// binding wrapper should adapt).
-struct MockEpisode: Identifiable, Hashable {
+struct MockPlayerEpisode: Identifiable, Hashable {
     let id: String
     let showName: String
     let episodeNumber: Int?
@@ -114,7 +114,7 @@ final class MockPlaybackState {
 
     /// The current episode. `nil` when nothing is loaded — used by `RootView`
     /// to decide whether to mount the `MiniPlayerView`.
-    var episode: MockEpisode?
+    var episode: MockPlayerEpisode?
 
     /// Sorted ascending by `start`.
     var transcript: [MockTranscriptLine] = []

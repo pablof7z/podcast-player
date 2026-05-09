@@ -9,14 +9,14 @@ import Foundation
 /// any claim whose citations don't survive. This is the *non-negotiable*
 /// gate the llm-wiki ethos demands: provenance-or-it-doesn't-render.
 ///
-/// The verifier is independent of the LLM — it talks to `RAGSearchProtocol`
+/// The verifier is independent of the LLM — it talks to `WikiRAGSearchProtocol`
 /// only. That keeps it cheap (no second LLM round-trip) and deterministic
 /// in tests.
 struct WikiVerifier: Sendable {
 
-    let rag: any RAGSearchProtocol
+    let rag: any WikiRAGSearchProtocol
 
-    init(rag: any RAGSearchProtocol) {
+    init(rag: any WikiRAGSearchProtocol) {
         self.rag = rag
     }
 

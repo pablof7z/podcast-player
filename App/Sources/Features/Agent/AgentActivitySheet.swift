@@ -150,45 +150,15 @@ struct AgentActivitySheet: View {
 extension AgentActivityKind {
     var icon: String {
         switch self {
-        case .itemCreated: "plus.circle.fill"
-        case .itemMarkedDone: "checkmark.circle.fill"
-        case .itemDeleted: "trash.circle.fill"
         case .noteCreated: "note.text"
         case .memoryRecorded: "brain"
-        case .reminderSet: "bell.badge.fill"
-        case .reminderCleared: "bell.slash.fill"
-        case .itemPrioritySet: "star.circle.fill"
-        case .itemTitleUpdated: "pencil.circle.fill"
-        case .itemDetailsUpdated: "text.alignleft"
-        case .dueDateSet: "calendar.badge.plus"
-        case .dueDateCleared: "calendar.badge.minus"
-        case .itemTagsUpdated: "tag.fill"
-        case .itemColorTagUpdated: "paintpalette.fill"
-        case .itemEstimatedMinutesSet: "clock.fill"
-        case .itemPinned: "pin.fill"
-        case .tagRenamed: "tag.circle.fill"
         }
     }
 
     var tint: Color {
         switch self {
-        case .itemCreated: .blue
-        case .itemMarkedDone: .green
-        case .itemDeleted: .red
         case .noteCreated: .purple
         case .memoryRecorded: .indigo
-        case .reminderSet: .orange
-        case .reminderCleared: .gray
-        case .itemPrioritySet: .yellow
-        case .itemTitleUpdated: .blue
-        case .itemDetailsUpdated: .teal
-        case .dueDateSet: .orange
-        case .dueDateCleared: .gray
-        case .itemTagsUpdated: .teal
-        case .itemColorTagUpdated: .pink
-        case .itemEstimatedMinutesSet: .cyan
-        case .itemPinned: .orange
-        case .tagRenamed: .teal
         }
     }
 }

@@ -34,15 +34,6 @@ enum ReviewPrompt {
 
     // MARK: - Public trigger points
 
-    /// Call when an item is marked done. Pass the *new* total completed count.
-    /// Fires at the 10th completion.
-    static func recordItemCompleted(totalCompletions: Int) {
-        guard !defaults.bool(forKey: firedAt10Key) else { return }
-        guard totalCompletions >= 10 else { return }
-        defaults.set(true, forKey: firedAt10Key)
-        requestIfCooldownPassed()
-    }
-
     /// Call after computing the current streak. Fires at the 3-day and 7-day
     /// milestones — each at most once per install.
     static func recordStreakMilestone(_ streak: Int) {
@@ -53,13 +44,6 @@ enum ReviewPrompt {
             defaults.set(true, forKey: firedAt3StreakKey)
             requestIfCooldownPassed()
         }
-    }
-
-    /// Call when the user shares an item. Fires on the very first share.
-    static func recordItemShared() {
-        guard !defaults.bool(forKey: firedFirstShareKey) else { return }
-        defaults.set(true, forKey: firedFirstShareKey)
-        requestIfCooldownPassed()
     }
 
     // MARK: - Private

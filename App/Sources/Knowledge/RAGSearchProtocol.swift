@@ -14,7 +14,7 @@ import Foundation
 ///   1. Find candidate transcript chunks for a topic.
 ///   2. Verify a synthesized claim against the spans the generator
 ///      told us it relied on (exact-span lookup).
-protocol RAGSearchProtocol: Sendable {
+protocol WikiRAGSearchProtocol: Sendable {
 
     /// Returns the top-`k` transcript chunks relevant to `query`, scoped
     /// to `scope` (or unscoped when `nil`). Implementations should run
@@ -86,7 +86,7 @@ struct RAGChunk: Codable, Hashable, Identifiable, Sendable {
 
 /// Test/preview implementation backed by a fixed set of `RAGChunk`s.
 /// Useful for SwiftUI previews and the lane-7 generator unit tests.
-struct InMemoryRAGSearch: RAGSearchProtocol {
+struct InMemoryRAGSearch: WikiRAGSearchProtocol {
 
     var chunks: [RAGChunk]
 

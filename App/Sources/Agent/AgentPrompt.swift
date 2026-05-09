@@ -1,54 +1,17 @@
 import Foundation
 
 /// Builds the system prompt injected at position 0 of every agent run.
-/// Includes current state context, friend list, and persisted memories.
+/// Includes friend list and persisted memories.
 enum AgentPrompt {
     static func build(for state: AppState) -> String {
         var sections: [String] = []
 
         sections.append("""
-        You are a helpful personal assistant embedded in an iOS app.
+        You are a helpful personal assistant embedded in a podcast-player iOS app.
         Today is \(Self.dateString).
-        Help the user manage their tasks, notes, and collaborate with their friends.
+        Help the user surface, recall, and reason about what they've been listening to.
         Be concise and action-oriented.
         """)
-
-        let activeItems = state.items
-            .filter { !$0.deleted && $0.status == .pending }
-            .sorted { $0.isPriority && !$1.isPriority }
-        if !activeItems.isEmpty {
-            let list = activeItems.map { item -> String in
-                var line = "- [\(item.id)]"
-                if item.isPriority { line += " ★" }
-                if item.isPinned { line += " [pinned]" }
-                line += " \(item.title)"
-                if let name = item.requestedByDisplayName {
-                    line += " (from \(name))"
-                }
-                if let due = item.dueAt {
-                    let dueLabel = item.isOverdue ? "OVERDUE since \(Self.dueDateString(due))" : "due \(Self.dueDateString(due))"
-                    line += " [\(dueLabel)]"
-                }
-                if let reminder = item.reminderAt {
-                    let recurrenceLabel = item.recurrence != .none ? ", \(item.recurrence.label)" : ""
-                    line += " [reminder: \(Self.reminderString(reminder))\(recurrenceLabel)]"
-                }
-                if !item.tags.isEmpty {
-                    line += " [tags: \(item.tags.map { "#\($0)" }.joined(separator: ", "))]"
-                }
-                if item.colorTag != .none {
-                    line += " [color: \(item.colorTag.rawValue)]"
-                }
-                if let estLabel = item.estimatedDurationLabel {
-                    line += " [est: \(estLabel)]"
-                }
-                if !item.details.isBlank {
-                    line += "\n  Details: \(item.details)"
-                }
-                return line
-            }.joined(separator: "\n")
-            sections.append("## Pending Items\n★ = priority\n\(list)")
-        }
 
         if !state.friends.isEmpty {
             // Expose only displayName + truncated public identifier. Internal
@@ -87,36 +50,7 @@ enum AgentPrompt {
         return f
     }()
 
-    private static let reminderFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .short
-        return f
-    }()
-
-    private static let dueDateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .none
-        return f
-    }()
-
     private static var dateString: String {
         dateFormatter.string(from: Date())
-    }
-
-    private static func dueDateString(_ date: Date) -> String {
-        dueDateFormatter.string(from: date)
-    }
-
-    private static func reminderString(_ date: Date) -> String {
-        let interval = date.timeIntervalSinceNow
-        if interval < 0 { return "overdue (\(reminderFormatter.string(from: date)))" }
-        let hours = interval / 3_600
-        if hours < 24 {
-            let h = Int(hours)
-            return h == 0 ? "in less than an hour" : "in \(h)h (\(reminderFormatter.string(from: date)))"
-        }
-        return reminderFormatter.string(from: date)
     }
 }

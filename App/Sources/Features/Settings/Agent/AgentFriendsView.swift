@@ -4,13 +4,11 @@ struct AgentFriendsView: View {
 
     private enum FriendSortOrder: String, CaseIterable {
         case alphabetical    = "alphabetical"
-        case mostPending     = "mostPending"
         case mostRecent      = "mostRecent"
 
         var label: String {
             switch self {
             case .alphabetical: return "Alphabetical"
-            case .mostPending:  return "Most Pending"
             case .mostRecent:   return "Most Recently Active"
             }
         }
@@ -18,7 +16,6 @@ struct AgentFriendsView: View {
         var icon: String {
             switch self {
             case .alphabetical: return "textformat.abc"
-            case .mostPending:  return "tray.full"
             case .mostRecent:   return "clock"
             }
         }
@@ -47,10 +44,6 @@ struct AgentFriendsView: View {
         switch sortOrder {
         case .alphabetical:
             return store.sortedFriends
-        case .mostPending:
-            return store.sortedFriends.sorted {
-                store.pendingItemCount(forFriend: $0.id) > store.pendingItemCount(forFriend: $1.id)
-            }
         case .mostRecent:
             return store.sortedFriends.sorted { lhs, rhs in
                 let lDate = store.lastActivity(forFriend: lhs.id) ?? lhs.addedAt
@@ -105,7 +98,6 @@ struct AgentFriendsView: View {
                     } label: {
                         FriendListRow(
                             friend: friend,
-                            pendingCount: store.pendingItemCount(forFriend: friend.id),
                             lastActivityDate: store.lastActivity(forFriend: friend.id),
                             query: searchText
                         )
@@ -167,8 +159,6 @@ struct AgentFriendsView: View {
     }
 
     let friend: Friend
-    /// Pending item count for this friend — 0 means no chip is shown.
-    let pendingCount: Int
     /// Most recent activity date; nil means fall back to addedAt.
     let lastActivityDate: Date?
     var query: String = ""
@@ -182,7 +172,7 @@ struct AgentFriendsView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: Layout.rowSpacing) {
-            FriendAvatar(friend: friend, size: Layout.avatarSize, pendingCount: pendingCount)
+            FriendAvatar(friend: friend, size: Layout.avatarSize)
 
             VStack(alignment: .leading, spacing: Layout.labelSpacing) {
                 Group {

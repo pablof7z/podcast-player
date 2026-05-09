@@ -31,7 +31,6 @@ struct DataExportView: View {
     @State private var generatedAt: Date?
     @State private var showShareSheet = false
     @State private var showClearConfirmation = false
-    @State private var exportFormat: DataExport.Format = .json
 
     var body: some View {
         ZStack {
@@ -65,7 +64,7 @@ struct DataExportView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all items, notes, friends, memories, and agent activity. This action cannot be undone.")
+            Text("This will permanently delete all notes, friends, memories, and agent activity. This action cannot be undone.")
         }
     }
 
@@ -73,7 +72,6 @@ struct DataExportView: View {
 
     private var summarySection: some View {
         Section("Contents") {
-            statRow(icon: "checklist", tint: .blue, label: "Items", count: stats.items)
             statRow(icon: "note.text", tint: .indigo, label: "Notes", count: stats.notes)
             statRow(icon: "person.2.fill", tint: .green, label: "Friends", count: stats.friends)
             statRow(icon: "brain.head.profile", tint: .orange, label: "Memories", count: stats.memories)
@@ -100,18 +98,6 @@ struct DataExportView: View {
 
     private var exportActionSection: some View {
         Section {
-            Picker("Format", selection: $exportFormat) {
-                ForEach(DataExport.Format.allCases, id: \.self) { fmt in
-                    Text(fmt.rawValue).tag(fmt)
-                }
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: exportFormat) {
-                fileURL = nil
-                fileSize = nil
-                generatedAt = nil
-            }
-
             Button {
                 generate()
             } label: {
@@ -119,19 +105,12 @@ struct DataExportView: View {
                     icon: "square.and.arrow.up",
                     tint: .indigo,
                     title: "Export & Share",
-                    subtitle: exportButtonSubtitle
+                    subtitle: "Generates a JSON file and opens the share sheet"
                 )
             }
             .foregroundStyle(.primary)
         } footer: {
             Text(actionFooterText)
-        }
-    }
-
-    private var exportButtonSubtitle: String {
-        switch exportFormat {
-        case .json: return "Generates a JSON file and opens the share sheet"
-        case .csv:  return "Exports items as a CSV spreadsheet"
         }
     }
 
@@ -147,7 +126,7 @@ struct DataExportView: View {
                 )
             }
         } footer: {
-            Text("Permanently deletes all items, notes, friends, memories, and agent activity.")
+            Text("Permanently deletes all notes, friends, memories, and agent activity.")
         }
     }
 
@@ -157,23 +136,14 @@ struct DataExportView: View {
                 icon: "doc.text",
                 tint: .gray,
                 title: "Format",
-                value: exportFormat.rawValue
+                value: "JSON"
             )
-            if exportFormat == .csv {
-                SettingsRow(
-                    icon: "checklist",
-                    tint: .gray,
-                    title: "Contents",
-                    value: "Items only"
-                )
-            } else {
-                SettingsRow(
-                    icon: "number",
-                    tint: .gray,
-                    title: "Schema",
-                    value: "v\(DataExport.currentSchemaVersion)"
-                )
-            }
+            SettingsRow(
+                icon: "number",
+                tint: .gray,
+                title: "Schema",
+                value: "v\(DataExport.currentSchemaVersion)"
+            )
         }
     }
 
@@ -200,13 +170,7 @@ struct DataExportView: View {
         if let size = fileSize, let generatedAt {
             return "\(base) · \(formatBytes(size)) · Last exported \(Self.exportTimeFormatter.string(from: generatedAt))"
         }
-        switch exportFormat {
-        case .json:
-            return "\(base) · Bundles items, notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
-        case .csv:
-            let itemCount = stats.items
-            return "\(itemCount) item\(itemCount == 1 ? "" : "s") · Exports item list as a spreadsheet-compatible CSV file."
-        }
+        return "\(base) · Bundles notes, friends, agent memories, and agent activity. API keys and the Nostr private key are never included."
     }
 
     // MARK: - Actions
@@ -215,13 +179,7 @@ struct DataExportView: View {
         do {
             let now = Date()
             let exportState = store.state
-            let url: URL
-            switch exportFormat {
-            case .json:
-                url = try DataExport.writeExport(of: exportState, now: now)
-            case .csv:
-                url = try DataExport.writeCSVExport(of: exportState, now: now)
-            }
+            let url = try DataExport.writeExport(of: exportState, now: now)
             let attrs: [FileAttributeKey: Any]?
             do {
                 attrs = try FileManager.default.attributesOfItem(atPath: url.path)

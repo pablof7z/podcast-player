@@ -4,13 +4,15 @@ import ProjectDescription
 
 let appName = "Podcastr"
 let appDisplayName = "Podcastr"
-let bundleIdPrefix = "com.podcastr"
 let appleTeamID = "456SHKPP26"
 let deploymentTarget: DeploymentTargets = .iOS("26.0")
 
 // MARK: - Derived identifiers
 
-let appBundleID = "\(bundleIdPrefix).\(appName.lowercased())"
+// `appBundleID` is fixed (not derived from `appName`) so renaming the working
+// title doesn't invalidate the existing provisioning profile / TestFlight /
+// App Store record tied to `io.f7z.podcast`.
+let appBundleID = "io.f7z.podcast"
 // App Group identifier is hardcoded (does not follow the bundle-ID derivation
 // pattern) so the working title can change without re-provisioning the group.
 let appGroupID = "group.com.podcastr.app"

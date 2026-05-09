@@ -4,12 +4,12 @@ import SwiftUI
 ///
 /// Two-speaker conversation, ~40 lines, monotonically increasing timestamps —
 /// stand-in for what Lane 5's real transcript stream will provide. Speaker
-/// colors come from an art-extracted palette baked into `MockEpisode`; here
+/// colors come from an art-extracted palette baked into `MockPlayerEpisode`; here
 /// we use plausible cover-art-friendly tints.
 enum MockTranscriptFixture {
 
     struct Bundle {
-        let episode: MockEpisode
+        let episode: MockPlayerEpisode
         let lines: [MockTranscriptLine]
     }
 
@@ -23,7 +23,7 @@ enum MockTranscriptFixture {
         let timColor = Color(red: 0.91, green: 0.55, blue: 0.30)   // copper-amber (host)
         let domColor = Color(red: 0.36, green: 0.62, blue: 0.78)   // soft azure (guest)
 
-        let episode = MockEpisode(
+        let episode = MockPlayerEpisode(
             id: "tim-ferriss-742",
             showName: "The Tim Ferriss Show",
             episodeNumber: 742,

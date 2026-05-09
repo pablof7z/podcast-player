@@ -3,25 +3,7 @@ import Observation
 import WidgetKit
 import os.log
 
-// MARK: - Navigation intents
-
-/// Ephemeral, non-persisted navigation requests dispatched by deep-links,
-/// home-screen quick actions, and Spotlight continuations.
-///
-/// `HomeView` (and any other consumer) observes this via `.onChange` and
-/// clears it immediately after acting so the intent fires exactly once.
-enum HomeAction: Equatable {
-    /// Open the inline "Add Item" row pre-filled with an optional title.
-    case addItem(prefill: String?)
-    /// Switch the active filter to `.overdue` so past-due items are surfaced.
-    case showOverdue
-    /// Switch the active filter to `.dueThisWeek` so upcoming items are surfaced.
-    case showDueThisWeek
-    /// Open the AI agent chat sheet.
-    case openAgent
-    /// Open the detail sheet for a specific item (e.g. from a Spotlight tap).
-    case openItem(UUID)
-}
+// MARK: - Friend invite
 
 /// Pre-filled data for an incoming friend invite deep-link.
 /// Consumed by `AgentFriendsView` to open `AddFriendSheet` with values already typed in.
@@ -41,13 +23,9 @@ struct PendingFriendInvite: Equatable, Identifiable {
 @Observable
 final class AppStateStore {
 
-    private static let logger = Logger.app("AppStateStore")
+    nonisolated private static let logger = Logger.app("AppStateStore")
 
     // MARK: - Navigation
-
-    /// Pending navigation intent set by deep-link / quick-action routing.
-    /// Consumed and cleared by `HomeView` on `.onChange`.
-    var pendingHomeAction: HomeAction?
 
     /// Pending friend invite dispatched by a `podcastr://friend/add` deep-link.
     /// Consumed and cleared by `AgentFriendsView` on `.onChange` so it fires exactly once.
@@ -57,9 +35,8 @@ final class AppStateStore {
         didSet {
             Persistence.save(state)
             SpotlightIndexer.reindex(state: state)
-            Task { await BadgeManager.sync(pendingCount: self.activeItems.count) }
-            // Notify WidgetKit so home/lock-screen widgets refresh immediately on
-            // every state mutation rather than waiting for the 15-minute poll.
+            // Notify WidgetKit so widgets refresh immediately on every state
+            // mutation rather than waiting for the timeline poll.
             WidgetCenter.shared.reloadAllTimelines()
             // Push the current settings to iCloud KV store. The sync service
             // internally no-ops if an inbound merge is already in progress.
@@ -69,8 +46,6 @@ final class AppStateStore {
 
     /// Retained observer token for iCloud external-change notifications.
     private var iCloudObserver: NSObjectProtocol?
-    /// Retained observer tokens for notification-action events from AppDelegate.
-    private var notificationActionObservers: [NSObjectProtocol] = []
 
     init() {
         var loadedState: AppState
@@ -104,46 +79,6 @@ final class AppStateStore {
                 self?.applyExternalSettingsChange()
             }
         }
-        // Observe notification action buttons (Snooze / Mark Done) dispatched
-        // by AppDelegate after the user acts on a banner or lock-screen notification.
-        subscribeToNotificationActions()
-    }
-
-    // MARK: - Notification action subscription
-
-    private func subscribeToNotificationActions() {
-        let markDone = NotificationCenter.default.addObserver(
-            forName: AppDelegate.reminderMarkDoneNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] note in
-            guard let self,
-                  let itemID = note.userInfo?["itemID"] as? UUID else { return }
-            MainActor.assumeIsolated {
-                self.setItemStatus(itemID, status: .done)
-                self.clearReminderDate(for: itemID)
-                Haptics.success()
-                Self.logger.info("Notification action: marked item \(itemID, privacy: .public) done")
-            }
-        }
-
-        let snoozed = NotificationCenter.default.addObserver(
-            forName: AppDelegate.reminderSnoozedNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] note in
-            guard let self,
-                  let itemID = note.userInfo?["itemID"] as? UUID,
-                  let interval = note.userInfo?["snoozeInterval"] as? TimeInterval else { return }
-            MainActor.assumeIsolated {
-                let snoozeDate = Date().addingTimeInterval(interval)
-                self.setReminderAt(itemID, date: snoozeDate)
-                Haptics.selection()
-                Self.logger.info("Notification action: snoozed item \(itemID, privacy: .public) by \(interval)s")
-            }
-        }
-
-        notificationActionObservers = [markDone, snoozed]
     }
 
     /// Pulls the latest iCloud values into `state.settings`.
@@ -185,8 +120,6 @@ final class AppStateStore {
 
     /// Wipes all user data while preserving API credentials and Nostr identity.
     func clearAllData() {
-        let itemIDs = state.items.compactMap { $0.reminderAt != nil ? $0.id : nil }
-        NotificationService.cancelAll(for: itemIDs)
         let preserved = state.settings
         state = AppState()
         state.settings = preserved

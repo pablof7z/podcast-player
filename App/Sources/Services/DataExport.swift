@@ -100,84 +100,20 @@ enum DataExport {
         return try writeTemporaryFile(data, filename: filename)
     }
 
-    // MARK: - Format
-
-    /// Supported export file formats.
-    enum Format: String, CaseIterable, Sendable {
-        case json = "JSON"
-        case csv  = "CSV"
-
-        var fileExtension: String {
-            switch self {
-            case .json: return "json"
-            case .csv:  return "csv"
-            }
-        }
-    }
-
-    // MARK: - CSV encoding (items only)
-
-    /// Produces a UTF-8 CSV string with one row per non-deleted item.
-    /// Columns: id, title, status, source, isPriority, isPinned, recurrence, createdAt, updatedAt, reminderAt, dueAt, tags, colorTag, estimatedMinutes
-    static func encodeItemsCSV(from state: AppState) -> Data {
-        let header = "id,title,status,source,isPriority,isPinned,recurrence,createdAt,updatedAt,reminderAt,dueAt,tags,colorTag,estimatedMinutes"
-        var rows: [String] = [header]
-        for item in state.items where !item.deleted {
-            let cols: [String] = [
-                item.id.uuidString,
-                csvEscaped(item.title),
-                item.status.rawValue,
-                item.source.rawValue,
-                item.isPriority ? "true" : "false",
-                item.isPinned ? "true" : "false",
-                item.recurrence.rawValue,
-                Self.iso8601.string(from: item.createdAt),
-                Self.iso8601.string(from: item.updatedAt),
-                item.reminderAt.map { Self.iso8601.string(from: $0) } ?? "",
-                item.dueAt.map { Self.iso8601.string(from: $0) } ?? "",
-                csvEscaped(item.tags.joined(separator: "|")),
-                item.colorTag.rawValue,
-                item.estimatedMinutes.map { String($0) } ?? "",
-            ]
-            rows.append(cols.joined(separator: ","))
-        }
-        // Force-unwrap is safe: UTF-8 encoding never fails on a Swift String.
-        return rows.joined(separator: "\n").data(using: .utf8)!
-    }
-
-    private static func csvEscaped(_ value: String) -> String {
-        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
-        return "\"\(escaped)\""
-    }
-
-    /// Suggested CSV filename, e.g. `Podcastr-Items-2026-05-05-1430.csv`.
-    static func suggestedCSVFilename(at date: Date = Date()) -> String {
-        "Podcastr-Items-\(filenameDateFormatter.string(from: date)).csv"
-    }
-
-    /// Writes a CSV of items to a temp file and returns its URL.
-    static func writeCSVExport(of state: AppState, now: Date = Date()) throws -> URL {
-        let data = encodeItemsCSV(from: state)
-        let filename = suggestedCSVFilename(at: now)
-        return try writeTemporaryFile(data, filename: filename)
-    }
-
     // MARK: - Stats (UI helpers)
 
     /// Counts of non-deleted records in `state`, used for the export preview.
     struct Stats: Sendable, Hashable {
-        var items: Int
         var notes: Int
         var friends: Int
         var memories: Int
         var agentActivity: Int
 
-        var totalRecords: Int { items + notes + friends + memories + agentActivity }
+        var totalRecords: Int { notes + friends + memories + agentActivity }
     }
 
     static func stats(for state: AppState) -> Stats {
         Stats(
-            items: state.items.filter { !$0.deleted }.count,
             notes: state.notes.filter { !$0.deleted }.count,
             friends: state.friends.count,
             memories: state.agentMemories.filter { !$0.deleted }.count,

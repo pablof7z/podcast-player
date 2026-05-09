@@ -9,20 +9,16 @@ struct AgentActivityLogView: View {
 
     private enum ActivityFilterCategory: String, CaseIterable, Identifiable {
         case all = "All"
-        case items = "Items"
         case notes = "Notes"
         case memories = "Memories"
-        case reminders = "Reminders"
 
         var id: String { rawValue }
 
         var icon: String {
             switch self {
             case .all:       "line.3.horizontal.decrease.circle"
-            case .items:     "checkmark.circle"
             case .notes:     "note.text"
             case .memories:  "brain"
-            case .reminders: "bell"
             }
         }
 
@@ -30,50 +26,12 @@ struct AgentActivityLogView: View {
             switch self {
             case .all:
                 return true
-            case .items:
-                switch entry.kind {
-                case .itemCreated, .itemMarkedDone, .itemDeleted,
-                     .itemPrioritySet, .itemTitleUpdated, .itemDetailsUpdated,
-                     .itemTagsUpdated, .dueDateSet, .dueDateCleared,
-                     .itemColorTagUpdated, .itemEstimatedMinutesSet, .itemPinned,
-                     .tagRenamed:
-                    return true
-                case .noteCreated, .memoryRecorded, .reminderSet, .reminderCleared:
-                    return false
-                }
             case .notes:
-                switch entry.kind {
-                case .noteCreated:
-                    return true
-                case .itemCreated, .itemMarkedDone, .itemDeleted,
-                     .itemPrioritySet, .itemTitleUpdated, .itemDetailsUpdated,
-                     .itemTagsUpdated, .dueDateSet, .dueDateCleared,
-                     .itemColorTagUpdated, .itemEstimatedMinutesSet, .itemPinned,
-                     .tagRenamed, .memoryRecorded, .reminderSet, .reminderCleared:
-                    return false
-                }
+                if case .noteCreated = entry.kind { return true }
+                return false
             case .memories:
-                switch entry.kind {
-                case .memoryRecorded:
-                    return true
-                case .itemCreated, .itemMarkedDone, .itemDeleted,
-                     .itemPrioritySet, .itemTitleUpdated, .itemDetailsUpdated,
-                     .itemTagsUpdated, .dueDateSet, .dueDateCleared,
-                     .itemColorTagUpdated, .itemEstimatedMinutesSet, .itemPinned,
-                     .tagRenamed, .noteCreated, .reminderSet, .reminderCleared:
-                    return false
-                }
-            case .reminders:
-                switch entry.kind {
-                case .reminderSet, .reminderCleared:
-                    return true
-                case .itemCreated, .itemMarkedDone, .itemDeleted,
-                     .itemPrioritySet, .itemTitleUpdated, .itemDetailsUpdated,
-                     .itemTagsUpdated, .dueDateSet, .dueDateCleared,
-                     .itemColorTagUpdated, .itemEstimatedMinutesSet, .itemPinned,
-                     .tagRenamed, .noteCreated, .memoryRecorded:
-                    return false
-                }
+                if case .memoryRecorded = entry.kind { return true }
+                return false
             }
         }
     }

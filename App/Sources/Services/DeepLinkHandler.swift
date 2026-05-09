@@ -6,15 +6,11 @@ import Foundation
 enum DeepLinkHandler {
     /// The set of deep-link destinations recognised by the app.
     enum Link {
-        /// Opens the Settings screen.
+        /// Opens the Settings sheet.
         case settings
         /// Opens the Feedback sheet.
         case feedback
-        /// Creates a new item, optionally pre-filling its title from the query string.
-        case newItem(title: String?)
-        /// Navigates to Home and scrolls/focuses the Overdue section.
-        case overdue
-        /// Opens the AI agent chat sheet directly from Home.
+        /// Opens the AI agent (Ask) tab.
         case agent
         /// Opens the Add Friend sheet pre-filled with the sender's public key and display name.
         /// `npub` is the bech32-encoded public key; `name` is the optional display name.
@@ -27,12 +23,7 @@ enum DeepLinkHandler {
         switch url.host {
         case "settings": return .settings
         case "feedback": return .feedback
-        case "new-item":
-            let title = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                .queryItems?.first(where: { $0.name == "title" })?.value
-            return .newItem(title: title)
-        case "overdue": return .overdue
-        case "agent":   return .agent
+        case "agent":    return .agent
         case "friend":
             guard url.path == "/add",
                   let components = URLComponents(url: url, resolvingAgainstBaseURL: false),

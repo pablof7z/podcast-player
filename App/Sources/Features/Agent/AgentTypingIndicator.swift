@@ -82,26 +82,8 @@ struct AgentTypingIndicator: View {
     /// Maps a raw tool name to a concise human-readable present-progressive label.
     private var toolStatusLabel: String? {
         switch toolName {
-        case AgentTools.Names.createItem:            return "Creating task…"
-        case AgentTools.Names.updateItem:            return "Renaming task…"
-        case AgentTools.Names.setItemPriority:       return "Setting priority…"
-        case AgentTools.Names.markItemDone:          return "Marking done…"
-        case AgentTools.Names.deleteItem:            return "Deleting task…"
-        case AgentTools.Names.createNote:            return "Saving note…"
-        case AgentTools.Names.recordMemory:          return "Saving memory…"
-        case AgentTools.Names.setReminder:           return "Setting reminder…"
-        case AgentTools.Names.clearReminder:         return "Clearing reminder…"
-        case AgentTools.Names.findItems:             return "Searching tasks…"
-        case AgentTools.Names.setDueDate:            return "Setting due date…"
-        case AgentTools.Names.clearDueDate:          return "Clearing due date…"
-        case AgentTools.Names.addTag:                return "Adding tag…"
-        case AgentTools.Names.removeTag:             return "Removing tag…"
-        case AgentTools.Names.setItemColorTag:       return "Setting color…"
-        case AgentTools.Names.setEstimatedMinutes:   return "Setting estimate…"
-        case AgentTools.Names.clearEstimatedMinutes: return "Clearing estimate…"
-        case AgentTools.Names.pinItem:               return "Pinning task…"
-        case AgentTools.Names.unpinItem:             return "Unpinning task…"
-        case AgentTools.Names.renameTag:             return "Renaming tag…"
+        case AgentTools.Names.createNote:    return "Saving note…"
+        case AgentTools.Names.recordMemory:  return "Saving memory…"
         default:
             guard let name = toolName else { return nil }
             // Fallback: prettify by replacing underscores with spaces and capitalising.
