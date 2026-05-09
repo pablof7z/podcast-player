@@ -29,6 +29,10 @@ final class AgentChatSession {
 
     private let store: AppStateStore
     private let history: ChatHistoryStore
+    /// Live podcast-tool dependencies. Nil only in test/preview contexts that
+    /// chose not to wire the player; podcast tool calls return a typed error
+    /// in that case rather than crashing.
+    private let podcastDeps: PodcastAgentToolDeps?
     private var rawMessages: [[String: Any]] = []
     private var rawMessageCountAtLastSendStart: Int = 0
     private var messageCountAtLastSendStart: Int = 0
@@ -37,9 +41,14 @@ final class AgentChatSession {
 
     private let maxTurns: Int = 20
 
-    init(store: AppStateStore, history: ChatHistoryStore = .shared) {
+    init(
+        store: AppStateStore,
+        playback: PlaybackState? = nil,
+        history: ChatHistoryStore = .shared
+    ) {
         self.store = store
         self.history = history
+        self.podcastDeps = playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
         let loaded = history.load()
         self.messages = loaded
         self.loadedFromHistory = !loaded.isEmpty
@@ -236,7 +245,7 @@ final class AgentChatSession {
             do {
                 result = try await AgentOpenRouterClient.streamCompletion(
                     messages: rawMessages,
-                    tools: AgentTools.schema,
+                    tools: AgentTools.schema + AgentTools.podcastSchema,
                     apiKey: apiKey,
                     model: store.state.settings.llmModel
                 ) { [weak self] partial in
@@ -295,7 +304,8 @@ final class AgentChatSession {
                     name: toolCall.name,
                     argsJSON: toolCall.arguments,
                     store: store,
-                    batchID: batchID
+                    batchID: batchID,
+                    podcastDeps: podcastDeps
                 )
                 rawMessages.append([
                     "role": "tool",

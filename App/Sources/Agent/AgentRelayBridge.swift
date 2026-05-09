@@ -5,10 +5,15 @@ import os.log
 final class AgentRelayBridge {
     private let logger = Logger.app("AgentRelayBridge")
     private let store: AppStateStore
+    /// Live podcast-tool dependencies. Nil only for callers that don't have a
+    /// `PlaybackState` handy (Nostr-only headless flows); podcast tool calls
+    /// then return a typed error envelope rather than crashing.
+    private let podcastDeps: PodcastAgentToolDeps?
     private let maxTurns = 8
 
-    init(store: AppStateStore) {
+    init(store: AppStateStore, playback: PlaybackState? = nil) {
         self.store = store
+        self.podcastDeps = playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
     }
 
     func reply(to content: String, from senderPubkey: String) async -> String? {
@@ -39,7 +44,7 @@ final class AgentRelayBridge {
             do {
                 result = try await AgentOpenRouterClient.streamCompletion(
                     messages: messages,
-                    tools: AgentTools.schema,
+                    tools: AgentTools.schema + AgentTools.podcastSchema,
                     apiKey: apiKey,
                     model: store.state.settings.llmModel,
                     onPartialContent: { _ in }
@@ -61,7 +66,8 @@ final class AgentRelayBridge {
                     name: toolCall.name,
                     argsJSON: toolCall.arguments,
                     store: store,
-                    batchID: batchID
+                    batchID: batchID,
+                    podcastDeps: podcastDeps
                 )
                 messages.append([
                     "role": "tool",

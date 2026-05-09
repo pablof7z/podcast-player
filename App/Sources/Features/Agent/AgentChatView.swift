@@ -36,6 +36,7 @@ struct AgentChatView: View {
     // MARK: - State
 
     @Environment(AppStateStore.self) private var store
+    @Environment(PlaybackState.self) private var playback
 
     @State private var session: AgentChatSession?
     @State private var draft: String = ""
@@ -58,7 +59,7 @@ struct AgentChatView: View {
         .toolbar { toolbarItems }
         .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
         .onAppear {
-            if session == nil { session = AgentChatSession(store: store) }
+            if session == nil { session = AgentChatSession(store: store, playback: playback) }
             let hasKey = OpenRouterCredentialStore.hasAPIKey()
             showSettingsHint = !hasKey
             inputFocused = hasKey
