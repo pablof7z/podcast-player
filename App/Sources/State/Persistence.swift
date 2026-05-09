@@ -1,4 +1,5 @@
 import Foundation
+import os
 import os.log
 
 /// Persists `AppState` as a JSON blob in a file inside the shared App Group
@@ -27,7 +28,7 @@ import os.log
 /// fixtures never leak into the real app's storage — the bug where launching
 /// the app after running the test target showed phantom "Test Show" /
 /// "Episode e1" was caused by both contexts writing to the same App Group key.
-struct Persistence: Sendable {
+final class Persistence: Sendable {
 
     /// Shared, production-default instance writing to the App Group container.
     static let shared = Persistence(fileURL: Persistence.appGroupStateFileURL)
@@ -35,8 +36,28 @@ struct Persistence: Sendable {
     /// File this instance reads from / writes to.
     let fileURL: URL
 
+    /// Lock-protected count of successful `save(_:)` invocations. Production
+    /// code never reads this; the per-second-write regression tests use it
+    /// to assert the position-debounce coalesces N rapid updates into ≤ 2
+    /// disk writes. Atomic so tests can sample it without coordinating with
+    /// the main actor.
+    private let saveCounter = OSAllocatedUnfairLock<Int>(initialState: 0)
+
     init(fileURL: URL) {
         self.fileURL = fileURL
+    }
+
+    /// Returns the number of times `save(_:)` has been called on this instance.
+    /// Test-only — production code has no reason to inspect this.
+    var saveInvocationCount: Int {
+        saveCounter.withLock { $0 }
+    }
+
+    /// Resets the save counter back to 0. Tests call this after the
+    /// `AppStateStore` initialiser has performed its eager save so subsequent
+    /// assertions count only the writes the test itself triggers.
+    func resetSaveInvocationCount() {
+        saveCounter.withLock { $0 = 0 }
     }
 
     // MARK: - State persistence
@@ -58,6 +79,7 @@ struct Persistence: Sendable {
         do {
             try ensureParentDirectoryExists()
             try data.write(to: fileURL, options: [.atomic])
+            saveCounter.withLock { $0 += 1 }
             Self.logger.info("Persistence.save: bytes=\(data.count, privacy: .public)")
         } catch {
             Self.logger.error("Persistence.save: write failed at \(self.fileURL.path, privacy: .public): \(error, privacy: .public)")
