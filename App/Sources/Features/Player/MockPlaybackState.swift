@@ -247,4 +247,16 @@ final class MockPlaybackState {
         transcript = palette.lines
         currentTime = palette.lines.first?.start ?? 0
     }
+
+    /// Public binding contract used by the Library tap-to-play flow.
+    /// Replaces the currently-loaded episode + transcript and resets the
+    /// playhead. Call `play()` after to start the demo timer.
+    func load(_ episode: MockPlayerEpisode, transcript: [MockTranscriptLine] = []) {
+        demoTask?.cancel()
+        demoTask = nil
+        isPlaying = false
+        self.episode = episode
+        self.transcript = transcript
+        currentTime = transcript.first?.start ?? 0
+    }
 }

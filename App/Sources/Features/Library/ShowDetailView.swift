@@ -23,6 +23,7 @@ struct ShowDetailView: View {
     let store: LibraryMockStore
     let subscription: LibraryMockSubscription
 
+    @Environment(MockPlaybackState.self) private var playbackState
     @State private var filter: LibraryFilter = .all
     @State private var showSettings: Bool = false
 
@@ -108,8 +109,12 @@ struct ShowDetailView: View {
                             title: ep.title
                         ),
                         label: {
-                            EpisodeRow(episode: ep, showAccent: currentSubscription.accentColor)
-                                .padding(.horizontal, AppTheme.Spacing.lg)
+                            EpisodeRow(
+                                episode: ep,
+                                showAccent: currentSubscription.accentColor,
+                                onPlay: { playEpisode(ep, in: currentSubscription) }
+                            )
+                            .padding(.horizontal, AppTheme.Spacing.lg)
                         }
                     )
                     if idx != episodes.count - 1 {
@@ -149,6 +154,30 @@ struct ShowDetailView: View {
             }
             .accessibilityLabel("Show options")
         }
+    }
+
+    // MARK: - Tap-to-play
+
+    /// Synthesizes a `MockPlayerEpisode` from the library shim types and
+    /// hands it to the playback state. Lane 2 will replace this bridge with
+    /// the real `Episode` -> `AudioEngine` path; for now it lets the
+    /// mini-player surface react to user input without leaving the list.
+    private func playEpisode(
+        _ episode: LibraryMockEpisode,
+        in subscription: LibraryMockSubscription
+    ) {
+        let player = MockPlayerEpisode(
+            id: episode.id.uuidString,
+            showName: subscription.title,
+            episodeNumber: episode.number,
+            title: episode.title,
+            chapterTitle: nil,
+            duration: TimeInterval(episode.durationSeconds),
+            primaryArtColor: subscription.accentColor,
+            secondaryArtColor: subscription.accentColor.opacity(0.55)
+        )
+        playbackState.load(player, transcript: [])
+        playbackState.play()
     }
 
     // MARK: - Filtering

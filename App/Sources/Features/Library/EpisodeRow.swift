@@ -19,10 +19,15 @@ import SwiftUI
 struct EpisodeRow: View {
     let episode: LibraryMockEpisode
     let showAccent: Color
+    /// Tap action for the leading state indicator. `nil` means the indicator
+    /// is decorative (the historical default); supplying it converts the
+    /// indicator into a Play affordance that loads the episode into the
+    /// mini-player without leaving the list.
+    var onPlay: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-            stateIndicator
+            playOrIndicator
                 .frame(width: 22, alignment: .center)
                 .padding(.top, 4)
 
@@ -46,6 +51,25 @@ struct EpisodeRow: View {
     }
 
     // MARK: - Subviews
+
+    /// Wraps the state indicator in a tap target when `onPlay` is supplied.
+    /// Decorative when not — preserves call sites that don't need play.
+    @ViewBuilder
+    private var playOrIndicator: some View {
+        if let onPlay {
+            Button {
+                Haptics.medium()
+                onPlay()
+            } label: {
+                stateIndicator
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Play \(episode.title)")
+        } else {
+            stateIndicator
+        }
+    }
 
     @ViewBuilder
     private var stateIndicator: some View {
