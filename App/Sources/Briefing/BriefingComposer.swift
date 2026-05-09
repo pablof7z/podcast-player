@@ -63,24 +63,22 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
     /// TTS voice id. Empty string = provider default.
     let voiceID: String
 
-    /// Production default: pulls live RAG from `RAGService.shared`. Marked
-    /// `@MainActor` because the singleton is main-actor isolated; the only
-    /// call site (`BriefingsViewModel`) is already on the main actor, and
-    /// the `init(rag:wiki:tts:storage:apiKey:model:voiceID:)` overload below
-    /// stays nonisolated for tests + dependency injection.
+    /// Production default: wires live RAG + WikiStorage + ElevenLabs TTS.
+    /// Marked `@MainActor` because the singletons are main-actor isolated;
+    /// the only production call site (`BriefingsViewModel`) is already on
+    /// the main actor, and the explicit `init(rag:wiki:tts:storage:...)`
+    /// overload below stays nonisolated for tests and DI.
     @MainActor
     convenience init(
         storage: BriefingStorage,
-        wiki: BriefingWikiStorageProtocol = FakeWikiStorage(),
-        tts: TTSProtocol = FakeTTS(),
         apiKey: String? = nil,
         model: String = "openai/gpt-4o-mini",
         voiceID: String = ""
     ) {
         self.init(
             rag: RAGService.shared.briefingRAG,
-            wiki: wiki,
-            tts: tts,
+            wiki: WikiStorage.shared,
+            tts: ElevenLabsBriefingTTS(),
             storage: storage,
             apiKey: apiKey,
             model: model,
@@ -90,8 +88,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
 
     init(
         rag: BriefingRAGSearchProtocol,
-        wiki: BriefingWikiStorageProtocol = FakeWikiStorage(),
-        tts: TTSProtocol = FakeTTS(),
+        wiki: BriefingWikiStorageProtocol,
+        tts: TTSProtocol,
         storage: BriefingStorage,
         apiKey: String? = nil,
         model: String = "openai/gpt-4o-mini",
