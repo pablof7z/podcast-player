@@ -31,6 +31,12 @@ struct DiscoverSearchForm: View {
     @State private var subscribingID: Int?
     @State private var searchTask: Task<Void, Never>?
 
+    /// Trending podcasts shown when the query is empty — fetched once
+    /// per sheet appearance, then cached.
+    @State private var trending: [ITunesSearchClient.Result] = []
+    @State private var isLoadingTrending: Bool = false
+    @State private var trendingFetched: Bool = false
+
     @FocusState private var queryFocused: Bool
 
     var body: some View {
@@ -46,12 +52,18 @@ struct DiscoverSearchForm: View {
             }
 
             if results.isEmpty && !isSearching {
-                emptyState
+                emptyOrTrendingState
             } else {
                 resultsList
             }
         }
-        .onAppear { queryFocused = true }
+        .onAppear {
+            queryFocused = true
+            if !trendingFetched {
+                trendingFetched = true
+                Task { await loadTrending() }
+            }
+        }
         .onChange(of: query) { _, newValue in
             scheduleAutoSearch(for: newValue)
         }
@@ -93,7 +105,26 @@ struct DiscoverSearchForm: View {
 
     // MARK: - Empty / results
 
-    private var emptyState: some View {
+    /// Pre-search empty area: shows the "Popular Now" rail when the
+    /// trending fetch succeeded; falls back to the calm prompt when the
+    /// fetch is still in flight, failed, or returned nothing.
+    @ViewBuilder
+    private var emptyOrTrendingState: some View {
+        if !trending.isEmpty {
+            trendingSection
+        } else if isLoadingTrending {
+            VStack {
+                Spacer(minLength: 60)
+                ProgressView()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+        } else {
+            calmPrompt
+        }
+    }
+
+    private var calmPrompt: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             Spacer(minLength: 40)
             Image(systemName: "magnifyingglass")
@@ -109,6 +140,35 @@ struct DiscoverSearchForm: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    /// "Popular Now" — top podcasts from Apple's marketing feed. Same row
+    /// component (and tap-to-subscribe affordance) as search results.
+    private var trendingSection: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                HStack {
+                    Text("Popular Now")
+                        .font(AppTheme.Typography.headline)
+                    Spacer()
+                }
+                .padding(.horizontal, AppTheme.Spacing.lg)
+                .padding(.bottom, AppTheme.Spacing.xs)
+
+                ForEach(trending) { result in
+                    DiscoverResultRow(
+                        result: result,
+                        isSubscribing: subscribingID == result.collectionId,
+                        isAlreadySubscribed: isAlreadySubscribed(result),
+                        onSubscribe: { Task { await subscribe(to: result) } }
+                    )
+                    .padding(.horizontal, AppTheme.Spacing.lg)
+                    Divider().padding(.leading, AppTheme.Spacing.lg + 64 + AppTheme.Spacing.md)
+                }
+            }
+            .padding(.bottom, AppTheme.Spacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
     }
 
     private var resultsList: some View {
@@ -187,6 +247,15 @@ struct DiscoverSearchForm: View {
             self.error = error.localizedDescription
             results = []
         }
+    }
+
+    /// One-shot trending fetch. Failure is silent — the calm prompt takes
+    /// over so the empty state never feels broken when the network is gone.
+    private func loadTrending() async {
+        isLoadingTrending = true
+        defer { isLoadingTrending = false }
+        let fetched = (try? await ITunesSearchClient.topPodcasts()) ?? []
+        trending = fetched
     }
 
     private func subscribe(to result: ITunesSearchClient.Result) async {
