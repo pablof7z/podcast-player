@@ -1,5 +1,5 @@
 import Foundation
-@testable import AppTemplate
+@testable import Podcastr
 
 // MARK: - Lane-10 test mocks
 //

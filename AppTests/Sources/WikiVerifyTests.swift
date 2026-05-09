@@ -1,5 +1,5 @@
 import XCTest
-@testable import AppTemplate
+@testable import Podcastr
 
 @MainActor
 final class WikiVerifyTests: XCTestCase {

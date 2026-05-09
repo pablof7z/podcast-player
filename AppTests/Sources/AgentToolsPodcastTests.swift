@@ -1,5 +1,5 @@
 import XCTest
-@testable import AppTemplate
+@testable import Podcastr
 
 /// Lane-10 tests. Drive `AgentTools.dispatchPodcast` against mock deps and
 /// verify (a) schema validation rejects bad arguments cleanly and (b) the

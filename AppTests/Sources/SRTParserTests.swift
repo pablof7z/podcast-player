@@ -1,5 +1,5 @@
 import XCTest
-@testable import AppTemplate
+@testable import Podcastr
 
 final class SRTParserTests: XCTestCase {
 
