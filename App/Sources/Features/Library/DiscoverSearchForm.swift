@@ -177,7 +177,10 @@ struct DiscoverSearchForm: View {
                         result: result,
                         isSubscribing: subscribingID == result.collectionId,
                         isAlreadySubscribed: isAlreadySubscribed(result),
-                        onSubscribe: { Task { await subscribe(to: result) } }
+                        rowError: rowErrors[result.collectionId],
+                        isErrorExpanded: expandedErrorIDs.contains(result.collectionId),
+                        onSubscribe: { Task { await subscribe(to: result) } },
+                        onToggleErrorExpansion: { toggleErrorExpansion(for: result.collectionId) }
                     )
                     .padding(.horizontal, AppTheme.Spacing.lg)
                     Divider().padding(.leading, AppTheme.Spacing.lg + 64 + AppTheme.Spacing.md)
