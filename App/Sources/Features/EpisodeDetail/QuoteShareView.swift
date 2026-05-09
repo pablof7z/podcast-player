@@ -76,7 +76,7 @@ struct QuoteShareView: View {
         let url = episode.imageURL ?? showImageURL
         return Group {
             if let url {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

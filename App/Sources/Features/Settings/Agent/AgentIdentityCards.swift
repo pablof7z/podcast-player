@@ -190,7 +190,7 @@ struct AgentPictureURLSheet: View {
     @ViewBuilder
     private var avatarPreview: some View {
         if let url = validPictureURL {
-            AsyncImage(url: url) { phase in
+            CachedAsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
                     image.resizable().scaledToFill()

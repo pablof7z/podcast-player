@@ -83,7 +83,7 @@ struct ShowDetailHeader: View {
     @ViewBuilder
     private var artworkOverlay: some View {
         if let url = subscription.imageURL {
-            AsyncImage(url: url) { phase in
+            CachedAsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
                     image

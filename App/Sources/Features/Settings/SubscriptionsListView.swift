@@ -157,7 +157,7 @@ struct SubscriptionsListView: View {
     private func artwork(for sub: PodcastSubscription) -> some View {
         Group {
             if let url = sub.imageURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

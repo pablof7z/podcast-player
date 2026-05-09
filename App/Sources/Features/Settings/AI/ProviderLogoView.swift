@@ -30,7 +30,7 @@ struct ProviderLogoView: View {
     var body: some View {
         Group {
             if let url = iconURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image

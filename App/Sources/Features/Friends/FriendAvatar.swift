@@ -42,7 +42,7 @@ struct FriendAvatar: View {
                 .font(.system(size: size * Layout.fontSizeRatio, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
             if let url = validAvatarURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     if case .success(let image) = phase {
                         image.resizable().scaledToFill()
                     }

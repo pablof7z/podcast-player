@@ -74,7 +74,7 @@ struct OnboardingIdentityPage: View {
                 .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
 
             if let url = validPictureURL {
-                AsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

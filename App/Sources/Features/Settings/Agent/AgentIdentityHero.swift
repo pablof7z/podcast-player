@@ -60,7 +60,7 @@ struct AgentIdentityHero: View {
                     .fill(AppTheme.Tint.agentSurface.opacity(0.16))
 
                 if let url = avatarURL {
-                    AsyncImage(url: url) { phase in
+                    CachedAsyncImage(url: url) { phase in
                         if case .success(let image) = phase {
                             image.resizable().scaledToFill()
                         } else {

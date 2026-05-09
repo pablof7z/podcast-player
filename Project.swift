@@ -39,6 +39,14 @@ let project = Project(
             url: "https://github.com/jkrukowski/SQLiteVec",
             requirement: .upToNextMinor(from: "0.0.14")
         ),
+        // Kingfisher — memory + disk image cache. Backs `CachedAsyncImage`
+        // so artwork URLs (subscription / episode covers, iTunes Search
+        // results, etc.) fetch at most once per session instead of
+        // re-downloading every appearance like SwiftUI's stock `AsyncImage`.
+        .remote(
+            url: "https://github.com/onevcat/Kingfisher",
+            requirement: .upToNextMajor(from: "8.0.0")
+        ),
     ],
     settings: .settings(
         base: [
@@ -63,6 +71,7 @@ let project = Project(
             dependencies: [
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
+                .package(product: "Kingfisher"),
                 .target(name: "\(appName)Widget"),
             ],
             settings: .settings(
