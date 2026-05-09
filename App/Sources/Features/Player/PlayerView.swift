@@ -110,18 +110,34 @@ struct PlayerView: View {
 
     // MARK: - Hero artwork
 
-    /// Resolved artwork URL for the current episode. Prefers the per-episode
-    /// override (`<itunes:image>`) and falls back to the show-level cover art
-    /// surfaced through `PlaybackState.resolveShowImage` (wired in `RootView`
-    /// so this view stays decoupled from `AppStateStore`).
+    /// Resolved artwork URL with per-chapter override. Priority:
+    ///
+    ///   1. Active chapter's `imageURL` (Podcasting 2.0 chapters often
+    ///      ship topic-aligned imagery — e.g. a guest photo for an
+    ///      interview segment). This swaps mid-playback as the chapter
+    ///      changes and is the user-visible payoff for chapter hydration.
+    ///   2. Per-episode artwork (`<itunes:image>` override).
+    ///   3. Show-level cover art via `PlaybackState.resolveShowImage`.
     private var artworkURL: URL? {
         guard let episode = state.episode else { return nil }
+        if let chapterImage = activeChapterImageURL { return chapterImage }
         return episode.imageURL ?? state.resolveShowImage(episode)
+    }
+
+    /// Active chapter's `img` URL, or `nil` when the active chapter has
+    /// none (or the episode has no navigable chapters at all). Reads from
+    /// the live store so chapters hydrated after playback started — via
+    /// `ChaptersHydrationService` — still produce per-chapter art.
+    private var activeChapterImageURL: URL? {
+        guard let chapters = navigableChapters, !chapters.isEmpty else { return nil }
+        return chapters.active(at: state.currentTime)?.imageURL
     }
 
     /// Square hero cover art. `AsyncImage` distinguishes loading (neutral
     /// surface, no glyph) from failure (neutral surface + subtle waveform
     /// glyph) so the user never reads the loading state as "no artwork".
+    /// The image is keyed on `artworkURL` so a chapter-image swap mid-
+    /// playback fades through opacity instead of snapping.
     private var heroArtwork: some View {
         ZStack {
             if let url = artworkURL {
@@ -139,6 +155,8 @@ struct PlayerView: View {
                         artworkLoadingPlaceholder
                     }
                 }
+                .id(url)
+                .transition(.opacity)
             } else {
                 artworkFailureFallback
             }
@@ -154,6 +172,7 @@ struct PlayerView: View {
         .blur(radius: isScrubbing ? 8 : 0)
         .glassEffectID("player.artwork", in: glassNamespace)
         .animation(AppTheme.Animation.spring, value: isScrubbing)
+        .animation(.easeInOut(duration: 0.35), value: artworkURL)
         .accessibilityHidden(true)
     }
 
