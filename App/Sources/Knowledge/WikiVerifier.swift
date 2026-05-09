@@ -16,6 +16,18 @@ struct WikiVerifier: Sendable {
 
     let rag: any WikiRAGSearchProtocol
 
+    /// Production default: hooks into the live `RAGService` singleton so the
+    /// verifier resolves citations against the on-device sqlite-vec store.
+    /// `@MainActor` because `RAGService.shared` is main-actor isolated; the
+    /// verifier itself remains `Sendable` and its `verify(_:)` method runs
+    /// off-main via `await`.
+    @MainActor
+    init() {
+        self.rag = RAGService.shared.wikiRAG
+    }
+
+    /// Test-injectable init. Tests pass an `InMemoryRAGSearch` (or another
+    /// mock) so they don't need to bring up `RAGService`.
     init(rag: any WikiRAGSearchProtocol) {
         self.rag = rag
     }

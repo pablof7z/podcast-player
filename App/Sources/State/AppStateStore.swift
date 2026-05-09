@@ -60,6 +60,11 @@ final class AppStateStore {
         // push (triggered by the `didSet` below) reflects the merged values.
         iCloudSettingsSync.shared.start(mergingInto: &loadedState.settings)
         self.state = loadedState
+        // Bootstrap the live RAG stack so the SQLite vector store is opened
+        // (and its file path logged) before any view tries to query it.
+        // Hand `self` to the service so the briefing adapter and transcript
+        // ingester can resolve episode/subscription metadata.
+        RAGService.shared.attach(appStore: self)
         // Prune agent-activity entries older than 30 days so the persisted log
         // doesn't grow unboundedly across many months of use. This fires one
         // Persistence.save only when stale entries are actually found.
