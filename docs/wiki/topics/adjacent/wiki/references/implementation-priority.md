@@ -19,7 +19,7 @@ Adjacent ideas should not distract from core playback, transcripts, wiki compila
 
 ## Near-Term
 
-- Parse and store Podcasting 2.0 metadata already relevant to the app: chapters, transcript, person, soundbite, podroll, funding, location, and alternateEnclosure.
+- Parse and store Podcasting 2.0 metadata already relevant to the app: chapters, transcript, person, soundbite, podroll, location, and alternateEnclosure.
 - Add snip/highlight model with timestamp, transcript text, speaker, note, and tags.
 - Export generated wiki pages and highlights as Markdown.
 - Add App Intent entry points for start voice mode, resume, save snip, and start briefing.
@@ -35,14 +35,13 @@ Adjacent ideas should not distract from core playback, transcripts, wiki compila
 ## Later
 
 - socialInteract comment reading/posting.
-- Value4Value payments or boost-like timestamp support.
 - liveItem listening rooms.
 - generated video overviews.
 - full Obsidian vault sync and Readwise-style integrations.
 
 ## Product Risk
 
-The social, payments, and live features are rich but can pull the app away from the core "converse with my podcast library" promise. Metadata parsing, snips, exports, and ambient controls are safer because they directly strengthen that promise.
+The social and live features are rich but can pull the app away from the core "converse with my podcast library" promise. Metadata parsing, snips, exports, and ambient controls are safer because they directly strengthen that promise.
 
 ## See Also
 

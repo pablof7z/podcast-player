@@ -20,9 +20,17 @@ enum DateParsing {
             f.dateFormat = fmt
             if let date = f.date(from: trimmed) { return date }
         }
-        // Last-ditch: ISO 8601 (some Atom-flavored feeds emit it under <pubDate>).
+        // Last-ditch: ISO 8601 (some Atom-flavored feeds emit it under
+        // `<pubDate>`). `[.withInternetDateTime, .withFractionalSeconds]`
+        // *requires* fractional seconds — so a clean "2024-01-01T12:00:00Z"
+        // wouldn't parse if we used that combination alone. Try the
+        // fractional-seconds variant first, then the plain form.
+        let isoFractional = ISO8601DateFormatter()
+        isoFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = isoFractional.date(from: trimmed) { return date }
+
         let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        iso.formatOptions = [.withInternetDateTime]
         return iso.date(from: trimmed)
     }
 

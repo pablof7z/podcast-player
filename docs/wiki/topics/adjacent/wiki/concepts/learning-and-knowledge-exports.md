@@ -24,7 +24,7 @@ The strongest adjacent knowledge idea is to make podcast listening produce porta
 - **Markdown export**: export episode pages, highlights, wiki pages, and briefings as plain Markdown.
 - **Obsidian-friendly vault**: preserve wikilinks, backlinks, speaker pages, and episode timestamp URLs.
 - **Readwise-style integration path**: support a structured export format that maps to highlights, notes, tags, and metadata.
-- **Generated learning artifacts**: turn a week of episodes into flashcards, quiz prompts, glossary pages, debate briefings, critique briefings, and action lists.
+- **Generated learning artifacts**: turn a week of episodes into glossary pages, debate briefings, critique briefings, and action lists.
 - **Artifact prompt transparency**: store the custom prompt or brief used to generate a briefing, mirroring the idea that generated study media should be inspectable.
 
 ## Why It Fits Podcastr

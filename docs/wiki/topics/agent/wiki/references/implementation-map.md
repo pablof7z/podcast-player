@@ -28,6 +28,11 @@ Agent work should follow the current codebase shape.
 - `App/Sources/Agent/AgentTools+Briefing.swift` - briefing generation.
 - `App/Sources/Agent/AgentTools+Web.swift` - external research.
 - `App/Sources/Agent/AgentRelayBridge.swift` - Nostr inbound loop and remote safety gates.
+- `App/Sources/Agent/ToolRegistry.swift` - proposed metadata registry for dynamic tool palettes.
+- `App/Sources/Agent/ToolGateway.swift` - proposed central execution, permission, audit, and dispatch path.
+- `App/Sources/Agent/AgentExecutionContext.swift` - proposed per-call context object.
+- `App/Sources/Agent/AgentApprovalQueue.swift` - proposed persistent approvals for risky actions.
+- `App/Sources/Agent/AgentJobQueue.swift` - proposed durable async job queue.
 - `App/Sources/Voice/AudioConversationManager.swift` - voice orchestration.
 - `App/Sources/Briefing/BriefingComposer.swift` - briefing scripts and anchors.
 - `App/Sources/Knowledge/` - wiki, embeddings, and retrieval services.
@@ -39,6 +44,8 @@ Keep each concern split before it approaches the 300-line soft limit. The tool f
 ## See Also
 
 - [[tool-surface|Tool Surface]] ([Tool Surface](../concepts/tool-surface.md)) - tool domains that map to these files.
+- [[agent-tool-platform|Agent Tool Platform]] ([Agent Tool Platform](../topics/agent-tool-platform.md)) - proposed infrastructure beyond the current files.
+- [[tool-family-matrix|Tool Family Matrix]] ([Tool Family Matrix](tool-family-matrix.md)) - service/store mapping for tool families.
 - [[data-model-notes|Data Model Notes]] ([Data Model Notes](../../../knowledge/wiki/references/data-model-notes.md)) - persistence boundaries for tool implementations.
 
 ## Sources

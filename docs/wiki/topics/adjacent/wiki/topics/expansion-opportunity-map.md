@@ -19,10 +19,10 @@ The adjacent opportunity set is not "more AI features." The richer direction is 
 
 ## Highest-Leverage Ideas
 
-1. **Podcasting 2.0 richness layer**: use chapters, soundbites, people, podrolls, locations, funding, value, socialInteract, liveItem, and alternateEnclosure as first-class product primitives.
+1. **Podcasting 2.0 richness layer**: use chapters, soundbites, people, podrolls, locations, socialInteract, liveItem, and alternateEnclosure as first-class product primitives.
 2. **Generated study media**: extend TLDR briefings into brief, deep dive, critique, debate, and visual overview formats grounded in podcast transcripts and wiki pages.
 3. **Highlight and export loop**: let users snip a playable moment, annotate it, sync it to Markdown, Readwise-style review, or Obsidian vaults.
-4. **Creator/community graph**: use podrolls, socialInteract roots, person tags, funding links, and OP3-style public stats to make discovery feel socially grounded.
+4. **Creator/community graph**: use podrolls, socialInteract roots, person tags, and OP3-style public stats to make discovery feel socially grounded.
 5. **Ambient companion layer**: make voice, briefings, queue actions, and citations reachable from widgets, Live Activities, Control Center, Lock Screen controls, and Action Button.
 6. **Trust and audit surface**: expose citation support, transcript source, model-generated artifact prompts, and privacy-friendly analytics choices.
 

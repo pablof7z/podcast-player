@@ -6,8 +6,8 @@ Last updated: 2026-05-09
 
 ## Statistics
 
-- Sources: 6 raw source notes plus linked repo-spec references and online sources
-- Articles: 23 compiled wiki articles
+- Sources: 7 raw source notes plus linked repo-spec references and online sources
+- Articles: 30 compiled wiki articles
 - Inventory records: 0 tracked items
 - Datasets: 0 manifests
 - Outputs: 0 generated artifacts
@@ -43,3 +43,5 @@ Last updated: 2026-05-09
 
 - 2026-05-09: Initialized repo-local wiki hub and four topic wikis from user product seed plus existing spec research.
 - 2026-05-09: Added adjacent ideas topic wiki from online research.
+- 2026-05-09: Expanded agent wiki with lifetime tool platform design.
+- 2026-05-09: Refined agent tool catalog to remove unwanted tools and add TENEX-compatible delegate.

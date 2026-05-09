@@ -9,6 +9,7 @@ import SwiftUI
 enum RootTab: String, CaseIterable {
     case home = "Home"
     case library = "Library"
+    case search = "Search"
     case wiki = "Wiki"
     case ask = "Ask"
 
@@ -16,6 +17,7 @@ enum RootTab: String, CaseIterable {
         switch self {
         case .home:    "house.fill"
         case .library: "books.vertical.fill"
+        case .search:  "magnifyingglass"
         case .wiki:    "book.closed.fill"
         case .ask:     "bubble.left.and.bubble.right.fill"
         }
@@ -165,7 +167,12 @@ struct RootView: View {
         case .home:
             NavigationStack { HomeView().toolbar { sharedToolbar(showAgent: true) } }
         case .library:
-            NavigationStack { LibraryView().toolbar { sharedToolbar(showAgent: true) } }
+            NavigationStack {
+                LibraryView(onOpenSearch: { selectedTab = .search })
+                    .toolbar { sharedToolbar(showAgent: true) }
+            }
+        case .search:
+            NavigationStack { PodcastSearchView().toolbar { sharedToolbar(showAgent: true) } }
         case .wiki:
             NavigationStack { WikiView().toolbar { sharedToolbar(showAgent: true) } }
         case .ask:

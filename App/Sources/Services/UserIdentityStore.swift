@@ -5,34 +5,74 @@ import os.log
 /// The human user's Nostr identity — entirely separate from the agent's identity.
 /// Manages its own keychain slot and published key state.
 ///
-/// Start by calling `start()` once at app launch so the store auto-loads any
-/// previously saved key from the keychain.
+/// Two flavours of identity are supported:
+/// 1. **Local nsec** — a private key stored in the iOS Keychain.
+/// 2. **Remote signer (NIP-46)** — a "bunker" connection where the user's nsec lives
+///    elsewhere (Amber, nsec.app, nsecBunker, …) and we delegate signing over a relay.
+///
+/// Call `start()` once at app launch so the store auto-loads any previously saved key
+/// or remote-signer connection from the keychain.
 @MainActor
 @Observable
 final class UserIdentityStore {
     private let logger = Logger.app("UserIdentityStore")
+
+    /// The user's signing pubkey (32-byte hex x-only). Always reflects whichever signer
+    /// is currently active — local key or NIP-46 user pubkey.
     private(set) var publicKeyHex: String?
     private(set) var keyPair: NostrKeyPair?
     private(set) var loginError: String?
 
+    /// What kind of identity is currently active.
+    enum Mode: String, Sendable, Codable {
+        case none
+        case localKey
+        case remoteSigner
+    }
+    private(set) var mode: Mode = .none
+
+    /// The active signer. Whatever the rest of the app uses to sign events.
+    /// `nil` while no identity is configured.
+    private(set) var signer: (any NostrSigner)?
+
+    /// Live state of the NIP-46 connection (UI surfaces this).
+    private(set) var remoteSignerState: RemoteSignerState = .idle
+
     var hasIdentity: Bool { publicKeyHex != nil }
+    var isRemoteSigner: Bool { mode == .remoteSigner }
 
-    // MARK: - Keychain
+    // MARK: - Keychain slots
 
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").user-identity"
-    private static let account = "user-private-key-hex"
+    private static let userKeyService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").user-identity"
+    private static let userKeyAccount = "user-private-key-hex"
+    private static let nip46SessionService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-session"
+    private static let nip46SessionAccount = "session-private-key-hex"
+    private static let nip46MetaService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-meta"
+    private static let nip46MetaAccount = "connection"
 
     // MARK: - Lifecycle
 
     func start() {
+        // Prefer an existing local key.
         do {
-            guard let hex = try KeychainStore.readString(service: Self.service, account: Self.account),
-                  !hex.isEmpty else { return }
-            let pair = try NostrKeyPair(privateKeyHex: hex)
-            keyPair = pair
-            publicKeyHex = pair.publicKeyHex
+            if let hex = try KeychainStore.readString(service: Self.userKeyService, account: Self.userKeyAccount),
+               !hex.isEmpty {
+                let pair = try NostrKeyPair(privateKeyHex: hex)
+                keyPair = pair
+                publicKeyHex = pair.publicKeyHex
+                signer = LocalKeySigner(keyPair: pair)
+                mode = .localKey
+                return
+            }
         } catch {
-            logger.error("UserIdentityStore.start failed to load key: \(error, privacy: .public)")
+            logger.error("UserIdentityStore.start failed to load local key: \(error, privacy: .public)")
+        }
+        // Otherwise, try to resume a remote-signer connection.
+        if let meta = try? loadRemoteMeta(), let session = try? loadSessionKeyPair() {
+            publicKeyHex = meta.userPubkeyHex
+            mode = .remoteSigner
+            remoteSignerState = .reconnecting
+            Task { await self.resumeRemote(meta: meta, sessionKeyPair: session) }
         }
     }
 
@@ -43,24 +83,22 @@ final class UserIdentityStore {
         let trimmed = nsec.trimmed
         do {
             let pair = try NostrKeyPair(nsec: trimmed)
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.service, account: Self.account)
-            keyPair = pair
-            publicKeyHex = pair.publicKeyHex
+            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            adoptLocal(pair)
         } catch {
             loginError = "Invalid nsec — check the key and try again."
             throw error
         }
     }
 
-    // MARK: - Generate ephemeral key (auto-attribution without exposing nsec)
+    // MARK: - Generate ephemeral key
 
     func generateKey() throws {
         loginError = nil
         do {
             let pair = try NostrKeyPair.generate()
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.service, account: Self.account)
-            keyPair = pair
-            publicKeyHex = pair.publicKeyHex
+            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            adoptLocal(pair)
         } catch {
             loginError = "Failed to generate key — please try again."
             throw error
@@ -71,20 +109,178 @@ final class UserIdentityStore {
 
     func clearIdentity() {
         do {
-            try KeychainStore.deleteString(service: Self.service, account: Self.account)
+            try KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
         } catch {
             logger.error("UserIdentityStore.clearIdentity failed: \(error, privacy: .public)")
         }
+        Task { await self.tearDownRemote() }
+        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
         keyPair = nil
         publicKeyHex = nil
+        signer = nil
+        mode = .none
+        remoteSignerState = .idle
+    }
+
+    // MARK: - NIP-46 connect / disconnect
+
+    /// Parse a `bunker://…` URI, run the connect handshake, and (on success) persist the
+    /// connection so the next app launch reconnects automatically. If the bunker replies
+    /// with an `auth_url` challenge, the state advances to `.awaitingAuthorization(url)`
+    /// and the UI surfaces a button to open the URL in the browser.
+    func connectRemoteSigner(uri: String) async {
+        loginError = nil
+        let parsed: BunkerURI
+        do {
+            parsed = try BunkerURI.parse(uri)
+        } catch {
+            loginError = (error as? LocalizedError)?.errorDescription ?? "Invalid bunker URI."
+            remoteSignerState = .failed(loginError ?? "Invalid bunker URI.")
+            return
+        }
+        remoteSignerState = .connecting
+        do {
+            let sessionPair = try NostrKeyPair.generate()
+            let signer = RemoteSigner(bunker: parsed, sessionKeyPair: sessionPair)
+            let userPub = try await signer.connect { [weak self] url in
+                await self?.handleAuthChallenge(url: url)
+            }
+            try KeychainStore.saveString(sessionPair.privateKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+            let meta = RemoteMeta(
+                bunkerPubkeyHex: parsed.remotePubkeyHex,
+                relays: parsed.relays,
+                secret: parsed.secret,
+                permissions: parsed.permissions,
+                userPubkeyHex: userPub
+            )
+            try saveRemoteMeta(meta)
+            self.signer = signer
+            self.publicKeyHex = userPub
+            self.keyPair = nil
+            self.mode = .remoteSigner
+            self.remoteSignerState = .connected(userPub)
+        } catch {
+            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            loginError = msg
+            remoteSignerState = .failed(msg)
+        }
+    }
+
+    /// Surfaces the bunker's `auth_url` URL to the UI. Called from inside `connect(...)`'s
+    /// `onAuthChallenge` continuation; the connect call itself is still suspended waiting
+    /// for the eventual `ack`.
+    private func handleAuthChallenge(url: URL) {
+        remoteSignerState = .awaitingAuthorization(url)
+    }
+
+    func disconnectRemoteSigner() async {
+        await tearDownRemote()
+        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
+        publicKeyHex = nil
+        keyPair = nil
+        signer = nil
+        mode = .none
+        remoteSignerState = .idle
     }
 
     // MARK: - Display helpers
 
-    var npub: String? { keyPair?.npub }
+    var npub: String? {
+        guard let hex = publicKeyHex, let bytes = Data(hexString: hex), bytes.count == 32 else { return nil }
+        return Bech32.encode(hrp: "npub", data: bytes)
+    }
 
     var npubShort: String? {
         guard let full = npub, full.count > 16 else { return npub }
         return "\(full.prefix(10))…\(full.suffix(6))"
     }
+
+    // MARK: - Private — local
+
+    private func adoptLocal(_ pair: NostrKeyPair) {
+        keyPair = pair
+        publicKeyHex = pair.publicKeyHex
+        signer = LocalKeySigner(keyPair: pair)
+        mode = .localKey
+        remoteSignerState = .idle
+    }
+
+    // MARK: - Private — remote
+
+    private func resumeRemote(meta: RemoteMeta, sessionKeyPair: NostrKeyPair) async {
+        let bunker = BunkerURI(
+            remotePubkeyHex: meta.bunkerPubkeyHex,
+            relays: meta.relays,
+            secret: meta.secret,
+            permissions: meta.permissions
+        )
+        // Pass the previously-known pubkey so callers of `signer.publicKey()` during the
+        // ~1s reconnect window get the cached value instead of `.missingPublicKey`.
+        let signer = RemoteSigner(
+            bunker: bunker,
+            sessionKeyPair: sessionKeyPair,
+            cachedUserPublicKeyHex: meta.userPubkeyHex
+        )
+        // Make the cached signer available to callers immediately (it answers
+        // `publicKey()` from cache; sign requests will block on the WebSocket).
+        self.signer = signer
+        do {
+            _ = try await signer.connect { [weak self] url in
+                await self?.handleAuthChallenge(url: url)
+            }
+            self.remoteSignerState = .connected(meta.userPubkeyHex)
+        } catch {
+            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+            self.remoteSignerState = .failed(msg)
+        }
+    }
+
+    private func tearDownRemote() async {
+        if let s = signer as? RemoteSigner { await s.disconnect() }
+    }
+
+    private func loadSessionKeyPair() throws -> NostrKeyPair? {
+        guard let hex = try KeychainStore.readString(service: Self.nip46SessionService, account: Self.nip46SessionAccount),
+              !hex.isEmpty else { return nil }
+        return try NostrKeyPair(privateKeyHex: hex)
+    }
+
+    private func loadRemoteMeta() throws -> RemoteMeta? {
+        guard let json = try KeychainStore.readString(service: Self.nip46MetaService, account: Self.nip46MetaAccount),
+              let data = json.data(using: .utf8) else { return nil }
+        return try JSONDecoder().decode(RemoteMeta.self, from: data)
+    }
+
+    private func saveRemoteMeta(_ meta: RemoteMeta) throws {
+        let data = try JSONEncoder().encode(meta)
+        guard let s = String(data: data, encoding: .utf8) else { return }
+        try KeychainStore.saveString(s, service: Self.nip46MetaService, account: Self.nip46MetaAccount)
+    }
+}
+
+// MARK: - Supporting types
+
+/// Connection state surfaced to the UI for the NIP-46 flow.
+enum RemoteSignerState: Sendable, Equatable {
+    case idle
+    case connecting
+    case reconnecting
+    /// The bunker replied with an `auth_url` challenge — the user must approve in a
+    /// browser. The connect call itself is still suspended; `connected(...)` follows
+    /// once the bunker delivers the real `ack`.
+    case awaitingAuthorization(URL)
+    case connected(String)            // associated value: user pubkey hex
+    case failed(String)               // error message
+}
+
+/// Minimal persisted NIP-46 metadata. Stored in the Keychain (JSON) alongside the
+/// session private key so the app can resume on launch without prompting for the URI again.
+private struct RemoteMeta: Codable, Sendable {
+    let bunkerPubkeyHex: String
+    let relays: [String]
+    let secret: String?
+    let permissions: [String]
+    let userPubkeyHex: String
 }

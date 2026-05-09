@@ -66,4 +66,4 @@ Episode ducks to −18 dB (not paused) on entry. Un-ducks with 300 ms fade on to
 
 - [[tool-surface|Tool Surface]] ([Tool Surface](tool-surface.md)) — full scoped tool list for this mode.
 - [[voice-briefing-loop|Voice and Briefing Loop]] ([Voice and Briefing Loop](voice-briefing-loop.md)) — UX-06 voice mode this complements.
-- [UX-16 brief](../../../../../../spec/briefs/ux-16-in-episode-agent.md) — full microinteraction tables, failure modes, and open questions.
+- [UX-16 brief](../../../../../spec/briefs/ux-16-in-episode-agent.md) — full microinteraction tables, failure modes, and open questions.

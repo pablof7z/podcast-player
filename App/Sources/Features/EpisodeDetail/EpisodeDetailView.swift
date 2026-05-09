@@ -10,9 +10,12 @@ import SwiftUI
 ///     trailing edge, docked glass pill player.
 ///
 /// Driven by the real `Episode` looked up out of `AppStateStore` via the
-/// passed `episodeID`. The transcript surface is intentionally placeholder
-/// until the transcript ingestion lane lands — this view shows
-/// `TranscribingInProgressView` for any non-`.ready` `transcriptState`.
+/// passed `episodeID`. When `episode.transcriptState == .ready` the transcript
+/// is loaded from `TranscriptStore`; otherwise we show
+/// `TranscribingInProgressView`. On first appearance for an episode that has
+/// a `publisherTranscriptURL` and a `.none` state, we kick off a background
+/// `TranscriptIngestService` warm so the user's intent ("read this episode")
+/// translates into a fetched transcript without an extra tap.
 struct EpisodeDetailView: View {
 
     // MARK: Mode
@@ -60,7 +63,7 @@ struct EpisodeDetailView: View {
         let subscription = store.subscription(id: episode.subscriptionID)
         let showName = subscription?.title ?? "Podcast"
         let showImageURL = subscription?.imageURL
-        let transcript = readyTranscript(for: episode)
+        let transcript = Self.readyTranscript(for: episode)
 
         ZStack(alignment: .bottom) {
             content(episode: episode,
@@ -83,6 +86,21 @@ struct EpisodeDetailView: View {
                 deepLink: deepLink(for: episode, segment: seg)
             )
         }
+        .task(id: episode.id) {
+            await warmTranscriptIfNeeded(episode: episode)
+        }
+    }
+
+    /// Warm the transcript on first appearance. Strict gating: we only kick off
+    /// an ingest if the state is `.none` and the publisher exposes a transcript
+    /// URL. We deliberately do not retry `.failed` here — that's the user's
+    /// "Request transcript" button to re-arm. We also don't try to gate on
+    /// Scribe-only configs (no publisher URL); the explicit CTA in
+    /// `TranscribingInProgressView` covers that path.
+    private func warmTranscriptIfNeeded(episode: Episode) async {
+        guard case .none = episode.transcriptState else { return }
+        guard episode.publisherTranscriptURL != nil else { return }
+        await TranscriptIngestService.shared.ingest(episodeID: episode.id)
     }
 
     // MARK: - Missing
@@ -204,13 +222,18 @@ struct EpisodeDetailView: View {
         return active.id
     }
 
-    private func readyTranscript(for episode: Episode) -> Transcript? {
-        // Transcript ingestion lane will populate a real store keyed by
-        // `episode.id`. Until that lands, we can only surface what's already
-        // marked `.ready` — and there's no fetcher in this lane to satisfy
-        // it. Returning `nil` triggers the empty-state surface.
+    /// Resolve the persisted `Transcript` for `episode` when its lifecycle is
+    /// `.ready`. Returns `nil` for any other state (so the caller renders the
+    /// in-progress / empty surface) and also `nil` if the on-disk file is
+    /// missing — which can happen if the user wiped Application Support but
+    /// the `AppState` snapshot still records `.ready`. Static + store-injected
+    /// so tests can drive it with a temp-directory `TranscriptStore`.
+    static func readyTranscript(
+        for episode: Episode,
+        store: TranscriptStore = .shared
+    ) -> Transcript? {
         guard case .ready = episode.transcriptState else { return nil }
-        return nil
+        return store.load(episodeID: episode.id)
     }
 
     private func deepLink(for episode: Episode, segment: Segment) -> String {

@@ -27,6 +27,9 @@ struct HomeView: View {
         .navigationTitle("Today")
         .navigationBarTitleDisplayMode(.large)
         .refreshable { await refreshAllFeeds() }
+        .navigationDestination(for: HomeEpisodeRoute.self) { route in
+            EpisodeDetailView(episodeID: route.episodeID)
+        }
     }
 
     // MARK: - Content

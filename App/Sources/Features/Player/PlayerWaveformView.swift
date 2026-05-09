@@ -13,7 +13,6 @@ struct PlayerWaveformView: View {
     /// `true` while the user is actively dragging the scrubber — drives the
     /// 56pt → 220pt expansion described in the brief.
     let isScrubbing: Bool
-    let copperAccent: Color
 
     /// Number of bars sampled across the full episode width. ~140 reads as
     /// "shape of the show" without becoming visual noise on phone screens.
@@ -21,15 +20,15 @@ struct PlayerWaveformView: View {
 
     var body: some View {
         Canvas { context, size in
-            drawWaveform(in: context, size: size)
-            drawPlayhead(in: context, size: size)
+            drawWaveform(in: &context, size: size)
+            drawPlayhead(in: &context, size: size)
         }
         .accessibilityHidden(true) // semantics handled by the parent slider.
     }
 
     // MARK: - Drawing
 
-    private func drawWaveform(in context: GraphicsContext, size: CGSize) {
+    private func drawWaveform(in context: inout GraphicsContext, size: CGSize) {
         let waveformHeight = size.height * (isScrubbing ? 0.62 : 0.78)
         let baseline = size.height * 0.5
         let barWidth = size.width / CGFloat(barCount)
@@ -47,22 +46,22 @@ struct PlayerWaveformView: View {
                 height: h
             )
             let played = normalized <= progressFraction
-            let color = played ? copperAccent : copperAccent.opacity(0.28)
+            let barColor: Color = played ? .accentColor : .accentColor.opacity(0.28)
             context.fill(
                 Path(roundedRect: rect, cornerRadius: barWidth * 0.35),
-                with: .color(color)
+                with: .color(barColor)
             )
         }
     }
 
-    private func drawPlayhead(in context: GraphicsContext, size: CGSize) {
+    private func drawPlayhead(in context: inout GraphicsContext, size: CGSize) {
         guard duration > 0 else { return }
         let x = CGFloat(currentTime / duration) * size.width
         let rect = CGRect(x: x - 1, y: size.height * 0.18, width: 2, height: size.height * 0.64)
-        context.fill(Path(rect), with: .color(.white.opacity(0.9)))
+        context.fill(Path(rect), with: .color(Color.primary.opacity(0.9)))
         context.fill(
             Path(ellipseIn: CGRect(x: x - 5, y: size.height * 0.46, width: 10, height: 10)),
-            with: .color(copperAccent)
+            with: .color(Color.accentColor)
         )
     }
 

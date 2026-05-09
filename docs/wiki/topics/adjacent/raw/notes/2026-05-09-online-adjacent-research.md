@@ -4,7 +4,7 @@ source: "Online research on 2026-05-09"
 type: notes
 ingested: 2026-05-09
 tags: [research, adjacent, podcasting-2, notebooklm, readwise, op3, ios]
-summary: "Online research found adjacent richness opportunities around Podcasting 2.0 metadata, source-grounded generated audio/video, interactive audio briefings, highlight export loops, social/funding primitives, open analytics, and iOS ambient controls."
+summary: "Online research found adjacent richness opportunities around Podcasting 2.0 metadata, source-grounded generated audio/video, interactive audio briefings, highlight export loops, open social primitives, open analytics, and iOS ambient controls."
 ---
 
 # Online Adjacent Ideas Research
@@ -19,8 +19,6 @@ summary: "Online research found adjacent richness opportunities around Podcastin
 - Podcasting 2.0 socialInteract tag: https://podcasting2.org/docs/podcast-namespace/tags/social-interact
 - Podcasting 2.0 liveItem tag: https://podcasting2.org/docs/podcast-namespace/tags/live-item
 - Podcasting 2.0 location tag: https://podcasting2.org/docs/podcast-namespace/tags/location
-- Podcasting 2.0 funding tag: https://podcasting2.org/docs/podcast-namespace/tags/funding
-- Podcasting 2.0 value tag: https://podcasting2.org/docs/podcast-namespace/tags/value
 - Podcasting 2.0 alternateEnclosure tag: https://podcasting2.org/docs/podcast-namespace/tags/alternate-enclosure
 - OP3: https://op3.dev/
 - NotebookLM Audio Overview help: https://support.google.com/notebooklm/answer/16212820
@@ -33,7 +31,7 @@ summary: "Online research found adjacent richness opportunities around Podcastin
 
 ## Findings
 
-Podcasting 2.0 is a broad metadata layer, not just transcripts. Its tags support chapters, soundbites, person credits, podroll recommendations, ActivityPub-style social comment roots, live items, locations, funding, value payments, and alternate enclosures.
+Podcasting 2.0 is a broad metadata layer, not just transcripts. Its tags support chapters, soundbites, person credits, podroll recommendations, ActivityPub-style social comment roots, live items, locations, and alternate enclosures.
 
 NotebookLM's Audio Overview pattern is relevant because it treats source-grounded synthesized audio as a first-class artifact. Its interactive mode lets the listener ask questions during the overview and then resume the original audio.
 

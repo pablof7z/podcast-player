@@ -145,6 +145,39 @@ final class AgentToolsPodcastTests: XCTestCase {
         XCTAssertEqual(rows?.first?["page_id"] as? String, "zone-2")
     }
 
+    func testLiveWikiStorageAdapterSearchesClaimBodies() async throws {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wiki-agent-search-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let storage = WikiStorage(root: tmp)
+        let page = WikiPage(
+            slug: "metabolic-health",
+            title: "Metabolic Health",
+            kind: .topic,
+            scope: .global,
+            summary: "A broad page about nutrition.",
+            sections: [
+                WikiSection(
+                    heading: "Claims",
+                    kind: .definition,
+                    ordinal: 0,
+                    claims: [
+                        WikiClaim(text: "Keto diet discussion focused on appetite and insulin sensitivity.")
+                    ]
+                )
+            ]
+        )
+        try storage.write(page)
+
+        let hits = try await LiveWikiStorageAdapter(storage: storage)
+            .queryWiki(topic: "keto diet", scope: nil, limit: 5)
+
+        XCTAssertEqual(hits.first?.title, "Metabolic Health")
+        XCTAssertTrue(hits.first?.excerpt.lowercased().contains("keto diet") == true)
+        XCTAssertGreaterThan(hits.first?.score ?? 0, 0)
+    }
+
     // MARK: - query_transcripts
 
     func testQueryTranscriptsReturnsChunksWithTimestamps() async throws {

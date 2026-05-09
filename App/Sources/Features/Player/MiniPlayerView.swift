@@ -20,8 +20,6 @@ struct MiniPlayerView: View {
 
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
-    private var copperAccent: Color { .orange }
-
     private var showName: String {
         guard let subID = state.episode?.subscriptionID,
               let sub = store.subscription(id: subID) else { return "" }
@@ -51,10 +49,7 @@ struct MiniPlayerView: View {
                 progressLine
                 content
             }
-            .glassEffect(
-                .regular.tint(copperAccent.opacity(0.18)),
-                in: .rect(cornerRadius: AppTheme.Corner.lg)
-            )
+            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
         }
         .buttonStyle(.pressable(scale: 0.985, opacity: 0.92))
@@ -76,8 +71,8 @@ struct MiniPlayerView: View {
                     state.togglePlayPause()
                 } label: {
                     Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.primary)
                         .frame(width: 28, height: 28)
                         .glassEffectID("player.play", in: glassNamespace)
                 }
@@ -91,17 +86,13 @@ struct MiniPlayerView: View {
 
     private var inlineArtwork: some View {
         ZStack {
-            LinearGradient(
-                colors: [.orange, .indigo],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.secondary.opacity(0.2)
             Image(systemName: "waveform")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
         .frame(width: 26, height: 26)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 
     // MARK: - Subviews
@@ -110,9 +101,9 @@ struct MiniPlayerView: View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(.white.opacity(0.10))
+                    .fill(Color.primary.opacity(0.10))
                 Rectangle()
-                    .fill(copperAccent)
+                    .fill(Color.accentColor)
                     .frame(width: proxy.size.width * progressFraction)
                     .animation(.linear(duration: 0.15), value: state.currentTime)
             }
@@ -142,25 +133,21 @@ struct MiniPlayerView: View {
 
     private var artwork: some View {
         ZStack {
-            LinearGradient(
-                colors: [.orange, .indigo],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.secondary.opacity(0.2)
             Image(systemName: "waveform")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.secondary)
         }
         .frame(width: 44, height: 44)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous))
     }
 
     @ViewBuilder
     private var titleLine: some View {
         if let episode = state.episode {
             Text(episode.title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -171,15 +158,16 @@ struct MiniPlayerView: View {
             if state.episode != nil {
                 if !showName.isEmpty {
                     Text(showName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.65))
+                        .font(AppTheme.Typography.caption2)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                     Text("·")
-                        .foregroundStyle(.white.opacity(0.35))
+                        .font(AppTheme.Typography.caption2)
+                        .foregroundStyle(.tertiary)
                 }
                 Text(PlayerTimeFormat.clock(state.currentTime))
-                    .font(.system(size: 11, design: .monospaced).weight(.medium))
-                    .foregroundStyle(.white.opacity(0.65))
+                    .font(AppTheme.Typography.mono)
+                    .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
         }
@@ -191,8 +179,8 @@ struct MiniPlayerView: View {
                 state.togglePlayPause()
             } label: {
                 Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
                     .frame(width: 36, height: 36)
                     .glassEffectID("player.play", in: glassNamespace)
             }
@@ -203,8 +191,8 @@ struct MiniPlayerView: View {
                 state.skipForward()
             } label: {
                 Image(systemName: forwardSkipGlyph)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.pressable)

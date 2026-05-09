@@ -10,7 +10,7 @@ aliases: [Podcasting 2.0 Metadata, Open Podcast Metadata]
 confidence: medium
 volatility: warm
 verified: 2026-05-09
-summary: "Podcasting 2.0 tags can become product surfaces for chapters, highlights, people, locations, live streams, creator recommendations, payment, and social discussion."
+summary: "Podcasting 2.0 tags can become product surfaces for chapters, highlights, people, locations, live streams, creator recommendations, and social discussion."
 ---
 
 # Podcasting 2 Rich Metadata

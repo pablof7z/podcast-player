@@ -9,7 +9,6 @@ import SwiftUI
 struct PlayerControlsView: View {
 
     @Bindable var state: PlaybackState
-    let copperAccent: Color
     let glassNamespace: Namespace.ID
 
     var body: some View {
@@ -53,13 +52,10 @@ struct PlayerControlsView: View {
             state.togglePlayPause()
         } label: {
             Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundStyle(.white)
+                .font(.largeTitle.weight(.bold))
+                .foregroundStyle(.primary)
                 .frame(width: 76, height: 76)
-                .glassEffect(
-                    .regular.tint(copperAccent.opacity(0.55)).interactive(),
-                    in: .circle
-                )
+                .glassEffect(.regular.interactive(), in: .circle)
                 .glassEffectID("player.play", in: glassNamespace)
                 .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
@@ -68,13 +64,11 @@ struct PlayerControlsView: View {
 
     private func skipButton(seconds: Int, glyph: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            ZStack {
-                Image(systemName: glyph)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.92))
-            }
-            .frame(width: 56, height: 56)
-            .glassEffect(.regular.interactive(), in: .circle)
+            Image(systemName: glyph)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 56, height: 56)
+                .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.pressable)
         .accessibilityLabel(seconds < 0 ? "Skip back \(-seconds) seconds" : "Skip forward \(seconds) seconds")
@@ -93,7 +87,6 @@ struct PlayerActionClusterView: View {
     @Binding var showSleepSheet: Bool
     @Binding var showQueueSheet: Bool
     @Binding var showShareSheet: Bool
-    let copperAccent: Color
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
@@ -127,13 +120,13 @@ struct PlayerActionClusterView: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: glyph)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                 Text(label)
                     .font(AppTheme.Typography.caption)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .glassEffect(.regular.interactive(), in: .capsule)

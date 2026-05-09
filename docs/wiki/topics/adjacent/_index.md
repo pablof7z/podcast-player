@@ -29,7 +29,7 @@ Last updated: 2026-05-09
 | [expansion-opportunity-map.md](wiki/topics/expansion-opportunity-map.md) | Ranked map of adjacent ideas that enrich the product. | adjacent, roadmap | 2026-05-09 |
 | [podcasting-2-rich-metadata.md](wiki/concepts/podcasting-2-rich-metadata.md) | Uses Podcasting 2.0 tags as a richness layer. | podcasting-2, metadata | 2026-05-09 |
 | [learning-and-knowledge-exports.md](wiki/concepts/learning-and-knowledge-exports.md) | Turns podcast listening into highlights, study artifacts, and Markdown exports. | learning, export | 2026-05-09 |
-| [social-and-creator-network.md](wiki/concepts/social-and-creator-network.md) | Adds creator recommendations, comments, funding, value, and public stats. | social, creators | 2026-05-09 |
+| [social-and-creator-network.md](wiki/concepts/social-and-creator-network.md) | Adds creator recommendations, comments, open social roots, and public stats. | social, creators | 2026-05-09 |
 | [ambient-companion-ideas.md](wiki/concepts/ambient-companion-ideas.md) | Extends the product into lock-screen, widgets, controls, generated media, and live contexts. | ambient, ios | 2026-05-09 |
 | [implementation-priority.md](wiki/references/implementation-priority.md) | Near/mid/later priority framing for adjacent ideas. | implementation, priority | 2026-05-09 |
 

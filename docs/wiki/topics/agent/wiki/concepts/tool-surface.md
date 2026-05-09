@@ -15,7 +15,7 @@ summary: "The agent needs retrieval, playback, briefing, UI, and research tools,
 
 # Tool Surface
 
-The tool surface is the agent's controlled interface to the app and knowledge base. It should grow alongside existing `AgentTools` patterns rather than as a separate agent subsystem.
+The tool surface is the agent's controlled interface to the app and knowledge base. This page captures the early podcast-specific slice. The full lifetime design lives in [[lifetime-tool-catalog|Lifetime Tool Catalog]] ([Lifetime Tool Catalog](lifetime-tool-catalog.md)) and [[agent-tool-platform|Agent Tool Platform]] ([Agent Tool Platform](../topics/agent-tool-platform.md)).
 
 ## Retrieval Tools
 
@@ -54,6 +54,8 @@ Mutating tools should record agent activity. Remote Nostr calls should expose a 
 ## See Also
 
 - [[agent-runtime-and-context|Agent Runtime And Context]] ([Agent Runtime And Context](../topics/agent-runtime-and-context.md)) - why tools carry library access.
+- [[agent-tool-platform|Agent Tool Platform]] ([Agent Tool Platform](../topics/agent-tool-platform.md)) - complete infrastructure design.
+- [[lifetime-tool-catalog|Lifetime Tool Catalog]] ([Lifetime Tool Catalog](lifetime-tool-catalog.md)) - full tool family catalog.
 - [[retrieval-and-citation-model|Retrieval And Citation Model]] ([Retrieval And Citation Model](../../../knowledge/wiki/concepts/retrieval-and-citation-model.md)) - retrieval contracts behind the tools.
 - [[nostr-command-safety|Nostr Command Safety]] ([Nostr Command Safety](nostr-command-safety.md)) - remote invocation boundaries.
 

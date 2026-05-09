@@ -4,13 +4,12 @@ import SwiftUI
 
 /// Empty / in-progress state for the transcript surface.
 ///
-/// Until the transcript ingestion lane lands we render a calm "not yet
-/// available" panel for any non-`.ready` `transcriptState`. The view inspects
-/// the state and chooses an appropriate copy + indicator (idle, queued,
-/// fetching publisher, mid-Scribe progress, or failed).
-///
-/// "Request transcript" is intentionally disabled — once the ingestion lane
-/// merges, the parent will swap in the real action.
+/// Shown for any non-`.ready` `transcriptState`. The view inspects the state
+/// and chooses an appropriate copy + indicator (idle, queued, fetching
+/// publisher, mid-Scribe progress, or failed). The "Request transcript" CTA
+/// fires a `TranscriptIngestService.ingest` for the episode when the state is
+/// idle or has previously failed; while a request is mid-flight it disables
+/// itself so the user can't double-tap.
 struct TranscribingInProgressView: View {
     let episode: Episode
 
@@ -87,11 +86,11 @@ struct TranscribingInProgressView: View {
 
     private var primaryCopy: String {
         switch episode.transcriptState {
-        case .none: return "Transcripts coming soon for this episode."
-        case .queued: return "We've got this episode in the queue."
-        case .fetchingPublisher: return "Pulling the publisher's transcript."
-        case .transcribing: return "We're transcribing this episode now."
-        case .failed: return "Transcription couldn't finish."
+        case .none: return "No transcript yet."
+        case .queued: return "Queued for transcription."
+        case .fetchingPublisher: return "Fetching the publisher's transcript."
+        case .transcribing: return "Transcribing this episode."
+        case .failed: return "Transcription didn't finish."
         case .ready: return "Transcript ready."
         }
     }
@@ -99,9 +98,9 @@ struct TranscribingInProgressView: View {
     private var secondaryCopy: String {
         switch episode.transcriptState {
         case .none:
-            return "When the transcript ingestion lane lands you'll be able to read along, search, and pull quote cards from this view."
+            return "Fetch one below. We'll use the publisher's transcript when available, or ElevenLabs Scribe if your key is configured."
         case .queued, .fetchingPublisher, .transcribing:
-            return "We'll surface the text here as soon as it's ready. You can keep listening while it processes."
+            return "The text will appear here when it's ready. Keep listening — this runs in the background."
         case .failed(let message):
             return message
         case .ready:
@@ -112,7 +111,8 @@ struct TranscribingInProgressView: View {
     private var cta: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Button {
-                // Disabled — transcript ingestion lane owns this action.
+                let episodeID = episode.id
+                Task { await TranscriptIngestService.shared.ingest(episodeID: episodeID) }
             } label: {
                 Text("Request transcript")
                     .font(.headline)
@@ -120,7 +120,7 @@ struct TranscribingInProgressView: View {
                     .padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(true)
+            .disabled(!isRequestable)
             .padding(.horizontal, AppTheme.Spacing.md)
 
             Text(footerLabel)
@@ -129,11 +129,22 @@ struct TranscribingInProgressView: View {
         }
     }
 
+    /// True when a fresh ingest call would actually do something. While the
+    /// pipeline is mid-flight (`queued`, `fetchingPublisher`, `transcribing`)
+    /// we disable so the user can't pile redundant submits onto the in-flight
+    /// dedup set in `TranscriptIngestService`.
+    private var isRequestable: Bool {
+        switch episode.transcriptState {
+        case .none, .failed: return true
+        case .queued, .fetchingPublisher, .transcribing, .ready: return false
+        }
+    }
+
     private var footerLabel: String {
         if episode.publisherTranscriptURL != nil {
             return "Publisher transcript available"
         }
-        return "Available once the transcript service is online"
+        return "We'll use ElevenLabs Scribe if your key is configured in Settings"
     }
 }
 

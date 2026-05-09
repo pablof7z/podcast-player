@@ -16,16 +16,22 @@ struct EpisodeDetailActionsMenu: View {
     let episode: Episode
     let store: AppStateStore
 
+    /// Live playback model — the queue lives here. Pulled from the environment
+    /// (rather than threaded through every call-site) to match the pattern used
+    /// by every other feature view in the app (Home, Library, Search, Agent).
+    @Environment(PlaybackState.self) private var playback
+
     @State private var confirmDelete: Bool = false
 
     var body: some View {
         Menu {
             downloadButton
+            queueButton
             Button {
                 togglePlayed()
             } label: {
                 Label(episode.played ? "Mark as unplayed" : "Mark as played",
-                      systemImage: episode.played ? "circle" : "checkmark.circle")
+                      systemImage: episode.played ? "circle" : "checkmark.circle.fill")
             }
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -78,6 +84,33 @@ struct EpisodeDetailActionsMenu: View {
                 EpisodeDownloadService.shared.download(episodeID: episode.id)
             } label: {
                 Label("Retry download", systemImage: "arrow.clockwise")
+            }
+        }
+    }
+
+    // MARK: - Queue menu item
+
+    /// "Add to queue" / "Remove from queue" toggle. The label flips so the
+    /// affordance is reversible without leaving the menu — Pocket Casts and
+    /// Overcast both follow this pattern. We deliberately don't hide the row
+    /// when the episode is currently playing (where `enqueue` is a no-op):
+    /// the user may have arrived via a direct deep link and is now reading
+    /// the detail; surfacing the inert affordance would be confusing.
+    @ViewBuilder
+    private var queueButton: some View {
+        if playback.queue.contains(episode.id) {
+            Button {
+                Haptics.light()
+                playback.removeFromQueue(episode.id)
+            } label: {
+                Label("Remove from queue", systemImage: "text.badge.minus")
+            }
+        } else {
+            Button {
+                Haptics.success()
+                playback.enqueue(episode.id)
+            } label: {
+                Label("Add to queue", systemImage: "text.badge.plus")
             }
         }
     }

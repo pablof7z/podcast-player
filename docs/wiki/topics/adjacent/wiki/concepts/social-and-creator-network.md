@@ -5,17 +5,17 @@ sources:
   - raw/notes/2026-05-09-online-adjacent-research.md
 created: 2026-05-09
 updated: 2026-05-09
-tags: [social, creators, nostr, activitypub, funding, analytics]
+tags: [social, creators, nostr, activitypub, analytics]
 aliases: [Creator Network, Social Podcast Layer]
 confidence: medium
 volatility: warm
 verified: 2026-05-09
-summary: "Podcastr can use open social roots, creator recommendations, public analytics, funding links, and value payments to make discovery and support feel creator-aligned."
+summary: "Podcastr can use open social roots, creator recommendations, person tags, and public analytics to make discovery feel creator-aligned."
 ---
 
 # Social And Creator Network
 
-The product can become richer without building a closed social network. The open podcast ecosystem already has primitives for comments, recommendations, credits, payments, and public stats.
+The product can become richer without building a closed social network. The open podcast ecosystem already has primitives for comments, recommendations, credits, and public stats.
 
 ## Product Ideas
 
@@ -23,9 +23,9 @@ The product can become richer without building a closed social network. The open
 - **Nostr bridge**: map Podcastr's existing Nostr agent communication to user-facing episode discussion carefully, without mixing private commands with public comments.
 - **Creator recommendations**: render podrolls as "recommended by this show," separate from algorithmic discovery.
 - **People-driven discovery**: follow a guest, host, producer, or contributor across shows.
-- **Support panel**: show funding links and value payment affordances when present.
-- **Boost-like timestamp support**: attach a message or value event to a specific timestamp after a powerful clip.
 - **Open stats context**: use OP3-style public analytics as a trust and discovery signal where available.
+ 
+This intentionally excludes creator monetization tooling from the agent surface.
 
 ## Safety Boundary
 
