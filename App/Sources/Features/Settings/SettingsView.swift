@@ -20,7 +20,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all notes, friends, and memories. API credentials are preserved.")
+            Text("This will permanently delete all subscriptions, episodes, notes, friends, and memories. API credentials and Nostr identity are preserved.")
         }
     }
 
@@ -79,7 +79,7 @@ struct SettingsView: View {
                 showClearConfirm = true
             }
         } footer: {
-            Text("Permanently deletes all notes, friends, and memories. API credentials and Nostr identity are preserved.")
+            Text("Permanently deletes all subscriptions, episodes, notes, friends, and memories. API credentials and Nostr identity are preserved.")
         }
     }
 
@@ -97,7 +97,11 @@ struct SettingsView: View {
 
     /// Total number of user-generated records that would be included in a data export.
     private var dataRecordCount: Int {
-        store.activeNotes.count + store.activeMemories.count
+        store.state.subscriptions.count
+            + store.state.episodes.count
+            + store.activeNotes.count
+            + store.activeMemories.count
+            + store.state.friends.count
     }
 
     private var currentModelShortName: String {
