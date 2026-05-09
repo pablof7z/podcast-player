@@ -23,7 +23,7 @@ extension AppStateStore {
 
     /// Episodes belonging to the given subscription, newest publish-date first.
     ///
-    /// O(1) lookup against `episodesByShow` plus an O(K) position-cache fold
+    /// O(1) lookup against `episodeIndexesByShow` plus an O(K) position-cache fold
     /// (K = pending position writes, typically ≤ 1). Was O(N) filter + O(N
     /// log N) sort, called from `ShowDetailView`'s body for every render —
     /// 2,853 episodes for "The Daily" alone.
@@ -89,13 +89,12 @@ extension AppStateStore {
                 newlyInserted.append(episode.id)
             }
         }
-        state.episodes = updated
-        // Recompute projections so the Library grid's unplayed count and the
-        // ShowDetail episode list pick up the new + merged episodes on the
-        // very next render. The didSet fingerprint catches count changes but
-        // misses pure-merge cases where count stays equal — explicit call
-        // covers both.
-        invalidateEpisodeProjections()
+        performMutationBatch {
+            state.episodes = updated
+            // The didSet fingerprint catches count changes but misses pure
+            // merges where count stays equal; explicit invalidation covers both.
+            invalidateEpisodeProjections()
+        }
         if !newlyInserted.isEmpty {
             // Attach the service to this store on first reach so the
             // download lifecycle, the auto-download path, and the AudioEngine
@@ -130,23 +129,40 @@ extension AppStateStore {
     func markEpisodePlayed(_ id: UUID) {
         flushPendingPositions()
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
-        state.episodes[idx].played = true
-        state.episodes[idx].playbackPosition = 0
+        let wasDownloaded: Bool
+        if case .downloaded = state.episodes[idx].downloadState { wasDownloaded = true }
+        else { wasDownloaded = false }
+        var episodes = state.episodes
+        episodes[idx].played = true
+        episodes[idx].playbackPosition = 0
         // The cache entry for this episode (if any) is now stale — we
         // just persisted position=0 deliberately. Drop it so the next
         // tick (e.g. a stray engine observer firing post-end) doesn't
         // resurrect a non-zero position on its first eager save.
-        positionCache.removeValue(forKey: id)
-        // Cached unplayed counts + in-progress feed must drop this episode.
-        invalidateEpisodeProjections()
+        performMutationBatch {
+            state.episodes = episodes
+            positionCache.removeValue(forKey: id)
+            // Cached unplayed counts + in-progress feed must drop this episode.
+            invalidateEpisodeProjections()
+        }
+        // Honour the user's "Delete after played" setting. Runs after the
+        // mutation batch so the played=true write is on disk before the
+        // download service flips downloadState back to .notDownloaded.
+        if wasDownloaded, state.settings.autoDeleteDownloadsAfterPlayed {
+            EpisodeDownloadService.shared.delete(episodeID: id)
+        }
     }
 
     /// Reverts an accidental "mark played".
     func markEpisodeUnplayed(_ id: UUID) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
-        state.episodes[idx].played = false
-        // Cached unplayed counts + recent feed must re-include this episode.
-        invalidateEpisodeProjections()
+        var episodes = state.episodes
+        episodes[idx].played = false
+        performMutationBatch {
+            state.episodes = episodes
+            // Cached unplayed counts + recent feed must re-include this episode.
+            invalidateEpisodeProjections()
+        }
     }
 
     /// Updates the episode's local download lifecycle (queued / downloading /
@@ -154,20 +170,25 @@ extension AppStateStore {
     /// between streaming and local file URLs.
     func setEpisodeDownloadState(_ id: UUID, state newState: DownloadState) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
-        state.episodes[idx].downloadState = newState
-        // Cached `hasDownloadedByShow` set may now need to add or drop this
-        // subscription. Cheap to recompute everything; downloads happen at
-        // human cadence, not in a hot loop.
-        invalidateEpisodeProjections()
+        var episodes = state.episodes
+        episodes[idx].downloadState = newState
+        performMutationBatch {
+            state.episodes = episodes
+            // Cached `hasDownloadedByShow` set may now need to add or drop this subscription.
+            invalidateEpisodeProjections()
+        }
     }
 
     /// Updates the episode's transcript ingestion lifecycle.
     func setEpisodeTranscriptState(_ id: UUID, state newState: TranscriptState) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
-        state.episodes[idx].transcriptState = newState
-        // Cached `hasTranscribedByShow` set may now need to add or drop this
-        // subscription.
-        invalidateEpisodeProjections()
+        var episodes = state.episodes
+        episodes[idx].transcriptState = newState
+        performMutationBatch {
+            state.episodes = episodes
+            // Cached `hasTranscribedByShow` set may now need to add or drop this subscription.
+            invalidateEpisodeProjections()
+        }
     }
 
     /// Persist hydrated chapters for an episode. Used by
@@ -180,6 +201,8 @@ extension AppStateStore {
         if chapters.isEmpty, let existing = state.episodes[idx].chapters, !existing.isEmpty {
             return
         }
-        state.episodes[idx].chapters = chapters.isEmpty ? nil : chapters
+        var episodes = state.episodes
+        episodes[idx].chapters = chapters.isEmpty ? nil : chapters
+        state.episodes = episodes
     }
 }

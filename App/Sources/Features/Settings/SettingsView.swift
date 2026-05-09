@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var showClearConfirm = false
+    @State private var storageSummary: String?
 
     var body: some View {
         List {
@@ -17,6 +18,14 @@ struct SettingsView: View {
         .settingsListStyle()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
+        .task {
+            // Cheap directory walk; runs once when Settings opens so the
+            // Storage row can show the total without a navigation push.
+            let snap = await StorageSettingsView.compute(store: store)
+            await MainActor.run {
+                storageSummary = snap.totalBytes > 0 ? Self.formatSize(snap.totalBytes) : nil
+            }
+        }
         .alert("Clear All Data?", isPresented: $showClearConfirm) {
             Button("Clear Everything", role: .destructive) {
                 store.clearAllData()
@@ -142,7 +151,28 @@ struct SettingsView: View {
                     value: dataRecordCount > 0 ? "\(dataRecordCount) records" : nil
                 )
             }
+
+            NavigationLink {
+                StorageSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "internaldrive.fill",
+                    tint: .gray,
+                    title: "Storage",
+                    value: storageSummary
+                )
+            }
         }
+    }
+
+    /// Shared helper so the Settings row's value matches the byte format used
+    /// inside `StorageSettingsView`. `.file` style with `.useAll` units lets
+    /// iOS pick the right unit per device locale (KB / MB / GB).
+    static func formatSize(_ bytes: Int64) -> String {
+        let f = ByteCountFormatter()
+        f.countStyle = .file
+        f.allowedUnits = [.useAll]
+        return f.string(fromByteCount: bytes)
     }
 
     private var destructiveSection: some View {

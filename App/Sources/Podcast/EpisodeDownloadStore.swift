@@ -129,6 +129,54 @@ final class EpisodeDownloadStore: @unchecked Sendable {
         try? FileManager.default.removeItem(at: url)
     }
 
+    // MARK: - Disk-usage aggregation
+    //
+    // These walk `rootURL` directly — *not* the `state.episodes` list — so
+    // orphaned files (downloads whose Episode has been removed from the
+    // store, e.g. unsubscribed shows) still get counted toward the user's
+    // total. The `StorageSettingsView` reconciles the directory walk
+    // against the live episode list to label each entry.
+
+    /// One on-disk artifact: either an enclosure (`.mp3` etc.) or a
+    /// `.resume` sidecar from an interrupted download.
+    struct OnDiskFile: Sendable {
+        let url: URL
+        let bytes: Int64
+        /// Parsed `Episode.id` — every file is named `<uuid>.<ext>` so we
+        /// can join back to the live store. `nil` for malformed file names
+        /// the user (or a previous build) might have left behind.
+        let episodeID: UUID?
+        let isResumeData: Bool
+    }
+
+    /// Walks the downloads directory and returns every artifact on disk —
+    /// enclosures + `.resume` sidecars. Pure I/O, safe to call off the main
+    /// thread; the caller is responsible for caching the result rather than
+    /// re-walking on every redraw.
+    func enumerateOnDisk() -> [OnDiskFile] {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(
+            at: rootURL,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+        return entries.compactMap { url -> OnDiskFile? in
+            let attrs = try? fm.attributesOfItem(atPath: url.path)
+            let bytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+            let stem = url.deletingPathExtension().lastPathComponent
+            let episodeID = UUID(uuidString: stem)
+            let isResume = url.pathExtension.lowercased() == "resume"
+            return OnDiskFile(
+                url: url,
+                bytes: bytes,
+                episodeID: episodeID,
+                isResumeData: isResume
+            )
+        }
+    }
+
     // MARK: - Extension inference
 
     /// Infers a usable file extension from the enclosure URL or its MIME type.

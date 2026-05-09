@@ -78,6 +78,10 @@ struct Settings: Codable, Hashable, Sendable {
     /// When `true`, an episode is automatically marked played the first time playback
     /// reaches its end. Defaults on for parity with Apple Podcasts.
     var autoMarkPlayedAtEnd: Bool = true
+    /// When `true`, downloaded enclosures are deleted as soon as the episode is
+    /// marked played (auto-end-of-play OR explicit "Mark as played"). Off by
+    /// default — without it, downloads are kept until manually removed.
+    var autoDeleteDownloadsAfterPlayed: Bool = false
 
     // Wiki
     /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as
