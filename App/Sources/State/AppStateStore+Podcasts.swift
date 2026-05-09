@@ -1,5 +1,15 @@
 import Foundation
 
+struct SubscriptionImportPayload: Sendable {
+    let subscription: PodcastSubscription
+    let episodes: [Episode]
+}
+
+struct SubscriptionImportResult: Sendable, Equatable {
+    let imported: Int
+    let skipped: Int
+}
+
 // MARK: - Podcast subscriptions
 
 extension AppStateStore {
@@ -33,6 +43,62 @@ extension AppStateStore {
         return true
     }
 
+    /// Adds a batch of fetched OPML/import results with one state assignment.
+    /// This avoids the large-library path where each feed writes the growing
+    /// JSON blob, rebuilds projections, and reindexes Spotlight separately.
+    @discardableResult
+    func addSubscriptions(_ payloads: [SubscriptionImportPayload]) -> SubscriptionImportResult {
+        guard !payloads.isEmpty else {
+            return SubscriptionImportResult(imported: 0, skipped: 0)
+        }
+
+        var next = state
+        var knownFeedURLs = Set(next.subscriptions.map { Self.feedURLKey($0.feedURL) })
+        var imported = 0
+        var skipped = 0
+        var autoDownloadBatches: [(subscriptionID: UUID, episodeIDs: [UUID])] = []
+
+        next.subscriptions.reserveCapacity(next.subscriptions.count + payloads.count)
+        next.episodes.reserveCapacity(next.episodes.count + payloads.reduce(0) { $0 + $1.episodes.count })
+
+        for payload in payloads {
+            let key = Self.feedURLKey(payload.subscription.feedURL)
+            guard knownFeedURLs.insert(key).inserted else {
+                skipped += 1
+                continue
+            }
+
+            next.subscriptions.append(payload.subscription)
+            next.episodes.append(contentsOf: payload.episodes)
+            imported += 1
+
+            let episodeIDs = payload.episodes.map(\.id)
+            if !episodeIDs.isEmpty {
+                autoDownloadBatches.append((payload.subscription.id, episodeIDs))
+            }
+        }
+
+        guard imported > 0 else {
+            return SubscriptionImportResult(imported: imported, skipped: skipped)
+        }
+
+        performMutationBatch {
+            state = next
+        }
+
+        if !autoDownloadBatches.isEmpty {
+            EpisodeDownloadService.shared.attach(appStore: self)
+            for batch in autoDownloadBatches {
+                EpisodeDownloadService.shared.evaluateAutoDownload(
+                    forSubscription: batch.subscriptionID,
+                    newEpisodeIDs: batch.episodeIDs
+                )
+            }
+        }
+
+        return SubscriptionImportResult(imported: imported, skipped: skipped)
+    }
+
     /// Replaces the subscription whose `id` matches `updated.id`. Used after
     /// a feed refresh to write back the new ETag / Last-Modified / metadata.
     func updateSubscription(_ updated: PodcastSubscription) {
@@ -42,19 +108,32 @@ extension AppStateStore {
 
     /// Removes the subscription and every episode that referenced it.
     func removeSubscription(_ id: UUID) {
-        state.subscriptions.removeAll { $0.id == id }
-        state.episodes.removeAll { $0.subscriptionID == id }
-        // Drop the show from every projection so the Library grid re-renders
-        // without a phantom unplayed dot or a downloaded-only filter chip
-        // pointing at a subscription that no longer exists. The didSet
-        // fingerprint catches the count change, but we recompute explicitly
-        // for symmetry with the other writers.
-        invalidateEpisodeProjections()
+        var next = state
+        next.subscriptions.removeAll { $0.id == id }
+        next.episodes.removeAll { $0.subscriptionID == id }
+        performMutationBatch {
+            state = next
+            // Drop the show from every projection immediately.
+            invalidateEpisodeProjections()
+        }
     }
 
     /// Toggles whether new-episode notifications fire for the subscription.
     func setSubscriptionNotificationsEnabled(_ id: UUID, enabled: Bool) {
         guard let idx = state.subscriptions.firstIndex(where: { $0.id == id }) else { return }
         state.subscriptions[idx].notificationsEnabled = enabled
+    }
+
+    /// Replaces the per-subscription auto-download policy. The download
+    /// service reads this directly when `evaluateAutoDownload` runs after a
+    /// feed refresh — no separate reschedule is needed because already-fired
+    /// downloads keep going regardless of subsequent policy changes.
+    func setSubscriptionAutoDownload(_ id: UUID, policy: AutoDownloadPolicy) {
+        guard let idx = state.subscriptions.firstIndex(where: { $0.id == id }) else { return }
+        state.subscriptions[idx].autoDownload = policy
+    }
+
+    private static func feedURLKey(_ url: URL) -> String {
+        url.absoluteString.lowercased()
     }
 }

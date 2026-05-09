@@ -240,9 +240,8 @@ struct ShowDetailView: View {
 
 // MARK: - ShowDetailSettingsSheet
 
-/// "Settings for this show" sheet. Real toggles for notifications + a
-/// destructive unsubscribe action. Auto-download / transcription preferences
-/// will land here once the corresponding writers exist on the store.
+/// "Settings for this show" sheet. Real toggles for notifications, the
+/// per-show auto-download policy, and a destructive unsubscribe action.
 struct ShowDetailSettingsSheet: View {
     let subscription: PodcastSubscription
     let store: AppStateStore
@@ -250,6 +249,30 @@ struct ShowDetailSettingsSheet: View {
     let onUnsubscribe: () -> Void
 
     @State private var notificationsEnabled: Bool
+    @State private var autoDownloadChoice: AutoDownloadChoice
+    @State private var latestNCount: Int
+    @State private var wifiOnly: Bool
+
+    /// Picker-friendly enum that flattens `AutoDownloadPolicy.Mode`'s
+    /// associated value into a stepper-driven count. `latestN` covers the
+    /// "keep the most recent N" case; the count is held in a separate
+    /// `@State` so the picker selection stays clean and the stepper is only
+    /// shown when the user picks `latestN`.
+    enum AutoDownloadChoice: String, CaseIterable, Identifiable {
+        case off
+        case latestN
+        case allNew
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .off:     return "Off"
+            case .latestN: return "Latest"
+            case .allNew:  return "All new"
+            }
+        }
+    }
 
     init(
         subscription: PodcastSubscription,
@@ -262,6 +285,19 @@ struct ShowDetailSettingsSheet: View {
         self.onDismiss = onDismiss
         self.onUnsubscribe = onUnsubscribe
         _notificationsEnabled = State(initialValue: subscription.notificationsEnabled)
+        let policy = subscription.autoDownload
+        switch policy.mode {
+        case .off:
+            _autoDownloadChoice = State(initialValue: .off)
+            _latestNCount = State(initialValue: 5)
+        case .latestN(let n):
+            _autoDownloadChoice = State(initialValue: .latestN)
+            _latestNCount = State(initialValue: n)
+        case .allNew:
+            _autoDownloadChoice = State(initialValue: .allNew)
+            _latestNCount = State(initialValue: 5)
+        }
+        _wifiOnly = State(initialValue: policy.wifiOnly)
     }
 
     var body: some View {
@@ -275,6 +311,37 @@ struct ShowDetailSettingsSheet: View {
                                 enabled: newValue
                             )
                         }
+                }
+                Section("Auto-download") {
+                    Picker("New episodes", selection: $autoDownloadChoice) {
+                        ForEach(AutoDownloadChoice.allCases) { choice in
+                            Text(choice.label).tag(choice)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: autoDownloadChoice) { _, _ in persistPolicy() }
+
+                    if autoDownloadChoice == .latestN {
+                        // `onEditingChanged` only fires on press-and-hold to
+                        // auto-repeat — single taps on + / - update the
+                        // binding but won't trip the closure. Use `.onChange`
+                        // on the count instead so every value change persists.
+                        Stepper(value: $latestNCount, in: 1...50) {
+                            HStack {
+                                Text("Keep latest")
+                                Spacer()
+                                Text("\(latestNCount)")
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                        }
+                        .onChange(of: latestNCount) { _, _ in persistPolicy() }
+                    }
+
+                    if autoDownloadChoice != .off {
+                        Toggle("Wi-Fi only", isOn: $wifiOnly)
+                            .onChange(of: wifiOnly) { _, _ in persistPolicy() }
+                    }
                 }
                 Section("Feed") {
                     LabeledContent("URL") {
@@ -312,5 +379,22 @@ struct ShowDetailSettingsSheet: View {
         .presentationBackground(.thinMaterial)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    /// Composes the three sheet-local fields back into the canonical
+    /// `AutoDownloadPolicy` and writes through the store. Called from every
+    /// path that mutates one of the inputs — keeping all the round-trip
+    /// logic in one place avoids drift between the picker and the stepper.
+    private func persistPolicy() {
+        let mode: AutoDownloadPolicy.Mode
+        switch autoDownloadChoice {
+        case .off:     mode = .off
+        case .latestN: mode = .latestN(latestNCount)
+        case .allNew:  mode = .allNew
+        }
+        store.setSubscriptionAutoDownload(
+            subscription.id,
+            policy: AutoDownloadPolicy(mode: mode, wifiOnly: wifiOnly)
+        )
     }
 }
