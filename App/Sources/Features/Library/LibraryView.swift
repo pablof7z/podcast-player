@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - LibraryView
 
 /// Root of the Library tab. Subscriptions grid + filter chips + a search-entry
-/// bar that *deep-links to the Ask tab*.
+/// bar that opens the dedicated podcast search surface.
 ///
 /// **Glass usage in this file:**
 ///
@@ -79,10 +79,10 @@ struct LibraryView: View {
             onOpenSearch()
         } label: {
             HStack(spacing: AppTheme.Spacing.sm) {
-                Image(systemName: "sparkles.rectangle.stack")
+                Image(systemName: "magnifyingglass")
                     .font(.body.weight(.semibold))
                     .foregroundStyle(AppTheme.Tint.agentSurface)
-                Text("Ask anything across your library…")
+                Text("Search your library…")
                     .font(AppTheme.Typography.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
@@ -97,8 +97,8 @@ struct LibraryView: View {
             .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Ask anything across your library")
-        .accessibilityHint("Opens the Ask tab")
+        .accessibilityLabel("Search your library")
+        .accessibilityHint("Opens Search")
     }
 
     // MARK: - Filter rail
@@ -138,7 +138,7 @@ struct LibraryView: View {
             VStack(spacing: AppTheme.Spacing.xs) {
                 Text("Your shows live here.")
                     .font(AppTheme.Typography.title)
-                Text("Add a show by URL or import an OPML file to begin.")
+                Text("Search Apple Podcasts, paste a feed URL, or import an OPML file to begin.")
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
