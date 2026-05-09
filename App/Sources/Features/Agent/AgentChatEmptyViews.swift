@@ -66,14 +66,30 @@ struct AgentChatWelcomeView: View {
     @Environment(AppStateStore.self) private var store
     @State private var visibleSuggestions: [String] = []
 
-    /// Generic starter prompts shown when no context-specific suggestion applies.
-    private static let genericSuggestions: [String] = [
+    /// Suggestions for users who have at least one in-progress episode — the
+    /// agent can pick up the listening thread directly via `list_in_progress`.
+    private static let resumeSuggestions: [String] = [
+        "What was I listening to?",
+        "Where did I leave off?",
+        "Summarize the episode I'm in the middle of",
+    ]
+
+    /// Suggestions for users with subscriptions but nothing in progress —
+    /// agent can survey the queue via `list_recent_unplayed` and `list_subscriptions`.
+    private static let subscribedSuggestions: [String] = [
+        "What's new in my library?",
+        "Catch me up on this week's episodes",
+        "What should I listen to next?",
+        "Pick a 30-minute episode for me",
+    ]
+
+    /// Suggestions for first-run users with no subscriptions — focused on
+    /// onboarding the agent itself rather than library queries.
+    private static let onboardingSuggestions: [String] = [
         "What can you help me with?",
-        "Remember I like longer-form interview podcasts",
-        "Save a note: episodes I want to revisit",
-        "What did I ask you to remember?",
-        "Remember that my timezone is Pacific",
-        "Take a note: ideas from today's listen",
+        "Recommend a podcast on a topic I'd like",
+        "Remember I prefer longer-form interviews",
+        "How do I add a podcast?",
     ]
 
     var body: some View {
@@ -133,7 +149,22 @@ struct AgentChatWelcomeView: View {
     }
 
     private func pickSuggestions() {
-        visibleSuggestions = Array(Self.genericSuggestions.shuffled().prefix(3))
+        let pool = suggestionPool()
+        visibleSuggestions = Array(pool.shuffled().prefix(3))
+    }
+
+    /// Picks a context-aware suggestion pool based on the user's current
+    /// library state. When suggestions land in front of the user, they should
+    /// reflect the agent's actual capability *for them right now* — not
+    /// generic memory prompts.
+    private func suggestionPool() -> [String] {
+        if !store.inProgressEpisodes.isEmpty {
+            return Self.resumeSuggestions
+        }
+        if !store.state.subscriptions.isEmpty {
+            return Self.subscribedSuggestions
+        }
+        return Self.onboardingSuggestions
     }
 
     private var timeOfDayGreeting: String {
