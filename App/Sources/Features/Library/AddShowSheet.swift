@@ -175,6 +175,17 @@ struct AddByURLForm: View {
             onAdded(added)
         } catch let addError as SubscriptionService.AddError {
             isWorking = false
+            // "Already subscribed" is success-like — the show the user
+            // wanted is already in their library. Mirror DiscoverSearchForm's
+            // behaviour: light haptic, dismiss the sheet via onAdded with
+            // the existing record; no angry red banner.
+            if case .alreadySubscribed = addError,
+               let url = URL(string: trimmed),
+               let existing = store.subscription(feedURL: url) {
+                Haptics.light()
+                onAdded(existing)
+                return
+            }
             error = addError
             Haptics.warning()
         } catch {
