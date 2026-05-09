@@ -133,10 +133,22 @@ struct WikiGenerateSheet: View {
             switch phase {
             case .input:
                 if !hasAPIKey {
-                    Label("Connect \(wikiProvider.displayName) in Settings to compile pages.",
-                          systemImage: "key")
+                    // Tap-through deep link rather than plain text — the user
+                    // is already in the right mental model ("I want to compile
+                    // a page"), so requiring them to back out, find Settings,
+                    // find AI, find the provider sub-screen burns the moment.
+                    // The link pushes onto the sheet's own NavigationStack so
+                    // they configure-and-come-back without losing the topic
+                    // they typed.
+                    NavigationLink {
+                        OpenRouterSettingsView()
+                    } label: {
+                        Label(
+                            "Connect \(wikiProvider.displayName) in Settings to compile pages.",
+                            systemImage: "key"
+                        )
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                    }
                 } else {
                     Text("This will use \(wikiProvider.displayName) credits.")
                         .font(.caption)
