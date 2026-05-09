@@ -26,7 +26,20 @@ extension AudioEngine {
                 let seconds = time.seconds.isFinite ? time.seconds : 0
                 self.setCurrentTime(seconds)
                 self.publishNowPlayingElapsed()
+                self.republishIfChapterChanged()
             }
+        }
+    }
+
+    /// When the active chapter changes mid-playback, the lightweight
+    /// `publishNowPlayingElapsed` path won't refresh the lock-screen album
+    /// line — only the elapsed/rate. Detect the crossing here and call the
+    /// full `publishNowPlaying` so the new chapter title appears.
+    func republishIfChapterChanged() {
+        guard let episode else { return }
+        let current = resolveActiveChapterTitle(episode, currentTime)
+        if current != lastPublishedChapterTitle {
+            publishNowPlaying()
         }
     }
 

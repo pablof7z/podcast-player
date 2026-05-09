@@ -68,6 +68,28 @@ final class AudioEngine {
         didSet { nowPlaying.setSkipIntervals(forward: skipForwardSeconds, backward: skipBackwardSeconds) }
     }
 
+    // MARK: - Now Playing metadata resolvers
+    //
+    // Closures injected by `RootView` so the lock-screen / Control Center
+    // metadata can show the show name and active chapter title without
+    // coupling the engine to `AppStateStore`. Each defaults to a no-op so
+    // the engine works in isolation (unit tests, previews).
+
+    /// Returns the show (subscription) title for an episode. Surfaces as the
+    /// lock-screen `MPMediaItemPropertyArtist` line.
+    var resolveShowName: (Episode) -> String? = { _ in nil }
+
+    /// Returns the active chapter title at `playhead`, when the live episode
+    /// has navigable chapters. Surfaces as the lock-screen
+    /// `MPMediaItemPropertyAlbumTitle` line. Pass-through closure so the
+    /// engine doesn't have to know how chapters are stored.
+    var resolveActiveChapterTitle: (Episode, TimeInterval) -> String? = { _, _ in nil }
+
+    /// Most-recently-published chapter title — checked on each time-observer
+    /// tick so a chapter boundary crossing triggers a full nowPlaying republish
+    /// (the lightweight `updateElapsed` path only refreshes elapsed/rate).
+    var lastPublishedChapterTitle: String?
+
     // MARK: - Internal (shared with AudioEngine+Observers.swift)
 
     let logger = Logger.app("AudioEngine")
@@ -226,14 +248,16 @@ final class AudioEngine {
     // MARK: - Internal Now Playing helpers (used from +Observers extension)
 
     func publishNowPlaying() {
+        let chapterTitle = episode.flatMap { resolveActiveChapterTitle($0, currentTime) }
         nowPlaying.update(
             title: episode?.title,
-            artist: nil,
-            albumTitle: nil,
+            artist: episode.flatMap { resolveShowName($0) },
+            albumTitle: chapterTitle,
             duration: duration > 0 ? duration : nil,
             elapsed: currentTime,
             rate: state == .playing ? rate : 0
         )
+        lastPublishedChapterTitle = chapterTitle
     }
 
     func publishNowPlayingElapsed() {

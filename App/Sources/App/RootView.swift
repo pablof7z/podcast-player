@@ -80,6 +80,20 @@ struct RootView: View {
                 playbackState.resolveShowImage = { [store] episode in
                     store.subscription(id: episode.subscriptionID)?.imageURL
                 }
+                // Lock-screen / Control Center enrichment. The engine reads
+                // these on every Now Playing publish so the lock screen
+                // shows show name + active chapter title, not just episode
+                // title. Each defaults to no-op so the engine works in
+                // isolation; we wire them here so the live store is the
+                // source of truth (chapters can hydrate post-playback).
+                playbackState.engine.resolveShowName = { [store] episode in
+                    store.subscription(id: episode.subscriptionID)?.title
+                }
+                playbackState.engine.resolveActiveChapterTitle = { [store] episode, playhead in
+                    let live = store.episode(id: episode.id) ?? episode
+                    let navigable = live.chapters?.filter(\.includeInTableOfContents) ?? []
+                    return navigable.active(at: playhead)?.title
+                }
             }
             // Re-push preferences whenever the user edits Settings so the
             // skip intervals update on the lock screen and the auto-mark
