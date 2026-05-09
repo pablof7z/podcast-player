@@ -16,7 +16,7 @@ import SwiftUI
 struct ShowDetailView: View {
 
     @Environment(AppStateStore.self) private var store
-    @Environment(MockPlaybackState.self) private var playback
+    @Environment(PlaybackState.self) private var playback
     @Environment(\.dismiss) private var dismiss
 
     let subscription: PodcastSubscription
@@ -197,9 +197,7 @@ struct ShowDetailView: View {
 
     private func handleTap(_ episode: Episode) {
         Haptics.selection()
-        // The player agent owns the real `play(episode:)` call. For now we just
-        // toggle the existing demo playback so a tap is observably different
-        // from a no-op; the navigation push below is the source of truth.
+        playback.setEpisode(episode)
         playback.play()
     }
 

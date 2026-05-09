@@ -36,20 +36,28 @@ struct RootView: View {
     @State private var lastShakeTime: Date = .distantPast
     /// Drives a Spotlight-continuation sheet for a note or memory.
     @State private var spotlightSheet: SpotlightIndexer.DeepLink?
-    /// Lane 4 — drives the persistent mini-player and full Now Playing view.
-    /// Lane 1 will replace `MockPlaybackState` with the real audio engine;
-    /// the surface API documented in `MockPlaybackState` is the binding contract.
-    @State private var mockPlaybackState = MockPlaybackState()
+    /// Drives the persistent mini-player and full Now Playing view. Wraps the
+    /// real `AudioEngine`; persistence callbacks are wired in `.onAppear` so
+    /// the wrapper stays independent of `AppStateStore`'s type.
+    @State private var playbackState = PlaybackState()
     @State private var showFullPlayer = false
     /// Shared namespace for matched-geometry between mini-bar and full player.
     @Namespace private var playerNamespace
 
     var body: some View {
         tabBar
-            .environment(mockPlaybackState)
+            .environment(playbackState)
+            .onAppear {
+                playbackState.onPersistPosition = { [store] id, position in
+                    store.setEpisodePlaybackPosition(id, position: position)
+                }
+                playbackState.onEpisodeFinished = { [store] id in
+                    store.markEpisodePlayed(id)
+                }
+            }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayerView(
-                    state: mockPlaybackState,
+                    state: playbackState,
                     glassNamespace: playerNamespace
                 )
             }
@@ -72,7 +80,7 @@ struct RootView: View {
                             }
                         }
                 }
-                .environment(mockPlaybackState)
+                .environment(playbackState)
             }
             .sheet(item: Binding(
                 get: { spotlightSheet.map(IdentifiedSpotlightLink.init) },
@@ -121,9 +129,9 @@ struct RootView: View {
         // pattern Apple Music uses for its mini-player.
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
-            if mockPlaybackState.episode != nil {
+            if playbackState.episode != nil {
                 MiniPlayerView(
-                    state: mockPlaybackState,
+                    state: playbackState,
                     onTap: { showFullPlayer = true },
                     glassNamespace: playerNamespace
                 )

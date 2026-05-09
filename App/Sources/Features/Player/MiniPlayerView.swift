@@ -4,24 +4,29 @@ import SwiftUI
 ///
 /// Reads `\.tabViewBottomAccessoryPlacement` from the environment and
 /// renders one of two layouts:
-///   - `.expanded` — full mini-bar above the tab bar with the active
-///     transcript line as the ticker (the UX-01 §6.5 signature).
+///   - `.expanded` — full mini-bar above the tab bar with the episode title.
 ///   - `.inline`   — compact pill that slots between the active-tab capsule
 ///     and the trailing toolbar controls when the tab bar collapses on
 ///     scroll-down (Apple Music pattern).
 ///
-/// The full UI shows artwork, the live transcript ticker line, the show name
-/// + clock, and play / +30s. The inline pill drops to artwork + play/pause
-/// only — no ticker, no progress, no metadata.
+/// The expanded UI shows artwork, the episode title, the show name + clock,
+/// and play / +30s. The inline pill drops to artwork + play/pause only.
 struct MiniPlayerView: View {
 
-    @Bindable var state: MockPlaybackState
+    @Environment(AppStateStore.self) private var store
+    @Bindable var state: PlaybackState
     let onTap: () -> Void
     let glassNamespace: Namespace.ID
 
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
-    private var copperAccent: Color { state.episode?.primaryArtColor ?? .orange }
+    private var copperAccent: Color { .orange }
+
+    private var showName: String {
+        guard let subID = state.episode?.subscriptionID,
+              let sub = store.subscription(id: subID) else { return "" }
+        return sub.title
+    }
 
     var body: some View {
         Group {
@@ -58,19 +63,12 @@ struct MiniPlayerView: View {
     // MARK: - Inline (compact) layout
 
     /// The collapsed pill that sits inline with the tab bar. No surrounding
-    /// glass surface — the toolbar's own glass shell hosts it. Just artwork,
-    /// the active speaker dot, and a play/pause button.
+    /// glass surface — the toolbar's own glass shell hosts it.
     private var inlineBody: some View {
         Button(action: onTap) {
             HStack(spacing: AppTheme.Spacing.xs) {
                 inlineArtwork
                     .glassEffectID("player.artwork", in: glassNamespace)
-
-                if let active = state.activeLine {
-                    Circle()
-                        .fill(active.speakerColor)
-                        .frame(width: 5, height: 5)
-                }
 
                 Spacer(minLength: 0)
 
@@ -94,10 +92,7 @@ struct MiniPlayerView: View {
     private var inlineArtwork: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    state.episode?.primaryArtColor ?? .orange,
-                    state.episode?.secondaryArtColor ?? .indigo
-                ],
+                colors: [.orange, .indigo],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -134,7 +129,7 @@ struct MiniPlayerView: View {
                 .glassEffectID("player.artwork", in: glassNamespace)
 
             VStack(alignment: .leading, spacing: 2) {
-                tickerLine
+                titleLine
                 metadataLine
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,10 +143,7 @@ struct MiniPlayerView: View {
     private var artwork: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    state.episode?.primaryArtColor ?? .orange,
-                    state.episode?.secondaryArtColor ?? .indigo
-                ],
+                colors: [.orange, .indigo],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -163,42 +155,28 @@ struct MiniPlayerView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    /// **The signature.** The active transcript line, ticker-style. Falls back
-    /// to the episode title only if the transcript is empty.
-    private var tickerLine: some View {
-        Group {
-            if let active = state.activeLine {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(active.speakerColor)
-                        .frame(width: 5, height: 5)
-                    Text(active.text)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .id(active.id) // re-renders → matchedGeometry-friendly fade
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
-                .animation(AppTheme.Animation.spring, value: active.id)
-            } else if let episode = state.episode {
-                Text(episode.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            }
+    @ViewBuilder
+    private var titleLine: some View {
+        if let episode = state.episode {
+            Text(episode.title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
     }
 
     private var metadataLine: some View {
         HStack(spacing: 6) {
-            if let episode = state.episode {
-                Text(episode.showName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
-                    .lineLimit(1)
-                Text("·")
-                    .foregroundStyle(.white.opacity(0.35))
+            if state.episode != nil {
+                if !showName.isEmpty {
+                    Text(showName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .lineLimit(1)
+                    Text("·")
+                        .foregroundStyle(.white.opacity(0.35))
+                }
                 Text(PlayerTimeFormat.clock(state.currentTime))
                     .font(.system(size: 11, design: .monospaced).weight(.medium))
                     .foregroundStyle(.white.opacity(0.65))
@@ -241,7 +219,6 @@ struct MiniPlayerView: View {
 
     private var accessibilityLabel: String {
         let title = state.episode?.title ?? "Now playing"
-        let active = state.activeLine.map { "\($0.speakerName) said: \($0.text)" } ?? ""
-        return [title, active].filter { !$0.isEmpty }.joined(separator: ", ")
+        return showName.isEmpty ? title : "\(title), \(showName)"
     }
 }

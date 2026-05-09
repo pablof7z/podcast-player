@@ -30,7 +30,7 @@ struct EpisodeDetailView: View {
     // MARK: Environment
 
     @Environment(AppStateStore.self) private var store
-    @Environment(MockPlaybackState.self) private var playback
+    @Environment(PlaybackState.self) private var playback
 
     // MARK: State
 
@@ -106,7 +106,10 @@ struct EpisodeDetailView: View {
                 showName: showName,
                 showImageURL: showImageURL,
                 isPlayed: episode.played,
-                onPlay: { playback.seek(to: episode.playbackPosition); playback.play() },
+                onPlay: {
+                    playback.setEpisode(episode)
+                    playback.play()
+                },
                 onPlayChapter: { chapter in
                     playback.seek(to: chapter.startTime)
                     withAnimation(.spring(duration: 0.45, bounce: 0.12)) { mode = .followAlong }
@@ -239,7 +242,7 @@ struct EpisodeDetailView: View {
 
 #Preview("Detail") {
     let store = AppStateStore()
-    let playback = MockPlaybackState()
+    let playback = PlaybackState()
     let subID = UUID()
     let subscription = PodcastSubscription(
         id: subID,

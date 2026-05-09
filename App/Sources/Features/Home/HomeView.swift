@@ -15,7 +15,7 @@ import os.log
 /// pull-to-refresh triggers the fetch.
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
-    @Environment(MockPlaybackState.self) private var playback
+    @Environment(PlaybackState.self) private var playback
 
     private static let logger = Logger.app("HomeView")
 
@@ -147,8 +147,8 @@ struct HomeView: View {
 
     private func playEpisode(_ episode: Episode) {
         Haptics.medium()
-        let subscription = store.subscription(id: episode.subscriptionID)
-        playback.play(episode: episode, in: subscription)
+        playback.setEpisode(episode)
+        playback.play()
     }
 
     private func markPlayed(_ episode: Episode) {
