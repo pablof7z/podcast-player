@@ -65,13 +65,17 @@ struct EpisodeDetailView: View {
         let showImageURL = subscription?.imageURL
         let transcript = Self.readyTranscript(for: episode)
 
-        ZStack(alignment: .bottom) {
-            content(episode: episode,
-                    showName: showName,
-                    showImageURL: showImageURL,
-                    transcript: transcript)
-            playerChrome(episode: episode, showName: showName)
-        }
+        // No inline player chrome — the global `MiniPlayerView` lives as
+        // the tab's bottom accessory and is always visible while an episode
+        // is loaded, so a second player surface here would duplicate it
+        // (the previous `DockedPlayerPlaceholder` was a stub from an early
+        // lane that never got removed).
+        content(
+            episode: episode,
+            showName: showName,
+            showImageURL: showImageURL,
+            transcript: transcript
+        )
         .navigationTitle(navigationTitle(episode: episode, showName: showName))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { modeToolbar(hasTranscript: transcript != nil) }
@@ -196,25 +200,6 @@ struct EpisodeDetailView: View {
             } else {
                 TranscribingInProgressView(episode: episode)
             }
-        }
-    }
-
-    // MARK: - Player chrome
-
-    @ViewBuilder
-    private func playerChrome(episode: Episode, showName: String) -> some View {
-        switch mode {
-        case .detail, .followAlong:
-            DockedPlayerPlaceholder(
-                title: episode.title,
-                subtitle: showName,
-                currentTime: playback.currentTime,
-                duration: episode.duration ?? playback.duration
-            )
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.bottom, AppTheme.Spacing.md)
-        case .reading:
-            EmptyView()
         }
     }
 
