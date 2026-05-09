@@ -70,7 +70,7 @@ struct LibraryGridCell: View {
     @ViewBuilder
     private var artworkOverlay: some View {
         if let url = subscription.imageURL {
-            CachedAsyncImage(url: url) { phase in
+            CachedAsyncImage(url: url, targetSize: CGSize(width: 150, height: 150)) { phase in
                 switch phase {
                 case .success(let image):
                     image

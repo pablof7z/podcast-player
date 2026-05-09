@@ -227,7 +227,7 @@ struct PlayerQueueRow: View {
     private var artwork: some View {
         Group {
             if let url = episode.imageURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 44, height: 44)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()

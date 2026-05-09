@@ -145,7 +145,7 @@ private struct PodcastSearchArtwork: View {
             RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
                 .fill(subscription.accentColor.opacity(0.2))
             if let url = subscription.imageURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 64, height: 64)) { phase in
                     if case .success(let image) = phase {
                         image.resizable().scaledToFill()
                     } else {
