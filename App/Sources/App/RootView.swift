@@ -54,6 +54,14 @@ struct RootView: View {
                 playbackState.onEpisodeFinished = { [store] id in
                     store.markEpisodePlayed(id)
                 }
+                // Cold-launch quick-action routing: AppDelegate stashed the
+                // shortcut URL during didFinishLaunchingWithOptions; consume
+                // it now and clear so subsequent re-appears don't re-route.
+                if let delegate = UIApplication.shared.delegate as? AppDelegate,
+                   let url = delegate.pendingShortcutURL {
+                    delegate.pendingShortcutURL = nil
+                    handleDeepLink(url)
+                }
             }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayerView(
