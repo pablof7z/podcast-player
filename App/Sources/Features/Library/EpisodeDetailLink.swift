@@ -4,8 +4,8 @@ import SwiftUI
 
 /// Navigation value pushed onto the show-detail `NavigationStack` when the
 /// user taps an episode row. Encapsulating the route as a value type (rather
-/// than a hard `NavigationLink(destination:)`) lets the EpisodeDetail agent
-/// swap the `navigationDestination(for:)` resolver without touching this view.
+/// than a hard `NavigationLink(destination:)`) keeps Library's row surface
+/// decoupled from `EpisodeDetailView`'s internal init.
 struct LibraryEpisodeRoute: Hashable {
     let episodeID: UUID
     let subscriptionID: UUID
@@ -32,24 +32,14 @@ struct EpisodeDetailLink<Label: View>: View {
 
 // MARK: - LibraryEpisodePlaceholder
 
-/// Minimal placeholder destination used by `ShowDetailView` until the
-/// EpisodeDetail agent wires the real screen into the route resolver.
-/// Keeps the navigation push verifiable end-to-end.
+/// Bridge between Library's `LibraryEpisodeRoute` and the real
+/// `EpisodeDetailView`. Library still holds the `navigationDestination`
+/// for `LibraryEpisodeRoute` and renders this view; this view forwards
+/// into the real episode-detail surface using the route's `episodeID`.
 struct LibraryEpisodePlaceholder: View {
     let route: LibraryEpisodeRoute
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-            Text(route.title)
-                .font(AppTheme.Typography.largeTitle)
-            Text("Episode detail will render here once it's wired in.")
-                .font(AppTheme.Typography.body)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-        }
-        .padding(AppTheme.Spacing.lg)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .navigationTitle(route.title)
-        .navigationBarTitleDisplayMode(.inline)
+        EpisodeDetailView(episodeID: route.episodeID)
     }
 }
