@@ -20,7 +20,8 @@ final class AppTests: XCTestCase {
 
     func testAddSubscriptionRejectsDuplicateFeedURL() throws {
         let store = AppStateStore()
-        let url = URL(string: "https://example.com/feed.xml")!
+        // Use a UUID-unique URL so prior persisted state can't collide.
+        let url = URL(string: "https://example.com/\(UUID().uuidString).xml")!
 
         XCTAssertTrue(store.addSubscription(makeSubscription(feedURL: url)))
         let countAfterFirst = store.state.subscriptions.count
@@ -30,18 +31,22 @@ final class AppTests: XCTestCase {
 
     func testRemoveSubscriptionAlsoRemovesItsEpisodes() throws {
         let store = AppStateStore()
-        let sub = makeSubscription(title: "Drop Me")
+        let sub = makeSubscription(title: "Drop Me \(UUID().uuidString)")
         store.addSubscription(sub)
 
-        let ep1 = makeEpisode(subscriptionID: sub.id, guid: "a")
-        let ep2 = makeEpisode(subscriptionID: sub.id, guid: "b")
+        let ep1 = makeEpisode(subscriptionID: sub.id, guid: "drop-\(UUID().uuidString)")
+        let ep2 = makeEpisode(subscriptionID: sub.id, guid: "drop-\(UUID().uuidString)")
         store.upsertEpisodes([ep1, ep2], forSubscription: sub.id)
-        XCTAssertEqual(store.state.episodes.count, 2)
+
+        // Assert against this subscription's episodes only — the live
+        // AppStateStore loads persisted state from prior test runs, so global
+        // counts are contaminated.
+        XCTAssertEqual(store.episodes(forSubscription: sub.id).count, 2)
 
         store.removeSubscription(sub.id)
 
         XCTAssertFalse(store.state.subscriptions.contains { $0.id == sub.id })
-        XCTAssertTrue(store.state.episodes.isEmpty)
+        XCTAssertTrue(store.episodes(forSubscription: sub.id).isEmpty)
     }
 
     func testSetSubscriptionNotificationsToggle() throws {
