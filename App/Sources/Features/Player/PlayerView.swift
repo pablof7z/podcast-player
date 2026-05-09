@@ -3,9 +3,10 @@ import SwiftUI
 /// Full-screen Now Playing surface.
 ///
 /// Layered top-down: hero artwork placeholder → editorial metadata →
-/// transcript stub → semantic waveform → primary transport → action cluster.
-/// All colors and fonts use semantic / Dynamic Type styles so the surface
-/// adapts to the user's appearance settings and accent color.
+/// chapters (with transcript fallback when no chapters exist) → semantic
+/// waveform → primary transport → action cluster. All colors and fonts use
+/// semantic / Dynamic Type styles so the surface adapts to the user's
+/// appearance settings and accent color.
 struct PlayerView: View {
 
     @Environment(AppStateStore.self) private var store
@@ -35,7 +36,7 @@ struct PlayerView: View {
                 VStack(spacing: AppTheme.Spacing.lg) {
                     heroArtwork
                     editorialHeader
-                    PlayerTranscriptScrollView(state: state, useGlassCard: true)
+                    secondarySurface
                         .frame(minHeight: 240, maxHeight: 320)
                 }
                 .padding(.horizontal, AppTheme.Spacing.md)
@@ -162,6 +163,34 @@ struct PlayerView: View {
                 .font(.system(size: 56, weight: .light))
                 .foregroundStyle(.secondary)
         }
+    }
+
+    // MARK: - Secondary surface (chapters / transcript)
+
+    /// Player body below the editorial header. Chapters take precedence
+    /// when the episode exposes navigable ones — otherwise we fall back to
+    /// the transcript scroller so chapter-less episodes don't regress to a
+    /// blank box. Clipping/share flows read the transcript directly via
+    /// `PlayerShareSheet` regardless of which surface is visible here.
+    @ViewBuilder
+    private var secondarySurface: some View {
+        if let chapters = navigableChapters, !chapters.isEmpty {
+            PlayerChaptersScrollView(
+                chapters: chapters,
+                state: state,
+                useGlassCard: true
+            )
+        } else {
+            PlayerTranscriptScrollView(state: state, useGlassCard: true)
+        }
+    }
+
+    private var navigableChapters: [Episode.Chapter]? {
+        // Prefer the live store copy so chapters fetched after the episode
+        // entered playback (e.g. async `chaptersURL` JSON hydration) appear
+        // without re-opening the player.
+        let liveEpisode = state.episode.flatMap { store.episode(id: $0.id) } ?? state.episode
+        return liveEpisode?.chapters?.filter(\.includeInTableOfContents)
     }
 
     // MARK: - Editorial header

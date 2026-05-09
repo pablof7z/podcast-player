@@ -205,7 +205,7 @@ struct EpisodeDetailView: View {
         case .reading: return "Reader"
         case .followAlong:
             if let chapters = navigableChapters(for: episode),
-               let active = chapters.last(where: { $0.startTime <= playback.currentTime }) {
+               let active = chapters.active(at: playback.currentTime) {
                 return active.title
             }
             return "Now Playing"
@@ -217,9 +217,7 @@ struct EpisodeDetailView: View {
     }
 
     private func activeChapterID(in chapters: [Episode.Chapter]) -> UUID? {
-        guard let active = chapters.last(where: { $0.startTime <= playback.currentTime })
-        else { return chapters.first?.id }
-        return active.id
+        chapters.active(at: playback.currentTime)?.id
     }
 
     /// Resolve the persisted `Transcript` for `episode` when its lifecycle is

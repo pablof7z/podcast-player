@@ -147,6 +147,20 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
 
 // MARK: - Podcasting 2.0 substructs
 
+extension BidirectionalCollection where Element == Episode.Chapter {
+    /// Returns the chapter that contains `playheadSeconds` — the last chapter
+    /// whose `startTime <= playheadSeconds`. Falls back to the first chapter
+    /// when the playhead sits before any chapter starts (typical at t=0
+    /// before playback begins) so consumers always have an active indicator
+    /// instead of a phantom none-selected state.
+    func active(at playheadSeconds: TimeInterval) -> Episode.Chapter? {
+        if let hit = self.last(where: { $0.startTime <= playheadSeconds }) {
+            return hit
+        }
+        return self.first
+    }
+}
+
 extension Episode {
     /// A chapter marker. Either inline (parsed from a `<podcast:chapter>`-like
     /// element) or hydrated later from `chaptersURL` JSON.
