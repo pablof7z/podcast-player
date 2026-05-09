@@ -183,66 +183,52 @@ struct EpisodeRowAccessibilityActions: View {
 
 // MARK: - Swipe-action helpers
 
-/// Leading-edge swipe action: "Mark played" with full-swipe enabled.
+/// Leading-edge swipe action: "Add to Queue".
+///
+/// Appends the episode to `PlaybackState.queue` so it's picked up by the
+/// "Up Next" rail. No-op (silently absorbed by `PlaybackState.enqueue`)
+/// when the episode is already queued or is the currently-playing item —
+/// the swipe still resolves visually so the user gets affordance feedback.
+///
 /// Apply via `.swipeActions(edge: .leading, allowsFullSwipe: true) { ... }`
 /// on a `List` row — the enclosing call site decides where this lives so
-/// non-`List` surfaces (the Home rail card) can opt out cleanly.
+/// non-`List` surfaces (the Home rail card) can opt out cleanly. The
+/// download / mark-played affordances that previously lived on the swipe
+/// edges are still available via `EpisodeRowContextMenu` (long-press).
 struct EpisodeRowLeadingSwipeAction: View {
     let episode: Episode
-    let store: AppStateStore
+    let playback: PlaybackState
 
     var body: some View {
         Button {
-            if episode.played {
-                Haptics.itemReopen()
-                store.markEpisodeUnplayed(episode.id)
-            } else {
-                Haptics.itemComplete()
-                store.markEpisodePlayed(episode.id)
-            }
+            Haptics.success()
+            playback.enqueue(episode.id)
         } label: {
-            Label(
-                episode.played ? "Unplayed" : "Played",
-                systemImage: episode.played ? "circle" : "checkmark.circle.fill"
-            )
+            Label("Add to Queue", systemImage: "text.badge.plus")
         }
-        .tint(episode.played ? .gray : .green)
+        .tint(.indigo)
     }
 }
 
-/// Trailing-edge swipe action: "Download" / "Remove". Destructive only when
-/// removing — matches Mail / Reminders conventions.
+/// Trailing-edge swipe action: destructive "Remove" — drops the episode
+/// from the visible list.
+///
+/// "Remove from list" semantically means "treat as done": calling
+/// `markEpisodePlayed` removes the episode from `recentEpisodes`
+/// (filters on `!played`) and from `inProgressEpisodes`, which is what
+/// the user actually wants when they swipe away an item they're not
+/// going to listen to. The download / mark-unplayed affordances remain
+/// available via `EpisodeRowContextMenu` (long-press).
 struct EpisodeRowTrailingSwipeAction: View {
     let episode: Episode
     let store: AppStateStore
 
     var body: some View {
-        switch episode.downloadState {
-        case .notDownloaded, .queued, .failed:
-            Button {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.download(episodeID: episode.id)
-            } label: {
-                Label("Download", systemImage: "arrow.down.circle")
-            }
-            .tint(.blue)
-        case .downloading:
-            Button(role: .cancel) {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.cancel(episodeID: episode.id)
-            } label: {
-                Label("Cancel", systemImage: "xmark.circle")
-            }
-        case .downloaded:
-            Button(role: .destructive) {
-                Haptics.warning()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.delete(episodeID: episode.id)
-            } label: {
-                Label("Remove", systemImage: "trash")
-            }
+        Button(role: .destructive) {
+            Haptics.warning()
+            store.markEpisodePlayed(episode.id)
+        } label: {
+            Label("Remove", systemImage: "trash")
         }
     }
 }

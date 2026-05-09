@@ -42,9 +42,9 @@ struct ShowDetailEpisodeList: View {
             ))
             .listRowBackground(Color(.systemBackground))
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                EpisodeRowLeadingSwipeAction(episode: ep, store: store)
+                EpisodeRowLeadingSwipeAction(episode: ep, playback: playback)
             }
-            .swipeActions(edge: .trailing) {
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 EpisodeRowTrailingSwipeAction(episode: ep, store: store)
             }
             .contextMenu {

@@ -129,9 +129,9 @@ struct HomeView: View {
                 .listRowSeparatorTint(AppTheme.Tint.hairline)
                 .listRowBackground(Color.clear)
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    EpisodeRowLeadingSwipeAction(episode: episode, store: store)
+                    EpisodeRowLeadingSwipeAction(episode: episode, playback: playback)
                 }
-                .swipeActions(edge: .trailing) {
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     EpisodeRowTrailingSwipeAction(episode: episode, store: store)
                 }
             }

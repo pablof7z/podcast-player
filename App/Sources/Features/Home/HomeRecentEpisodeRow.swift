@@ -17,8 +17,9 @@ struct HomeEpisodeRoute: Hashable {
 /// Shows artwork, show name, episode title, relative pub date, and duration.
 /// Tap plays the episode; long-press exposes the full shared menu (mark
 /// played/unplayed, download/cancel/remove, share, open episode details).
-/// Leading-edge swipe marks played; trailing-edge swipe drives the download
-/// affordance — both rely on the row being hosted inside a `List`.
+/// Leading-edge swipe adds the episode to the playback queue; trailing-edge
+/// swipe is a destructive "Remove" that marks the episode played so it falls
+/// out of the recent feed — both rely on the row being hosted inside a `List`.
 struct HomeRecentEpisodeRow: View {
     let episode: Episode
     let subscription: PodcastSubscription?
