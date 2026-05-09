@@ -147,6 +147,18 @@ final class PlaybackState {
     /// (mirrors `Settings.autoMarkPlayedAtEnd`) so the user can opt out of auto-mark.
     var onEpisodeFinished: (UUID) -> Void = { _ in }
 
+    /// Called when the player wants any queued position writes drained to
+    /// disk synchronously: on pause, on natural end-of-episode (so the
+    /// final position survives even when auto-mark-played is off), and on
+    /// episode change (so the previous episode's position is durable
+    /// before the next episode steals the persistence loop).
+    ///
+    /// Wired by `RootView` to `AppStateStore.flushPendingPositions`. The
+    /// store also flushes on `UIApplication.didEnterBackgroundNotification`
+    /// independently, so this closure is for the in-app transitions the
+    /// store can't observe directly.
+    var onFlushPositions: () -> Void = { }
+
     /// Mirrors `Settings.autoMarkPlayedAtEnd`. When `false`, end-of-item
     /// detection still stops the persistence loop from over-writing the
     /// final position but skips the `onEpisodeFinished` callback.
@@ -189,6 +201,11 @@ final class PlaybackState {
     /// actually start audio — matches the engine's deliberate two-step flow.
     func setEpisode(_ newEpisode: Episode) {
         if episode?.id != newEpisode.id {
+            // Drain any cached position for the previous episode before
+            // we steal the persistence loop — otherwise the outgoing
+            // playhead would only land on disk at the next 30s eager-cap
+            // tick, by which time the user may have force-quit.
+            onFlushPositions()
             didFireFinishedFor = nil
             lastSnapshotWrite = nil
         }
@@ -224,6 +241,10 @@ final class PlaybackState {
     func pause() {
         Haptics.soft()
         engine.pause()
+        // Pause is a "the user is done for now" signal — drain the
+        // position cache so the playhead survives a force-quit-after-
+        // pause cycle. Cheap when the cache is empty.
+        onFlushPositions()
     }
 
     func seek(to time: TimeInterval) {
@@ -373,7 +394,16 @@ final class PlaybackState {
             // played is an explicit user preference.
             didFireFinishedFor = episode.id
             if autoMarkPlayedOnFinish {
+                // markEpisodePlayed flushes the cache itself, so the
+                // explicit flush below would be redundant on this path.
                 onEpisodeFinished(episode.id)
+            } else {
+                // Auto-mark is off: we just persisted the final position
+                // through `onPersistPosition` above, which goes through
+                // the debounced cache. Force it to disk now so the user's
+                // exact end-position survives a kill before the next
+                // debounce tick.
+                onFlushPositions()
             }
         }
     }

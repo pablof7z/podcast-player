@@ -5,24 +5,38 @@ import Foundation
 extension AppStateStore {
 
     // MARK: - Reads
+    //
+    // Reads fold the position-debounce cache into the result so a freshly-
+    // updated playhead is visible to UI surfaces (in-progress carousel,
+    // resume-from-position, episode detail) without waiting for the next
+    // disk flush. See `AppStateStore+PositionDebounce.swift` for the
+    // cache's lifecycle.
 
     /// Returns the live episode record matching `id`, or `nil` when not found.
     func episode(id: UUID) -> Episode? {
-        state.episodes.first { $0.id == id }
+        guard var found = state.episodes.first(where: { $0.id == id }) else { return nil }
+        if let cached = cachedPosition(for: id) {
+            found.playbackPosition = cached
+        }
+        return found
     }
 
     /// Episodes belonging to the given subscription, newest publish-date first.
     func episodes(forSubscription id: UUID) -> [Episode] {
-        state.episodes
+        let filtered = state.episodes
             .filter { $0.subscriptionID == id }
             .sorted { $0.pubDate > $1.pubDate }
+        return applyingPositionCache(filtered)
     }
 
     /// Episodes the user has started but not finished, ordered by most recent
     /// activity. "Started" is `playbackPosition > 0`. "Finished" is `played`.
     /// Used by the Home tab's in-progress carousel.
     var inProgressEpisodes: [Episode] {
-        state.episodes
+        // Fold the cache *before* filtering on `playbackPosition > 0` —
+        // otherwise an episode whose first tick hasn't been flushed yet
+        // would be missing from the in-progress list.
+        applyingPositionCache(state.episodes)
             .filter { !$0.played && $0.playbackPosition > 0 }
             .sorted { $0.pubDate > $1.pubDate }
     }
@@ -30,11 +44,12 @@ extension AppStateStore {
     /// Recently published, unplayed episodes across all subscriptions.
     /// Used by the Home tab's "new" feed.
     func recentEpisodes(limit: Int = 30) -> [Episode] {
-        state.episodes
+        let recent = state.episodes
             .filter { !$0.played }
             .sorted { $0.pubDate > $1.pubDate }
             .prefix(limit)
             .map { $0 }
+        return applyingPositionCache(recent)
     }
 
     // MARK: - Writes
@@ -89,20 +104,34 @@ extension AppStateStore {
         return newlyInserted
     }
 
-    /// Persists a playback-position update without rewriting the entire episode.
-    /// Called frequently from the audio engine's progress observer.
-    func setEpisodePlaybackPosition(_ id: UUID, position: TimeInterval) {
-        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
-        guard state.episodes[idx].playbackPosition != position else { return }
-        state.episodes[idx].playbackPosition = position
-    }
+    // `setEpisodePlaybackPosition(_:position:)` is implemented in
+    // `AppStateStore+PositionDebounce.swift`. It writes through an in-memory
+    // cache and only mutates `state.episodes` (firing the expensive save) on
+    // an eager-first / 5-second-trailing / 30-second-cap schedule. This is
+    // the file's single highest-frequency caller; routing it through the
+    // cache is the entire point of that companion file.
 
     /// Marks the episode as fully played (sets `played = true`, zeroes the
     /// position so a re-play starts from the top).
+    ///
+    /// **Flushes the position cache before mutating.** Without the flush,
+    /// a cached non-zero position for `id` would still be in
+    /// `positionCache`; clearing the cache *after* the played-true write
+    /// is fine, but if the app crashed between the flush and the
+    /// played=true save, the user would lose both the played flag *and*
+    /// the actual end-position. Flushing first means the worst case is
+    /// "played=false but position correct" — recoverable next time the
+    /// user opens the episode.
     func markEpisodePlayed(_ id: UUID) {
+        flushPendingPositions()
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         state.episodes[idx].played = true
         state.episodes[idx].playbackPosition = 0
+        // The cache entry for this episode (if any) is now stale — we
+        // just persisted position=0 deliberately. Drop it so the next
+        // tick (e.g. a stray engine observer firing post-end) doesn't
+        // resurrect a non-zero position on its first eager save.
+        positionCache.removeValue(forKey: id)
     }
 
     /// Reverts an accidental "mark played".

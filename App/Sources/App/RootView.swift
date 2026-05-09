@@ -56,6 +56,14 @@ struct RootView: View {
                 playbackState.onEpisodeFinished = { [store] id in
                     store.markEpisodePlayed(id)
                 }
+                // Drain the position-debounce cache on pause / episode
+                // change / natural end-without-auto-mark. The store also
+                // flushes on `UIApplication.didEnterBackgroundNotification`
+                // independently — this closure covers the in-app
+                // transitions the store can't observe.
+                playbackState.onFlushPositions = { [store] in
+                    store.flushPendingPositions()
+                }
                 // Cold-launch quick-action routing: AppDelegate stashed the
                 // shortcut URL during didFinishLaunchingWithOptions; consume
                 // it now and clear so subsequent re-appears don't re-route.

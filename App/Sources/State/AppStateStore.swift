@@ -52,6 +52,44 @@ final class AppStateStore {
     /// Retained observer token for iCloud external-change notifications.
     private var iCloudObserver: NSObjectProtocol?
 
+    /// Retained observer token for `UIApplication.didEnterBackgroundNotification`.
+    /// On background, the position cache is flushed to disk so the user
+    /// can force-quit + relaunch without losing playback progress.
+    /// See `AppStateStore+PositionDebounce.swift` for the rationale.
+    private var backgroundObserver: NSObjectProtocol?
+
+    // MARK: - Position debounce
+    //
+    // Position updates from `PlaybackState.tickPersistence` arrive at 1 Hz.
+    // Writing the entire ~8 MB JSON blob every second would be 480 MB/min of
+    // disk I/O on the main actor — battery, NAND wear, and main-thread
+    // responsiveness all suffer. We coalesce position updates through these
+    // three fields and only mutate `state.episodes` (which would trigger the
+    // expensive save) on a controlled cadence.
+    //
+    // See `AppStateStore+PositionDebounce.swift` for the full read/write
+    // contract; these properties are declared here because they're stored
+    // properties (extensions can't add stored state) and isolated to the
+    // store's main actor.
+
+    /// Cached playback positions waiting to be folded into `state.episodes`.
+    /// Read-folded into `episode(id:)`/`inProgressEpisodes`/`recentEpisodes`
+    /// so UI surfaces never see a stale position. Drained by
+    /// `flushPendingPositions()`.
+    var positionCache: [UUID: TimeInterval] = [:]
+
+    /// Pending trailing-debounce flush task. Cancelled and re-armed on each
+    /// `setEpisodePlaybackPosition` call so the deadline keeps moving while
+    /// updates stream in (true trailing debounce).
+    var positionFlushTask: Task<Void, Never>?
+
+    /// Wall-clock time of the most recent position flush. Drives the
+    /// max-interval cap: if continuous updates exceed
+    /// `positionMaxInterval` since this timestamp, the next call writes
+    /// eagerly so a crash never loses more than one cap-window of
+    /// position.
+    var lastPositionFlush: Date?
+
     init(persistence: Persistence = .shared) {
         self.persistence = persistence
         var loadedState: AppState
@@ -94,6 +132,11 @@ final class AppStateStore {
         // itself owns the polling task + lifecycle observers, so this call
         // is idempotent and we never have to clean up from here.
         SubscriptionRefreshService.shared.startPeriodicRefresh(store: self)
+        // Subscribe to app-backgrounding so the position cache is flushed
+        // to disk before iOS can suspend or kill the process. Token is
+        // retained on `self` so the observer outlives the init call but
+        // dies with the store. See `AppStateStore+PositionDebounce.swift`.
+        backgroundObserver = registerBackgroundFlushObserver()
     }
 
     /// Pulls the latest iCloud values into `state.settings`.
@@ -138,10 +181,41 @@ final class AppStateStore {
 
     /// Wipes all user data while preserving API credentials and Nostr identity.
     func clearAllData() {
+        // Drop any queued position writes — they would target episode IDs
+        // about to disappear and could resurrect deleted records on the
+        // next flush.
+        positionFlushTask?.cancel()
+        positionFlushTask = nil
+        positionCache.removeAll()
+
         let preserved = state.settings
         state = AppState()
         state.settings = preserved
         persistence.save(state)
         SpotlightIndexer.clearAll()
+    }
+
+    deinit {
+        // NotificationCenter retains observer tokens until they're removed,
+        // even after the registering instance dies. Without this, the
+        // closure would keep firing into a `nil` self (harmless but noisy)
+        // and the test target would leak observers across runs.
+        //
+        // Swift 6 deinit is nonisolated; we can't touch the @MainActor
+        // stored properties from here directly. The observer tokens and
+        // Task we need to clean up are conceptually owned by the actor,
+        // but `removeObserver` is thread-safe and `Task.cancel()` is
+        // `Sendable`, so we can safely reach them via `assumeIsolated` —
+        // by the time deinit runs, no other actor work can be racing
+        // against us for `self`.
+        MainActor.assumeIsolated {
+            if let backgroundObserver {
+                NotificationCenter.default.removeObserver(backgroundObserver)
+            }
+            if let iCloudObserver {
+                NotificationCenter.default.removeObserver(iCloudObserver)
+            }
+            positionFlushTask?.cancel()
+        }
     }
 }
