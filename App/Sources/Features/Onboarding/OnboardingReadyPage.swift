@@ -20,10 +20,10 @@ struct OnboardingReadyPage: View {
 
     /// The four headline features surfaced to the user on completion.
     private let features: [(icon: String, label: String, color: Color)] = [
-        ("sparkles", "Chat with your AI agent", AppTheme.Tint.onboardingChipAI),
-        ("note.text", "Notes & agent memories", .white),
-        ("person.2.fill", "Connect with friends", AppTheme.Tint.onboardingChipFriends),
-        ("hand.tap.fill", "Shake to send feedback", AppTheme.Tint.onboardingChipFeedback),
+        ("antenna.radiowaves.left.and.right", "Subscribe via OPML or feed URL", AppTheme.Tint.onboardingChipAI),
+        ("headphones", "Listen with chapters & speed control", .white),
+        ("sparkles", "Ask the agent about anything you've heard", AppTheme.Tint.onboardingChipFriends),
+        ("book.closed.fill", "Auto-generated wikis from transcripts", AppTheme.Tint.onboardingChipFeedback),
     ]
 
     var body: some View {

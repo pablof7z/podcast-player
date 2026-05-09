@@ -11,18 +11,18 @@ struct OnboardingWelcomePage: View {
             Spacer()
             sparkleMedallion
             VStack(spacing: AppTheme.Spacing.sm) {
-                Text("iOS App Template")
+                Text("Podcastr")
                     .font(AppTheme.Typography.largeTitle)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
 
-                Text("Your intelligent personal agent")
+                Text("A podcast player with a memory")
                     .font(AppTheme.Typography.title)
                     .foregroundStyle(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
             }
 
-            Text("Liquid glass, AI agents, Nostr identity, and shake-to-feedback — all wired up and ready.")
+            Text("Subscribe to your shows; let an AI agent remember, summarize, and connect everything you listen to.")
                 .font(AppTheme.Typography.body)
                 .foregroundStyle(.white.opacity(0.75))
                 .multilineTextAlignment(.center)
@@ -31,9 +31,9 @@ struct OnboardingWelcomePage: View {
 
             if showChips {
                 HStack(spacing: AppTheme.Spacing.xs) {
-                    featureChip("AI Agent", icon: "sparkles")
-                    featureChip("Glass UI", icon: "circle.hexagonpath.fill")
-                    featureChip("Privacy", icon: "lock.shield.fill")
+                    featureChip("Subscribe", icon: "antenna.radiowaves.left.and.right")
+                    featureChip("Listen", icon: "headphones")
+                    featureChip("Remember", icon: "sparkles")
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
