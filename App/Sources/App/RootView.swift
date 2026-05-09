@@ -41,9 +41,33 @@ struct RootView: View {
     /// Drives a Spotlight-continuation sheet for a note or memory.
     /// Set by `handleSpotlight` and cleared on sheet dismiss.
     @State private var spotlightSheet: SpotlightIndexer.DeepLink?
+    /// Lane 4 — drives the persistent mini-player and full Now Playing view.
+    /// Lane 1 will replace `MockPlaybackState` with the real audio engine;
+    /// the surface API documented in `MockPlaybackState` is the binding contract.
+    @State private var mockPlaybackState = MockPlaybackState()
+    @State private var showFullPlayer = false
+    /// Shared namespace for matched-geometry between mini-bar and full player.
+    @Namespace private var playerNamespace
 
     var body: some View {
         tabBar
+            .environment(mockPlaybackState)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if mockPlaybackState.episode != nil {
+                    MiniPlayerView(
+                        state: mockPlaybackState,
+                        onTap: { showFullPlayer = true },
+                        glassNamespace: playerNamespace
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .fullScreenCover(isPresented: $showFullPlayer) {
+                PlayerView(
+                    state: mockPlaybackState,
+                    glassNamespace: playerNamespace
+                )
+            }
             .onShake { handleShake() }
             .sheet(isPresented: $showFeedback) {
                 FeedbackView(workflow: feedbackWorkflow)
