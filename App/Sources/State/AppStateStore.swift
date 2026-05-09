@@ -79,6 +79,10 @@ final class AppStateStore {
                 self?.applyExternalSettingsChange()
             }
         }
+        // Kick off the foreground subscription-refresh loop. The service
+        // itself owns the polling task + lifecycle observers, so this call
+        // is idempotent and we never have to clean up from here.
+        SubscriptionRefreshService.shared.startPeriodicRefresh(store: self)
     }
 
     /// Pulls the latest iCloud values into `state.settings`.

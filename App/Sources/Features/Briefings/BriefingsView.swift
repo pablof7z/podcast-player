@@ -28,6 +28,9 @@ struct BriefingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.Spacing.lg) {
+                if let error = model.composeError {
+                    errorBanner(message: error)
+                }
                 presetRow
                 Divider().padding(.horizontal)
                 if model.briefings.isEmpty {
@@ -39,6 +42,13 @@ struct BriefingsView: View {
             .padding(.top)
         }
         .background(briefingBackground)
+        .overlay(alignment: .bottom) {
+            if let progress = model.composeProgress, progress != .finished {
+                composeProgressOverlay(progress: progress)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: model.composeProgress)
         .navigationTitle("Briefings")
         .toolbar { toolbar }
         .sheet(isPresented: $isComposing) {
@@ -53,6 +63,71 @@ struct BriefingsView: View {
             BriefingPlayerView(context: ctx)
         }
         .task { await model.reload() }
+    }
+
+    // MARK: Error banner
+
+    @ViewBuilder
+    private func errorBanner(message: String) -> some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Couldn't compose briefing")
+                    .font(.subheadline.weight(.semibold))
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.lg,
+            tint: Color.orange.opacity(0.18)
+        )
+        .padding(.horizontal)
+    }
+
+    // MARK: Compose progress overlay
+
+    @ViewBuilder
+    private func composeProgressOverlay(progress: BriefingComposeProgress) -> some View {
+        HStack(spacing: AppTheme.Spacing.md) {
+            ProgressView()
+                .progressViewStyle(.circular)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Composing your briefing")
+                    .font(.subheadline.weight(.semibold))
+                Text(progressLabel(progress))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.lg,
+            tint: BriefingsView.brassAmber.opacity(0.32)
+        )
+        .padding(.horizontal)
+        .padding(.bottom, AppTheme.Spacing.lg)
+    }
+
+    private func progressLabel(_ progress: BriefingComposeProgress) -> String {
+        switch progress {
+        case .selectedEpisodes(let count):
+            count > 0 ? "Selected \(count) episodes" : "Searching your library…"
+        case .draftedSegments(let count):
+            "Drafted \(count) segment\(count == 1 ? "" : "s")"
+        case .synthesizingVoice(let i, let total):
+            "Synthesizing voice (\(i + 1)/\(total))"
+        case .stitchingQuotes:
+            "Stitching audio together"
+        case .finished:
+            "Done"
+        }
     }
 
     // MARK: Toolbar
@@ -132,6 +207,13 @@ struct BriefingsView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        model.delete(briefing)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
         }
     }

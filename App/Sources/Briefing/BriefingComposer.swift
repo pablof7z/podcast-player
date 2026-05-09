@@ -63,10 +63,24 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
     /// TTS voice id. Empty string = provider default.
     let voiceID: String
 
+    /// Production defaults wire the composer to:
+    ///   - `RAGService.shared.briefingRAG` for cross-podcast retrieval
+    ///     (provided by the RAG-service lane).
+    ///   - `WikiStorage.shared` for wiki page lookups
+    ///     (provided by the wiki-storage lane).
+    ///   - `ElevenLabsBriefingTTS()` for narration synthesis
+    ///     (wraps `ElevenLabsTTSClient` from Lane 8 — Voice).
+    ///
+    /// The first two defaults reference singletons added by sibling lanes; if
+    /// either lane's PR has not yet merged into `main`, this file will fail to
+    /// compile. That is expected — see the lane spec note in the commit.
+    /// Tests can still inject `FakeRAGSearch` / `FakeWikiStorage` / `FakeTTS`
+    /// (kept under `#if DEBUG` in `BriefingFakes.swift`) by passing them
+    /// explicitly here.
     init(
-        rag: BriefingRAGSearchProtocol = FakeRAGSearch(),
-        wiki: BriefingWikiStorageProtocol = FakeWikiStorage(),
-        tts: TTSProtocol = FakeTTS(),
+        rag: BriefingRAGSearchProtocol = RAGService.shared.briefingRAG,
+        wiki: BriefingWikiStorageProtocol = WikiStorage.shared,
+        tts: TTSProtocol = ElevenLabsBriefingTTS(),
         storage: BriefingStorage,
         apiKey: String? = nil,
         model: String = "openai/gpt-4o-mini",

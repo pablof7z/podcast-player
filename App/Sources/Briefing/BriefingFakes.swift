@@ -1,18 +1,29 @@
 import AVFoundation
 import Foundation
+import os.log
 
-// MARK: - Fakes
+// MARK: - Adapters and shared utilities
 //
-// Real implementations of the cross-lane protocols ship in lanes 1/6/7/8.
-// Until those land, the briefing pipeline runs end-to-end against the fakes
-// in this file. They produce *real* artifacts (silent m4a files of the
-// correct length, fixture RAG candidates, fixture wiki pages) so the data
-// flow through the composer is genuine — only the contents are stubbed.
+// This file used to be wall-to-wall fakes. With Lanes 6/7/8 wired up the
+// production composer now relies on:
+//   - `SilentAudioWriter` (a small AAC scratch writer, also reused by the
+//     audio stitcher when an original-quote enclosure can't be downloaded)
+//   - `ElevenLabsBriefingTTS` (the real TTS adapter — wraps Lane 8's
+//     streaming client behind the file-oriented `TTSProtocol`)
+//   - `FakeBriefingPlayerHost` (the only available `BriefingPlayerHostProtocol`
+//     implementation today — Lane 1's `AudioEngine`-as-host hasn't shipped
+//     yet, and `BriefingPlayerView` constructs one of these in production)
+//
+// The remaining `Fake*` data sources (`FakeRAGSearch`, `FakeWikiStorage`,
+// `FakeTTS`) are now `#if DEBUG`-only so production code paths can't reach
+// them. They stay around for previews and tests.
 
 // MARK: Silent audio writer
 
-/// Writes a silent AAC m4a of `duration` seconds to `url`. Used by the fake
-/// TTS provider and as the substitute audio for any missing original-quote.
+/// Writes a silent AAC m4a of `duration` seconds to `url`. Used by
+/// `BriefingAudioStitcher` whenever an original-quote enclosure cannot be
+/// resolved (the stitcher substitutes silence so the timeline still lines
+/// up) and by the debug `FakeTTS` provider for SwiftUI previews / tests.
 ///
 /// The output is a real, decoded-audio-equivalent .m4a — `AVPlayer`,
 /// `AVMutableComposition`, and `AVAssetExportSession` all consume it without
@@ -155,6 +166,128 @@ enum SilentAudioWriter {
     }
 }
 
+// MARK: - ElevenLabs briefing TTS adapter
+
+/// Production `TTSProtocol` adapter. Wraps `ElevenLabsTTSClient`'s streaming
+/// surface (which yields raw audio frames over an `AsyncThrowingStream`)
+/// behind the file-oriented contract the briefing composer expects.
+///
+/// Behaviour:
+///   1. Validates that `ElevenLabsCredentialStore` has an API key. Throws
+///      `AdapterError.missingCredentials` when not. The composer surfaces
+///      that as a Settings prompt rather than a synthesise failure.
+///   2. Spools every byte from the stream into `outputURL` via `FileHandle`
+///      so a multi-minute briefing never holds the whole clip in memory.
+///   3. Loads the resulting file as an `AVURLAsset` and reads the realised
+///      `.duration` so the composer can populate `BriefingTrack.endInTrack`
+///      against the *real* clip length, not a wpm estimate.
+///
+/// The output filename uses the composer's `.m4a` convention. AVFoundation
+/// sniffs the container from the leading bytes, so the REST fallback's MP3
+/// payload still plays through `AVMutableComposition` without rewrap.
+struct ElevenLabsBriefingTTS: TTSProtocol {
+
+    enum AdapterError: Error, Sendable, Equatable {
+        case missingCredentials
+        case streamProducedNoAudio
+        case durationLoadFailed(String)
+    }
+
+    private static let logger = Logger.app("ElevenLabsBriefingTTS")
+    let client: ElevenLabsTTSClient
+
+    init(client: ElevenLabsTTSClient = ElevenLabsTTSClient()) {
+        self.client = client
+    }
+
+    func synthesize(
+        text: String,
+        voiceID: String,
+        outputURL: URL
+    ) async throws -> TimeInterval {
+        guard client.isConfigured else {
+            throw AdapterError.missingCredentials
+        }
+
+        try? FileManager.default.removeItem(at: outputURL)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let resolvedVoiceID = voiceID.isEmpty ? ElevenLabsTTSClient.defaultVoiceID : voiceID
+        let stream = client.synthesizeStream(text: text, voiceID: resolvedVoiceID)
+
+        FileManager.default.createFile(atPath: outputURL.path, contents: nil)
+        guard let handle = try? FileHandle(forWritingTo: outputURL) else {
+            throw AdapterError.streamProducedNoAudio
+        }
+        defer { try? handle.close() }
+
+        var totalBytes = 0
+        for try await chunk in stream {
+            try handle.write(contentsOf: chunk)
+            totalBytes += chunk.count
+        }
+
+        guard totalBytes > 0 else {
+            throw AdapterError.streamProducedNoAudio
+        }
+
+        let asset = AVURLAsset(url: outputURL)
+        do {
+            let duration = try await asset.load(.duration)
+            return CMTimeGetSeconds(duration)
+        } catch {
+            Self.logger.error("Failed to load TTS asset duration: \(error.localizedDescription, privacy: .public)")
+            throw AdapterError.durationLoadFailed(error.localizedDescription)
+        }
+    }
+}
+
+// MARK: - Fake briefing player host
+
+/// In-memory `AVPlayer`-backed host used by `BriefingPlayerView`. Lane 1's
+/// `AudioEngine` will eventually expose a `BriefingPlayerHostProtocol`
+/// conformer that hands the stitched .m4a into the same Now-Playing /
+/// CarPlay surface the regular podcast player uses; until then this host
+/// keeps the player UI fully exercised.
+@MainActor
+final class FakeBriefingPlayerHost: BriefingPlayerHostProtocol {
+    private var player: AVPlayer?
+
+    var currentTimeSeconds: TimeInterval {
+        guard let player else { return 0 }
+        return CMTimeGetSeconds(player.currentTime())
+    }
+
+    func play(assetURL: URL, startAt seconds: TimeInterval) async {
+        let item = AVPlayerItem(url: assetURL)
+        let player = AVPlayer(playerItem: item)
+        self.player = player
+        if seconds > 0 {
+            await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
+        }
+        player.play()
+    }
+
+    func pause() async { player?.pause() }
+    func resume() async { player?.play() }
+    func seek(to seconds: TimeInterval) async {
+        await player?.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
+    }
+}
+
+// MARK: - Debug-only data fakes
+//
+// Available to SwiftUI previews and unit tests only. Production code paths
+// must not reference these — the composer now defaults to real RAG / wiki /
+// TTS dependencies (see `BriefingComposer.init`). Gating with `#if DEBUG`
+// gives the test target access (tests build the app in Debug) while
+// guaranteeing a Release build cannot accidentally fall back to fixture data.
+
+#if DEBUG
+
 // MARK: Fake TTS
 
 /// Synthesises silent m4a files at the requested duration so the briefing
@@ -255,32 +388,4 @@ struct FakeWikiStorage: BriefingWikiStorageProtocol {
     }
 }
 
-// MARK: Fake player host
-
-/// In-memory `AVPlayer`-backed host used by previews and tests when Lane 1
-/// hasn't yet exposed the real `AudioEngine`.
-@MainActor
-final class FakeBriefingPlayerHost: BriefingPlayerHostProtocol {
-    private var player: AVPlayer?
-
-    var currentTimeSeconds: TimeInterval {
-        guard let player else { return 0 }
-        return CMTimeGetSeconds(player.currentTime())
-    }
-
-    func play(assetURL: URL, startAt seconds: TimeInterval) async {
-        let item = AVPlayerItem(url: assetURL)
-        let player = AVPlayer(playerItem: item)
-        self.player = player
-        if seconds > 0 {
-            await player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
-        }
-        player.play()
-    }
-
-    func pause() async { player?.pause() }
-    func resume() async { player?.play() }
-    func seek(to seconds: TimeInterval) async {
-        await player?.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
-    }
-}
+#endif
