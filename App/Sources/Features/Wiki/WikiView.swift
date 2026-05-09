@@ -52,9 +52,9 @@ struct WikiView: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.isLoading && model.pages.isEmpty {
+        if model.isLoading && model.recentPages.isEmpty {
             loadingView
-        } else if model.pages.isEmpty {
+        } else if model.recentPages.isEmpty {
             emptyView
         } else if model.filteredPages.isEmpty {
             noResultsView

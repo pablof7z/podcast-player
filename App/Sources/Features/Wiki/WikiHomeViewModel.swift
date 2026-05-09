@@ -13,11 +13,13 @@ final class WikiHomeViewModel {
     // MARK: - State
 
     /// All pages on disk, sorted by `generatedAt` descending. Search and
-    /// grouping derive from this list.
-    private(set) var pages: [WikiPage] = []
+    /// grouping derive from this list. Pinned pages are not modeled in
+    /// v1 — the WikiPage model has no `isPinned` flag yet — so the
+    /// brief's `pinnedPages` is intentionally omitted.
+    private(set) var recentPages: [WikiPage] = []
 
-    /// Free-text query the search bar binds into. Filters `pages` by
-    /// title and summary, case-insensitively.
+    /// Free-text query the search bar binds into. Filters `recentPages`
+    /// by title and summary, case-insensitively.
     var searchQuery: String = ""
 
     /// `true` while `load()` is in flight. Drives the inline progress
@@ -48,10 +50,10 @@ final class WikiHomeViewModel {
             let loaded = try await Task.detached(priority: .userInitiated) { [storage] in
                 try storage.allPages()
             }.value
-            pages = loaded.sorted { $0.generatedAt > $1.generatedAt }
+            recentPages = loaded.sorted { $0.generatedAt > $1.generatedAt }
             loadError = nil
         } catch {
-            pages = []
+            recentPages = []
             loadError = error.localizedDescription
         }
     }
@@ -60,16 +62,16 @@ final class WikiHomeViewModel {
     /// `(scope, slug)`) and re-sorts. Lets the view show the new page
     /// immediately while a fresh `load()` runs in the background.
     func upsert(_ page: WikiPage) {
-        pages.removeAll { $0.slug == page.slug && $0.scope == page.scope }
-        pages.insert(page, at: 0)
-        pages.sort { $0.generatedAt > $1.generatedAt }
+        recentPages.removeAll { $0.slug == page.slug && $0.scope == page.scope }
+        recentPages.insert(page, at: 0)
+        recentPages.sort { $0.generatedAt > $1.generatedAt }
     }
 
     /// Removes the page with the given id from the in-memory list.
     /// Persistent removal is the caller's responsibility (it should call
     /// `WikiStorage.delete(pageID:)` first).
     func remove(pageID: UUID) {
-        pages.removeAll { $0.id == pageID }
+        recentPages.removeAll { $0.id == pageID }
     }
 
     // MARK: - Derived views
@@ -78,9 +80,9 @@ final class WikiHomeViewModel {
     /// list. Match is case-insensitive against title + summary.
     var filteredPages: [WikiPage] {
         let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return pages }
+        guard !trimmed.isEmpty else { return recentPages }
         let needle = trimmed.lowercased()
-        return pages.filter { page in
+        return recentPages.filter { page in
             page.title.lowercased().contains(needle)
                 || page.summary.lowercased().contains(needle)
         }
