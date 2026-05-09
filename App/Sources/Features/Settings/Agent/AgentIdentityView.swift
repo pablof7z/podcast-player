@@ -160,7 +160,7 @@ struct AgentIdentityView: View {
                     .font(AppTheme.Typography.headline)
                 Spacer()
             }
-            Text("Share your public key so others can send you items via the Nostr network.")
+            Text("Share your public key so friends can send you clips, episodes, and agent prompts over Nostr.")
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
             Button {
