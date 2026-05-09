@@ -44,6 +44,12 @@ extension AppStateStore {
     func removeSubscription(_ id: UUID) {
         state.subscriptions.removeAll { $0.id == id }
         state.episodes.removeAll { $0.subscriptionID == id }
+        // Drop the show from every projection so the Library grid re-renders
+        // without a phantom unplayed dot or a downloaded-only filter chip
+        // pointing at a subscription that no longer exists. The didSet
+        // fingerprint catches the count change, but we recompute explicitly
+        // for symmetry with the other writers.
+        invalidateEpisodeProjections()
     }
 
     /// Toggles whether new-episode notifications fire for the subscription.

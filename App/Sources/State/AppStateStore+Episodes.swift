@@ -22,34 +22,33 @@ extension AppStateStore {
     }
 
     /// Episodes belonging to the given subscription, newest publish-date first.
+    ///
+    /// O(1) lookup against `episodesByShow` plus an O(K) position-cache fold
+    /// (K = pending position writes, typically ≤ 1). Was O(N) filter + O(N
+    /// log N) sort, called from `ShowDetailView`'s body for every render —
+    /// 2,853 episodes for "The Daily" alone.
     func episodes(forSubscription id: UUID) -> [Episode] {
-        let filtered = state.episodes
-            .filter { $0.subscriptionID == id }
-            .sorted { $0.pubDate > $1.pubDate }
-        return applyingPositionCache(filtered)
+        episodesForShowView(id)
     }
 
     /// Episodes the user has started but not finished, ordered by most recent
     /// activity. "Started" is `playbackPosition > 0`. "Finished" is `played`.
     /// Used by the Home tab's in-progress carousel.
+    ///
+    /// Backed by `inProgressEpisodesCached`. The read-side helper folds the
+    /// position-debounce cache so an episode whose first tick hasn't flushed
+    /// yet still surfaces here.
     var inProgressEpisodes: [Episode] {
-        // Fold the cache *before* filtering on `playbackPosition > 0` —
-        // otherwise an episode whose first tick hasn't been flushed yet
-        // would be missing from the in-progress list.
-        applyingPositionCache(state.episodes)
-            .filter { !$0.played && $0.playbackPosition > 0 }
-            .sorted { $0.pubDate > $1.pubDate }
+        inProgressEpisodesView()
     }
 
     /// Recently published, unplayed episodes across all subscriptions.
     /// Used by the Home tab's "new" feed.
+    ///
+    /// Backed by `recentEpisodesCached` (top `Self.recentEpisodesCacheLimit`).
+    /// Larger limits fall back to a one-off recompute against `state.episodes`.
     func recentEpisodes(limit: Int = 30) -> [Episode] {
-        let recent = state.episodes
-            .filter { !$0.played }
-            .sorted { $0.pubDate > $1.pubDate }
-            .prefix(limit)
-            .map { $0 }
-        return applyingPositionCache(recent)
+        recentEpisodesView(limit: limit)
     }
 
     // MARK: - Writes
@@ -91,6 +90,12 @@ extension AppStateStore {
             }
         }
         state.episodes = updated
+        // Recompute projections so the Library grid's unplayed count and the
+        // ShowDetail episode list pick up the new + merged episodes on the
+        // very next render. The didSet fingerprint catches count changes but
+        // misses pure-merge cases where count stays equal — explicit call
+        // covers both.
+        invalidateEpisodeProjections()
         if !newlyInserted.isEmpty {
             // Attach the service to this store on first reach so the
             // download lifecycle, the auto-download path, and the AudioEngine
@@ -132,12 +137,16 @@ extension AppStateStore {
         // tick (e.g. a stray engine observer firing post-end) doesn't
         // resurrect a non-zero position on its first eager save.
         positionCache.removeValue(forKey: id)
+        // Cached unplayed counts + in-progress feed must drop this episode.
+        invalidateEpisodeProjections()
     }
 
     /// Reverts an accidental "mark played".
     func markEpisodeUnplayed(_ id: UUID) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         state.episodes[idx].played = false
+        // Cached unplayed counts + recent feed must re-include this episode.
+        invalidateEpisodeProjections()
     }
 
     /// Updates the episode's local download lifecycle (queued / downloading /
@@ -146,12 +155,19 @@ extension AppStateStore {
     func setEpisodeDownloadState(_ id: UUID, state newState: DownloadState) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         state.episodes[idx].downloadState = newState
+        // Cached `hasDownloadedByShow` set may now need to add or drop this
+        // subscription. Cheap to recompute everything; downloads happen at
+        // human cadence, not in a hot loop.
+        invalidateEpisodeProjections()
     }
 
     /// Updates the episode's transcript ingestion lifecycle.
     func setEpisodeTranscriptState(_ id: UUID, state newState: TranscriptState) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         state.episodes[idx].transcriptState = newState
+        // Cached `hasTranscribedByShow` set may now need to add or drop this
+        // subscription.
+        invalidateEpisodeProjections()
     }
 
     /// Persist hydrated chapters for an episode. Used by

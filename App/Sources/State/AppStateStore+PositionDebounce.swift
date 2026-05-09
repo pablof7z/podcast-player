@@ -139,6 +139,12 @@ extension AppStateStore {
 
         if mutated {
             state.episodes = working
+            // Newly-non-zero playback positions need to land in
+            // `inProgressEpisodesCached`; the read-side fold only patches
+            // values for episodes already in the projection. The didSet
+            // fingerprint won't catch this (count unchanged, first/last
+            // ids unchanged), so invalidate explicitly.
+            invalidateEpisodeProjections()
         }
     }
 

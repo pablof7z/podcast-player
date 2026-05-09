@@ -135,31 +135,27 @@ extension Episode {
 extension AppStateStore {
 
     /// Episodes the user has not played for the given subscription.
+    ///
+    /// O(1) dict lookup against `unplayedCountByShow`. The 10k-episode
+    /// reduce that used to dominate `LibraryView`'s grid render path is
+    /// gone — see `AppStateStore+EpisodeProjections.swift`.
     func unplayedCount(forSubscription id: UUID) -> Int {
-        state.episodes.reduce(into: 0) { count, episode in
-            if episode.subscriptionID == id, !episode.played { count += 1 }
-        }
+        unplayedCountByShow[id] ?? 0
     }
 
     /// `true` when at least one episode for the subscription has any
     /// download in flight or already on disk.
+    ///
+    /// O(1) Set membership against `hasDownloadedByShow`.
     func hasDownloadedEpisode(forSubscription id: UUID) -> Bool {
-        state.episodes.contains { episode in
-            guard episode.subscriptionID == id else { return false }
-            switch episode.downloadState {
-            case .downloaded: return true
-            default: return false
-            }
-        }
+        hasDownloadedByShow.contains(id)
     }
 
     /// `true` when at least one episode for the subscription has a ready
     /// transcript. Drives the Library "Transcribed" filter chip.
+    ///
+    /// O(1) Set membership against `hasTranscribedByShow`.
     func hasTranscribedEpisode(forSubscription id: UUID) -> Bool {
-        state.episodes.contains { episode in
-            guard episode.subscriptionID == id else { return false }
-            if case .ready = episode.transcriptState { return true }
-            return false
-        }
+        hasTranscribedByShow.contains(id)
     }
 }

@@ -33,6 +33,27 @@ final class AppStateStore {
 
     var state: AppState {
         didSet {
+            // Episode projections are an O(N) view of `state.episodes` (unplayed
+            // counts per show, downloaded/transcribed presence sets, sorted
+            // episodes-per-show, in-progress + recent feeds). Library + Home
+            // SwiftUI bodies hammer these — without the cache, scrolling the
+            // 20-cell grid against 10k episodes runs 20×10k = 200k filter
+            // iterations *per scroll tick*. Recompute once on every episode
+            // change and let readers do an O(1) dict/Set lookup.
+            //
+            // The check uses the array reference identity-ish path: SwiftUI
+            // value-type arrays use COW, so element-wise equality on a 10k
+            // array would itself be O(N). Comparing `count` + the first/last
+            // pubDate is a cheap fingerprint that misses no realistic
+            // mutation surface (every writer goes through one of the
+            // dedicated methods, all of which change at least one of those).
+            // We additionally call `invalidateEpisodeProjections()` from
+            // every episode writer for correctness — this fingerprint is
+            // belt-and-suspenders for direct `state` reassignments
+            // (`clearAllData`, persistence reload).
+            if Self.episodesFingerprintChanged(oldValue.episodes, state.episodes) {
+                recomputeEpisodeProjections()
+            }
             persistence.save(state)
             SpotlightIndexer.reindex(state: state)
             // Notify WidgetKit so widgets refresh immediately on every state
@@ -43,6 +64,49 @@ final class AppStateStore {
             iCloudSettingsSync.shared.push(state.settings)
         }
     }
+
+    // MARK: - Episode projections (cache)
+    //
+    // These mirror `state.episodes` so the per-cell O(N) helpers in the
+    // Library grid + Home feeds become O(1) dict/Set lookups. See
+    // `AppStateStore+EpisodeProjections.swift` for the recompute logic and
+    // the read-side adapters that fold the position cache.
+    //
+    // Stored properties have to live on the class itself (extensions can't
+    // add stored state); the methods that build them live in the
+    // `+EpisodeProjections` extension.
+
+    /// Unplayed-episode count per subscription. Drives `LibraryGridCell`'s
+    /// red dot and the Library "Unplayed" filter chip.
+    var unplayedCountByShow: [UUID: Int] = [:]
+
+    /// Subscriptions that have at least one episode in `.downloaded` state.
+    /// Drives the Library "Downloaded" filter chip.
+    var hasDownloadedByShow: Set<UUID> = []
+
+    /// Subscriptions that have at least one episode with a ready transcript.
+    /// Drives the Library "Transcribed" filter chip.
+    var hasTranscribedByShow: Set<UUID> = []
+
+    /// Episodes per subscription, pre-sorted newest-publish-date first.
+    /// Drives `ShowDetailView`'s episode list. Position-cache fold happens
+    /// on read (cheap; one tiny dict scan).
+    var episodesByShow: [UUID: [Episode]] = [:]
+
+    /// Episodes whose persisted `playbackPosition > 0` and `played == false`,
+    /// pre-sorted newest first. Reads merge the position-cache so an episode
+    /// the user *just* started (cache > 0, persisted == 0) shows up too.
+    var inProgressEpisodesCached: [Episode] = []
+
+    /// Top 30 unplayed episodes across all shows, pre-sorted newest first.
+    /// `recentEpisodes(limit:)` returns a prefix of this slice. The fixed
+    /// 30 cap matches Home's hard upper bound — anything beyond that the
+    /// Home feed never renders, and a smaller cap keeps the cache cheap.
+    var recentEpisodesCached: [Episode] = []
+
+    /// Cap used when building `recentEpisodesCached`. Matches Home's
+    /// rendered limit; if a caller asks for more we recompute on the fly.
+    static let recentEpisodesCacheLimit = 30
 
     /// Storage backing this store. Production code uses `Persistence.shared`
     /// (the App Group suite); tests inject an instance over a unique
@@ -104,6 +168,13 @@ final class AppStateStore {
         // push (triggered by the `didSet` below) reflects the merged values.
         iCloudSettingsSync.shared.start(mergingInto: &loadedState.settings)
         self.state = loadedState
+        // The `state.didSet` above doesn't fire from inside `init` until all
+        // stored properties are initialised, and even then it skips the very
+        // first assignment in init. Build the projections by hand from the
+        // freshly-loaded state so the first SwiftUI render after launch
+        // already sees populated caches — otherwise the Library grid would
+        // briefly read empty unplayed dots until the first mutation.
+        recomputeEpisodeProjections()
         // Bootstrap the live RAG stack so the SQLite vector store is opened
         // (and its file path logged) before any view tries to query it.
         // Hand `self` to the service so the briefing adapter and transcript
@@ -191,6 +262,11 @@ final class AppStateStore {
         let preserved = state.settings
         state = AppState()
         state.settings = preserved
+        // `state = AppState()` above changes the episode array's count from
+        // N to 0, so the `state.didSet` fingerprint catches it and rebuilds
+        // the projections to empty. Explicit call here is belt-and-
+        // suspenders against future refactors that might bypass didSet.
+        invalidateEpisodeProjections()
         persistence.save(state)
         SpotlightIndexer.clearAll()
     }
