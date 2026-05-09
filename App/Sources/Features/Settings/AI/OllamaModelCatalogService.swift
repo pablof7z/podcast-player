@@ -17,13 +17,14 @@ struct OllamaModelCatalogService: Sendable {
     }
 
     func fetchModels() async throws -> [OllamaTagModel] {
-        guard let apiKey = try apiKeyProvider(), !apiKey.isEmpty else { return [] }
         guard let url = URL(string: Constants.tagsURL) else {
             throw CatalogError.decoding("Invalid Ollama tags URL")
         }
 
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if let apiKey = try apiKeyProvider(), !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = Constants.timeout
 
         let (data, response) = try await URLSession.shared.data(for: request)

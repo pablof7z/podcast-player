@@ -250,6 +250,7 @@ final class PlaybackState {
     func seek(to time: TimeInterval) {
         engine.seek(to: time)
         Haptics.selection()
+        persistAndFlushAfterUserSeek()
     }
 
     /// `seekSnapping` was a transcript-snap behaviour in the mock. With the
@@ -263,12 +264,31 @@ final class PlaybackState {
     /// gesture wants a specific delta (e.g. transcript chapter rewind).
     func skipBackward(_ seconds: TimeInterval? = nil) {
         engine.skip(back: seconds)
+        persistAndFlushAfterUserSeek()
     }
 
     /// Skip forward. Pass `nil` (the default) to honour the user's configured
     /// `skipForwardSeconds` from `Settings`.
     func skipForward(_ seconds: TimeInterval? = nil) {
         engine.skip(forward: seconds)
+        persistAndFlushAfterUserSeek()
+    }
+
+    /// Persists the post-seek position immediately and drains the cache.
+    ///
+    /// Without this, a user who scrubs / skips and then force-quits within
+    /// the 30s position-debounce window resumes from the **pre-seek**
+    /// position — the engine moved the playhead but the cache hadn't been
+    /// touched yet (`tickPersistence` runs on a 1s timer). A user-initiated
+    /// position change is the most explicit "remember where I am" signal we
+    /// get; treat it like pause and flush eagerly.
+    private func persistAndFlushAfterUserSeek() {
+        guard let episode else { return }
+        let time = engine.currentTime
+        if time > 0 {
+            onPersistPosition(episode.id, time)
+        }
+        onFlushPositions()
     }
 
     // MARK: - Chapter navigation
@@ -282,6 +302,7 @@ final class PlaybackState {
         guard let next = Self.nextChapter(after: currentTime, in: navigable) else { return }
         engine.seek(to: next.startTime)
         Haptics.selection()
+        persistAndFlushAfterUserSeek()
     }
 
     /// Jump to the previous chapter's `startTime`, applying the iOS Music
@@ -297,6 +318,7 @@ final class PlaybackState {
         ) else { return }
         engine.seek(to: target.startTime)
         Haptics.selection()
+        persistAndFlushAfterUserSeek()
     }
 
     /// Above this many seconds into the current chapter, "previous chapter"

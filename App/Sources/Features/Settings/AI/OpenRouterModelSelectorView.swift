@@ -7,6 +7,7 @@ struct OpenRouterModelSelectorView: View {
 
     private enum Layout {
         static let maxProviderCount: Int = 24
+        static let pinnedProviderIDs: Set<String> = ["ollama-cloud"]
         static let currentFallbackSpacing: CGFloat = 6
         static let rowVerticalPadding: CGFloat = 4
         static let loadingSpacing: CGFloat = 12
@@ -268,7 +269,9 @@ struct OpenRouterModelSelectorView: View {
             if lhs.count != rhs.count { return lhs.count > rhs.count }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
-        return Array(sorted.prefix(Layout.maxProviderCount))
+        let pinned = sorted.filter { Layout.pinnedProviderIDs.contains($0.id) }
+        let remaining = sorted.filter { !Layout.pinnedProviderIDs.contains($0.id) }
+        return Array((pinned + remaining).prefix(Layout.maxProviderCount))
     }
 }
 
