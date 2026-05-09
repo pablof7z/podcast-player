@@ -137,7 +137,7 @@ struct PlayerActionClusterView: View {
                 showSpeedSheet = true
             }
             actionChip(
-                label: state.sleepTimer == .off ? "Sleep" : state.sleepTimer.label,
+                label: state.sleepTimerChipLabel,
                 glyph: "moon.fill"
             ) {
                 showSleepSheet = true
