@@ -136,8 +136,25 @@ struct EpisodeDetailView: View {
                     playback.play()
                 },
                 onPlayChapter: { chapter in
+                    // Tapping a chapter row in detail mode is "play this
+                    // chapter" — make sure the episode is actually loaded
+                    // and audio is rolling, not just an engine seek that
+                    // silently no-ops when nothing is loaded yet.
+                    if playback.episode?.id != episode.id {
+                        playback.setEpisode(episode)
+                    }
                     playback.seek(to: chapter.startTime)
-                    withAnimation(.spring(duration: 0.45, bounce: 0.12)) { mode = .followAlong }
+                    if !playback.isPlaying {
+                        playback.play()
+                    }
+                    // Only switch to follow-along when a transcript is
+                    // ready. Without one, follow-along mode shows the
+                    // "transcribing…" surface, which would hijack the
+                    // user's screen for what was really just "play from
+                    // here."
+                    if Self.readyTranscript(for: episode) != nil {
+                        withAnimation(.spring(duration: 0.45, bounce: 0.12)) { mode = .followAlong }
+                    }
                 },
                 onReadTranscript: {
                     withAnimation(.spring(duration: 0.35, bounce: 0.15)) { mode = .reading }
