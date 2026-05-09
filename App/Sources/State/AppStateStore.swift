@@ -33,7 +33,7 @@ final class AppStateStore {
 
     var state: AppState {
         didSet {
-            Persistence.save(state)
+            persistence.save(state)
             SpotlightIndexer.reindex(state: state)
             // Notify WidgetKit so widgets refresh immediately on every state
             // mutation rather than waiting for the timeline poll.
@@ -44,18 +44,24 @@ final class AppStateStore {
         }
     }
 
+    /// Storage backing this store. Production code uses `Persistence.shared`
+    /// (the App Group suite); tests inject an instance over a unique
+    /// in-memory suite so fixtures never leak into the real app.
+    let persistence: Persistence
+
     /// Retained observer token for iCloud external-change notifications.
     private var iCloudObserver: NSObjectProtocol?
 
-    init() {
+    init(persistence: Persistence = .shared) {
+        self.persistence = persistence
         var loadedState: AppState
         do {
-            loadedState = try Persistence.load()
+            loadedState = try persistence.load()
         } catch {
             Self.logger.error("Persistence.load failed: \(error, privacy: .public) — starting with empty state")
             loadedState = AppState()
         }
-        Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState)
+        Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState, persistence: persistence)
         // Start iCloud KV sync before assigning state so that the first
         // push (triggered by the `didSet` below) reflects the merged values.
         iCloudSettingsSync.shared.start(mergingInto: &loadedState.settings)
@@ -104,7 +110,10 @@ final class AppStateStore {
         state.settings = updated
     }
 
-    private static func migrateLegacyOpenRouterSecretIfNeeded(in state: inout AppState) {
+    private static func migrateLegacyOpenRouterSecretIfNeeded(
+        in state: inout AppState,
+        persistence: Persistence
+    ) {
         let legacyKey = state.settings.legacyOpenRouterAPIKey.trimmedOrEmpty
         guard !legacyKey.isEmpty else {
             state.settings.legacyOpenRouterAPIKey = nil
@@ -118,7 +127,7 @@ final class AppStateStore {
             logger.error("Failed to migrate legacy OpenRouter key to keychain: \(error, privacy: .public)")
             state.settings.clearOpenRouterCredential()
         }
-        Persistence.save(state)
+        persistence.save(state)
     }
 
     // MARK: - Settings
@@ -132,7 +141,7 @@ final class AppStateStore {
         let preserved = state.settings
         state = AppState()
         state.settings = preserved
-        Persistence.save(state)
+        persistence.save(state)
         SpotlightIndexer.clearAll()
     }
 }

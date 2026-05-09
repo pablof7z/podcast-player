@@ -93,8 +93,13 @@ struct OnboardingView: View {
             .padding(.horizontal, AppTheme.Spacing.lg)
 
             OnboardingSubscribePage { _ in
+                // Don't auto-advance: the user just tapped a row and we
+                // want them to *see* it flip to the green checkmark before
+                // the page transitions away (otherwise the tap looks like
+                // a no-op). Flipping `hasSubscribedDuringOnboarding`
+                // re-labels the primary button to "Continue", which the
+                // user then taps when they're ready to move on.
                 hasSubscribedDuringOnboarding = true
-                advance()
             }
             .tag(OnboardingStep.subscribe)
             .padding(.horizontal, AppTheme.Spacing.lg)
