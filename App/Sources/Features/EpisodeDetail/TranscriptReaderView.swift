@@ -17,7 +17,7 @@ struct TranscriptReaderView: View {
 
     // MARK: Inputs
 
-    let episode: MockEpisode
+    let episode: MockTranscriptEpisode
     let transcript: Transcript
     let currentTime: TimeInterval?
     let followAlong: Bool
@@ -168,7 +168,7 @@ private struct TranscriptRow: View {
 
 #Preview {
     let (episode, transcript) = MockEpisodeFixture.timFerrissKeto()
-    return TranscriptReaderView(
+    TranscriptReaderView(
         episode: episode,
         transcript: transcript,
         currentTime: 260,

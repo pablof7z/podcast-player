@@ -158,7 +158,7 @@ public struct PerplexityResult: Sendable, Equatable {
 // MARK: - Protocols
 
 /// RAG search across transcripts and wiki content (lane 4/7).
-public protocol RAGSearchProtocol: Sendable {
+public protocol PodcastAgentRAGSearchProtocol: Sendable {
     /// Semantic + keyword episode discovery. `scope` is an optional podcast ID
     /// to constrain the search. Limit defaults to 10.
     func searchEpisodes(query: String, scope: PodcastID?, limit: Int) async throws -> [EpisodeHit]
@@ -232,7 +232,7 @@ public protocol PerplexityClientProtocol: Sendable {
 /// Bundle of every protocol the podcast tool surface needs. Construct once at
 /// app startup; pass to `AgentTools.dispatchPodcast(...)` for every tool call.
 public struct PodcastAgentToolDeps: Sendable {
-    public let rag: RAGSearchProtocol
+    public let rag: PodcastAgentRAGSearchProtocol
     public let wiki: WikiStorageProtocol
     public let briefing: BriefingComposerProtocol
     public let summarizer: EpisodeSummarizerProtocol
@@ -241,7 +241,7 @@ public struct PodcastAgentToolDeps: Sendable {
     public let perplexity: PerplexityClientProtocol
 
     public init(
-        rag: RAGSearchProtocol,
+        rag: PodcastAgentRAGSearchProtocol,
         wiki: WikiStorageProtocol,
         briefing: BriefingComposerProtocol,
         summarizer: EpisodeSummarizerProtocol,

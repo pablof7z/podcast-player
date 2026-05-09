@@ -25,7 +25,7 @@ struct EpisodeDetailView: View {
 
     // MARK: Inputs
 
-    let episode: MockEpisode
+    let episode: MockTranscriptEpisode
     let transcript: Transcript
 
     // MARK: State
@@ -34,7 +34,7 @@ struct EpisodeDetailView: View {
     @State private var currentTime: TimeInterval = 0
     @State private var sharingSegment: Segment?
 
-    init(episode: MockEpisode, transcript: Transcript) {
+    init(episode: MockTranscriptEpisode, transcript: Transcript) {
         self.episode = episode
         self.transcript = transcript
     }

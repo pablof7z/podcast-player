@@ -1,14 +1,14 @@
 import Foundation
 
-// MARK: - MockEpisode
+// MARK: - MockTranscriptEpisode
 
 /// A minimal Episode-shaped struct used while Lane 2's `Podcast/Episode.swift`
-/// is still in flight. EpisodeDetail views consume `MockEpisode`; when Lane 2
+/// is still in flight. EpisodeDetail views consume `MockTranscriptEpisode`; when Lane 2
 /// merges, swap the type alias and delete this file.
 ///
 /// Kept deliberately small — title, show, artwork URL, duration, publish
 /// date, chapters. Anything richer comes from Lane 2.
-struct MockEpisode: Sendable, Hashable, Identifiable {
+struct MockTranscriptEpisode: Sendable, Hashable, Identifiable {
     let id: UUID
     let title: String
     let showName: String
@@ -33,15 +33,15 @@ enum MockEpisodeFixture {
 
     /// A two-speaker fixture (Tim Ferriss + Peter Attia) so the reader view
     /// has speaker switches and a chapter rail to morph against.
-    static func timFerrissKeto() -> (MockEpisode, Transcript) {
+    static func timFerrissKeto() -> (MockTranscriptEpisode, Transcript) {
         let episodeID = UUID()
-        let chapters: [MockEpisode.Chapter] = [
+        let chapters: [MockTranscriptEpisode.Chapter] = [
             .init(id: UUID(), start: 0, title: "Cold open"),
             .init(id: UUID(), start: 252, title: "Why ketones matter"),
             .init(id: UUID(), start: 1720, title: "The Inuit objection"),
             .init(id: UUID(), start: 4810, title: "Practical protocols")
         ]
-        let episode = MockEpisode(
+        let episode = MockTranscriptEpisode(
             id: episodeID,
             title: "How to Think About Keto",
             showName: "The Tim Ferriss Show",
@@ -73,7 +73,7 @@ enum MockEpisodeFixture {
 
     /// An "in-progress" Scribe transcript — mostly empty, used to drive the
     /// `TranscribingInProgressView`.
-    static func inProgress() -> (MockEpisode, Transcript) {
+    static func inProgress() -> (MockTranscriptEpisode, Transcript) {
         let (episode, _) = timFerrissKeto()
         let transcript = Transcript(
             episodeID: episode.id,

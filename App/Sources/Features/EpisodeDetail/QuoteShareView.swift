@@ -8,7 +8,7 @@ import SwiftUI
 /// Three actions: image, audio+sub, link. Wiring lives one level up — this
 /// view is just the visual.
 struct QuoteShareView: View {
-    let episode: MockEpisode
+    let episode: MockTranscriptEpisode
     let segment: Segment
     let speaker: Speaker?
     let deepLink: String
@@ -137,7 +137,7 @@ struct QuoteShareView: View {
 #Preview {
     let (episode, transcript) = MockEpisodeFixture.timFerrissKeto()
     let segment = transcript.segments.first(where: { !$0.text.hasPrefix("[") })!
-    return QuoteShareView(
+    QuoteShareView(
         episode: episode,
         segment: segment,
         speaker: transcript.speaker(for: segment.speakerID),

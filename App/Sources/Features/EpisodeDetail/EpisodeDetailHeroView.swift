@@ -9,8 +9,8 @@ import SwiftUI
 /// Extracted from `EpisodeDetailView` to keep that file under the 300-line
 /// soft limit. Owns no state; all interactions bubble up via callbacks.
 struct EpisodeDetailHeroView: View {
-    let episode: MockEpisode
-    let onPlayChapter: (MockEpisode.Chapter) -> Void
+    let episode: MockTranscriptEpisode
+    let onPlayChapter: (MockTranscriptEpisode.Chapter) -> Void
     let onReadTranscript: () -> Void
 
     var body: some View {

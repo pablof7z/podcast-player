@@ -7,7 +7,7 @@ import Foundation
 // 500-line hard limit. Every mock is `actor` so it satisfies the `Sendable`
 // protocol surface in `PodcastAgentToolDeps`.
 
-actor MockRAG: RAGSearchProtocol {
+actor MockRAG: PodcastAgentRAGSearchProtocol {
     private let searchResult: [EpisodeHit]
     private let transcriptsResult: [TranscriptHit]
     private let similarResult: [EpisodeHit]

@@ -417,7 +417,7 @@ final class AgentToolsPodcastTests: XCTestCase {
     }
 
     private func makeDeps(
-        rag: RAGSearchProtocol = MockRAG(),
+        rag: PodcastAgentRAGSearchProtocol = MockRAG(),
         wiki: WikiStorageProtocol = MockWiki(),
         briefing: BriefingComposerProtocol = MockBriefing(),
         summarizer: EpisodeSummarizerProtocol = MockSummarizer(),

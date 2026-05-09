@@ -6,7 +6,7 @@ import SwiftUI
 /// stream the partial transcript in real-time and animate skeleton paragraphs
 /// for the rest. ETA + provider attribution is shown inline.
 struct TranscribingInProgressView: View {
-    let episode: MockEpisode
+    let episode: MockTranscriptEpisode
     let partial: Transcript
     let progress: Double                 // 0…1, drives the percentage badge
     let etaMinutes: Int
@@ -149,7 +149,7 @@ private struct SkeletonLine: View {
 
 #Preview {
     let (episode, transcript) = MockEpisodeFixture.inProgress()
-    return NavigationStack {
+    NavigationStack {
         TranscribingInProgressView(
             episode: episode,
             partial: transcript,
