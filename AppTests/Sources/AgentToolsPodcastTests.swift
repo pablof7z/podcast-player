@@ -456,6 +456,9 @@ final class AgentToolsPodcastTests: XCTestCase {
         summarizer: EpisodeSummarizerProtocol = MockSummarizer(),
         fetcher: EpisodeFetcherProtocol = MockFetcher(),
         playback: MockPlayback = MockPlayback(),
+        library: PodcastLibraryProtocol = MockLibrary(),
+        inventory: PodcastInventoryProtocol = MockInventory(),
+        delegation: PodcastDelegationProtocol = MockDelegation(),
         perplexity: PerplexityClientProtocol = MockPerplexity()
     ) -> DepsBundle {
         DepsBundle(
@@ -466,6 +469,9 @@ final class AgentToolsPodcastTests: XCTestCase {
                 summarizer: summarizer,
                 fetcher: fetcher,
                 playback: playback,
+                library: library,
+                inventory: inventory,
+                delegation: delegation,
                 perplexity: perplexity
             ),
             playback: playback

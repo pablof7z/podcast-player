@@ -92,19 +92,107 @@ actor MockFetcher: EpisodeFetcherProtocol {
 
 actor MockPlayback: PlaybackHostProtocol {
     private(set) var recordedPlays: [(EpisodeID, Double)] = []
+    private(set) var pauseCount = 0
     private(set) var recordedNowPlaying: [(EpisodeID, Double?)] = []
+    private(set) var recordedRates: [Double] = []
+    private(set) var recordedSleepTimers: [(String, Int?)] = []
     private(set) var recordedRoutes: [String] = []
 
     func playEpisodeAt(episodeID: EpisodeID, timestampSeconds: Double) async {
         recordedPlays.append((episodeID, timestampSeconds))
     }
 
+    func pausePlayback() async {
+        pauseCount += 1
+    }
+
     func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async {
         recordedNowPlaying.append((episodeID, timestampSeconds))
     }
 
+    func setPlaybackRate(_ rate: Double) async -> Double {
+        recordedRates.append(rate)
+        return min(max(rate, 0.5), 3.0)
+    }
+
+    func setSleepTimer(mode: String, minutes: Int?) async -> String {
+        recordedSleepTimers.append((mode, minutes))
+        switch mode {
+        case "off": return "Off"
+        case "end_of_episode": return "End of episode"
+        case "minutes": return "\(minutes ?? 0) min"
+        default: return "Unknown"
+        }
+    }
+
     func openScreen(route: String) async {
         recordedRoutes.append(route)
+    }
+}
+
+actor MockLibrary: PodcastLibraryProtocol {
+    private(set) var playedIDs: [EpisodeID] = []
+    private(set) var unplayedIDs: [EpisodeID] = []
+    private(set) var downloadedIDs: [EpisodeID] = []
+    private(set) var transcriptionIDs: [EpisodeID] = []
+    private(set) var refreshedPodcastIDs: [PodcastID] = []
+
+    func markEpisodePlayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        playedIDs.append(episodeID)
+        return episodeResult(episodeID: episodeID, state: "played")
+    }
+
+    func markEpisodeUnplayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        unplayedIDs.append(episodeID)
+        return episodeResult(episodeID: episodeID, state: "unplayed")
+    }
+
+    func downloadEpisode(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        downloadedIDs.append(episodeID)
+        return episodeResult(episodeID: episodeID, state: "downloading")
+    }
+
+    func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult {
+        transcriptionIDs.append(episodeID)
+        return TranscriptRequestResult(episodeID: episodeID, status: "queued")
+    }
+
+    func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult {
+        refreshedPodcastIDs.append(podcastID)
+        return FeedRefreshResult(
+            podcastID: podcastID,
+            title: "Mock Show",
+            episodeCount: 42,
+            newEpisodeCount: 2
+        )
+    }
+
+    private func episodeResult(episodeID: EpisodeID, state: String) -> EpisodeMutationResult {
+        EpisodeMutationResult(
+            episodeID: episodeID,
+            podcastID: "pod1",
+            episodeTitle: "Episode \(episodeID)",
+            podcastTitle: "Mock Show",
+            state: state
+        )
+    }
+}
+
+actor MockDelegation: PodcastDelegationProtocol {
+    private(set) var lastRecipient: String?
+    private(set) var lastPrompt: String?
+
+    func delegate(recipient: String, prompt: String) async throws -> DelegationResult {
+        lastRecipient = recipient
+        lastPrompt = prompt
+        return DelegationResult(
+            eventID: "delegation-1",
+            recipient: recipient,
+            prompt: prompt,
+            status: "queued_local",
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            tags: [["p", recipient], ["tool", "delegate"]]
+        )
     }
 }
 
@@ -120,5 +208,46 @@ actor MockPerplexity: PerplexityClientProtocol {
     func search(query: String) async throws -> PerplexityResult {
         if let error = error { throw error }
         return result ?? PerplexityResult(answer: "", sources: [])
+    }
+}
+
+actor MockInventory: PodcastInventoryProtocol {
+    var subscriptions: [SubscriptionSummary] = []
+    var episodesByPodcast: [PodcastID: [EpisodeInventoryRow]] = [:]
+    var inProgress: [EpisodeInventoryRow] = []
+    var recentUnplayed: [EpisodeInventoryRow] = []
+    private(set) var lastListSubscriptionsLimit: Int = -1
+    private(set) var lastListEpisodesPodcastID: PodcastID?
+    private(set) var lastListEpisodesLimit: Int = -1
+    private(set) var lastInProgressLimit: Int = -1
+    private(set) var lastRecentUnplayedLimit: Int = -1
+
+    func setSubscriptions(_ subs: [SubscriptionSummary]) { subscriptions = subs }
+    func setEpisodes(_ rows: [EpisodeInventoryRow], forPodcast podcastID: PodcastID) {
+        episodesByPodcast[podcastID] = rows
+    }
+    func setInProgress(_ rows: [EpisodeInventoryRow]) { inProgress = rows }
+    func setRecentUnplayed(_ rows: [EpisodeInventoryRow]) { recentUnplayed = rows }
+
+    func listSubscriptions(limit: Int) async -> [SubscriptionSummary] {
+        lastListSubscriptionsLimit = limit
+        return Array(subscriptions.prefix(limit))
+    }
+
+    func listEpisodes(podcastID: PodcastID, limit: Int) async -> [EpisodeInventoryRow]? {
+        lastListEpisodesPodcastID = podcastID
+        lastListEpisodesLimit = limit
+        guard let rows = episodesByPodcast[podcastID] else { return nil }
+        return Array(rows.prefix(limit))
+    }
+
+    func listInProgress(limit: Int) async -> [EpisodeInventoryRow] {
+        lastInProgressLimit = limit
+        return Array(inProgress.prefix(limit))
+    }
+
+    func listRecentUnplayed(limit: Int) async -> [EpisodeInventoryRow] {
+        lastRecentUnplayedLimit = limit
+        return Array(recentUnplayed.prefix(limit))
     }
 }

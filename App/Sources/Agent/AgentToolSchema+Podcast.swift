@@ -35,6 +35,29 @@ extension AgentTools {
                 required: ["episode_id", "timestamp"]
             ),
             podcastTool(
+                name: PodcastNames.pausePlayback,
+                description: "Pause the current podcast playback and persist the playhead. Use when the user asks you to stop or pause.",
+                properties: [:],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.setPlaybackRate,
+                description: "Set the active playback speed. Use when the user asks to listen faster or slower.",
+                properties: [
+                    "rate": ["type": "number", "description": "Requested playback speed multiplier. The player supports roughly 0.5x to 3.0x."],
+                ],
+                required: ["rate"]
+            ),
+            podcastTool(
+                name: PodcastNames.setSleepTimer,
+                description: "Arm or clear the sleep timer. Use for requests like 'stop after 30 minutes' or 'pause at the end of this episode'.",
+                properties: [
+                    "mode": ["type": "string", "enum": ["off", "minutes", "end_of_episode"], "description": "Timer mode."],
+                    "minutes": ["type": "integer", "description": "Duration in minutes when mode is 'minutes'. Max 180."],
+                ],
+                required: ["mode"]
+            ),
+            podcastTool(
                 name: PodcastNames.searchEpisodes,
                 description: "Semantic + keyword search across the user's subscribed podcasts. Use for fuzzy recall like 'the one about stamps last week' or topical queries like 'episodes on Zone 2 training'.",
                 properties: [
@@ -101,6 +124,46 @@ extension AgentTools {
                 required: ["seed_episode_id"]
             ),
             podcastTool(
+                name: PodcastNames.markEpisodePlayed,
+                description: "Mark an episode as played. Use only when the user explicitly asks to mark something listened/done.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to mark played."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.markEpisodeUnplayed,
+                description: "Mark an episode as unplayed. Use when the user says they have not listened yet or wants to undo a played mark.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to mark unplayed."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.downloadEpisode,
+                description: "Download an episode's audio for offline playback. Use when the user asks to save or download an episode.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to download."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.requestTranscription,
+                description: "Request transcript ingestion for an episode, using publisher transcripts first and ElevenLabs fallback when configured.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to transcribe/index."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.refreshFeed,
+                description: "Refresh a subscribed podcast feed and ingest newly published episodes. Use when the user asks for the latest from one show.",
+                properties: [
+                    "podcast_id": ["type": "string", "description": "The subscribed podcast/feed ID to refresh."],
+                ],
+                required: ["podcast_id"]
+            ),
+            podcastTool(
                 name: PodcastNames.openScreen,
                 description: "Navigate the app UI to a named route (e.g. 'library', 'now_playing', 'briefings', 'wiki/zone-2'). Use sparingly — only when the user explicitly asks to go somewhere.",
                 properties: [
@@ -116,6 +179,48 @@ extension AgentTools {
                     "timestamp": ["type": "number", "description": "Optional timestamp in seconds. Omit to leave position unchanged."],
                 ],
                 required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.delegate,
+                description: "TENEX-compatible async delegation. Send a task with full context to another agent or team, then stop for the turn until delegated work completes.",
+                properties: [
+                    "recipient": ["type": "string", "description": "Recipient agent slug, team name, or Nostr pubkey."],
+                    "prompt": ["type": "string", "description": "The delegated task plus all context the recipient needs."],
+                ],
+                required: ["recipient", "prompt"]
+            ),
+            podcastTool(
+                name: PodcastNames.listSubscriptions,
+                description: "List the podcasts the user is currently subscribed to, sorted by title. Use this before offering to unsubscribe or when the user asks 'what am I subscribed to?'. Returns each show's id, title, total + unplayed episode counts, and last-published date.",
+                properties: [
+                    "limit": ["type": "integer", "description": "Maximum subscriptions to return. Defaults to 25, capped at 100."],
+                ],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.listEpisodes,
+                description: "List episodes of a specific podcast, newest first. Use after list_subscriptions when the user wants to drill into one show. Returns played/unplayed state and current playback position for each episode.",
+                properties: [
+                    "podcast_id": ["type": "string", "description": "The subscribed podcast/feed ID to list episodes for."],
+                    "limit": ["type": "integer", "description": "Maximum episodes to return. Defaults to 25, capped at 100."],
+                ],
+                required: ["podcast_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.listInProgress,
+                description: "List episodes the user has started but not finished, newest first. Use to answer 'what was I listening to?' or 'what should I resume?' without spending a search call.",
+                properties: [
+                    "limit": ["type": "integer", "description": "Maximum episodes to return. Defaults to 25, capped at 100."],
+                ],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.listRecentUnplayed,
+                description: "List recently published episodes the user hasn't played, newest first. Mirrors the Today tab's New Episodes feed. Use to answer 'what's new?' or 'what should I listen to next?'.",
+                properties: [
+                    "limit": ["type": "integer", "description": "Maximum episodes to return. Defaults to 25, capped at 100."],
+                ],
+                required: []
             ),
         ]
     }

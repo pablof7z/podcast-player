@@ -155,6 +155,104 @@ public struct PerplexityResult: Sendable, Equatable {
     }
 }
 
+/// Result returned by episode-state mutation tools.
+public struct EpisodeMutationResult: Sendable, Equatable {
+    public let episodeID: EpisodeID
+    public let podcastID: PodcastID?
+    public let episodeTitle: String
+    public let podcastTitle: String?
+    public let state: String
+
+    public init(
+        episodeID: EpisodeID,
+        podcastID: PodcastID? = nil,
+        episodeTitle: String,
+        podcastTitle: String? = nil,
+        state: String
+    ) {
+        self.episodeID = episodeID
+        self.podcastID = podcastID
+        self.episodeTitle = episodeTitle
+        self.podcastTitle = podcastTitle
+        self.state = state
+    }
+}
+
+/// Result returned when transcript ingestion is requested.
+public struct TranscriptRequestResult: Sendable, Equatable {
+    public let episodeID: EpisodeID
+    public let status: String
+    public let source: String?
+    public let message: String?
+
+    public init(
+        episodeID: EpisodeID,
+        status: String,
+        source: String? = nil,
+        message: String? = nil
+    ) {
+        self.episodeID = episodeID
+        self.status = status
+        self.source = source
+        self.message = message
+    }
+}
+
+/// Result returned by feed-refresh tools.
+public struct FeedRefreshResult: Sendable, Equatable {
+    public let podcastID: PodcastID
+    public let title: String
+    public let episodeCount: Int
+    public let newEpisodeCount: Int
+    public let refreshedAt: Date?
+
+    public init(
+        podcastID: PodcastID,
+        title: String,
+        episodeCount: Int,
+        newEpisodeCount: Int,
+        refreshedAt: Date? = nil
+    ) {
+        self.podcastID = podcastID
+        self.title = title
+        self.episodeCount = episodeCount
+        self.newEpisodeCount = newEpisodeCount
+        self.refreshedAt = refreshedAt
+    }
+}
+
+/// Result returned by TENEX-compatible delegation.
+public struct DelegationResult: Sendable, Equatable {
+    public let eventID: String
+    public let recipient: String
+    public let prompt: String
+    public let status: String
+    public let createdAt: Date
+    public let nostrKind: Int
+    public let tags: [[String]]
+    public let warning: String?
+
+    public init(
+        eventID: String,
+        recipient: String,
+        prompt: String,
+        status: String,
+        createdAt: Date,
+        nostrKind: Int = 1,
+        tags: [[String]],
+        warning: String? = nil
+    ) {
+        self.eventID = eventID
+        self.recipient = recipient
+        self.prompt = prompt
+        self.status = status
+        self.createdAt = createdAt
+        self.nostrKind = nostrKind
+        self.tags = tags
+        self.warning = warning
+    }
+}
+
 // MARK: - Protocols
 
 /// RAG search across transcripts and wiki content (lane 4/7).
@@ -211,13 +309,133 @@ public protocol PlaybackHostProtocol: Sendable {
     /// AVPlayer state and Now Playing center.
     func playEpisodeAt(episodeID: EpisodeID, timestampSeconds: Double) async
 
+    /// Pause active playback and flush persisted position state.
+    func pausePlayback() async
+
     /// Update the now-playing context without immediately starting playback —
     /// e.g. preload artwork, seed Now Playing center.
     func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async
 
+    /// Set playback rate. Implementations may clamp to their supported range.
+    func setPlaybackRate(_ rate: Double) async -> Double
+
+    /// Arm or clear the sleep timer. `mode` is `off`, `minutes`, or
+    /// `end_of_episode`.
+    func setSleepTimer(mode: String, minutes: Int?) async -> String
+
     /// Navigate the UI to a named route. Routes are app-defined strings, e.g.
     /// `"library"`, `"now_playing"`, `"briefings"`, `"wiki/zone-2"`.
     func openScreen(route: String) async
+}
+
+/// Library, transcript, feed, and local episode-state mutations.
+public protocol PodcastLibraryProtocol: Sendable {
+    func markEpisodePlayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult
+    func markEpisodeUnplayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult
+    func downloadEpisode(episodeID: EpisodeID) async throws -> EpisodeMutationResult
+    func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult
+    func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult
+}
+
+/// TENEX-compatible async delegation.
+public protocol PodcastDelegationProtocol: Sendable {
+    func delegate(recipient: String, prompt: String) async throws -> DelegationResult
+}
+
+// MARK: - Inventory queries
+
+/// One subscription row returned by `list_subscriptions`. Compact on purpose:
+/// the agent uses this to pick a `PodcastID` for a follow-up tool call (e.g.
+/// `list_episodes(podcastID:)` or `query_wiki(scope:)`); detail pages are
+/// rendered by other tools.
+public struct SubscriptionSummary: Sendable, Equatable {
+    public let podcastID: PodcastID
+    public let title: String
+    public let author: String?
+    public let totalEpisodes: Int
+    public let unplayedEpisodes: Int
+    public let lastPublishedAt: Date?
+
+    public init(
+        podcastID: PodcastID,
+        title: String,
+        author: String?,
+        totalEpisodes: Int,
+        unplayedEpisodes: Int,
+        lastPublishedAt: Date?
+    ) {
+        self.podcastID = podcastID
+        self.title = title
+        self.author = author
+        self.totalEpisodes = totalEpisodes
+        self.unplayedEpisodes = unplayedEpisodes
+        self.lastPublishedAt = lastPublishedAt
+    }
+}
+
+/// One episode row returned by `list_episodes` / `list_in_progress` /
+/// `list_recent_unplayed`. Distinct from `EpisodeHit` (search/RAG result) —
+/// inventory rows carry the user's *state* (played, position) instead of a
+/// search score.
+public struct EpisodeInventoryRow: Sendable, Equatable {
+    public let episodeID: EpisodeID
+    public let podcastID: PodcastID
+    public let title: String
+    public let podcastTitle: String
+    public let publishedAt: Date?
+    public let durationSeconds: Int?
+    public let played: Bool
+    /// Seconds into the episode the user has reached. `0` for unplayed
+    /// or freshly-marked-played; non-zero for in-progress.
+    public let playbackPositionSeconds: Double
+    /// Convenience flag: `playbackPositionSeconds > 0 && !played`.
+    public let isInProgress: Bool
+
+    public init(
+        episodeID: EpisodeID,
+        podcastID: PodcastID,
+        title: String,
+        podcastTitle: String,
+        publishedAt: Date?,
+        durationSeconds: Int?,
+        played: Bool,
+        playbackPositionSeconds: Double,
+        isInProgress: Bool
+    ) {
+        self.episodeID = episodeID
+        self.podcastID = podcastID
+        self.title = title
+        self.podcastTitle = podcastTitle
+        self.publishedAt = publishedAt
+        self.durationSeconds = durationSeconds
+        self.played = played
+        self.playbackPositionSeconds = playbackPositionSeconds
+        self.isInProgress = isInProgress
+    }
+}
+
+/// Plain-English library inventory queries. None of these go through RAG —
+/// the agent uses them to answer "what am I subscribed to?" or "what was I
+/// listening to?" without spending a search budget. Detail / discovery /
+/// content lookups still go through the search and wiki protocols.
+public protocol PodcastInventoryProtocol: Sendable {
+    /// Every show the user is subscribed to, sorted by title. Caps at
+    /// `limit` if the library is huge; the agent can ask for more in a
+    /// follow-up call.
+    func listSubscriptions(limit: Int) async -> [SubscriptionSummary]
+
+    /// Episodes belonging to a specific subscription, newest publish-date
+    /// first. Returns `nil` if the podcast isn't in the user's library.
+    func listEpisodes(podcastID: PodcastID, limit: Int) async -> [EpisodeInventoryRow]?
+
+    /// Episodes the user has started but not finished, newest publish-date
+    /// first. Drives "what was I listening to?" answers without semantic
+    /// search.
+    func listInProgress(limit: Int) async -> [EpisodeInventoryRow]
+
+    /// Recently published episodes the user has not played, newest first.
+    /// Mirrors what the Today tab's New Episodes feed shows the user.
+    func listRecentUnplayed(limit: Int) async -> [EpisodeInventoryRow]
 }
 
 /// HTTP-bearing online lookup (lane 9).
@@ -238,6 +456,9 @@ public struct PodcastAgentToolDeps: Sendable {
     public let summarizer: EpisodeSummarizerProtocol
     public let fetcher: EpisodeFetcherProtocol
     public let playback: PlaybackHostProtocol
+    public let library: PodcastLibraryProtocol
+    public let inventory: PodcastInventoryProtocol
+    public let delegation: PodcastDelegationProtocol
     public let perplexity: PerplexityClientProtocol
 
     public init(
@@ -247,6 +468,9 @@ public struct PodcastAgentToolDeps: Sendable {
         summarizer: EpisodeSummarizerProtocol,
         fetcher: EpisodeFetcherProtocol,
         playback: PlaybackHostProtocol,
+        library: PodcastLibraryProtocol,
+        inventory: PodcastInventoryProtocol,
+        delegation: PodcastDelegationProtocol,
         perplexity: PerplexityClientProtocol
     ) {
         self.rag = rag
@@ -255,6 +479,9 @@ public struct PodcastAgentToolDeps: Sendable {
         self.summarizer = summarizer
         self.fetcher = fetcher
         self.playback = playback
+        self.library = library
+        self.inventory = inventory
+        self.delegation = delegation
         self.perplexity = perplexity
     }
 }

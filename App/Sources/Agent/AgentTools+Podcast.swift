@@ -26,6 +26,9 @@ extension AgentTools {
     /// owns its own surface without modifying the read-only base file.
     enum PodcastNames {
         static let playEpisodeAt        = "play_episode_at"
+        static let pausePlayback        = "pause_playback"
+        static let setPlaybackRate      = "set_playback_rate"
+        static let setSleepTimer        = "set_sleep_timer"
         static let searchEpisodes       = "search_episodes"
         static let queryWiki            = "query_wiki"
         static let queryTranscripts     = "query_transcripts"
@@ -33,16 +36,30 @@ extension AgentTools {
         static let perplexitySearch     = "perplexity_search"
         static let summarizeEpisode     = "summarize_episode"
         static let findSimilarEpisodes  = "find_similar_episodes"
+        static let markEpisodePlayed    = "mark_episode_played"
+        static let markEpisodeUnplayed  = "mark_episode_unplayed"
+        static let downloadEpisode      = "download_episode"
+        static let requestTranscription = "request_transcription"
+        static let refreshFeed          = "refresh_feed"
         static let openScreen           = "open_screen"
         static let setNowPlaying        = "set_now_playing"
+        static let delegate             = "delegate"
+        static let listSubscriptions    = "list_subscriptions"
+        static let listEpisodes         = "list_episodes"
+        static let listInProgress       = "list_in_progress"
+        static let listRecentUnplayed   = "list_recent_unplayed"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch.
         static var all: [String] {
             [
-                playEpisodeAt, searchEpisodes, queryWiki, queryTranscripts,
+                playEpisodeAt, pausePlayback, setPlaybackRate, setSleepTimer,
+                searchEpisodes, queryWiki, queryTranscripts,
                 generateBriefing, perplexitySearch, summarizeEpisode,
-                findSimilarEpisodes, openScreen, setNowPlaying,
+                findSimilarEpisodes, markEpisodePlayed, markEpisodeUnplayed,
+                downloadEpisode, requestTranscription, refreshFeed,
+                openScreen, setNowPlaying, delegate,
+                listSubscriptions, listEpisodes, listInProgress, listRecentUnplayed,
             ]
         }
     }
@@ -96,6 +113,12 @@ extension AgentTools {
         switch name {
         case PodcastNames.playEpisodeAt:
             return await playEpisodeAtTool(args: args, deps: deps)
+        case PodcastNames.pausePlayback:
+            return await pausePlaybackTool(args: args, deps: deps)
+        case PodcastNames.setPlaybackRate:
+            return await setPlaybackRateTool(args: args, deps: deps)
+        case PodcastNames.setSleepTimer:
+            return await setSleepTimerTool(args: args, deps: deps)
         case PodcastNames.searchEpisodes:
             return await searchEpisodesTool(args: args, deps: deps)
         case PodcastNames.queryWiki:
@@ -110,14 +133,39 @@ extension AgentTools {
             return await summarizeEpisodeTool(args: args, deps: deps)
         case PodcastNames.findSimilarEpisodes:
             return await findSimilarEpisodesTool(args: args, deps: deps)
+        case PodcastNames.markEpisodePlayed:
+            return await markEpisodePlayedTool(args: args, deps: deps)
+        case PodcastNames.markEpisodeUnplayed:
+            return await markEpisodeUnplayedTool(args: args, deps: deps)
+        case PodcastNames.downloadEpisode:
+            return await downloadEpisodeTool(args: args, deps: deps)
+        case PodcastNames.requestTranscription:
+            return await requestTranscriptionTool(args: args, deps: deps)
+        case PodcastNames.refreshFeed:
+            return await refreshFeedTool(args: args, deps: deps)
         case PodcastNames.openScreen:
             return await openScreenTool(args: args, deps: deps)
         case PodcastNames.setNowPlaying:
             return await setNowPlayingTool(args: args, deps: deps)
+        case PodcastNames.delegate:
+            return await delegateTool(args: args, deps: deps)
+        case PodcastNames.listSubscriptions:
+            return await listSubscriptionsTool(args: args, deps: deps)
+        case PodcastNames.listEpisodes:
+            return await listEpisodesTool(args: args, deps: deps)
+        case PodcastNames.listInProgress:
+            return await listInProgressTool(args: args, deps: deps)
+        case PodcastNames.listRecentUnplayed:
+            return await listRecentUnplayedTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }
     }
+
+    // Inventory tools (`list_subscriptions`, `list_episodes`,
+    // `list_in_progress`, `list_recent_unplayed`) live in
+    // `AgentTools+PodcastInventory.swift` to keep this file under the
+    // 500-line hard limit.
 
     // MARK: - play_episode_at
 
@@ -371,7 +419,7 @@ extension AgentTools {
     // MARK: - Argument helpers
 
     /// Coerce JSON numerics to a `Double`. Supports `Double`, `Int`, and `NSNumber`.
-    private static func numericArg(_ raw: Any?) -> Double? {
+    static func numericArg(_ raw: Any?) -> Double? {
         if let d = raw as? Double { return d }
         if let i = raw as? Int { return Double(i) }
         if let n = raw as? NSNumber { return n.doubleValue }

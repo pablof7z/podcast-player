@@ -38,6 +38,14 @@ enum LivePodcastAgentToolDeps {
             summarizer: LiveEpisodeSummarizerAdapter(store: store),
             fetcher: LiveEpisodeFetcherAdapter(store: store),
             playback: LivePlaybackHostAdapter(store: store, playback: playback),
+            library: LivePodcastLibraryAdapter(
+                store: store,
+                downloadService: .shared,
+                transcriptService: .shared,
+                refreshService: .shared
+            ),
+            inventory: LivePodcastInventoryAdapter(store: store),
+            delegation: LiveTENEXDelegationBridge(store: store),
             perplexity: PerplexityClient()
         )
     }
@@ -194,6 +202,17 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         }
     }
 
+    func pausePlayback() async {
+        await MainActor.run {
+            guard let playback else {
+                logger.error("pausePlayback: playback host missing")
+                return
+            }
+            playback.pause()
+            logger.info("pausePlayback: paused")
+        }
+    }
+
     func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async {
         await MainActor.run {
             guard let store, let playback,
@@ -210,11 +229,195 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         }
     }
 
+    func setPlaybackRate(_ rate: Double) async -> Double {
+        await MainActor.run {
+            guard let playback else {
+                logger.error("setPlaybackRate: playback host missing")
+                return 1.0
+            }
+            let clamped = min(max(rate, 0.5), 3.0)
+            playback.engine.setRate(clamped)
+            logger.info("setPlaybackRate: \(clamped)")
+            return clamped
+        }
+    }
+
+    func setSleepTimer(mode: String, minutes: Int?) async -> String {
+        await MainActor.run {
+            guard let playback else {
+                logger.error("setSleepTimer: playback host missing")
+                return "Unavailable"
+            }
+            let timer: PlaybackSleepTimer
+            switch mode {
+            case "off":
+                timer = .off
+            case "end_of_episode":
+                timer = .endOfEpisode
+            case "minutes":
+                timer = .minutes(max(1, minutes ?? 30))
+            default:
+                timer = .off
+            }
+            playback.setSleepTimer(timer)
+            logger.info("setSleepTimer: \(timer.label, privacy: .public)")
+            return timer.label
+        }
+    }
+
     func openScreen(route: String) async {
         // Routing surface lives in `RootView`'s local `@State`; until a
         // dedicated navigator exists the best we can do is log so the agent's
         // intent is visible in Console.app and so tests can assert the call
         // shape unchanged.
         logger.info("openScreen: route='\(route, privacy: .public)' (no-op until nav router lands)")
+    }
+}
+
+// MARK: - Library adapter
+
+final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendable {
+
+    weak var store: AppStateStore?
+    private let downloadService: EpisodeDownloadService
+    private let transcriptService: TranscriptIngestService
+    private let refreshService: SubscriptionRefreshService
+
+    init(
+        store: AppStateStore,
+        downloadService: EpisodeDownloadService,
+        transcriptService: TranscriptIngestService,
+        refreshService: SubscriptionRefreshService
+    ) {
+        self.store = store
+        self.downloadService = downloadService
+        self.transcriptService = transcriptService
+        self.refreshService = refreshService
+    }
+
+    func markEpisodePlayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        try await mutateEpisode(episodeID: episodeID, state: "played") { store, id in
+            store.markEpisodePlayed(id)
+        }
+    }
+
+    func markEpisodeUnplayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        try await mutateEpisode(episodeID: episodeID, state: "unplayed") { store, id in
+            store.markEpisodeUnplayed(id)
+        }
+    }
+
+    func downloadEpisode(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
+        try await mutateEpisode(episodeID: episodeID, state: nil) { store, id in
+            self.downloadService.attach(appStore: store)
+            self.downloadService.download(episodeID: id)
+        }
+    }
+
+    func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult {
+        guard let uuid = UUID(uuidString: episodeID) else {
+            throw PodcastAgentToolAdapterError.invalidID(episodeID)
+        }
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let episode = await store.episode(id: uuid) else {
+            throw PodcastAgentToolAdapterError.missingEpisode(episodeID)
+        }
+        if case .ready(let source) = episode.transcriptState {
+            return TranscriptRequestResult(
+                episodeID: episodeID,
+                status: "ready",
+                source: source.rawValue
+            )
+        }
+        await MainActor.run {
+            store.setEpisodeTranscriptState(uuid, state: .queued)
+            Task { @MainActor in
+                await self.transcriptService.ingest(episodeID: uuid)
+            }
+        }
+        return TranscriptRequestResult(
+            episodeID: episodeID,
+            status: "queued",
+            message: "Transcript ingestion started."
+        )
+    }
+
+    func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult {
+        guard let uuid = UUID(uuidString: podcastID) else {
+            throw PodcastAgentToolAdapterError.invalidID(podcastID)
+        }
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let before = await store.subscription(id: uuid) else {
+            throw PodcastAgentToolAdapterError.missingPodcast(podcastID)
+        }
+        let priorCount = await store.episodes(forSubscription: uuid).count
+        try await refreshService.refresh(uuid, store: store)
+        let after = await store.subscription(id: uuid) ?? before
+        let episodeCount = await store.episodes(forSubscription: uuid).count
+        return FeedRefreshResult(
+            podcastID: podcastID,
+            title: after.title,
+            episodeCount: episodeCount,
+            newEpisodeCount: max(0, episodeCount - priorCount),
+            refreshedAt: after.lastRefreshedAt
+        )
+    }
+
+    private func mutateEpisode(
+        episodeID: EpisodeID,
+        state explicitState: String?,
+        _ mutation: @escaping @MainActor (AppStateStore, UUID) -> Void
+    ) async throws -> EpisodeMutationResult {
+        guard let uuid = UUID(uuidString: episodeID) else {
+            throw PodcastAgentToolAdapterError.invalidID(episodeID)
+        }
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let before = await store.episode(id: uuid) else {
+            throw PodcastAgentToolAdapterError.missingEpisode(episodeID)
+        }
+        await MainActor.run {
+            mutation(store, uuid)
+        }
+        let after = await store.episode(id: uuid) ?? before
+        let subscription = await store.subscription(id: after.subscriptionID)
+        return EpisodeMutationResult(
+            episodeID: episodeID,
+            podcastID: after.subscriptionID.uuidString,
+            episodeTitle: after.title,
+            podcastTitle: subscription?.title,
+            state: explicitState ?? Self.downloadStateLabel(after.downloadState)
+        )
+    }
+
+    private static func downloadStateLabel(_ state: DownloadState) -> String {
+        switch state {
+        case .notDownloaded: return "not_downloaded"
+        case .queued: return "queued"
+        case .downloading: return "downloading"
+        case .downloaded: return "downloaded"
+        case .failed: return "failed"
+        }
+    }
+}
+
+enum PodcastAgentToolAdapterError: LocalizedError {
+    case unavailable(String)
+    case invalidID(String)
+    case missingEpisode(String)
+    case missingPodcast(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable(let name): return "\(name) is unavailable."
+        case .invalidID(let value): return "Invalid UUID: \(value)"
+        case .missingEpisode(let id): return "Episode not found: \(id)"
+        case .missingPodcast(let id): return "Podcast not found: \(id)"
+        }
     }
 }
