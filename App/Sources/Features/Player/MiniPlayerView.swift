@@ -58,44 +58,63 @@ struct MiniPlayerView: View {
     // MARK: - Expanded (regular) layout
 
     private var expandedBody: some View {
-        Button(action: onTap) {
-            VStack(spacing: 0) {
-                content
-                progressLine
-            }
-            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-            .glassEffectID("player.surface", in: glassNamespace)
+        // Wrapping in `Button(action: onTap)` collapses every nested Button
+        // (Pause, Skip Forward) into the parent's tap target — sighted users
+        // tapping the visible pause icon end up *expanding* the player
+        // instead of pausing. Worse, the inner Buttons disappear from the
+        // accessibility tree as direct AXButtons and reappear as custom
+        // actions on the parent (only reachable via the VoiceOver rotor).
+        // Use a non-Button tap surface so the nested transport Buttons keep
+        // their own gestures, and limit the expand-on-tap target to the
+        // non-button regions via `.contentShape` + `.onTapGesture` on the
+        // background, not the whole stack.
+        VStack(spacing: 0) {
+            content
+            progressLine
         }
-        .buttonStyle(.pressable(scale: 0.985, opacity: 0.92))
+        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+        .glassEffectID("player.surface", in: glassNamespace)
+        .contentShape(.rect(cornerRadius: AppTheme.Corner.lg))
+        .onTapGesture {
+            Haptics.light()
+            onTap()
+        }
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: - Inline (compact) layout
 
     /// The collapsed pill that sits inline with the tab bar. No surrounding
     /// glass surface — the toolbar's own glass shell hosts it.
+    ///
+    /// Same Button-inside-Button trap as `expandedBody`: the play/pause icon
+    /// has to remain a real, separately-tappable Button. Use a non-Button
+    /// tap surface for the expand-on-tap action.
     private var inlineBody: some View {
-        Button(action: onTap) {
-            HStack(spacing: AppTheme.Spacing.xs) {
-                inlineArtwork
-                    .glassEffectID("player.artwork", in: glassNamespace)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    state.togglePlayPause()
-                } label: {
-                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 28, height: 28)
-                        .glassEffectID("player.play", in: glassNamespace)
+        HStack(spacing: AppTheme.Spacing.xs) {
+            inlineArtwork
+                .glassEffectID("player.artwork", in: glassNamespace)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    Haptics.light()
+                    onTap()
                 }
-                .buttonStyle(.pressable)
-                .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
+
+            Spacer(minLength: 0)
+
+            Button {
+                state.togglePlayPause()
+            } label: {
+                Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 28, height: 28)
+                    .glassEffectID("player.play", in: glassNamespace)
             }
-            .padding(.horizontal, AppTheme.Spacing.xs)
+            .buttonStyle(.pressable)
+            .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
-        .buttonStyle(.pressable(scale: 0.97, opacity: 0.9))
+        .padding(.horizontal, AppTheme.Spacing.xs)
     }
 
     private var inlineArtwork: some View {
