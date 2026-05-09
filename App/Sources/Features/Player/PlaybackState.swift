@@ -71,16 +71,11 @@ enum PlaybackSleepTimer: Hashable, Identifiable {
 /// Real, observable wrapper around `AudioEngine` that the Player UI binds to.
 ///
 /// Owns a single `AudioEngine` instance and republishes its state through
-/// `@Observable` properties so SwiftUI re-renders on changes. The wrapper also:
-///   - Throttles a 1-second progress mirror back into `AppStateStore` for
-///     persistence (prevents 30 writes/second flood through `state.didSet`).
-///   - Detects end-of-episode and marks the episode played in the store.
-///   - Adapts the engine's `SleepTimer.Mode` to the UI's preset enum.
-///
-/// Persistence is wired via closures (`onPersistPosition`, `onEpisodeFinished`)
-/// rather than holding an `AppStateStore` reference directly — it keeps this
-/// type testable in isolation and side-steps the `@State` init-order problem
-/// where `RootView` cannot read `@Environment` during property initialization.
+/// `@Observable` properties so SwiftUI re-renders on changes. Also: throttles
+/// a 1-second persistence mirror, detects end-of-episode, and adapts the
+/// engine's `SleepTimer.Mode` to the UI's preset enum. Persistence wires via
+/// closures (`onPersistPosition`, `onEpisodeFinished`) so the type stays
+/// testable without holding an `AppStateStore` reference directly.
 @MainActor
 @Observable
 final class PlaybackState {
@@ -138,8 +133,14 @@ final class PlaybackState {
     var onPersistPosition: (UUID, TimeInterval) -> Void = { _, _ in }
 
     /// Called once per episode when the playhead reaches the end. Receivers
-    /// should mark the episode as fully played.
+    /// should mark the episode as fully played. Gated by `autoMarkPlayedOnFinish`
+    /// (mirrors `Settings.autoMarkPlayedAtEnd`) so the user can opt out of auto-mark.
     var onEpisodeFinished: (UUID) -> Void = { _ in }
+
+    /// Mirrors `Settings.autoMarkPlayedAtEnd`. When `false`, end-of-item
+    /// detection still stops the persistence loop from over-writing the
+    /// final position but skips the `onEpisodeFinished` callback.
+    var autoMarkPlayedOnFinish: Bool = true
 
     // MARK: - Internal
 
@@ -204,17 +205,44 @@ final class PlaybackState {
         seek(to: time)
     }
 
-    func skipBackward(_ seconds: TimeInterval = 15) {
+    /// Skip backwards. Pass `nil` (the default) to honour the user's configured
+    /// `skipBackwardSeconds` from `Settings`. Pass an explicit value when a UI
+    /// gesture wants a specific delta (e.g. transcript chapter rewind).
+    func skipBackward(_ seconds: TimeInterval? = nil) {
         engine.skip(back: seconds)
     }
 
-    func skipForward(_ seconds: TimeInterval = 30) {
+    /// Skip forward. Pass `nil` (the default) to honour the user's configured
+    /// `skipForwardSeconds` from `Settings`.
+    func skipForward(_ seconds: TimeInterval? = nil) {
         engine.skip(forward: seconds)
     }
 
     func setRate(_ newRate: PlaybackRate) {
         engine.setRate(newRate.rawValue)
         Haptics.selection()
+    }
+
+    /// Effective skip intervals (read from the engine so the lock-screen and
+    /// in-app transport always agree). Surfaced for the player UI to render
+    /// the right `gobackward.NN` / `goforward.NN` glyph and the matching
+    /// accessibility label.
+    var skipForwardSeconds: Int { Int(engine.skipForwardSeconds) }
+    var skipBackwardSeconds: Int { Int(engine.skipBackwardSeconds) }
+
+    /// Push live `Settings` values into the engine. Called by `RootView` on
+    /// `.onAppear` and again whenever `state.settings` changes so a Settings
+    /// edit takes effect immediately on the lock-screen and the in-app transport.
+    func applyPreferences(from settings: Settings) {
+        engine.skipForwardSeconds = Double(max(1, settings.skipForwardSeconds))
+        engine.skipBackwardSeconds = Double(max(1, settings.skipBackwardSeconds))
+        // Default rate only takes effect for items that haven't been started.
+        // Once the user nudges the speed sheet we don't want to clobber their
+        // choice on every settings change, so we only reset when the engine is
+        // still at its baseline rate.
+        if engine.episode == nil {
+            engine.setRate(settings.defaultPlaybackRate)
+        }
     }
 
     func setSleepTimer(_ timer: PlaybackSleepTimer) {
@@ -256,8 +284,13 @@ final class PlaybackState {
         // observer jitter without misclassifying a manual pause near the end.
         let total = duration
         if total > 0, time >= total - 0.1, !isPlaying {
+            // Always remember we hit the end so the persistence loop stops
+            // re-writing the final position. Whether we *also* mark the episode
+            // played is an explicit user preference.
             didFireFinishedFor = episode.id
-            onEpisodeFinished(episode.id)
+            if autoMarkPlayedOnFinish {
+                onEpisodeFinished(episode.id)
+            }
         }
     }
 }

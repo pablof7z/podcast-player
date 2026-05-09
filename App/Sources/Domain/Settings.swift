@@ -18,6 +18,9 @@ struct Settings: Codable, Hashable, Sendable {
         static let elevenLabsSTTModel = "scribe_v1"
         static let elevenLabsTTSModel = "eleven_turbo_v2_5"
         static let nostrRelayURL = "wss://relay.tenex.chat"
+        static let defaultPlaybackRate: Double = 1.0
+        static let skipForwardSeconds: Int = 30
+        static let skipBackwardSeconds: Int = 15
     }
 
     // AI / LLM
@@ -25,6 +28,14 @@ struct Settings: Codable, Hashable, Sendable {
     var llmModelName: String = ""
     var memoryCompilationModel: String = Defaults.llmModel
     var memoryCompilationModelName: String = ""
+    /// Model used by `WikiGenerator`. Kept distinct from `llmModel` so users can pick a
+    /// cheaper / faster model for wiki compilation than for live agent chat — same pattern
+    /// as `memoryCompilationModel`.
+    var wikiModel: String = Defaults.llmModel
+    var wikiModelName: String = ""
+    /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
+    /// default to save tokens; settings UI exposes the toggle.
+    var rerankerEnabled: Bool = false
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
@@ -45,6 +56,40 @@ struct Settings: Codable, Hashable, Sendable {
     var elevenLabsVoiceID: String = ""
     var elevenLabsVoiceName: String = ""
 
+    // Playback
+    /// Default playback rate (0.5x – 3.0x). Per-show overrides live on `PodcastSubscription`.
+    var defaultPlaybackRate: Double = Defaults.defaultPlaybackRate
+    /// Seconds the forward-skip transport button advances by. Mirrored to the lock-screen.
+    var skipForwardSeconds: Int = Defaults.skipForwardSeconds
+    /// Seconds the back-skip transport button rewinds by. Mirrored to the lock-screen.
+    var skipBackwardSeconds: Int = Defaults.skipBackwardSeconds
+    /// When `true`, an episode is automatically marked played the first time playback
+    /// reaches its end. Defaults on for parity with Apple Podcasts.
+    var autoMarkPlayedAtEnd: Bool = true
+
+    // Wiki
+    /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as
+    /// a new transcript finishes ingesting. Defaults off so first-run users don't burn
+    /// tokens before deciding to opt in.
+    var wikiAutoGenerateOnTranscriptIngest: Bool = false
+
+    // Transcripts
+    /// When `true`, the app pre-fetches publisher-supplied transcripts in the background as
+    /// soon as new episodes appear. Off by default; consumes bandwidth and storage.
+    var autoIngestPublisherTranscripts: Bool = false
+    /// When `true`, episodes lacking a publisher transcript fall back to ElevenLabs Scribe
+    /// transcription. Requires an ElevenLabs key; defaults on so existing behaviour is
+    /// preserved.
+    var autoFallbackToScribe: Bool = true
+
+    // Notifications (per-kind toggles; the system permission is separate)
+    /// When `true`, fire a local notification when a feed refresh discovers a brand-new
+    /// episode for a subscription that has notifications enabled.
+    var notifyOnNewEpisodes: Bool = true
+    /// When `true`, fire a local notification when a daily/weekly briefing finishes
+    /// generating and is ready to play.
+    var notifyOnBriefingReady: Bool = true
+
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
     var nostrRelayURL: String = Defaults.nostrRelayURL
@@ -60,12 +105,17 @@ struct Settings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
+        case wikiModel, wikiModelName, rerankerEnabled
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
+        case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
+        case wikiAutoGenerateOnTranscriptIngest
+        case autoIngestPublisherTranscripts, autoFallbackToScribe
+        case notifyOnNewEpisodes, notifyOnBriefingReady
         case nostrEnabled, nostrRelayURL
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
@@ -78,6 +128,9 @@ struct Settings: Codable, Hashable, Sendable {
         llmModelName = try c.decodeIfPresent(String.self, forKey: .llmModelName) ?? ""
         memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? Defaults.llmModel
         memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
+        wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? Defaults.llmModel
+        wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? ""
+        rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
@@ -91,6 +144,15 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? Defaults.elevenLabsTTSModel
         elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
         elevenLabsVoiceName = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) ?? ""
+        defaultPlaybackRate = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate) ?? Defaults.defaultPlaybackRate
+        skipForwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipForwardSeconds) ?? Defaults.skipForwardSeconds
+        skipBackwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipBackwardSeconds) ?? Defaults.skipBackwardSeconds
+        autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
+        wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
+        autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? false
+        autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
+        notifyOnNewEpisodes = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) ?? true
+        notifyOnBriefingReady = try c.decodeIfPresent(Bool.self, forKey: .notifyOnBriefingReady) ?? true
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
         nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? Defaults.nostrRelayURL
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
@@ -112,6 +174,9 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(llmModelName, forKey: .llmModelName)
         try c.encode(memoryCompilationModel, forKey: .memoryCompilationModel)
         try c.encode(memoryCompilationModelName, forKey: .memoryCompilationModelName)
+        try c.encode(wikiModel, forKey: .wikiModel)
+        try c.encode(wikiModelName, forKey: .wikiModelName)
+        try c.encode(rerankerEnabled, forKey: .rerankerEnabled)
         try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
@@ -124,6 +189,15 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(elevenLabsTTSModel, forKey: .elevenLabsTTSModel)
         try c.encode(elevenLabsVoiceID, forKey: .elevenLabsVoiceID)
         try c.encode(elevenLabsVoiceName, forKey: .elevenLabsVoiceName)
+        try c.encode(defaultPlaybackRate, forKey: .defaultPlaybackRate)
+        try c.encode(skipForwardSeconds, forKey: .skipForwardSeconds)
+        try c.encode(skipBackwardSeconds, forKey: .skipBackwardSeconds)
+        try c.encode(autoMarkPlayedAtEnd, forKey: .autoMarkPlayedAtEnd)
+        try c.encode(wikiAutoGenerateOnTranscriptIngest, forKey: .wikiAutoGenerateOnTranscriptIngest)
+        try c.encode(autoIngestPublisherTranscripts, forKey: .autoIngestPublisherTranscripts)
+        try c.encode(autoFallbackToScribe, forKey: .autoFallbackToScribe)
+        try c.encode(notifyOnNewEpisodes, forKey: .notifyOnNewEpisodes)
+        try c.encode(notifyOnBriefingReady, forKey: .notifyOnBriefingReady)
         try c.encode(nostrEnabled, forKey: .nostrEnabled)
         try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
         try c.encode(nostrProfileName, forKey: .nostrProfileName)
@@ -195,4 +269,20 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsBYOKKeyLabel = nil
         elevenLabsConnectedAt = nil
     }
+}
+
+// MARK: - Embedding constants
+//
+// Display-only metadata for the on-device embedding pipeline. Surfaced in the AI
+// settings UI so the user can confirm what the RAG layer is using.
+
+extension Settings {
+    /// Provider/model identifier used by `EmbeddingsClient`. The actual call site
+    /// is hardcoded in the embedding client; this constant just feeds the UI.
+    static let embeddingsModelID: String = "openai/text-embedding-3-large"
+    /// Truncation dimension applied to embeddings (Matryoshka). See
+    /// `docs/spec/research/embeddings-rag-stack.md`.
+    static let embeddingsDimensions: Int = 1024
+    /// Display string mirroring `model@dim`, used directly in settings rows.
+    static var embeddingsModelDisplay: String { "text-embedding-3-large@\(embeddingsDimensions)" }
 }

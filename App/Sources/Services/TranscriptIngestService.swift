@@ -114,7 +114,15 @@ final class TranscriptIngestService {
             }
         }
 
-        // Path B: ElevenLabs Scribe (only if a key is configured).
+        // Path B: ElevenLabs Scribe (only if a key is configured *and* the
+        // user has opted in to the Scribe fallback under Settings → Transcripts).
+        guard appStore.state.settings.autoFallbackToScribe else {
+            Self.logger.info(
+                "publisher transcript missing for \(episodeID, privacy: .public) and Scribe fallback disabled in settings — leaving transcriptState=.none"
+            )
+            appStore.setEpisodeTranscriptState(episodeID, state: .none)
+            return
+        }
         guard let key = elevenLabsKey(), !key.isEmpty else {
             Self.logger.info(
                 "no publisher transcript and no ElevenLabs key for \(episodeID, privacy: .public) — leaving transcriptState=.none"

@@ -6,7 +6,11 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            configurationSection
+            librarySection
+            playbackSection
+            knowledgeSection
+            agentSection
+            systemSection
             destructiveSection
             versionFooterSection
         }
@@ -20,25 +24,87 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all notes, friends, and memories. API credentials are preserved.")
+            Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved.")
         }
     }
 
     // MARK: - Sections
 
-    private var configurationSection: some View {
-        Section("Configuration") {
+    /// "Library" groups everything tied to the user's catalogue of shows.
+    private var librarySection: some View {
+        Section("Library") {
+            NavigationLink {
+                SubscriptionsListView()
+            } label: {
+                SettingsRow(
+                    icon: "antenna.radiowaves.left.and.right",
+                    tint: .pink,
+                    title: "Subscriptions",
+                    value: subscriptionCountLabel
+                )
+            }
+        }
+    }
+
+    /// "Playback" wires the basic transport / player preferences.
+    private var playbackSection: some View {
+        Section("Playback") {
+            NavigationLink {
+                PlaybackSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "play.rectangle.fill",
+                    tint: .blue,
+                    title: "Player",
+                    subtitle: playbackSummary
+                )
+            }
+        }
+    }
+
+    /// "Knowledge" pulls together the AI surfaces (chat models, embeddings,
+    /// wiki, transcripts) so the user has one logical group for everything
+    /// generative.
+    private var knowledgeSection: some View {
+        Section("Knowledge") {
             NavigationLink {
                 AISettingsView()
             } label: {
                 SettingsRow(
                     icon: "sparkles",
-                    tint: .blue,
+                    tint: .purple,
                     title: "AI",
                     value: currentModelShortName
                 )
             }
 
+            NavigationLink {
+                WikiSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "book.closed.fill",
+                    tint: .indigo,
+                    title: "Wiki",
+                    subtitle: wikiModelShortName
+                )
+            }
+
+            NavigationLink {
+                TranscriptsSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "captions.bubble.fill",
+                    tint: .orange,
+                    title: "Transcripts",
+                    value: transcriptStatus
+                )
+            }
+        }
+    }
+
+    /// "Agent" hosts the identity / friends / Nostr surface.
+    private var agentSection: some View {
+        Section("Agent") {
             NavigationLink {
                 AgentSettingsView()
             } label: {
@@ -49,14 +115,20 @@ struct SettingsView: View {
                     badge: store.pendingNostrApprovals.count
                 )
             }
+        }
+    }
 
+    /// "System" rounds out the rows that don't fit anywhere else.
+    private var systemSection: some View {
+        Section("System") {
             NavigationLink {
                 NotificationSettingsView()
             } label: {
                 SettingsRow(
                     icon: "bell.badge",
                     tint: .red,
-                    title: "Notifications"
+                    title: "Notifications",
+                    value: notificationsRowValue
                 )
             }
 
@@ -79,7 +151,7 @@ struct SettingsView: View {
                 showClearConfirm = true
             }
         } footer: {
-            Text("Permanently deletes all notes, friends, and memories. API credentials and Nostr identity are preserved.")
+            Text("Permanently deletes every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved.")
         }
     }
 
@@ -95,9 +167,16 @@ struct SettingsView: View {
 
     // MARK: - Derived values
 
-    /// Total number of user-generated records that would be included in a data export.
+    /// Total number of records that would be wiped by "Clear All Data" (and
+    /// included in a data export). Matches the field set in
+    /// `DataExport.Stats` plus subscriptions + episodes for completeness.
     private var dataRecordCount: Int {
-        store.activeNotes.count + store.activeMemories.count
+        store.state.subscriptions.count
+            + store.state.episodes.count
+            + store.activeNotes.count
+            + store.activeMemories.count
+            + store.state.friends.count
+            + store.activeAgentActivityCount
     }
 
     private var currentModelShortName: String {
@@ -105,6 +184,51 @@ struct SettingsView: View {
             modelID: store.state.settings.llmModel,
             modelName: store.state.settings.llmModelName
         )
+    }
+
+    private var wikiModelShortName: String? {
+        let name = Settings.modelDisplayName(
+            modelID: store.state.settings.wikiModel,
+            modelName: store.state.settings.wikiModelName
+        )
+        return name == "Not set" ? nil : name
+    }
+
+    private var subscriptionCountLabel: String? {
+        let count = store.state.subscriptions.count
+        guard count > 0 else { return nil }
+        return "\(count)"
+    }
+
+    private var playbackSummary: String {
+        let s = store.state.settings
+        let rate: String
+        if abs(s.defaultPlaybackRate - 1.0) < 0.001 {
+            rate = "1×"
+        } else {
+            rate = String(format: "%.1f×", s.defaultPlaybackRate)
+        }
+        return "\(rate) · \(s.skipBackwardSeconds)s back · \(s.skipForwardSeconds)s forward"
+    }
+
+    private var transcriptStatus: String {
+        let s = store.state.settings
+        switch (s.autoIngestPublisherTranscripts, s.autoFallbackToScribe) {
+        case (true, true):  return "Auto + Scribe"
+        case (true, false): return "Auto only"
+        case (false, true): return "Scribe fallback"
+        case (false, false): return "Manual"
+        }
+    }
+
+    private var notificationsRowValue: String? {
+        let s = store.state.settings
+        var on: [String] = []
+        if s.notifyOnNewEpisodes  { on.append("Episodes") }
+        if s.notifyOnBriefingReady { on.append("Briefings") }
+        if on.isEmpty { return "Off" }
+        if on.count == 2 { return "On" }
+        return on.first
     }
 
     private var appVersionFooter: String {

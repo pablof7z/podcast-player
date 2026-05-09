@@ -1,30 +1,48 @@
 import SwiftUI
 
+// MARK: - OnboardingView
+//
+// Hosts the full onboarding flow as a horizontally-paged `TabView`. The page
+// list is driven by `OnboardingStep` (typed, not magic integers) so the
+// primary-button label, skip-visibility, and per-step actions all read from
+// a single source of truth.
+//
+// Per-step action handlers live in `OnboardingView+Handlers.swift` to keep
+// this file under the 300-line soft limit. State is intentionally `internal`
+// (not `private`) so the handler extension can mutate it without indirection.
+
 struct OnboardingView: View {
-    @Environment(AppStateStore.self) private var store
+    @Environment(AppStateStore.self) var store
 
-    @State private var pageIndex: Int = 0
-    @State private var apiKeyDraft: String = ""
-    @State private var apiKeyError: String?
-    @State private var apiKeySaving: Bool = false
-    @State private var isConnectingBYOK: Bool = false
-    @State private var byokConnect = BYOKConnectService()
-    @State private var agentNameDraft: String = ""
-    @State private var profilePictureDraft: String = ""
+    @State var step: OnboardingStep = .welcome
 
-    private let pageCount: Int = 4
+    // OpenRouter / API key state
+    @State var apiKeyDraft: String = ""
+    @State var apiKeyError: String?
+    @State var apiKeySaving: Bool = false
+    @State var isConnectingBYOK: Bool = false
+    @State var byokConnect = BYOKConnectService()
+
+    // ElevenLabs state
+    @State var elevenKeyDraft: String = ""
+    @State var elevenKeyError: String?
+    @State var elevenKeySaving: Bool = false
+
+    // Identity state
+    @State var agentNameDraft: String = ""
+    @State var profilePictureDraft: String = ""
+
+    // Subscribe state
+    /// Tracks whether the user has subscribed to at least one show during
+    /// onboarding. Used to flip the primary button label from "Skip for Now"
+    /// to "Continue".
+    @State var hasSubscribedDuringOnboarding: Bool = false
 
     private enum Layout {
         static let chipHorizontalPadding: CGFloat = 14
         static let chipVerticalPadding: CGFloat = 8
         /// Height of the top bar (back / skip buttons row).
         static let topBarHeight: CGFloat = 60
-    }
-
-    private enum Page {
-        static let welcome = 0
-        static let aiSetup = 1
-        static let identity = 2
     }
 
     var body: some View {
@@ -44,9 +62,9 @@ struct OnboardingView: View {
     // MARK: - Pages
 
     private var pages: some View {
-        TabView(selection: $pageIndex) {
+        TabView(selection: $step) {
             OnboardingWelcomePage()
-                .tag(0)
+                .tag(OnboardingStep.welcome)
                 .padding(.horizontal, AppTheme.Spacing.lg)
 
             OnboardingAISetupPage(
@@ -56,32 +74,47 @@ struct OnboardingView: View {
                 isConnectingBYOK: isConnectingBYOK,
                 onConnectBYOK: { Task { await handleBYOKConnect() } }
             )
-            .tag(1)
+            .tag(OnboardingStep.aiSetup)
+            .padding(.horizontal, AppTheme.Spacing.lg)
+
+            OnboardingElevenLabsPage(
+                apiKey: $elevenKeyDraft,
+                errorMessage: elevenKeyError,
+                isSaving: elevenKeySaving
+            )
+            .tag(OnboardingStep.elevenLabs)
             .padding(.horizontal, AppTheme.Spacing.lg)
 
             OnboardingIdentityPage(
                 agentName: $agentNameDraft,
                 profilePicture: $profilePictureDraft
             )
-            .tag(2)
+            .tag(OnboardingStep.identity)
+            .padding(.horizontal, AppTheme.Spacing.lg)
+
+            OnboardingSubscribePage { _ in
+                hasSubscribedDuringOnboarding = true
+                advance()
+            }
+            .tag(OnboardingStep.subscribe)
             .padding(.horizontal, AppTheme.Spacing.lg)
 
             OnboardingReadyPage()
-                .tag(3)
+                .tag(OnboardingStep.ready)
                 .padding(.horizontal, AppTheme.Spacing.lg)
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
         .indexViewStyle(.page(backgroundDisplayMode: .always))
-        .animation(AppTheme.Animation.spring, value: pageIndex)
+        .animation(AppTheme.Animation.spring, value: step)
     }
 
     // MARK: - Top bar
 
     private var topBar: some View {
         HStack {
-            if pageIndex > 0 { backButton }
+            if step != .welcome { backButton }
             Spacer()
-            if shouldShowSkip { skipButton }
+            if step.allowsSkip { skipButton }
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.md)
@@ -91,7 +124,9 @@ struct OnboardingView: View {
     private var backButton: some View {
         Button {
             Haptics.selection()
-            withAnimation(AppTheme.Animation.spring) { pageIndex -= 1 }
+            withAnimation(AppTheme.Animation.spring) {
+                if let prev = step.previous { step = prev }
+            }
         } label: {
             Label("Back", systemImage: "chevron.left")
                 .font(AppTheme.Typography.callout.weight(.semibold))
@@ -106,7 +141,7 @@ struct OnboardingView: View {
     private var skipButton: some View {
         Button {
             Haptics.selection()
-            advanceOrFinish()
+            advance()
         } label: {
             Text("Skip")
                 .font(AppTheme.Typography.callout.weight(.semibold))
@@ -129,13 +164,8 @@ struct OnboardingView: View {
                 HStack(spacing: AppTheme.Spacing.sm) {
                     Text(primaryButtonTitle)
                         .font(AppTheme.Typography.headline)
-                    if pageIndex < pageCount - 1 {
-                        Image(systemName: "arrow.right")
-                            .font(AppTheme.Typography.headline)
-                    } else {
-                        Image(systemName: "sparkles")
-                            .font(AppTheme.Typography.headline)
-                    }
+                    Image(systemName: step.isLast ? "sparkles" : "arrow.right")
+                        .font(AppTheme.Typography.headline)
                 }
                 .frame(maxWidth: .infinity, minHeight: OnboardingLayout.primaryButtonMinHeight)
                 .padding(.vertical, OnboardingLayout.primaryButtonVerticalPadding)
@@ -144,115 +174,55 @@ struct OnboardingView: View {
             .controlSize(.large)
             .tint(.white)
             .foregroundStyle(.black)
-            .disabled(apiKeySaving)
+            .disabled(isPrimaryButtonDisabled)
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .padding(.bottom, AppTheme.Spacing.lg)
         .padding(.top, AppTheme.Spacing.sm)
     }
 
-    // MARK: - Logic
-
-    private var shouldShowSkip: Bool {
-        pageIndex == Page.identity
-    }
+    // MARK: - Primary button labelling
 
     private var primaryButtonTitle: String {
-        switch pageIndex {
-        case Page.welcome: "Get Started"
-        case Page.aiSetup: apiKeyDraft.isBlank ? "Skip for Now" : "Save Key"
-        case Page.identity: agentNameDraft.isBlank ? "Skip for Now" : "Save"
-        default: "Enter App"
+        switch step {
+        case .welcome:    return "Get Started"
+        case .aiSetup:    return apiKeyDraft.isBlank ? "Skip for Now" : "Save Key"
+        case .elevenLabs: return elevenKeyDraft.isBlank ? "Skip for Now" : "Save Key"
+        case .identity:   return agentNameDraft.isBlank ? "Skip for Now" : "Save"
+        case .subscribe:  return hasSubscribedDuringOnboarding ? "Continue" : "Skip for Now"
+        case .ready:      return "Enter App"
         }
     }
+
+    private var isPrimaryButtonDisabled: Bool {
+        apiKeySaving || elevenKeySaving || isConnectingBYOK
+    }
+
+    // MARK: - Routing
 
     private func primaryAction() {
-        switch pageIndex {
-        case Page.aiSetup:
+        switch step {
+        case .aiSetup:
             handleAISetupContinue()
-        case Page.identity:
+        case .elevenLabs:
+            handleElevenLabsContinue()
+        case .identity:
             handleIdentityContinue()
-        case pageCount - 1:
+        case .ready:
             finishOnboarding()
-        default:
-            advanceOrFinish()
+        case .welcome, .subscribe:
+            advance()
         }
     }
 
-    private func advanceOrFinish() {
-        if pageIndex < pageCount - 1 {
-            withAnimation(AppTheme.Animation.spring) { pageIndex += 1 }
-        } else {
-            finishOnboarding()
+    func advance() {
+        withAnimation(AppTheme.Animation.spring) {
+            if let next = step.next {
+                step = next
+            } else {
+                finishOnboarding()
+            }
         }
-    }
-
-    private func handleAISetupContinue() {
-        let trimmed = apiKeyDraft.trimmed
-        guard !trimmed.isEmpty else {
-            apiKeyError = nil
-            advanceOrFinish()
-            return
-        }
-        apiKeySaving = true
-        apiKeyError = nil
-        do {
-            try OpenRouterCredentialStore.saveAPIKey(trimmed)
-            var s = store.state.settings
-            s.markOpenRouterManual()
-            store.updateSettings(s)
-            apiKeyDraft = ""
-            apiKeySaving = false
-            Haptics.success()
-            advanceOrFinish()
-        } catch {
-            apiKeySaving = false
-            apiKeyError = "Could not save key. Tap Skip or try again."
-            Haptics.error()
-        }
-    }
-
-    private func handleBYOKConnect() async {
-        isConnectingBYOK = true
-        apiKeyError = nil
-        defer { isConnectingBYOK = false }
-        do {
-            let token = try await byokConnect.connectOpenRouter()
-            try OpenRouterCredentialStore.saveAPIKey(token.apiKey)
-            var s = store.state.settings
-            s.markOpenRouterBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
-            store.updateSettings(s)
-            apiKeyDraft = ""
-            Haptics.success()
-            advanceOrFinish()
-        } catch BYOKConnectError.cancelled {
-            // user cancelled — no error shown
-        } catch {
-            apiKeyError = error.localizedDescription
-            Haptics.error()
-        }
-    }
-
-    private func handleIdentityContinue() {
-        var s = store.state.settings
-        let nameTrimmed = agentNameDraft.trimmed
-        let pictureTrimmed = profilePictureDraft.trimmed
-        if !nameTrimmed.isEmpty {
-            s.nostrProfileName = nameTrimmed
-        }
-        if !pictureTrimmed.isEmpty {
-            s.nostrProfilePicture = pictureTrimmed
-        }
-        store.updateSettings(s)
-        Haptics.success()
-        advanceOrFinish()
-    }
-
-    private func finishOnboarding() {
-        var s = store.state.settings
-        s.hasCompletedOnboarding = true
-        store.updateSettings(s)
-        Haptics.success()
     }
 
     // MARK: - Background

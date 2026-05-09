@@ -54,6 +54,15 @@ struct RootView: View {
                 playbackState.onEpisodeFinished = { [store] id in
                     store.markEpisodePlayed(id)
                 }
+                playbackState.autoMarkPlayedOnFinish = store.state.settings.autoMarkPlayedAtEnd
+                playbackState.applyPreferences(from: store.state.settings)
+            }
+            // Re-push preferences whenever the user edits Settings so the
+            // skip intervals update on the lock screen and the auto-mark
+            // toggle takes effect mid-session.
+            .onChange(of: store.state.settings) { _, new in
+                playbackState.autoMarkPlayedOnFinish = new.autoMarkPlayedAtEnd
+                playbackState.applyPreferences(from: new)
             }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayerView(
