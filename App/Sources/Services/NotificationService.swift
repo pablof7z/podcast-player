@@ -12,7 +12,18 @@ enum NotificationService {
         static let approvalTitle = "New contact request"
         static let approvalBody = "Someone wants to reach your agent. Open the app to review."
         static let approvalIDPrefix = "nostr-approval:"
+        static let newEpisodeIDPrefix = "new-episode:"
+        /// `userInfo` key carrying the new episode's UUID string. The
+        /// `AppDelegate` pulls this out of a tap and turns it into a
+        /// `podcastr://episode/<uuid>` deep-link.
+        static let episodeIDUserInfoKey = "episodeID"
     }
+
+    /// Fan-out cap: at most this many new-episode notifications fire per
+    /// subscription per refresh. Prevents a feed that just dumped its archive
+    /// (or a one-off `If-None-Match` cache miss) from blowing up the user's
+    /// notification stack with hundreds of banners.
+    static let maxNewEpisodeNotificationsPerRefresh = 3
 
     // MARK: - Authorization
 
@@ -63,6 +74,50 @@ enum NotificationService {
             try await center.add(request)
         } catch {
             logger.error("notifyPendingApproval failed for pubkey \(pubkeyHex, privacy: .public): \(error, privacy: .public)")
+        }
+    }
+
+    // MARK: - New-episode notifications
+
+    /// Fires one local notification per `newEpisodes` entry, capped at
+    /// ``maxNewEpisodeNotificationsPerRefresh`` per call. Title is the
+    /// subscription's display title; body is `"New episode: <title>"`.
+    /// The episode UUID rides in `userInfo["episodeID"]` so the
+    /// `AppDelegate` tap handler can deep-link straight into the right detail
+    /// view.
+    ///
+    /// The caller is expected to filter by `subscription.notificationsEnabled`
+    /// and to compute the actual delta — this function trusts both invariants.
+    static func notifyNewEpisodes(
+        _ newEpisodes: [Episode],
+        subscription: PodcastSubscription
+    ) async {
+        guard !newEpisodes.isEmpty else { return }
+        let granted = await requestAuthorization()
+        guard granted else { return }
+
+        let center = UNUserNotificationCenter.current()
+        let capped = newEpisodes.prefix(maxNewEpisodeNotificationsPerRefresh)
+
+        for episode in capped {
+            let id = "\(Content.newEpisodeIDPrefix)\(episode.id.uuidString)"
+            let content = UNMutableNotificationContent()
+            content.title = subscription.title
+            content.body = "New episode: \(episode.title)"
+            content.sound = .default
+            content.userInfo = [Content.episodeIDUserInfoKey: episode.id.uuidString]
+            // Threading by subscription so iOS groups multiple new-episode
+            // banners from the same show into one stack on the lock screen.
+            content.threadIdentifier = "subscription:\(subscription.id.uuidString)"
+
+            let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+            do {
+                try await center.add(request)
+            } catch {
+                logger.error(
+                    "notifyNewEpisode failed for \(episode.id.uuidString, privacy: .public): \(error, privacy: .public)"
+                )
+            }
         }
     }
 }

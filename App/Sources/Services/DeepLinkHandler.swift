@@ -15,6 +15,11 @@ enum DeepLinkHandler {
         /// Opens the Add Friend sheet pre-filled with the sender's public key and display name.
         /// `npub` is the bech32-encoded public key; `name` is the optional display name.
         case addFriend(npub: String, name: String?)
+        /// Opens the Episode Detail surface for the given episode UUID.
+        /// Posted by tapped new-episode notifications.
+        case episode(UUID)
+        /// Opens the Show Detail surface for the given subscription UUID.
+        case subscription(UUID)
     }
 
     /// Converts a URL into a ``Link``, or returns `nil` if the URL is not a recognised deep-link.
@@ -32,8 +37,24 @@ enum DeepLinkHandler {
             else { return nil }
             let name = components.queryItems?.first(where: { $0.name == "name" })?.value
             return .addFriend(npub: npub, name: name)
+        case "episode":
+            // `podcastr://episode/<uuid>` — host=episode, path="/<uuid>".
+            guard let raw = firstPathComponent(of: url),
+                  let uuid = UUID(uuidString: raw)
+            else { return nil }
+            return .episode(uuid)
+        case "subscription":
+            guard let raw = firstPathComponent(of: url),
+                  let uuid = UUID(uuidString: raw)
+            else { return nil }
+            return .subscription(uuid)
         default: return nil
         }
+    }
+
+    /// Returns the first non-empty path component of `url` (`podcastr://episode/<uuid>` → `<uuid>`).
+    private static func firstPathComponent(of url: URL) -> String? {
+        url.pathComponents.first(where: { $0 != "/" && !$0.isEmpty })
     }
 
     // MARK: - Link builder

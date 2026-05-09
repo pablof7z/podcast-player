@@ -77,8 +77,17 @@ final class SubscriptionRefreshService {
             bumped.lastRefreshedAt = lastRefreshedAt
             store.updateSubscription(bumped)
         case .updated(let updatedSubscription, let episodes, _):
+            // Snapshot the existing GUIDs *before* the upsert so the delta is
+            // accurate. Anything in `episodes` whose GUID isn't already known
+            // is brand-new and a notification candidate.
+            let priorGUIDs = Set(store.episodes(forSubscription: subscriptionID).map(\.guid))
             store.upsertEpisodes(episodes, forSubscription: subscriptionID)
             store.updateSubscription(updatedSubscription)
+            notifyIfNeeded(
+                priorGUIDs: priorGUIDs,
+                incoming: episodes,
+                subscription: updatedSubscription
+            )
         }
     }
 
@@ -164,13 +173,45 @@ final class SubscriptionRefreshService {
                 bumped.lastRefreshedAt = lastRefreshedAt
                 store.updateSubscription(bumped)
             case .updated(let updatedSubscription, let episodes, _):
+                // Same delta-before-upsert dance as `refresh(_:)`: snapshot
+                // the old GUID set, then write, then notify on the diff.
+                let priorGUIDs = Set(
+                    store.episodes(forSubscription: updatedSubscription.id).map(\.guid)
+                )
                 store.upsertEpisodes(episodes, forSubscription: updatedSubscription.id)
                 store.updateSubscription(updatedSubscription)
+                notifyIfNeeded(
+                    priorGUIDs: priorGUIDs,
+                    incoming: episodes,
+                    subscription: updatedSubscription
+                )
             }
         case .failure(let originalID, let error):
             Self.logger.notice(
                 "refresh failed for \(originalID, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
+        }
+    }
+
+    /// Fires new-episode notifications for the GUIDs that didn't appear in the
+    /// store before this refresh. No-ops when notifications are disabled on
+    /// the subscription, when the prior set is empty (first-ever fetch — the
+    /// user just subscribed and doesn't want a flood), or when nothing's new.
+    private func notifyIfNeeded(
+        priorGUIDs: Set<String>,
+        incoming: [Episode],
+        subscription: PodcastSubscription
+    ) {
+        guard subscription.notificationsEnabled else { return }
+        // First fetch: every episode would be "new". That's spammy and not
+        // what the user wants right after subscribing — skip.
+        guard !priorGUIDs.isEmpty else { return }
+        let newOnes = incoming
+            .filter { !priorGUIDs.contains($0.guid) }
+            .sorted { $0.pubDate > $1.pubDate }
+        guard !newOnes.isEmpty else { return }
+        Task {
+            await NotificationService.notifyNewEpisodes(newOnes, subscription: subscription)
         }
     }
 

@@ -26,28 +26,44 @@ enum SpotlightIndexer {
     // MARK: - Domains
 
     enum Domain: String, CaseIterable {
-        case notes    = "com.podcastr.spotlight.notes"
-        case memories = "com.podcastr.spotlight.memories"
+        case notes         = "com.podcastr.spotlight.notes"
+        case memories      = "com.podcastr.spotlight.memories"
+        case subscriptions = "com.podcastr.spotlight.subscriptions"
+        case episodes      = "com.podcastr.spotlight.episodes"
     }
 
     // MARK: - Identifier scheme
 
-    private static let notePrefix   = "note:"
-    private static let memoryPrefix = "memory:"
+    private static let notePrefix         = "note:"
+    private static let memoryPrefix       = "memory:"
+    private static let subscriptionPrefix = "subscription:"
+    private static let episodePrefix      = "episode:"
 
-    static func noteIdentifier(_ id: UUID)   -> String { notePrefix   + id.uuidString }
-    static func memoryIdentifier(_ id: UUID) -> String { memoryPrefix + id.uuidString }
+    /// Cap on how many episodes go into the Spotlight index. The system
+    /// happily takes thousands of items, but each one is a small disk write
+    /// and a continuation result the user has to scroll past. 200 covers
+    /// the recently-relevant tail across a typical 30-show library.
+    static let maxIndexedEpisodes = 200
+
+    static func noteIdentifier(_ id: UUID)         -> String { notePrefix         + id.uuidString }
+    static func memoryIdentifier(_ id: UUID)       -> String { memoryPrefix       + id.uuidString }
+    static func subscriptionIdentifier(_ id: UUID) -> String { subscriptionPrefix + id.uuidString }
+    static func episodeIdentifier(_ id: UUID)      -> String { episodePrefix      + id.uuidString }
 
     /// Decoded result from a Spotlight continuation activity.
     enum DeepLink: Equatable, Identifiable {
         case note(UUID)
         case memory(UUID)
+        case subscription(UUID)
+        case episode(UUID)
 
         /// Stable, collision-safe identifier for use with `.sheet(item:)`.
         var id: String {
             switch self {
-            case .note(let uuid):   return "note:"   + uuid.uuidString
-            case .memory(let uuid): return "memory:" + uuid.uuidString
+            case .note(let uuid):         return "note:"         + uuid.uuidString
+            case .memory(let uuid):       return "memory:"       + uuid.uuidString
+            case .subscription(let uuid): return "subscription:" + uuid.uuidString
+            case .episode(let uuid):      return "episode:"      + uuid.uuidString
             }
         }
     }
@@ -63,6 +79,14 @@ enum SpotlightIndexer {
             let raw = String(identifier.dropFirst(memoryPrefix.count))
             return UUID(uuidString: raw).map(DeepLink.memory)
         }
+        if identifier.hasPrefix(subscriptionPrefix) {
+            let raw = String(identifier.dropFirst(subscriptionPrefix.count))
+            return UUID(uuidString: raw).map(DeepLink.subscription)
+        }
+        if identifier.hasPrefix(episodePrefix) {
+            let raw = String(identifier.dropFirst(episodePrefix.count))
+            return UUID(uuidString: raw).map(DeepLink.episode)
+        }
         return nil
     }
 
@@ -77,7 +101,7 @@ enum SpotlightIndexer {
 
     // MARK: - Reindex
 
-    /// Replaces the contents of both Spotlight domains with current state.
+    /// Replaces the contents of all Spotlight domains with current state.
     /// Safe to call from any mutation site — idempotent, and the underlying
     /// `CSSearchableIndex` calls are non-blocking.
     static func reindex(state: AppState) {
@@ -89,21 +113,46 @@ enum SpotlightIndexer {
             .filter { !$0.deleted }
             .map(makeSearchable(from:))
 
+        // Subscriptions are hard-deleted via `removeSubscription`, so every
+        // record in `state.subscriptions` is "live" — no soft-delete filter.
+        let subscriptions = state.subscriptions.map(makeSearchable(from:))
+
+        // Bound the episode index size: the 200 most-recent unplayed
+        // episodes across all subscriptions. An unplayed cap keeps already-
+        // listened material from cluttering search; the 200 ceiling caps
+        // worst-case index churn for users with very large libraries.
+        let subscriptionTitles = Dictionary(
+            uniqueKeysWithValues: state.subscriptions.map { ($0.id, $0.title) }
+        )
+        let episodes = state.episodes
+            .filter { !$0.played }
+            .sorted { $0.pubDate > $1.pubDate }
+            .prefix(maxIndexedEpisodes)
+            .map { makeSearchable(from: $0, showName: subscriptionTitles[$0.subscriptionID] ?? "") }
+
         let index = CSSearchableIndex.default()
+        replace(domain: .notes, with: notes, in: index)
+        replace(domain: .memories, with: memories, in: index)
+        replace(domain: .subscriptions, with: subscriptions, in: index)
+        replace(domain: .episodes, with: episodes, in: index)
+    }
 
-        index.deleteSearchableItems(withDomainIdentifiers: [Domain.notes.rawValue]) { error in
-            if let error { logger.error("Failed to delete notes domain: \(error, privacy: .public)") }
-            guard !notes.isEmpty else { return }
-            index.indexSearchableItems(notes) { error in
-                if let error { logger.error("Failed to index notes: \(error, privacy: .public)") }
+    /// Idempotent "delete-then-insert" for one domain. Items can be empty —
+    /// in that case the domain is just emptied.
+    private static func replace(
+        domain: Domain,
+        with items: [CSSearchableItem],
+        in index: CSSearchableIndex
+    ) {
+        index.deleteSearchableItems(withDomainIdentifiers: [domain.rawValue]) { error in
+            if let error {
+                logger.error("Failed to delete \(domain.rawValue, privacy: .public) domain: \(error, privacy: .public)")
             }
-        }
-
-        index.deleteSearchableItems(withDomainIdentifiers: [Domain.memories.rawValue]) { error in
-            if let error { logger.error("Failed to delete memories domain: \(error, privacy: .public)") }
-            guard !memories.isEmpty else { return }
-            index.indexSearchableItems(memories) { error in
-                if let error { logger.error("Failed to index memories: \(error, privacy: .public)") }
+            guard !items.isEmpty else { return }
+            index.indexSearchableItems(items) { error in
+                if let error {
+                    logger.error("Failed to index \(domain.rawValue, privacy: .public): \(error, privacy: .public)")
+                }
             }
         }
     }
@@ -171,5 +220,58 @@ enum SpotlightIndexer {
         }
         if content.count <= 60 { return content }
         return String(content.prefix(60)) + "…"
+    }
+
+    private static func makeSearchable(from subscription: PodcastSubscription) -> CSSearchableItem {
+        let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
+        attrs.title = subscription.title
+        attrs.contentDescription = subscription.description
+        if !subscription.author.isEmpty {
+            attrs.artist = subscription.author
+        }
+        if let imageURL = subscription.imageURL {
+            attrs.thumbnailURL = imageURL
+        }
+        attrs.contentCreationDate = subscription.subscribedAt
+        attrs.keywords = subscriptionKeywords(for: subscription)
+
+        return CSSearchableItem(
+            uniqueIdentifier: subscriptionIdentifier(subscription.id),
+            domainIdentifier: Domain.subscriptions.rawValue,
+            attributeSet: attrs
+        )
+    }
+
+    private static func subscriptionKeywords(for subscription: PodcastSubscription) -> [String] {
+        var keywords = ["podcast", "subscription", "show"]
+        if !subscription.author.isEmpty { keywords.append(subscription.author) }
+        keywords.append(contentsOf: subscription.categories)
+        return keywords
+    }
+
+    private static func makeSearchable(from episode: Episode, showName: String) -> CSSearchableItem {
+        let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
+        attrs.title = episode.title
+        attrs.contentDescription = episode.description
+        if !showName.isEmpty {
+            // `album` shows under the title in the Spotlight result row, which
+            // is exactly where the user expects "which podcast is this from".
+            attrs.album = showName
+            attrs.artist = showName
+        }
+        if let imageURL = episode.imageURL {
+            attrs.thumbnailURL = imageURL
+        }
+        attrs.contentCreationDate = episode.pubDate
+        if let duration = episode.duration {
+            attrs.duration = NSNumber(value: duration)
+        }
+        attrs.keywords = ["podcast", "episode", showName].filter { !$0.isEmpty }
+
+        return CSSearchableItem(
+            uniqueIdentifier: episodeIdentifier(episode.id),
+            domainIdentifier: Domain.episodes.rawValue,
+            attributeSet: attrs
+        )
     }
 }

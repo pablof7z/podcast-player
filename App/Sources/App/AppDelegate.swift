@@ -87,6 +87,30 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         completionHandler([.banner, .sound, .badge])
     }
+
+    /// Routes notification taps. Only new-episode notifications carry an
+    /// `episodeID` payload — for those we synthesize a `podcastr://episode/<uuid>`
+    /// deep-link and post it through `shortcutURLNotification`, which `RootView`
+    /// already observes and routes via `handleDeepLink(_:)`.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        defer { completionHandler() }
+        let userInfo = response.notification.request.content.userInfo
+        guard let episodeID = userInfo["episodeID"] as? String,
+              UUID(uuidString: episodeID) != nil,
+              let url = URL(string: "podcastr://episode/\(episodeID)")
+        else { return }
+        // Hop onto the main actor to post — RootView listens on the main queue.
+        Task { @MainActor in
+            NotificationCenter.default.post(
+                name: AppDelegate.shortcutURLNotification,
+                object: url
+            )
+        }
+    }
 }
 
 // MARK: - Notification names
