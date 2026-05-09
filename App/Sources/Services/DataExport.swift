@@ -76,9 +76,9 @@ enum DataExport {
         try encoder.encode(payload)
     }
 
-    /// Suggested filename, e.g. `AppTemplate-Export-2026-05-05-1430.json`.
+    /// Suggested filename, e.g. `Podcastr-Export-2026-05-05-1430.json`.
     static func suggestedFilename(at date: Date = Date()) -> String {
-        "AppTemplate-Export-\(filenameDateFormatter.string(from: date)).json"
+        "Podcastr-Export-\(filenameDateFormatter.string(from: date)).json"
     }
 
     // MARK: - Write
@@ -150,9 +150,9 @@ enum DataExport {
         return "\"\(escaped)\""
     }
 
-    /// Suggested CSV filename, e.g. `AppTemplate-Items-2026-05-05-1430.csv`.
+    /// Suggested CSV filename, e.g. `Podcastr-Items-2026-05-05-1430.csv`.
     static func suggestedCSVFilename(at date: Date = Date()) -> String {
-        "AppTemplate-Items-\(filenameDateFormatter.string(from: date)).csv"
+        "Podcastr-Items-\(filenameDateFormatter.string(from: date)).csv"
     }
 
     /// Writes a CSV of items to a temp file and returns its URL.

@@ -32,14 +32,14 @@ enum Persistence {
     /// the same `$(APP_GROUP_IDENTIFIER)` substitution.
     static var appGroupIdentifier: String {
         Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
-            ?? "group.com.pablofernandez.apptemplate"   // compile-time fallback
+            ?? "group.com.podcastr.app"   // compile-time fallback
     }
 
     private static var defaults: UserDefaults {
         UserDefaults(suiteName: appGroupIdentifier) ?? .standard
     }
 
-    private static let stateKey = "apptemplate.state.v1"
+    private static let stateKey = "podcastr.state.v1"
 
     /// Encodes `state` to JSON and writes it to the shared App Group UserDefaults.
     ///

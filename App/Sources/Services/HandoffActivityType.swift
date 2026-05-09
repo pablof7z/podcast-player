@@ -5,7 +5,7 @@ import Foundation
 /// editing an item seamlessly on another device.
 enum HandoffActivityType {
     /// Editing a single item. `userInfo` keys are defined in ``HandoffUserInfoKey``.
-    static let editItem = "com.pablofernandez.apptemplate.editItem"
+    static let editItem = "com.podcastr.podcastr.editItem"
 }
 
 /// `userInfo` keys used in the ``HandoffActivityType/editItem`` activity.

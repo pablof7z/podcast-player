@@ -3,7 +3,7 @@ import Foundation
 import os.log
 
 /// Adds a new item to the user's list. Exposed to Siri, the Shortcuts app, and
-/// the Action Button via `AppTemplateShortcuts`.
+/// the Action Button via `PodcastrShortcuts`.
 ///
 /// **Process model.** This intent runs in the host extension that Siri /
 /// Shortcuts spawns. That process is logically separate from a running app

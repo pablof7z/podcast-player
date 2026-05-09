@@ -64,9 +64,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let suffix = item.type.components(separatedBy: ".").last ?? ""
         let urlString: String
         switch suffix {
-        case ShortcutType.addItem:    urlString = "apptemplate://new-item"
-        case ShortcutType.viewOverdue: urlString = "apptemplate://overdue"
-        case ShortcutType.openAgent:  urlString = "apptemplate://agent"
+        case ShortcutType.addItem:    urlString = "podcastr://new-item"
+        case ShortcutType.viewOverdue: urlString = "podcastr://overdue"
+        case ShortcutType.openAgent:  urlString = "podcastr://agent"
         default: return false
         }
         guard let url = URL(string: urlString) else { return false }

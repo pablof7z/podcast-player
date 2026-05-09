@@ -15,9 +15,9 @@ enum FocusFilterStore {
 
     /// The tag string to filter by when a Focus is active; `nil` when Focus is
     /// inactive or the user selected "Priority" or "All" as their focus filter.
-    static let focusTagKey     = "apptemplate.focus.tag"
+    static let focusTagKey     = "podcastr.focus.tag"
     /// Stores "priority" or "all" for non-tag choices.
-    static let focusChoiceKey  = "apptemplate.focus.choice"
+    static let focusChoiceKey  = "podcastr.focus.choice"
 
     private static var defaults: UserDefaults {
         UserDefaults(suiteName: Persistence.appGroupIdentifier) ?? .standard

@@ -19,7 +19,7 @@ final class UserIdentityStore {
 
     // MARK: - Keychain
 
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "AppTemplate").user-identity"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").user-identity"
     private static let account = "user-private-key-hex"
 
     // MARK: - Lifecycle

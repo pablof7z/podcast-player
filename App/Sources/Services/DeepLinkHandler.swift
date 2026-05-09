@@ -1,6 +1,6 @@
 import Foundation
 
-/// Parses `apptemplate://` deep-links into typed ``Link`` values.
+/// Parses `podcastr://` deep-links into typed ``Link`` values.
 ///
 /// All work is pure URL parsing with no shared state, so no actor isolation is required.
 enum DeepLinkHandler {
@@ -23,7 +23,7 @@ enum DeepLinkHandler {
 
     /// Converts a URL into a ``Link``, or returns `nil` if the URL is not a recognised deep-link.
     static func resolve(_ url: URL) -> Link? {
-        guard url.scheme == "apptemplate" else { return nil }
+        guard url.scheme == "podcastr" else { return nil }
         switch url.host {
         case "settings": return .settings
         case "feedback": return .feedback
@@ -47,10 +47,10 @@ enum DeepLinkHandler {
 
     // MARK: - Link builder
 
-    /// Builds an `apptemplate://friend/add` URL suitable for sharing in an invite message.
+    /// Builds an `podcastr://friend/add` URL suitable for sharing in an invite message.
     static func friendInviteURL(npub: String, name: String?) -> URL? {
         var components = URLComponents()
-        components.scheme = "apptemplate"
+        components.scheme = "podcastr"
         components.host = "friend"
         components.path = "/add"
         var items: [URLQueryItem] = [URLQueryItem(name: "npub", value: npub)]

@@ -49,7 +49,7 @@ final class AppStateStore {
     /// Consumed and cleared by `HomeView` on `.onChange`.
     var pendingHomeAction: HomeAction?
 
-    /// Pending friend invite dispatched by an `apptemplate://friend/add` deep-link.
+    /// Pending friend invite dispatched by a `podcastr://friend/add` deep-link.
     /// Consumed and cleared by `AgentFriendsView` on `.onChange` so it fires exactly once.
     var pendingFriendInvite: PendingFriendInvite?
 

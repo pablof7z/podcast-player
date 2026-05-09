@@ -2,16 +2,18 @@ import ProjectDescription
 
 // MARK: - Configure these before running `tuist generate`
 
-let appName = "AppTemplate"
-let appDisplayName = "App Template"
-let bundleIdPrefix = "com.pablofernandez"
+let appName = "Podcastr"
+let appDisplayName = "Podcastr"
+let bundleIdPrefix = "com.podcastr"
 let appleTeamID = "456SHKPP26"
 let deploymentTarget: DeploymentTargets = .iOS("26.0")
 
 // MARK: - Derived identifiers
 
 let appBundleID = "\(bundleIdPrefix).\(appName.lowercased())"
-let appGroupID = "group.\(appBundleID)"
+// App Group identifier is hardcoded (does not follow the bundle-ID derivation
+// pattern) so the working title can change without re-provisioning the group.
+let appGroupID = "group.com.podcastr.app"
 let widgetBundleID = "\(appBundleID).widget"
 
 // MARK: - Project
@@ -48,7 +50,7 @@ let project = Project(
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
             resources: [],
-            entitlements: .file(path: "App/Resources/AppTemplate.entitlements"),
+            entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
             dependencies: [
                 .package(product: "P256K"),
                 .target(name: "\(appName)Widget"),
@@ -76,7 +78,7 @@ let project = Project(
             infoPlist: .file(path: "App/Widget/Resources/Info.plist"),
             sources: ["App/Widget/Sources/**"],
             resources: [],
-            entitlements: .file(path: "App/Widget/Resources/AppTemplateWidget.entitlements"),
+            entitlements: .file(path: "App/Widget/Resources/PodcastrWidget.entitlements"),
             dependencies: [],
             settings: .settings(
                 base: [

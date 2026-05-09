@@ -6,7 +6,7 @@ import AppIntents
 ///
 /// Phrases must contain `\(.applicationName)` so Apple can substitute the
 /// localized app name (and apply phrase-grammar variants under the hood).
-struct AppTemplateShortcuts: AppShortcutsProvider {
+struct PodcastrShortcuts: AppShortcutsProvider {
 
     /// Apple recommends a maximum of 10 shortcuts; we ship three to keep the
     /// Spotlight / Shortcuts surface focused: capture, completion, and status.

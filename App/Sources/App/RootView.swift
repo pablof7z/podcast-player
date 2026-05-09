@@ -2,12 +2,28 @@ import CoreSpotlight
 import SwiftUI
 
 /// The tabs available at the root navigation level.
+///
+/// The `Player` is intentionally NOT a top-level tab — it lives behind a
+/// persistent mini-bar (added later) that expands into `PlayerView` on tap.
+/// Voice and Briefings are reached from `Today` / `Ask` rather than the tab
+/// bar to keep the bar focused on browsing surfaces.
+///
+/// `home` and `settings` are inherited from the template (tasks / agent
+/// configuration) and will be folded into the new surfaces in a later pass.
 enum RootTab: String, CaseIterable {
+    case today = "Today"
+    case library = "Library"
+    case wiki = "Wiki"
+    case ask = "Ask"
     case home = "Home"
     case settings = "Settings"
 
     var icon: String {
         switch self {
+        case .today: "sparkles"
+        case .library: "books.vertical.fill"
+        case .wiki: "book.closed.fill"
+        case .ask: "bubble.left.and.bubble.right.fill"
         case .home: "house.fill"
         case .settings: "gear"
         }
@@ -18,7 +34,7 @@ enum RootTab: String, CaseIterable {
 /// onboarding gate, and deep-link routing.
 struct RootView: View {
     @Environment(AppStateStore.self) private var store
-    @State private var selectedTab: RootTab = .home
+    @State private var selectedTab: RootTab = .today
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var lastShakeTime: Date = .distantPast
@@ -79,10 +95,16 @@ struct RootView: View {
     @ViewBuilder
     private func tabContent(for tab: RootTab) -> some View {
         switch tab {
+        case .today:
+            NavigationStack { TodayView() }
+        case .library:
+            NavigationStack { LibraryView() }
+        case .wiki:
+            NavigationStack { WikiView() }
+        case .ask:
+            NavigationStack { AskAgentView() }
         case .home:
-            NavigationStack {
-                HomeView()
-            }
+            NavigationStack { HomeView() }
         case .settings:
             NavigationStack { SettingsView() }
         }

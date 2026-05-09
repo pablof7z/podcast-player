@@ -3,7 +3,7 @@ import os.log
 
 enum OpenRouterCredentialStore {
     private static let logger = Logger.app("OpenRouterCredentialStore")
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "AppTemplate").openrouter"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").openrouter"
     private static let account = "api-key"
 
     static func saveAPIKey(_ apiKey: String) throws {

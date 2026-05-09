@@ -19,11 +19,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_SCHEME: AppTemplate
-  PROJECT_PATH: AppTemplate.xcodeproj
+  APP_SCHEME: Podcastr
+  PROJECT_PATH: Podcastr.xcodeproj
   APP_INFO_PLIST: App/Resources/Info.plist
   APPLE_TEAM_ID: XXXXXXXXXX   # Replace with your Apple Team ID
-  APP_BUNDLE_ID: com.yourcompany.apptemplate   # Replace with your bundle ID
+  APP_BUNDLE_ID: com.podcastr.podcastr
 
 jobs:
   deploy:

@@ -21,7 +21,7 @@
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>apptemplate</string>
+				<string>podcastr</string>
 			</array>
 		</dict>
 	</array>
@@ -75,7 +75,7 @@
 	</array>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>com.pablofernandez.apptemplate.editItem</string>
+		<string>com.podcastr.podcastr.editItem</string>
 	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

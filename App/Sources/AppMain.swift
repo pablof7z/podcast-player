@@ -3,7 +3,7 @@ import SwiftUI
 /// The top-level entry point for the app. Sets up global environment objects
 /// and wires the Nostr relay service to relevant settings changes.
 @main
-struct AppTemplateApp: App {
+struct PodcastrApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var store = AppStateStore()
     @State private var userIdentity = UserIdentityStore()

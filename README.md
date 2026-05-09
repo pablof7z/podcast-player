@@ -1,6 +1,10 @@
-# iOS App Template
+# Podcastr
 
-A production-ready iOS app template distilled from three real apps: **win-the-day-app** (RockingLife), **cut-tracker** (WeightTracker), and **highlighter**. Includes polished feedback UX, an AI agent loop, a friends/collaborators system, and full TestFlight auto-deployment via GitHub Actions.
+A next-generation iOS podcast player built around an embedded AI agent that has perfect knowledge of every podcast the user is subscribed to — including episodes they have not listened to yet.
+
+See [`.claude/PROJECT_CONTEXT.md`](.claude/PROJECT_CONTEXT.md) for the full product vision and [`AGENTS.md`](AGENTS.md) for engineering guidelines (file-size limits, etc.).
+
+> Bootstrapped from [`ios-app-template`](https://github.com/pablofernandez/ios-app-template). The sections below describe the inherited template foundations (shake-to-feedback, agent loop, friends, TestFlight CI). Podcast-specific modules live under `App/Sources/{Audio,Podcast,Transcript,Knowledge,Voice,Briefing}` and the new feature folders under `App/Sources/Features/`.
 
 ---
 
@@ -169,14 +173,14 @@ App/Sources/
 
 3. **Rename the App Group**
 
-   Replace `group.com.yourcompany.apptemplate` in `Persistence.swift` and `AppTemplate.entitlements` with your actual App Group ID.
+   The current App Group is `group.com.podcastr.app`, defined in `Persistence.swift` and `App/Resources/Podcastr.entitlements`. Update both if you change it.
 
 4. **Connect OpenRouter in Settings** with BYOK, or save a manual key, to enable the agent.
 
 ### Running
 
 ```bash
-tuist generate && open AppTemplate.xcodeproj
+tuist generate && open Podcastr.xcodeproj
 # Press Cmd+R in Xcode
 ```
 
@@ -200,7 +204,7 @@ Create an API key at [appstoreconnect.apple.com/access/api](https://appstoreconn
   --auth-key ~/Downloads/AuthKey_KEYID.p8 \
   [--p12 ~/Downloads/Certificates.p12] \
   [--p12-password your_p12_password] \
-  [--app-profile ~/Downloads/AppTemplate.mobileprovision]
+  [--app-profile ~/Downloads/Podcastr.mobileprovision]
 ```
 
 Omit `--p12` to use Xcode automatic signing (requires a logged-in Apple account on the runner).
@@ -263,7 +267,7 @@ Automatic signing works without the certificate/profile secrets if your runner h
 2. Update `APP_GROUP_IDENTIFIER` in entitlements
 3. Update `Persistence.swift` suite name
 4. Update `.github/workflows/testflight.yml` env vars
-5. Rename `App/Resources/AppTemplate.entitlements`
+5. Rename `App/Resources/Podcastr.entitlements`
 6. Run `tuist generate`
 
 ### Adding a new feature tab

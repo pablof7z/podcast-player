@@ -6,7 +6,7 @@ import os.log
 /// Implement secp256k1 key derivation (e.g. via swift-secp256k1) to derive pubkey from privkey.
 enum NostrCredentialStore {
     private static let logger = Logger.app("NostrCredentialStore")
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "AppTemplate").nostr"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nostr"
     private static let account = "private-key-hex"
 
     static func savePrivateKey(_ hexKey: String) throws {

@@ -19,7 +19,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
 
     private let authorizationBaseURL = URL(string: "https://byok.f7z.io/authorize")!
     private let tokenURL = URL(string: "https://byok.f7z.io/api/token")!
-    private let redirectScheme = "apptemplate"
+    private let redirectScheme = "podcastr"
     private let redirectHost = "byok"
     private var currentSession: ASWebAuthenticationSession?
 
@@ -188,7 +188,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
     }
 
     private var clientID: String {
-        Bundle.main.bundleIdentifier ?? "com.yourcompany.apptemplate"
+        Bundle.main.bundleIdentifier ?? "com.podcastr.podcastr"
     }
 
     private var appName: String {
@@ -196,7 +196,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
            !displayName.isEmpty {
             return displayName
         }
-        return Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "App Template"
+        return Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Podcastr"
     }
 
     private static func randomBase64URL(byteCount: Int) throws -> String {

@@ -27,9 +27,9 @@ enum SpotlightIndexer {
     // MARK: - Domains
 
     enum Domain: String, CaseIterable {
-        case items    = "com.apptemplate.spotlight.items"
-        case notes    = "com.apptemplate.spotlight.notes"
-        case memories = "com.apptemplate.spotlight.memories"
+        case items    = "com.podcastr.spotlight.items"
+        case notes    = "com.podcastr.spotlight.notes"
+        case memories = "com.podcastr.spotlight.memories"
     }
 
     // MARK: - Identifier scheme

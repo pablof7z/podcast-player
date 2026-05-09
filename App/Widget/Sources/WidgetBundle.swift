@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Registers all widgets shipped with the app.
 @main
-struct AppTemplateWidgetBundle: WidgetBundle {
+struct PodcastrWidgetBundle: WidgetBundle {
     var body: some Widget {
         ItemsWidget()
     }

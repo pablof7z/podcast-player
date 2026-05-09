@@ -75,11 +75,11 @@ struct WidgetAppState: Codable {
 // MARK: - Persistence (widget side)
 
 enum WidgetPersistence {
-    static let stateKey = "apptemplate.state.v1"
+    static let stateKey = "podcastr.state.v1"
 
     static var appGroupIdentifier: String {
         Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
-            ?? "group.com.pablofernandez.apptemplate"
+            ?? "group.com.podcastr.app"
     }
 
     private static var defaults: UserDefaults {
