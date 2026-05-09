@@ -9,9 +9,7 @@ struct QRCodeView: View {
     let content: String
 
     /// Shared `CIContext` — creating one per render allocates GPU resources unnecessarily.
-    /// `CIContext` is thread-safe after initialisation; `nonisolated(unsafe)` silences
-    /// the Swift 6 global-variable warning without changing runtime behaviour.
-    private nonisolated(unsafe) static let ciContext = CIContext()
+    private static let ciContext = CIContext()
 
     /// Cache the rendered image for this content string.  The QR code for a given
     /// npub is deterministic and never changes, so we generate it at most once per

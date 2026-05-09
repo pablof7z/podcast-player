@@ -22,7 +22,7 @@ import UniformTypeIdentifiers
 /// records disappear from search automatically.
 @MainActor
 enum SpotlightIndexer {
-    private static let logger = Logger.app("SpotlightIndexer")
+    nonisolated private static let logger = Logger.app("SpotlightIndexer")
 
     // MARK: - Domains
 

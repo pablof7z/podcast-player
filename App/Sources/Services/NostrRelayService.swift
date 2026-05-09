@@ -5,7 +5,7 @@ import os.log
 /// through the access-control layer, queuing unknown senders for user approval.
 @MainActor
 final class NostrRelayService {
-    private static let logger = Logger.app("NostrRelayService")
+    nonisolated private static let logger = Logger.app("NostrRelayService")
     private let store: AppStateStore
     private var webSocketTask: URLSessionWebSocketTask?
     private var receiveLoop: Task<Void, Never>?

@@ -32,7 +32,7 @@ import os.log
 /// does not immediately re-echo the same values back to iCloud.
 @MainActor
 final class iCloudSettingsSync {
-    private static let logger = Logger.app("iCloudSettingsSync")
+    nonisolated private static let logger = Logger.app("iCloudSettingsSync")
 
     // MARK: - Singleton
 

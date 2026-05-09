@@ -70,13 +70,17 @@ enum ReviewPrompt {
         let elapsed = lastRequest == 0 ? Double.infinity : Date().timeIntervalSince1970 - lastRequest
         guard elapsed > cooldownSeconds else { return }
 
+        guard let targetScene = scene ?? activeWindowScene() else { return }
+
         defaults.set(Date().timeIntervalSince1970, forKey: lastRequestKey)
         defaults.set(defaults.integer(forKey: requestCountKey) + 1, forKey: requestCountKey)
 
-        if let scene {
-            SKStoreReviewController.requestReview(in: scene)
-        } else {
-            SKStoreReviewController.requestReview()
-        }
+        AppStore.requestReview(in: targetScene)
+    }
+
+    private static func activeWindowScene() -> UIWindowScene? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.first(where: { $0.activationState == .foregroundActive })
+            ?? scenes.first
     }
 }

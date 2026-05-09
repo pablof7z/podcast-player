@@ -64,7 +64,10 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
         if let fallbackWindow = scenes.flatMap(\.windows).first {
             return fallbackWindow
         }
-        return ASPresentationAnchor()
+        if let firstScene = scenes.first {
+            return UIWindow(windowScene: firstScene)
+        }
+        preconditionFailure("BYOKConnectService: no UIWindowScene available to present authentication")
     }
 
     private func makeAuthorization(provider: String, scope: String) throws -> BYOKPendingAuthorization {
