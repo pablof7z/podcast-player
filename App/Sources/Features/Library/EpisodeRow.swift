@@ -4,11 +4,10 @@ import SwiftUI
 
 /// Episode list row for the show-detail screen.
 ///
-/// **Glass usage:** matte. The row sits on the elevated card surface
-/// and uses the system grouped-list look. The lane brief reserves
-/// structural glass for the nav chrome and the OPML sheet only —
-/// the only glass-y element on this row is `DownloadStatusCapsule`
-/// (which is itself a structural status indicator, not a card).
+/// **Glass usage:** matte. The row sits on the elevated card surface and uses
+/// the system grouped-list look. The only glass-y element on this row is
+/// `DownloadStatusCapsule` (which is itself a structural status indicator,
+/// not a card).
 ///
 /// **State surfaces:**
 ///   - Unplayed:    leading red `circle.fill` dot, bold title.
@@ -17,7 +16,7 @@ import SwiftUI
 ///   - Downloaded:  trailing `DownloadStatusCapsule`.
 ///   - Transcribing/queued: trailing capsule communicates state.
 struct EpisodeRow: View {
-    let episode: LibraryMockEpisode
+    let episode: Episode
     let showAccent: Color
 
     var body: some View {
@@ -27,15 +26,18 @@ struct EpisodeRow: View {
                 .padding(.top, 4)
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text("#\(episode.number)  \(episode.title)")
+                Text(episode.title)
                     .font(AppTheme.Typography.headline)
-                    .foregroundStyle(episode.isPlayed ? Color.secondary : Color.primary)
+                    .foregroundStyle(episode.played ? Color.secondary : Color.primary)
                     .lineLimit(2)
 
-                Text(episode.summary)
-                    .font(AppTheme.Typography.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                let summary = episode.plainTextSummary
+                if !summary.isEmpty {
+                    Text(summary)
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
 
                 metaRow
             }
@@ -49,20 +51,17 @@ struct EpisodeRow: View {
 
     @ViewBuilder
     private var stateIndicator: some View {
-        if episode.isPlayed {
+        if episode.played {
             Image(systemName: "checkmark.circle.fill")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
         } else if episode.isInProgress {
-            // Crescent for partial progress — matches ux-02 §3 wireframe.
             Image(systemName: "circle.lefthalf.filled")
                 .font(.body)
                 .foregroundStyle(showAccent)
                 .accessibilityHidden(true)
         } else {
-            // Unplayed — solid red dot, redundant with the bold title for
-            // color-independence (per ux-02 §8 accessibility).
             Image(systemName: "circle.fill")
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(.red)
@@ -95,7 +94,7 @@ struct EpisodeRow: View {
 
             Spacer(minLength: AppTheme.Spacing.xs)
 
-            DownloadStatusCapsule(status: episode.downloadStatus)
+            DownloadStatusCapsule(status: episode.displayDownloadStatus)
         }
     }
 
@@ -104,22 +103,22 @@ struct EpisodeRow: View {
     private var relativePublished: String {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
-        return f.localizedString(for: episode.publishedAt, relativeTo: Date())
+        return f.localizedString(for: episode.pubDate, relativeTo: Date())
     }
 
-    /// Compound VoiceOver label per ux-02 §8 — episode number, title,
-    /// duration, played-state, transcript-status read as one phrase.
+    /// Compound VoiceOver label per ux-02 §8 — title, duration, played-state,
+    /// transcript-status read as one phrase.
     private var accessibilityLabel: String {
-        var parts: [String] = ["Episode \(episode.number). \(episode.title)"]
+        var parts: [String] = [episode.title]
         parts.append(episode.formattedDuration)
-        if episode.isPlayed {
+        if episode.played {
             parts.append("played")
         } else if episode.isInProgress {
             parts.append("\(Int((episode.playbackProgress * 100).rounded())) percent listened")
         } else {
             parts.append("unplayed")
         }
-        switch episode.downloadStatus {
+        switch episode.displayDownloadStatus {
         case .none:                            break
         case .downloaded(let t):               parts.append(t ? "transcript available" : "downloaded")
         case .downloading(let p):              parts.append("downloading \(Int(p * 100)) percent")
