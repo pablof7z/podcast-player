@@ -6,7 +6,7 @@ Last updated: 2026-05-09
 
 ## Statistics
 
-- Sources: 7 raw source notes plus linked repo-spec references and online sources
+- Sources: 8 raw source notes plus linked repo-spec references and online sources
 - Articles: 30 compiled wiki articles
 - Inventory records: 0 tracked items
 - Datasets: 0 manifests
@@ -45,3 +45,4 @@ Last updated: 2026-05-09
 - 2026-05-09: Added adjacent ideas topic wiki from online research.
 - 2026-05-09: Expanded agent wiki with lifetime tool platform design.
 - 2026-05-09: Refined agent tool catalog to remove unwanted tools and add TENEX-compatible delegate.
+- 2026-05-09: Updated agent wiki for concrete podcast action-tool implementation.

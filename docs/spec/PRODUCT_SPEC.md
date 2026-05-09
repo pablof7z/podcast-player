@@ -140,6 +140,7 @@ These are what no competitor has stitched together. Each row must work in concer
 | Personalized audio briefings (interruptible) | UX-08 | `Briefing/BriefingComposer`, `BriefingPlayer`, agent tool `generate_briefing` |
 | Cross-episode threading (timeline / contradictions / evolution) | UX-09 | Threading inference job (BG), agent tools `find_contradictions`, `find_similar_episodes` |
 | Speaker + topic profiles | UX-13 | Speaker resolver (RSS notes → NER → voiceprint), agent tool `summarize_speaker` |
+| Snipd-parity learning loop: headphone / CarPlay snips, mentioned books, guest graph, auto-chapters, AI DJ-style routes | UX-01, UX-03, UX-04, UX-07, UX-11, UX-13 | Span-grounded `Snip` model, entity extraction workers, `Book` resolver, `Person` resolver, `ChapterCompiler`, `PlaybackRouteCompiler`; see [Snipd Feature Model](research/snipd-feature-model.md) |
 | Proactive editorial Today | UX-14 | Insight ranking job (BG), `IsightCard` taxonomy, push budget (1/day default) |
 | Nostr-mediated cross-device + friend agent | UX-12 | Existing `NostrRelayService` + `AgentRelayBridge`, new `PermissionTier`, `toolOverrides` on `Friend` |
 | Onboarding to first briefing in <90 s | UX-10 | Trial budget service, OPML detection animation |
@@ -747,10 +748,17 @@ The agent's **eyes become its tools**; its memory is a vector store. This is the
 |---|---|---|---|
 | `play_episode_at` | `episode_id`, `timestamp_sec` | `+Podcast` | Suggester (draft), Actor |
 | `pause_playback` | — | `+Podcast` | Actor |
+| `set_playback_rate` | `rate` | `+PodcastActions` | Actor |
+| `set_sleep_timer` | `mode`, `minutes?` | `+PodcastActions` | Actor |
 | `set_now_playing` | `episode_id`, `timestamp_sec` | `+Podcast` | Actor |
 | `search_episodes` | `query`, `scope?` | `+Podcast` | Reader |
 | `find_similar_episodes` | `seed_episode_id` | `+Podcast` | Reader |
 | `summarize_episode` | `episode_id` | `+Podcast` | Reader |
+| `mark_episode_played` | `episode_id` | `+PodcastActions` | Actor |
+| `mark_episode_unplayed` | `episode_id` | `+PodcastActions` | Actor |
+| `download_episode` | `episode_id` | `+PodcastActions` | Actor |
+| `request_transcription` | `episode_id` | `+PodcastActions` | Suggester (draft), Actor |
+| `refresh_feed` | `podcast_id` | `+PodcastActions` | Suggester (draft), Actor |
 | `open_screen` | `route` | `+Podcast` | Suggester (draft) |
 | `query_transcripts` | `query`, `scope?` | `+RAG` | Reader |
 | `query_wiki` | `topic` | `+Wiki` | Reader |
@@ -759,8 +767,9 @@ The agent's **eyes become its tools**; its memory is a vector store. This is the
 | `generate_briefing` | `scope`, `length_min`, `voice?` | `+Briefing` | Suggester (draft), Actor |
 | `send_clip` | `clip_id`, `recipient_pubkey` | `+Briefing` | Actor |
 | `perplexity_search` | `query` | `+Web` | Reader |
+| `delegate` | `recipient`, `prompt` | `+PodcastActions` | Actor, internal only until approval gates land |
 
-Every mutating tool records an `AgentActivityEntry` with a new `AgentActivityKind` case so per-batch undo keeps working.
+Final contract: every mutating tool records an `AgentActivityEntry` with a new `AgentActivityKind` case so per-batch undo keeps working. Current protocol-dependency action tools return JSON envelopes directly; central audit/activity logging should be added in the `ToolGateway` wrapper before remote Actor-tier exposure.
 
 **Reuse of the existing loop.** `AgentChatSession.runAgentTurns` (text) and `AgentRelayBridge` (Nostr inbound, 8-turn cap) both stay. Voice mode (UX-06) hooks `AgentChatSession.send(message, source: .voice)` with a per-sentence callback so TTS streams while the LLM is still generating.
 
@@ -907,8 +916,9 @@ Smart playlists, alt feeds, Apple Podcasts Subscriptions OAuth, translated trans
 - [docs/spec/briefs/ux-14-proactive-agent-notifications.md](briefs/ux-14-proactive-agent-notifications.md) — Proactive Agent & Notifications.
 - [docs/spec/briefs/ux-15-liquid-glass-system.md](briefs/ux-15-liquid-glass-system.md) — Liquid Glass Design System & Motion Language.
 
-### Research notes (5)
+### Research notes (6)
 
+- [docs/spec/research/snipd-feature-model.md](research/snipd-feature-model.md) — Snipd feature model for headphone snipping, mentioned books, guest graph, auto-chapters, and AI DJ-style routes.
 - [docs/spec/research/template-architecture-and-extension-plan.md](research/template-architecture-and-extension-plan.md) — what we have, what we extend, what we add. The architectural backbone.
 - [docs/spec/research/skeleton-bootstrap-report.md](research/skeleton-bootstrap-report.md) — the rename pass and module/feature stubs already on disk.
 - [docs/spec/research/transcription-stack.md](research/transcription-stack.md) — Scribe + publisher + iOS-26 SpeechAnalyzer pipeline.

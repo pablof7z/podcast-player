@@ -8,7 +8,7 @@ Last updated: 2026-05-09
 
 | File | Summary | Tags | Updated |
 |------|---------|------|---------|
-| [tool-surface.md](tool-surface.md) | Podcast-specific tools the agent needs. | tools, agent | 2026-05-09 |
+| [tool-surface.md](tool-surface.md) | Podcast-specific retrieval, playback, library, delegation, and research tools. | tools, agent | 2026-05-09 |
 | [lifetime-tool-catalog.md](lifetime-tool-catalog.md) | Full lifetime tool families across the podcast product. | agent, tools, catalog | 2026-05-09 |
 | [tenex-delegate-tool.md](tenex-delegate-tool.md) | TENEX-compatible async delegation contract for the agent. | agent, tenex, delegation | 2026-05-09 |
 | [tool-execution-infrastructure.md](tool-execution-infrastructure.md) | Gateway, registry, execution context, and result envelope design. | agent, infrastructure | 2026-05-09 |
@@ -31,3 +31,4 @@ Last updated: 2026-05-09
 - 2026-05-09: Added initial agent concepts.
 - 2026-05-09: Added lifetime tool platform concepts.
 - 2026-05-09: Added TENEX-compatible delegate concept.
+- 2026-05-09: Updated tool-surface concept for concrete action tools.

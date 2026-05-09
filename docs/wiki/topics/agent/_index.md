@@ -6,7 +6,7 @@ Last updated: 2026-05-09
 
 ## Statistics
 
-- Sources: 2 raw notes
+- Sources: 3 raw notes
 - Articles: 13 compiled wiki articles
 - Inventory records: 0 tracked items
 - Datasets: 0 manifests
@@ -51,3 +51,4 @@ Last updated: 2026-05-09
 - 2026-05-09: Compiled initial agent wiki from architecture, voice, project context, and template research.
 - 2026-05-09: Added lifetime tool platform design.
 - 2026-05-09: Removed unwanted tool families and added TENEX-compatible delegate contract.
+- 2026-05-09: Updated tool surface and implementation map for concrete action-tool implementation.

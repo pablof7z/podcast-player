@@ -3,6 +3,7 @@ title: "Tool Surface"
 category: concepts
 sources:
   - raw/notes/2026-05-09-agent-source-map.md
+  - raw/notes/2026-05-09-agent-action-tools-implementation.md
 created: 2026-05-09
 updated: 2026-05-09
 tags: [agent, tools, playback, retrieval]
@@ -10,7 +11,7 @@ aliases: [Podcast Agent Tools]
 confidence: medium
 volatility: warm
 verified: 2026-05-09
-summary: "The agent needs retrieval, playback, briefing, UI, and research tools, with mutating tools logged through the existing activity mechanism."
+summary: "The agent needs retrieval, playback, library mutation, briefing, UI, delegation, and research tools, with risky tools gated by permission context."
 ---
 
 # Tool Surface
@@ -28,15 +29,26 @@ The tool surface is the agent's controlled interface to the app and knowledge ba
 
 - `play_episode_at(episode_id, timestamp)`
 - `pause_playback()`
+- `set_playback_rate(rate)`
+- `set_sleep_timer(mode, minutes?)`
 - `set_now_playing(episode_id, timestamp?)`
 - `open_screen(route)`
 - `share_clip(episode_id, start, end, recipient?)`
+
+## Library And Feed Action Tools
+
+- `mark_episode_played(episode_id)`
+- `mark_episode_unplayed(episode_id)`
+- `download_episode(episode_id)`
+- `request_transcription(episode_id)`
+- `refresh_feed(podcast_id)`
 
 ## Synthesis And Research Tools
 
 - `summarize_episode(episode_id)`
 - `generate_briefing(scope, length, voice?)`
 - `perplexity_search(query)`
+- `delegate(recipient, prompt)`
 
 ## In-Episode Context Tools
 
@@ -49,7 +61,7 @@ These tools are scoped exclusively to the **In-Episode Agent** (UX-16) surface â
 
 ## Safety And Logging
 
-Mutating tools should record agent activity. Remote Nostr calls should expose a narrower default tool set than local voice or in-app chat. Tools that start playback, send messages, share clips, or perform external research should be explicitly classified.
+Mutating tools should record agent activity before they are exposed to remote actors. The current direct `AgentTools.dispatchPodcast` implementation returns JSON envelopes and is covered by unit tests, but central audit/activity logging still belongs in the future `ToolGateway` wrapper. Remote Nostr calls should expose a narrower default tool set than local voice or in-app chat. Tools that start playback, send messages, share clips, delegate work, or perform external research should be explicitly classified.
 
 ## See Also
 
@@ -62,3 +74,4 @@ Mutating tools should record agent activity. Remote Nostr calls should expose a 
 ## Sources
 
 - [Agent source map](../../raw/notes/2026-05-09-agent-source-map.md)
+- [Agent action tools implementation](../../raw/notes/2026-05-09-agent-action-tools-implementation.md)
