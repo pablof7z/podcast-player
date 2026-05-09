@@ -55,6 +55,22 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
         return token
     }
 
+    func connectOllama() async throws -> BYOKTokenResponse {
+        let pending = try makeAuthorization(provider: "ollama", scope: "key:ollama")
+        let callbackURL = try await authenticate(url: pending.authorizationURL)
+        let code = try authorizationCode(from: callbackURL, expectedState: pending.state)
+        let token = try await exchangeCode(code, pending: pending)
+
+        guard token.provider == "ollama" else {
+            throw BYOKConnectError.unexpectedProvider
+        }
+        guard token.tokenType == "raw_api_key", !token.apiKey.isEmpty else {
+            throw BYOKConnectError.invalidTokenResponse
+        }
+
+        return token
+    }
+
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         if let activeScene = scenes.first(where: { $0.activationState == .foregroundActive }),

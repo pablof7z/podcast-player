@@ -6,10 +6,12 @@ struct OllamaSettingsView: View {
     @State private var settings = Settings()
     @State private var manualAPIKey = ""
     @State private var hasStoredKey = false
+    @State private var isConnectingBYOK = false
     @State private var isValidating = false
     @State private var credentialMessage: String?
     @State private var credentialError: String?
     @State private var modelCount: Int?
+    @State private var byokConnect = BYOKConnectService()
 
     private let catalog = OllamaModelCatalogService()
 
@@ -28,12 +30,32 @@ struct OllamaSettingsView: View {
         .animation(AppTheme.Animation.spring, value: credentialMessage)
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: modelCount)
+        .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
     }
 
     private var connectionSection: some View {
         Section {
             Label(statusTitle, systemImage: statusIcon)
                 .foregroundStyle(statusColor)
+
+            if settings.ollamaCredentialSource == .byok,
+               let label = settings.ollamaBYOKKeyLabel,
+               !label.isBlank {
+                LabeledContent("BYOK key", value: label)
+            }
+
+            Button {
+                Task { await connectWithBYOK() }
+            } label: {
+                HStack {
+                    Label(isConnectingBYOK ? "Connecting..." : byokButtonTitle, systemImage: "key.viewfinder")
+                    if isConnectingBYOK {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(isConnectingBYOK)
 
             RevealableAPIKeyField("Paste Ollama API key", text: $manualAPIKey)
 
@@ -84,7 +106,7 @@ struct OllamaSettingsView: View {
         } header: {
             Text("Connection")
         } footer: {
-            Text("Create an Ollama API key on ollama.com. The key is stored only in Keychain and is used for model browsing, chat, and embeddings.")
+            Text("BYOK opens byok.f7z.io for consent and stores the returned Ollama key in Keychain. Manual keys are also saved only in Keychain.")
         }
     }
 
@@ -92,7 +114,11 @@ struct OllamaSettingsView: View {
         guard hasStoredKey else {
             return settings.ollamaCredentialSource == .none ? "Not connected" : "Reconnect required"
         }
-        return "Manual key saved"
+        switch settings.ollamaCredentialSource {
+        case .byok:   return "Connected with BYOK"
+        case .manual: return "Manual key saved"
+        case .none:   return "Key saved"
+        }
     }
 
     private var statusIcon: String {
@@ -101,6 +127,34 @@ struct OllamaSettingsView: View {
 
     private var statusColor: Color {
         hasStoredKey ? .green : .secondary
+    }
+
+    private var byokButtonTitle: String {
+        settings.ollamaCredentialSource == .byok ? "Reconnect BYOK" : "Connect with BYOK"
+    }
+
+    private func connectWithBYOK() async {
+        credentialError = nil
+        credentialMessage = nil
+        modelCount = nil
+        isConnectingBYOK = true
+        defer { isConnectingBYOK = false }
+
+        do {
+            let token = try await byokConnect.connectOllama()
+            try OllamaCredentialStore.saveAPIKey(token.apiKey)
+            settings.markOllamaBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            store.updateSettings(settings)
+            manualAPIKey = ""
+            refreshCredentialState()
+            credentialMessage = "Ollama Cloud connected with BYOK."
+            Haptics.success()
+        } catch BYOKConnectError.cancelled {
+            Haptics.warning()
+        } catch {
+            credentialError = error.localizedDescription
+            Haptics.error()
+        }
     }
 
     private func saveManualKey() {

@@ -18,16 +18,22 @@ final class LLMProviderTests: XCTestCase {
         XCTAssertEqual(reference.storedID, "ollama:gpt-oss:120b")
     }
 
-    func testSettingsPersistOllamaMetadataAndEmbeddingSelection() throws {
+    func testSettingsPersistOllamaBYOKMetadataAndEmbeddingSelection() throws {
         var settings = Settings()
-        settings.markOllamaManual(connectedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        settings.markOllamaBYOK(
+            keyID: "key_ollama",
+            keyLabel: "Podcast Ollama",
+            connectedAt: Date(timeIntervalSince1970: 1_700_000_000)
+        )
         settings.embeddingsModel = "ollama:qwen3-embedding"
         settings.embeddingsModelName = "qwen3-embedding"
 
         let data = try JSONEncoder().encode(settings)
         let decoded = try JSONDecoder().decode(Settings.self, from: data)
 
-        XCTAssertEqual(decoded.ollamaCredentialSource, .manual)
+        XCTAssertEqual(decoded.ollamaCredentialSource, .byok)
+        XCTAssertEqual(decoded.ollamaBYOKKeyID, "key_ollama")
+        XCTAssertEqual(decoded.ollamaBYOKKeyLabel, "Podcast Ollama")
         XCTAssertEqual(decoded.embeddingsModel, "ollama:qwen3-embedding")
         XCTAssertEqual(decoded.embeddingsModelName, "qwen3-embedding")
     }

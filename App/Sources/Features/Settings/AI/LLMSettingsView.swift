@@ -236,6 +236,7 @@ struct LLMSettingsView: View {
 
     private var ollamaStatus: String {
         switch store.state.settings.ollamaCredentialSource {
+        case .byok:   return "BYOK"
         case .manual: return "Manual"
         case .none:   return "Not set up"
         }

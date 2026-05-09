@@ -11,7 +11,7 @@ enum ElevenLabsCredentialSource: String, Codable, Hashable, Sendable {
 }
 
 enum OllamaCredentialSource: String, Codable, Hashable, Sendable {
-    case none, manual
+    case none, manual, byok
 }
 
 struct Settings: Codable, Hashable, Sendable {
@@ -52,6 +52,8 @@ struct Settings: Codable, Hashable, Sendable {
 
     // Ollama Cloud credentials (secret stored in Keychain; only metadata here)
     var ollamaCredentialSource: OllamaCredentialSource = .none
+    var ollamaBYOKKeyID: String?
+    var ollamaBYOKKeyLabel: String?
     var ollamaConnectedAt: Date?
 
     // ElevenLabs credentials (secret stored in Keychain; only metadata here)
@@ -119,7 +121,7 @@ struct Settings: Codable, Hashable, Sendable {
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
-        case ollamaCredentialSource, ollamaConnectedAt
+        case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
@@ -150,6 +152,8 @@ struct Settings: Codable, Hashable, Sendable {
         openRouterConnectedAt = try c.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
         legacyOpenRouterAPIKey = try c.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
         ollamaCredentialSource = try c.decodeIfPresent(OllamaCredentialSource.self, forKey: .ollamaCredentialSource) ?? .none
+        ollamaBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyID)
+        ollamaBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyLabel)
         ollamaConnectedAt = try c.decodeIfPresent(Date.self, forKey: .ollamaConnectedAt)
         elevenLabsCredentialSource = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) ?? .none
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
@@ -199,6 +203,8 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(openRouterBYOKKeyLabel, forKey: .openRouterBYOKKeyLabel)
         try c.encodeIfPresent(openRouterConnectedAt, forKey: .openRouterConnectedAt)
         try c.encode(ollamaCredentialSource, forKey: .ollamaCredentialSource)
+        try c.encodeIfPresent(ollamaBYOKKeyID, forKey: .ollamaBYOKKeyID)
+        try c.encodeIfPresent(ollamaBYOKKeyLabel, forKey: .ollamaBYOKKeyLabel)
         try c.encodeIfPresent(ollamaConnectedAt, forKey: .ollamaConnectedAt)
         try c.encode(elevenLabsCredentialSource, forKey: .elevenLabsCredentialSource)
         try c.encodeIfPresent(elevenLabsBYOKKeyID, forKey: .elevenLabsBYOKKeyID)
@@ -272,11 +278,22 @@ struct Settings: Codable, Hashable, Sendable {
 
     mutating func markOllamaManual(connectedAt: Date = Date()) {
         ollamaCredentialSource = .manual
+        ollamaBYOKKeyID = nil
+        ollamaBYOKKeyLabel = nil
+        ollamaConnectedAt = connectedAt
+    }
+
+    mutating func markOllamaBYOK(keyID: String?, keyLabel: String?, connectedAt: Date = Date()) {
+        ollamaCredentialSource = .byok
+        ollamaBYOKKeyID = keyID
+        ollamaBYOKKeyLabel = keyLabel
         ollamaConnectedAt = connectedAt
     }
 
     mutating func clearOllamaCredential() {
         ollamaCredentialSource = .none
+        ollamaBYOKKeyID = nil
+        ollamaBYOKKeyLabel = nil
         ollamaConnectedAt = nil
     }
 

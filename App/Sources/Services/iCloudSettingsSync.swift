@@ -23,7 +23,8 @@ import os.log
 ///   - `openRouterCredentialSource`, `*BYOKKeyID/Label`, `*ConnectedAt` — tied to
 ///     local Keychain secrets; syncing source without syncing the secret is
 ///     misleading and could make the app appear connected when it isn't
-///   - `ollamaCredentialSource`, `ollamaConnectedAt` — same local-Keychain rule
+///   - `ollamaCredentialSource`, `ollamaBYOKKeyID/Label`, `ollamaConnectedAt` —
+///     same local-Keychain rule
 ///   - `elevenLabsCredentialSource`, `*BYOKKeyID/Label`, `*ConnectedAt` — same
 ///     reasoning as above
 ///
