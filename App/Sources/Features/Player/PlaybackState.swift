@@ -158,6 +158,13 @@ final class PlaybackState {
     /// when the show name isn't known.
     var resolveShowName: (Episode) -> String = { _ in "" }
 
+    /// Resolves the parent show's cover-art URL for a given episode. Used by
+    /// the player UI as the fallback when `episode.imageURL` is `nil`.
+    /// Mirrors the `resolveShowName` injection pattern so `PlaybackState`
+    /// stays decoupled from `AppStateStore`. Returns `nil` when the show's
+    /// artwork isn't known.
+    var resolveShowImage: (Episode) -> URL? = { _ in nil }
+
     // MARK: - Internal
 
     /// Drives the 1-second persistence + end-detection loop.

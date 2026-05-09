@@ -98,52 +98,70 @@ struct PlayerView: View {
 
     // MARK: - Hero artwork
 
-    /// Episode cover art preferring per-episode `imageURL` (some shows ship
-    /// per-episode artwork) and falling back to the subscription's show
-    /// artwork. Both are populated by the RSS parser; falls back to a calm
-    /// placeholder while the image loads or if neither URL is available.
+    /// Resolved artwork URL for the current episode. Prefers the per-episode
+    /// override (`<itunes:image>`) and falls back to the show-level cover art
+    /// surfaced through `PlaybackState.resolveShowImage` (wired in `RootView`
+    /// so this view stays decoupled from `AppStateStore`).
     private var artworkURL: URL? {
-        state.episode?.imageURL ?? subscription?.imageURL
+        guard let episode = state.episode else { return nil }
+        return episode.imageURL ?? state.resolveShowImage(episode)
     }
 
+    /// Square hero cover art. `AsyncImage` distinguishes loading (neutral
+    /// surface, no glyph) from failure (neutral surface + subtle waveform
+    /// glyph) so the user never reads the loading state as "no artwork".
     private var heroArtwork: some View {
         ZStack {
-            Color.secondary.opacity(0.12)
             if let url = artworkURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .empty, .failure:
-                        Image(systemName: "waveform")
-                            .font(.system(size: 64, weight: .light))
-                            .foregroundStyle(.secondary)
+                            .scaledToFill()
+                    case .failure:
+                        artworkFailureFallback
+                    case .empty:
+                        artworkLoadingPlaceholder
                     @unknown default:
-                        Image(systemName: "waveform")
-                            .font(.system(size: 64, weight: .light))
-                            .foregroundStyle(.secondary)
+                        artworkLoadingPlaceholder
                     }
                 }
             } else {
-                Image(systemName: "waveform")
-                    .font(.system(size: 64, weight: .light))
-                    .foregroundStyle(.secondary)
+                artworkFailureFallback
             }
         }
+        .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity)
-        .frame(height: isScrubbing ? 180 : 260)
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
         )
-        .scaleEffect(isScrubbing ? 1.04 : 1.0)
+        .scaleEffect(isScrubbing ? 0.92 : 1.0)
         .blur(radius: isScrubbing ? 8 : 0)
         .glassEffectID("player.artwork", in: glassNamespace)
         .animation(AppTheme.Animation.spring, value: isScrubbing)
         .accessibilityHidden(true)
+    }
+
+    /// Neutral surface shown while the artwork is fetching. Intentionally
+    /// glyph-free — a placeholder symbol here would read as "no artwork
+    /// available" rather than "loading".
+    private var artworkLoadingPlaceholder: some View {
+        Color.secondary.opacity(0.10)
+    }
+
+    /// Neutral surface plus a subtle waveform glyph, shown when artwork
+    /// resolution failed (or the episode has no artwork at all) so the hero
+    /// area doesn't look broken.
+    private var artworkFailureFallback: some View {
+        ZStack {
+            Color.secondary.opacity(0.10)
+            Image(systemName: "waveform")
+                .font(.system(size: 56, weight: .light))
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Editorial header
