@@ -14,7 +14,7 @@ import Foundation
 /// Lane 6 ships the concrete implementation that hits the on-device vector
 /// index plus reranker (`embeddings-rag-stack.md`). For this lane we only
 /// need *retrieval* — write operations are out of scope.
-protocol RAGSearchProtocol: Sendable {
+protocol BriefingRAGSearchProtocol: Sendable {
 
     /// Hybrid (lexical + vector) search over transcript chunks and wiki pages.
     ///
@@ -67,7 +67,7 @@ struct RAGCandidate: Sendable, Hashable, Identifiable {
 ///
 /// The composer calls into wiki storage for *catch-up* and *topic deep-dive*
 /// briefings where a wiki page provides the structural backbone of the script.
-protocol WikiStorageProtocol: Sendable {
+protocol BriefingWikiStorageProtocol: Sendable {
 
     /// Returns the wiki page with the given id, or `nil` if not found.
     func wikiPage(id: UUID) async throws -> WikiPage?

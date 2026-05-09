@@ -36,8 +36,8 @@ struct BriefingComposeResult: Sendable {
 /// Produces synthesized audio briefings.
 ///
 /// Pipeline (UX-08 §1, §3):
-///  1. Gather candidate episodes / clips / wikis via `RAGSearchProtocol`
-///     (Lane 6) and `WikiStorageProtocol` (Lane 7).
+///  1. Gather candidate episodes / clips / wikis via `BriefingRAGSearchProtocol`
+///     (Lane 6) and `BriefingWikiStorageProtocol` (Lane 7).
 ///  2. Compose script via OpenRouter chat completion. When the API key is
 ///     missing or the request fails, fall back to a fixture script — the
 ///     data flow is real, only the contents are stubbed.
@@ -50,8 +50,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
 
     // MARK: Dependencies
 
-    let rag: RAGSearchProtocol
-    let wiki: WikiStorageProtocol
+    let rag: BriefingRAGSearchProtocol
+    let wiki: BriefingWikiStorageProtocol
     let tts: TTSProtocol
     let storage: BriefingStorage
     /// OpenRouter API key. When `nil`, the composer skips the network call and
@@ -64,8 +64,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
     let voiceID: String
 
     init(
-        rag: RAGSearchProtocol = FakeRAGSearch(),
-        wiki: WikiStorageProtocol = FakeWikiStorage(),
+        rag: BriefingRAGSearchProtocol = FakeRAGSearch(),
+        wiki: BriefingWikiStorageProtocol = FakeWikiStorage(),
         tts: TTSProtocol = FakeTTS(),
         storage: BriefingStorage,
         apiKey: String? = nil,

@@ -178,7 +178,7 @@ struct FakeTTS: TTSProtocol {
 /// Returns a small, deterministic fixture set so the composer always has
 /// something to compose against. Contents are seeded from `query` so unit
 /// tests can assert on stable ids.
-struct FakeRAGSearch: RAGSearchProtocol {
+struct FakeRAGSearch: BriefingRAGSearchProtocol {
     func search(query: String, scope _: BriefingScope, limit: Int) async throws -> [RAGCandidate] {
         let seeds: [(showName: String, startSec: Double, snippet: String)] = [
             ("Hard Fork", 2052, "Sundar mentioned a new TPU this week."),
@@ -235,13 +235,13 @@ struct FakeRAGSearch: RAGSearchProtocol {
 
 /// In-memory wiki store seeded with a couple of pages so topic-deep-dive
 /// briefings have a structural backbone in dev / preview builds.
-struct FakeWikiStorage: WikiStorageProtocol {
+struct FakeWikiStorage: BriefingWikiStorageProtocol {
     var pages: [WikiPage]
 
     init(pages: [WikiPage]? = nil) {
         self.pages = pages ?? [
-            WikiPage(title: "Ozempic", body: "GLP-1 receptor agonist class, originally for type 2 diabetes."),
-            WikiPage(title: "Google TPU", body: "Tensor Processing Unit family, custom ASIC for ML workloads."),
+            WikiPage(slug: "ozempic", title: "Ozempic", kind: .topic, scope: .global, summary: "GLP-1 receptor agonist class, originally for type 2 diabetes."),
+            WikiPage(slug: "google-tpu", title: "Google TPU", kind: .topic, scope: .global, summary: "Tensor Processing Unit family, custom ASIC for ML workloads."),
         ]
     }
 
