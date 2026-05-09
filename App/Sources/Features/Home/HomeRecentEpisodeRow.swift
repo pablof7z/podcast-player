@@ -15,13 +15,20 @@ struct HomeEpisodeRoute: Hashable {
 /// One row in the Home tab's "New episodes" feed.
 ///
 /// Shows artwork, show name, episode title, relative pub date, and duration.
-/// Tap plays the episode; long-press exposes "Mark as played" and an
-/// "Episode details" navigation hop.
+/// Tap plays the episode; long-press exposes the full shared menu (mark
+/// played/unplayed, download/cancel/remove, share, open episode details).
+/// Leading-edge swipe marks played; trailing-edge swipe drives the download
+/// affordance — both rely on the row being hosted inside a `List`.
 struct HomeRecentEpisodeRow: View {
     let episode: Episode
     let subscription: PodcastSubscription?
     let onPlay: () -> Void
-    let onMarkPlayed: () -> Void
+    /// Bound by `HomeView` so the VoiceOver "Open episode details" custom
+    /// action can drive `.navigationDestination(item:)` — `accessibilityActions`
+    /// can't host a `NavigationLink`.
+    @Binding var voiceOverDetailRoute: HomeEpisodeRoute?
+
+    @Environment(AppStateStore.self) private var store
 
     var body: some View {
         Button(action: onPlay) {
@@ -36,14 +43,11 @@ struct HomeRecentEpisodeRow: View {
         .padding(.vertical, AppTheme.Spacing.xs)
         .contextMenu(
             menuItems: {
-                Button {
-                    onMarkPlayed()
-                } label: {
-                    Label("Mark as played", systemImage: "checkmark.circle")
-                }
-                NavigationLink(value: HomeEpisodeRoute(episodeID: episode.id)) {
-                    Label("Episode details", systemImage: "info.circle")
-                }
+                EpisodeRowContextMenu(
+                    episode: episode,
+                    store: store,
+                    openDetailsRoute: HomeEpisodeRoute(episodeID: episode.id)
+                )
             },
             preview: {
                 HomeEpisodePreviewCard(
@@ -57,6 +61,15 @@ struct HomeRecentEpisodeRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isButton)
+        .accessibilityActions {
+            EpisodeRowAccessibilityActions(
+                episode: episode,
+                store: store,
+                onOpenDetails: {
+                    voiceOverDetailRoute = HomeEpisodeRoute(episodeID: episode.id)
+                }
+            )
+        }
     }
 
     // MARK: - Subviews

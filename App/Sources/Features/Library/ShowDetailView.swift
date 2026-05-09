@@ -16,7 +16,6 @@ import SwiftUI
 struct ShowDetailView: View {
 
     @Environment(AppStateStore.self) private var store
-    @Environment(PlaybackState.self) private var playback
     @Environment(\.dismiss) private var dismiss
 
     let subscription: PodcastSubscription
@@ -24,24 +23,48 @@ struct ShowDetailView: View {
     @State private var filter: LibraryFilter = .all
     @State private var showSettings: Bool = false
     @State private var showUnsubscribeConfirm: Bool = false
+    /// Drives the VoiceOver "Open episode details" custom action — bound into
+    /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
+    /// so the same `EpisodeDetailView` opens regardless of how the user got there.
+    @State private var voiceOverDetailRoute: LibraryEpisodeRoute?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+        List {
+            Section {
                 ShowDetailHeader(
                     subscription: liveSubscription,
                     episodeCount: episodes.count
                 )
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
 
                 description
+                    .listRowInsets(EdgeInsets(
+                        top: 0,
+                        leading: AppTheme.Spacing.lg,
+                        bottom: 0,
+                        trailing: AppTheme.Spacing.lg
+                    ))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
 
                 filterSection
-                    .padding(.top, AppTheme.Spacing.md)
-
-                episodeList
-                    .padding(.bottom, AppTheme.Spacing.xl)
+                    .listRowInsets(EdgeInsets(
+                        top: AppTheme.Spacing.md,
+                        leading: 0,
+                        bottom: AppTheme.Spacing.sm,
+                        trailing: 0
+                    ))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
+
+            episodeListSection
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(liveSubscription.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
@@ -65,6 +88,9 @@ struct ShowDetailView: View {
             Text("This removes the show and all of its episodes from your library.")
         }
         .navigationDestination(for: LibraryEpisodeRoute.self) { route in
+            LibraryEpisodePlaceholder(route: route)
+        }
+        .navigationDestination(item: $voiceOverDetailRoute) { route in
             LibraryEpisodePlaceholder(route: route)
         }
     }
@@ -112,10 +138,11 @@ struct ShowDetailView: View {
         }
     }
 
-    private var episodeList: some View {
+    @ViewBuilder
+    private var episodeListSection: some View {
         let visible = filteredEpisodes()
-        return LazyVStack(spacing: 0) {
-            if visible.isEmpty {
+        if visible.isEmpty {
+            Section {
                 ContentUnavailableView(
                     episodes.isEmpty ? "No episodes yet" : "No episodes match",
                     systemImage: "tray",
@@ -125,25 +152,19 @@ struct ShowDetailView: View {
                         : "Try a different filter."
                     )
                 )
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
                 .padding(.top, AppTheme.Spacing.xl)
-            } else {
-                ForEach(Array(visible.enumerated()), id: \.element.id) { idx, ep in
-                    Button {
-                        handleTap(ep)
-                    } label: {
-                        EpisodeRow(episode: ep, showAccent: liveSubscription.accentColor)
-                            .padding(.horizontal, AppTheme.Spacing.lg)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    if idx != visible.count - 1 {
-                        Divider()
-                            .padding(.leading, AppTheme.Spacing.lg + 22 + AppTheme.Spacing.md)
-                    }
-                }
+            }
+        } else {
+            Section {
+                ShowDetailEpisodeList(
+                    subscription: liveSubscription,
+                    episodes: visible,
+                    voiceOverDetailRoute: $voiceOverDetailRoute
+                )
             }
         }
-        .padding(.top, AppTheme.Spacing.sm)
     }
 
     // MARK: - Toolbar
@@ -194,12 +215,6 @@ struct ShowDetailView: View {
     }
 
     // MARK: - Actions
-
-    private func handleTap(_ episode: Episode) {
-        Haptics.selection()
-        playback.setEpisode(episode)
-        playback.play()
-    }
 
     private func confirmUnsubscribe() {
         showUnsubscribeConfirm = true
