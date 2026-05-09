@@ -1,0 +1,145 @@
+import Foundation
+
+// MARK: - Podcast tool schema (OpenAI tool format)
+//
+// This file declares the OpenAI-compatible JSON-schema entries for every
+// podcast-domain tool the agent can call. The orchestrator concatenates this
+// array onto `AgentTools.schema` at merge time:
+//
+//     let allTools = AgentTools.schema + AgentTools.podcastSchema
+//
+// Adding a new podcast tool requires four steps, in order:
+//   1. Add the canonical name to `AgentTools.PodcastNames`
+//      in `AgentTools+Podcast.swift`.
+//   2. Add a `tool(...)` entry below.
+//   3. Add a `case` in `AgentTools.dispatchPodcast(...)`.
+//   4. Add a unit test in `AgentToolsPodcastTests.swift`.
+
+extension AgentTools {
+
+    /// OpenAI-compatible tool schema array for the podcast tool surface.
+    ///
+    /// Kept as a separate computed property (not merged into `AgentTools.schema`)
+    /// so the existing template tests continue to assert against the original
+    /// schema unchanged.
+    @MainActor
+    static var podcastSchema: [[String: Any]] {
+        [
+            podcastTool(
+                name: PodcastNames.playEpisodeAt,
+                description: "Open the podcast player at a specific episode and timestamp. Use this when the user says 'play that part where…' or asks to jump to a specific moment they remember.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode's stable ID (UUID or canonical string)."],
+                    "timestamp": ["type": "number", "description": "Position to seek to, in seconds from the start of the episode. Use 0 to play from the beginning."],
+                ],
+                required: ["episode_id", "timestamp"]
+            ),
+            podcastTool(
+                name: PodcastNames.searchEpisodes,
+                description: "Semantic + keyword search across the user's subscribed podcasts. Use for fuzzy recall like 'the one about stamps last week' or topical queries like 'episodes on Zone 2 training'.",
+                properties: [
+                    "query": ["type": "string", "description": "Natural-language query."],
+                    "scope": ["type": "string", "description": "Optional podcast ID to constrain the search to one show."],
+                    "limit": ["type": "integer", "description": "Maximum results (1–25). Defaults to 10."],
+                ],
+                required: ["query"]
+            ),
+            podcastTool(
+                name: PodcastNames.queryWiki,
+                description: "Look up a topic in the LLM-generated podcast wiki. Use this for definitional questions ('what is Zone 2?') or to surface cross-episode context the user has already built up.",
+                properties: [
+                    "topic": ["type": "string", "description": "Topic, person, place, or concept to look up."],
+                    "scope": ["type": "string", "description": "Optional podcast ID to constrain the wiki lookup to one show's wiki."],
+                    "limit": ["type": "integer", "description": "Maximum pages returned (1–10). Defaults to 5."],
+                ],
+                required: ["topic"]
+            ),
+            podcastTool(
+                name: PodcastNames.queryTranscripts,
+                description: "RAG search over transcript chunks. Returns timestamped excerpts with speaker labels. Use this when the user asks 'what did they say about X?' and you need direct quotes to ground the answer.",
+                properties: [
+                    "query": ["type": "string", "description": "Natural-language question."],
+                    "scope": ["type": "string", "description": "Optional scope: an episode_id, a podcast_id, or omit for all-corpus search."],
+                    "limit": ["type": "integer", "description": "Maximum chunks returned (1–25). Defaults to 8."],
+                ],
+                required: ["query"]
+            ),
+            podcastTool(
+                name: PodcastNames.generateBriefing,
+                description: "Compose a personalized TLDR audio briefing across episodes. Use when the user asks 'catch me up on this week' or wants a synthesized digest. Returns a briefing handle the user can play.",
+                properties: [
+                    "scope": ["type": "string", "description": "Selection scope: 'this_week', 'unlistened', a podcast_id, or a custom keyword."],
+                    "length": ["type": "integer", "description": "Target length in minutes (3–30)."],
+                    "style": ["type": "string", "enum": ["news", "deep_dive", "quick_hits"], "description": "Optional style hint."],
+                ],
+                required: ["scope", "length"]
+            ),
+            podcastTool(
+                name: PodcastNames.perplexitySearch,
+                description: "Run an online web search via Perplexity for facts that are NOT in the user's podcast corpus. Use for current events, fact-checks, citation lookups, or contrarian-take queries.",
+                properties: [
+                    "query": ["type": "string", "description": "Question to send to Perplexity."],
+                ],
+                required: ["query"]
+            ),
+            podcastTool(
+                name: PodcastNames.summarizeEpisode,
+                description: "Generate an on-demand summary of a single episode. Use when the user asks 'TLDR this' or 'what's this episode about?' for a specific episode.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to summarize."],
+                    "length": ["type": "string", "enum": ["short", "medium", "long"], "description": "Optional summary length. Defaults to 'medium'."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.findSimilarEpisodes,
+                description: "Discovery — find episodes semantically similar to a seed episode. Use when the user says 'more like this' or 'what else should I listen to after this?'.",
+                properties: [
+                    "seed_episode_id": ["type": "string", "description": "The episode to use as a similarity seed."],
+                    "k": ["type": "integer", "description": "Number of similar episodes to return (1–20). Defaults to 5."],
+                ],
+                required: ["seed_episode_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.openScreen,
+                description: "Navigate the app UI to a named route (e.g. 'library', 'now_playing', 'briefings', 'wiki/zone-2'). Use sparingly — only when the user explicitly asks to go somewhere.",
+                properties: [
+                    "route": ["type": "string", "description": "App route string."],
+                ],
+                required: ["route"]
+            ),
+            podcastTool(
+                name: PodcastNames.setNowPlaying,
+                description: "Update the player's now-playing context without necessarily starting playback (preload artwork, seed the lock-screen). Use as a setup step before a 'play_episode_at' or to reflect what the agent is currently grounded in.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "Episode to mark as now playing."],
+                    "timestamp": ["type": "number", "description": "Optional timestamp in seconds. Omit to leave position unchanged."],
+                ],
+                required: ["episode_id"]
+            ),
+        ]
+    }
+
+    /// Local copy of the OpenAI function-tool builder. The base file's helper
+    /// is `private`, so we duplicate the (tiny) shape here to keep this lane
+    /// self-contained.
+    private static func podcastTool(
+        name: String,
+        description: String,
+        properties: [String: Any],
+        required: [String]
+    ) -> [String: Any] {
+        [
+            "type": "function",
+            "function": [
+                "name": name,
+                "description": description,
+                "parameters": [
+                    "type": "object",
+                    "properties": properties,
+                    "required": required,
+                ] as [String: Any],
+            ] as [String: Any],
+        ]
+    }
+}
