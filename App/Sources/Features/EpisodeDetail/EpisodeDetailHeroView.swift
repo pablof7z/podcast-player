@@ -181,15 +181,82 @@ struct EpisodeDetailHeroView: View {
         }
     }
 
+    /// State-aware transcript CTA. Was "Read transcript" unconditionally —
+    /// misleading for episodes that don't have one yet, or are mid-ingest.
+    /// Now reflects the live `transcriptState` so the label matches what
+    /// actually happens on tap.
+    @ViewBuilder
     private var readTranscriptCTA: some View {
+        switch episode.transcriptState {
+        case .ready:
+            transcriptButton(
+                title: "Read transcript",
+                systemImage: "text.alignleft",
+                style: .prominent,
+                disabled: false
+            )
+        case .transcribing(let progress):
+            transcriptButton(
+                title: progress > 0
+                    ? "Transcribing… \(Int((progress * 100).rounded()))%"
+                    : "Transcribing…",
+                systemImage: "waveform",
+                style: .bordered,
+                disabled: true
+            )
+        case .queued, .fetchingPublisher:
+            transcriptButton(
+                title: "Preparing transcript…",
+                systemImage: "clock",
+                style: .bordered,
+                disabled: true
+            )
+        case .failed:
+            transcriptButton(
+                title: "Retry transcription",
+                systemImage: "arrow.clockwise",
+                style: .bordered,
+                disabled: false
+            )
+        case .none:
+            transcriptButton(
+                title: episode.publisherTranscriptURL != nil
+                    ? "Get transcript"
+                    : "Transcribe with Scribe",
+                systemImage: "text.badge.plus",
+                style: .bordered,
+                disabled: false
+            )
+        }
+    }
+
+    private func transcriptButton(
+        title: String,
+        systemImage: String,
+        style: TranscriptButtonStyle,
+        disabled: Bool
+    ) -> some View {
         Button(action: onReadTranscript) {
-            Text("Read transcript")
+            Label(title, systemImage: systemImage)
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }
-        .buttonStyle(.borderedProminent)
+        .modifier(TranscriptButtonStyleModifier(style: style))
+        .disabled(disabled)
         .padding(.vertical, AppTheme.Spacing.md)
+    }
+
+    enum TranscriptButtonStyle { case prominent, bordered }
+
+    private struct TranscriptButtonStyleModifier: ViewModifier {
+        let style: TranscriptButtonStyle
+        func body(content: Content) -> some View {
+            switch style {
+            case .prominent: content.buttonStyle(.borderedProminent)
+            case .bordered:  content.buttonStyle(.bordered)
+            }
+        }
     }
 
     // MARK: Helpers
