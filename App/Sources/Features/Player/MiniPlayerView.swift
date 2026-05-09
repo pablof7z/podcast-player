@@ -1,20 +1,46 @@
 import SwiftUI
 
-/// Persistent mini-player docked above the tab bar.
+/// Persistent mini-player presented as a `tabViewBottomAccessory` (iOS 26).
 ///
-/// **Signature behaviour (UX-01 §6.5):** the ticker line is the **active
-/// transcript line**, not just the episode title. That single decision is what
-/// separates this player from every other one on the App Store — the user
-/// always knows what's *being said* without opening the full surface.
+/// Reads `\.tabViewBottomAccessoryPlacement` from the environment and
+/// renders one of two layouts:
+///   - `.expanded` — full mini-bar above the tab bar with the active
+///     transcript line as the ticker (the UX-01 §6.5 signature).
+///   - `.inline`   — compact pill that slots between the active-tab capsule
+///     and the trailing toolbar controls when the tab bar collapses on
+///     scroll-down (Apple Music pattern).
+///
+/// The full UI shows artwork, the live transcript ticker line, the show name
+/// + clock, and play / +30s. The inline pill drops to artwork + play/pause
+/// only — no ticker, no progress, no metadata.
 struct MiniPlayerView: View {
 
     @Bindable var state: MockPlaybackState
     let onTap: () -> Void
     let glassNamespace: Namespace.ID
 
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
     private var copperAccent: Color { state.episode?.primaryArtColor ?? .orange }
 
     var body: some View {
+        Group {
+            switch placement {
+            case .inline:
+                inlineBody
+            default:
+                expandedBody
+            }
+        }
+        .animation(AppTheme.Animation.spring, value: placement)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    // MARK: - Expanded (regular) layout
+
+    private var expandedBody: some View {
         Button(action: onTap) {
             VStack(spacing: 0) {
                 progressLine
@@ -25,13 +51,62 @@ struct MiniPlayerView: View {
                 in: .rect(cornerRadius: AppTheme.Corner.lg)
             )
             .glassEffectID("player.surface", in: glassNamespace)
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.bottom, AppTheme.Spacing.xs)
         }
         .buttonStyle(.pressable(scale: 0.985, opacity: 0.92))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityAddTraits(.isButton)
+    }
+
+    // MARK: - Inline (compact) layout
+
+    /// The collapsed pill that sits inline with the tab bar. No surrounding
+    /// glass surface — the toolbar's own glass shell hosts it. Just artwork,
+    /// the active speaker dot, and a play/pause button.
+    private var inlineBody: some View {
+        Button(action: onTap) {
+            HStack(spacing: AppTheme.Spacing.xs) {
+                inlineArtwork
+                    .glassEffectID("player.artwork", in: glassNamespace)
+
+                if let active = state.activeLine {
+                    Circle()
+                        .fill(active.speakerColor)
+                        .frame(width: 5, height: 5)
+                }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    state.togglePlayPause()
+                } label: {
+                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .glassEffectID("player.play", in: glassNamespace)
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
+            }
+            .padding(.horizontal, AppTheme.Spacing.xs)
+        }
+        .buttonStyle(.pressable(scale: 0.97, opacity: 0.9))
+    }
+
+    private var inlineArtwork: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    state.episode?.primaryArtColor ?? .orange,
+                    state.episode?.secondaryArtColor ?? .indigo
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "waveform")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+        }
+        .frame(width: 26, height: 26)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     // MARK: - Subviews

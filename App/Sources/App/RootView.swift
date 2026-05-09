@@ -3,29 +3,21 @@ import SwiftUI
 
 /// The tabs available at the root navigation level.
 ///
-/// The `Player` is intentionally NOT a top-level tab — it lives behind a
-/// persistent mini-bar (added later) that expands into `PlayerView` on tap.
-/// Voice and Briefings are reached from `Today` / `Ask` rather than the tab
-/// bar to keep the bar focused on browsing surfaces.
-///
-/// `home` and `settings` are inherited from the template (tasks / agent
-/// configuration) and will be folded into the new surfaces in a later pass.
+/// Settings is reachable via a top-right toolbar button on every tab rather
+/// than as a tab entry. The Player lives behind a persistent mini-bar that
+/// expands into `PlayerView` on tap.
 enum RootTab: String, CaseIterable {
-    case today = "Today"
+    case home = "Home"
     case library = "Library"
     case wiki = "Wiki"
     case ask = "Ask"
-    case home = "Home"
-    case settings = "Settings"
 
     var icon: String {
         switch self {
-        case .today: "sparkles"
+        case .home:    "house.fill"
         case .library: "books.vertical.fill"
-        case .wiki: "book.closed.fill"
-        case .ask: "bubble.left.and.bubble.right.fill"
-        case .home: "house.fill"
-        case .settings: "gear"
+        case .wiki:    "book.closed.fill"
+        case .ask:     "bubble.left.and.bubble.right.fill"
         }
     }
 }
@@ -34,12 +26,12 @@ enum RootTab: String, CaseIterable {
 /// onboarding gate, and deep-link routing.
 struct RootView: View {
     @Environment(AppStateStore.self) private var store
-    @State private var selectedTab: RootTab = .today
+    @State private var selectedTab: RootTab = .home
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
+    @State private var showSettings = false
     @State private var lastShakeTime: Date = .distantPast
     /// Drives a Spotlight-continuation sheet for a note or memory.
-    /// Set by `handleSpotlight` and cleared on sheet dismiss.
     @State private var spotlightSheet: SpotlightIndexer.DeepLink?
     /// Lane 4 — drives the persistent mini-player and full Now Playing view.
     /// Lane 1 will replace `MockPlaybackState` with the real audio engine;
@@ -52,16 +44,6 @@ struct RootView: View {
     var body: some View {
         tabBar
             .environment(mockPlaybackState)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if mockPlaybackState.episode != nil {
-                    MiniPlayerView(
-                        state: mockPlaybackState,
-                        onTap: { showFullPlayer = true },
-                        glassNamespace: playerNamespace
-                    )
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayerView(
                     state: mockPlaybackState,
@@ -71,6 +53,9 @@ struct RootView: View {
             .onShake { handleShake() }
             .sheet(isPresented: $showFeedback) {
                 FeedbackView(workflow: feedbackWorkflow)
+            }
+            .sheet(isPresented: $showSettings) {
+                NavigationStack { SettingsView() }
             }
             .sheet(item: Binding(
                 get: { spotlightSheet.map(IdentifiedSpotlightLink.init) },
@@ -102,7 +87,6 @@ struct RootView: View {
             ) { note in
                 if let url = note.object as? URL { handleDeepLink(url) }
             }
-            .onContinueUserActivity(HandoffActivityType.editItem, perform: handleHandoff)
             .onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
     }
 
@@ -114,23 +98,67 @@ struct RootView: View {
                     .tag(tab)
             }
         }
+        // iOS 26: tab bar collapses to a compact pill on scroll-down. The
+        // bottom accessory below adapts to `.inline` placement and slots
+        // between the active-tab capsule and the trailing controls — same
+        // pattern Apple Music uses for its mini-player.
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .tabViewBottomAccessory {
+            if mockPlaybackState.episode != nil {
+                MiniPlayerView(
+                    state: mockPlaybackState,
+                    onTap: { showFullPlayer = true },
+                    glassNamespace: playerNamespace
+                )
+            }
+        }
     }
 
     @ViewBuilder
     private func tabContent(for tab: RootTab) -> some View {
         switch tab {
-        case .today:
-            NavigationStack { TodayView() }
-        case .library:
-            NavigationStack { LibraryView() }
-        case .wiki:
-            NavigationStack { WikiView() }
-        case .ask:
-            NavigationStack { AskAgentView() }
         case .home:
-            NavigationStack { HomeView() }
-        case .settings:
-            NavigationStack { SettingsView() }
+            NavigationStack { HomeView().toolbar { sharedToolbar(showAgent: true) } }
+        case .library:
+            NavigationStack { LibraryView().toolbar { sharedToolbar(showAgent: true) } }
+        case .wiki:
+            NavigationStack { WikiView().toolbar { sharedToolbar(showAgent: true) } }
+        case .ask:
+            // Ask tab IS the agent — no need for a redundant agent shortcut here.
+            NavigationStack { AskAgentView().toolbar { sharedToolbar(showAgent: false) } }
+        }
+    }
+
+    /// Top-right toolbar shared across tabs:
+    ///   • Sparkles — selects the Ask tab (the agent surface). Hidden on Ask itself.
+    ///   • Gear — presents the Settings sheet.
+    @ToolbarContentBuilder
+    private func sharedToolbar(showAgent: Bool) -> some ToolbarContent {
+        if showAgent {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.selection()
+                    selectedTab = .ask
+                } label: {
+                    Image(systemName: "sparkles")
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .accessibilityLabel("Open Agent")
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                Haptics.selection()
+                showSettings = true
+            } label: {
+                Image(systemName: "gear")
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel("Settings")
+            .keyboardShortcut(",", modifiers: .command)
         }
     }
 
@@ -138,29 +166,13 @@ struct RootView: View {
         guard let link = DeepLinkHandler.resolve(url) else { return }
         switch link {
         case .settings:
-            selectedTab = .settings
+            showSettings = true
         case .feedback:
             showFeedback = true
-        case .newItem(let title):
-            selectedTab = .home
-            // Delay one run-loop tick so the Home tab is visible before the
-            // add-row animates in. Without this, SwiftUI may drop the state
-            // change because the HomeView isn't yet in the hierarchy.
-            Task { @MainActor in
-                store.pendingHomeAction = .addItem(prefill: title)
-            }
-        case .overdue:
-            selectedTab = .home
-            Task { @MainActor in
-                store.pendingHomeAction = .showOverdue
-            }
         case .agent:
-            selectedTab = .home
-            Task { @MainActor in
-                store.pendingHomeAction = .openAgent
-            }
+            selectedTab = .ask
         case .addFriend(let npub, let name):
-            selectedTab = .settings
+            showSettings = true
             Task { @MainActor in
                 store.pendingFriendInvite = PendingFriendInvite(npub: npub, name: name)
             }
@@ -168,22 +180,11 @@ struct RootView: View {
     }
 
     /// Routes a Spotlight continuation activity to the correct in-app screen.
-    ///
-    /// Items open their detail sheet via `HomeView`'s `.onChange(of: store.pendingHomeAction)`.
-    /// Notes and memories are presented as a standalone `NavigationStack` sheet
-    /// directly from `RootView` so the user lands on the right record immediately
-    /// without having to navigate Settings → Agent → Notes/Memories manually.
+    /// Notes and memories are presented as a standalone sheet so the user lands
+    /// on the right record immediately.
     private func handleSpotlight(_ activity: NSUserActivity) {
         guard let link = SpotlightIndexer.deepLink(from: activity) else { return }
-        switch link {
-        case .item(let id):
-            selectedTab = .home
-            Task { @MainActor in
-                store.pendingHomeAction = .openItem(id)
-            }
-        case .note, .memory:
-            spotlightSheet = link
-        }
+        spotlightSheet = link
     }
 
     /// Builds the detail view shown inside the Spotlight-continuation sheet.
@@ -194,8 +195,6 @@ struct RootView: View {
             AgentNotesView(spotlightTargetID: id)
         case .memory(let id):
             AgentMemoriesView(spotlightTargetID: id)
-        case .item:
-            EmptyView() // Items are routed through HomeView; should never reach here.
         }
     }
 
@@ -217,10 +216,6 @@ struct RootView: View {
         }
     }
 
-    private func handleHandoff(_ activity: NSUserActivity) {
-        selectedTab = .home
-    }
-
     private func captureScreenshot() -> UIImage? {
         guard
             let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -239,7 +234,6 @@ struct RootView: View {
 
         var id: String {
             switch link {
-            case .item(let id):   return "item:\(id)"
             case .note(let id):   return "note:\(id)"
             case .memory(let id): return "memory:\(id)"
             }
