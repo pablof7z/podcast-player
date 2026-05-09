@@ -19,17 +19,22 @@ struct HomeView: View {
 
     private static let logger = Logger.app("HomeView")
 
+    /// Drives the VoiceOver "Open episode details" custom action surfaced by
+    /// every Home episode row/card. `accessibilityActions` cannot host a
+    /// `NavigationLink`, so we route through `.navigationDestination(item:)`.
+    @State private var voiceOverDetailRoute: HomeEpisodeRoute?
+
     var body: some View {
-        ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
-            content
-        }
-        .navigationTitle("Today")
-        .navigationBarTitleDisplayMode(.large)
-        .refreshable { await refreshAllFeeds() }
-        .navigationDestination(for: HomeEpisodeRoute.self) { route in
-            EpisodeDetailView(episodeID: route.episodeID)
-        }
+        content
+            .navigationTitle("Today")
+            .navigationBarTitleDisplayMode(.large)
+            .refreshable { await refreshAllFeeds() }
+            .navigationDestination(for: HomeEpisodeRoute.self) { route in
+                EpisodeDetailView(episodeID: route.episodeID)
+            }
+            .navigationDestination(item: $voiceOverDetailRoute) { route in
+                EpisodeDetailView(episodeID: route.episodeID)
+            }
     }
 
     // MARK: - Content
@@ -40,74 +45,96 @@ struct HomeView: View {
         let recent = store.recentEpisodes(limit: 30)
         let hasAnyEpisode = !(inProgress.isEmpty && recent.isEmpty)
 
-        // Always wrap in ScrollView so `.refreshable` attaches in every state,
-        // including the "subscribed but no episodes yet" pre-first-fetch case
-        // where the user most needs to pull down.
-        ScrollView {
-            if !hasAnyEpisode {
-                emptyState
-                    .frame(minHeight: 480)
-            } else {
-                LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.lg, pinnedViews: []) {
-                    if !inProgress.isEmpty {
-                        continueListeningSection(inProgress)
-                    }
-                    if !recent.isEmpty {
-                        recentSection(recent)
-                    }
-                    Color.clear.frame(height: AppTheme.Spacing.lg)
-                }
-                .padding(.top, AppTheme.Spacing.sm)
+        if !hasAnyEpisode {
+            // Wrap the empty state in a ScrollView so `.refreshable` still
+            // attaches in the "subscribed but no episodes yet" case where the
+            // user most needs to pull down.
+            ScrollView {
+                emptyState.frame(minHeight: 480)
             }
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        } else {
+            List {
+                if !inProgress.isEmpty {
+                    continueListeningRow(inProgress)
+                }
+                if !recent.isEmpty {
+                    recentSection(recent)
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
         }
     }
 
     // MARK: - Continue listening rail
 
-    private func continueListeningSection(_ episodes: [Episode]) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            sectionHeader("Continue listening")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-                    ForEach(episodes) { episode in
-                        HomeContinueListeningCard(
-                            episode: episode,
-                            subscription: store.subscription(id: episode.subscriptionID),
-                            onPlay: { playEpisode(episode) }
-                        )
+    private func continueListeningRow(_ episodes: [Episode]) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                sectionHeader("Continue listening")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+                        ForEach(episodes) { episode in
+                            HomeContinueListeningCard(
+                                episode: episode,
+                                subscription: store.subscription(id: episode.subscriptionID),
+                                onPlay: { playEpisode(episode) },
+                                voiceOverDetailRoute: $voiceOverDetailRoute
+                            )
+                        }
                     }
+                    .padding(.horizontal, AppTheme.Spacing.md)
                 }
-                .padding(.horizontal, AppTheme.Spacing.md)
             }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .padding(.top, AppTheme.Spacing.sm)
         }
     }
 
     // MARK: - Recent section
 
+    @ViewBuilder
     private func recentSection(_ episodes: [Episode]) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+        Section {
             sectionHeader("New episodes")
-            VStack(spacing: 0) {
-                ForEach(Array(episodes.enumerated()), id: \.element.id) { index, episode in
-                    HomeRecentEpisodeRow(
-                        episode: episode,
-                        subscription: store.subscription(id: episode.subscriptionID),
-                        onPlay: { playEpisode(episode) },
-                        onMarkPlayed: { markPlayed(episode) }
-                    )
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    if index < episodes.count - 1 {
-                        Divider()
-                            .padding(.leading, AppTheme.Spacing.md + 56 + AppTheme.Spacing.md)
-                    }
+                .listRowInsets(EdgeInsets(
+                    top: AppTheme.Spacing.sm,
+                    leading: 0,
+                    bottom: AppTheme.Spacing.xs,
+                    trailing: 0
+                ))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+            ForEach(episodes) { episode in
+                HomeRecentEpisodeRow(
+                    episode: episode,
+                    subscription: store.subscription(id: episode.subscriptionID),
+                    onPlay: { playEpisode(episode) },
+                    voiceOverDetailRoute: $voiceOverDetailRoute
+                )
+                .listRowInsets(EdgeInsets(
+                    top: AppTheme.Spacing.xs,
+                    leading: AppTheme.Spacing.md,
+                    bottom: AppTheme.Spacing.xs,
+                    trailing: AppTheme.Spacing.md
+                ))
+                // Hairline separator between rows — replaces the manual
+                // `Divider()` from the previous LazyVStack layout.
+                .listRowSeparator(.visible)
+                .listRowSeparatorTint(AppTheme.Tint.hairline)
+                .listRowBackground(Color.clear)
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    EpisodeRowLeadingSwipeAction(episode: episode, store: store)
+                }
+                .swipeActions(edge: .trailing) {
+                    EpisodeRowTrailingSwipeAction(episode: episode, store: store)
                 }
             }
-            .padding(.vertical, AppTheme.Spacing.xs)
-            .background(
-                Color(.secondarySystemBackground),
-                in: RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-            )
-            .padding(.horizontal, AppTheme.Spacing.md)
         }
     }
 
@@ -152,11 +179,6 @@ struct HomeView: View {
         Haptics.medium()
         playback.setEpisode(episode)
         playback.play()
-    }
-
-    private func markPlayed(_ episode: Episode) {
-        Haptics.itemComplete()
-        store.markEpisodePlayed(episode.id)
     }
 
     // MARK: - Refresh

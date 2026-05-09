@@ -6,11 +6,18 @@ import SwiftUI
 ///
 /// Shows artwork, episode title, show name, and a thin progress bar driven by
 /// `episode.playbackPosition / episode.duration`. Tapping the card resumes
-/// playback via the env-injected playback state.
+/// playback via the env-injected playback state. Long-press surfaces the
+/// shared episode menu (mark played, download, share, open details).
 struct HomeContinueListeningCard: View {
     let episode: Episode
     let subscription: PodcastSubscription?
     let onPlay: () -> Void
+    /// Bound by `HomeView` so the VoiceOver "Open episode details" custom
+    /// action can drive `.navigationDestination(item:)` consistently with the
+    /// recent-episodes list below.
+    @Binding var voiceOverDetailRoute: HomeEpisodeRoute?
+
+    @Environment(AppStateStore.self) private var store
 
     var body: some View {
         Button(action: onPlay) {
@@ -28,9 +35,25 @@ struct HomeContinueListeningCard: View {
             .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            EpisodeRowContextMenu(
+                episode: episode,
+                store: store,
+                openDetailsRoute: HomeEpisodeRoute(episodeID: episode.id)
+            )
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isButton)
+        .accessibilityActions {
+            EpisodeRowAccessibilityActions(
+                episode: episode,
+                store: store,
+                onOpenDetails: {
+                    voiceOverDetailRoute = HomeEpisodeRoute(episodeID: episode.id)
+                }
+            )
+        }
     }
 
     // MARK: - Subviews
