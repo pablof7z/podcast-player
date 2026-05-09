@@ -30,6 +30,9 @@ struct RootView: View {
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var showSettings = false
+    /// Sparkles toolbar shortcut presents the agent chat as a dismissible
+    /// sheet — distinct from the dedicated Ask tab.
+    @State private var showAgentChat = false
     @State private var lastShakeTime: Date = .distantPast
     /// Drives a Spotlight-continuation sheet for a note or memory.
     @State private var spotlightSheet: SpotlightIndexer.DeepLink?
@@ -56,6 +59,20 @@ struct RootView: View {
             }
             .sheet(isPresented: $showSettings) {
                 NavigationStack { SettingsView() }
+            }
+            .sheet(isPresented: $showAgentChat) {
+                NavigationStack {
+                    AgentChatView()
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button("Done") {
+                                    Haptics.selection()
+                                    showAgentChat = false
+                                }
+                            }
+                        }
+                }
+                .environment(mockPlaybackState)
             }
             .sheet(item: Binding(
                 get: { spotlightSheet.map(IdentifiedSpotlightLink.init) },
@@ -138,7 +155,7 @@ struct RootView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    selectedTab = .ask
+                    showAgentChat = true
                 } label: {
                     Image(systemName: "sparkles")
                 }
