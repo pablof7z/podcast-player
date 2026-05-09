@@ -4,10 +4,36 @@ import XCTest
 @MainActor
 final class AppTests: XCTestCase {
 
+    // MARK: - Per-test isolated storage
+    //
+    // Every test gets a fresh `AppStateStore` over a unique in-memory
+    // `UserDefaults` suite (see `AppStateTestSupport`). This keeps the
+    // production App Group suite (`group.com.podcastr.app`) clean — running
+    // the test target used to leak fixture data ("Test Show", "Episode e1")
+    // into the real app's persisted state.
+
+    private var suiteName: String!
+    private var store: AppStateStore!
+
+    override func setUp() async throws {
+        try await super.setUp()
+        let made = await AppStateTestSupport.makeIsolatedStore()
+        suiteName = made.suiteName
+        store = made.store
+    }
+
+    override func tearDown() async throws {
+        if let suiteName {
+            AppStateTestSupport.disposeIsolatedSuite(suiteName)
+        }
+        store = nil
+        suiteName = nil
+        try await super.tearDown()
+    }
+
     // MARK: - Subscriptions
 
     func testAddSubscriptionAcceptsNewFeed() throws {
-        let store = AppStateStore()
         let initialCount = store.state.subscriptions.count
 
         let sub = makeSubscription(title: "Test Show")
@@ -19,7 +45,6 @@ final class AppTests: XCTestCase {
     }
 
     func testAddSubscriptionRejectsDuplicateFeedURL() throws {
-        let store = AppStateStore()
         // Use a UUID-unique URL so prior persisted state can't collide.
         let url = URL(string: "https://example.com/\(UUID().uuidString).xml")!
 
@@ -30,7 +55,6 @@ final class AppTests: XCTestCase {
     }
 
     func testRemoveSubscriptionAlsoRemovesItsEpisodes() throws {
-        let store = AppStateStore()
         let sub = makeSubscription(title: "Drop Me \(UUID().uuidString)")
         store.addSubscription(sub)
 
@@ -38,9 +62,9 @@ final class AppTests: XCTestCase {
         let ep2 = makeEpisode(subscriptionID: sub.id, guid: "drop-\(UUID().uuidString)")
         store.upsertEpisodes([ep1, ep2], forSubscription: sub.id)
 
-        // Assert against this subscription's episodes only — the live
-        // AppStateStore loads persisted state from prior test runs, so global
-        // counts are contaminated.
+        // Assert against this subscription's episodes only — keeping the
+        // narrower scope makes the intent obvious even though the isolated
+        // suite means the global episode count would also be 2.
         XCTAssertEqual(store.episodes(forSubscription: sub.id).count, 2)
 
         store.removeSubscription(sub.id)
@@ -50,7 +74,6 @@ final class AppTests: XCTestCase {
     }
 
     func testSetSubscriptionNotificationsToggle() throws {
-        let store = AppStateStore()
         let sub = makeSubscription()
         store.addSubscription(sub)
 
@@ -64,7 +87,6 @@ final class AppTests: XCTestCase {
     // MARK: - Episodes
 
     func testSetEpisodePlaybackPosition() throws {
-        let store = AppStateStore()
         let sub = makeSubscription()
         store.addSubscription(sub)
         let ep = makeEpisode(subscriptionID: sub.id, guid: "e1")
@@ -79,7 +101,6 @@ final class AppTests: XCTestCase {
     // MARK: - Friends
 
     func testAddFriend() throws {
-        let store = AppStateStore()
         let friend = store.addFriend(displayName: "Alice", identifier: "alice@example.com")
 
         XCTAssertEqual(friend.displayName, "Alice")
@@ -88,7 +109,6 @@ final class AppTests: XCTestCase {
     }
 
     func testUpdateFriendDisplayName() throws {
-        let store = AppStateStore()
         let friend = store.addFriend(displayName: "Bob", identifier: "bob_id")
 
         store.updateFriendDisplayName(friend.id, newName: "Robert")
@@ -97,7 +117,6 @@ final class AppTests: XCTestCase {
     }
 
     func testRemoveFriend() throws {
-        let store = AppStateStore()
         let friend = store.addFriend(displayName: "Charlie", identifier: "charlie_id")
 
         store.removeFriend(friend.id)
@@ -198,6 +217,28 @@ final class AppTests: XCTestCase {
         // Subscription should still appear, but the 30-day-old episode
         // shouldn't surface in the 7-day recent window.
         XCTAssertFalse(prompt.contains("Old episode title that is unique"))
+    }
+
+    // MARK: - Persistence isolation
+
+    /// Regression test for the test-leak bug: writing through an isolated
+    /// store must NOT mutate the production App Group state.
+    func testIsolatedStoreDoesNotTouchSharedAppGroupSuite() throws {
+        let sentinelKey = "podcastr.tests.sharedSuiteSnapshot"
+        let shared = Persistence.appGroupDefaults
+        // Snapshot whatever the production suite currently holds.
+        let before = shared.data(forKey: "podcastr.state.v1")
+        shared.set(before, forKey: sentinelKey)
+
+        // Make a noisy mutation through the isolated store.
+        let sub = makeSubscription(title: "Leak Canary \(UUID().uuidString)")
+        XCTAssertTrue(store.addSubscription(sub))
+
+        // The production suite must be byte-identical to the snapshot.
+        let after = shared.data(forKey: "podcastr.state.v1")
+        XCTAssertEqual(before, after, "Test mutation leaked into the shared App Group suite.")
+        // Don't leave the sentinel behind.
+        shared.removeObject(forKey: sentinelKey)
     }
 
     // MARK: - Settings

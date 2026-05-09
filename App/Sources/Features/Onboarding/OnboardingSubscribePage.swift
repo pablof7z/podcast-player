@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 // MARK: - OnboardingSubscribePage
 //
@@ -11,8 +12,14 @@ import SwiftUI
 // require an action.
 
 struct OnboardingSubscribePage: View {
+
+    nonisolated private static let logger = Logger.app("OnboardingSubscribe")
+
     /// Closure invoked once a subscription has been added so the parent can
-    /// advance the flow. Failures stay inline; success drives navigation.
+    /// react (e.g. flip a "has subscribed" flag that re-labels the primary
+    /// button). Failures stay inline; the page does NOT auto-navigate on
+    /// success — the user needs to see the row flip to a checkmark first,
+    /// otherwise the tap reads as a no-op.
     var onSubscribed: (PodcastSubscription) -> Void
 
     /// Curated, vendor-agnostic starter shows. Every URL points at a public
@@ -209,11 +216,26 @@ struct OnboardingSubscribePage: View {
         do {
             let added = try await service.addSubscription(feedURLString: suggestion.feed)
             Haptics.success()
+            // Sanity check the subscription is actually persisted — if a
+            // future regression starts losing writes, we'd rather log than
+            // silently flip the checkmark.
+            if let url = URL(string: suggestion.feed),
+               store.subscription(feedURL: url) == nil {
+                Self.logger.error(
+                    "Subscription \(suggestion.title, privacy: .public) reported success but was not found in store after add"
+                )
+            }
             onSubscribed(added)
         } catch let addError as SubscriptionService.AddError {
+            Self.logger.error(
+                "Failed to subscribe to \(suggestion.title, privacy: .public) (\(suggestion.feed, privacy: .public)): \(addError.localizedDescription, privacy: .public)"
+            )
             errorMessage = addError.localizedDescription
             Haptics.warning()
         } catch {
+            Self.logger.error(
+                "Unexpected error subscribing to \(suggestion.title, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
             errorMessage = error.localizedDescription
             Haptics.warning()
         }
@@ -232,9 +254,15 @@ struct OnboardingSubscribePage: View {
             feedURL = ""
             onSubscribed(added)
         } catch let addError as SubscriptionService.AddError {
+            Self.logger.error(
+                "Failed to subscribe to typed URL \(trimmed, privacy: .public): \(addError.localizedDescription, privacy: .public)"
+            )
             errorMessage = addError.localizedDescription
             Haptics.warning()
         } catch {
+            Self.logger.error(
+                "Unexpected error subscribing to typed URL \(trimmed, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
             errorMessage = error.localizedDescription
             Haptics.warning()
         }

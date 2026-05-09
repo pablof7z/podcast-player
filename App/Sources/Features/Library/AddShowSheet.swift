@@ -45,7 +45,7 @@ struct AddShowSheet: View {
                     case .search:
                         DiscoverSearchForm(store: store, onAdded: handleAdded)
                     case .url:
-                        AddByURLForm(store: store, onAdded: handleAdded)
+                        AddByURLForm(store: store, onAdded: handleAddedFromURL)
                     case .opml:
                         OPMLImportSheet(store: store, onDismiss: onDismiss)
                             .padding(.top, -AppTheme.Spacing.md)
@@ -76,6 +76,18 @@ struct AddShowSheet: View {
     }
 
     private func handleAdded(_ subscription: PodcastSubscription) {
+        // Intentionally NOT auto-dismissing here. The Search segment lets
+        // users add multiple shows in one sitting (and we want them to
+        // *see* the row flip to a green checkmark — auto-dismiss made the
+        // tap read as a no-op). The "From URL" segment, by contrast, is
+        // single-shot, so it dismisses via its own success path.
+        Haptics.success()
+    }
+
+    /// Single-shot success path for the From-URL segment. Closes the sheet
+    /// because that flow always adds exactly one feed at a time and there
+    /// is no list-of-rows to re-render with a checkmark.
+    private func handleAddedFromURL(_ subscription: PodcastSubscription) {
         Haptics.success()
         onDismiss()
     }

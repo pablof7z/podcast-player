@@ -1,4 +1,5 @@
 import SwiftUI
+import os.log
 
 // MARK: - DiscoverSearchForm
 
@@ -7,12 +8,20 @@ import SwiftUI
 /// ships. Tapping a result calls into `SubscriptionService.addSubscription`
 /// (same path as the From-URL form, plus the OPML import).
 ///
+/// Tap targets:
+///   - The whole row body subscribes (single tap anywhere on the cell).
+///   - The trailing ⊕ button does the same thing (and acts as the
+///     accessibility action target).
+///
 /// **State surfaces:**
 ///   - empty (no query yet)    — calm prompt
 ///   - searching                — inline spinner
 ///   - has results              — list of `DiscoverResultRow`
-///   - error                    — inline label above results
+///   - search-level error       — inline label above results
+///   - per-row subscribe error  — red ⚠ icon on the row, tap to expand
 struct DiscoverSearchForm: View {
+
+    nonisolated private static let logger = Logger.app("AddShowSearch")
 
     let store: AppStateStore
     let onAdded: (PodcastSubscription) -> Void
@@ -27,8 +36,14 @@ struct DiscoverSearchForm: View {
     @State private var query: String = ""
     @State private var isSearching: Bool = false
     @State private var results: [ITunesSearchClient.Result] = []
-    @State private var error: String?
+    @State private var searchError: String?
     @State private var subscribingID: Int?
+    /// Per-row subscribe failure messages, keyed by `collectionId`. Cleared
+    /// when the user taps a fresh attempt on the same row.
+    @State private var rowErrors: [Int: String] = [:]
+    /// Rows whose error caption is currently expanded. Toggling the ⚠
+    /// chip adds/removes the row's id here.
+    @State private var expandedErrorIDs: Set<Int> = []
     @State private var searchTask: Task<Void, Never>?
 
     /// Trending podcasts shown when the query is empty — fetched once
@@ -43,8 +58,8 @@ struct DiscoverSearchForm: View {
         VStack(alignment: .leading, spacing: 0) {
             searchField
 
-            if let error {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+            if let searchError {
+                Label(searchError, systemImage: "exclamationmark.triangle.fill")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.red)
                     .padding(.horizontal, AppTheme.Spacing.lg)
@@ -85,7 +100,9 @@ struct DiscoverSearchForm: View {
                 Button {
                     query = ""
                     results = []
-                    error = nil
+                    searchError = nil
+                    rowErrors.removeAll()
+                    expandedErrorIDs.removeAll()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
@@ -187,7 +204,10 @@ struct DiscoverSearchForm: View {
                         result: result,
                         isSubscribing: subscribingID == result.collectionId,
                         isAlreadySubscribed: isAlreadySubscribed(result),
-                        onSubscribe: { Task { await subscribe(to: result) } }
+                        rowError: rowErrors[result.collectionId],
+                        isErrorExpanded: expandedErrorIDs.contains(result.collectionId),
+                        onSubscribe: { Task { await subscribe(to: result) } },
+                        onToggleErrorExpansion: { toggleErrorExpansion(for: result.collectionId) }
                     )
                     .padding(.horizontal, AppTheme.Spacing.lg)
                     Divider().padding(.leading, AppTheme.Spacing.lg + 64 + AppTheme.Spacing.md)
@@ -203,6 +223,14 @@ struct DiscoverSearchForm: View {
     private func isAlreadySubscribed(_ result: ITunesSearchClient.Result) -> Bool {
         guard let url = result.feedURL else { return false }
         return store.subscription(feedURL: url) != nil
+    }
+
+    private func toggleErrorExpansion(for id: Int) {
+        if expandedErrorIDs.contains(id) {
+            expandedErrorIDs.remove(id)
+        } else {
+            expandedErrorIDs.insert(id)
+        }
     }
 
     /// Submit-handler (return key on the keyboard). Skips the debounce so
@@ -222,7 +250,7 @@ struct DiscoverSearchForm: View {
         searchTask?.cancel()
         if trimmed.isEmpty {
             results = []
-            error = nil
+            searchError = nil
             isSearching = false
             return
         }
@@ -236,15 +264,22 @@ struct DiscoverSearchForm: View {
 
     private func performSearch(_ term: String) async {
         isSearching = true
-        error = nil
+        searchError = nil
         defer { isSearching = false }
         do {
             let fetched = try await ITunesSearchClient.search(term)
             guard !Task.isCancelled else { return }
             results = fetched
+            // Clear stale per-row errors that don't apply to this result set.
+            let fetchedIDs = Set(fetched.map(\.collectionId))
+            rowErrors = rowErrors.filter { fetchedIDs.contains($0.key) }
+            expandedErrorIDs = expandedErrorIDs.filter { fetchedIDs.contains($0) }
         } catch {
             guard !Task.isCancelled else { return }
-            self.error = error.localizedDescription
+            Self.logger.error(
+                "iTunes search failed for term \(term, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            self.searchError = error.localizedDescription
             results = []
         }
     }
@@ -260,16 +295,34 @@ struct DiscoverSearchForm: View {
 
     private func subscribe(to result: ITunesSearchClient.Result) async {
         guard let feedURL = result.feedURL else {
-            error = "This show has no public feed URL."
+            // No feedUrl in the iTunes payload — surface as a per-row error
+            // so the user understands why this specific show won't subscribe.
+            let message = "This show has no public feed URL."
+            Self.logger.error(
+                "iTunes result \(result.collectionName, privacy: .public) (\(result.collectionId)) has no feedUrl"
+            )
+            rowErrors[result.collectionId] = message
             return
         }
+        // Eager spinner so the tap registers visually even before the
+        // network round-trip completes.
         subscribingID = result.collectionId
+        rowErrors.removeValue(forKey: result.collectionId)
+        expandedErrorIDs.remove(result.collectionId)
         defer { subscribingID = nil }
 
         let service = SubscriptionService(store: store)
         do {
             let added = try await service.addSubscription(feedURLString: feedURL.absoluteString)
+            // Sanity check the write actually landed.
+            if store.subscription(feedURL: feedURL) == nil {
+                Self.logger.error(
+                    "Subscription \(result.collectionName, privacy: .public) reported success but is missing from store"
+                )
+            }
             Haptics.success()
+            // NOTE: parent `AddShowSheet` no longer auto-dismisses, so the
+            // user sees this row's checkmark and can keep adding shows.
             onAdded(added)
         } catch let addError as SubscriptionService.AddError {
             // "Already subscribed" is success-like — the row will just flip
@@ -278,112 +331,17 @@ struct DiscoverSearchForm: View {
                 Haptics.light()
                 return
             }
-            self.error = addError.localizedDescription
+            Self.logger.error(
+                "Failed to subscribe to \(result.collectionName, privacy: .public) at \(feedURL.absoluteString, privacy: .public): \(addError.localizedDescription, privacy: .public)"
+            )
+            rowErrors[result.collectionId] = addError.localizedDescription
             Haptics.warning()
         } catch {
-            self.error = error.localizedDescription
+            Self.logger.error(
+                "Unexpected error subscribing to \(result.collectionName, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            rowErrors[result.collectionId] = error.localizedDescription
             Haptics.warning()
         }
-    }
-}
-
-// MARK: - DiscoverResultRow
-
-/// Row in the directory search results. Artwork left, title + author + meta
-/// in the middle, subscribe button right. Replaces the trailing button with
-/// a check when the user is already subscribed.
-struct DiscoverResultRow: View {
-
-    let result: ITunesSearchClient.Result
-    let isSubscribing: Bool
-    let isAlreadySubscribed: Bool
-    let onSubscribe: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-            artwork
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(result.collectionName)
-                    .font(AppTheme.Typography.headline)
-                    .lineLimit(2)
-                if let artist = result.artistName, !artist.isEmpty {
-                    Text(artist)
-                        .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                metaRow
-                    .padding(.top, 2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            subscribeButton
-                .padding(.top, 2)
-        }
-        .padding(.vertical, AppTheme.Spacing.sm)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var artwork: some View {
-        AsyncImage(url: result.artworkURL) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().aspectRatio(contentMode: .fill)
-            case .empty, .failure:
-                ZStack {
-                    Color(.tertiarySystemFill)
-                    Image(systemName: "waveform")
-                        .foregroundStyle(.secondary)
-                }
-            @unknown default:
-                Color(.tertiarySystemFill)
-            }
-        }
-        .frame(width: 64, height: 64)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous))
-    }
-
-    @ViewBuilder
-    private var metaRow: some View {
-        let bits: [String] = {
-            var parts: [String] = []
-            if let g = result.primaryGenreName, !g.isEmpty { parts.append(g) }
-            if let count = result.trackCount, count > 0 {
-                parts.append("\(count) episode\(count == 1 ? "" : "s")")
-            }
-            return parts
-        }()
-        if !bits.isEmpty {
-            Text(bits.joined(separator: " · "))
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-    }
-
-    private var subscribeButton: some View {
-        Button(action: onSubscribe) {
-            Group {
-                if isSubscribing {
-                    ProgressView().controlSize(.small)
-                } else if isAlreadySubscribed {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.tint)
-                }
-            }
-            .font(.title3)
-            .frame(width: 32, height: 32)
-        }
-        .buttonStyle(.plain)
-        .disabled(isSubscribing || isAlreadySubscribed)
-        .accessibilityLabel(
-            isAlreadySubscribed
-                ? "Already subscribed to \(result.collectionName)"
-                : "Subscribe to \(result.collectionName)"
-        )
     }
 }
