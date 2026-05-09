@@ -11,22 +11,22 @@ import XCTest
 @MainActor
 final class EpisodePlayedStateTests: XCTestCase {
 
-    private var suiteName: String!
+    private var fileURL: URL!
     private var store: AppStateStore!
 
     override func setUp() async throws {
         try await super.setUp()
-        let made = await AppStateTestSupport.makeIsolatedStore()
-        suiteName = made.suiteName
+        let made = AppStateTestSupport.makeIsolatedStore()
+        fileURL = made.fileURL
         store = made.store
     }
 
     override func tearDown() async throws {
-        if let suiteName {
-            AppStateTestSupport.disposeIsolatedSuite(suiteName)
+        if let fileURL {
+            AppStateTestSupport.disposeIsolatedStore(at: fileURL)
         }
         store = nil
-        suiteName = nil
+        fileURL = nil
         try await super.tearDown()
     }
 
