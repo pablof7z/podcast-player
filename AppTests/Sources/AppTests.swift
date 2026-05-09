@@ -12,22 +12,22 @@ final class AppTests: XCTestCase {
     // the test target used to leak fixture data ("Test Show", "Episode e1")
     // into the real app's persisted state.
 
-    private var suiteName: String!
+    private var storeFileURL: URL!
     private var store: AppStateStore!
 
     override func setUp() async throws {
         try await super.setUp()
         let made = await AppStateTestSupport.makeIsolatedStore()
-        suiteName = made.suiteName
+        storeFileURL = made.fileURL
         store = made.store
     }
 
     override func tearDown() async throws {
-        if let suiteName {
-            AppStateTestSupport.disposeIsolatedSuite(suiteName)
+        if let storeFileURL {
+            AppStateTestSupport.disposeIsolatedStore(at: storeFileURL)
         }
         store = nil
-        suiteName = nil
+        storeFileURL = nil
         try await super.tearDown()
     }
 
@@ -222,23 +222,107 @@ final class AppTests: XCTestCase {
     // MARK: - Persistence isolation
 
     /// Regression test for the test-leak bug: writing through an isolated
-    /// store must NOT mutate the production App Group state.
-    func testIsolatedStoreDoesNotTouchSharedAppGroupSuite() throws {
-        let sentinelKey = "podcastr.tests.sharedSuiteSnapshot"
-        let shared = Persistence.appGroupDefaults
-        // Snapshot whatever the production suite currently holds.
-        let before = shared.data(forKey: "podcastr.state.v1")
-        shared.set(before, forKey: sentinelKey)
+    /// store must NOT mutate the production App Group state file.
+    func testIsolatedStoreDoesNotTouchSharedAppGroupContainer() throws {
+        let productionURL = Persistence.appGroupStateFileURL
+        // Snapshot whatever the production file currently holds (may be
+        // absent on a clean dev machine — `nil` is a valid baseline).
+        let before = try? Data(contentsOf: productionURL)
 
         // Make a noisy mutation through the isolated store.
         let sub = makeSubscription(title: "Leak Canary \(UUID().uuidString)")
         XCTAssertTrue(store.addSubscription(sub))
 
-        // The production suite must be byte-identical to the snapshot.
-        let after = shared.data(forKey: "podcastr.state.v1")
-        XCTAssertEqual(before, after, "Test mutation leaked into the shared App Group suite.")
-        // Don't leave the sentinel behind.
-        shared.removeObject(forKey: sentinelKey)
+        // The production file must be byte-identical to the snapshot.
+        let after = try? Data(contentsOf: productionURL)
+        XCTAssertEqual(before, after, "Test mutation leaked into the shared App Group state file.")
+    }
+
+    // MARK: - Persistence durability
+
+    /// Regression test for the silent-large-write loss bug: when the encoded
+    /// `AppState` exceeds a few MB (the practical `cfprefsd` ceiling, easily
+    /// hit by a real subscription's full episode list), the previous
+    /// `UserDefaults`-backed `Persistence` would commit the write to the
+    /// preferences plist on disk but the daemon refused to serve it back on
+    /// the next read — so a fresh process would decode an older, smaller
+    /// blob and lose any field added after the size crossover (most visibly
+    /// `hasCompletedOnboarding`).
+    ///
+    /// The fix: `Persistence` now writes to a file inside the App Group
+    /// container. This test pads `state.episodes` past 4 MB (well above the
+    /// historical failure threshold) and asserts the round-trip survives a
+    /// fresh `AppStateStore` constructed over the same backing file. If
+    /// anyone ever swaps the storage primitive back to a size-capped one,
+    /// this test will fail.
+    func testPersistenceRoundTripsLargeStateAcrossStoreInstances() async throws {
+        let sharedFileURL = AppStateTestSupport.uniqueTempFileURL()
+        defer { AppStateTestSupport.disposeIsolatedStore(at: sharedFileURL) }
+
+        // Build a state with enough fixture episodes to push the encoded
+        // blob past ~4 MB. Each episode carries a long synthetic
+        // `showNotes` string so we hit the threshold without needing
+        // thousands of distinct records.
+        do {
+            let made = await AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
+            let firstStore = made.store
+            let sub = makeSubscription(title: "Large State Show")
+            XCTAssertTrue(firstStore.addSubscription(sub))
+
+            let padding = String(repeating: "x", count: 4_096)
+            var episodes: [Episode] = []
+            episodes.reserveCapacity(1_500)
+            for i in 0..<1_500 {
+                var ep = makeEpisode(subscriptionID: sub.id, guid: "large-\(i)")
+                ep.description = padding
+                episodes.append(ep)
+            }
+            firstStore.upsertEpisodes(episodes, forSubscription: sub.id)
+
+            var settings = firstStore.state.settings
+            settings.hasCompletedOnboarding = true
+            firstStore.updateSettings(settings)
+
+            // Sanity: the encoded blob is at least the size that broke
+            // UserDefaults so the test actually exercises the failure mode.
+            let onDisk = try Data(contentsOf: sharedFileURL)
+            XCTAssertGreaterThan(
+                onDisk.count, 4 * 1024 * 1024,
+                "Test fixture is too small to exercise the large-state regression."
+            )
+        }
+
+        // Construct a fresh store over the same file and assert the
+        // post-onboarding flag survived along with the subscription.
+        let reopened = await AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
+        XCTAssertTrue(
+            reopened.store.state.settings.hasCompletedOnboarding,
+            "hasCompletedOnboarding did not survive a round-trip through Persistence."
+        )
+        XCTAssertEqual(reopened.store.state.subscriptions.count, 1)
+        XCTAssertEqual(reopened.store.state.episodes.count, 1_500)
+    }
+
+    /// Smaller-scale companion to the large-state regression: covers the
+    /// minimum invariant the original bug report described — set
+    /// `hasCompletedOnboarding`, dispose the store, recreate over the same
+    /// backing file, expect the flag to still be `true`. Kept as a separate
+    /// test so a future failure is easy to triage (small case fails ⇒
+    /// general persistence is broken; only the large case fails ⇒ size
+    /// regression).
+    func testHasCompletedOnboardingPersistsAcrossStoreInstances() async throws {
+        let sharedFileURL = AppStateTestSupport.uniqueTempFileURL()
+        defer { AppStateTestSupport.disposeIsolatedStore(at: sharedFileURL) }
+
+        do {
+            let made = await AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
+            var settings = made.store.state.settings
+            settings.hasCompletedOnboarding = true
+            made.store.updateSettings(settings)
+        }
+
+        let reopened = await AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
+        XCTAssertTrue(reopened.store.state.settings.hasCompletedOnboarding)
     }
 
     // MARK: - Settings
