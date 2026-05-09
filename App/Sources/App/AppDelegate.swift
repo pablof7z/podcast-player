@@ -25,6 +25,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // Bound Kingfisher's memory + disk caches so artwork doesn't grow
+        // unchecked. See KingfisherConfiguration for the rationale.
+        KingfisherConfiguration.configure()
         // Cold-launch path: UIKit hands the shortcut here. `RootView` reads
         // `pendingShortcutURL` on `.onAppear` and routes via DeepLinkHandler.
         if let shortcut = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem,
