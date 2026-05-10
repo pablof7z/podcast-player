@@ -54,7 +54,8 @@ struct PlayerQueueSheet: View {
                     state.clearQueue()
                 }
             } message: {
-                Text("All \(resolvedEpisodes.count) queued episodes will be removed. This cannot be undone.")
+                let n = resolvedEpisodes.count
+                Text("All \(n) queued episode\(n == 1 ? "" : "s") will be removed. This cannot be undone.")
             }
         }
         .presentationDetents([.medium, .large])
