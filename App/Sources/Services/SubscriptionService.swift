@@ -47,7 +47,7 @@ struct SubscriptionService {
             case .transport(let message):
                 return "Couldn't reach the feed: \(message)"
             case .http(let status):
-                return "The feed server returned HTTP \(status)."
+                return Self.humanizeHTTPStatus(status)
             case .parse(let message):
                 // The parse error already speaks in user-facing language
                 // (see `RSSParser.ParseError.errorDescription`). Don't
@@ -55,6 +55,29 @@ struct SubscriptionService {
                 // parse messages already explain the problem in full
                 // sentences.
                 return message
+            }
+        }
+
+        /// Maps an HTTP status into the kind of plain-English sentence the
+        /// rest of the error surface uses — users don't think in 404/500.
+        /// Keeps the raw code as a parenthetical so support diagnostics
+        /// still have a fingerprint to grep for.
+        private static func humanizeHTTPStatus(_ status: Int) -> String {
+            switch status {
+            case 401, 403:
+                return "This feed needs sign-in or isn't public — Podcastr can't subscribe to it."
+            case 404, 410:
+                return "We couldn't find a feed at that URL. Double-check it and try again."
+            case 408, 504:
+                return "The feed server took too long to respond. Try again in a moment."
+            case 429:
+                return "The feed server is rate-limiting requests right now. Try again in a few minutes."
+            case 500..<600:
+                return "The feed server hit an error (HTTP \(status)). Try again later."
+            case 400..<500:
+                return "The feed server rejected the request (HTTP \(status))."
+            default:
+                return "The feed server returned an unexpected status (HTTP \(status))."
             }
         }
     }

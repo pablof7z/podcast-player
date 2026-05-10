@@ -45,19 +45,67 @@ final class SubscriptionAddErrorTests: XCTestCase {
         )
     }
 
-    func testHTTPStatusIncludesCode() {
+    func testHTTP404PromptsUserToCheckURL() {
+        // 404 is the most common case — paste a wrong URL, expect a
+        // hint that points at the URL itself, not the HTTP code.
         let error = SubscriptionService.AddError.http(404)
         XCTAssertEqual(
             error.errorDescription,
-            "The feed server returned HTTP 404."
+            "We couldn't find a feed at that URL. Double-check it and try again."
         )
     }
 
-    func testHTTPStatus500() {
+    func testHTTP410MatchesNotFoundCopy() {
+        // 410 Gone is "feed permanently moved or deleted" — same UX
+        // intent as 404 (the URL is dead). Lump them together.
+        let error = SubscriptionService.AddError.http(410)
+        XCTAssertEqual(
+            error.errorDescription,
+            "We couldn't find a feed at that URL. Double-check it and try again."
+        )
+    }
+
+    func testHTTP403FlagsAuthRequirement() {
+        let error = SubscriptionService.AddError.http(403)
+        XCTAssertEqual(
+            error.errorDescription,
+            "This feed needs sign-in or isn't public — Podcastr can't subscribe to it."
+        )
+    }
+
+    func testHTTP429SuggestsRetryLater() {
+        let error = SubscriptionService.AddError.http(429)
+        XCTAssertEqual(
+            error.errorDescription,
+            "The feed server is rate-limiting requests right now. Try again in a few minutes."
+        )
+    }
+
+    func testHTTP504TreatedAsTimeout() {
+        let error = SubscriptionService.AddError.http(504)
+        XCTAssertEqual(
+            error.errorDescription,
+            "The feed server took too long to respond. Try again in a moment."
+        )
+    }
+
+    func testHTTP500FlagsServerErrorWithDiagnosticCode() {
+        // Server-side 5xx — keep the raw code in parentheses so support
+        // can diagnose, but lead with plain English.
         let error = SubscriptionService.AddError.http(500)
         XCTAssertEqual(
             error.errorDescription,
-            "The feed server returned HTTP 500."
+            "The feed server hit an error (HTTP 500). Try again later."
+        )
+    }
+
+    func testHTTP418FallsThroughToGenericClientError() {
+        // 4xx that isn't one of our specific cases — generic copy with
+        // the raw code preserved.
+        let error = SubscriptionService.AddError.http(418)
+        XCTAssertEqual(
+            error.errorDescription,
+            "The feed server rejected the request (HTTP 418)."
         )
     }
 
