@@ -59,3 +59,13 @@ struct Clip: Codable, Sendable, Hashable, Identifiable {
     /// Wall-clock duration of the clip in seconds.
     var duration: TimeInterval { Double(endMs - startMs) / 1000 }
 }
+
+extension Clip {
+    /// Start time as seconds, convenient for `AVAsset` / `CMTime` math.
+    var startSeconds: TimeInterval { TimeInterval(startMs) / 1000.0 }
+    /// End time as seconds.
+    var endSeconds: TimeInterval { TimeInterval(endMs) / 1000.0 }
+    /// Span duration in seconds. Always non-negative. Mirrors `duration`
+    /// but exposes a non-negative guarantee for the share-target stack.
+    var durationSeconds: TimeInterval { max(0, endSeconds - startSeconds) }
+}

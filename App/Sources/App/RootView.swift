@@ -312,6 +312,16 @@ struct RootView: View {
             }
         case .subscription(let uuid):
             spotlightSheet = .subscription(uuid)
+        case .clip(let clipID):
+            // `podcastr://clip/<uuid>` — clip share. The clip store lives
+            // on the sister agent's branch (Clip composer); this branch
+            // only ships the parser + share-target plumbing. Once the
+            // store lands, look up the `Clip`, resolve `episodeID`, seek
+            // the playback engine to `startSeconds`, and surface the
+            // detail sheet (mirrors the `episodeByGUID` path above).
+            // Until then this is a no-op so the link round-trip is at
+            // least non-crashy when the share is opened in-app.
+            _ = clipID
         }
     }
 
