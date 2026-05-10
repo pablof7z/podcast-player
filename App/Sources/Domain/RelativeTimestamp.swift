@@ -27,8 +27,12 @@ enum RelativeTimestamp {
     /// - < 60 → "Xs ago"
     /// - < 3 600 → "Xm ago"
     /// - ≥ 3 600 → "Xh ago"
+    ///
+    /// Negative intervals (the timestamp is in the future — typically a
+    /// clock-skew artifact on imported content) collapse to "just now"
+    /// rather than rendering "-3s ago".
     static func compact(_ date: Date, now: Date = Date()) -> String {
-        let interval = now.timeIntervalSince(date)
+        let interval = max(0, now.timeIntervalSince(date))
         if interval < Threshold.justNow  { return "just now" }
         if interval < Threshold.minutes  { return "\(Int(interval))s ago" }
         if interval < Threshold.hours    { return "\(Int(interval / Threshold.minutes))m ago" }
@@ -36,31 +40,37 @@ enum RelativeTimestamp {
     }
 
     /// Extended style: "just now" for sub-minute recency, then minutes,
-    /// hours, days, and weeks. Falls back to an abbreviated absolute date
-    /// for content older than one week.
+    /// hours, days, weeks. Falls back to an abbreviated absolute date
+    /// for content older than four weeks.
     ///
     /// Thresholds (seconds):
     /// - < 60 → "just now"
     /// - < 3 600 → "Xm ago"
     /// - < 86 400 → "Xh ago"
     /// - < 604 800 → "Xd ago"
-    /// - ≥ 604 800 → abbreviated date + shortened time
+    /// - < 2 419 200 → "Xw ago"
+    /// - ≥ 2 419 200 → abbreviated date + shortened time
+    ///
+    /// Negative intervals collapse to "just now" — same rationale as
+    /// `compact(_:)`.
     static func extended(_ date: Date, now: Date = Date()) -> String {
-        let interval = now.timeIntervalSince(date)
+        let interval = max(0, now.timeIntervalSince(date))
         if interval < Threshold.minutes  { return "just now" }
         if interval < Threshold.hours    { return "\(Int(interval / Threshold.minutes))m ago" }
         if interval < Threshold.day      { return "\(Int(interval / Threshold.hours))h ago" }
         if interval < Threshold.week     { return "\(Int(interval / Threshold.day))d ago" }
+        if interval < Threshold.fourWeeks { return "\(Int(interval / Threshold.week))w ago" }
         return date.shortDateTime
     }
 
     // MARK: - Private
 
     private enum Threshold {
-        static let justNow: TimeInterval = 5
-        static let minutes: TimeInterval = 60
-        static let hours:   TimeInterval = 3_600
-        static let day:     TimeInterval = 86_400
-        static let week:    TimeInterval = 7 * 86_400
+        static let justNow:    TimeInterval = 5
+        static let minutes:    TimeInterval = 60
+        static let hours:      TimeInterval = 3_600
+        static let day:        TimeInterval = 86_400
+        static let week:       TimeInterval = 7 * 86_400
+        static let fourWeeks:  TimeInterval = 4 * 7 * 86_400
     }
 }
