@@ -10,6 +10,25 @@ enum FeedbackCategory: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var tagValue: String {
+        switch self {
+        case .bug: "bug"
+        case .featureRequest: "feature-request"
+        case .question: "question"
+        case .praise: "praise"
+        }
+    }
+
+    static func from(tags: [[String]]) -> FeedbackCategory {
+        let tagged = tags.first { tag in
+            tag.count >= 2 && (tag[0] == "t" || tag[0] == "category")
+        }?[1].lowercased()
+        guard let tagged else { return .bug }
+        return Self.allCases.first {
+            $0.tagValue == tagged || $0.rawValue.lowercased() == tagged
+        } ?? .bug
+    }
+
     var icon: String {
         switch self {
         case .bug: "ant.fill"
@@ -32,7 +51,9 @@ enum FeedbackCategory: String, Codable, CaseIterable, Identifiable {
 // MARK: - FeedbackThread
 
 struct FeedbackThread: Identifiable {
-    var id: UUID = UUID()
+    var id: String { eventID }
+    var eventID: String
+    var authorPubkey: String
     var category: FeedbackCategory
     var content: String
     var attachedImage: UIImage?
@@ -41,44 +62,132 @@ struct FeedbackThread: Identifiable {
     var statusLabel: String?
     var replies: [FeedbackReply] = []
     var createdAt: Date = Date()
+
+    init(
+        eventID: String = "local-\(UUID().uuidString)",
+        authorPubkey: String = "",
+        category: FeedbackCategory,
+        content: String,
+        attachedImage: UIImage? = nil,
+        title: String? = nil,
+        summary: String? = nil,
+        statusLabel: String? = nil,
+        replies: [FeedbackReply] = [],
+        createdAt: Date = Date()
+    ) {
+        self.eventID = eventID
+        self.authorPubkey = authorPubkey
+        self.category = category
+        self.content = content
+        self.attachedImage = attachedImage
+        self.title = title
+        self.summary = summary
+        self.statusLabel = statusLabel
+        self.replies = replies
+        self.createdAt = createdAt
+    }
+
+    init(
+        event: SignedNostrEvent,
+        replies: [SignedNostrEvent] = [],
+        metadata: FeedbackMetadata? = nil,
+        attachedImage: UIImage? = nil,
+        localPubkey: String? = nil
+    ) {
+        self.eventID = event.id
+        self.authorPubkey = event.pubkey
+        self.category = FeedbackCategory.from(tags: event.tags)
+        self.content = event.content
+        self.attachedImage = attachedImage
+        self.title = metadata?.title
+        self.summary = metadata?.summary
+        self.statusLabel = metadata?.statusLabel
+        self.replies = replies.map { FeedbackReply(event: $0, localPubkey: localPubkey) }
+        self.createdAt = Date(timeIntervalSince1970: TimeInterval(event.created_at))
+    }
 }
 
-extension FeedbackThread: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case id, category, content, title, summary, statusLabel, replies, createdAt
-        // attachedImage is intentionally excluded — UIImage is not Codable
-    }
+// MARK: - FeedbackMetadata
 
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(UUID.self, forKey: .id)
-        category = try c.decode(FeedbackCategory.self, forKey: .category)
-        content = try c.decode(String.self, forKey: .content)
-        title = try c.decodeIfPresent(String.self, forKey: .title)
-        summary = try c.decodeIfPresent(String.self, forKey: .summary)
-        statusLabel = try c.decodeIfPresent(String.self, forKey: .statusLabel)
-        replies = try c.decode([FeedbackReply].self, forKey: .replies)
-        createdAt = try c.decode(Date.self, forKey: .createdAt)
-    }
+struct FeedbackMetadata {
+    let createdAt: Int
+    let title: String?
+    let summary: String?
+    let statusLabel: String?
 
-    func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(id, forKey: .id)
-        try c.encode(category, forKey: .category)
-        try c.encode(content, forKey: .content)
-        try c.encodeIfPresent(title, forKey: .title)
-        try c.encodeIfPresent(summary, forKey: .summary)
-        try c.encodeIfPresent(statusLabel, forKey: .statusLabel)
-        try c.encode(replies, forKey: .replies)
-        try c.encode(createdAt, forKey: .createdAt)
+    init(event: SignedNostrEvent) {
+        createdAt = event.created_at
+
+        var title: String?
+        var summary: String?
+        var status: String?
+        for tag in event.tags where tag.count >= 2 {
+            switch tag[0] {
+            case "title":
+                title = title ?? tag[1]
+            case "summary":
+                summary = summary ?? tag[1]
+            case "status-label", "status_label", "status":
+                status = status ?? tag[1]
+            default:
+                break
+            }
+        }
+
+        if title == nil || summary == nil || status == nil,
+           let data = event.content.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            title = title ?? json["title"] as? String
+            summary = summary ?? json["summary"] as? String
+            status = status ?? json["status_label"] as? String ?? json["status"] as? String
+        }
+
+        self.title = title
+        self.summary = summary
+        self.statusLabel = status
     }
 }
 
 // MARK: - FeedbackReply
 
-struct FeedbackReply: Identifiable, Codable {
-    var id: UUID = UUID()
+struct FeedbackReply: Identifiable {
+    var id: String { eventID }
+    var eventID: String
+    var authorPubkey: String
     var content: String
     var isFromMe: Bool
     var createdAt: Date = Date()
+
+    init(event: SignedNostrEvent, localPubkey: String?) {
+        eventID = event.id
+        authorPubkey = event.pubkey
+        content = event.content
+        isFromMe = event.pubkey == localPubkey
+        createdAt = Date(timeIntervalSince1970: TimeInterval(event.created_at))
+    }
+}
+
+// MARK: - Nostr feedback helpers
+
+extension SignedNostrEvent {
+    var projectATags: [String] {
+        tags.compactMap { tag in
+            tag.count >= 2 && tag[0] == "a" ? tag[1] : nil
+        }
+    }
+
+    var eTagIDs: [String] {
+        tags.compactMap { tag in
+            tag.count >= 2 && tag[0] == "e" ? tag[1] : nil
+        }
+    }
+
+    var rootEventID: String? {
+        if let marked = tags.first(where: { tag in
+            tag.count >= 4 && tag[0] == "e" && tag[3] == "root"
+        }) {
+            return marked[1]
+        }
+        return eTagIDs.first
+    }
 }

@@ -19,7 +19,6 @@ import UniformTypeIdentifiers
 ///
 /// Each domain is fully replaced on every reindex, so soft-deleted records
 /// disappear from search automatically.
-@MainActor
 enum SpotlightIndexer {
     nonisolated private static let logger = Logger.app("SpotlightIndexer")
 

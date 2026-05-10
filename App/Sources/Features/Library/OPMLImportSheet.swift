@@ -351,12 +351,13 @@ struct OPMLImportSheet: View {
         var errors: [OPMLImportRowError] = []
         var imported = 0
         var skipped = 0
+        var fetched: [SubscriptionImportPayload] = []
         let service = SubscriptionService(store: store)
         withAnimation { phase = .progress(completed: 0, total: total, errors: errors) }
         for (index, entry) in entries.enumerated() {
             do {
-                if let _ = try await service.adopt(opmlEntry: entry) {
-                    imported += 1
+                if let payload = try await service.fetchForAdoption(opmlEntry: entry) {
+                    fetched.append(payload)
                 } else {
                     skipped += 1
                 }
@@ -377,6 +378,9 @@ struct OPMLImportSheet: View {
                 phase = .progress(completed: index + 1, total: total, errors: errors)
             }
         }
+        let result = store.addSubscriptions(fetched)
+        imported = result.imported
+        skipped += result.skipped
         Haptics.success()
         withAnimation {
             phase = .done(imported: imported, skipped: skipped, errors: errors)

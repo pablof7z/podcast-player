@@ -68,9 +68,13 @@ struct MiniPlayerView: View {
         // their own gestures, and limit the expand-on-tap target to the
         // non-button regions via `.contentShape` + `.onTapGesture` on the
         // background, not the whole stack.
+        //
+        // Progress line sits at the TOP, Overcast-style — a high-glance,
+        // always-visible read on how far through the episode the user is.
+        // Bottom placement reads as a divider rather than a meter.
         VStack(spacing: 0) {
-            content
             progressLine
+            content
         }
         .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
         .glassEffectID("player.surface", in: glassNamespace)
@@ -90,17 +94,19 @@ struct MiniPlayerView: View {
     /// Same Button-inside-Button trap as `expandedBody`: the play/pause icon
     /// has to remain a real, separately-tappable Button. Use a non-Button
     /// tap surface for the expand-on-tap action.
+    ///
+    /// Title is included alongside the artwork — without it, the pill reads
+    /// as a generic glass slab and the underlying scroll content shows
+    /// through the translucent background, making it look broken. Apple
+    /// Music's pill omits the title because their artwork conveys identity
+    /// strongly; podcast covers don't, so we need text.
     private var inlineBody: some View {
         HStack(spacing: AppTheme.Spacing.xs) {
             inlineArtwork
                 .glassEffectID("player.artwork", in: glassNamespace)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    Haptics.light()
-                    onTap()
-                }
 
-            Spacer(minLength: 0)
+            inlineTitle
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Button {
                 state.togglePlayPause()
@@ -115,6 +121,22 @@ struct MiniPlayerView: View {
             .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
         .padding(.horizontal, AppTheme.Spacing.xs)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            Haptics.light()
+            onTap()
+        }
+    }
+
+    @ViewBuilder
+    private var inlineTitle: some View {
+        if let episode = state.episode {
+            Text(episode.title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
     }
 
     private var inlineArtwork: some View {

@@ -31,10 +31,20 @@ import os.log
 final class Persistence: Sendable {
 
     /// Shared, production-default instance writing to the App Group container.
-    static let shared = Persistence(fileURL: Persistence.appGroupStateFileURL)
+    static let shared = Persistence(
+        fileURL: Persistence.appGroupStateFileURL,
+        writeMode: .background
+    )
+
+    enum WriteMode: Sendable {
+        case immediate
+        case background
+    }
 
     /// File this instance reads from / writes to.
     let fileURL: URL
+    private let writeMode: WriteMode
+    private let backgroundWriter = PersistenceBackgroundWriter()
 
     /// Lock-protected count of successful `save(_:)` invocations. Production
     /// code never reads this; the per-second-write regression tests use it
@@ -43,8 +53,9 @@ final class Persistence: Sendable {
     /// the main actor.
     private let saveCounter = OSAllocatedUnfairLock<Int>(initialState: 0)
 
-    init(fileURL: URL) {
+    init(fileURL: URL, writeMode: WriteMode = .immediate) {
         self.fileURL = fileURL
+        self.writeMode = writeMode
     }
 
     /// Returns the number of times `save(_:)` has been called on this instance.
@@ -69,6 +80,18 @@ final class Persistence: Sendable {
     /// `.atomic` write would refuse to clobber on failure anyway) so a
     /// transient encoder bug can't drop the user's library.
     func save(_ state: AppState) {
+        switch writeMode {
+        case .immediate:
+            write(state)
+        case .background:
+            let writer = backgroundWriter
+            Task.detached(priority: .utility) { [state, writer] in
+                await writer.enqueue(state, persistence: self)
+            }
+        }
+    }
+
+    fileprivate func write(_ state: AppState) {
         let data: Data
         do {
             data = try Self.encoder.encode(state)
@@ -197,5 +220,27 @@ final class Persistence: Sendable {
     private func ensureParentDirectoryExists() throws {
         let parent = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+    }
+}
+
+private actor PersistenceBackgroundWriter {
+    private var pending: AppState?
+    private var isDraining = false
+
+    func enqueue(_ state: AppState, persistence: Persistence) {
+        pending = state
+        guard !isDraining else { return }
+        isDraining = true
+        Task { await drain(persistence: persistence) }
+    }
+
+    private func drain(persistence: Persistence) async {
+        while let state = pending {
+            pending = nil
+            await Task.detached(priority: .utility) {
+                persistence.write(state)
+            }.value
+        }
+        isDraining = false
     }
 }

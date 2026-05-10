@@ -241,7 +241,8 @@ struct FeedbackComposeView: View {
         try await store.publishThread(
             category: workflow.selectedCategory,
             content: workflow.draft.trimmed,
-            image: image
+            image: image,
+            identity: userIdentity
         )
         Haptics.success()
         workflow.phase = .idle

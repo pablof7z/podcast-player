@@ -21,6 +21,7 @@ struct FeedbackThreadDetailView: View {
 
     let thread: FeedbackThread
     let store: FeedbackStore
+    @Environment(UserIdentityStore.self) private var userIdentity
 
     @State private var replyDraft = ""
     @State private var isSending = false
@@ -109,7 +110,7 @@ struct FeedbackThreadDetailView: View {
                     // Root message bubble
                     FeedbackBubble(
                         content: currentThread.content,
-                        isFromMe: true,
+                        isFromMe: currentThread.authorPubkey == userIdentity.publicKeyHex,
                         createdAt: currentThread.createdAt
                     )
                     .id("root")
@@ -254,7 +255,7 @@ struct FeedbackThreadDetailView: View {
         errorMessage = nil
         let trimmed = replyDraft.trimmed
         do {
-            try await store.publishReply(content: trimmed, threadID: thread.id)
+            try await store.publishReply(content: trimmed, threadID: thread.id, identity: userIdentity)
             Haptics.success()
             replyDraft = ""
         } catch {

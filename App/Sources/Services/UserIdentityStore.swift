@@ -45,10 +45,13 @@ final class UserIdentityStore {
 
     private static let userKeyService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").user-identity"
     private static let userKeyAccount = "user-private-key-hex"
+    private static let userKeyOriginAccount = "user-private-key-origin"
+    private static let generatedProfileAccount = "generated-profile-published-pubkey"
     private static let nip46SessionService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-session"
     private static let nip46SessionAccount = "session-private-key-hex"
     private static let nip46MetaService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-meta"
     private static let nip46MetaAccount = "connection"
+    private static let generatedOrigin = "generated"
 
     // MARK: - Lifecycle
 
@@ -58,10 +61,10 @@ final class UserIdentityStore {
             if let hex = try KeychainStore.readString(service: Self.userKeyService, account: Self.userKeyAccount),
                !hex.isEmpty {
                 let pair = try NostrKeyPair(privateKeyHex: hex)
-                keyPair = pair
-                publicKeyHex = pair.publicKeyHex
-                signer = LocalKeySigner(keyPair: pair)
-                mode = .localKey
+                adoptLocal(pair)
+                if isGeneratedLocalKey {
+                    publishGeneratedProfileIfNeeded(pair: pair)
+                }
                 return
             }
         } catch {
@@ -73,6 +76,12 @@ final class UserIdentityStore {
             mode = .remoteSigner
             remoteSignerState = .reconnecting
             Task { await self.resumeRemote(meta: meta, sessionKeyPair: session) }
+        } else {
+            do {
+                try generateGeneratedKey()
+            } catch {
+                logger.error("UserIdentityStore.start failed to generate local key: \(error, privacy: .public)")
+            }
         }
     }
 
@@ -84,6 +93,8 @@ final class UserIdentityStore {
         do {
             let pair = try NostrKeyPair(nsec: trimmed)
             try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
+            clearRemoteConnectionState()
             adoptLocal(pair)
         } catch {
             loginError = "Invalid nsec — check the key and try again."
@@ -98,7 +109,10 @@ final class UserIdentityStore {
         do {
             let pair = try NostrKeyPair.generate()
             try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
+            clearRemoteConnectionState()
             adoptLocal(pair)
+            publishGeneratedProfileIfNeeded(pair: pair)
         } catch {
             loginError = "Failed to generate key — please try again."
             throw error
@@ -113,6 +127,8 @@ final class UserIdentityStore {
         } catch {
             logger.error("UserIdentityStore.clearIdentity failed: \(error, privacy: .public)")
         }
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.generatedProfileAccount)
         Task { await self.tearDownRemote() }
         try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
         try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
@@ -147,6 +163,8 @@ final class UserIdentityStore {
                 await self?.handleAuthChallenge(url: url)
             }
             try KeychainStore.saveString(sessionPair.privateKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
+            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
             let meta = RemoteMeta(
                 bunkerPubkeyHex: parsed.remotePubkeyHex,
                 relays: parsed.relays,
@@ -205,6 +223,114 @@ final class UserIdentityStore {
         signer = LocalKeySigner(keyPair: pair)
         mode = .localKey
         remoteSignerState = .idle
+    }
+
+    private var isGeneratedLocalKey: Bool {
+        (try? KeychainStore.readString(
+            service: Self.userKeyService,
+            account: Self.userKeyOriginAccount
+        )) == Self.generatedOrigin
+    }
+
+    private func generateGeneratedKey() throws {
+        let pair = try NostrKeyPair.generate()
+        try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+        try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
+        adoptLocal(pair)
+        publishGeneratedProfileIfNeeded(pair: pair)
+    }
+
+    private func clearRemoteConnectionState() {
+        if let remote = signer as? RemoteSigner {
+            Task { await remote.disconnect() }
+        }
+        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
+        remoteSignerState = .idle
+    }
+
+    private func publishGeneratedProfileIfNeeded(pair: NostrKeyPair) {
+        let alreadyPublished = try? KeychainStore.readString(
+            service: Self.userKeyService,
+            account: Self.generatedProfileAccount
+        )
+        guard alreadyPublished != pair.publicKeyHex else { return }
+        let pubkey = pair.publicKeyHex
+        let keyService = Self.userKeyService
+        let profileAccount = Self.generatedProfileAccount
+        let signer = LocalKeySigner(keyPair: pair)
+        let profile = Self.generatedProfile(pubkey: pubkey)
+        Task.detached {
+            guard let data = try? JSONSerialization.data(withJSONObject: profile, options: [.sortedKeys]),
+                  let content = String(data: data, encoding: .utf8) else { return }
+            let event = try await signer.sign(NostrEventDraft(kind: 0, content: content))
+            var published = false
+            for relayURL in FeedbackRelayClient.profileRelayURLs {
+                let client = FeedbackRelayClient(relayURL: relayURL)
+                do {
+                    try await client.publish(event, authSigner: signer)
+                    published = true
+                } catch {
+                    continue
+                }
+            }
+            if published {
+                try? KeychainStore.saveString(
+                    pubkey,
+                    service: keyService,
+                    account: profileAccount
+                )
+            }
+        }
+    }
+
+    private static func generatedProfile(pubkey: String) -> [String: String] {
+        let seed = String(pubkey.prefix(16))
+        let index = stableProfileIndex(seed)
+        let adjectives = ["Bright", "Quiet", "Swift", "Kind", "Clear", "North"]
+        let nouns = ["Signal", "Notebook", "Harbor", "Lantern", "Thread", "Field"]
+        let adjective = adjectives[index % adjectives.count]
+        let noun = nouns[(index / adjectives.count) % nouns.count]
+        return [
+            "name": "\(adjective.lowercased())-\(noun.lowercased())-\(pubkey.prefix(4))",
+            "display_name": "\(adjective) \(noun)",
+            "about": "Feedback identity generated by Podcastr.",
+            "picture": "https://api.dicebear.com/9.x/personas/svg?seed=\(seed)",
+        ]
+    }
+
+    private static func stableProfileIndex(_ seed: String) -> Int {
+        seed.utf8.reduce(0) { partial, byte in
+            (partial &* 31 &+ Int(byte)) & 0x7fffffff
+        }
+    }
+
+    // MARK: - Feedback publishing
+
+    func publishFeedbackNote(
+        category: FeedbackCategory,
+        body: String,
+        parentEventID: String?,
+        replyToPubkey: String?
+    ) async throws -> SignedNostrEvent {
+        if signer == nil {
+            try generateGeneratedKey()
+        }
+        guard let signer else { throw UserIdentityError.noIdentity }
+        var tags: [[String]] = [
+            ["a", FeedbackRelayClient.projectCoordinate],
+            ["t", category.tagValue],
+            ["-"],
+        ]
+        if let parentEventID {
+            tags.append(["e", parentEventID, "", "root"])
+        }
+        if let replyToPubkey {
+            tags.append(["p", replyToPubkey])
+        }
+        let event = try await signer.sign(NostrEventDraft(kind: 1, content: body.trimmed, tags: tags))
+        try await FeedbackRelayClient().publish(event, authSigner: signer)
+        return event
     }
 
     // MARK: - Private — remote
@@ -283,4 +409,15 @@ private struct RemoteMeta: Codable, Sendable {
     let secret: String?
     let permissions: [String]
     let userPubkeyHex: String
+}
+
+enum UserIdentityError: LocalizedError {
+    case noIdentity
+
+    var errorDescription: String? {
+        switch self {
+        case .noIdentity:
+            "No feedback identity is available."
+        }
+    }
 }

@@ -33,35 +33,7 @@ final class AppStateStore {
 
     var state: AppState {
         didSet {
-            // Episode projections are an O(N) view of `state.episodes` (unplayed
-            // counts per show, downloaded/transcribed presence sets, sorted
-            // episodes-per-show, in-progress + recent feeds). Library + Home
-            // SwiftUI bodies hammer these — without the cache, scrolling the
-            // 20-cell grid against 10k episodes runs 20×10k = 200k filter
-            // iterations *per scroll tick*. Recompute once on every episode
-            // change and let readers do an O(1) dict/Set lookup.
-            //
-            // The check uses the array reference identity-ish path: SwiftUI
-            // value-type arrays use COW, so element-wise equality on a 10k
-            // array would itself be O(N). Comparing `count` + the first/last
-            // pubDate is a cheap fingerprint that misses no realistic
-            // mutation surface (every writer goes through one of the
-            // dedicated methods, all of which change at least one of those).
-            // We additionally call `invalidateEpisodeProjections()` from
-            // every episode writer for correctness — this fingerprint is
-            // belt-and-suspenders for direct `state` reassignments
-            // (`clearAllData`, persistence reload).
-            if Self.episodesFingerprintChanged(oldValue.episodes, state.episodes) {
-                recomputeEpisodeProjections()
-            }
-            persistence.save(state)
-            SpotlightIndexer.reindex(state: state)
-            // Notify WidgetKit so widgets refresh immediately on every state
-            // mutation rather than waiting for the timeline poll.
-            WidgetCenter.shared.reloadAllTimelines()
-            // Push the current settings to iCloud KV store. The sync service
-            // internally no-ops if an inbound merge is already in progress.
-            iCloudSettingsSync.shared.push(state.settings)
+            handleStateDidSet(previousEpisodes: oldValue.episodes)
         }
     }
 
@@ -88,10 +60,9 @@ final class AppStateStore {
     /// Drives the Library "Transcribed" filter chip.
     var hasTranscribedByShow: Set<UUID> = []
 
-    /// Episodes per subscription, pre-sorted newest-publish-date first.
-    /// Drives `ShowDetailView`'s episode list. Position-cache fold happens
-    /// on read (cheap; one tiny dict scan).
-    var episodesByShow: [UUID: [Episode]] = [:]
+    /// Episode array indexes per subscription, pre-sorted newest first.
+    /// Drives `ShowDetailView` without duplicating every `Episode` in memory.
+    var episodeIndexesByShow: [UUID: [Int]] = [:]
 
     /// Episodes whose persisted `playbackPosition > 0` and `played == false`,
     /// pre-sorted newest first. Reads merge the position-cache so an episode
@@ -121,6 +92,11 @@ final class AppStateStore {
     /// can force-quit + relaunch without losing playback progress.
     /// See `AppStateStore+PositionDebounce.swift` for the rationale.
     private var backgroundObserver: NSObjectProtocol?
+
+    var mutationBatchDepth = 0
+    var deferredStateSideEffects = false
+    var deferredEpisodeProjectionRebuild = false
+    var spotlightReindexTask: Task<Void, Never>?
 
     // MARK: - Position debounce
     //
@@ -184,10 +160,10 @@ final class AppStateStore {
         // doesn't grow unboundedly across many months of use. This fires one
         // Persistence.save only when stale entries are actually found.
         pruneStaleActivityEntries()
-        // Seed Spotlight with whatever was persisted before this launch — the
-        // index can be wiped out independently of our app data (device reset,
-        // reinstall, user clearing system search).
-        SpotlightIndexer.reindex(state: loadedState)
+        // Seed Spotlight after first render. The persisted library can contain
+        // tens of thousands of episodes, so building the bounded Spotlight
+        // snapshot must not compete with launch UI work on the main actor.
+        scheduleSpotlightReindex(for: loadedState, delay: .seconds(2))
         // Observe external iCloud changes so settings stay in sync while the
         // app is running on multiple devices simultaneously.
         iCloudObserver = NotificationCenter.default.addObserver(
@@ -257,17 +233,20 @@ final class AppStateStore {
         // next flush.
         positionFlushTask?.cancel()
         positionFlushTask = nil
+        spotlightReindexTask?.cancel()
+        spotlightReindexTask = nil
         positionCache.removeAll()
 
         let preserved = state.settings
-        state = AppState()
-        state.settings = preserved
-        // `state = AppState()` above changes the episode array's count from
-        // N to 0, so the `state.didSet` fingerprint catches it and rebuilds
-        // the projections to empty. Explicit call here is belt-and-
-        // suspenders against future refactors that might bypass didSet.
-        invalidateEpisodeProjections()
-        persistence.save(state)
+        performMutationBatch {
+            state = AppState()
+            state.settings = preserved
+            // `state = AppState()` above changes the episode array's count from
+            // N to 0, so the `state.didSet` fingerprint catches it and rebuilds
+            // the projections to empty. Explicit call here is belt-and-
+            // suspenders against future refactors that might bypass didSet.
+            invalidateEpisodeProjections()
+        }
         SpotlightIndexer.clearAll()
     }
 
@@ -292,6 +271,7 @@ final class AppStateStore {
                 NotificationCenter.default.removeObserver(iCloudObserver)
             }
             positionFlushTask?.cancel()
+            spotlightReindexTask?.cancel()
         }
     }
 }

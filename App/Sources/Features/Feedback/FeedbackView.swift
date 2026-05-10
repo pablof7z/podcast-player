@@ -5,6 +5,7 @@ import SwiftUI
 struct FeedbackView: View {
     @Bindable var workflow: FeedbackWorkflow
     @Environment(\.dismiss) private var dismiss
+    @Environment(UserIdentityStore.self) private var userIdentity
 
     @State private var store = FeedbackStore()
     @State private var composerPresented = false
@@ -13,17 +14,21 @@ struct FeedbackView: View {
     @State private var searchText = ""
 
     private var visibleThreads: [FeedbackThread] {
-        // Both segments return all threads until identity / multi-user is wired up.
         guard !searchText.isBlank else {
-            return store.threads
+            return segmentFilteredThreads
         }
         let query = searchText.lowercased()
-        return store.threads.filter { thread in
+        return segmentFilteredThreads.filter { thread in
             (thread.title ?? "").lowercased().contains(query)
             || thread.content.lowercased().contains(query)
             || (thread.summary ?? "").lowercased().contains(query)
             || thread.category.rawValue.lowercased().contains(query)
         }
+    }
+
+    private var segmentFilteredThreads: [FeedbackThread] {
+        guard showMine, let pubkey = userIdentity.publicKeyHex else { return store.threads }
+        return store.threads.filter { $0.authorPubkey == pubkey }
     }
 
     var body: some View {
@@ -41,7 +46,7 @@ struct FeedbackView: View {
                     }
                 }
         }
-        .task { await store.load() }
+        .task { await store.load(identity: userIdentity) }
         .sheet(isPresented: $composerPresented) {
             FeedbackComposeView(store: store, workflow: workflow)
         }
@@ -88,6 +93,12 @@ struct FeedbackView: View {
     private var content: some View {
         if store.isLoading && store.threads.isEmpty {
             loadingSkeleton
+        } else if let loadError = store.loadError, store.threads.isEmpty {
+            ContentUnavailableView(
+                "Feedback unavailable",
+                systemImage: "wifi.exclamationmark",
+                description: Text(loadError)
+            )
         } else if store.threads.isEmpty {
             emptyState
         } else if visibleThreads.isEmpty {
@@ -110,6 +121,7 @@ struct FeedbackView: View {
             ForEach(visibleThreads) { thread in
                 NavigationLink {
                     FeedbackThreadDetailView(thread: thread, store: store)
+                        .task { await store.loadReplies(for: thread, identity: userIdentity) }
                 } label: {
                     FeedbackThreadRow(thread: thread, query: searchText)
                 }
@@ -125,7 +137,7 @@ struct FeedbackView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .refreshable { await store.load() }
+        .refreshable { await store.load(identity: userIdentity) }
     }
 
     // MARK: - Segmented control
@@ -181,4 +193,3 @@ struct FeedbackView: View {
     }
 
 }
-

@@ -34,14 +34,9 @@ import Foundation
 // returned values *at read time*, not stored in the precomputed array,
 // so a 1 Hz playback tick doesn't dirty the projection.
 //
-// **Memory.** `episodesByShow` stores full `Episode` structs (sorted),
-// roughly doubling the in-memory episode footprint. For the seeded
-// 10k-episode library that's still small (~few MB) compared to the
-// transient-allocation explosion the per-cell helpers caused before.
-// If RSS doesn't drop after this lands, the path forward is to swap
-// `episodesByShow` to `[UUID: [UUID]]` (sorted IDs) plus a separate
-// episode-by-id index, rebuilding slices at read time. Don't pre-
-// optimise — measure first.
+// **Memory.** Per-show projections store sorted indexes into `state.episodes`,
+// not full `Episode` copies. Reads materialize just the visible show's slice,
+// keeping the large imported-library footprint lower than a duplicate cache.
 
 extension AppStateStore {
 
@@ -63,7 +58,7 @@ extension AppStateStore {
         var unplayed: [UUID: Int] = [:]
         var downloaded: Set<UUID> = []
         var transcribed: Set<UUID> = []
-        var byShow: [UUID: [Episode]] = [:]
+        var byShow: [UUID: [Int]] = [:]
         var inProgress: [Episode] = []
         var recent: [Episode] = []
 
@@ -79,7 +74,7 @@ extension AppStateStore {
         inProgress.reserveCapacity(min(64, episodes.count))
         recent.reserveCapacity(min(Self.recentEpisodesCacheLimit, episodes.count))
 
-        for episode in episodes {
+        for (index, episode) in episodes.enumerated() {
             let subID = episode.subscriptionID
 
             // Unplayed-count bucket. Default to 0 so the dict has an entry
@@ -102,8 +97,8 @@ extension AppStateStore {
                 transcribed.insert(subID)
             }
 
-            // episodesByShow: append now, sort once per show after the loop.
-            byShow[subID, default: []].append(episode)
+            // Per-show index cache: append indexes now, sort once per show.
+            byShow[subID, default: []].append(index)
 
             // In-progress: persisted position > 0 AND not played. The
             // position-cache fold at read time also surfaces episodes
@@ -120,7 +115,7 @@ extension AppStateStore {
         // Mutate values in place via key iteration so the dict's COW
         // buffer isn't reseated for every show.
         for id in byShow.keys {
-            byShow[id]?.sort { $0.pubDate > $1.pubDate }
+            byShow[id]?.sort { episodes[$0].pubDate > episodes[$1].pubDate }
         }
 
         inProgress.sort { $0.pubDate > $1.pubDate }
@@ -128,17 +123,17 @@ extension AppStateStore {
         // recentEpisodesCached: top-N unplayed episodes across all shows.
         // We do a global sort + prefix here. For 10k episodes this is
         // still cheap (single 10k sort, no allocation per cell).
-        recent = episodes
+        recent = episodes.indices
             .lazy
-            .filter { !$0.played }
-            .sorted { $0.pubDate > $1.pubDate }
+            .filter { !episodes[$0].played }
+            .sorted { episodes[$0].pubDate > episodes[$1].pubDate }
             .prefix(Self.recentEpisodesCacheLimit)
-            .map { $0 }
+            .map { episodes[$0] }
 
         unplayedCountByShow = unplayed
         hasDownloadedByShow = downloaded
         hasTranscribedByShow = transcribed
-        episodesByShow = byShow
+        episodeIndexesByShow = byShow
         inProgressEpisodesCached = inProgress
         recentEpisodesCached = recent
     }
@@ -149,7 +144,7 @@ extension AppStateStore {
     /// transcribed sets may now be stale", not "rebuild everything for
     /// performance reasons".
     func invalidateEpisodeProjections() {
-        recomputeEpisodeProjections()
+        markEpisodeProjectionsDirty()
     }
 
     // MARK: - Read-side helpers (position-cache fold)
@@ -214,9 +209,14 @@ extension AppStateStore {
     }
 
     /// Pre-sorted, position-cache-folded list of episodes for one show.
-    /// Backed by `episodesByShow`; no per-call filter or sort.
+    /// Backed by `episodeIndexesByShow`; no per-call filter or sort.
     func episodesForShowView(_ id: UUID) -> [Episode] {
-        guard let cached = episodesByShow[id] else { return [] }
+        guard let indexes = episodeIndexesByShow[id] else { return [] }
+        let episodes = state.episodes
+        let cached = indexes.compactMap { index -> Episode? in
+            guard episodes.indices.contains(index) else { return nil }
+            return episodes[index]
+        }
         return applyingPositionCache(cached)
     }
 
