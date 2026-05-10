@@ -82,6 +82,11 @@ struct Settings: Codable, Hashable, Sendable {
     /// marked played (auto-end-of-play OR explicit "Mark as played"). Off by
     /// default — without it, downloads are kept until manually removed.
     var autoDeleteDownloadsAfterPlayed: Bool = false
+    /// When `true`, the next episode in `PlaybackState.queue` (Up Next)
+    /// starts playing automatically when the current episode finishes.
+    /// Defaults on for parity with Apple Podcasts. Suppressed when the
+    /// sleep timer has armed an end-of-episode stop.
+    var autoPlayNext: Bool = true
 
     // Wiki
     /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as

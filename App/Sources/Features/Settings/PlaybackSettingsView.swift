@@ -25,6 +25,7 @@ struct PlaybackSettingsView: View {
             speedSection
             skipSection
             autoMarkSection
+            autoPlayNextSection
         }
         .navigationTitle("Playback")
         .navigationBarTitleDisplayMode(.inline)
@@ -85,6 +86,16 @@ struct PlaybackSettingsView: View {
         }
     }
 
+    private var autoPlayNextSection: some View {
+        Section {
+            Toggle(isOn: autoPlayNextBinding) {
+                Label("Auto-play next from queue", systemImage: "forward.end.fill")
+            }
+        } footer: {
+            Text("When on, the next episode in your Up Next queue starts automatically when one finishes. The sleep timer's end-of-episode mode still stops playback as configured.")
+        }
+    }
+
     // MARK: - Bindings
 
     private var rateBinding: Binding<Double> {
@@ -129,6 +140,18 @@ struct PlaybackSettingsView: View {
             set: { v in
                 var s = store.state.settings
                 s.autoMarkPlayedAtEnd = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
+        )
+    }
+
+    private var autoPlayNextBinding: Binding<Bool> {
+        Binding(
+            get: { store.state.settings.autoPlayNext },
+            set: { v in
+                var s = store.state.settings
+                s.autoPlayNext = v
                 store.updateSettings(s)
                 Haptics.selection()
             }

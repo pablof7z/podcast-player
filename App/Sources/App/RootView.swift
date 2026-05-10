@@ -53,8 +53,22 @@ struct RootView: View {
                 playbackState.onPersistPosition = { [store] id, position in
                     store.setEpisodePlaybackPosition(id, position: position)
                 }
-                playbackState.onEpisodeFinished = { [store] id in
+                playbackState.onEpisodeFinished = { [store, playbackState] id in
                     store.markEpisodePlayed(id)
+                    // Auto-advance to the next queue entry when the user
+                    // hasn't opted out, and only when the sleep timer
+                    // isn't waiting on this exact episode-end as its stop
+                    // signal — auto-playing through that defeats the
+                    // whole point of `endOfEpisode` mode.
+                    let endOfEpisodeArmed: Bool
+                    switch playbackState.engine.sleepTimer.phase {
+                    case .armedEndOfEpisode, .fired:
+                        endOfEpisodeArmed = true
+                    default:
+                        endOfEpisodeArmed = false
+                    }
+                    guard store.state.settings.autoPlayNext, !endOfEpisodeArmed else { return }
+                    playbackState.playNext { store.episode(id: $0) }
                 }
                 // Drain the position-debounce cache on pause / episode
                 // change / natural end-without-auto-mark. The store also
