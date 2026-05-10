@@ -68,6 +68,7 @@ let project = Project(
             sources: ["App/Sources/**"],
             resources: [
                 "App/Resources/Assets.xcassets",
+                "App/Resources/whats-new.json",
             ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
             dependencies: [

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "bcd321b",
+      "shipped_at": "2026-05-10T22:02:15Z",
+      "lines": [
+        "Track what's new — every install now shows a sheet of changes since you last opened the app"
+      ]
+    },
+    {
+      "id": "c31f9d3",
+      "shipped_at": "2026-05-10T21:50:27Z",
+      "lines": [
+        "ElevenLabs Scribe transcripts now actually work — fixed the bogus polling endpoint and bumped the timeout to ten minutes",
+        "Big audio files no longer pre-upload from the device; ElevenLabs fetches them via source_url instead"
+      ]
+    },
+    {
+      "id": "e41dd53",
+      "shipped_at": "2026-05-10T21:40:21Z",
+      "lines": [
+        "Home now reads agent picks aloud and explains why each one was chosen",
+        "Threaded Today pill and topic-pivot lenses let you jump between angles on a story without leaving Home"
+      ]
+    },
+    {
+      "id": "b5d0249",
+      "shipped_at": "2026-05-10T21:32:44Z",
+      "lines": [
+        "Audio no longer cuts out when the screen locks during playback",
+        "Player action chips collapsed to icon-only Liquid Glass buttons so the controls breathe"
+      ]
+    },
+    {
+      "id": "5b41668",
+      "shipped_at": "2026-05-10T21:22:15Z",
+      "lines": [
+        "Segmented pickers everywhere now use the new Liquid Glass control with proper haptics"
+      ]
+    },
+    {
+      "id": "cad3fcd",
+      "shipped_at": "2026-05-10T21:17:54Z",
+      "lines": [
+        "Removed serif fonts across the app — everything now uses one consistent rounded type ramp"
+      ]
+    },
+    {
+      "id": "7e6aceb",
+      "shipped_at": "2026-05-10T21:14:07Z",
+      "lines": [
+        "Spotlight previews of episodes now show clean text snippets instead of raw HTML"
+      ]
+    },
+    {
+      "id": "69cd4e6",
+      "shipped_at": "2026-05-10T20:56:47Z",
+      "lines": [
+        "Long-press any transcript line to ask the agent about that exact moment"
+      ]
+    },
+    {
+      "id": "72260bc",
+      "shipped_at": "2026-05-10T20:57:15Z",
+      "lines": [
+        "Settings now has a Downloads Manager so you can see and free up space from cached episodes"
+      ]
+    },
+    {
+      "id": "658dc27",
+      "shipped_at": "2026-05-10T20:55:03Z",
+      "lines": [
+        "Player accessibility, skip glyphs, and scrubber polished — the chrome finally feels finished"
+      ]
+    },
+    {
+      "id": "7de79e4",
+      "shipped_at": "2026-05-10T20:52:29Z",
+      "lines": [
+        "Today and Library merged into one editorial Home — dateline, filter chips, featured row, and your shows all in one surface"
+      ]
+    },
+    {
+      "id": "07a2b24",
+      "shipped_at": "2026-05-10T20:51:47Z",
+      "lines": [
+        "Episodes without a publisher transcript now auto-transcribe in the background via ElevenLabs Scribe"
+      ]
+    },
+    {
+      "id": "71af0ff",
+      "shipped_at": "2026-05-10T20:51:08Z",
+      "lines": [
+        "More playback-speed presets so you can dial in the exact pace you like"
+      ]
+    },
+    {
+      "id": "a96fc79",
+      "shipped_at": "2026-05-10T20:41:08Z",
+      "lines": [
+        "Fixed iTunes Search returning shows that wouldn't subscribe — the results now match by parsed feed URL"
+      ]
+    }
+  ]
+}
