@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var showClearConfirm = false
     @State private var storageSummary: String?
+    @State private var categoriesSheetPresented = false
 
     var body: some View {
         List {
@@ -18,6 +19,9 @@ struct SettingsView: View {
         .settingsListStyle()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
+        .sheet(isPresented: $categoriesSheetPresented) {
+            CategoriesRecomputeSheet()
+        }
         .task {
             // Cheap directory walk; runs once when Settings opens so the
             // Storage row can show the total without a navigation push.
@@ -108,6 +112,19 @@ struct SettingsView: View {
                     value: transcriptStatus
                 )
             }
+
+            Button {
+                categoriesSheetPresented = true
+            } label: {
+                SettingsRow(
+                    icon: "square.grid.2x2.fill",
+                    tint: .green,
+                    title: "Recompute Categories",
+                    value: categoriesRowValue
+                )
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
         }
     }
 
@@ -249,6 +266,14 @@ struct SettingsView: View {
         case (false, true): return "Scribe fallback"
         case (false, false): return "Manual"
         }
+    }
+
+    /// Trailing label for the Categories row — surfaces the cached count so
+    /// the user knows the feature has been run before opening the sheet.
+    private var categoriesRowValue: String? {
+        let count = store.state.categories.count
+        guard count > 0 else { return nil }
+        return "\(count)"
     }
 
     private var notificationsRowValue: String? {

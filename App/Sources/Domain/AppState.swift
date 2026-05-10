@@ -17,6 +17,10 @@ struct AppState: Codable, Sendable {
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
     var agentActivity: [AgentActivityEntry] = []
+    /// LLM-derived podcast categories covering the user's subscriptions.
+    /// Recomputed on demand via `PodcastCategorizationService`; empty until
+    /// the user runs the recompute action for the first time.
+    var categories: [PodcastCategory] = []
 
     init() {}
 
@@ -25,6 +29,7 @@ struct AppState: Codable, Sendable {
         case notes, friends, agentMemories, settings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
+        case categories
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -42,5 +47,6 @@ struct AppState: Codable, Sendable {
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
+        categories = try c.decodeIfPresent([PodcastCategory].self, forKey: .categories) ?? []
     }
 }

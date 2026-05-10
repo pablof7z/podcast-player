@@ -9,17 +9,19 @@ enum CostFeature {
     static let wikiCompile = "wiki.compile"
     static let embeddingsOpenRouter = "embeddings.openrouter"
     static let embeddingsOllama = "embeddings.ollama"
+    static let categorizationRecompute = "categorization.recompute"
 
     static func displayName(for feature: String) -> String {
         switch feature {
-        case agentChat:            return "Agent chat"
-        case agentNostr:           return "Agent (Nostr)"
-        case episodeSummary:       return "Episode summary"
-        case briefingCompose:      return "Briefing"
-        case wikiCompile:          return "Wiki compile"
-        case embeddingsOpenRouter: return "Embeddings (OpenRouter)"
-        case embeddingsOllama:     return "Embeddings (Ollama)"
-        default:                   return feature
+        case agentChat:              return "Agent chat"
+        case agentNostr:             return "Agent (Nostr)"
+        case episodeSummary:         return "Episode summary"
+        case briefingCompose:        return "Briefing"
+        case wikiCompile:            return "Wiki compile"
+        case embeddingsOpenRouter:   return "Embeddings (OpenRouter)"
+        case embeddingsOllama:       return "Embeddings (Ollama)"
+        case categorizationRecompute: return "Categorization"
+        default:                     return feature
         }
     }
 }
