@@ -82,11 +82,26 @@ struct PlayerShareSheet: View {
     @ViewBuilder
     private var systemShareButton: some View {
         if let url = URL(string: episodeDeepLink) {
-            ShareLink(item: url, subject: Text(episode.title)) {
+            // `subject` only surfaces in some destinations (Mail's subject
+            // line). The share-sheet preview itself defaults to the URL's
+            // own metadata, which for a `podcastr://e/<guid>` deep link
+            // is just the bare scheme + path — no episode context. The
+            // explicit `SharePreview` makes the destination header read
+            // "<Show>: <Episode>" so the recipient sees what they're
+            // about to receive. Mirrors the per-row context-menu share.
+            ShareLink(
+                item: url,
+                subject: Text(episode.title),
+                preview: SharePreview(sharePreviewTitle, image: Image(systemName: "headphones"))
+            ) {
                 shareRowLabel(label: "Share via…", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var sharePreviewTitle: String {
+        showName.isEmpty ? episode.title : "\(showName): \(episode.title)"
     }
 
     private var shareQuoteButton: some View {
