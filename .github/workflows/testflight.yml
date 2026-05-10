@@ -22,7 +22,7 @@ env:
   APP_SCHEME: Podcastr
   PROJECT_PATH: Podcastr.xcodeproj
   APP_INFO_PLIST: App/Resources/Info.plist
-  APPLE_TEAM_ID: XXXXXXXXXX   # Replace with your Apple Team ID
+  APPLE_TEAM_ID: 456SHKPP26
   APP_BUNDLE_ID: com.podcastr.podcastr
 
 jobs:
