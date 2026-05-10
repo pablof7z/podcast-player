@@ -2,8 +2,11 @@ import Foundation
 import os
 import os.log
 
-/// Persists `AppState` as a JSON blob in a file inside the shared App Group
-/// container.
+/// Persists `AppState` inside the shared App Group container.
+///
+/// Low-cardinality metadata stays in a JSON file. High-cardinality `Episode`
+/// records live in a SQLite sidecar so a large imported library does not turn
+/// every launch and mutation into a 70MB+ JSON decode/encode.
 ///
 /// **Why a file, not `UserDefaults`.** A previous iteration wrote the blob to
 /// `UserDefaults(suiteName: <App Group>)`. Once a user subscribed to a real
@@ -43,8 +46,10 @@ final class Persistence: Sendable {
 
     /// File this instance reads from / writes to.
     let fileURL: URL
+    let episodeStore: EpisodeSQLiteStore
     private let writeMode: WriteMode
     private let backgroundWriter = PersistenceBackgroundWriter()
+    private let episodeSignature = OSAllocatedUnfairLock<EpisodeSQLiteSignature?>(initialState: nil)
 
     /// Lock-protected count of successful `save(_:)` invocations. Production
     /// code never reads this; the per-second-write regression tests use it
@@ -53,8 +58,15 @@ final class Persistence: Sendable {
     /// the main actor.
     private let saveCounter = OSAllocatedUnfairLock<Int>(initialState: 0)
 
-    init(fileURL: URL, writeMode: WriteMode = .immediate) {
+    init(
+        fileURL: URL,
+        writeMode: WriteMode = .immediate,
+        episodeStoreURL: URL? = nil
+    ) {
         self.fileURL = fileURL
+        self.episodeStore = EpisodeSQLiteStore(
+            fileURL: episodeStoreURL ?? Self.episodeStoreURL(for: fileURL)
+        )
         self.writeMode = writeMode
     }
 
@@ -91,10 +103,21 @@ final class Persistence: Sendable {
         }
     }
 
-    fileprivate func write(_ state: AppState) {
+    func write(_ state: AppState) {
+        let signature = EpisodeSQLiteStore.signature(for: state.episodes)
+        if episodeSignature.withLock({ $0 }) != signature {
+            do {
+                try episodeStore.replaceAll(state.episodes)
+                episodeSignature.withLock { $0 = signature }
+            } catch {
+                Self.logger.error("Persistence.save: episode SQLite write failed: \(error, privacy: .public)")
+                return
+            }
+        }
+
         let data: Data
         do {
-            data = try Self.encoder.encode(state)
+            data = try Self.encoder.encode(Self.metadataState(from: state))
         } catch {
             Self.logger.error("Persistence.save: encode failed: \(error, privacy: .public)")
             return
@@ -120,7 +143,9 @@ final class Persistence: Sendable {
     func load() throws -> AppState {
         if FileManager.default.fileExists(atPath: fileURL.path) {
             let data = try Data(contentsOf: fileURL)
-            return try Self.decoder.decode(AppState.self, from: data)
+            var state = try Self.decoder.decode(AppState.self, from: data)
+            try hydrateEpisodes(into: &state)
+            return state
         }
         // One-shot migration: an earlier build wrote `AppState` to App Group
         // `UserDefaults` under `legacyStateKey`. If a user is launching the
@@ -132,9 +157,11 @@ final class Persistence: Sendable {
         // test instances point at temp files and have no legacy data.
         if fileURL == Self.appGroupStateFileURL,
            let legacyData = Self.appGroupDefaults.data(forKey: Self.legacyStateKey) {
-            let migrated = try Self.decoder.decode(AppState.self, from: legacyData)
+            var migrated = try Self.decoder.decode(AppState.self, from: legacyData)
+            try hydrateEpisodes(into: &migrated)
+            let metadata = try Self.encoder.encode(Self.metadataState(from: migrated))
             try? ensureParentDirectoryExists()
-            try? legacyData.write(to: fileURL, options: [.atomic])
+            try? metadata.write(to: fileURL, options: [.atomic])
             Self.appGroupDefaults.removeObject(forKey: Self.legacyStateKey)
             Self.logger.info("Persistence.load: migrated \(legacyData.count, privacy: .public) bytes from legacy UserDefaults key")
             return migrated
@@ -147,6 +174,8 @@ final class Persistence: Sendable {
     /// are not an error.
     func reset() {
         try? FileManager.default.removeItem(at: fileURL)
+        episodeStore.reset()
+        episodeSignature.withLock { $0 = nil }
     }
 
     // MARK: - Suite resolution
@@ -192,6 +221,13 @@ final class Persistence: Sendable {
         return base.appendingPathComponent("podcastr-state.v1.json", isDirectory: false)
     }
 
+    static func episodeStoreURL(for stateFileURL: URL) -> URL {
+        let baseName = stateFileURL.deletingPathExtension().lastPathComponent
+        return stateFileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("\(baseName).episodes.sqlite", isDirectory: false)
+    }
+
     // MARK: - Static helpers
 
     private static let logger = Logger.app("Persistence")
@@ -221,26 +257,41 @@ final class Persistence: Sendable {
         let parent = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
     }
-}
 
-private actor PersistenceBackgroundWriter {
-    private var pending: AppState?
-    private var isDraining = false
+    private func hydrateEpisodes(into state: inout AppState) throws {
+        let jsonEpisodes = state.episodes
+        let sqliteEpisodes = try episodeStore.loadAll()
+        if sqliteEpisodes.isEmpty {
+            guard !jsonEpisodes.isEmpty else {
+                episodeSignature.withLock { $0 = EpisodeSQLiteStore.signature(for: []) }
+                return
+            }
+            try episodeStore.replaceAll(jsonEpisodes)
+            episodeSignature.withLock {
+                $0 = EpisodeSQLiteStore.signature(for: jsonEpisodes)
+            }
+            try writeMetadataSnapshot(state)
+            return
+        }
 
-    func enqueue(_ state: AppState, persistence: Persistence) {
-        pending = state
-        guard !isDraining else { return }
-        isDraining = true
-        Task { await drain(persistence: persistence) }
+        state.episodes = sqliteEpisodes
+        episodeSignature.withLock {
+            $0 = EpisodeSQLiteStore.signature(for: sqliteEpisodes)
+        }
+        if !jsonEpisodes.isEmpty {
+            try writeMetadataSnapshot(state)
+        }
     }
 
-    private func drain(persistence: Persistence) async {
-        while let state = pending {
-            pending = nil
-            await Task.detached(priority: .utility) {
-                persistence.write(state)
-            }.value
-        }
-        isDraining = false
+    private func writeMetadataSnapshot(_ state: AppState) throws {
+        let data = try Self.encoder.encode(Self.metadataState(from: state))
+        try ensureParentDirectoryExists()
+        try data.write(to: fileURL, options: [.atomic])
+    }
+
+    private static func metadataState(from state: AppState) -> AppState {
+        var metadata = state
+        metadata.episodes = []
+        return metadata
     }
 }

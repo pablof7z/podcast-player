@@ -5,9 +5,9 @@ import Foundation
 struct AppState: Codable, Sendable {
     /// Podcasts the user follows. Source of truth for Library + Home + Search.
     var subscriptions: [PodcastSubscription] = []
-    /// All known episodes across all subscriptions. Reads filter by
-    /// `subscriptionID` rather than maintaining per-subscription arrays so a
-    /// single mutation surface (`upsertEpisodes(_:)`) works for any feed.
+    /// All known episodes across all subscriptions, hydrated from SQLite at
+    /// launch. Reads filter by `subscriptionID` rather than maintaining
+    /// per-subscription arrays so `upsertEpisodes(_:)` works for any feed.
     var episodes: [Episode] = []
     var notes: [Note] = []
     var friends: [Friend] = []

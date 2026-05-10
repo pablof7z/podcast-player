@@ -12,19 +12,15 @@ import Foundation
 // e1`, etc. — survived the test run and showed up the next time the actual
 // app launched on the simulator.
 //
-// `makeIsolatedStore()` builds a `Persistence` bound to a unique temp file
-// URL, so:
+// `makeIsolatedStore()` builds a `Persistence` bound to a unique temp state
+// URL plus its SQLite episode sidecar, so:
 //
 //   - Each test instance starts from a clean slate (no cross-test bleed).
 //   - Nothing the tests write touches the real App Group container.
 //   - The temp file is removed via `FileManager.removeItem` in `tearDown`.
 //
-// The storage primitive intentionally matches production (`Data.write` to a
-// JSON file inside an App-Group-style container). Tests written against the
-// previous `UserDefaults`-backed `Persistence` would have round-tripped a
-// few KB of state without ever stressing the actual failure mode that broke
-// real users — see `testIsolatedStorePersistsLargeStateAcrossInstances` for
-// the regression test that does.
+// The storage primitive intentionally matches production (`Data.write` for
+// metadata plus SQLite for episodes inside an App-Group-style container).
 enum AppStateTestSupport {
 
     /// Builds an `AppStateStore` backed by a unique temp file so the test
@@ -58,7 +54,7 @@ enum AppStateTestSupport {
     /// Removes a temp file created by `makeIsolatedStore`. Safe to call
     /// from `tearDown`; idempotent if the file is already gone.
     static func disposeIsolatedStore(at fileURL: URL) {
-        try? FileManager.default.removeItem(at: fileURL)
+        Persistence(fileURL: fileURL).reset()
     }
 
     /// Wipes the production App Group state file. Use only as a one-shot

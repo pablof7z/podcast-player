@@ -95,9 +95,14 @@ struct Settings: Codable, Hashable, Sendable {
     var wikiAutoGenerateOnTranscriptIngest: Bool = false
 
     // Transcripts
-    /// When `true`, the app pre-fetches publisher-supplied transcripts in the background as
-    /// soon as new episodes appear. Off by default; consumes bandwidth and storage.
-    var autoIngestPublisherTranscripts: Bool = false
+    /// When `true`, the app pre-fetches publisher-supplied transcripts in the
+    /// background as soon as new episodes appear (called from
+    /// `AppStateStore.upsertEpisodes` after a feed refresh). Default-on
+    /// because the agent layer (RAG, wiki, briefings, summarisation) only
+    /// works once the transcript exists; publisher transcripts are typically
+    /// tens of KB so the bandwidth cost is small. Toggle off in
+    /// Settings → Transcripts to defer everything to manual fetch.
+    var autoIngestPublisherTranscripts: Bool = true
     /// When `true`, episodes lacking a publisher transcript fall back to ElevenLabs Scribe
     /// transcription. Requires an ElevenLabs key; defaults on so existing behaviour is
     /// preserved.

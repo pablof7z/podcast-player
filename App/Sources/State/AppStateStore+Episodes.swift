@@ -104,6 +104,13 @@ extension AppStateStore {
                 forSubscription: subscriptionID,
                 newEpisodeIDs: newlyInserted
             )
+            // Fire publisher-transcript ingestion for the new IDs so we
+            // don't depend on the user manually opening Episode Detail to
+            // discover a transcript exists. Settings-gated; the service
+            // bails fast when the toggle is off.
+            TranscriptIngestService.shared.evaluateAutoIngest(
+                newEpisodeIDs: newlyInserted
+            )
         }
         return newlyInserted
     }

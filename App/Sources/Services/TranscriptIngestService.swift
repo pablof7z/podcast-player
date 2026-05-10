@@ -150,6 +150,38 @@ final class TranscriptIngestService {
         }
     }
 
+    /// Triggered from `AppStateStore.upsertEpisodes` whenever a feed refresh
+    /// surfaces brand-new episode IDs. Filters down to episodes the user
+    /// would actually benefit from ingesting (publisher URL present, state
+    /// not yet ready), gates on `Settings.autoIngestPublisherTranscripts`,
+    /// and dispatches an async ingest per candidate.
+    ///
+    /// Without this hook the publisher transcript URL was parsed and stored
+    /// but never *fetched* unless the user happened to open Episode Detail
+    /// — leaving most subscribed shows with `transcriptState == .none`
+    /// forever despite shipping a `<podcast:transcript>` element.
+    func evaluateAutoIngest(newEpisodeIDs: [UUID]) {
+        guard !newEpisodeIDs.isEmpty else { return }
+        guard let appStore = rag.appStore else {
+            Self.logger.warning("evaluateAutoIngest: no AppStateStore attached — skipping")
+            return
+        }
+        guard appStore.state.settings.autoIngestPublisherTranscripts else { return }
+        let candidates = newEpisodeIDs
+            .compactMap { appStore.episode(id: $0) }
+            .filter { $0.publisherTranscriptURL != nil && !Self.isReady($0.transcriptState) }
+        guard !candidates.isEmpty else { return }
+        Self.logger.info(
+            "evaluateAutoIngest: queueing \(candidates.count, privacy: .public) publisher-transcript ingests"
+        )
+        for episode in candidates {
+            let episodeID = episode.id
+            Task { @MainActor [weak self] in
+                await self?.ingest(episodeID: episodeID)
+            }
+        }
+    }
+
     // MARK: - Private pipeline
 
     private func runScribe(for episode: Episode, appStore: AppStateStore) async {
