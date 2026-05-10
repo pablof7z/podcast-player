@@ -87,19 +87,19 @@ extension Episode {
     }
 
     /// Plain-text summary suitable for a one-or-two-line row preview.
-    /// Strips simple HTML tags and collapses whitespace.
+    /// Strips HTML tags, decodes the common entities (so curly quotes /
+    /// em-dashes / ellipses don't render as `&rsquo;` etc.), and collapses
+    /// every whitespace run — including the paragraph breaks the formatter
+    /// inserts — into a single space so the preview fits the row's
+    /// `lineLimit(2)` cleanly.
     var plainTextSummary: String {
-        let stripped = description.replacingOccurrences(
-            of: "<[^>]+>",
-            with: "",
-            options: .regularExpression
-        )
-        let collapsed = stripped.replacingOccurrences(
+        let decoded = EpisodeShowNotesFormatter.plainText(from: description)
+        return decoded.replacingOccurrences(
             of: "\\s+",
             with: " ",
             options: .regularExpression
         )
-        return collapsed.trimmingCharacters(in: .whitespacesAndNewlines)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// View-model adapter for `DownloadStatusCapsule`. Translates the two

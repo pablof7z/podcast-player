@@ -13,19 +13,34 @@ import Foundation
 enum EpisodeShowNotesFormatter {
 
     /// Plain-text projection of an episode description. Tag stripping +
-    /// entity decoding + whitespace normalization.
+    /// entity decoding + whitespace normalization, plus a fix-up pass that
+    /// removes the spurious space `stripTags` injects before trailing
+    /// punctuation (`<b>word</b>.` → `word .` → `word.`).
     static func plainText(from raw: String) -> String {
         let stripped = stripTags(raw)
         let decoded = decodeEntities(stripped)
-        return collapseWhitespace(decoded)
+        let collapsed = collapseWhitespace(decoded)
+        return collapsed.replacingOccurrences(
+            of: "\\s+([.,!?;:])",
+            with: "$1",
+            options: .regularExpression
+        )
     }
 
     private static func stripTags(_ input: String) -> String {
+        // Replace each tag with a single space so block-level boundaries
+        // (`</p><p>`, `<br>`) don't glue adjacent words together —
+        // `<p>A</p><p>B</p>` previously collapsed to `AB`. The trailing
+        // `collapseWhitespace` pass folds multiple spaces back to one.
         var inTag = false
         var out = ""
         out.reserveCapacity(input.count)
         for c in input {
-            if c == "<" { inTag = true; continue }
+            if c == "<" {
+                inTag = true
+                if out.last != " " { out.append(" ") }
+                continue
+            }
             if c == ">" { inTag = false; continue }
             if !inTag { out.append(c) }
         }
@@ -59,7 +74,19 @@ enum EpisodeShowNotesFormatter {
     private static func collapseWhitespace(_ input: String) -> String {
         let lines = input
             .split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .map { line -> String in
+                // Fold repeated spaces / tabs / etc. inside the line into a
+                // single space so the de-tagged stream (which inserts a
+                // space at every tag boundary) doesn't read with awkward
+                // multi-space gaps.
+                line
+                    .replacingOccurrences(
+                        of: "[ \\t]+",
+                        with: " ",
+                        options: .regularExpression
+                    )
+                    .trimmingCharacters(in: .whitespaces)
+            }
             .filter { !$0.isEmpty }
         return lines.joined(separator: "\n\n")
     }
