@@ -225,10 +225,11 @@ final class AgentPicksService {
             // incremental parser may have nothing to do, so re-parse the
             // full string with the tolerant end-of-stream parser.
             let text = (result.assistantMessage["content"] as? String) ?? ""
-            if self?.bundle.picks.isEmpty != false {
+            let alreadyPicked = self?.bundle.picks ?? []
+            if alreadyPicked.isEmpty {
                 return AgentPicksPrompt.parse(text, knownEpisodeIDs: knownIDs)
             }
-            return self?.bundle.picks ?? []
+            return alreadyPicked
         }
 
         // Stall watchdog — cancels the streaming task if no new content

@@ -154,13 +154,19 @@ struct HomeRelatedSheet: View {
             .listStyle(.plain)
         case .sources:
             // Group by subscription so the user sees coverage breadth.
-            // Within each group, rows stay in match-score order.
-            let groups = Dictionary(grouping: matches, by: { $0.subscription?.id ?? UUID() })
-            let orderedKeys = matches.map { $0.subscription?.id ?? UUID() }
+            // Within each group, rows stay in match-score order. Drops any
+            // match without a subscription — those would each need their
+            // own bucket (and rendering an "Unknown show" group from
+            // multiple anonymous matches just feels broken).
+            let attributed = matches.filter { $0.subscription != nil }
+            let groups = Dictionary(grouping: attributed) { $0.subscription!.id }
             var seenKeys = Set<UUID>()
-            let uniqueKeys = orderedKeys.filter { seenKeys.insert($0).inserted }
+            let orderedKeys = attributed.compactMap { match -> UUID? in
+                let id = match.subscription!.id
+                return seenKeys.insert(id).inserted ? id : nil
+            }
             List {
-                ForEach(uniqueKeys, id: \.self) { key in
+                ForEach(orderedKeys, id: \.self) { key in
                     if let bucket = groups[key], let first = bucket.first {
                         Section(first.subscription?.title ?? "Unknown show") {
                             ForEach(bucket) { match in
