@@ -146,11 +146,18 @@ struct MiniPlayerView: View {
     private var inlineDownloadBadge: some View {
         if let resolved = liveDownloadEpisode {
             switch resolved.downloadState {
-            case .downloading, .failed:
-                DownloadProgressBadge(
-                    episode: resolved,
-                    liveProgress: downloadService.progress[resolved.id]
-                )
+            case .downloading(let persistedProgress, _):
+                let live = downloadService.progress[resolved.id] ?? persistedProgress
+                let pct = Int((max(0, min(1, live)) * 100).rounded())
+                Text("\(pct)%")
+                    .font(.caption2.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Downloading \(pct) percent")
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel("Download failed")
             default:
                 EmptyView()
             }
