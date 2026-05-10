@@ -17,6 +17,11 @@ struct UseMyOwnKeyView: View {
     @State private var hasBackup = false
     @State private var inlineError: String?
     @State private var importing = false
+    /// Cached so we don't read the clipboard on every body re-render —
+    /// each read triggers iOS's "Podcastr accessed your pasteboard"
+    /// privacy banner, which would fire per-keystroke if we recomputed
+    /// inside the body.
+    @State private var clipboardLooksLikeNsec = false
     @FocusState private var keyFocused: Bool
 
     var body: some View {
@@ -54,7 +59,18 @@ struct UseMyOwnKeyView: View {
         .navigationTitle("Use my own key")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemBackground))
-        .onAppear { keyFocused = true }
+        .onAppear {
+            keyFocused = true
+            refreshClipboardCheck()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)) { _ in
+            refreshClipboardCheck()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Clipboard may have changed in another app while we were
+            // backgrounded — re-detect when we come back.
+            refreshClipboardCheck()
+        }
     }
 
     // MARK: - Preface
@@ -152,10 +168,21 @@ struct UseMyOwnKeyView: View {
         !nsec.trimmed.isEmpty && hasBackup && !importing
     }
 
-    private var clipboardLooksLikeNsec: Bool {
-        guard UIPasteboard.general.hasStrings,
-              let s = UIPasteboard.general.string?.trimmed else { return false }
-        return s.hasPrefix("nsec1")
+    private func refreshClipboardCheck() {
+        // `hasStrings` is the only no-prompt check available — it tells
+        // us whether *any* string is on the clipboard without exposing
+        // the bytes. We still need to read `.string` to confirm the
+        // `nsec1` prefix, but we do it once per change rather than per
+        // body render. iOS surfaces a single "Pasted from..." banner the
+        // first time we read after a clipboard change, which is the
+        // expected behavior (the user just copied something; they're
+        // about to paste).
+        guard UIPasteboard.general.hasStrings else {
+            clipboardLooksLikeNsec = false
+            return
+        }
+        let candidate = UIPasteboard.general.string?.trimmed ?? ""
+        clipboardLooksLikeNsec = candidate.hasPrefix("nsec1")
     }
 
     private func paste() {
