@@ -13,9 +13,11 @@ import SwiftUI
 struct TranscriptsSettingsView: View {
     @Environment(AppStateStore.self) private var store
 
-    /// Known ElevenLabs Scribe model IDs. The textfield below allows arbitrary
-    /// input so future model variants don't require a code change, but the
-    /// picker covers the common ones.
+    /// Known ElevenLabs Scribe model IDs. If the persisted
+    /// `settings.elevenLabsSTTModel` doesn't match any of these (e.g. the
+    /// user updated to a future variant by hand), the picker surfaces the
+    /// stored value as a synthesized "(custom)" entry so the active
+    /// selection stays visible.
     private static let scribeModels: [(id: String, label: String)] = [
         ("scribe_v1", "Scribe v1 (default)"),
         ("scribe_v1_experimental", "Scribe v1 — experimental"),
@@ -61,11 +63,24 @@ struct TranscriptsSettingsView: View {
             Toggle(isOn: scribeFallbackBinding) {
                 Label("Fall back to Scribe", systemImage: "arrow.triangle.branch")
             }
+            if store.state.settings.autoFallbackToScribe && !hasElevenLabsKey {
+                // The toggle is on but the dependency isn't set up — surface
+                // the gap inline rather than letting the fallback silently
+                // no-op when an episode actually needs transcription.
+                Label("Requires an ElevenLabs API key — connect in AI → ElevenLabs.", systemImage: "key.slash")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.vertical, 2)
+            }
         } header: {
             Text("Automation")
         } footer: {
             Text("Auto-ingest pre-fetches transcripts in the background as new episodes appear. Scribe fallback transcribes audio when the publisher hasn't supplied a transcript — requires an ElevenLabs key.")
         }
+    }
+
+    private var hasElevenLabsKey: Bool {
+        store.state.settings.elevenLabsCredentialSource != .none
     }
 
     // MARK: - Bindings
