@@ -244,7 +244,10 @@ struct EditProfileView: View {
     }
 
     private func save() async {
-        Haptics.success()
+        // Haptic fires AFTER the publish attempt so the user's wrist
+        // feedback matches the actual outcome — previously a success
+        // tap was played the moment they tapped Save, even when the
+        // relay was unreachable and the banner ended up warning.
         initialSnapshot = currentSnapshot
         let snapshot = currentSnapshot
         saveBanner = SaveBanner(message: "Publishing…", isWarning: false)
@@ -255,8 +258,10 @@ struct EditProfileView: View {
                 about: snapshot.about,
                 picture: snapshot.pictureURL
             )
+            Haptics.success()
             saveBanner = SaveBanner(message: "Profile published.", isWarning: false)
         } catch {
+            Haptics.warning()
             saveBanner = SaveBanner(
                 message: "Saved locally — couldn't reach the relay. We'll retry next launch.",
                 isWarning: true
