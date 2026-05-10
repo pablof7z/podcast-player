@@ -61,6 +61,16 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
             )
         }
 
+        Button {
+            Haptics.light()
+            store.toggleEpisodeStarred(episode.id)
+        } label: {
+            Label(
+                episode.isStarred ? "Unstar" : "Star",
+                systemImage: episode.isStarred ? "star.slash" : "star"
+            )
+        }
+
         queueButton
 
         downloadButton
