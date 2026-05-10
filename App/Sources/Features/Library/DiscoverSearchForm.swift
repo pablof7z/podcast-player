@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import os.log
 
 // MARK: - DiscoverSearchForm
@@ -52,7 +53,8 @@ struct DiscoverSearchForm: View {
     @State private var isLoadingTrending: Bool = false
     @State private var trendingFetched: Bool = false
 
-    @FocusState private var queryFocused: Bool
+    @State private var queryFocused: Bool = false
+    @State private var focusTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -73,11 +75,16 @@ struct DiscoverSearchForm: View {
             }
         }
         .onAppear {
-            queryFocused = true
+            requestSearchFocus(deferred: true)
             if !trendingFetched {
                 trendingFetched = true
                 Task { await loadTrending() }
             }
+        }
+        .onDisappear {
+            searchTask?.cancel()
+            focusTask?.cancel()
+            queryFocused = false
         }
         .onChange(of: query) { _, newValue in
             scheduleAutoSearch(for: newValue)
@@ -90,26 +97,24 @@ struct DiscoverSearchForm: View {
         HStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search Apple Podcasts", text: $query)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused($queryFocused)
-                .onSubmit { runSearch() }
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                    results = []
-                    searchError = nil
-                    rowErrors.removeAll()
-                    expandedErrorIDs.removeAll()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
+            DiscoverSearchTextField(
+                placeholder: "Search Apple Podcasts",
+                text: $query,
+                isFocused: $queryFocused,
+                onSubmit: runSearch
+            )
+            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+            Button {
+                clearQuery()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
             }
+            .buttonStyle(.plain)
+            .opacity(query.isEmpty ? 0 : 1)
+            .disabled(query.isEmpty)
+            .accessibilityHidden(query.isEmpty)
+            .accessibilityLabel("Clear search")
         }
         .padding(AppTheme.Spacing.md)
         .background(
@@ -118,6 +123,8 @@ struct DiscoverSearchForm: View {
         )
         .padding(.horizontal, AppTheme.Spacing.lg)
         .padding(.bottom, AppTheme.Spacing.sm)
+        .contentShape(Rectangle())
+        .onTapGesture { requestSearchFocus() }
     }
 
     // MARK: - Empty / results
@@ -226,6 +233,28 @@ struct DiscoverSearchForm: View {
     private func isAlreadySubscribed(_ result: ITunesSearchClient.Result) -> Bool {
         guard let url = result.feedURL else { return false }
         return store.subscription(feedURL: url) != nil
+    }
+
+    private func requestSearchFocus(deferred: Bool = false) {
+        focusTask?.cancel()
+        guard deferred else {
+            queryFocused = true
+            return
+        }
+        focusTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
+            queryFocused = true
+        }
+    }
+
+    private func clearQuery() {
+        query = ""
+        results = []
+        searchError = nil
+        rowErrors.removeAll()
+        expandedErrorIDs.removeAll()
+        requestSearchFocus()
     }
 
     private func toggleErrorExpansion(for id: Int) {
@@ -345,6 +374,93 @@ struct DiscoverSearchForm: View {
             )
             rowErrors[result.collectionId] = error.localizedDescription
             Haptics.warning()
+        }
+    }
+}
+
+private struct DiscoverSearchTextField: UIViewRepresentable {
+    let placeholder: String
+    @Binding var text: String
+    @Binding var isFocused: Bool
+    let onSubmit: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, isFocused: $isFocused, onSubmit: onSubmit)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = UITextField(frame: .zero)
+        field.placeholder = placeholder
+        field.autocapitalizationType = .none
+        field.autocorrectionType = .no
+        field.returnKeyType = .search
+        field.backgroundColor = .clear
+        field.font = .preferredFont(forTextStyle: .body)
+        field.adjustsFontForContentSizeCategory = true
+        field.delegate = context.coordinator
+        field.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return field
+    }
+
+    func updateUIView(_ field: UITextField, context: Context) {
+        context.coordinator.text = $text
+        context.coordinator.isFocused = $isFocused
+        context.coordinator.onSubmit = onSubmit
+        field.placeholder = placeholder
+        if field.text != text {
+            field.text = text
+        }
+        if isFocused, !field.isFirstResponder {
+            field.becomeFirstResponder()
+        } else if !isFocused, field.isFirstResponder {
+            field.resignFirstResponder()
+        }
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var text: Binding<String>
+        var isFocused: Binding<Bool>
+        var onSubmit: () -> Void
+        private var keepFocusUntil: Date = .distantPast
+
+        init(text: Binding<String>, isFocused: Binding<Bool>, onSubmit: @escaping () -> Void) {
+            self.text = text
+            self.isFocused = isFocused
+            self.onSubmit = onSubmit
+        }
+
+        @objc func textDidChange(_ field: UITextField) {
+            keepFocusUntil = Date().addingTimeInterval(1)
+            text.wrappedValue = field.text ?? ""
+            if !isFocused.wrappedValue {
+                isFocused.wrappedValue = true
+            }
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            isFocused.wrappedValue = true
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            guard isFocused.wrappedValue else { return }
+            guard Date() < keepFocusUntil else {
+                isFocused.wrappedValue = false
+                return
+            }
+            DispatchQueue.main.async { [weak self, weak textField] in
+                guard let self, self.isFocused.wrappedValue else { return }
+                textField?.becomeFirstResponder()
+            }
+        }
+
+        func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
+            !isFocused.wrappedValue || Date() >= keepFocusUntil
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            onSubmit()
+            return false
         }
     }
 }
