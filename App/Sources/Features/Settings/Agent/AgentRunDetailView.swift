@@ -4,8 +4,60 @@ import UIKit
 struct AgentRunDetailView: View {
     let run: AgentRun
 
+    @Environment(AppStateStore.self) private var store
+
     @State private var copyFlash: String?
     @State private var shareItem: AgentRunShareItem?
+
+    /// Resolves common podcast-domain argument keys to human-readable
+    /// strings so the run detail row reads "play_episode_at — episode_id:
+    /// 'How to Think About Keto', timestamp: 7:00" instead of
+    /// "episode_id: '0123…', timestamp: 420". Falls through to the
+    /// formatter's generic scalar render for unrecognized keys / values.
+    private var podcastValueResolver: AgentRunToolFormatter.ValueResolver {
+        { [store] key, value in
+            switch key {
+            case "episode_id":
+                if case .string(let s) = value, let id = UUID(uuidString: s),
+                   let title = store.episode(id: id)?.title, !title.isEmpty {
+                    return "\u{201C}\(title)\u{201D}"
+                }
+            case "podcast_id", "subscription_id":
+                if case .string(let s) = value, let id = UUID(uuidString: s),
+                   let title = store.subscription(id: id)?.title, !title.isEmpty {
+                    return "\u{201C}\(title)\u{201D}"
+                }
+            case "timestamp", "start_seconds", "end_seconds", "playhead":
+                if let seconds = numericSeconds(from: value) {
+                    return Self.formatSeconds(seconds)
+                }
+            default:
+                break
+            }
+            return nil
+        }
+    }
+
+    /// Coerces an `AnyCodable` numeric to seconds. Accepts both `Int`
+    /// (the common JSON case for whole-second timestamps) and `Double`
+    /// (fractional seconds from chunk start times).
+    private func numericSeconds(from value: AnyCodable) -> Double? {
+        switch value {
+        case .int(let i): return Double(i)
+        case .double(let d): return d
+        default: return nil
+        }
+    }
+
+    private static func formatSeconds(_ s: Double) -> String {
+        let total = max(0, Int(s.rounded()))
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let sec = total % 60
+        return h > 0
+            ? String(format: "%d:%02d:%02d", h, m, sec)
+            : String(format: "%d:%02d", m, sec)
+    }
 
     var body: some View {
         ScrollView {
@@ -182,7 +234,8 @@ struct AgentRunDetailView: View {
     private func toolRow(_ entry: FlatToolEntry) -> some View {
         let formatted = AgentRunToolFormatter.format(
             toolName: entry.dispatch.toolName,
-            arguments: entry.dispatch.arguments
+            arguments: entry.dispatch.arguments,
+            resolveValue: podcastValueResolver
         )
         let isError = entry.dispatch.error != nil
         return HStack(alignment: .top, spacing: 10) {

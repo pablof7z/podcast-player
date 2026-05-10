@@ -6,18 +6,38 @@ enum AgentRunToolFormatter {
         let detail: String?
     }
 
-    static func format(toolName: String, arguments: [String: AnyCodable]) -> Formatted {
+    /// Optional value resolver — called per `(key, value)` pair before
+    /// the generic scalar render. Return a non-nil string to override
+    /// the rendering for known-friendly fields (e.g. UUID episode/show
+    /// IDs → titles, raw seconds → clock time). The view injects a
+    /// resolver that knows about `AppStateStore`; the formatter itself
+    /// stays decoupled from the live state.
+    typealias ValueResolver = (String, AnyCodable) -> String?
+
+    static func format(
+        toolName: String,
+        arguments: [String: AnyCodable],
+        resolveValue: ValueResolver? = nil
+    ) -> Formatted {
         Formatted(
             title: humanizeName(toolName),
-            detail: genericDetail(arguments)
+            detail: genericDetail(arguments, resolveValue: resolveValue)
         )
     }
 
-    private static func genericDetail(_ args: [String: AnyCodable]) -> String? {
+    private static func genericDetail(
+        _ args: [String: AnyCodable],
+        resolveValue: ValueResolver?
+    ) -> String? {
         guard !args.isEmpty else { return nil }
         let pieces = args
             .sorted { $0.key < $1.key }
-            .map { "\($0.key): \(scalarDescription($0.value))" }
+            .map { (key, value) -> String in
+                if let resolved = resolveValue?(key, value) {
+                    return "\(key): \(resolved)"
+                }
+                return "\(key): \(scalarDescription(value))"
+            }
         return pieces.joined(separator: ", ")
     }
 
