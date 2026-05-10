@@ -1,5 +1,4 @@
 import SwiftUI
-import os.log
 
 // MARK: - HomeView
 
@@ -16,8 +15,6 @@ import os.log
 struct HomeView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(PlaybackState.self) private var playback
-
-    private static let logger = Logger.app("HomeView")
 
     /// Drives the VoiceOver "Open episode details" custom action surfaced by
     /// every Home episode row/card. `accessibilityActions` cannot host a
@@ -184,65 +181,18 @@ struct HomeView: View {
 
     // MARK: - Refresh
 
-    /// Re-fetches every subscription's feed in parallel and merges the
-    /// new episodes into the store. Errors per-feed are logged and
-    /// swallowed so one bad feed can't kill the entire refresh.
+    /// Re-fetches every subscription's feed via the canonical
+    /// `SubscriptionRefreshService`. Delegating (rather than rolling our
+    /// own loop) gives us:
     ///
-    /// Fetch is fan-out via TaskGroup because each request is bound by
-    /// network latency and there are no cross-feed dependencies; the
-    /// store mutations are then applied serially on the main actor so
-    /// the observable writes remain ordered.
+    /// - Bounded concurrency (`maxConcurrent: 4`) so a user with 200
+    ///   shows doesn't open 200 simultaneous sockets on one pull.
+    /// - New-episode push notifications — the service computes the
+    ///   GUID delta between fetches and routes new ones through
+    ///   `NotificationService.notifyNewEpisodes(...)`. The previous
+    ///   inline loop here silently skipped that.
+    /// - Per-feed error swallowing already lives on the service.
     private func refreshAllFeeds() async {
-        let subs = store.sortedSubscriptions
-        guard !subs.isEmpty else { return }
-        let client = FeedClient()
-        // Capture the logger up front — `Self.logger` is implicitly
-        // main-actor isolated through the View, but `os.Logger` is
-        // Sendable, so a captured copy can be safely used from the
-        // detached fetch tasks.
-        let logger = Self.logger
-
-        // Each task returns the subscription it was responsible for
-        // alongside its outcome. `nil` means an error was already
-        // logged inside the task — surfaced as a no-op below.
-        let outcomes = await withTaskGroup(
-            of: (PodcastSubscription, FeedClient.FeedFetchResult?).self
-        ) { group in
-            for sub in subs {
-                group.addTask {
-                    do {
-                        let result = try await client.fetch(sub)
-                        return (sub, result)
-                    } catch {
-                        logger.error(
-                            "Feed refresh failed for \(sub.title, privacy: .public): \(String(describing: error), privacy: .public)"
-                        )
-                        return (sub, nil)
-                    }
-                }
-            }
-            var collected: [(PodcastSubscription, FeedClient.FeedFetchResult?)] = []
-            for await result in group {
-                collected.append(result)
-            }
-            return collected
-        }
-
-        for (sub, result) in outcomes {
-            guard let result else { continue }
-            switch result {
-            case .notModified:
-                var refreshed = sub
-                refreshed.lastRefreshedAt = Date()
-                store.updateSubscription(refreshed)
-            case .updated(let updatedSub, let episodes, _):
-                store.updateSubscription(updatedSub)
-                store.upsertEpisodes(
-                    episodes,
-                    forSubscription: updatedSub.id,
-                    evaluateAutoDownload: true
-                )
-            }
-        }
+        await SubscriptionRefreshService.shared.refreshAll(store: store)
     }
 }
