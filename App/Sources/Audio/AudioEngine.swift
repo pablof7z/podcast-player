@@ -287,11 +287,20 @@ final class AudioEngine {
     /// Wrap the cached UIImage in an `MPMediaItemArtwork`. Returns `nil`
     /// when no image has resolved yet — the lock screen falls back to its
     /// default state until the fetch lands.
+    ///
+    /// **Concurrency.** `MPNowPlayingInfoCenter` invokes the request handler
+    /// from its own internal workloop (`com.apple.MPRemoteCommandCenter`-
+    /// flavoured), NOT from the main thread. The closure has to be marked
+    /// `@Sendable` explicitly — without it, Swift 6 captures the enclosing
+    /// `@MainActor` isolation from this class and the runtime tripwire
+    /// `_swift_task_checkIsolatedSwift` traps the violation, crashing the
+    /// app the moment Now Playing tries to populate the lock-screen
+    /// artwork. Captured `image` is a local `let` (UIImage is Sendable
+    /// since iOS 17) and `Self.resize` is `nonisolated static`, so neither
+    /// capture pulls main-actor state across the boundary.
     private func makeMediaItemArtwork() -> MPMediaItemArtwork? {
         guard let image = lastPublishedArtworkImage else { return nil }
-        // 600x600 is the size Apple Music uses; the request handler
-        // resizes per the media center's specific bounds request.
-        return MPMediaItemArtwork(boundsSize: image.size) { requested in
+        return MPMediaItemArtwork(boundsSize: image.size) { @Sendable requested in
             // Cheap on-demand resize. iOS calls this with the exact
             // pixel bounds it needs (e.g. lock screen ~ 280pt, Control
             // Center ~ 100pt). Returning the original is fine for v1;
@@ -331,9 +340,16 @@ final class AudioEngine {
 
     /// Cheap UIGraphics resize for `MPMediaItemArtwork`'s request handler.
     /// Returns nil on failure so the caller can fall back to the original.
-    private static func resize(_ image: UIImage, to size: CGSize) -> UIImage? {
+    ///
+    /// `nonisolated` so it can be called from the `@Sendable` artwork
+    /// request closure (which itself runs on `MPNowPlayingInfoCenter`'s
+    /// background workloop). The inner drawing closure is also marked
+    /// `@Sendable` for the same reason — without it, Swift 6 inherits
+    /// MainActor isolation from the wrapping `@MainActor` class and the
+    /// runtime traps when the renderer invokes the actions block off-main.
+    nonisolated private static func resize(_ image: UIImage, to size: CGSize) -> UIImage? {
         let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { _ in
+        return renderer.image { @Sendable _ in
             image.draw(in: CGRect(origin: .zero, size: size))
         }
     }
