@@ -10,7 +10,6 @@ struct FeedbackView: View {
     @State private var store = FeedbackStore()
     @State private var composerPresented = false
     @State private var showMine = true
-    @State private var identityPresented = false
     @State private var searchText = ""
 
     private var visibleThreads: [FeedbackThread] {
@@ -50,9 +49,6 @@ struct FeedbackView: View {
         .sheet(isPresented: $composerPresented) {
             FeedbackComposeView(store: store, workflow: workflow)
         }
-        .sheet(isPresented: $identityPresented) {
-            UserIdentityView()
-        }
         .onAppear {
             if workflow.screenshot != nil || workflow.annotatedImage != nil {
                 composerPresented = true
@@ -66,8 +62,8 @@ struct FeedbackView: View {
     private var trailingToolbarButtons: some View {
         GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
             HStack(spacing: AppTheme.Spacing.sm) {
-                Button {
-                    identityPresented = true
+                NavigationLink {
+                    IdentityRootView()
                 } label: {
                     Image(systemName: "person.crop.circle")
                 }
