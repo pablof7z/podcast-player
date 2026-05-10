@@ -129,6 +129,20 @@ final class PlaybackState {
     /// final position but skips the `onEpisodeFinished` callback.
     var autoMarkPlayedOnFinish: Bool = true
 
+    /// Mirrors `Settings.autoSkipAds`. When `true`, `tickPersistence` seeks
+    /// past any `Episode.AdSegment` the playhead enters, throttled to one
+    /// skip per segment per playback session via `skippedAdSegmentIDs`.
+    /// Off by default so the toggle stays opt-in until detection quality
+    /// is proven.
+    var autoSkipAdsEnabled: Bool = false
+
+    /// Ad segments for the currently-loaded episode. Refreshed by
+    /// `RootView` whenever the episode changes (and after detection runs)
+    /// so the auto-skip loop doesn't have to reach into `AppStateStore`
+    /// from a tight 1-second tick. Empty when detection hasn't run or
+    /// found nothing.
+    var adSegments: [Episode.AdSegment] = []
+
     /// Resolves the parent show name for a given episode. Called by the
     /// snapshot writer so the widget can render the show subtitle without
     /// `PlaybackState` needing to know about `AppStateStore`. Returns `""`
@@ -152,6 +166,11 @@ final class PlaybackState {
     /// updates to once every 5 seconds — the widget's timeline refresh
     /// granularity makes finer writes wasted I/O.
     private var lastSnapshotWrite: Date?
+    /// Ad segments already auto-skipped in this playback session, keyed by
+    /// `AdSegment.id`. Cleared on episode change so a user replaying the
+    /// same episode sees ads skipped again. Not persisted — purely
+    /// throttling state for the 1-second tick loop.
+    private var skippedAdSegmentIDs: Set<UUID> = []
 
     // MARK: - Init
 
@@ -182,6 +201,10 @@ final class PlaybackState {
             onFlushPositions()
             didFireFinishedFor = nil
             lastSnapshotWrite = nil
+            // Skipped-ad set is per-episode-session. Replaying the same
+            // episode should re-skip the same ads; a brand-new episode
+            // starts with an empty set.
+            skippedAdSegmentIDs = []
         } else {
             // Same-id reload (Play/Resume tap, deep-link, chapter-row).
             // Clear the finished-flag so a user replaying an already-
@@ -192,6 +215,11 @@ final class PlaybackState {
             didFireFinishedFor = nil
         }
         episode = newEpisode
+        // Refresh the local ad-segments cache from the newly-loaded episode
+        // so the 1-second auto-skip loop has the right list. On same-episode
+        // reloads we still refresh — detection may have completed since the
+        // previous `setEpisode` call and added segments to the model.
+        adSegments = newEpisode.adSegments ?? []
         if !isSameEpisode {
             engine.load(newEpisode)
             if newEpisode.playbackPosition > 0 {
@@ -319,6 +347,10 @@ final class PlaybackState {
         if engine.episode == nil {
             engine.setRate(settings.defaultPlaybackRate)
         }
+        // Mirror the user's auto-skip-ads preference. The 1-second
+        // persistence loop reads `autoSkipAdsEnabled` directly so a Settings
+        // edit takes effect on the next tick — no need to re-open the player.
+        autoSkipAdsEnabled = settings.autoSkipAds
     }
 
     func setSleepTimer(_ timer: PlaybackSleepTimer) {
@@ -355,6 +387,12 @@ final class PlaybackState {
             onPersistPosition(episode.id, time)
         }
 
+        // Auto-skip ad segments. Gated on the user's opt-in setting; the
+        // throttling set guarantees one skip per segment per session even
+        // if the user manually scrubs back into the same segment (a second
+        // scrub-back is treated as deliberate — the user wants the ad).
+        applyAutoSkipAdsIfNeeded(at: time)
+
         // Throttled snapshot write — at most once every 5 seconds. The widget
         // re-reads on a 60s timeline, so finer writes are pure waste.
         writeNowPlayingSnapshot(force: false)
@@ -380,6 +418,27 @@ final class PlaybackState {
                 onFlushPositions()
             }
         }
+    }
+
+    /// Seeks past any ad segment the playhead currently sits inside, when
+    /// `autoSkipAdsEnabled` is on. Throttled to one skip per `AdSegment.id`
+    /// per playback session via `skippedAdSegmentIDs` — a user who scrubs
+    /// back into a previously-skipped ad doesn't get auto-yanked forward a
+    /// second time, treating that as a deliberate "let it play" intent.
+    ///
+    /// No-op when the engine is paused (`time == 0` && `!isPlaying`) — we
+    /// shouldn't fight a user who paused inside an ad to copy a URL.
+    private func applyAutoSkipAdsIfNeeded(at time: TimeInterval) {
+        guard autoSkipAdsEnabled, !adSegments.isEmpty else { return }
+        // Find the first ad whose `[start, end)` contains the playhead and
+        // hasn't been auto-skipped yet this session. Strict half-open
+        // intervals so the player can land on `ad.end` after a skip
+        // without immediately re-triggering itself.
+        guard let segment = adSegments.first(where: { ad in
+            time >= ad.start && time < ad.end && !skippedAdSegmentIDs.contains(ad.id)
+        }) else { return }
+        skippedAdSegmentIDs.insert(segment.id)
+        engine.seek(to: segment.end)
     }
 
     /// Writes the current episode metadata into the App Group `UserDefaults`

@@ -67,6 +67,13 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     var downloadState: DownloadState
     /// Lifecycle of transcript ingestion.
     var transcriptState: TranscriptState
+    /// Ad segments detected by `AdSegmentDetector` from the transcript. `nil`
+    /// when detection hasn't been run yet (or the transcript wasn't ready);
+    /// an empty array means detection ran and found no ads. Drives the
+    /// auto-skip wiring in `PlaybackState` and the amber stripe on the
+    /// chapter rail. Older saved state decodes via `decodeIfPresent` so the
+    /// migration is silent.
+    var adSegments: [AdSegment]?
 
     init(
         id: UUID = UUID(),
@@ -89,7 +96,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         played: Bool = false,
         isStarred: Bool = false,
         downloadState: DownloadState = .notDownloaded,
-        transcriptState: TranscriptState = .none
+        transcriptState: TranscriptState = .none,
+        adSegments: [AdSegment]? = nil
     ) {
         self.id = id
         self.subscriptionID = subscriptionID
@@ -112,6 +120,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         self.isStarred = isStarred
         self.downloadState = downloadState
         self.transcriptState = transcriptState
+        self.adSegments = adSegments
     }
 
     // MARK: - Codable (forward-compat decoding)
@@ -122,6 +131,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         case chapters, persons, soundBites
         case publisherTranscriptURL, publisherTranscriptType, chaptersURL
         case playbackPosition, played, isStarred, downloadState, transcriptState
+        case adSegments
     }
 
     init(from decoder: Decoder) throws {
@@ -147,6 +157,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         isStarred = try c.decodeIfPresent(Bool.self, forKey: .isStarred) ?? false
         downloadState = try c.decodeIfPresent(DownloadState.self, forKey: .downloadState) ?? .notDownloaded
         transcriptState = try c.decodeIfPresent(TranscriptState.self, forKey: .transcriptState) ?? .none
+        adSegments = try c.decodeIfPresent([AdSegment].self, forKey: .adSegments)
     }
 }
 
@@ -279,5 +290,53 @@ extension Episode {
             self.duration = duration
             self.title = title
         }
+    }
+
+    /// A detected ad span inside the audio. Produced by `AdSegmentDetector`
+    /// from the transcript and persisted on the episode so the player can
+    /// auto-skip (gated by `Settings.autoSkipAds`) and the chapter rail can
+    /// flag overlapping chapters with the amber stripe.
+    struct AdSegment: Codable, Sendable, Hashable, Identifiable {
+        var id: UUID
+        /// Start of the ad in seconds from the beginning of the episode.
+        var start: TimeInterval
+        /// End of the ad in seconds. Always greater than `start`.
+        var end: TimeInterval
+        /// Where in the episode this ad sits — pre-roll, mid-roll, or
+        /// post-roll. Drives the "Skip 30s ad" pre-roll affordance.
+        var kind: AdKind
+
+        init(
+            id: UUID = UUID(),
+            start: TimeInterval,
+            end: TimeInterval,
+            kind: AdKind
+        ) {
+            self.id = id
+            self.start = start
+            self.end = end
+            self.kind = kind
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case id, start, end, kind
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            start = try c.decode(TimeInterval.self, forKey: .start)
+            end = try c.decode(TimeInterval.self, forKey: .end)
+            kind = try c.decodeIfPresent(AdKind.self, forKey: .kind) ?? .midroll
+        }
+    }
+
+    /// Classification for an `AdSegment`. `preroll` ads anchor the
+    /// "Skip 30s ad" button above the scrubber; `midroll` is the common
+    /// case; `postroll` segments are flagged but don't drive the pre-roll UI.
+    enum AdKind: String, Codable, Sendable, Hashable, CaseIterable {
+        case preroll
+        case midroll
+        case postroll
     }
 }

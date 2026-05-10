@@ -103,6 +103,13 @@ struct EpisodeDetailView: View {
                 episodeID: episode.id,
                 store: store
             )
+            // Detect ad segments for the same reason. Idempotent — early
+            // returns once `Episode.adSegments` is non-nil (including an
+            // empty array signalling "detection ran, found no ads").
+            await AdSegmentDetector.shared.detectIfNeeded(
+                episodeID: episode.id,
+                store: store
+            )
         }
     }
 

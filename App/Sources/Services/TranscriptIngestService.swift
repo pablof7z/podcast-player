@@ -353,6 +353,16 @@ final class TranscriptIngestService {
             guard let appStore else { return }
             await AIChapterCompiler.shared.compileIfNeeded(episodeID: episodeID, store: appStore)
         }
+
+        // STEP 4: Fire-and-forget ad-segment detection. Also idempotent —
+        // early-returns when `Episode.adSegments` is already set (including
+        // an explicit empty array meaning "no ads found"). Independent of
+        // the chapter compile so a chapter-rich episode still gets ad spans
+        // marked.
+        Task { @MainActor [weak appStore] in
+            guard let appStore else { return }
+            await AdSegmentDetector.shared.detectIfNeeded(episodeID: episodeID, store: appStore)
+        }
     }
 
     // MARK: - Helpers

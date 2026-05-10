@@ -87,6 +87,13 @@ struct PlayerView: View {
                     episodeID: episode.id,
                     store: store
                 )
+                // Same idempotency story for ad-segment detection. Cheap
+                // when ads were already detected (early return on
+                // `adSegments != nil`).
+                await AdSegmentDetector.shared.detectIfNeeded(
+                    episodeID: episode.id,
+                    store: store
+                )
             }
             // Idempotent — wires the singleton's MPRemoteCommand once and
             // refreshes its playback/store handles every time the episode
@@ -326,6 +333,11 @@ struct PlayerView: View {
 
     private var playbackChrome: some View {
         VStack(spacing: AppTheme.Spacing.md) {
+            // Pre-roll skip button — only renders while the playhead sits
+            // inside a `.preroll` ad segment. Animates in/out with the
+            // surrounding chrome so it doesn't jump-cut on dismiss.
+            PlayerPrerollSkipButton(state: state, episode: liveEpisode)
+                .animation(AppTheme.Animation.spring, value: state.currentTime)
             PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
             PlayerControlsView(
                 state: state,

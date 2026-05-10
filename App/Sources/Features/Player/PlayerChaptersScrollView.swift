@@ -32,6 +32,18 @@ struct PlayerChaptersScrollView: View {
         chapters.active(at: state.currentTime)?.id
     }
 
+    /// Detected ad spans for the currently-loaded episode. Read live via the
+    /// store rather than `PlaybackState.adSegments` so a detection result
+    /// that lands while the player surface is open (e.g. the user opened a
+    /// freshly-ingested episode) reflects on the rail immediately. The
+    /// auto-skip path still goes through `PlaybackState.adSegments` for
+    /// per-tick efficiency.
+    private var adSegments: [Episode.AdSegment] {
+        guard let id = state.episode?.id,
+              let episode = store.episode(id: id) else { return [] }
+        return episode.adSegments ?? []
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
@@ -64,6 +76,7 @@ struct PlayerChaptersScrollView: View {
 
     @ViewBuilder
     private func chapterRow(_ chapter: Episode.Chapter, isActive: Bool) -> some View {
+        let overlapsAd = chapter.overlapsAd(in: chapters, adSegments: adSegments)
         Button {
             handleTap(chapter)
         } label: {
@@ -77,6 +90,12 @@ struct PlayerChaptersScrollView: View {
                     .foregroundStyle(isActive ? .primary : .secondary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
+                if overlapsAd {
+                    Image(systemName: "speaker.slash")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.orange)
+                        .accessibilityLabel("Contains an ad")
+                }
                 if chapter.isAIGenerated {
                     aiPill
                 }
@@ -99,6 +118,18 @@ struct PlayerChaptersScrollView: View {
             .padding(.horizontal, AppTheme.Spacing.sm)
             .padding(.vertical, 8)
             .background(rowBackground(isActive: isActive))
+            .overlay(alignment: .leading) {
+                if overlapsAd {
+                    // Amber leading stripe — informational only. Tapping the
+                    // row still seeks normally; the stripe just tells the
+                    // user this chapter overlaps a detected ad span.
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(Color.orange)
+                        .frame(width: 3)
+                        .padding(.vertical, 4)
+                        .accessibilityHidden(true)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

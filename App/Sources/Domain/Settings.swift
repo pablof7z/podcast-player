@@ -87,6 +87,11 @@ struct Settings: Codable, Hashable, Sendable {
     /// Defaults on for parity with Apple Podcasts. Suppressed when the
     /// sleep timer has armed an end-of-episode stop.
     var autoPlayNext: Bool = true
+    /// When `true`, the player auto-seeks past detected ad segments
+    /// (`AdSegmentDetector` output, stored on `Episode.adSegments`).
+    /// Defaults off for v1 — opt-in until detection quality is proven. The
+    /// chapter rail still flags ad-overlapping chapters visually regardless.
+    var autoSkipAds: Bool = false
 
     // Wiki
     /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as
@@ -140,7 +145,7 @@ struct Settings: Codable, Hashable, Sendable {
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
-        case autoDeleteDownloadsAfterPlayed, autoPlayNext
+        case autoDeleteDownloadsAfterPlayed, autoPlayNext, autoSkipAds
         case wikiAutoGenerateOnTranscriptIngest
         case autoIngestPublisherTranscripts, autoFallbackToScribe
         case notifyOnNewEpisodes, notifyOnBriefingReady
@@ -184,6 +189,7 @@ struct Settings: Codable, Hashable, Sendable {
         autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
         autoDeleteDownloadsAfterPlayed = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) ?? false
         autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
+        autoSkipAds = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAds) ?? false
         wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
         autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? true
         autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
@@ -237,6 +243,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(autoMarkPlayedAtEnd, forKey: .autoMarkPlayedAtEnd)
         try c.encode(autoDeleteDownloadsAfterPlayed, forKey: .autoDeleteDownloadsAfterPlayed)
         try c.encode(autoPlayNext, forKey: .autoPlayNext)
+        try c.encode(autoSkipAds, forKey: .autoSkipAds)
         try c.encode(wikiAutoGenerateOnTranscriptIngest, forKey: .wikiAutoGenerateOnTranscriptIngest)
         try c.encode(autoIngestPublisherTranscripts, forKey: .autoIngestPublisherTranscripts)
         try c.encode(autoFallbackToScribe, forKey: .autoFallbackToScribe)

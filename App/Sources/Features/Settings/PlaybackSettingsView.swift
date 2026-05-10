@@ -26,6 +26,7 @@ struct PlaybackSettingsView: View {
             skipSection
             autoMarkSection
             autoPlayNextSection
+            autoSkipAdsSection
         }
         .navigationTitle("Playback")
         .navigationBarTitleDisplayMode(.inline)
@@ -96,6 +97,16 @@ struct PlaybackSettingsView: View {
         }
     }
 
+    private var autoSkipAdsSection: some View {
+        Section {
+            Toggle(isOn: autoSkipAdsBinding) {
+                Label("Auto-skip ads", systemImage: "speaker.slash.fill")
+            }
+        } footer: {
+            Text("When on, the player seeks past ad reads detected from the transcript. Detection quality varies — leave off if you'd rather hear the host's sponsor breaks. Detected ads are still flagged on the chapter list either way.")
+        }
+    }
+
     // MARK: - Bindings
 
     private var rateBinding: Binding<Double> {
@@ -152,6 +163,18 @@ struct PlaybackSettingsView: View {
             set: { v in
                 var s = store.state.settings
                 s.autoPlayNext = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
+        )
+    }
+
+    private var autoSkipAdsBinding: Binding<Bool> {
+        Binding(
+            get: { store.state.settings.autoSkipAds },
+            set: { v in
+                var s = store.state.settings
+                s.autoSkipAds = v
                 store.updateSettings(s)
                 Haptics.selection()
             }
