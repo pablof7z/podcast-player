@@ -90,6 +90,10 @@ final class BriefingPlayerEngine {
     /// the absolute time inside that file, computed from cumulative durations.
     func play(stitchedURL: URL) async {
         guard !tracks.isEmpty else { return }
+        // Make sure the shared audio session is in `.briefingPlayback` so
+        // lock-screen / Now-Playing / CarPlay all light up correctly. Idempotent
+        // when already in that mode.
+        try? AudioSessionCoordinator.shared.activate(.briefingPlayback)
         let positionSeconds = absoluteSecondsForCurrentTrack()
         await host?.play(assetURL: stitchedURL, startAt: positionSeconds)
         isPlaying = true
@@ -101,6 +105,9 @@ final class BriefingPlayerEngine {
     }
 
     func resume() async {
+        // Resume always lands in `.briefingPlayback` — even if we got here
+        // straight out of a barge-in turn that was using `.duckedForVoice`.
+        try? AudioSessionCoordinator.shared.activate(.briefingPlayback)
         await host?.resume()
         isPlaying = true
     }

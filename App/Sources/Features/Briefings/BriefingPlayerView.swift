@@ -1,3 +1,5 @@
+import AVFoundation
+import Speech
 import SwiftUI
 
 // MARK: - BriefingPlayerView
@@ -19,8 +21,13 @@ struct BriefingPlayerView: View {
     // MARK: State
 
     @State private var engine = BriefingPlayerEngine()
+    @State private var mic = BriefingMicCaptureController()
     @State private var promptDraft: String = ""
     @State private var isShowingBranchPrompt = false
+    /// Whether the user is currently holding the mic glyph. Drives chrome
+    /// (the *listening* glow on the transcript pane — UX-08 §4) and the
+    /// `engine.beginBranch` / `endBranch` lifecycle.
+    @State private var isHoldingMic = false
 
     // MARK: Body
 
@@ -74,7 +81,21 @@ struct BriefingPlayerView: View {
 
     private var transcriptPane: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            if let segment = currentSegment {
+            if isHoldingMic {
+                // Live transcript of the user's question while the mic is
+                // held (UX-08 §4 — *listening* glow + frozen segment text).
+                if !mic.liveTranscript.isEmpty {
+                    Text(mic.liveTranscript)
+                        .font(.system(.body, design: .serif).italic())
+                        .lineSpacing(6)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text("Listening…")
+                        .font(.system(.body, design: .serif).italic())
+                        .foregroundStyle(.secondary)
+                }
+            } else if let segment = currentSegment {
                 Text(segment.bodyText)
                     .font(.system(.body, design: .serif))
                     .lineSpacing(6)
@@ -88,8 +109,9 @@ struct BriefingPlayerView: View {
         .padding(AppTheme.Spacing.md)
         .glassSurface(
             cornerRadius: AppTheme.Corner.lg,
-            tint: BriefingsView.brassAmber.opacity(0.18)
+            tint: BriefingsView.brassAmber.opacity(isHoldingMic ? 0.34 : 0.18)
         )
+        .animation(.easeInOut(duration: 0.18), value: isHoldingMic)
     }
 
     // MARK: Transport (W2 line 8)
@@ -123,10 +145,72 @@ struct BriefingPlayerView: View {
                 Task { await engine.skipCurrentSegment() }
             }
             Spacer()
+            micButton
             actionButton(label: "share", icon: "square.and.arrow.up") {
                 /* share-card composition handled by ShareSheet */
             }
         }
+    }
+
+    /// Hold-to-talk mic. UX-08 §5 *Hold-to-pause-and-ask*: pressing ducks
+    /// briefing audio, recording starts; releasing finalises the question
+    /// and hands it to `engine.endBranch`. Permission denial collapses the
+    /// glyph into a typed-sheet fallback so the surface is never gated.
+    @ViewBuilder
+    private var micButton: some View {
+        if mic.phase == .denied {
+            // Fallback per spec: UI-only "Pause + ask in chat" path.
+            actionButton(label: "ask", icon: "text.bubble") {
+                Task { await engine.pause() }
+                isShowingBranchPrompt = true
+            }
+        } else {
+            VStack(spacing: 2) {
+                Image(systemName: isHoldingMic ? "mic.fill" : "mic")
+                    .foregroundStyle(isHoldingMic ? BriefingsView.brassAmber : .primary)
+                Text(isHoldingMic ? "listening" : "hold")
+                    .font(.caption2.weight(.medium))
+                    .tracking(1.5)
+            }
+            .padding(.horizontal, AppTheme.Spacing.sm)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isHoldingMic else { return }
+                        isHoldingMic = true
+                        Task { await beginMicCapture() }
+                    }
+                    .onEnded { _ in
+                        guard isHoldingMic else { return }
+                        isHoldingMic = false
+                        Task { await endMicCapture() }
+                    }
+            )
+        }
+    }
+
+    @MainActor
+    private func beginMicCapture() async {
+        // Pause the briefing so the user's question starts a clean branch.
+        await engine.beginBranch(prompt: "")
+        await mic.start { _ in
+            // Live transcript already mirrored on `mic.liveTranscript`; the
+            // closure exists so SwiftUI body recomputes via @Observable.
+        }
+    }
+
+    @MainActor
+    private func endMicCapture() async {
+        let transcript = mic.stop()
+        // For now, the agent answer pipeline (Lane 6/8) is not wired to this
+        // surface. We close the branch with a placeholder echo so the engine's
+        // pause-and-resume contract still holds end-to-end. When the agent
+        // surface lands, swap this for the real answer text.
+        let answer = transcript.isEmpty
+            ? "I didn't catch that — try again."
+            : "You asked: \(transcript)"
+        await engine.endBranch(prompt: transcript, answerText: answer)
     }
 
     private func actionButton(
@@ -267,6 +351,16 @@ struct BriefingPlayerView: View {
 
     @MainActor
     private func prepareEngine() async {
+        // Reflect existing mic / speech authorization into `mic.phase` so the
+        // mic button renders the correct state on first appear (without
+        // prompting). Only an explicit hold actually requests permission.
+        let micStatus = AVAudioApplication.shared.recordPermission
+        let srStatus = SFSpeechRecognizer.authorizationStatus()
+        if micStatus == .denied || (srStatus != .notDetermined && srStatus != .authorized) {
+            // Force the denied chrome so the typed-sheet fallback is exposed.
+            _ = await mic.requestPermission()
+        }
+
         // Build minimal `BriefingTrack`s from segments so the engine can
         // navigate without re-running the composer. Real builds will pass the
         // composer's `tracks` through — for saved-on-disk briefings (which
