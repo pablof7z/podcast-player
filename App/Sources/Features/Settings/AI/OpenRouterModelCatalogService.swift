@@ -117,6 +117,12 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
     var knowledgeCutoff: String?
     var releaseDate: String?
     var lastUpdated: String?
+    /// Lower-cased haystack used by the model selector's search filter.
+    /// Stored (not computed) because the selector recomputes
+    /// `visibleModels` on every keystroke, and a 200-model OpenRouter
+    /// catalogue was rebuilding 200 joined strings + 200 lowercased
+    /// copies per keystroke. Built once at init.
+    let searchText: String
 
     init(openRouter model: ORModel, modelsDev: ModelsDevCatalog?) {
         let devModel = modelsDev?.openRouterModel(id: model.id)
@@ -155,6 +161,16 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         self.knowledgeCutoff = model.knowledgeCutoff ?? devModel?.knowledge
         self.releaseDate = devModel?.releaseDate
         self.lastUpdated = devModel?.lastUpdated
+        self.searchText = Self.makeSearchText(
+            id: self.id,
+            name: self.name,
+            providerName: self.providerName,
+            providerID: self.providerID,
+            modelDescription: self.modelDescription,
+            tokenizer: self.tokenizer,
+            inputModalities: self.inputModalities,
+            outputModalities: self.outputModalities
+        )
     }
 
     init(ollama model: OllamaTagModel) {
@@ -198,6 +214,33 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         self.knowledgeCutoff = nil
         self.releaseDate = nil
         self.lastUpdated = model.modifiedAt?.formatted(date: .abbreviated, time: .omitted)
+        self.searchText = Self.makeSearchText(
+            id: self.id,
+            name: self.name,
+            providerName: self.providerName,
+            providerID: self.providerID,
+            modelDescription: self.modelDescription,
+            tokenizer: self.tokenizer,
+            inputModalities: self.inputModalities,
+            outputModalities: self.outputModalities
+        )
+    }
+
+    private static func makeSearchText(
+        id: String,
+        name: String,
+        providerName: String,
+        providerID: String,
+        modelDescription: String?,
+        tokenizer: String?,
+        inputModalities: [String],
+        outputModalities: [String]
+    ) -> String {
+        [id, name, providerName, providerID,
+         modelDescription ?? "", tokenizer ?? "",
+         inputModalities.joined(separator: " "),
+         outputModalities.joined(separator: " ")]
+        .joined(separator: " ").lowercased()
     }
 
     var isFree: Bool {
@@ -216,14 +259,6 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         guard let input = promptCostPerMillion, let output = completionCostPerMillion else { return "Variable" }
         if input == 0 && output == 0 { return "Free" }
         return "\(Self.money(input)) in / \(Self.money(output)) out"
-    }
-
-    var searchText: String {
-        [id, name, providerName, providerID,
-         modelDescription ?? "", tokenizer ?? "",
-         inputModalities.joined(separator: " "),
-         outputModalities.joined(separator: " ")]
-        .joined(separator: " ").lowercased()
     }
 
     static func money(_ value: Double) -> String {

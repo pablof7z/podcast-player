@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "model-selector-perf",
+      "shipped_at": "2026-05-10T23:00:00Z",
+      "lines": [
+        "Model selector search no longer rebuilds 200 lower-cased haystacks per keystroke — typing into the OpenRouter / Ollama list is snappier"
+      ]
+    },
+    {
       "id": "feedback-search-fold",
       "shipped_at": "2026-05-10T22:55:00Z",
       "lines": [
