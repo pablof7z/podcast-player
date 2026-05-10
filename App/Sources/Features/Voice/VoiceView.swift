@@ -119,18 +119,30 @@ struct VoiceView: View {
     // MARK: - Orb
 
     private var orb: some View {
-        VoiceOrbView(mode: orbMode, diameter: 240)
+        VoiceOrbView(state: orbState, inputRMS: orbInputRMS)
     }
 
-    private var orbMode: VoiceOrbView.Mode {
+    /// Map the conversation manager's state machine onto the orb's visual
+    /// state. Error and briefing-handoff states collapse onto `.idle` so
+    /// the orb stays consistent — error chrome lives in the badge.
+    private var orbState: VoiceOrbState {
         switch manager.state {
         case .idle: return .idle
         case .listening: return .listening
-        case .thinking: return .thinking
-        case .speaking: return .speaking
-        case .duckedWhileBriefing: return .ducked
-        case .error: return .error
+        case .thinking: return .thinking(toolName: nil)
+        case .speaking:
+            return manager.isUserBargingIn ? .bargeIn : .speaking
+        case .duckedWhileBriefing: return .idle
+        case .error: return .idle
         }
+    }
+
+    /// Hook for the orb's live input pulse. While we're in the barge-in
+    /// preview window the manager surfaces a non-zero level; otherwise the
+    /// orb stays still. Future work pipes the detector's running RMS
+    /// through the manager.
+    private var orbInputRMS: Float {
+        manager.isUserBargingIn ? 0.18 : 0
     }
 
     // MARK: - Captions
