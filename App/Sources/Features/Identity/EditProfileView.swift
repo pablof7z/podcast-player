@@ -4,8 +4,12 @@ import SwiftUI
 //
 // Push from `IdentityRootView`. Per identity-05-synthesis §4.3. Save signs and
 // publishes a kind-0 profile event via `UserIdentityStore.publishProfile`.
-// Failure (relay unreachable) falls back to a local-only banner so the user's
-// edit isn't lost; next launch's auto-publish path retries.
+//
+// In-flight UX: Save flips to a `ProgressView` in the toolbar and Cancel
+// disables so a double-tap can't queue two publishes. On success the dirty
+// snapshot advances and the view dismisses after a 900 ms banner beat. On
+// failure the view stays open with a "Tap Save to retry" warning — Save stays
+// enabled because the snapshot didn't advance.
 //
 // Field rules from §4.3:
 //   - Display name: 0-48 chars, empty allowed (falls back to slug)
@@ -27,7 +31,6 @@ struct EditProfileView: View {
     @Environment(UserIdentityStore.self) private var identity
     @Environment(\.dismiss) private var dismiss
 
-    // Local edit state — Slice A stores only on this device.
     @State private var displayName: String = ""
     @State private var username: String = ""
     @State private var about: String = ""
@@ -35,6 +38,10 @@ struct EditProfileView: View {
     @State private var pictureSheetPresented = false
     @State private var discardConfirmPresented = false
     @State private var saveBanner: SaveBanner?
+    /// True while `publishProfile` is in flight. Drives the toolbar
+    /// spinner + Save-button disable so a double-tap can't queue two
+    /// publishes for the same edit.
+    @State private var isPublishing = false
 
     /// Captures the initial values so dirty-detection can compare and
     /// cancel-with-dirty can offer a Discard alert.
@@ -60,7 +67,7 @@ struct EditProfileView: View {
                     }
             }
             Section {
-                TextField("bright-signal-a3f2", text: $username)
+                TextField(usernamePlaceholder, text: $username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($usernameFocused)
@@ -84,11 +91,16 @@ struct EditProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Save") { Task { await save() } }
-                    .disabled(!isDirty)
+                if isPublishing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("Save") { Task { await save() } }
+                        .disabled(!isDirty)
+                }
             }
             ToolbarItem(placement: .topBarLeading) {
                 Button("Cancel") { handleCancel() }
+                    .disabled(isPublishing)
             }
         }
         .alert("Discard changes?", isPresented: $discardConfirmPresented) {
@@ -213,11 +225,22 @@ struct EditProfileView: View {
         UserProfileDisplay.from(publicKeyHex: identity.publicKeyHex)
     }
 
+    /// Username field's placeholder. Falls back to a generic slug shape
+    /// only when the identity is somehow missing — normally we show the
+    /// real generated slug so the user sees what their username *will*
+    /// be if they leave the field blank.
+    private var usernamePlaceholder: String {
+        identityProfile?.slug ?? "bright-signal-a3f2"
+    }
+
+    /// Seed the form from the identity's auto-generated kind-0 fields.
+    /// `UserIdentityStore` doesn't yet cache the last-published kind-0
+    /// payload locally, so we rebuild the deterministic name + slug +
+    /// avatar from the pubkey using the same algorithm
+    /// `publishGeneratedProfileIfNeeded` uses. Once that cache lands the
+    /// hydrate path can prefer it over the deterministic rebuild.
     private func hydrateFromIdentity() {
         guard initialSnapshot == nil else { return }
-        // TODO Slice B: hydrate from UserIdentityStore's stored kind-0 fields
-        // once they exist. Today we seed with the deterministic display name
-        // and slug emitted by `publishGeneratedProfileIfNeeded`.
         let p = identityProfile
         displayName = p?.displayName ?? ""
         username    = p?.slug ?? ""
@@ -243,14 +266,19 @@ struct EditProfileView: View {
         }
     }
 
+    /// Sign + publish the kind-0 profile. Two-outcome flow:
+    ///   - **Success**: clear-dirty (so a second tap doesn't republish), show
+    ///     a success banner long enough to read (≈900 ms), then dismiss.
+    ///   - **Failure**: keep the view open, surface a warning banner with the
+    ///     reason so the user can fix and retry. We do NOT move
+    ///     `initialSnapshot` forward on failure — Save stays enabled.
+    /// Haptic fires AFTER the publish attempt so the user's wrist feedback
+    /// matches the actual outcome.
     private func save() async {
-        // Haptic fires AFTER the publish attempt so the user's wrist
-        // feedback matches the actual outcome — previously a success
-        // tap was played the moment they tapped Save, even when the
-        // relay was unreachable and the banner ended up warning.
-        initialSnapshot = currentSnapshot
         let snapshot = currentSnapshot
+        isPublishing = true
         saveBanner = SaveBanner(message: "Publishing…", isWarning: false)
+        defer { isPublishing = false }
         do {
             _ = try await identity.publishProfile(
                 name: snapshot.username,
@@ -258,17 +286,18 @@ struct EditProfileView: View {
                 about: snapshot.about,
                 picture: snapshot.pictureURL
             )
+            initialSnapshot = snapshot
             Haptics.success()
             saveBanner = SaveBanner(message: "Profile published.", isWarning: false)
+            try? await Task.sleep(for: .milliseconds(900))
+            dismiss()
         } catch {
             Haptics.warning()
             saveBanner = SaveBanner(
-                message: "Saved locally — couldn't reach the relay. We'll retry next launch.",
+                message: "Couldn't reach the relay. Tap Save to retry.",
                 isWarning: true
             )
         }
-        try? await Task.sleep(for: .seconds(0.3))
-        dismiss()
     }
 }
 
