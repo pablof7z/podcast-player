@@ -33,6 +33,7 @@ struct EditTextSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var draft: String = ""
+    @State private var showDiscardConfirm = false
     @FocusState private var editorFocused: Bool
 
     // MARK: - Body
@@ -67,7 +68,7 @@ struct EditTextSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { handleCancel() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -78,6 +79,19 @@ struct EditTextSheet: View {
                     .disabled(saveDisabled)
                     .fontWeight(.semibold)
                 }
+            }
+            // Standard "discard unsaved changes" confirm. Without this,
+            // a misfired Cancel tap silently wiped a half-written note
+            // or reverted an in-progress edit, with no undo.
+            .confirmationDialog(
+                "Discard changes?",
+                isPresented: $showDiscardConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Discard", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            } message: {
+                Text("Your edits will be lost.")
             }
         }
         .presentationDetents([.medium, .large])
@@ -92,5 +106,20 @@ struct EditTextSheet: View {
 
     private var saveDisabled: Bool {
         draft.isBlank || draft.trimmed == initialText.trimmed
+    }
+
+    /// True when the user has materially changed the text since the
+    /// sheet opened. Drives whether Cancel is a one-tap dismiss or
+    /// surfaces the discard-confirmation dialog.
+    private var hasUnsavedChanges: Bool {
+        draft.trimmed != initialText.trimmed
+    }
+
+    private func handleCancel() {
+        if hasUnsavedChanges {
+            showDiscardConfirm = true
+            return
+        }
+        dismiss()
     }
 }
