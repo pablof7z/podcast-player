@@ -195,11 +195,20 @@ struct StorageSettingsView: View {
     }
 
     private func formattedSize(_ bytes: Int64) -> String {
+        Self.byteCountFormatter.string(fromByteCount: bytes)
+    }
+
+    /// Shared, configured once. `ByteCountFormatter` touches Foundation
+    /// locale tables on init and is reentrant for `string(fromByteCount:)`
+    /// — `formattedSize` was minting a new one for every row in the
+    /// per-show breakdown, so a user with 30 downloaded shows re-allocated
+    /// 30 formatters per render.
+    nonisolated(unsafe) private static let byteCountFormatter: ByteCountFormatter = {
         let f = ByteCountFormatter()
         f.countStyle = .file
         f.allowedUnits = [.useAll]
-        return f.string(fromByteCount: bytes)
-    }
+        return f
+    }()
 
     // MARK: - Actions
 
