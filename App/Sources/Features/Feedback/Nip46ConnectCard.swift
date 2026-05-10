@@ -1,21 +1,39 @@
 import SwiftUI
 import UIKit
 
-/// "Add a remote signer" card embedded inside `UserIdentityView`. Lets the user paste
-/// a `bunker://` URI, shows live connection state, surfaces auth-challenge URLs, and
-/// (when connected) confirms the user's pubkey + offers a disconnect button.
+/// "Add a remote signer" card. Lets the user paste a `bunker://` URI, shows live
+/// connection state, surfaces auth-challenge URLs, and (when connected) confirms
+/// the user's pubkey + offers a disconnect button.
+///
+/// Two presentations:
+/// - `.card` — embedded look (rounded secondary background + header glyph +
+///   footnote). The default; preserved for any caller that still wants the
+///   self-contained card.
+/// - `.primary` — promoted to a full push surface (per identity-05-synthesis §4.7).
+///   The hosting view (`RemoteSignerView`) supplies title, intro copy, and the
+///   trailing footnote, so the card drops outer chrome, header glyph, and footnote.
 struct Nip46ConnectCard: View {
+
+    /// How the card paints itself.
+    enum Presentation {
+        /// Embedded card with `.secondarySystemBackground`, header, and footnote.
+        case card
+        /// Primary push-surface treatment — drop outer chrome, header, and footnote.
+        case primary
+    }
+
     @Environment(UserIdentityStore.self) private var identity
     @Environment(\.openURL) private var openURL
     @Binding var bunkerInput: String
     @Binding var isConnectingRemote: Bool
     let connect: () async -> Void
     let disconnect: () async -> Void
+    var presentation: Presentation = .card
     @FocusState private var bunkerFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            header
+            if presentation == .card { header }
             switch identity.remoteSignerState {
             case .idle:
                 if identity.isRemoteSigner {
@@ -34,11 +52,21 @@ struct Nip46ConnectCard: View {
             case .failed(let message):
                 failedRow(message: message)
             }
-            footnote
+            if presentation == .card { footnote }
         }
-        .padding(AppTheme.Spacing.md)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
+        .padding(presentation == .card ? AppTheme.Spacing.md : 0)
+        .background(cardBackground)
         .onAppear { autoPasteBunkerIfPresent() }
+    }
+
+    @ViewBuilder
+    private var cardBackground: some View {
+        if presentation == .card {
+            RoundedRectangle(cornerRadius: AppTheme.Corner.md)
+                .fill(Color(.secondarySystemBackground))
+        } else {
+            Color.clear
+        }
     }
 
     // MARK: - Header

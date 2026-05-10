@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     var body: some View {
         List {
+            identitySection
             librarySection
             playbackSection
             knowledgeSection
@@ -42,6 +43,15 @@ struct SettingsView: View {
     }
 
     // MARK: - Sections
+
+    /// "Identity" sits at the top of Settings, above Library. The single row
+    /// pushes `IdentityRootView`. Per identity-05-synthesis §3 + §4.1 — Identity
+    /// is a top-level surface, not a Feedback concern.
+    private var identitySection: some View {
+        Section {
+            IdentitySettingsRow()
+        }
+    }
 
     /// "Library" groups everything tied to the user's catalogue of shows.
     private var librarySection: some View {
