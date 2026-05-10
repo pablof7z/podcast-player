@@ -19,6 +19,10 @@ struct PlayerTranscriptRow: View {
     let speaker: Speaker?
     let isActive: Bool
     let onTap: () -> Void
+    /// Long-press → "Ask the agent about this moment". Optional so existing
+    /// callers that don't yet wire the agent (previews, fixtures) keep
+    /// compiling without a no-op stub.
+    var onAskAgent: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -50,9 +54,22 @@ struct PlayerTranscriptRow: View {
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+        .contextMenu {
+            if let onAskAgent {
+                Button {
+                    Haptics.selection()
+                    onAskAgent()
+                } label: {
+                    Label("Ask the agent about this", systemImage: "sparkles")
+                }
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: Text("Ask the agent")) {
+            onAskAgent?()
+        }
     }
 
     /// Display name with a graceful fallback to the raw label so we never

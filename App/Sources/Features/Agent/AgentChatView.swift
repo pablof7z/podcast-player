@@ -65,7 +65,15 @@ struct AgentChatView: View {
             let reference = LLMModelReference(storedID: store.state.settings.llmModel)
             let hasKey = LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
             showSettingsHint = !hasKey
-            inputFocused = hasKey
+            // Long-press → ask-agent prefill. Drained once per session so a
+            // re-open without a new long-press starts blank. Focus the input
+            // so the user can append a question and Send without a tap.
+            if let seed = session?.consumeSeededDraft(), !seed.isEmpty {
+                draft = seed
+                inputFocused = true
+            } else {
+                inputFocused = hasKey
+            }
         }
         .onChange(of: session?.phase) { _, newPhase in
             guard let newPhase else { return }

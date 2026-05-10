@@ -31,6 +31,11 @@ final class AppStateStore {
     /// Consumed and cleared by `AgentFriendsView` on `.onChange` so it fires exactly once.
     var pendingFriendInvite: PendingFriendInvite?
 
+    /// Transcript line the user long-pressed in the player. Drained by
+    /// `AgentChatSession.init` and prefilled into the composer; cleared by
+    /// the same call so a later sheet re-open starts blank.
+    var pendingTranscriptAgentContext: TranscriptAgentContext?
+
     var state: AppState {
         didSet {
             handleStateDidSet(previousEpisodes: oldValue.episodes)

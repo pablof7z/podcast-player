@@ -96,7 +96,8 @@ struct PlayerTranscriptScrollView: View {
                             segment: seg,
                             speaker: transcript.speaker(for: seg.speakerID),
                             isActive: seg.id == activeSegmentID,
-                            onTap: { tapSegment(seg) }
+                            onTap: { tapSegment(seg) },
+                            onAskAgent: { askAgent(about: seg) }
                         )
                         .id(seg.id)
                     }
@@ -131,6 +132,13 @@ struct PlayerTranscriptScrollView: View {
         } else {
             proxy.scrollTo(active.id, anchor: .center)
         }
+    }
+
+    /// Long-press → "Ask the agent." Forwards to the stateless dispatcher so
+    /// the View doesn't need to expose `store`. See
+    /// `PlayerTranscriptScrollView+AskAgent.swift` for the full flow rationale.
+    private func askAgent(about segment: Segment) {
+        AskAgentDispatcher.dispatch(segment: segment, episode: liveEpisode, store: store)
     }
 
     /// Tap-to-seek that respects the user's pause intent. Tapping a line

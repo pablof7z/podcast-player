@@ -26,6 +26,11 @@ final class AgentChatSession {
     /// once the inner tool loop finishes. Drives the status label in the
     /// typing indicator so the user can see what the agent is doing.
     private(set) var currentToolName: String?
+    /// Composer prefill captured from `AppStateStore.pendingTranscriptAgentContext`
+    /// at init time. The view drains this exactly once via
+    /// `consumeSeededDraft()` on `.onAppear`; subsequent reads return nil so a
+    /// re-presentation of the chat sheet starts blank.
+    private var seededDraft: String?
 
     private let store: AppStateStore
     private let history: ChatHistoryStore
@@ -52,6 +57,21 @@ final class AgentChatSession {
         let loaded = history.load()
         self.messages = loaded
         self.loadedFromHistory = !loaded.isEmpty
+        // Drain the long-press → ask-agent context. Read-and-clear so a later
+        // sheet re-open starts blank. Auto-send is intentionally NOT done here
+        // — long-press is too easy to mistrigger; let the user confirm via Send.
+        if let pending = store.pendingTranscriptAgentContext {
+            self.seededDraft = pending.prefilledDraft
+            store.pendingTranscriptAgentContext = nil
+        }
+    }
+
+    /// Returns the prefilled draft once and clears it. View calls this from
+    /// `.onAppear` after wiring the session.
+    func consumeSeededDraft() -> String? {
+        let value = seededDraft
+        seededDraft = nil
+        return value
     }
 
     var canSend: Bool {

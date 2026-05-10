@@ -199,6 +199,14 @@ struct RootView: View {
             .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
                 showVoiceMode = true
             }
+            // Long-press on a transcript line in the player posts this
+            // notification after stashing the segment context on the store.
+            // `AgentChatSession.init` drains the context on the next sheet
+            // open and prefills the composer.
+            .onReceive(NotificationCenter.default.publisher(for: .askAgentRequested)) { _ in
+                showFullPlayer = false
+                showAgentChat = true
+            }
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
                 NotificationCenter.default.publisher(for: AppDelegate.shortcutURLNotification)
