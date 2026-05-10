@@ -26,4 +26,21 @@ struct AutoDownloadPolicy: Codable, Sendable, Hashable {
 
     /// Convenience: app default for new subscriptions.
     static let `default` = AutoDownloadPolicy(mode: .off, wifiOnly: true)
+
+    /// Compact human-readable description used by management surfaces
+    /// (Subscriptions list, per-show details). Returns `nil` for the
+    /// off case so callers can hide the label entirely instead of
+    /// surfacing "Off" noise on every row.
+    var summaryLabel: String? {
+        switch mode {
+        case .off:
+            return nil
+        case .latestN(let n):
+            let base = "Latest \(n)"
+            return wifiOnly ? "\(base) · Wi-Fi only" : base
+        case .allNew:
+            let base = "All new"
+            return wifiOnly ? "\(base) · Wi-Fi only" : base
+        }
+    }
 }

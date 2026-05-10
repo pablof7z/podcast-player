@@ -131,6 +131,11 @@ struct SubscriptionsListView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
+                    // Status row: episode count + auto-download mode (when
+                    // not Off). Surfaces here so a user managing many subs
+                    // can see at a glance which feeds are pulling bytes
+                    // automatically without diving into per-show settings.
+                    statusRow(for: sub)
                 }
                 Spacer(minLength: 0)
             }
@@ -150,6 +155,27 @@ struct SubscriptionsListView: View {
                 pendingDelete = sub
             } label: {
                 Label("Unsubscribe", systemImage: "trash")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func statusRow(for sub: PodcastSubscription) -> some View {
+        let count = store.episodes(forSubscription: sub.id).count
+        let countLabel = count == 1 ? "1 episode" : "\(count) episodes"
+        HStack(spacing: 6) {
+            Text(countLabel)
+                .font(AppTheme.Typography.caption2)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            if let policy = sub.autoDownload.summaryLabel {
+                Text("·")
+                    .font(AppTheme.Typography.caption2)
+                    .foregroundStyle(.tertiary)
+                Label(policy, systemImage: "arrow.down.circle")
+                    .labelStyle(StatusBadgeLabelStyle())
+                    .font(AppTheme.Typography.caption2)
+                    .foregroundStyle(.tint)
             }
         }
     }
@@ -223,5 +249,18 @@ struct SubscriptionsListView: View {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC")
         return f.string(from: Date())
+    }
+}
+
+/// Compact horizontal label so the auto-download badge on the
+/// subscriptions list reads as a single inline chip — default `Label`
+/// stacks the icon at a heavier weight than this row needs.
+private struct StatusBadgeLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.icon
+                .font(.system(size: 9, weight: .semibold))
+            configuration.title
+        }
     }
 }
