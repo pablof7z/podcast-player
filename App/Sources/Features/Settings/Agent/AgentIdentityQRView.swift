@@ -186,14 +186,52 @@ struct AgentIdentityQRView: View {
             }
             .buttonStyle(.glass)
 
-            ShareLink(item: npub) {
+            // Deep-link-aware share. When a `podcastr://friend/add` URL
+            // is buildable, prefer sharing it (recipients on Podcastr tap
+            // → AddFriendSheet pre-filled). Falls back to the bare npub
+            // string when the URL builder returns nil. Either way wraps
+            // a SharePreview so the share sheet header shows the
+            // sender's name instead of the raw base32 npub.
+            shareLink
+                .buttonStyle(.glass)
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    // MARK: - Share assembly
+
+    /// Branches on whether we can build a `podcastr://friend/add` URL —
+    /// SwiftUI's `ShareLink` requires a single Transferable item to
+    /// attach a `SharePreview`, so the URL and string variants need
+    /// distinct call shapes.
+    @ViewBuilder
+    private var shareLink: some View {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preview = SharePreview(
+            sharePreviewTitle,
+            image: Image(systemName: "person.crop.circle.badge.plus")
+        )
+        if let url = DeepLinkHandler.friendInviteURL(
+            npub: npub,
+            name: trimmedName.isEmpty ? nil : trimmedName
+        ) {
+            ShareLink(item: url, preview: preview) {
                 Label("Share", systemImage: "square.and.arrow.up")
                     .frame(maxWidth: .infinity)
                     .frame(height: Layout.actionButtonHeight)
             }
-            .buttonStyle(.glass)
+        } else {
+            ShareLink(item: npub, preview: preview) {
+                Label("Share", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Layout.actionButtonHeight)
+            }
         }
-        .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    private var sharePreviewTitle: String {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.isEmpty ? "Podcastr invite" : "\(trimmedName) on Podcastr"
     }
 
     // MARK: - Actions
