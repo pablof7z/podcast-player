@@ -11,6 +11,15 @@ import Foundation
 
 extension AgentTools {
 
+    /// Shared formatter for the inventory serializers. `ISO8601DateFormatter`
+    /// is expensive to allocate (touches Foundation locale tables) and is
+    /// thread-safe for reads after construction, so the per-row allocations
+    /// in `serializeCategory` / `serializeInventoryRow` / `listSubscriptionsTool`
+    /// were pure waste — a 200-episode `list_episodes` response was minting
+    /// 200 formatters and discarding them. One shared instance is reused
+    /// across calls.
+    nonisolated(unsafe) private static let iso8601 = ISO8601DateFormatter()
+
     // MARK: - Tool dispatch entry points
 
     static func listSubscriptionsTool(
@@ -28,7 +37,7 @@ extension AgentTools {
             ]
             if let author = sub.author, !author.isEmpty { row["author"] = author }
             if let date = sub.lastPublishedAt {
-                row["last_published_at"] = ISO8601DateFormatter().string(from: date)
+                row["last_published_at"] = Self.iso8601.string(from: date)
             }
             return row
         }
@@ -155,7 +164,7 @@ extension AgentTools {
             "slug": category.slug,
             "description": category.description,
             "subscription_count": category.subscriptionCount,
-            "generated_at": ISO8601DateFormatter().string(from: category.generatedAt),
+            "generated_at": Self.iso8601.string(from: category.generatedAt),
         ]
         if let colorHex = category.colorHex { out["color_hex"] = colorHex }
         if let model = category.model { out["model"] = model }
@@ -196,7 +205,7 @@ extension AgentTools {
             "is_in_progress": row.isInProgress,
         ]
         if let date = row.publishedAt {
-            out["published_at"] = ISO8601DateFormatter().string(from: date)
+            out["published_at"] = Self.iso8601.string(from: date)
         }
         if let dur = row.durationSeconds { out["duration_seconds"] = dur }
         return out
