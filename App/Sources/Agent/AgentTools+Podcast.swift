@@ -45,6 +45,8 @@ extension AgentTools {
         static let setNowPlaying        = "set_now_playing"
         static let delegate             = "delegate"
         static let listSubscriptions    = "list_subscriptions"
+        static let listCategories       = "list_categories"
+        static let changePodcastCategory = "change_podcast_category"
         static let listEpisodes         = "list_episodes"
         static let listInProgress       = "list_in_progress"
         static let listRecentUnplayed   = "list_recent_unplayed"
@@ -59,7 +61,8 @@ extension AgentTools {
                 findSimilarEpisodes, markEpisodePlayed, markEpisodeUnplayed,
                 downloadEpisode, requestTranscription, refreshFeed,
                 openScreen, setNowPlaying, delegate,
-                listSubscriptions, listEpisodes, listInProgress, listRecentUnplayed,
+                listSubscriptions, listCategories, changePodcastCategory,
+                listEpisodes, listInProgress, listRecentUnplayed,
             ]
         }
     }
@@ -151,6 +154,10 @@ extension AgentTools {
             return await delegateTool(args: args, deps: deps)
         case PodcastNames.listSubscriptions:
             return await listSubscriptionsTool(args: args, deps: deps)
+        case PodcastNames.listCategories:
+            return await listCategoriesTool(args: args, deps: deps)
+        case PodcastNames.changePodcastCategory:
+            return await changePodcastCategoryTool(args: args, deps: deps)
         case PodcastNames.listEpisodes:
             return await listEpisodesTool(args: args, deps: deps)
         case PodcastNames.listInProgress:
@@ -464,6 +471,10 @@ extension AgentTools {
 
 // MARK: - String helpers
 
-private extension String {
+extension String {
+    /// Module-internal so sibling `AgentTools+*.swift` files (Actions,
+    /// Inventory) can share the helper without redeclaring it. The
+    /// duplicate `private` copy in `+PodcastActions.swift` is harmless
+    /// today but breaks compilation if Swift later flags ambiguity.
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }

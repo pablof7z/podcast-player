@@ -12,6 +12,27 @@ extension AppStateStore {
         state.categories = categories
     }
 
+    /// Moves a subscription into one category and removes it from every other
+    /// category. Returns false when either ID is no longer valid.
+    @discardableResult
+    func moveSubscription(_ subscriptionID: UUID, toCategory categoryID: UUID) -> Bool {
+        guard state.subscriptions.contains(where: { $0.id == subscriptionID }),
+              state.categories.contains(where: { $0.id == categoryID })
+        else { return false }
+
+        var categories = state.categories
+        for index in categories.indices {
+            categories[index].subscriptionIDs.removeAll { $0 == subscriptionID }
+            if categories[index].id == categoryID {
+                categories[index].subscriptionIDs.append(subscriptionID)
+            }
+        }
+        if categories != state.categories {
+            state.categories = categories
+        }
+        return true
+    }
+
     /// Returns the category with the given ID, if any.
     func category(id: UUID) -> PodcastCategory? {
         state.categories.first(where: { $0.id == id })

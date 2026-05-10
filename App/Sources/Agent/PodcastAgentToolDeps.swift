@@ -138,6 +138,19 @@ public protocol PodcastInventoryProtocol: Sendable {
     func listRecentUnplayed(limit: Int) async -> [EpisodeInventoryRow]
 }
 
+/// LLM-derived category inventory and membership mutations.
+public protocol PodcastCategoryProtocol: Sendable {
+    /// Categories generated for the user's library. `includePodcasts` controls
+    /// whether each category carries compact show rows or only counts.
+    func listCategories(limit: Int, includePodcasts: Bool) async -> [PodcastCategorySummary]
+
+    /// Move a subscribed podcast into an existing generated category.
+    func changePodcastCategory(
+        podcastID: PodcastID,
+        category: PodcastCategoryReference
+    ) async throws -> PodcastCategoryChangeResult
+}
+
 /// HTTP-bearing online lookup (lane 9).
 public protocol PerplexityClientProtocol: Sendable {
     /// Run an online search. May throw on transport errors, missing API key,
@@ -158,6 +171,7 @@ public struct PodcastAgentToolDeps: Sendable {
     public let playback: PlaybackHostProtocol
     public let library: PodcastLibraryProtocol
     public let inventory: PodcastInventoryProtocol
+    public let categories: PodcastCategoryProtocol
     public let delegation: PodcastDelegationProtocol
     public let perplexity: PerplexityClientProtocol
 
@@ -170,6 +184,7 @@ public struct PodcastAgentToolDeps: Sendable {
         playback: PlaybackHostProtocol,
         library: PodcastLibraryProtocol,
         inventory: PodcastInventoryProtocol,
+        categories: PodcastCategoryProtocol,
         delegation: PodcastDelegationProtocol,
         perplexity: PerplexityClientProtocol
     ) {
@@ -181,6 +196,7 @@ public struct PodcastAgentToolDeps: Sendable {
         self.playback = playback
         self.library = library
         self.inventory = inventory
+        self.categories = categories
         self.delegation = delegation
         self.perplexity = perplexity
     }

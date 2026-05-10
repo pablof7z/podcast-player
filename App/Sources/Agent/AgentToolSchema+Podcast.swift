@@ -198,6 +198,26 @@ extension AgentTools {
                 required: []
             ),
             podcastTool(
+                name: PodcastNames.listCategories,
+                description: "List the LLM-generated podcast categories in the user's library. Use this before answering category-management questions or before moving a show between categories.",
+                properties: [
+                    "limit": ["type": "integer", "description": "Maximum categories to return. Defaults to 25, capped at 100."],
+                    "include_podcasts": ["type": "boolean", "description": "Whether to include compact podcast rows under each category. Defaults to true."],
+                ],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.changePodcastCategory,
+                description: "Move a subscribed podcast into an existing generated category. Use only after identifying the target category by list_categories or from the user's explicit wording.",
+                properties: [
+                    "podcast_id": ["type": "string", "description": "The subscribed podcast/feed ID to move."],
+                    "category_id": ["type": "string", "description": "Preferred target category UUID from list_categories."],
+                    "category_slug": ["type": "string", "description": "Alternative target category slug when the UUID is unavailable."],
+                    "category_name": ["type": "string", "description": "Alternative target category display name when the UUID or slug is unavailable."],
+                ],
+                required: ["podcast_id"]
+            ),
+            podcastTool(
                 name: PodcastNames.listEpisodes,
                 description: "List episodes of a specific podcast, newest first. Use after list_subscriptions when the user wants to drill into one show. Returns played/unplayed state and current playback position for each episode.",
                 properties: [

@@ -1,10 +1,12 @@
 import XCTest
 @testable import Podcastr
 
-/// Coverage for the four inventory-listing podcast agent tools added to
+/// Coverage for the inventory/category podcast agent tools added to
 /// `AgentTools.dispatchPodcast`:
 ///
 ///   - `list_subscriptions`
+///   - `list_categories`
+///   - `change_podcast_category`
 ///   - `list_episodes`
 ///   - `list_in_progress`
 ///   - `list_recent_unplayed`
@@ -63,6 +65,86 @@ final class AgentToolsInventoryTests: XCTestCase {
 
         let lastLimit = await inventory.lastListSubscriptionsLimit
         XCTAssertEqual(lastLimit, 25)
+    }
+
+    // MARK: - list_categories
+
+    func testListCategoriesReturnsCategoryRowsAndPodcasts() async throws {
+        let inventory = MockInventory()
+        await inventory.setCategories([
+            sampleCategory(id: "c1", name: "Deep Tech", subscriptions: [
+                CategorySubscriptionSummary(podcastID: "p1", title: "Acquired", author: "Ben and David"),
+            ]),
+        ])
+
+        let result = await dispatch(name: "list_categories", args: [:], inventory: inventory)
+
+        let json = try unwrapJSON(result)
+        XCTAssertEqual(json["success"] as? Bool, true)
+        let rows = json["categories"] as? [[String: Any]] ?? []
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(rows.first?["name"] as? String, "Deep Tech")
+        XCTAssertEqual(rows.first?["subscription_count"] as? Int, 1)
+        let subscriptions = rows.first?["subscriptions"] as? [[String: Any]] ?? []
+        XCTAssertEqual(subscriptions.first?["title"] as? String, "Acquired")
+    }
+
+    func testListCategoriesCanOmitPodcastRows() async throws {
+        let inventory = MockInventory()
+        await inventory.setCategories([sampleCategory(id: "c1", name: "News")])
+
+        let result = await dispatch(
+            name: "list_categories",
+            args: ["include_podcasts": false, "limit": 7],
+            inventory: inventory
+        )
+
+        let json = try unwrapJSON(result)
+        let rows = json["categories"] as? [[String: Any]] ?? []
+        XCTAssertNil(rows.first?["subscriptions"])
+        let lastLimit = await inventory.lastListCategoriesLimit
+        let include = await inventory.lastListCategoriesIncludePodcasts
+        XCTAssertEqual(lastLimit, 7)
+        XCTAssertEqual(include, false)
+    }
+
+    // MARK: - change_podcast_category
+
+    func testChangePodcastCategoryRequiresPodcastID() async throws {
+        let result = await dispatch(
+            name: "change_podcast_category",
+            args: ["category_slug": "news"],
+            inventory: MockInventory()
+        )
+        let json = try unwrapJSON(result)
+        XCTAssertNotNil(json["error"])
+    }
+
+    func testChangePodcastCategoryForwardsSlugReference() async throws {
+        let inventory = MockInventory()
+        await inventory.setCategoryChangeResult(PodcastCategoryChangeResult(
+            podcastID: "p1",
+            title: "The Daily",
+            previousCategoryID: "old",
+            previousCategoryName: "Politics",
+            categoryID: "new",
+            categoryName: "News",
+            categorySlug: "news"
+        ))
+
+        let result = await dispatch(
+            name: "change_podcast_category",
+            args: ["podcast_id": "p1", "category_slug": "news"],
+            inventory: inventory
+        )
+
+        let json = try unwrapJSON(result)
+        XCTAssertEqual(json["success"] as? Bool, true)
+        XCTAssertEqual(json["category_slug"] as? String, "news")
+        let lastPodcast = await inventory.lastCategoryChangePodcastID
+        let lastReference = await inventory.lastCategoryChangeReference
+        XCTAssertEqual(lastPodcast, "p1")
+        XCTAssertEqual(lastReference?.slug, "news")
     }
 
     // MARK: - list_episodes
@@ -143,6 +225,8 @@ final class AgentToolsInventoryTests: XCTestCase {
         let names = AgentTools.podcastSchema
             .compactMap { ($0["function"] as? [String: Any])?["name"] as? String }
         XCTAssertTrue(names.contains("list_subscriptions"))
+        XCTAssertTrue(names.contains("list_categories"))
+        XCTAssertTrue(names.contains("change_podcast_category"))
         XCTAssertTrue(names.contains("list_episodes"))
         XCTAssertTrue(names.contains("list_in_progress"))
         XCTAssertTrue(names.contains("list_recent_unplayed"))
@@ -151,6 +235,8 @@ final class AgentToolsInventoryTests: XCTestCase {
     func testPodcastNamesAllIncludesInventoryTools() {
         let all = AgentTools.PodcastNames.all
         XCTAssertTrue(all.contains("list_subscriptions"))
+        XCTAssertTrue(all.contains("list_categories"))
+        XCTAssertTrue(all.contains("change_podcast_category"))
         XCTAssertTrue(all.contains("list_episodes"))
         XCTAssertTrue(all.contains("list_in_progress"))
         XCTAssertTrue(all.contains("list_recent_unplayed"))
@@ -172,6 +258,7 @@ final class AgentToolsInventoryTests: XCTestCase {
             playback: MockPlayback(),
             library: MockLibrary(),
             inventory: inventory,
+            categories: inventory,
             delegation: MockDelegation(),
             perplexity: MockPerplexity()
         )
@@ -200,6 +287,24 @@ final class AgentToolsInventoryTests: XCTestCase {
             totalEpisodes: 100,
             unplayedEpisodes: 5,
             lastPublishedAt: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+    }
+
+    private func sampleCategory(
+        id: String,
+        name: String,
+        subscriptions: [CategorySubscriptionSummary] = []
+    ) -> PodcastCategorySummary {
+        PodcastCategorySummary(
+            categoryID: id,
+            name: name,
+            slug: name.lowercased().replacingOccurrences(of: " ", with: "-"),
+            description: "Shows about \(name)",
+            colorHex: "#5B8DEF",
+            subscriptionCount: subscriptions.count,
+            generatedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            model: "test",
+            subscriptions: subscriptions
         )
     }
 

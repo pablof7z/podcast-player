@@ -458,6 +458,7 @@ final class AgentToolsPodcastTests: XCTestCase {
         playback: MockPlayback = MockPlayback(),
         library: PodcastLibraryProtocol = MockLibrary(),
         inventory: PodcastInventoryProtocol = MockInventory(),
+        categories: PodcastCategoryProtocol = MockInventory(),
         delegation: PodcastDelegationProtocol = MockDelegation(),
         perplexity: PerplexityClientProtocol = MockPerplexity()
     ) -> DepsBundle {
@@ -471,6 +472,7 @@ final class AgentToolsPodcastTests: XCTestCase {
                 playback: playback,
                 library: library,
                 inventory: inventory,
+                categories: categories,
                 delegation: delegation,
                 perplexity: perplexity
             ),

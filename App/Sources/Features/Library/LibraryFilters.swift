@@ -151,3 +151,119 @@ struct LibraryFilterRail: View {
         }
     }
 }
+
+// MARK: - LibraryCategoryRail
+
+struct LibraryCategoryRail: View {
+    let categories: [PodcastCategory]
+    let counts: [UUID: Int]
+    @Binding var selection: UUID?
+
+    private var totalCount: Int {
+        counts.values.reduce(0, +)
+    }
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                LibraryCategoryChip(
+                    title: "All Categories",
+                    count: totalCount,
+                    color: .accentColor,
+                    isActive: selection == nil,
+                    action: { select(nil) }
+                )
+
+                ForEach(categories) { category in
+                    LibraryCategoryChip(
+                        title: category.name,
+                        count: counts[category.id] ?? 0,
+                        color: category.displayColor,
+                        isActive: selection == category.id,
+                        action: { select(category.id) }
+                    )
+                }
+            }
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, AppTheme.Spacing.sm)
+        }
+    }
+
+    private func select(_ categoryID: UUID?) {
+        Haptics.selection()
+        withAnimation(AppTheme.Animation.springFast) {
+            selection = categoryID
+        }
+    }
+}
+
+private struct LibraryCategoryChip: View {
+    let title: String
+    let count: Int
+    let color: Color
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AppTheme.Spacing.xs) {
+                Circle()
+                    .fill(isActive ? Color.white : color)
+                    .frame(width: 8, height: 8)
+                Text(title)
+                    .font(AppTheme.Typography.caption)
+                    .lineLimit(1)
+                Text("\(count)")
+                    .font(.caption2.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(isActive ? Color.white.opacity(0.78) : Color.secondary)
+            }
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, AppTheme.Spacing.sm)
+            .foregroundStyle(isActive ? Color.white : Color.primary)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isActive
+                          ? AnyShapeStyle(color)
+                          : AnyShapeStyle(Color(.tertiarySystemFill)))
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(count) shows")
+        .accessibilityAddTraits(isActive ? .isSelected : [])
+    }
+}
+
+private extension PodcastCategory {
+    var displayColor: Color {
+        Color(categoryHex: colorHex) ?? .accentColor
+    }
+}
+
+private extension Color {
+    init?(categoryHex rawValue: String?) {
+        guard var hex = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !hex.isEmpty
+        else { return nil }
+        if hex.hasPrefix("#") {
+            hex.removeFirst()
+        }
+        guard hex.count == 6 || hex.count == 8,
+              let value = UInt64(hex, radix: 16)
+        else { return nil }
+        let r: Double
+        let g: Double
+        let b: Double
+        if hex.count == 8 {
+            r = Double((value >> 24) & 0xFF) / 255.0
+            g = Double((value >> 16) & 0xFF) / 255.0
+            b = Double((value >> 8) & 0xFF) / 255.0
+        } else {
+            r = Double((value >> 16) & 0xFF) / 255.0
+            g = Double((value >> 8) & 0xFF) / 255.0
+            b = Double(value & 0xFF) / 255.0
+        }
+        self.init(red: r, green: g, blue: b)
+    }
+}

@@ -283,6 +283,104 @@ public struct SubscriptionSummary: Sendable, Equatable {
     }
 }
 
+// MARK: - Category rows
+
+/// Compact subscription row nested under `list_categories` results.
+public struct CategorySubscriptionSummary: Sendable, Equatable {
+    public let podcastID: PodcastID
+    public let title: String
+    public let author: String?
+
+    public init(podcastID: PodcastID, title: String, author: String?) {
+        self.podcastID = podcastID
+        self.title = title
+        self.author = author
+    }
+}
+
+/// One LLM-derived category returned by `list_categories`.
+public struct PodcastCategorySummary: Sendable, Equatable {
+    public let categoryID: String
+    public let name: String
+    public let slug: String
+    public let description: String
+    public let colorHex: String?
+    public let subscriptionCount: Int
+    public let generatedAt: Date
+    public let model: String?
+    public let subscriptions: [CategorySubscriptionSummary]
+
+    public init(
+        categoryID: String,
+        name: String,
+        slug: String,
+        description: String,
+        colorHex: String?,
+        subscriptionCount: Int,
+        generatedAt: Date,
+        model: String?,
+        subscriptions: [CategorySubscriptionSummary]
+    ) {
+        self.categoryID = categoryID
+        self.name = name
+        self.slug = slug
+        self.description = description
+        self.colorHex = colorHex
+        self.subscriptionCount = subscriptionCount
+        self.generatedAt = generatedAt
+        self.model = model
+        self.subscriptions = subscriptions
+    }
+}
+
+/// Category lookup supplied by `change_podcast_category`. The tool accepts ID,
+/// slug, or display name so the agent can use whatever `list_categories`
+/// returned in the prior turn.
+public struct PodcastCategoryReference: Sendable, Equatable {
+    public let id: String?
+    public let slug: String?
+    public let name: String?
+
+    public init(id: String? = nil, slug: String? = nil, name: String? = nil) {
+        self.id = id
+        self.slug = slug
+        self.name = name
+    }
+
+    public var isEmpty: Bool {
+        [id, slug, name].allSatisfy { ($0 ?? "").trimmed.isEmpty }
+    }
+}
+
+/// Result returned after moving a show between generated categories.
+public struct PodcastCategoryChangeResult: Sendable, Equatable {
+    public let podcastID: PodcastID
+    public let title: String
+    public let previousCategoryID: String?
+    public let previousCategoryName: String?
+    public let categoryID: String
+    public let categoryName: String
+    public let categorySlug: String
+
+    public init(
+        podcastID: PodcastID,
+        title: String,
+        previousCategoryID: String?,
+        previousCategoryName: String?,
+        categoryID: String,
+        categoryName: String,
+        categorySlug: String
+    ) {
+        self.podcastID = podcastID
+        self.title = title
+        self.previousCategoryID = previousCategoryID
+        self.previousCategoryName = previousCategoryName
+        self.categoryID = categoryID
+        self.categoryName = categoryName
+        self.categorySlug = categorySlug
+    }
+}
+
 /// One episode row returned by `list_episodes` / `list_in_progress` /
 /// `list_recent_unplayed`. Distinct from `EpisodeHit` (search/RAG result) —
 /// inventory rows carry the user's *state* (played, position) instead of a

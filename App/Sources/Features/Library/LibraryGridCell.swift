@@ -15,6 +15,17 @@ import SwiftUI
 struct LibraryGridCell: View {
     let subscription: PodcastSubscription
     let unplayedCount: Int
+    let category: PodcastCategory?
+
+    init(
+        subscription: PodcastSubscription,
+        unplayedCount: Int,
+        category: PodcastCategory? = nil
+    ) {
+        self.subscription = subscription
+        self.unplayedCount = unplayedCount
+        self.category = category
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
@@ -32,6 +43,10 @@ struct LibraryGridCell: View {
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                }
+
+                if let category {
+                    categoryBadge(category)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -107,9 +122,21 @@ struct LibraryGridCell: View {
         .accessibilityHidden(true)
     }
 
+    private func categoryBadge(_ category: PodcastCategory) -> some View {
+        Text(category.name)
+            .font(.caption2.weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, AppTheme.Spacing.xs)
+            .padding(.vertical, 2)
+            .background(Color(.tertiarySystemFill), in: Capsule(style: .continuous))
+            .padding(.top, 2)
+    }
+
     private var accessibilityLabel: String {
         var parts = [subscription.title]
         if !subscription.author.isEmpty { parts.append(subscription.author) }
+        if let category { parts.append(category.name) }
         if unplayedCount > 0 { parts.append("\(unplayedCount) unplayed") }
         return parts.joined(separator: ", ")
     }

@@ -31,7 +31,8 @@ enum LivePodcastAgentToolDeps {
         store: AppStateStore,
         playback: PlaybackState
     ) -> PodcastAgentToolDeps {
-        PodcastAgentToolDeps(
+        let inventory = LivePodcastInventoryAdapter(store: store)
+        return PodcastAgentToolDeps(
             rag: LivePodcastRAGAdapter(store: store),
             wiki: LiveWikiStorageAdapter(),
             briefing: LiveBriefingComposerAdapter(store: store),
@@ -44,7 +45,8 @@ enum LivePodcastAgentToolDeps {
                 transcriptService: .shared,
                 refreshService: .shared
             ),
-            inventory: LivePodcastInventoryAdapter(store: store),
+            inventory: inventory,
+            categories: inventory,
             delegation: LiveTENEXDelegationBridge(store: store),
             perplexity: PerplexityClient()
         )

@@ -200,6 +200,6 @@ extension AgentTools {
     }
 }
 
-private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
-}
+// `nilIfEmpty` lives at internal scope on `String` in
+// `AgentTools+Podcast.swift` so all three `AgentTools+*.swift` files
+// share one definition.

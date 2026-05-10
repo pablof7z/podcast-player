@@ -211,16 +211,22 @@ actor MockPerplexity: PerplexityClientProtocol {
     }
 }
 
-actor MockInventory: PodcastInventoryProtocol {
+actor MockInventory: PodcastInventoryProtocol, PodcastCategoryProtocol {
     var subscriptions: [SubscriptionSummary] = []
     var episodesByPodcast: [PodcastID: [EpisodeInventoryRow]] = [:]
     var inProgress: [EpisodeInventoryRow] = []
     var recentUnplayed: [EpisodeInventoryRow] = []
+    var categories: [PodcastCategorySummary] = []
+    var categoryChangeResult: PodcastCategoryChangeResult?
     private(set) var lastListSubscriptionsLimit: Int = -1
     private(set) var lastListEpisodesPodcastID: PodcastID?
     private(set) var lastListEpisodesLimit: Int = -1
     private(set) var lastInProgressLimit: Int = -1
     private(set) var lastRecentUnplayedLimit: Int = -1
+    private(set) var lastListCategoriesLimit: Int = -1
+    private(set) var lastListCategoriesIncludePodcasts: Bool?
+    private(set) var lastCategoryChangePodcastID: PodcastID?
+    private(set) var lastCategoryChangeReference: PodcastCategoryReference?
 
     func setSubscriptions(_ subs: [SubscriptionSummary]) { subscriptions = subs }
     func setEpisodes(_ rows: [EpisodeInventoryRow], forPodcast podcastID: PodcastID) {
@@ -228,6 +234,10 @@ actor MockInventory: PodcastInventoryProtocol {
     }
     func setInProgress(_ rows: [EpisodeInventoryRow]) { inProgress = rows }
     func setRecentUnplayed(_ rows: [EpisodeInventoryRow]) { recentUnplayed = rows }
+    func setCategories(_ rows: [PodcastCategorySummary]) { categories = rows }
+    func setCategoryChangeResult(_ result: PodcastCategoryChangeResult) {
+        categoryChangeResult = result
+    }
 
     func listSubscriptions(limit: Int) async -> [SubscriptionSummary] {
         lastListSubscriptionsLimit = limit
@@ -249,5 +259,28 @@ actor MockInventory: PodcastInventoryProtocol {
     func listRecentUnplayed(limit: Int) async -> [EpisodeInventoryRow] {
         lastRecentUnplayedLimit = limit
         return Array(recentUnplayed.prefix(limit))
+    }
+
+    func listCategories(limit: Int, includePodcasts: Bool) async -> [PodcastCategorySummary] {
+        lastListCategoriesLimit = limit
+        lastListCategoriesIncludePodcasts = includePodcasts
+        return Array(categories.prefix(limit))
+    }
+
+    func changePodcastCategory(
+        podcastID: PodcastID,
+        category: PodcastCategoryReference
+    ) async throws -> PodcastCategoryChangeResult {
+        lastCategoryChangePodcastID = podcastID
+        lastCategoryChangeReference = category
+        return categoryChangeResult ?? PodcastCategoryChangeResult(
+            podcastID: podcastID,
+            title: "Mock Show",
+            previousCategoryID: nil,
+            previousCategoryName: nil,
+            categoryID: category.id ?? "category-1",
+            categoryName: category.name ?? "Mock Category",
+            categorySlug: category.slug ?? "mock-category"
+        )
     }
 }

@@ -2,8 +2,8 @@ import Foundation
 
 // MARK: - LivePodcastInventoryAdapter
 //
-// Concrete `PodcastInventoryProtocol` implementation backed by `AppStateStore`.
-// All four list methods are pure reads off `state` plus a sort, so this stays
+// Concrete inventory/category implementation backed by `AppStateStore`.
+// Most methods are pure reads off `state` plus a sort, so this stays
 // allocation-light even on libraries with thousands of episodes.
 //
 // Constructed once per `AgentChatSession` (via `LivePodcastAgentToolDeps.make`)
@@ -11,7 +11,7 @@ import Foundation
 // lifetime.
 
 @MainActor
-final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, @unchecked Sendable {
+final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCategoryProtocol, @unchecked Sendable {
 
     private weak var store: AppStateStore?
 
@@ -35,6 +35,23 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, @unchecked Se
 
     func listRecentUnplayed(limit: Int) async -> [EpisodeInventoryRow] {
         await MainActor.run { listRecentUnplayedSync(limit: limit) }
+    }
+
+    // MARK: - PodcastCategoryProtocol
+
+    func listCategories(limit: Int, includePodcasts: Bool) async -> [PodcastCategorySummary] {
+        await MainActor.run {
+            listCategoriesSync(limit: limit, includePodcasts: includePodcasts)
+        }
+    }
+
+    func changePodcastCategory(
+        podcastID: PodcastID,
+        category reference: PodcastCategoryReference
+    ) async throws -> PodcastCategoryChangeResult {
+        try await MainActor.run {
+            try changePodcastCategorySync(podcastID: podcastID, category: reference)
+        }
     }
 
     // MARK: - MainActor reads
@@ -97,6 +114,61 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, @unchecked Se
         }
     }
 
+    private func listCategoriesSync(limit: Int, includePodcasts: Bool) -> [PodcastCategorySummary] {
+        guard let store else { return [] }
+        let subscriptionsByID = Dictionary(uniqueKeysWithValues: store.state.subscriptions.map { ($0.id, $0) })
+        return store.state.categories.prefix(limit).map { category in
+            let subscriptions = category.subscriptionIDs
+                .compactMap { subscriptionsByID[$0] }
+                .sorted { lhs, rhs in lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending }
+            let rows = includePodcasts ? subscriptions.map(categorySubscriptionRow) : []
+            return PodcastCategorySummary(
+                categoryID: category.id.uuidString,
+                name: category.name,
+                slug: category.slug,
+                description: category.description,
+                colorHex: category.colorHex,
+                subscriptionCount: subscriptions.count,
+                generatedAt: category.generatedAt,
+                model: category.model,
+                subscriptions: rows
+            )
+        }
+    }
+
+    private func changePodcastCategorySync(
+        podcastID: PodcastID,
+        category reference: PodcastCategoryReference
+    ) throws -> PodcastCategoryChangeResult {
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let podcastUUID = UUID(uuidString: podcastID) else {
+            throw PodcastAgentToolAdapterError.invalidID(podcastID)
+        }
+        guard let subscription = store.subscription(id: podcastUUID) else {
+            throw PodcastAgentToolAdapterError.missingPodcast(podcastID)
+        }
+        guard let target = resolveCategory(reference, categories: store.state.categories) else {
+            throw PodcastCategoryAdapterError.missingCategory
+        }
+
+        let previous = store.category(forSubscription: podcastUUID)
+        guard store.moveSubscription(podcastUUID, toCategory: target.id) else {
+            throw PodcastCategoryAdapterError.moveFailed
+        }
+        let updated = store.category(id: target.id) ?? target
+        return PodcastCategoryChangeResult(
+            podcastID: podcastID,
+            title: subscription.title,
+            previousCategoryID: previous?.id.uuidString,
+            previousCategoryName: previous?.name,
+            categoryID: updated.id.uuidString,
+            categoryName: updated.name,
+            categorySlug: updated.slug
+        )
+    }
+
     // MARK: - Helpers
 
     private func inventoryRow(episode ep: Episode, subscriptionTitle: String) -> EpisodeInventoryRow {
@@ -111,5 +183,43 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, @unchecked Se
             playbackPositionSeconds: ep.playbackPosition,
             isInProgress: !ep.played && ep.playbackPosition > 0
         )
+    }
+
+    private func categorySubscriptionRow(_ sub: PodcastSubscription) -> CategorySubscriptionSummary {
+        CategorySubscriptionSummary(
+            podcastID: sub.id.uuidString,
+            title: sub.title,
+            author: sub.author.isEmpty ? nil : sub.author
+        )
+    }
+
+    private func resolveCategory(
+        _ reference: PodcastCategoryReference,
+        categories: [PodcastCategory]
+    ) -> PodcastCategory? {
+        if let rawID = reference.id?.trimmed, let id = UUID(uuidString: rawID) {
+            return categories.first(where: { $0.id == id })
+        }
+        if let slug = reference.slug?.trimmed.lowercased(), !slug.isEmpty {
+            return categories.first(where: { $0.slug.lowercased() == slug })
+        }
+        if let name = reference.name?.trimmed.lowercased(), !name.isEmpty {
+            return categories.first(where: { $0.name.lowercased() == name })
+        }
+        return nil
+    }
+}
+
+private enum PodcastCategoryAdapterError: LocalizedError {
+    case missingCategory
+    case moveFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .missingCategory:
+            return "Category not found. Use list_categories to choose an existing category ID, slug, or name."
+        case .moveFailed:
+            return "Could not move podcast into the requested category."
+        }
     }
 }

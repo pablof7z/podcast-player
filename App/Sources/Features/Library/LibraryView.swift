@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// **Glass usage in this file:**
 ///
-///   - The filter rail is wrapped in a structural glass container.
+///   - The category and filter rails are wrapped in structural glass containers.
 ///   - The search-entry bar is a structural glass capsule.
 ///   - All cards (`LibraryGridCell`) are matte.
 struct LibraryView: View {
@@ -24,6 +24,7 @@ struct LibraryView: View {
     /// case rawValue. Falls back to `.all` for a fresh install or when
     /// the stored string doesn't match a known case (e.g. after a rename).
     @AppStorage("library.filter") private var filter: LibraryFilter = .all
+    @AppStorage("library.categoryFilterID") private var categoryFilterID: String = ""
     @State private var showAddShowSheet: Bool = false
     /// Set when the user picks "Unsubscribe" from a grid cell's long-press
     /// context menu. The presented alert reads from this — clearing it
@@ -39,6 +40,10 @@ struct LibraryView: View {
                     .padding(.top, AppTheme.Spacing.sm)
 
                 continueListeningRail
+
+                categoryRailContainer
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.top, AppTheme.Spacing.sm)
 
                 filterRailContainer
                     .padding(.horizontal, AppTheme.Spacing.md)
@@ -108,7 +113,7 @@ struct LibraryView: View {
 
     /// Applies the filter chip selection to the current subscription list.
     private var filteredSubs: [PodcastSubscription] {
-        let all = store.sortedSubscriptions
+        let all = categoryFilteredSubscriptions
         switch filter {
         case .all:
             return all
@@ -119,6 +124,38 @@ struct LibraryView: View {
         case .transcribed:
             return all.filter { store.hasTranscribedEpisode(forSubscription: $0.id) }
         }
+    }
+
+    private var selectedCategoryID: UUID? {
+        guard let id = UUID(uuidString: categoryFilterID),
+              store.category(id: id) != nil
+        else { return nil }
+        return id
+    }
+
+    private var selectedCategory: PodcastCategory? {
+        selectedCategoryID.flatMap { store.category(id: $0) }
+    }
+
+    private var categorySelection: Binding<UUID?> {
+        Binding(
+            get: { selectedCategoryID },
+            set: { categoryFilterID = $0?.uuidString ?? "" }
+        )
+    }
+
+    private var categoryFilteredSubscriptions: [PodcastSubscription] {
+        guard let selectedCategory else { return store.sortedSubscriptions }
+        let ids = Set(selectedCategory.subscriptionIDs)
+        return store.sortedSubscriptions.filter { ids.contains($0.id) }
+    }
+
+    private var categoryCounts: [UUID: Int] {
+        let subscriptionIDs = Set(store.state.subscriptions.map(\.id))
+        return Dictionary(uniqueKeysWithValues: store.state.categories.map { category in
+            let count = category.subscriptionIDs.filter { subscriptionIDs.contains($0) }.count
+            return (category.id, count)
+        })
     }
 
     // MARK: - Search entry bar
@@ -153,6 +190,18 @@ struct LibraryView: View {
 
     // MARK: - Filter rail
 
+    @ViewBuilder
+    private var categoryRailContainer: some View {
+        if !store.state.categories.isEmpty {
+            LibraryCategoryRail(
+                categories: store.state.categories,
+                counts: categoryCounts,
+                selection: categorySelection
+            )
+            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+        }
+    }
+
     private var filterRailContainer: some View {
         LibraryFilterRail(selection: $filter)
             .glassEffect(.regular, in: .capsule)
@@ -166,7 +215,8 @@ struct LibraryView: View {
                 NavigationLink(value: sub) {
                     LibraryGridCell(
                         subscription: sub,
-                        unplayedCount: store.unplayedCount(forSubscription: sub.id)
+                        unplayedCount: store.unplayedCount(forSubscription: sub.id),
+                        category: store.category(forSubscription: sub.id)
                     )
                 }
                 .buttonStyle(.plain)
@@ -239,18 +289,19 @@ struct LibraryView: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.tertiary)
             VStack(spacing: AppTheme.Spacing.xs) {
-                Text(filter.emptyStateTitle)
+                Text(filteredEmptyTitle)
                     .font(AppTheme.Typography.title)
-                Text(filter.emptyStateSubtitle)
+                Text(filteredEmptySubtitle)
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             Button {
                 Haptics.light()
+                categoryFilterID = ""
                 filter = .all
             } label: {
-                Label("Show all", systemImage: "line.3.horizontal.decrease.circle")
+                Label("Clear filters", systemImage: "line.3.horizontal.decrease.circle")
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.vertical, AppTheme.Spacing.sm)
             }
@@ -258,6 +309,21 @@ struct LibraryView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity)
+    }
+
+    private var filteredEmptyTitle: String {
+        guard let selectedCategory else { return filter.emptyStateTitle }
+        if filter == .all {
+            return "No shows in \(selectedCategory.name)."
+        }
+        return "No \(filter.label.lowercased()) shows in \(selectedCategory.name)."
+    }
+
+    private var filteredEmptySubtitle: String {
+        if selectedCategory != nil {
+            return "Clear filters to see the rest of your categorized library."
+        }
+        return filter.emptyStateSubtitle
     }
 
     // MARK: - Toolbar

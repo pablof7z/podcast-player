@@ -163,6 +163,7 @@ final class AgentToolsPodcastActionTests: XCTestCase {
                 playback: playback,
                 library: library,
                 inventory: MockInventory(),
+                categories: MockInventory(),
                 delegation: delegation,
                 perplexity: MockPerplexity()
             ),

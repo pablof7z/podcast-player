@@ -38,6 +38,48 @@ extension AgentTools {
         ])
     }
 
+    static func listCategoriesTool(
+        args: [String: Any],
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        let limit = clampedInventoryLimit(args["limit"])
+        let includePodcasts = boolArg(args["include_podcasts"], default: true)
+        let categories = await deps.categories.listCategories(
+            limit: limit,
+            includePodcasts: includePodcasts
+        )
+        return toolSuccess([
+            "categories": categories.map { serializeCategory($0, includePodcasts: includePodcasts) },
+            "count": categories.count,
+        ])
+    }
+
+    static func changePodcastCategoryTool(
+        args: [String: Any],
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        guard let podcastID = (args["podcast_id"] as? String)?.trimmed, !podcastID.isEmpty else {
+            return toolError("Missing or empty 'podcast_id'")
+        }
+        let reference = PodcastCategoryReference(
+            id: (args["category_id"] as? String)?.trimmed.nilIfEmpty,
+            slug: (args["category_slug"] as? String)?.trimmed.nilIfEmpty,
+            name: (args["category_name"] as? String)?.trimmed.nilIfEmpty
+        )
+        guard !reference.isEmpty else {
+            return toolError("Provide one of 'category_id', 'category_slug', or 'category_name'")
+        }
+        do {
+            let result = try await deps.categories.changePodcastCategory(
+                podcastID: podcastID,
+                category: reference
+            )
+            return toolSuccess(serializeCategoryChange(result))
+        } catch {
+            return toolError("change_podcast_category failed: \(error.localizedDescription)")
+        }
+    }
+
     static func listEpisodesTool(
         args: [String: Any],
         deps: PodcastAgentToolDeps
@@ -88,6 +130,59 @@ extension AgentTools {
     static func clampedInventoryLimit(_ raw: Any?) -> Int {
         guard let n = numericArg(raw) else { return inventoryDefaultLimit }
         return max(1, min(Int(n), inventoryMaxLimit))
+    }
+
+    static func boolArg(_ raw: Any?, default defaultValue: Bool) -> Bool {
+        if let value = raw as? Bool { return value }
+        if let number = raw as? NSNumber { return number.boolValue }
+        if let string = (raw as? String)?.trimmed.lowercased() {
+            switch string {
+            case "true", "yes", "1": return true
+            case "false", "no", "0": return false
+            default: break
+            }
+        }
+        return defaultValue
+    }
+
+    static func serializeCategory(
+        _ category: PodcastCategorySummary,
+        includePodcasts: Bool
+    ) -> [String: Any] {
+        var out: [String: Any] = [
+            "category_id": category.categoryID,
+            "name": category.name,
+            "slug": category.slug,
+            "description": category.description,
+            "subscription_count": category.subscriptionCount,
+            "generated_at": ISO8601DateFormatter().string(from: category.generatedAt),
+        ]
+        if let colorHex = category.colorHex { out["color_hex"] = colorHex }
+        if let model = category.model { out["model"] = model }
+        if includePodcasts {
+            out["subscriptions"] = category.subscriptions.map { sub in
+                var row: [String: Any] = [
+                    "podcast_id": sub.podcastID,
+                    "title": sub.title,
+                ]
+                if let author = sub.author { row["author"] = author }
+                return row
+            }
+        }
+        return out
+    }
+
+    static func serializeCategoryChange(_ result: PodcastCategoryChangeResult) -> [String: Any] {
+        var out: [String: Any] = [
+            "podcast_id": result.podcastID,
+            "title": result.title,
+            "category_id": result.categoryID,
+            "category_name": result.categoryName,
+            "category_slug": result.categorySlug,
+        ]
+        if let id = result.previousCategoryID { out["previous_category_id"] = id }
+        if let name = result.previousCategoryName { out["previous_category_name"] = name }
+        return out
     }
 
     static func serializeInventoryRow(_ row: EpisodeInventoryRow) -> [String: Any] {
