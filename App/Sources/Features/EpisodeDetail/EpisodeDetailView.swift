@@ -162,6 +162,11 @@ struct EpisodeDetailView: View {
                 },
                 onReadTranscript: {
                     withAnimation(.spring(duration: 0.35, bounce: 0.15)) { mode = .reading }
+                },
+                isInQueue: playback.queue.contains(episode.id),
+                onAddToQueue: {
+                    Haptics.success()
+                    playback.enqueue(episode.id)
                 }
             )
         case .reading:

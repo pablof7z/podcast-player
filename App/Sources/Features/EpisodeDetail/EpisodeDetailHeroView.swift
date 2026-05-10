@@ -16,6 +16,12 @@ struct EpisodeDetailHeroView: View {
     let onPlay: () -> Void
     let onPlayChapter: (Episode.Chapter) -> Void
     let onReadTranscript: () -> Void
+    /// `true` when this episode is already queued in `PlaybackState.queue` —
+    /// drives the "Queued" disabled state on the Add to Queue button.
+    var isInQueue: Bool = false
+    /// Tap handler for the new Add to Queue affordance. No-op default
+    /// preserves call sites that don't yet wire it up.
+    var onAddToQueue: () -> Void = {}
 
     var body: some View {
         ScrollView {
@@ -118,6 +124,25 @@ struct EpisodeDetailHeroView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
+
+            // Add to Queue / Queued — sits next to Play so the queue is
+            // a one-tap action instead of buried inside a long-press
+            // context menu. Flips to a disabled "Queued" state once the
+            // episode is in `PlaybackState.queue`.
+            Button(action: onAddToQueue) {
+                Label(
+                    isInQueue ? "Queued" : "Queue",
+                    systemImage: isInQueue ? "checkmark" : "text.badge.plus"
+                )
+                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: !isInQueue)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(isInQueue ? .secondary : .primary)
+            .disabled(isInQueue)
+            .accessibilityHint(isInQueue ? "Already in your Up Next queue" : "Add to Up Next queue")
         }
     }
 
