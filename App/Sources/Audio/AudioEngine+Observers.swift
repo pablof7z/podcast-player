@@ -122,6 +122,7 @@ extension AudioEngine {
 
     func handleEndOfItem() {
         setCurrentTime(duration)
+        didReachNaturalEnd = true
         publishNowPlayingElapsed()
         // Sleep timer "end of episode" mode wins if armed.
         if sleepTimer.shouldStopAtEpisodeEnd() {

@@ -182,6 +182,14 @@ final class PlaybackState {
             onFlushPositions()
             didFireFinishedFor = nil
             lastSnapshotWrite = nil
+        } else {
+            // Same-id reload (Play/Resume tap, deep-link, chapter-row).
+            // Clear the finished-flag so a user replaying an already-
+            // finished episode resumes producing position writes — without
+            // this, `tickPersistence` returns immediately on the
+            // `didFireFinishedFor` guard and the new playthrough is
+            // entirely lost on force-quit.
+            didFireFinishedFor = nil
         }
         episode = newEpisode
         if !isSameEpisode {
@@ -226,6 +234,13 @@ final class PlaybackState {
     func pause() {
         Haptics.soft()
         engine.pause()
+        // Stop the 1-second persistence + snapshot loop while paused —
+        // otherwise it keeps re-writing the same `currentTime` and
+        // bouncing widget timelines for nothing, and races with the
+        // pause flush below in pathological force-quit windows.
+        // `play()` restarts the loop.
+        persistenceTask?.cancel()
+        persistenceTask = nil
         // Pause is a "the user is done for now" signal — drain the
         // position cache so the playhead survives a force-quit-after-
         // pause cycle. Cheap when the cache is empty.
@@ -344,14 +359,13 @@ final class PlaybackState {
         // re-reads on a 60s timeline, so finer writes are pure waste.
         writeNowPlayingSnapshot(force: false)
 
-        // Natural end-of-item handler in `AudioEngine+Observers` pins
-        // `currentTime` to exactly `duration`. A 0.1s tolerance absorbs any
-        // observer jitter without misclassifying a manual pause near the end.
-        let total = duration
-        if total > 0, time >= total - 0.1, !isPlaying {
-            // Always remember we hit the end so the persistence loop stops
-            // re-writing the final position. Whether we *also* mark the episode
-            // played is an explicit user preference.
+        // Trust the engine's natural-end signal instead of inferring "near
+        // the end + paused" — that inference fired for a manual pause inside
+        // the last 100 ms, auto-marking episodes the user didn't actually
+        // finish. The flag is only ever set by the AVPlayer
+        // `AVPlayerItemDidPlayToEndTime` notification and cleared on user
+        // seek + episode change.
+        if engine.didReachNaturalEnd {
             didFireFinishedFor = episode.id
             if autoMarkPlayedOnFinish {
                 // markEpisodePlayed flushes the cache itself, so the

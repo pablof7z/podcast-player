@@ -53,6 +53,19 @@ final class AudioEngine {
     private(set) var rate: Double = 1.0
     private(set) var episode: Episode?
 
+    /// `true` once the natural end-of-item observer has fired for the current
+    /// episode. Distinguishes "user paused at 99.9 % of duration" from "episode
+    /// genuinely finished" — the two are otherwise indistinguishable from a
+    /// `currentTime`/`state` snapshot, and a 100 ms tolerance for jitter would
+    /// otherwise auto-mark a manually-paused episode as played. Reset by
+    /// `load(_:)` and by any user-initiated seek that lands more than 5 s
+    /// before the end.
+    ///
+    /// Setter is module-internal (not `private(set)`) so the
+    /// `AudioEngine+Observers` extension — which lives in a sibling file —
+    /// can flip it from `handleEndOfItem`.
+    var didReachNaturalEnd: Bool = false
+
     /// Sleep-timer surface so the player UI can render the countdown.
     let sleepTimer = SleepTimer()
 
@@ -154,6 +167,7 @@ final class AudioEngine {
         teardownItemObservers()
         self.episode = episode
         state = .loading(episode)
+        didReachNaturalEnd = false
 
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
@@ -202,12 +216,27 @@ final class AudioEngine {
     }
 
     /// Seek to absolute position in seconds.
+    ///
+    /// **Synchronously** updates `currentTime` to the clamped target *before*
+    /// dispatching the AVPlayer seek so the rest of the app sees the new
+    /// playhead immediately. The completion handler stays only to publish the
+    /// Now Playing elapsed update once iOS has actually moved the player —
+    /// without the eager local update, callers reading `engine.currentTime`
+    /// right after `seek(to:)` would still see the pre-seek value (the
+    /// completion is async on a background queue) and persist the wrong
+    /// position to disk.
     func seek(to seconds: TimeInterval) {
         let target = max(0, min(seconds, duration > 0 ? duration : seconds))
+        // Any user-initiated seek that lands more than 5 s before the end
+        // re-arms the natural-end detection — necessary so a user who
+        // finishes an episode then rewinds resumes producing position writes.
+        if duration <= 0 || target < duration - 5 {
+            didReachNaturalEnd = false
+        }
+        currentTime = target
         let time = CMTime(seconds: target, preferredTimescale: 600)
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             Task { @MainActor in
-                self?.currentTime = target
                 self?.publishNowPlayingElapsed()
             }
         }
