@@ -42,7 +42,7 @@ struct PodcastSearchPromptEmptyState: View {
             header
             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
                 Text("Try asking")
-                    .font(.system(.subheadline, design: .serif).weight(.semibold))
+                    .font(AppTheme.Typography.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 ForEach(PodcastSearchEmptyState.exampleQueries, id: \.self) { example in
                     PodcastSearchExamplePill(text: example) {
@@ -67,11 +67,11 @@ struct PodcastSearchPromptEmptyState: View {
                 .foregroundStyle(AppTheme.Tint.agentSurface)
                 .padding(.bottom, AppTheme.Spacing.xs)
             Text("Search shows, episodes, transcripts.")
-                .font(.system(.title2, design: .serif).weight(.semibold))
+                .font(AppTheme.Typography.title)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
             Text("Or hand the question to the agent.")
-                .font(.system(.body, design: .serif))
+                .font(AppTheme.Typography.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
         }
@@ -94,7 +94,7 @@ struct PodcastSearchExamplePill: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(AppTheme.Tint.agentSurface.opacity(0.85))
                 Text(text)
-                    .font(.system(.body, design: .serif))
+                    .font(AppTheme.Typography.body)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -137,7 +137,7 @@ struct PodcastSearchNoResultsView: View {
                     Image(systemName: "sparkles")
                         .font(.body.weight(.semibold))
                     Text("Ask the agent instead")
-                        .font(.system(.body, design: .serif).weight(.semibold))
+                        .font(AppTheme.Typography.body.weight(.semibold))
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)
                 .padding(.vertical, AppTheme.Spacing.md)

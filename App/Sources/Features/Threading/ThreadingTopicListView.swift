@@ -135,7 +135,7 @@ private struct TopicRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(topic.displayName)
-                        .font(.system(.body, design: .serif).weight(.semibold))
+                        .font(AppTheme.Typography.body.weight(.semibold))
                         .foregroundStyle(.primary)
                     if topic.contradictionCount > 0 {
                         Circle()

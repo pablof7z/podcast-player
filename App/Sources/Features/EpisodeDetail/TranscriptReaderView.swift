@@ -148,7 +148,7 @@ private struct TranscriptRow: View {
 
     var body: some View {
         Text(segment.text)
-            .font(.system(size: 19, weight: .regular, design: .serif))
+            .font(AppTheme.Typography.body)
             .lineSpacing(11)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, alignment: .leading)

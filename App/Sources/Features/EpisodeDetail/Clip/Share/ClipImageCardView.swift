@@ -145,7 +145,7 @@ struct ClipImageCardView: View {
     private var quoteFont: Font {
         switch style {
         case .editorial:
-            return .system(size: 64, design: .serif).italic()
+            return AppTheme.Typography.title.italic()
         case .bold:
             return .system(size: 64).weight(.semibold)
         }

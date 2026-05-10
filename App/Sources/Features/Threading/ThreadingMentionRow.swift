@@ -27,12 +27,12 @@ struct ThreadingMentionRow: View {
                 topMeta
                 if let title = episode?.title {
                     Text(title)
-                        .font(.system(.callout, design: .serif).weight(.medium))
+                        .font(AppTheme.Typography.callout.weight(.medium))
                         .foregroundStyle(.primary)
                         .lineLimit(2)
                 }
                 Text("\u{201C}\(mention.snippet)\u{201D}")
-                    .font(.system(.footnote, design: .serif))
+                    .font(AppTheme.Typography.caption)
                     .italic()
                     .foregroundStyle(.secondary)
                     .lineSpacing(2)

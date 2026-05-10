@@ -68,7 +68,7 @@ struct CitationPeekView: View {
 
     private var quote: some View {
         Text("\u{201C}\(citation.quoteSnippet)\u{201D}")
-            .font(.system(.body, design: .serif))
+            .font(AppTheme.Typography.body)
             .italic()
             .foregroundStyle(.primary)
             .lineSpacing(4)

@@ -78,7 +78,7 @@ struct ClipPreviewView: View {
     private var prose: Font {
         switch style {
         case .editorial:
-            return .system(size: 19, weight: .regular, design: .serif)
+            return AppTheme.Typography.body
         case .bold:
             return .system(size: 20, weight: .bold, design: .rounded)
         }

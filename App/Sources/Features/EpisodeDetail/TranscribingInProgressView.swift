@@ -75,10 +75,10 @@ struct TranscribingInProgressView: View {
     private var copyBlock: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             Text(primaryCopy)
-                .font(.system(.title3, design: .serif).weight(.medium))
+                .font(AppTheme.Typography.title3)
                 .foregroundStyle(.primary)
             Text(secondaryCopy)
-                .font(.system(.callout, design: .serif))
+                .font(AppTheme.Typography.callout)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, AppTheme.Spacing.md)

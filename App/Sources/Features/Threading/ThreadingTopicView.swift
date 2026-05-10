@@ -37,7 +37,7 @@ struct ThreadingTopicView: View {
                     header(topic)
                     if let definition = topic.definition, !definition.isEmpty {
                         Text(definition)
-                            .font(.system(.body, design: .serif))
+                            .font(AppTheme.Typography.body)
                             .italic()
                             .foregroundStyle(.primary)
                             .lineSpacing(4)
@@ -95,7 +95,7 @@ struct ThreadingTopicView: View {
     private func header(_ topic: ThreadingTopic) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(topic.displayName)
-                .font(.system(size: 34, weight: .semibold, design: .serif))
+                .font(AppTheme.Typography.largeTitle)
                 .tracking(-0.4)
                 .foregroundStyle(.primary)
             Text(metadataLine(for: topic))
@@ -180,7 +180,7 @@ struct ThreadingTopicView: View {
                 presentedWikiPage = page
             } label: {
                 Text("Open the wiki entry for \u{201C}\(topic.displayName)\u{201D} \u{2192}")
-                    .font(.system(.footnote, design: .serif))
+                    .font(AppTheme.Typography.caption)
                     .italic()
                     .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
                     .padding(.horizontal, 14)

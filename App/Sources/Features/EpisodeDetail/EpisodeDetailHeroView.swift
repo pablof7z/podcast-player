@@ -66,7 +66,7 @@ struct EpisodeDetailHeroView: View {
             artwork
             VStack(alignment: .leading, spacing: 6) {
                 Text(episode.title.uppercased())
-                    .font(.system(size: 24, weight: .semibold, design: .serif))
+                    .font(AppTheme.Typography.title)
                     .foregroundStyle(.primary)
                 Text(showName)
                     .font(.system(.subheadline, design: .rounded).weight(.medium))
@@ -223,7 +223,7 @@ struct EpisodeDetailHeroView: View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Summary")
             Text("\u{201C}\(summaryLede)\u{201D}")
-                .font(.system(size: 21, weight: .medium, design: .serif).italic())
+                .font(AppTheme.Typography.title3.italic())
                 .lineSpacing(8)
                 .foregroundStyle(.primary)
                 .lineLimit(4)
@@ -250,7 +250,7 @@ struct EpisodeDetailHeroView: View {
                             .foregroundStyle(isActive ? Color.accentColor : .secondary)
                             .frame(width: 64, alignment: .leading)
                         Text(chapter.title)
-                            .font(.system(.body, design: .serif))
+                            .font(AppTheme.Typography.body)
                             .foregroundStyle(isActive ? Color.accentColor : .primary)
                         Spacer()
                         if isActive {
@@ -276,7 +276,7 @@ struct EpisodeDetailHeroView: View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Show notes")
             Text(descriptionPlain)
-                .font(.system(size: 17, design: .serif))
+                .font(AppTheme.Typography.body)
                 .lineSpacing(7)
                 .foregroundStyle(.secondary)
         }

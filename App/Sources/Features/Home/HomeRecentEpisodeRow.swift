@@ -252,6 +252,7 @@ private struct HomeEpisodePreviewCard: View {
                     .lineLimit(1)
             }
             Text(episode.title)
+                // TODO: replace serif
                 .font(.system(.title3, design: .serif, weight: .semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(3)

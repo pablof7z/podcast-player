@@ -120,7 +120,7 @@ struct WikiPageView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(page.title)
-                .font(.system(size: 34, weight: .semibold, design: .serif))
+                .font(AppTheme.Typography.largeTitle)
                 .tracking(-0.4)
                 .foregroundStyle(.primary)
             Text(metadataLine)
@@ -136,7 +136,7 @@ struct WikiPageView: View {
 
     private var summary: some View {
         Text(page.summary)
-            .font(.system(.body, design: .serif))
+            .font(AppTheme.Typography.body)
             .italic()
             .foregroundStyle(.primary)
             .lineSpacing(4)
@@ -166,7 +166,7 @@ struct WikiPageView: View {
     private func claimView(_ claim: WikiClaim) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(claim.text)
-                .font(.system(.body, design: .serif))
+                .font(AppTheme.Typography.body)
                 .lineSpacing(4)
                 .foregroundStyle(.primary)
             if !claim.citations.isEmpty {
@@ -219,7 +219,7 @@ struct WikiPageView: View {
                                         .foregroundStyle(.primary)
                                 }
                                 Text("\u{201C}\(citation.quoteSnippet)\u{201D}")
-                                    .font(.system(.footnote, design: .serif))
+                                    .font(AppTheme.Typography.caption)
                                     .italic()
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.leading)

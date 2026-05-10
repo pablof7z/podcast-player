@@ -68,7 +68,7 @@ struct BriefingPlayerView: View {
                 .frame(height: 1)
                 .foregroundStyle(.tertiary)
             Text(context.script.title)
-                .font(.system(.largeTitle, design: .serif).weight(.semibold))
+                .font(AppTheme.Typography.largeTitle)
                 .padding(.top, AppTheme.Spacing.sm)
             Text(context.script.subtitle.uppercased())
                 .font(.caption.weight(.medium))
@@ -86,18 +86,18 @@ struct BriefingPlayerView: View {
                 // held (UX-08 §4 — *listening* glow + frozen segment text).
                 if !mic.liveTranscript.isEmpty {
                     Text(mic.liveTranscript)
-                        .font(.system(.body, design: .serif).italic())
+                        .font(AppTheme.Typography.body.italic())
                         .lineSpacing(6)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     Text("Listening…")
-                        .font(.system(.body, design: .serif).italic())
+                        .font(AppTheme.Typography.body.italic())
                         .foregroundStyle(.secondary)
                 }
             } else if let segment = currentSegment {
                 Text(segment.bodyText)
-                    .font(.system(.body, design: .serif))
+                    .font(AppTheme.Typography.body)
                     .lineSpacing(6)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {

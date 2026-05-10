@@ -51,7 +51,7 @@ struct QuoteShareView: View {
             }
 
             Text("\u{201C}\(segment.text)\u{201D}")
-                .font(.system(.title3, design: .serif))
+                .font(AppTheme.Typography.title)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
