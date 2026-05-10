@@ -27,7 +27,9 @@ extension AgentTools {
         }
 
         let kind: NoteKind = (args["kind"] as? String) == "reflection" ? .reflection : .free
-        let note = store.addNote(text: text, kind: kind)
+        // Agent-authored: takes the no-publish branch in `addNote(...)` per
+        // `identity-05-synthesis.md` §5.3.
+        let note = store.addNote(text: text, kind: kind, author: .agent)
         store.recordAgentActivity(
             AgentActivityEntry(
                 batchID: batchID,

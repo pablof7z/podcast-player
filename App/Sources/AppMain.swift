@@ -6,7 +6,7 @@ import SwiftUI
 struct PodcastrApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var store = AppStateStore()
-    @State private var userIdentity = UserIdentityStore()
+    @State private var userIdentity = UserIdentityStore.shared
     @State private var relayService: NostrRelayService?
 
     var body: some Scene {
