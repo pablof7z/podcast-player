@@ -60,8 +60,14 @@ enum ITunesSearchClient {
         }
 
         let decoded = try JSONDecoder().decode(Response.self, from: data)
-        // Filter out entries with no feed URL — they're nothing we can subscribe to.
-        return decoded.results.filter { $0.feedUrl != nil }
+        // Filter on the *parsed* URL, not just the string presence —
+        // iTunes occasionally emits a non-nil feedUrl that doesn't
+        // round-trip through `URL(string:)` (rare, but seen on a
+        // handful of legacy entries). Filtering on `feedURL` instead of
+        // `feedUrl` means rows that survive are guaranteed to subscribe;
+        // the previous filter let malformed rows render and silently
+        // no-op on tap.
+        return decoded.results.filter { $0.feedURL != nil }
     }
 
     /// Top podcasts in the user's storefront. Fetched as a two-step pipeline
@@ -112,9 +118,10 @@ enum ITunesSearchClient {
         let looked = try JSONDecoder().decode(Response.self, from: lookupData).results
 
         // Reorder to match the ranked feed; drop rows the lookup didn't
-        // return or that lack a feed URL we can subscribe to.
+        // return or whose feedUrl doesn't parse — same parsed-URL guard
+        // as `search(_:limit:)` so a tapped row is always subscribable.
         let byCollectionID = Dictionary(uniqueKeysWithValues: looked.map { ($0.collectionId, $0) })
-        return rankedIDs.compactMap { byCollectionID[$0] }.filter { $0.feedUrl != nil }
+        return rankedIDs.compactMap { byCollectionID[$0] }.filter { $0.feedURL != nil }
     }
 
     // MARK: - Top-feed shapes
