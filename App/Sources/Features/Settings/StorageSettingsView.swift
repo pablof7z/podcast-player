@@ -156,8 +156,20 @@ struct StorageSettingsView: View {
                     .font(AppTheme.Typography.body.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    Haptics.warning()
+                    deleteOrphans()
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
         } footer: {
-            Text("Files left behind when their episode was removed (e.g. unsubscribed shows). Tap below to clean up.")
+            // Footer used to read "Tap below to clean up" — but the only
+            // "below" action was Delete All Downloads, which wipes
+            // everything (including subscribed shows). Swipe-to-delete on
+            // this row keeps the cleanup scoped to just the orphans.
+            Text("Files left behind when their episode was removed (e.g. unsubscribed shows). Swipe to clean up.")
         }
     }
 
@@ -207,6 +219,28 @@ struct StorageSettingsView: View {
     private func deleteShow(_ row: ShowRow) {
         for episodeID in row.episodeIDs {
             EpisodeDownloadService.shared.delete(episodeID: episodeID)
+        }
+        Task { await refresh() }
+    }
+
+    /// Re-walks the on-disk artifacts and removes only those whose
+    /// `episodeID` no longer resolves to a live `Episode` in the store.
+    /// Tracked downloads are untouched. Snapshot URLs aren't cached on
+    /// `Snapshot` (only the count + total bytes) — re-enumerating is
+    /// cheap and avoids a stale-URL race if a tracked episode was just
+    /// added.
+    private func deleteOrphans() {
+        let store = EpisodeDownloadStore.shared
+        for file in store.enumerateOnDisk() {
+            let isOrphan: Bool
+            if let id = file.episodeID {
+                isOrphan = self.store.episode(id: id) == nil
+            } else {
+                isOrphan = true
+            }
+            if isOrphan {
+                try? FileManager.default.removeItem(at: file.url)
+            }
         }
         Task { await refresh() }
     }
