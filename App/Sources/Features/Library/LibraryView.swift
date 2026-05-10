@@ -33,6 +33,8 @@ struct LibraryView: View {
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.top, AppTheme.Spacing.sm)
 
+                continueListeningRail
+
                 filterRailContainer
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.top, AppTheme.Spacing.sm)
@@ -55,8 +57,29 @@ struct LibraryView: View {
         .navigationDestination(for: PodcastSubscription.self) { sub in
             ShowDetailView(subscription: sub)
         }
+        // Registered so the Continue Listening rail's cards can push the
+        // shared Library episode detail. ShowDetailView registers the same
+        // route on its own stack — both surfaces resolve consistently.
+        .navigationDestination(for: LibraryEpisodeRoute.self) { route in
+            LibraryEpisodePlaceholder(route: route)
+        }
         .sheet(isPresented: $showAddShowSheet) {
             AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
+        }
+    }
+
+    // MARK: - Continue listening rail
+
+    /// Shown only when the user has any in-progress episode. Sits above the
+    /// filter rail so it doesn't interact with the Unplayed/Downloaded chip
+    /// selection — the rail is a global resume affordance, not a filter
+    /// projection.
+    @ViewBuilder
+    private var continueListeningRail: some View {
+        let inProgress = store.inProgressEpisodes
+        if !inProgress.isEmpty {
+            LibraryContinueListeningRail(episodes: inProgress)
+                .padding(.top, AppTheme.Spacing.lg)
         }
     }
 

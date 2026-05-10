@@ -56,7 +56,8 @@ struct ShowDetailEpisodeList: View {
                         episodeID: ep.id,
                         subscriptionID: subscription.id,
                         title: ep.title
-                    )
+                    ),
+                    playback: playback
                 )
             }
             .accessibilityActions {

@@ -23,12 +23,13 @@ struct PodcastSearchView: View {
     var body: some View {
         List {
             if model.query.isBlank {
-                emptyState
+                PodcastSearchPromptEmptyState { example in
+                    model.query = example
+                }
             } else {
                 resultSections
                 if !hasAnyResults && !model.isSearchingTranscripts {
-                    ContentUnavailableView.search(text: model.query)
-                        .listRowBackground(Color.clear)
+                    PodcastSearchNoResultsView(query: model.query)
                 }
             }
         }
@@ -140,42 +141,11 @@ struct PodcastSearchView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: AppTheme.Spacing.md) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.tertiary)
-            Text("Search")
-                .font(AppTheme.Typography.title)
-            HStack(spacing: AppTheme.Spacing.xs) {
-                scopePill("Shows", icon: "square.stack")
-                scopePill("Episodes", icon: "play.rectangle")
-                scopePill("Transcripts", icon: "text.quote")
-                scopePill("Wiki", icon: "book.closed")
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AppTheme.Spacing.xl)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-    }
-
     private var resultCount: Int {
         localResults.shows.count
             + localResults.episodes.count
             + model.transcriptResults.count
             + model.wikiResults.count
-    }
-
-    private func scopePill(_ label: String, icon: String) -> some View {
-        Label(label, systemImage: icon)
-            .font(AppTheme.Typography.caption2)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, AppTheme.Spacing.sm)
-            .padding(.vertical, AppTheme.Spacing.xs)
-            .background(AppTheme.Tint.surfaceMuted, in: Capsule())
     }
 
     private func openTranscriptHit(_ hit: PodcastTranscriptSearchHit) {
