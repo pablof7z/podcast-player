@@ -253,9 +253,20 @@ final class TranscriptIngestService {
 
     private func runScribe(for episode: Episode, appStore: AppStateStore) async {
         appStore.setEpisodeTranscriptState(episode.id, state: .transcribing(progress: 0))
+        // Prefer the on-disk download when present (fastest upload, no extra
+        // egress for the user). Fall back to the publisher's HTTPS enclosure
+        // URL — Scribe's `source_url` form field tells the server to fetch
+        // the audio itself, so we never have to download 100MB on-device
+        // just to hand it back over the wire.
+        let audioURL: URL
+        if EpisodeDownloadStore.shared.exists(for: episode) {
+            audioURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
+        } else {
+            audioURL = episode.enclosureURL
+        }
         do {
             let job = try await scribe.submit(
-                audioURL: episode.enclosureURL,
+                audioURL: audioURL,
                 episodeID: episode.id,
                 languageHint: nil
             )
