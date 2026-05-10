@@ -50,26 +50,6 @@
 	<array>
 		<dict>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>plus.circle.fill</string>
-			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>Create a new task</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Add Item</string>
-			<key>UIApplicationShortcutItemType</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER).add-item</string>
-		</dict>
-		<dict>
-			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>exclamationmark.circle.fill</string>
-			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>See past-due items</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>View Overdue</string>
-			<key>UIApplicationShortcutItemType</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER).view-overdue</string>
-		</dict>
-		<dict>
-			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>sparkles</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
 			<string>Chat with your AI agent</string>
@@ -77,6 +57,26 @@
 			<string>Open Agent</string>
 			<key>UIApplicationShortcutItemType</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).open-agent</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>gear</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Models, transcripts, downloads</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Settings</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).settings</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>exclamationmark.bubble.fill</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Report a bug or share thoughts</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Send Feedback</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).feedback</string>
 		</dict>
 	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

@@ -59,10 +59,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     /// The bundle-id prefix is stripped so the suffix alone identifies the
     /// destination — keeps this in sync with whatever bundle ID `Project.swift`
     /// resolves to today.
-    ///
-    /// Legacy template shortcuts (`add-item`, `view-overdue`) are
-    /// intentionally unmapped — they reference functionality removed in the
-    /// podcast pivot. Tapping them just opens the app.
     private static func deepLinkURL(for shortcut: UIApplicationShortcutItem) -> URL? {
         let bundleID = Bundle.main.bundleIdentifier ?? ""
         let prefix = bundleID + "."
