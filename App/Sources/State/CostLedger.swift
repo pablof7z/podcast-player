@@ -188,12 +188,20 @@ final class CostLedger: ObservableObject {
     }
 
     private func save() {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(records) else { return }
+        guard let data = try? Self.encoder.encode(records) else { return }
         try? data.write(to: fileURL, options: [.atomic])
     }
+
+    /// Configured once. `save()` runs on every cost-log (every LLM
+    /// call the user makes), so per-call encoder construction +
+    /// `.iso8601` / `.sortedKeys` configuration was real (if modest)
+    /// waste. Matches the same fix applied to `AgentRunLogger.save()`.
+    private static let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        e.outputFormatting = [.sortedKeys]
+        return e
+    }()
 
     private static func load(from url: URL) -> [UsageRecord] {
         guard let data = try? Data(contentsOf: url) else { return [] }
