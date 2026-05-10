@@ -1,8 +1,10 @@
 import AVFoundation
 import Combine
 import Foundation
+import Kingfisher
 import MediaPlayer
 import os.log
+import UIKit
 
 // MARK: - EngineError
 
@@ -85,10 +87,26 @@ final class AudioEngine {
     /// engine doesn't have to know how chapters are stored.
     var resolveActiveChapterTitle: (Episode, TimeInterval) -> String? = { _, _ in nil }
 
+    /// Returns the artwork URL to render on the lock screen for the current
+    /// playhead — chapter image takes precedence over episode/show artwork
+    /// so the system surface mirrors the in-app hero. Returns `nil` when no
+    /// artwork is available.
+    var resolveArtworkURL: (Episode, TimeInterval) -> URL? = { _, _ in nil }
+
     /// Most-recently-published chapter title — checked on each time-observer
     /// tick so a chapter boundary crossing triggers a full nowPlaying republish
     /// (the lightweight `updateElapsed` path only refreshes elapsed/rate).
     var lastPublishedChapterTitle: String?
+
+    /// Most-recently-resolved artwork URL — used to avoid redundant
+    /// Kingfisher fetches when the URL hasn't changed (chapter title may
+    /// flip without the artwork URL flipping).
+    var lastPublishedArtworkURL: URL?
+
+    /// Cached UIImage backing the last-published `MPMediaItemArtwork`. The
+    /// artwork's request handler returns it (resized) on demand by the
+    /// media center.
+    var lastPublishedArtworkImage: UIImage?
 
     // MARK: - Internal (shared with AudioEngine+Observers.swift)
 
@@ -249,15 +267,75 @@ final class AudioEngine {
 
     func publishNowPlaying() {
         let chapterTitle = episode.flatMap { resolveActiveChapterTitle($0, currentTime) }
+        let artworkURL = episode.flatMap { resolveArtworkURL($0, currentTime) }
         nowPlaying.update(
             title: episode?.title,
             artist: episode.flatMap { resolveShowName($0) },
             albumTitle: chapterTitle,
             duration: duration > 0 ? duration : nil,
             elapsed: currentTime,
-            rate: state == .playing ? rate : 0
+            rate: state == .playing ? rate : 0,
+            artwork: makeMediaItemArtwork()
         )
         lastPublishedChapterTitle = chapterTitle
+        // Kick off an artwork fetch when the URL changed; the result calls
+        // back into `publishNowPlaying` once the image is ready so the
+        // lock screen swaps in fresh artwork without us blocking publish.
+        fetchArtworkIfNeeded(url: artworkURL)
+    }
+
+    /// Wrap the cached UIImage in an `MPMediaItemArtwork`. Returns `nil`
+    /// when no image has resolved yet — the lock screen falls back to its
+    /// default state until the fetch lands.
+    private func makeMediaItemArtwork() -> MPMediaItemArtwork? {
+        guard let image = lastPublishedArtworkImage else { return nil }
+        // 600x600 is the size Apple Music uses; the request handler
+        // resizes per the media center's specific bounds request.
+        return MPMediaItemArtwork(boundsSize: image.size) { requested in
+            // Cheap on-demand resize. iOS calls this with the exact
+            // pixel bounds it needs (e.g. lock screen ~ 280pt, Control
+            // Center ~ 100pt). Returning the original is fine for v1;
+            // the system will down-sample without aliasing artifacts.
+            if requested == image.size { return image }
+            return Self.resize(image, to: requested) ?? image
+        }
+    }
+
+    /// Resolve `url` via Kingfisher (shared cache) and republish nowPlaying
+    /// when the resulting UIImage is ready. No-op when the URL is unchanged
+    /// since the last fetch.
+    private func fetchArtworkIfNeeded(url: URL?) {
+        guard url != lastPublishedArtworkURL else { return }
+        lastPublishedArtworkURL = url
+        guard let url else {
+            lastPublishedArtworkImage = nil
+            return
+        }
+        KingfisherManager.shared.retrieveImage(with: url) { [weak self] result in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                // Bail when a newer fetch raced ahead — the URL we kicked
+                // off may have been superseded by a chapter boundary.
+                guard self.lastPublishedArtworkURL == url else { return }
+                if case .success(let value) = result {
+                    self.lastPublishedArtworkImage = value.image
+                    // Re-publish so the new artwork lands on the lock
+                    // screen. `publishNowPlaying` will re-call this fetch
+                    // helper, but the URL-equality short-circuit means
+                    // the second call returns immediately.
+                    self.publishNowPlaying()
+                }
+            }
+        }
+    }
+
+    /// Cheap UIGraphics resize for `MPMediaItemArtwork`'s request handler.
+    /// Returns nil on failure so the caller can fall back to the original.
+    private static func resize(_ image: UIImage, to size: CGSize) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 
     func publishNowPlayingElapsed() {

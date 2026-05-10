@@ -94,6 +94,19 @@ struct RootView: View {
                     let navigable = live.chapters?.filter(\.includeInTableOfContents) ?? []
                     return navigable.active(at: playhead)?.title
                 }
+                playbackState.engine.resolveArtworkURL = { [store] episode, playhead in
+                    // Mirror the in-app hero priority: chapter image →
+                    // episode <itunes:image> → show cover. Reads from the
+                    // live store so chapters hydrated post-playback drive
+                    // the lock-screen artwork swap.
+                    let live = store.episode(id: episode.id) ?? episode
+                    let navigable = live.chapters?.filter(\.includeInTableOfContents) ?? []
+                    if let chapterURL = navigable.active(at: playhead)?.imageURL {
+                        return chapterURL
+                    }
+                    return live.imageURL
+                        ?? store.subscription(id: live.subscriptionID)?.imageURL
+                }
             }
             // Re-push preferences whenever the user edits Settings so the
             // skip intervals update on the lock screen and the auto-mark
