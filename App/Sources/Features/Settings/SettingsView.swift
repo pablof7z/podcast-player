@@ -31,11 +31,11 @@ struct SettingsView: View {
             }
         }
         .alert("Clear All Data?", isPresented: $showClearConfirm) {
-            Button("Clear Everything", role: .destructive) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All Data", role: .destructive) {
                 store.clearAllData()
                 Haptics.success()
             }
-            Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved.")
         }
