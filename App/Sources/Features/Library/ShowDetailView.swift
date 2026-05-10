@@ -27,6 +27,10 @@ struct ShowDetailView: View {
     /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
     /// so the same `EpisodeDetailView` opens regardless of how the user got there.
     @State private var voiceOverDetailRoute: LibraryEpisodeRoute?
+    /// Controls whether the show description is shown collapsed (≤ 5 lines)
+    /// or fully expanded. Many feeds publish multi-paragraph "About this
+    /// show" blurbs; folding them by default keeps the surface scannable.
+    @State private var descriptionExpanded: Bool = false
 
     var body: some View {
         List {
@@ -119,18 +123,49 @@ struct ShowDetailView: View {
 
     @ViewBuilder
     private var description: some View {
-        let body = liveSubscription.description.replacingOccurrences(
-            of: "<[^>]+>",
-            with: "",
-            options: .regularExpression
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        // Use the shared formatter so HTML entities (&rsquo;, &mdash;, …)
+        // decode to the right glyph instead of bleeding through as
+        // literals. The previous regex strip only removed tags.
+        let body = EpisodeShowNotesFormatter.plainText(from: liveSubscription.description)
         if !body.isEmpty {
-            Text(body)
-                .font(AppTheme.Typography.body)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-                .padding(.top, AppTheme.Spacing.lg)
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text(body)
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(descriptionExpanded ? nil : 5)
+                    .animation(.easeInOut(duration: 0.2), value: descriptionExpanded)
+                if Self.descriptionNeedsToggle(body) {
+                    Button {
+                        Haptics.selection()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            descriptionExpanded.toggle()
+                        }
+                    } label: {
+                        Text(descriptionExpanded ? "Show less" : "Show more")
+                            .font(AppTheme.Typography.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, AppTheme.Spacing.lg)
+            .padding(.top, AppTheme.Spacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    /// Approximate "is this longer than the 5-line cap" check. Counts the
+    /// blocks an `EpisodeShowNotesFormatter`-collapsed string produces.
+    /// Imperfect — wide characters or narrow widths still vary — but the
+    /// false-positive cost is just an inert "Show more" button on a body
+    /// that already fits, which is preferable to silently truncating with
+    /// no escape hatch.
+    static func descriptionNeedsToggle(_ body: String) -> Bool {
+        // Hand-tuned thresholds: very long single-line blurbs OR multiple
+        // paragraphs both warrant the toggle.
+        if body.count > 240 { return true }
+        let blocks = body.split(separator: "\n\n").count
+        return blocks > 1
     }
 
     private var filterSection: some View {
