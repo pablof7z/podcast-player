@@ -85,6 +85,15 @@ final class TranscriptIngestService {
             )
             return
         }
+        // Per-category opt-out: if the user has disabled transcription for
+        // the category this show belongs to, skip ingestion entirely.
+        // Defaults to allow when the show isn't yet categorised.
+        guard appStore.effectiveTranscriptionEnabled(forSubscription: episode.subscriptionID) else {
+            Self.logger.info(
+                "ingest(\(episodeID, privacy: .public)): transcription disabled for category — skipping"
+            )
+            return
+        }
 
         inFlight.insert(episodeID)
         defer { inFlight.remove(episodeID) }
