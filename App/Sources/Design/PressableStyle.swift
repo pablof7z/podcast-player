@@ -115,7 +115,15 @@ extension View {
                 }
                 .tint(.blue)
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            // `allowsFullSwipe: false` so the user has to swipe AND tap
+            // the Delete button — instead of triggering on a full-edge
+            // swipe alone. Notes/Memories are user-typed content with no
+            // recovery UI ("Recently Deleted" doesn't exist), and the
+            // soft-delete (`deleted: True`) is invisible from the app —
+            // an accidental full-swipe would silently lose the row with
+            // no Undo. The extra tap-to-confirm is cheap and matches the
+            // pattern Apple Notes uses on its main list.
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     onDelete()
                     Haptics.delete()
