@@ -28,10 +28,11 @@ struct AgentChatView: View {
         let id: UUID
     }
 
-    private struct IdentifiedURL: Identifiable {
-        let url: URL
-        var id: String { url.absoluteString }
-    }
+    // `IdentifiedURL` was used to drive `.sheet(item:)` for the transcript
+    // share — replaced by `SystemShareSheet.present(items:)` because
+    // wrapping `UIActivityViewController` in a SwiftUI sheet renders blank
+    // for file-URL items. See `Design/ShareSheet.swift` docstring for the
+    // file-vs-string distinction.
 
     // MARK: - State
 
@@ -46,7 +47,8 @@ struct AgentChatView: View {
     @State private var didSendInSession = false
     @State private var showClearConfirm = false
     @State private var scrolledMessageID: AnyHashable? = nil
-    @State private var transcriptURL: URL?
+    // `transcriptURL` is no longer held as state — the export handler
+    // presents the share sheet imperatively via `SystemShareSheet`.
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -81,12 +83,6 @@ struct AgentChatView: View {
             set: { presentedBatch = $0?.id }
         )) { batch in
             AgentActivitySheet(batchID: batch.id)
-        }
-        .sheet(item: Binding(
-            get: { transcriptURL.map(IdentifiedURL.init) },
-            set: { transcriptURL = $0?.url }
-        )) { identified in
-            ShareSheet(items: [identified.url])
         }
     }
 
@@ -127,7 +123,10 @@ struct AgentChatView: View {
         }
         guard let url = AgentChatTranscriptExport.write(messages, batchSummaries: batchSummaries) else { return }
         Haptics.success()
-        transcriptURL = url
+        // Imperative present — SwiftUI's `.sheet { ShareSheet(...) }` wrapper
+        // renders the activity controller as a blank sheet on iOS 16+ for
+        // file-URL items.
+        SystemShareSheet.present(items: [url])
     }
 
     @ViewBuilder
