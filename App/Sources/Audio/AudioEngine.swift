@@ -167,6 +167,8 @@ final class AudioEngine {
         teardownItemObservers()
         self.episode = episode
         state = .loading(episode)
+        currentTime = 0
+        duration = episode.duration ?? 0
         didReachNaturalEnd = false
 
         let asset = AVURLAsset(url: url)
@@ -175,10 +177,6 @@ final class AudioEngine {
         installItemObservers(for: item)
         installTimeObserver()
 
-        // Best-effort known-duration fast-path from the feed.
-        if let dur = episode.duration {
-            duration = dur
-        }
         publishNowPlaying()
     }
 
