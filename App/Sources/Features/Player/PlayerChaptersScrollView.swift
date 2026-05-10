@@ -70,11 +70,18 @@ struct PlayerChaptersScrollView: View {
                     .lineLimit(2)
                 Spacer(minLength: 0)
                 if isActive {
-                    Image(systemName: "waveform")
+                    // `speaker.wave.2.fill` reads as audible-from-this-row.
+                    // The previous `waveform` glyph collided with the
+                    // artwork-failure fallback in the hero (also a
+                    // waveform), so chapter-less episodes with missing art
+                    // showed a static waveform up top and an animated one
+                    // mid-list — confusing.
+                    Image(systemName: "speaker.wave.2.fill")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Color.accentColor)
                         .symbolEffect(.variableColor.iterative, options: .repeating, value: state.isPlaying)
                         .transition(.opacity.combined(with: .scale))
+                        .accessibilityHidden(true)
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.sm)
@@ -85,7 +92,10 @@ struct PlayerChaptersScrollView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(chapter.title)
         .accessibilityValue(isActive ? "Active chapter, \(formatTimestamp(chapter.startTime))" : formatTimestamp(chapter.startTime))
-        .accessibilityHint("Double-tap to play from this chapter")
+        // Hint describes the *effect* of the action, not the gesture —
+        // VoiceOver already announces "double-tap to activate" via the
+        // button trait, so saying "double-tap to..." is redundant.
+        .accessibilityHint("Seeks playback to this chapter")
     }
 
     @ViewBuilder
@@ -121,6 +131,10 @@ struct PlayerChaptersScrollView: View {
     }
 
     private func formatTimestamp(_ t: TimeInterval) -> String {
+        // Use the shared formatter — guards NaN/negative inputs from a
+        // corrupt feed and keeps the zero-padded `%02d:%02d[:02d]` style
+        // by branching on hours.
+        guard t.isFinite, t >= 0 else { return "0:00" }
         let total = Int(t)
         let h = total / 3600
         let m = (total % 3600) / 60

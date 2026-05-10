@@ -11,34 +11,41 @@ struct PlayerSpeedSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        // Cache the current rate once per body eval so each row's
+        // selection check doesn't re-run `PlaybackRate.bestFit(for:)` —
+        // that helper allocates an `allCases` walk per call.
+        let current = state.rate
         NavigationStack {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Playback Speed")
-                    .font(AppTheme.Typography.title)
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, AppTheme.Spacing.lg)
-                    .padding(.top, AppTheme.Spacing.lg)
-                    .padding(.bottom, AppTheme.Spacing.sm)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Playback Speed")
+                        .font(AppTheme.Typography.title)
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, AppTheme.Spacing.lg)
+                        .padding(.top, AppTheme.Spacing.lg)
+                        .padding(.bottom, AppTheme.Spacing.sm)
+                        .accessibilityAddTraits(.isHeader)
 
-                ForEach(PlaybackRate.allCases) { rate in
-                    rateRow(for: rate)
-                }
+                    ForEach(PlaybackRate.allCases) { rate in
+                        rateRow(for: rate, isSelected: rate == current)
+                    }
 
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Spacer(minLength: AppTheme.Spacing.lg)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .toolbarTitleDisplayMode(.inline)
         }
-        .presentationDetents([.medium])
+        // `.medium` plus `.large` so the row list stays reachable at
+        // accessibility text sizes — at default sizes the medium detent
+        // already fits comfortably, so most users won't notice the
+        // difference. Drop the redundant Done button: tapping a row
+        // dismisses, the drag indicator is the cancel path.
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
-    private func rateRow(for rate: PlaybackRate) -> some View {
+    private func rateRow(for rate: PlaybackRate, isSelected: Bool) -> some View {
         Button {
             state.setRate(rate)
             dismiss()
@@ -48,10 +55,11 @@ struct PlayerSpeedSheet: View {
                     .font(AppTheme.Typography.headline)
                     .foregroundStyle(.primary)
                 Spacer()
-                if state.rate == rate {
+                if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.lg)
@@ -59,5 +67,9 @@ struct PlayerSpeedSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.pressable(scale: 0.98, opacity: 0.85))
+        // VoiceOver announces this row as "1.5×, selected" when active —
+        // previously every row sounded identical and the user had no
+        // way to know which speed was current.
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

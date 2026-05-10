@@ -133,6 +133,7 @@ struct AgentRunDetailView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
+            .accessibilityLabel("More actions")
         }
     }
 

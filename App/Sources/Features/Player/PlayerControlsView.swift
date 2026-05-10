@@ -27,45 +27,23 @@ struct PlayerControlsView: View {
             // value so the SF Symbol still resolves.
             let back = state.skipBackwardSeconds
             let forward = state.skipForwardSeconds
-            skipButton(
-                seconds: -back,
-                glyph: skipGlyph(back, forward: false),
-                action: { state.skipBackward() },
-                chapterAction: chapters.isEmpty ? nil : {
-                    Haptics.medium()
-                    state.seekToPreviousChapter(in: chapters)
-                }
+            SkipButton(
+                seconds: back,
+                direction: .backward,
+                tapAction: { state.skipBackward() },
+                chapterAction: chapters.isEmpty ? nil : { state.seekToPreviousChapter(in: chapters) }
             )
 
             playPauseButton
 
-            skipButton(
+            SkipButton(
                 seconds: forward,
-                glyph: skipGlyph(forward, forward: true),
-                action: { state.skipForward() },
-                chapterAction: chapters.isEmpty ? nil : {
-                    Haptics.medium()
-                    state.seekToNextChapter(in: chapters)
-                }
+                direction: .forward,
+                tapAction: { state.skipForward() },
+                chapterAction: chapters.isEmpty ? nil : { state.seekToNextChapter(in: chapters) }
             )
-
-            AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
-    }
-
-    /// Picks the closest SF Symbol that ships with iOS for the given seconds.
-    /// `gobackward.10/15/30/45/60/75/90` and the matching `goforward.*` are
-    /// the supported variants; anything else falls back to `gobackward` /
-    /// `goforward` (no number).
-    private func skipGlyph(_ seconds: Int, forward: Bool) -> String {
-        let supported = [10, 15, 30, 45, 60, 75, 90]
-        let prefix = forward ? "goforward" : "gobackward"
-        guard let match = supported.min(by: { abs($0 - seconds) < abs($1 - seconds) }),
-              abs(match - seconds) <= 5 else {
-            return prefix
-        }
-        return "\(prefix).\(match)"
     }
 
     // MARK: - Subviews
@@ -84,38 +62,102 @@ struct PlayerControlsView: View {
         }
         .buttonStyle(.pressable(scale: 0.94, opacity: 0.9))
     }
+}
 
-    @ViewBuilder
-    private func skipButton(
-        seconds: Int,
-        glyph: String,
-        action: @escaping () -> Void,
-        chapterAction: (() -> Void)? = nil
-    ) -> some View {
+// MARK: - SkipButton
+
+/// Tap = configured-seconds skip; long-press = chapter nav (when chapters
+/// available). `simultaneousGesture` previously fired BOTH actions because
+/// it doesn't suppress the Button's tap on release — this struct guards
+/// the tap with a `didLongPress` flag so a long-press is exclusive.
+///
+/// The SF Symbol picker requires an exact match so the visible number
+/// always equals the configured interval. A user with a 20 s skip used to
+/// see `goforward.15` (closest stocked variant ±5 s) but the action
+/// skipped 20 s — the visible label silently lied. Anything off-grid now
+/// falls back to bare `goforward`/`gobackward` (no digit) so the visual
+/// stays honest.
+private struct SkipButton: View {
+
+    enum Direction { case forward, backward }
+
+    let seconds: Int
+    let direction: Direction
+    let tapAction: () -> Void
+    let chapterAction: (() -> Void)?
+
+    @State private var didLongPress = false
+
+    var body: some View {
         let label = Image(systemName: glyph)
             .font(.title3.weight(.semibold))
             .foregroundStyle(.primary)
             .frame(width: 56, height: 56)
             .glassEffect(.regular.interactive(), in: .circle)
-        let baseLabel = seconds < 0 ? "Skip back \(-seconds) seconds" : "Skip forward \(seconds) seconds"
+
+        let baseLabel: String = direction == .backward
+            ? "Skip back \(seconds) seconds"
+            : "Skip forward \(seconds) seconds"
+
+        Button {
+            if didLongPress {
+                didLongPress = false
+                return
+            }
+            tapAction()
+        } label: { label }
+        .buttonStyle(.pressable)
+        .modifier(LongPressChapterModifier(
+            chapterAction: chapterAction,
+            didLongPress: $didLongPress
+        ))
+        .accessibilityLabel(baseLabel)
+        .modifier(ChapterAccessibilityActionModifier(
+            direction: direction,
+            chapterAction: chapterAction
+        ))
+    }
+
+    private var glyph: String {
+        let supported = [10, 15, 30, 45, 60, 75, 90]
+        let prefix = direction == .forward ? "goforward" : "gobackward"
+        // Exact match only — see comment above on why.
+        guard supported.contains(seconds) else { return prefix }
+        return "\(prefix).\(seconds)"
+    }
+}
+
+private struct LongPressChapterModifier: ViewModifier {
+    let chapterAction: (() -> Void)?
+    @Binding var didLongPress: Bool
+
+    func body(content: Content) -> some View {
         if let chapterAction {
-            // Tap = configured-seconds skip. Long-press = chapter nav.
-            // `simultaneousGesture` keeps both gesture paths active without
-            // the Button swallowing the long-press.
-            Button(action: action) { label }
-                .buttonStyle(.pressable)
-                .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.45)
-                        .onEnded { _ in chapterAction() }
-                )
-                .accessibilityLabel(baseLabel)
-                .accessibilityAction(named: seconds < 0 ? "Previous chapter" : "Next chapter") {
-                    chapterAction()
-                }
+            content.simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.45)
+                    .onEnded { _ in
+                        didLongPress = true
+                        Haptics.heavy()
+                        chapterAction()
+                    }
+            )
         } else {
-            Button(action: action) { label }
-                .buttonStyle(.pressable)
-                .accessibilityLabel(baseLabel)
+            content
+        }
+    }
+}
+
+private struct ChapterAccessibilityActionModifier: ViewModifier {
+    let direction: SkipButton.Direction
+    let chapterAction: (() -> Void)?
+
+    func body(content: Content) -> some View {
+        if let chapterAction {
+            content.accessibilityAction(named: direction == .backward ? "Previous chapter" : "Next chapter") {
+                chapterAction()
+            }
+        } else {
+            content
         }
     }
 }
@@ -135,24 +177,52 @@ struct PlayerActionClusterView: View {
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
-            actionChip(label: state.rate.label, glyph: "speedometer") {
+            actionChip(
+                label: state.rate.label,
+                glyph: "speedometer",
+                accessibilityName: "Playback speed",
+                accessibilityValue: state.rate.label
+            ) {
                 showSpeedSheet = true
             }
             actionChip(
                 label: state.sleepTimerChipLabel,
-                glyph: "moon.fill"
+                glyph: "moon.fill",
+                accessibilityName: "Sleep timer",
+                accessibilityValue: sleepTimerSpokenValue
             ) {
                 showSleepSheet = true
             }
             routePickerChip
-            actionChip(label: "Queue", glyph: "list.bullet") {
+            actionChip(
+                label: "Up Next",
+                glyph: "list.bullet",
+                accessibilityName: "Up Next queue"
+            ) {
                 showQueueSheet = true
             }
-            actionChip(label: "Share", glyph: "square.and.arrow.up") {
+            actionChip(
+                label: "More",
+                glyph: "ellipsis.circle",
+                accessibilityName: "Share and copy options"
+            ) {
                 showShareSheet = true
             }
+            AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// VoiceOver-friendly spoken form of the sleep-timer state. The chip's
+    /// visible label is just `state.sleepTimerChipLabel` (e.g. "29:42") —
+    /// fine for sighted users next to a moon glyph, but a bare time read out
+    /// loud is meaningless.
+    private var sleepTimerSpokenValue: String {
+        switch state.sleepTimer {
+        case .off: return "Off"
+        case .minutes: return "\(state.sleepTimerChipLabel) remaining"
+        case .endOfEpisode: return "Until end of episode"
+        }
     }
 
     /// Output-route chip backed by `AVRoutePickerView`. Tapping presents
@@ -164,43 +234,57 @@ struct PlayerActionClusterView: View {
             HStack(spacing: 6) {
                 Image(systemName: "airplayaudio")
                     .font(.footnote.weight(.semibold))
+                    .accessibilityHidden(true)
                 Text("Output")
                     .font(AppTheme.Typography.caption)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
             }
             .foregroundStyle(.primary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, AppTheme.Spacing.sm)
             .glassEffect(.regular.interactive(), in: .capsule)
             // Invisible AVRoutePickerView overlaid to capture taps —
             // suppress the OS-drawn glyph (tintColor + activeTintColor =
             // .clear) so only our chip is visible. The picker still
-            // presents the system route sheet on tap.
+            // presents the system route sheet on tap. Hide the picker
+            // from VoiceOver so it doesn't double-announce on top of our
+            // own combined label.
             RoutePickerView(activeTintColor: .clear, tintColor: .clear)
                 .allowsHitTesting(true)
+                .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Audio output")
-        .accessibilityHint("Choose AirPlay, Bluetooth, or built-in output")
+        .accessibilityHint("Opens system output picker")
     }
 
-    private func actionChip(label: String, glyph: String, action: @escaping () -> Void) -> some View {
+    private func actionChip(
+        label: String,
+        glyph: String,
+        accessibilityName: String,
+        accessibilityValue: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: glyph)
                     .font(.footnote.weight(.semibold))
+                    .accessibilityHidden(true)
                 Text(label)
                     .font(AppTheme.Typography.caption)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
             }
             .foregroundStyle(.primary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, AppTheme.Spacing.sm)
             .glassEffect(.regular.interactive(), in: .capsule)
         }
         .buttonStyle(.pressable)
-        .accessibilityLabel(label)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityName)
+        .accessibilityValue(accessibilityValue ?? "")
+        .accessibilityAddTraits(.isButton)
     }
 }

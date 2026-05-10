@@ -124,7 +124,13 @@ struct PlayerQueueSheet: View {
                     // only being pulled from Up Next. This `.swipeActions`
                     // label is also what edit-mode's inline red-minus confirm
                     // surfaces, so the affordance is consistent.
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    // `allowsFullSwipe: false` so a near-edge flick can
+                    // never accidentally remove the row — with the
+                    // permanent edit-mode also exposing a reorder grip
+                    // on the same trailing edge, two destructive
+                    // affordances within millimetres of each other was
+                    // a real misclick risk.
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             removeFromQueue(episode.id)
                         } label: {
@@ -156,6 +162,10 @@ struct PlayerQueueSheet: View {
             // `.confirmationDialog` attached to the `NavigationStack`. Tapping
             // here just arms the dialog; that protects against the user flicking
             // the footer accidentally while reordering.
+            // `role: .destructive` already tints the label red via the
+            // semantic system color — overriding with raw `.red` broke
+            // the Increase Contrast accessibility tint and bypassed the
+            // tinting for older renderers.
             Button(role: .destructive) {
                 Haptics.selection()
                 confirmClear = true
@@ -164,7 +174,6 @@ struct PlayerQueueSheet: View {
                     .font(AppTheme.Typography.subheadline)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.red)
         }
         .padding(.top, AppTheme.Spacing.sm)
     }

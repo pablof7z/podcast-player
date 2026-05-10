@@ -55,9 +55,6 @@ struct MiniPlayerView: View {
             }
         }
         .animation(AppTheme.Animation.spring, value: placement)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityAddTraits(.isButton)
     }
 
     // MARK: - Expanded (regular) layout
@@ -78,19 +75,29 @@ struct MiniPlayerView: View {
         // high-glance, always-visible. Putting it inside the VStack
         // *under* the glassEffect makes the bar disappear into the glass
         // material; lifting it into an overlay renders it crisply on top.
+        // The overlay drops horizontal padding so the bar tracks the
+        // surface's full curvature instead of starting after the rounded
+        // corners (the previous 16pt inset made it read as a separate UI).
         content
             .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
             .overlay(alignment: .top) {
                 progressLine
-                    .padding(.horizontal, AppTheme.Corner.lg)
+                    .clipShape(.rect(cornerRadius: AppTheme.Corner.lg))
             }
             .contentShape(.rect(cornerRadius: AppTheme.Corner.lg))
             .onTapGesture {
                 Haptics.light()
                 onTap()
             }
+            // Expose the tap-to-expand as a real VoiceOver action on a
+            // single combined element while letting nested Buttons keep
+            // their own AX identity for direct activation. Without this
+            // the expand gesture was unreachable to VoiceOver.
             .accessibilityElement(children: .contain)
+            .accessibilityAction(named: "Open player") {
+                onTap()
+            }
     }
 
     // MARK: - Inline (compact) layout
@@ -109,14 +116,38 @@ struct MiniPlayerView: View {
     /// strongly; podcast covers don't, so we need text.
     private var inlineBody: some View {
         HStack(spacing: AppTheme.Spacing.xs) {
-            inlineArtwork
-                .glassEffectID("player.artwork", in: glassNamespace)
+            // Combine artwork + title + clock into a single tap-to-expand
+            // surface. Each child is `accessibilityHidden` so VoiceOver
+            // hears one labeled "Now Playing" element, not three. The
+            // tap-to-expand was previously unreachable for VO users.
+            HStack(spacing: AppTheme.Spacing.xs) {
+                inlineArtwork
+                    .glassEffectID("player.artwork", in: glassNamespace)
+                    .accessibilityHidden(true)
 
-            inlineTitle
+                VStack(alignment: .leading, spacing: 0) {
+                    inlineTitle
+                    inlineClock
+                }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                Haptics.light()
+                onTap()
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("Opens the full player")
+            .accessibilityAddTraits(.isButton)
 
             inlineDownloadBadge
 
+            // Real Button kept as a sibling so its 44pt hit area never
+            // gets eaten by the expand-tap surface. `.frame(28)` keeps the
+            // visible glyph compact; the outer `.frame(44)` + .contentShape
+            // expands the actual tap target to Apple's HIG minimum.
             Button {
                 state.togglePlayPause()
             } label: {
@@ -124,17 +155,13 @@ struct MiniPlayerView: View {
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
                     .frame(width: 28, height: 28)
-                    .glassEffectID("player.play", in: glassNamespace)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.pressable)
             .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
         .padding(.horizontal, AppTheme.Spacing.xs)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            Haptics.light()
-            onTap()
-        }
     }
 
     /// Re-resolves `state.episode` through the store so coarse download
@@ -153,6 +180,21 @@ struct MiniPlayerView: View {
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
+        }
+    }
+
+    /// Compact mono-digit playhead surfaced inline so the collapsed pill
+    /// keeps a glanceable cue without the full metadata line. Hidden when
+    /// no episode is loaded (the artwork+title row already conveys "no
+    /// playback") to avoid an empty 0:00 leaking into the layout.
+    @ViewBuilder
+    private var inlineClock: some View {
+        if state.episode != nil {
+            Text(PlayerTimeFormat.clock(state.currentTime))
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .lineLimit(1)
         }
     }
 
@@ -296,7 +338,11 @@ struct MiniPlayerView: View {
         if state.episode != nil {
             HStack(spacing: 6) {
                 if let chapterTitle = activeChapterTitle {
-                    Image(systemName: "book.pages")
+                    // `list.bullet.rectangle` reads as "chapter / item in
+                    // a list" — the previous `book.pages` glyph reads as
+                    // "show notes / read more" and conflicted with the
+                    // long-form notes affordance.
+                    Image(systemName: "list.bullet.rectangle")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(.tint)
                         .accessibilityHidden(true)
@@ -310,6 +356,7 @@ struct MiniPlayerView: View {
                     Text("·")
                         .font(AppTheme.Typography.caption2)
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 } else if !showName.isEmpty {
                     Text(showName)
                         .font(AppTheme.Typography.caption2)
@@ -318,6 +365,7 @@ struct MiniPlayerView: View {
                     Text("·")
                         .font(AppTheme.Typography.caption2)
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 }
                 Text(PlayerTimeFormat.clock(state.currentTime))
                     .font(AppTheme.Typography.mono)
@@ -337,6 +385,8 @@ struct MiniPlayerView: View {
                     .font(.title3.weight(.bold))
                     .foregroundStyle(.primary)
                     .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
                     .glassEffectID("player.play", in: glassNamespace)
             }
             .buttonStyle(.pressable)
@@ -347,8 +397,14 @@ struct MiniPlayerView: View {
             } label: {
                 Image(systemName: forwardSkipGlyph)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    // `.primary` foreground (not `.secondary`) so the
+                    // glyph doesn't read as disabled at glass-on-glass
+                    // 50 % opacity. Size + lack of glass capsule already
+                    // carry the secondary-action semantics.
+                    .foregroundStyle(.primary)
                     .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Skip forward \(state.skipForwardSeconds) seconds")
@@ -371,15 +427,14 @@ struct MiniPlayerView: View {
         return parts.joined(separator: ", ")
     }
 
-    /// Picks the closest SF Symbol to the user's configured skip-forward
-    /// interval. iOS only ships a numeric variant for {10, 15, 30, 45, 60, 75, 90}.
+    /// Picks the SF Symbol that *exactly* matches the user's configured
+    /// skip-forward interval. iOS only ships numeric variants for
+    /// `{10, 15, 30, 45, 60, 75, 90}`; anything off-grid falls back to bare
+    /// `goforward` (no number) so the visible label never lies about the
+    /// actual skip seconds — a 20 s skip used to render `goforward.15`.
     private var forwardSkipGlyph: String {
         let supported = [10, 15, 30, 45, 60, 75, 90]
         let seconds = state.skipForwardSeconds
-        guard let match = supported.min(by: { abs($0 - seconds) < abs($1 - seconds) }),
-              abs(match - seconds) <= 5 else {
-            return "goforward"
-        }
-        return "goforward.\(match)"
+        return supported.contains(seconds) ? "goforward.\(seconds)" : "goforward"
     }
 }

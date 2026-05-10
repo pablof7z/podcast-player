@@ -103,7 +103,8 @@ struct DiscoverSearchForm: View {
                 isFocused: $queryFocused,
                 onSubmit: runSearch
             )
-            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
             Button {
                 clearQuery()
             } label: {
@@ -400,6 +401,8 @@ private struct DiscoverSearchTextField: UIViewRepresentable {
         field.delegate = context.coordinator
         field.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.setContentHuggingPriority(.required, for: .vertical)
+        field.setContentCompressionResistancePriority(.required, for: .vertical)
         return field
     }
 

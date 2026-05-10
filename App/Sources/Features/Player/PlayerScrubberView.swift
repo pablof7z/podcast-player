@@ -14,7 +14,7 @@ struct PlayerScrubberView: View {
     @Binding var isScrubbing: Bool
 
     @State private var scrubTime: TimeInterval = 0
-    @State private var waveformWidth: CGFloat = 320
+    @State private var waveformWidth: CGFloat = 0
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
@@ -38,10 +38,14 @@ struct PlayerScrubberView: View {
             .accessibilityElement()
             .accessibilityLabel("Playback scrubber")
             .accessibilityValue(PlayerTimeFormat.progress(state.currentTime, state.duration))
+            .accessibilityHint("Swipe up or down to skip")
             .accessibilityAdjustableAction { direction in
+                // Honour the user's configured skip intervals — was previously
+                // hardcoded to 15 s, ignoring the same value the on-screen
+                // skip buttons (and lock-screen) used.
                 switch direction {
-                case .increment: state.skipForward(15)
-                case .decrement: state.skipBackward(15)
+                case .increment: state.skipForward()
+                case .decrement: state.skipBackward()
                 @unknown default: break
                 }
             }
@@ -57,21 +61,32 @@ struct PlayerScrubberView: View {
         }
     }
 
+    /// Absolute-position scrub: x = 0 maps to 0 s, x = width maps to
+    /// `duration`. The previous implementation translated relative finger
+    /// motion at `0.4 × duration / width` — so a 3-hour episode required
+    /// roughly seven full-width swipes to traverse end-to-end.
+    ///
+    /// `minimumDistance: 4` suppresses the visual scrub-flash from
+    /// incidental taps; the previous `0` value triggered the 56→220 pt
+    /// expansion + hero blur on every brush.
     private var scrubGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
+        DragGesture(minimumDistance: 4)
             .onChanged { value in
+                let width = waveformWidth
+                guard width > 0 else { return }
                 if !isScrubbing {
                     isScrubbing = true
                     scrubTime = state.currentTime
                     Haptics.soft()
                 }
-                let width = max(waveformWidth, 1)
-                let dx = value.translation.width / width
-                let delta = TimeInterval(dx) * state.duration * 0.4
-                scrubTime = max(0, min(state.currentTime + delta, state.duration))
+                let fraction = max(0, min(1, value.location.x / width))
+                scrubTime = state.duration * Double(fraction)
             }
             .onEnded { _ in
-                state.seekSnapping(to: scrubTime)
+                if isScrubbing {
+                    state.seekSnapping(to: scrubTime)
+                    Haptics.medium()
+                }
                 isScrubbing = false
             }
     }
