@@ -86,7 +86,17 @@ private struct NowPlayingMediumView: View {
                     .font(WidgetTheme.Typography.itemTitle.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                if !snapshot.showName.isEmpty {
+                // Chapter title — preferred over the show name when
+                // present because it's the more specific "where am I right
+                // now" signal once playback is in flight. Falls back to
+                // the show name for chapter-less episodes.
+                if let chapter = snapshot.chapterTitle, !chapter.isEmpty {
+                    Label(chapter, systemImage: "book.pages")
+                        .labelStyle(WidgetChapterLabelStyle())
+                        .font(WidgetTheme.Typography.accessoryRow)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if !snapshot.showName.isEmpty {
                     Text(snapshot.showName)
                         .font(WidgetTheme.Typography.accessoryRow)
                         .foregroundStyle(.secondary)
@@ -195,4 +205,19 @@ private struct NowPlayingArtwork: View {
 
 private extension Optional where Wrapped == String {
     var orEmpty: String { self ?? "" }
+}
+
+// MARK: - Chapter label style
+
+/// Compact horizontal label so the icon + title fit cleanly inside the
+/// medium widget's secondary line. Default `Label` styling stacks the icon
+/// at a larger weight than we want here.
+private struct WidgetChapterLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.icon
+                .font(.system(size: 9, weight: .semibold))
+            configuration.title
+        }
+    }
 }

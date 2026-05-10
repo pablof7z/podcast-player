@@ -537,7 +537,11 @@ final class PlaybackState {
             imageURLString: episode.imageURL?.absoluteString,
             position: engine.currentTime,
             duration: duration,
-            updatedAt: now
+            updatedAt: now,
+            // Reuse the engine's chapter resolver — same closure that drives
+            // the lock-screen album line. `nil` for chapter-less episodes
+            // so the widget falls back cleanly to show name only.
+            chapterTitle: engine.resolveActiveChapterTitle(episode, engine.currentTime)
         )
         NowPlayingSnapshotStore.write(snapshot)
         lastSnapshotWrite = now
