@@ -224,7 +224,11 @@ enum SpotlightIndexer {
     private static func makeSearchable(from subscription: PodcastSubscription) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
         attrs.title = subscription.title
-        attrs.contentDescription = subscription.description
+        // Show notes commonly arrive as raw HTML (`<p>`, `<a href>`, …)
+        // plus named or numeric entities. Spotlight renders the snippet
+        // as literal text, so without this projection users were seeing
+        // `<p>Hello &amp; world</p>` in search results.
+        attrs.contentDescription = EpisodeShowNotesFormatter.plainText(from: subscription.description)
         if !subscription.author.isEmpty {
             attrs.artist = subscription.author
         }
@@ -251,7 +255,10 @@ enum SpotlightIndexer {
     private static func makeSearchable(from episode: Episode, showName: String) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
         attrs.title = episode.title
-        attrs.contentDescription = episode.description
+        // Same HTML / entity issue as the subscription description —
+        // Spotlight expects plain text. Route through the formatter
+        // so `<p>` and `&#8217;` don't leak into the search snippet.
+        attrs.contentDescription = EpisodeShowNotesFormatter.plainText(from: episode.description)
         if !showName.isEmpty {
             // `album` shows under the title in the Spotlight result row, which
             // is exactly where the user expects "which podcast is this from".
