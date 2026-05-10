@@ -68,7 +68,60 @@ enum EpisodeShowNotesFormatter {
         for (entity, replacement) in entityMap {
             out = out.replacingOccurrences(of: entity, with: replacement)
         }
+        return decodeNumericEntities(out)
+    }
+
+    /// Decodes decimal (`&#39;`) and hexadecimal (`&#x2019;`) numeric
+    /// character references. WordPress-generated feeds emit these
+    /// constantly for smart quotes / apostrophes / dashes; the
+    /// previous formatter only handled named entities and let the
+    /// numeric escapes bleed through verbatim.
+    private static func decodeNumericEntities(_ input: String) -> String {
+        // Cheap pre-check — if there's no "&#" anywhere, the whole
+        // walk is wasted work.
+        guard input.contains("&#") else { return input }
+
+        var out = ""
+        out.reserveCapacity(input.count)
+        var i = input.startIndex
+        while i < input.endIndex {
+            // Need at least "&#x;" worth of room left to be a valid
+            // reference, so bail to literal copy when it's shorter.
+            if input[i] == "&",
+               input.index(i, offsetBy: 3, limitedBy: input.endIndex) != nil,
+               input[input.index(after: i)] == "#",
+               // Cap the lookahead — a ref this long is malformed
+               // and a runaway scan over a description body would be
+               // its own problem.
+               let semi = input[i...].prefix(12).firstIndex(of: ";")
+            {
+                let body = input[input.index(i, offsetBy: 2)..<semi]
+                if let scalar = parseNumericRef(body) {
+                    out.append(Character(scalar))
+                    i = input.index(after: semi)
+                    continue
+                }
+            }
+            out.append(input[i])
+            i = input.index(after: i)
+        }
         return out
+    }
+
+    /// Parses the digits between `&#` and `;`. Decimal by default,
+    /// hex when the body starts with `x` or `X`. Returns `nil` for
+    /// malformed input or out-of-range / surrogate scalars so the
+    /// caller falls through to a literal-character copy.
+    private static func parseNumericRef(_ body: Substring) -> Unicode.Scalar? {
+        guard !body.isEmpty else { return nil }
+        let value: UInt32?
+        if let first = body.first, first == "x" || first == "X" {
+            value = UInt32(body.dropFirst(), radix: 16)
+        } else {
+            value = UInt32(body, radix: 10)
+        }
+        guard let v = value else { return nil }
+        return Unicode.Scalar(v)
     }
 
     private static func collapseWhitespace(_ input: String) -> String {

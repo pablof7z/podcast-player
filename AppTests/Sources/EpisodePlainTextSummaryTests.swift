@@ -51,6 +51,57 @@ final class EpisodePlainTextSummaryTests: XCTestCase {
         XCTAssertEqual(ep.plainTextSummary, "Black & white photography")
     }
 
+    // MARK: - Numeric character references (WordPress + many feed gens)
+
+    func testDecodesDecimalNumericApostrophe() {
+        // `&#39;` is the most common one — WordPress emits it for every
+        // straight apostrophe.
+        let ep = makeEpisode(description: "It&#39;s a beautiful day.")
+        XCTAssertEqual(ep.plainTextSummary, "It's a beautiful day.")
+    }
+
+    func testDecodesDecimalNumericRightSingleQuote() {
+        let ep = makeEpisode(description: "It&#8217;s a beautiful day.")
+        XCTAssertEqual(ep.plainTextSummary, "It\u{2019}s a beautiful day.")
+    }
+
+    func testDecodesHexNumericRightSingleQuote() {
+        let ep = makeEpisode(description: "It&#x2019;s a beautiful day.")
+        XCTAssertEqual(ep.plainTextSummary, "It\u{2019}s a beautiful day.")
+    }
+
+    func testDecodesHexUppercaseX() {
+        let ep = makeEpisode(description: "It&#X2019;s a beautiful day.")
+        XCTAssertEqual(ep.plainTextSummary, "It\u{2019}s a beautiful day.")
+    }
+
+    func testDecodesNumericEllipsis() {
+        let ep = makeEpisode(description: "Hold on&#8230; here it comes.")
+        XCTAssertEqual(ep.plainTextSummary, "Hold on\u{2026} here it comes.")
+    }
+
+    func testMixedNamedAndNumericEntities() {
+        let ep = makeEpisode(description: "AT&amp;T&#8217;s &#x201C;Tech&#x201D; News")
+        XCTAssertEqual(
+            ep.plainTextSummary,
+            "AT&T\u{2019}s \u{201C}Tech\u{201D} News"
+        )
+    }
+
+    func testMalformedNumericEscapeStaysLiteral() {
+        // A `&#` followed by non-digits isn't a valid ref — leave
+        // it alone rather than silently dropping characters.
+        let ep = makeEpisode(description: "look at &#abc; here")
+        XCTAssertEqual(ep.plainTextSummary, "look at &#abc; here")
+    }
+
+    func testOutOfRangeNumericRefStaysLiteral() {
+        // 0x110000 is past the last valid Unicode scalar — `Unicode.Scalar`
+        // init returns nil and we leave the source verbatim.
+        let ep = makeEpisode(description: "x&#1114112;y")
+        XCTAssertEqual(ep.plainTextSummary, "x&#1114112;y")
+    }
+
     // MARK: - Whitespace policy
 
     func testCollapsesParagraphBreaksToSingleLine() {
