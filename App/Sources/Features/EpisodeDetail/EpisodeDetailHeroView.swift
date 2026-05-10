@@ -22,6 +22,11 @@ struct EpisodeDetailHeroView: View {
     /// Tap handler for the new Add to Queue affordance. No-op default
     /// preserves call sites that don't yet wire it up.
     var onAddToQueue: () -> Void = {}
+    /// Active chapter id when this episode is currently playing — drives
+    /// the live "you are here" highlight in the chapters list. `nil` when
+    /// playback is on a different episode (or no chapters); the list
+    /// renders flat in that case.
+    var activeChapterID: UUID? = nil
 
     var body: some View {
         ScrollView {
@@ -172,18 +177,26 @@ struct EpisodeDetailHeroView: View {
         VStack(alignment: .leading, spacing: 6) {
             sectionDivider("Chapters")
             ForEach(chapters) { chapter in
+                let isActive = chapter.id == activeChapterID
                 Button {
                     onPlayChapter(chapter)
                 } label: {
                     HStack(alignment: .firstTextBaseline) {
                         Text(formatTimestamp(chapter.startTime))
                             .font(.system(.footnote, design: .monospaced).weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(isActive ? Color.accentColor : .secondary)
                             .frame(width: 64, alignment: .leading)
                         Text(chapter.title)
                             .font(.system(.body, design: .serif))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(isActive ? Color.accentColor : .primary)
                         Spacer()
+                        if isActive {
+                            Image(systemName: "waveform")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                .symbolEffect(.variableColor.iterative, options: .repeating)
+                                .accessibilityLabel("Now playing")
+                        }
                     }
                     .padding(.vertical, 4)
                 }

@@ -167,7 +167,8 @@ struct EpisodeDetailView: View {
                 onAddToQueue: {
                     Haptics.success()
                     playback.enqueue(episode.id)
-                }
+                },
+                activeChapterID: liveActiveChapterID(for: episode)
             )
         case .reading:
             if let transcript {
@@ -229,6 +230,17 @@ struct EpisodeDetailView: View {
 
     private func activeChapterID(in chapters: [Episode.Chapter]) -> UUID? {
         chapters.active(at: playback.currentTime)?.id
+    }
+
+    /// Active chapter id when this exact episode is currently loaded in
+    /// the player. Returns `nil` for chapter-less episodes or when
+    /// playback is on a different episode — the hero's chapter list
+    /// renders flat in those cases.
+    private func liveActiveChapterID(for episode: Episode) -> UUID? {
+        guard playback.episode?.id == episode.id,
+              let chapters = navigableChapters(for: episode),
+              !chapters.isEmpty else { return nil }
+        return activeChapterID(in: chapters)
     }
 
     /// Resolve the persisted `Transcript` for `episode` when its lifecycle is
