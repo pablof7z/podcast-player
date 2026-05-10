@@ -3,70 +3,6 @@ import Observation
 import SwiftUI
 import WidgetKit
 
-// MARK: - PlaybackRate
-
-/// Playback rates surfaced in the speed sheet. Stored as `Double` so the value
-/// maps directly onto `AVPlayer.rate` via the audio engine.
-enum PlaybackRate: Double, CaseIterable, Identifiable {
-    case slow = 0.8
-    case normal = 1.0
-    case quick = 1.2
-    case fast = 1.5
-    case fastest = 2.0
-
-    var id: Double { rawValue }
-    var label: String {
-        switch self {
-        case .normal: return "1×"
-        default:      return String(format: "%.1f×", rawValue)
-        }
-    }
-
-    /// Best-fit rate for an arbitrary engine rate (e.g. restored from a per-show
-    /// override). Falls back to `.normal` when nothing is reasonably close.
-    static func bestFit(for rate: Double) -> PlaybackRate {
-        allCases.min(by: { abs($0.rawValue - rate) < abs($1.rawValue - rate) }) ?? .normal
-    }
-}
-
-// MARK: - PlaybackSleepTimer
-
-/// Sleep-timer presets surfaced in the sleep-timer sheet. Mapped onto the
-/// engine's `SleepTimer.Mode` at the boundary.
-enum PlaybackSleepTimer: Hashable, Identifiable {
-    case off
-    case minutes(Int)
-    case endOfEpisode
-
-    var id: String {
-        switch self {
-        case .off: return "off"
-        case .minutes(let m): return "m\(m)"
-        case .endOfEpisode: return "eoe"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .off: return "Off"
-        case .minutes(let m): return "\(m) min"
-        case .endOfEpisode: return "End of episode"
-        }
-    }
-
-    static let presets: [PlaybackSleepTimer] = [
-        .off, .minutes(5), .minutes(15), .minutes(30), .minutes(45), .minutes(60), .endOfEpisode
-    ]
-
-    var engineMode: SleepTimer.Mode {
-        switch self {
-        case .off: return .off
-        case .minutes(let m): return .duration(TimeInterval(m * 60))
-        case .endOfEpisode: return .endOfEpisode
-        }
-    }
-}
-
 // MARK: - PlaybackState
 
 /// Real, observable wrapper around `AudioEngine` that the Player UI binds to.
@@ -334,76 +270,13 @@ final class PlaybackState {
     /// touched yet (`tickPersistence` runs on a 1s timer). A user-initiated
     /// position change is the most explicit "remember where I am" signal we
     /// get; treat it like pause and flush eagerly.
-    private func persistAndFlushAfterUserSeek() {
+    func persistAndFlushAfterUserSeek() {
         guard let episode else { return }
         let time = engine.currentTime
         if time > 0 {
             onPersistPosition(episode.id, time)
         }
         onFlushPositions()
-    }
-
-    // MARK: - Chapter navigation
-
-    /// Jump to the next chapter's `startTime` in the supplied list. No-op
-    /// when there is no next chapter (we're already in the last one).
-    /// `navigable` is passed in by the UI so it stays in sync with whatever
-    /// the live store reports (chapters can hydrate after playback starts —
-    /// see `ChaptersHydrationService`).
-    func seekToNextChapter(in navigable: [Episode.Chapter]) {
-        guard let next = Self.nextChapter(after: currentTime, in: navigable) else { return }
-        engine.seek(to: next.startTime)
-        Haptics.selection()
-        persistAndFlushAfterUserSeek()
-    }
-
-    /// Jump to the previous chapter's `startTime`, applying the iOS Music
-    /// pattern: if the current chapter started more than
-    /// `previousChapterRestartThreshold` seconds ago, restart the current
-    /// chapter instead of going further back. This matches the user's
-    /// muscle memory for "previous track."
-    func seekToPreviousChapter(in navigable: [Episode.Chapter]) {
-        guard let target = Self.previousChapter(
-            from: currentTime,
-            in: navigable,
-            restartThreshold: Self.previousChapterRestartThreshold
-        ) else { return }
-        engine.seek(to: target.startTime)
-        Haptics.selection()
-        persistAndFlushAfterUserSeek()
-    }
-
-    /// Above this many seconds into the current chapter, "previous chapter"
-    /// restarts the current chapter instead of stepping back one.
-    static let previousChapterRestartThreshold: TimeInterval = 3.0
-
-    /// Pure helper: chapter strictly after `playhead`, or nil when there
-    /// isn't one. Exposed as `static nonisolated` so tests can drive it
-    /// without spinning up the audio engine and without inheriting
-    /// `PlaybackState`'s `@MainActor` isolation.
-    nonisolated static func nextChapter(after playhead: TimeInterval, in chapters: [Episode.Chapter]) -> Episode.Chapter? {
-        chapters.first(where: { $0.startTime > playhead })
-    }
-
-    /// Pure helper: chapter to seek to when the user requests "previous."
-    /// Returns the current chapter (restart) when `playhead` is more than
-    /// `restartThreshold` seconds into it; otherwise the chapter strictly
-    /// before. Returns the first chapter when there is no earlier one.
-    nonisolated static func previousChapter(
-        from playhead: TimeInterval,
-        in chapters: [Episode.Chapter],
-        restartThreshold: TimeInterval
-    ) -> Episode.Chapter? {
-        guard let current = chapters.active(at: playhead) else { return nil }
-        let elapsed = playhead - current.startTime
-        if elapsed > restartThreshold {
-            return current
-        }
-        // Step back one — find the chapter immediately before `current`.
-        guard let idx = chapters.firstIndex(where: { $0.id == current.id }), idx > 0 else {
-            return current
-        }
-        return chapters[idx - 1]
     }
 
     func setRate(_ newRate: PlaybackRate) {
@@ -437,54 +310,6 @@ final class PlaybackState {
         sleepTimer = timer
         engine.setSleepTimer(timer.engineMode)
         Haptics.selection()
-    }
-
-    // MARK: - Queue (Up Next)
-
-    /// Append an episode to the end of the Up Next queue. No-op if the
-    /// episode is already queued or is the currently-playing episode — the
-    /// queue is intentionally a set-by-identity to avoid the user accidentally
-    /// stacking the same episode three times.
-    func enqueue(_ episodeID: UUID) {
-        guard episodeID != episode?.id else { return }
-        guard !queue.contains(episodeID) else { return }
-        queue.append(episodeID)
-    }
-
-    /// Remove an episode from the Up Next queue. Idempotent.
-    func removeFromQueue(_ episodeID: UUID) {
-        queue.removeAll { $0 == episodeID }
-    }
-
-    /// Move queue entries (List `.onMove` compatible). `source` indices are in
-    /// the pre-move array; `destination` is the insertion point in the
-    /// post-removal array — matches `Array.move(fromOffsets:toOffset:)`.
-    func moveQueue(from source: IndexSet, to destination: Int) {
-        queue.move(fromOffsets: source, toOffset: destination)
-    }
-
-    /// Clear the entire Up Next queue. Used by the queue sheet's destructive
-    /// "Clear queue" footer action.
-    func clearQueue() {
-        queue.removeAll()
-    }
-
-    /// Pop the head of the queue and start playing it. Returns `true` when an
-    /// episode was actually played, `false` when the queue is empty or the
-    /// resolver couldn't materialise the head episode (e.g. it was deleted
-    /// from the store between enqueue and dequeue).
-    ///
-    /// Takes a `resolve` closure rather than holding an `AppStateStore`
-    /// reference directly so `PlaybackState` stays unit-testable. Callers in
-    /// the UI pass `{ store.episode(id: $0) }`.
-    @discardableResult
-    func playNext(resolve: (UUID) -> Episode?) -> Bool {
-        guard !queue.isEmpty else { return false }
-        let nextID = queue.removeFirst()
-        guard let next = resolve(nextID) else { return false }
-        setEpisode(next)
-        play()
-        return true
     }
 
     // MARK: - Persistence loop
