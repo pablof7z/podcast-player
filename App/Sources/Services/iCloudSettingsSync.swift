@@ -137,6 +137,8 @@ final class iCloudSettingsSync {
         if let v = int(.skipForwardSeconds), v > 0            { settings.skipForwardSeconds = v }
         if let v = int(.skipBackwardSeconds), v > 0           { settings.skipBackwardSeconds = v }
         if let v = bool(.autoMarkPlayedAtEnd)                 { settings.autoMarkPlayedAtEnd = v }
+        if let v = bool(.autoPlayNext)                        { settings.autoPlayNext = v }
+        if let v = bool(.autoDeleteDownloadsAfterPlayed)      { settings.autoDeleteDownloadsAfterPlayed = v }
         if let v = bool(.wikiAutoGenerateOnTranscriptIngest)  { settings.wikiAutoGenerateOnTranscriptIngest = v }
         if let v = bool(.autoIngestPublisherTranscripts)      { settings.autoIngestPublisherTranscripts = v }
         if let v = bool(.autoFallbackToScribe)                { settings.autoFallbackToScribe = v }
@@ -168,6 +170,8 @@ final class iCloudSettingsSync {
         kvs.set(Int64(settings.skipForwardSeconds),               forKey: Key.skipForwardSeconds.rawValue)
         kvs.set(Int64(settings.skipBackwardSeconds),              forKey: Key.skipBackwardSeconds.rawValue)
         kvs.set(settings.autoMarkPlayedAtEnd,                     forKey: Key.autoMarkPlayedAtEnd.rawValue)
+        kvs.set(settings.autoPlayNext,                            forKey: Key.autoPlayNext.rawValue)
+        kvs.set(settings.autoDeleteDownloadsAfterPlayed,          forKey: Key.autoDeleteDownloadsAfterPlayed.rawValue)
         kvs.set(settings.wikiAutoGenerateOnTranscriptIngest,      forKey: Key.wikiAutoGenerateOnTranscriptIngest.rawValue)
         kvs.set(settings.autoIngestPublisherTranscripts,          forKey: Key.autoIngestPublisherTranscripts.rawValue)
         kvs.set(settings.autoFallbackToScribe,                    forKey: Key.autoFallbackToScribe.rawValue)
@@ -201,6 +205,8 @@ final class iCloudSettingsSync {
         case skipForwardSeconds                  = "sync.settings.skipForwardSeconds"
         case skipBackwardSeconds                 = "sync.settings.skipBackwardSeconds"
         case autoMarkPlayedAtEnd                 = "sync.settings.autoMarkPlayedAtEnd"
+        case autoPlayNext                        = "sync.settings.autoPlayNext"
+        case autoDeleteDownloadsAfterPlayed      = "sync.settings.autoDeleteDownloadsAfterPlayed"
         case wikiAutoGenerateOnTranscriptIngest  = "sync.settings.wikiAutoGenerateOnTranscriptIngest"
         case autoIngestPublisherTranscripts      = "sync.settings.autoIngestPublisherTranscripts"
         case autoFallbackToScribe                = "sync.settings.autoFallbackToScribe"
