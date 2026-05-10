@@ -15,6 +15,7 @@ struct FeedbackComposeView: View {
     @Environment(UserIdentityStore.self) private var userIdentity
 
     @State private var errorMessage: String?
+    @State private var showDiscardConfirm = false
 
     private let characterLimit = Layout.characterLimit
 
@@ -52,6 +53,21 @@ struct FeedbackComposeView: View {
             .navigationTitle("New Feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { composeToolbar }
+            // iOS-standard discard confirmation. Cancel without a
+            // confirm step on a non-empty draft was the most painful
+            // foot-gun in this view: a misfired tap wiped a long
+            // feedback message + any screenshot the user had taken
+            // and annotated, with no undo.
+            .confirmationDialog(
+                "Discard this feedback?",
+                isPresented: $showDiscardConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Discard", role: .destructive) { discardAndDismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            } message: {
+                Text("Your draft and any attached screenshot will be lost.")
+            }
         }
     }
 
@@ -225,7 +241,24 @@ struct FeedbackComposeView: View {
 
     // MARK: - Actions
 
+    /// True when there's user-entered content the system would lose if
+    /// we discarded right now. Drives whether Cancel is a one-tap
+    /// dismiss or routes through the confirmation dialog.
+    private var hasUnsavedWork: Bool {
+        !workflow.draft.isBlank
+            || workflow.screenshot != nil
+            || workflow.annotatedImage != nil
+    }
+
     private func cancel() {
+        if hasUnsavedWork {
+            showDiscardConfirm = true
+            return
+        }
+        discardAndDismiss()
+    }
+
+    private func discardAndDismiss() {
         workflow.phase = .idle
         workflow.draft = ""
         workflow.screenshot = nil
