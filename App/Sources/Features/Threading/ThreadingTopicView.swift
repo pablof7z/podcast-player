@@ -106,7 +106,21 @@ struct ThreadingTopicView: View {
         }
         .padding(.top, 8)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(topic.displayName), \(topic.episodeMentionCount) mentions")
+        .accessibilityLabel(headerAccessibilityLabel(for: topic))
+    }
+
+    /// VoiceOver assembly for the header. Mirrors the visual metadata
+    /// line — singular/plural-matched mention count, and contradictions
+    /// only when present.
+    private func headerAccessibilityLabel(for topic: ThreadingTopic) -> String {
+        var parts: [String] = [topic.displayName]
+        let mentions = topic.episodeMentionCount
+        parts.append("\(mentions) episode\(mentions == 1 ? "" : "s")")
+        if topic.contradictionCount > 0 {
+            let n = topic.contradictionCount
+            parts.append("\(n) contradiction\(n == 1 ? "" : "s")")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var timeline: some View {
@@ -205,9 +219,11 @@ struct ThreadingTopicView: View {
     }
 
     private func metadataLine(for topic: ThreadingTopic) -> String {
-        var parts: [String] = ["\(topic.episodeMentionCount) episodes"]
+        let mentions = topic.episodeMentionCount
+        var parts: [String] = ["\(mentions) episode\(mentions == 1 ? "" : "s")"]
         if topic.contradictionCount > 0 {
-            parts.append("\(topic.contradictionCount) contradiction\(topic.contradictionCount == 1 ? "" : "s")")
+            let n = topic.contradictionCount
+            parts.append("\(n) contradiction\(n == 1 ? "" : "s")")
         }
         return parts.joined(separator: " \u{00B7} ")
     }
