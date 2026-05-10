@@ -76,6 +76,16 @@ struct SettingsView: View {
                     value: categoryCountLabel
                 )
             }
+            NavigationLink {
+                DownloadsManagerView()
+            } label: {
+                SettingsRow(
+                    icon: "arrow.down.circle.fill",
+                    tint: .blue,
+                    title: "Downloads",
+                    value: downloadsSummaryLabel
+                )
+            }
         }
     }
 
@@ -271,6 +281,28 @@ struct SettingsView: View {
         let count = store.state.categories.count
         guard count > 0 else { return nil }
         return "\(count)"
+    }
+
+    private var downloadsSummaryLabel: String? {
+        var active = 0
+        var failed = 0
+        var downloaded = 0
+        for episode in store.state.episodes {
+            switch episode.downloadState {
+            case .queued, .downloading:
+                active += 1
+            case .failed:
+                failed += 1
+            case .downloaded:
+                downloaded += 1
+            case .notDownloaded:
+                break
+            }
+        }
+        if active > 0 { return "\(active) active" }
+        if failed > 0 { return "\(failed) failed" }
+        if downloaded > 0 { return "\(downloaded) saved" }
+        return nil
     }
 
     private var playbackSummary: String {

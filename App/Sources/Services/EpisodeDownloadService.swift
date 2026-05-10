@@ -110,9 +110,9 @@ final class EpisodeDownloadService {
     }
 
     /// Wires the service to the live store. Idempotent — safe to call from
-    /// every UI surface that needs the service. We can't call this from
-    /// `AppStateStore.init` (the store init isn't in scope for this lane), so
-    /// the public API self-attaches via this hook on first use.
+    /// startup and from every UI surface that needs the service. Action
+    /// surfaces still call it defensively so previews/tests with injected
+    /// stores mutate the right state.
     func attach(appStore: AppStateStore) {
         self.appStore = appStore
     }
