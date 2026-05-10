@@ -175,7 +175,11 @@ enum PodcastSearchEngine {
     }
 
     private static func cleanSnippet(_ text: String) -> String {
-        text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmed
+        // Pure UTF-16 scanning via `CharacterSet` — the prior shape
+        // compiled `\\s+` via `.regularExpression` on every call, and
+        // this runs N times per search result while the user types.
+        text.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 }
