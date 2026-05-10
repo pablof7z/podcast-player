@@ -19,12 +19,16 @@ extension WikiStorage: BriefingWikiStorageProtocol {
     }
 
     func wikiPages(matchingTitle titleQuery: String) async throws -> [WikiPage] {
-        let q = titleQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let q = titleQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return [] }
         let storage = self
         return try await Task.detached(priority: .utility) {
             try storage.allPages()
-                .filter { $0.title.lowercased().contains(q) }
+                // Locale-aware fold so the briefing composer's title
+                // lookup matches across Unicode case (Straße / STRASSE,
+                // İstanbul / istanbul) — same shape fix the wiki home
+                // search and feedback search just got.
+                .filter { $0.title.localizedCaseInsensitiveContains(q) }
                 .sorted { $0.generatedAt > $1.generatedAt }
         }.value
     }
