@@ -12,9 +12,17 @@ import SwiftUI
 struct CitationPeekView: View {
 
     let citation: WikiCitation
+    /// Optional commit handler — called when the user taps "Play clip"
+    /// to commit to the full clip instead of letting the peek's
+    /// auto-restore kick in on dismiss. The host (`CitationPeekSheet`)
+    /// supplies a closure that suppresses the restore + dismisses.
+    /// `nil` means the button posts the legacy notification fallback.
+    var onCommitFullClip: (() -> Void)? = nil
 
-    /// Notification name the player observes for "open episode at MS".
-    /// Stubbed deep-link contract — no real router yet.
+    /// Legacy notification name — kept for backward compatibility with
+    /// surfaces that wrap the view directly without the sheet (e.g.
+    /// previews, ad-hoc embeds). New callers should pass
+    /// `onCommitFullClip` to the initializer instead.
     static let playClipNotification = Notification.Name("podcastr.wiki.playClip")
 
     var body: some View {
@@ -70,15 +78,19 @@ struct CitationPeekView: View {
     private var actions: some View {
         HStack(spacing: 12) {
             Button {
-                NotificationCenter.default.post(
-                    name: CitationPeekView.playClipNotification,
-                    object: nil,
-                    userInfo: [
-                        "episodeID": citation.episodeID.uuidString,
-                        "startMS": citation.startMS,
-                        "endMS": citation.endMS,
-                    ]
-                )
+                if let onCommitFullClip {
+                    onCommitFullClip()
+                } else {
+                    NotificationCenter.default.post(
+                        name: CitationPeekView.playClipNotification,
+                        object: nil,
+                        userInfo: [
+                            "episodeID": citation.episodeID.uuidString,
+                            "startMS": citation.startMS,
+                            "endMS": citation.endMS,
+                        ]
+                    )
+                }
             } label: {
                 Label("Play clip", systemImage: "play.fill")
                     .font(.headline)

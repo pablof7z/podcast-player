@@ -25,6 +25,7 @@ struct CitationPeekSheet: View {
     let resolveEpisode: (UUID) -> Episode?
 
     @Environment(PlaybackState.self) private var playback
+    @Environment(\.dismiss) private var dismiss
 
     /// Snapshot of the playback context captured the moment the sheet
     /// appears. Restored on dismiss so the user is returned to exactly where
@@ -33,14 +34,27 @@ struct CitationPeekSheet: View {
     /// `true` once the autoplay path has run for this presentation. Guards
     /// against duplicate `onAppear` calls inside the same lifecycle.
     @State private var hasAutoplayed = false
+    /// Set when the user taps "Play clip" inside the peek view to commit
+    /// to the full clip. Suppresses the auto-restore that normally fires
+    /// on dismiss, so audio keeps rolling at the cited timestamp.
+    @State private var didCommit = false
 
     /// 12-second peek window. UX-04 §5: "autoplays the cited 12s".
     static let peekWindowSeconds: Double = 12
 
     var body: some View {
-        CitationPeekView(citation: citation)
+        CitationPeekView(citation: citation, onCommitFullClip: commitAndDismiss)
             .onAppear { startPeek() }
             .onDisappear { endPeek() }
+    }
+
+    /// User wants to keep playing past the 12s peek window. Mark the
+    /// commit flag so `endPeek` skips the restore, then dismiss so the
+    /// sheet gets out of the way of full-screen playback context.
+    private func commitAndDismiss() {
+        didCommit = true
+        Haptics.success()
+        dismiss()
     }
 
     // MARK: - Lifecycle
@@ -72,6 +86,9 @@ struct CitationPeekSheet: View {
     }
 
     private func endPeek() {
+        // Commit path: user tapped "Play clip" — leave audio alone so the
+        // cited timestamp keeps playing past the 12s peek.
+        guard !didCommit else { return }
         guard let prior else { return }
         // Restore: switch back to the prior episode (if any), seek to the
         // prior playhead, and replay only if the user was actively playing
