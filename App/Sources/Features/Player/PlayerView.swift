@@ -57,6 +57,7 @@ struct PlayerView: View {
                     .padding(.horizontal, AppTheme.Spacing.md)
                     .padding(.bottom, AppTheme.Spacing.md)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
@@ -201,6 +202,7 @@ struct PlayerView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: 280)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous))
         // Drop the 0.08-opacity primary stroke. In dark mode `.primary`

@@ -176,38 +176,39 @@ struct PlayerActionClusterView: View {
     @Binding var showShareSheet: Bool
 
     var body: some View {
-        HStack(spacing: AppTheme.Spacing.sm) {
+        HStack {
             actionChip(
-                label: state.rate.label,
                 glyph: "speedometer",
                 accessibilityName: "Playback speed",
                 accessibilityValue: state.rate.label
             ) {
                 showSpeedSheet = true
             }
+            Spacer(minLength: 0)
             actionChip(
-                label: state.sleepTimerChipLabel,
                 glyph: "moon.fill",
                 accessibilityName: "Sleep timer",
                 accessibilityValue: sleepTimerSpokenValue
             ) {
                 showSleepSheet = true
             }
+            Spacer(minLength: 0)
             routePickerChip
+            Spacer(minLength: 0)
             actionChip(
-                label: "Up Next",
                 glyph: "list.bullet",
                 accessibilityName: "Up Next queue"
             ) {
                 showQueueSheet = true
             }
+            Spacer(minLength: 0)
             actionChip(
-                label: "More",
                 glyph: "ellipsis.circle",
                 accessibilityName: "Share and copy options"
             ) {
                 showShareSheet = true
             }
+            Spacer(minLength: 0)
             AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
@@ -231,55 +232,34 @@ struct PlayerActionClusterView: View {
     /// bool but never actually changed the audio route.
     private var routePickerChip: some View {
         ZStack {
-            HStack(spacing: 6) {
-                Image(systemName: "airplayaudio")
-                    .font(.footnote.weight(.semibold))
-                    .accessibilityHidden(true)
-                Text("Output")
-                    .font(AppTheme.Typography.caption)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-            }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.sm)
-            .glassEffect(.regular.interactive(), in: .capsule)
-            // Invisible AVRoutePickerView overlaid to capture taps —
-            // suppress the OS-drawn glyph (tintColor + activeTintColor =
-            // .clear) so only our chip is visible. The picker still
-            // presents the system route sheet on tap. Hide the picker
-            // from VoiceOver so it doesn't double-announce on top of our
-            // own combined label.
+            Image(systemName: "airplayaudio")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
+                .accessibilityHidden(true)
             RoutePickerView(activeTintColor: .clear, tintColor: .clear)
                 .allowsHitTesting(true)
                 .accessibilityHidden(true)
         }
+        .frame(width: 44, height: 44)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Audio output")
         .accessibilityHint("Opens system output picker")
     }
 
     private func actionChip(
-        label: String,
         glyph: String,
         accessibilityName: String,
         accessibilityValue: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: glyph)
-                    .font(.footnote.weight(.semibold))
-                    .accessibilityHidden(true)
-                Text(label)
-                    .font(AppTheme.Typography.caption)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-            }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.sm)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            Image(systemName: glyph)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.pressable)
         .accessibilityElement(children: .ignore)
