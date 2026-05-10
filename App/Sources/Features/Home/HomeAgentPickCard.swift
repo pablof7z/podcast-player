@@ -14,7 +14,10 @@ struct HomeAgentPickCard: View {
     let onPlay: () -> Void
 
     @Environment(AppStateStore.self) private var store
+    @Environment(PlaybackState.self) private var playback
+    @State private var narrator = RationaleNarrator.shared
     @State private var isExpanded: Bool = false
+    @State private var pulse: Bool = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -116,8 +119,46 @@ struct HomeAgentPickCard: View {
             HStack(alignment: .top, spacing: AppTheme.Spacing.xs) {
                 rationaleText
                 Spacer(minLength: 0)
+                speakerButton
                 expandButton
             }
+        }
+    }
+
+    /// Tap glyph → narrate via TTS (ElevenLabs if connected, else AVSpeech).
+    /// Tap again while narrating → stop. The narrator pauses the active
+    /// podcast for the duration of the narration and resumes after.
+    private var speakerButton: some View {
+        let isNarratingThis = narrator.narratingPickID == pick.episodeID
+        return Button {
+            Haptics.light()
+            let text = pick.spokenRationale.isEmpty ? pick.rationale : pick.spokenRationale
+            narrator.attach(playback: playback)
+            Task {
+                await narrator.speak(
+                    pickID: pick.episodeID,
+                    text: text,
+                    voiceID: store.state.settings.elevenLabsVoiceID,
+                    ttsModel: store.state.settings.elevenLabsTTSModel
+                )
+            }
+        } label: {
+            Image(systemName: isNarratingThis ? "speaker.wave.2.fill" : "speaker.wave.2")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(isNarratingThis ? AppTheme.Tint.agentSurface : .secondary)
+                .padding(4)
+                .scaleEffect(isNarratingThis && pulse ? 1.18 : 1.0)
+                .animation(
+                    isNarratingThis
+                        ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
+                        : .default,
+                    value: pulse
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isNarratingThis ? "Stop reading rationale" : "Read rationale aloud")
+        .onChange(of: narrator.narratingPickID == pick.episodeID) { _, narrating in
+            pulse = narrating
         }
     }
 

@@ -10,8 +10,25 @@ struct HomeAgentPick: Identifiable, Equatable, Sendable {
     /// One- or two-sentence reason the pick was selected. The hero pick
     /// gets a richer 2-sentence rationale; secondaries stay terse.
     let rationale: String
+    /// 2–3 sentence variant of `rationale` shaped to be *spoken* aloud
+    /// (Task 3 — voice-narrated rationale). Empty when the source either
+    /// (a) was the heuristic fallback or (b) the LLM omitted the field.
+    /// Callers fall back to `rationale` when this is empty.
+    let spokenRationale: String
     /// `true` when this is the *hero* pick rendered larger above the rail.
     let isHero: Bool
+
+    init(
+        episodeID: UUID,
+        rationale: String,
+        spokenRationale: String = "",
+        isHero: Bool
+    ) {
+        self.episodeID = episodeID
+        self.rationale = rationale
+        self.spokenRationale = spokenRationale
+        self.isHero = isHero
+    }
 }
 
 // MARK: - HomeAgentPicksBundle

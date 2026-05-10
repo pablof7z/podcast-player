@@ -6,18 +6,16 @@ import SwiftUI
 // editorial surface:
 //   • Dateline + active-filter chip strip
 //   • Featured (resume cards + agent picks), collapsible
-//   • Search-entry affordance
 //   • Subscription list (default) or grid, recency-sorted, filterable
 //
 // Persistence keys mirror what `LibraryView` used so the user's chosen
 // filter / category carries over without a one-time reset.
+//
+// Search lives on its own tab. The earlier inline search-entry bar was
+// removed — it duplicated the tab-bar affordance and burned vertical
+// space in the editorial scroll.
 
 struct HomeView: View {
-    /// Closure invoked when the user taps the search-entry bar. Mirrors
-    /// the `LibraryView` pattern: `RootView` constructs Home with a
-    /// `selectedTab = .search` closure.
-    var onOpenSearch: () -> Void = { Haptics.light() }
-
     @Environment(AppStateStore.self) private var store
     @Environment(PlaybackState.self) private var playback
 
@@ -27,8 +25,10 @@ struct HomeView: View {
     @AppStorage("home.featuredExpanded") private var featuredExpanded: Bool = true
 
     @State private var picksService = AgentPicksService.shared
+    @State private var threadingService = ThreadingInferenceService.shared
     @State private var unsubscribeTarget: PodcastSubscription?
     @State private var relatedSheetEpisode: Episode?
+    @State private var threadedTodaySheet: ThreadingInferenceService.ActiveTopic?
     @State private var voiceOverDetailRoute: HomeEpisodeRoute?
     @State private var showAddShowSheet: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
@@ -63,6 +63,11 @@ struct HomeView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(item: $threadedTodaySheet) { active in
+                HomeThreadedTodayView(active: active)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .alert(
                 "Unsubscribe from \(unsubscribeTarget?.title ?? "")?",
                 isPresented: Binding(
@@ -79,8 +84,20 @@ struct HomeView: View {
             } message: { _ in
                 Text("This removes the show and all its episodes from your library.")
             }
-            .task { picksService.ensureFreshPicks(store: store) }
+            .task {
+                picksService.ensureFreshPicks(store: store)
+                // Bind the threading service to the store so the
+                // "Threaded Today" derivation has somewhere to look.
+                threadingService.attach(store: store)
+            }
             .onAppear { renderedAt = Date() }
+    }
+
+    /// Top active threading topic for the "Threaded Today" affordance.
+    /// Nil when no topic has at least three unplayed mentions, which is
+    /// also the signal to hide the pill entirely.
+    private var topActiveThread: ThreadingInferenceService.ActiveTopic? {
+        threadingService.topActiveTopics(limit: 1).first
     }
 
     // MARK: - Layout
@@ -104,14 +121,14 @@ struct HomeView: View {
                     HomeFeaturedSection(
                         resumeEpisodes: store.inProgressEpisodes,
                         picksBundle: picksService.bundle,
+                        isStreaming: picksService.isStreaming,
+                        activeThread: topActiveThread,
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
-                        onLongPressEpisode: { relatedSheetEpisode = $0 }
+                        onLongPressEpisode: { relatedSheetEpisode = $0 },
+                        onOpenThread: { threadedTodaySheet = topActiveThread }
                     )
                 }
-
-                searchEntryBar
-                    .padding(.horizontal, AppTheme.Spacing.md)
 
                 subscriptionsSurface
                     .padding(.bottom, AppTheme.Spacing.xl)
@@ -202,36 +219,6 @@ struct HomeView: View {
         case .libraryFilter: filter = .all
         case .category:      categoryFilterID = ""
         }
-    }
-
-    // MARK: - Search entry
-
-    private var searchEntryBar: some View {
-        Button {
-            Haptics.light()
-            onOpenSearch()
-        } label: {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(AppTheme.Tint.agentSurface)
-                Text("Search Podcastr…")
-                    .font(AppTheme.Typography.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.md)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Search Podcastr")
-        .accessibilityHint("Opens Search")
     }
 
     // MARK: - Toolbar

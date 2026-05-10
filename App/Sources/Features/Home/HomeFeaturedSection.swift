@@ -10,9 +10,19 @@ import SwiftUI
 struct HomeFeaturedSection: View {
     let resumeEpisodes: [Episode]
     let picksBundle: HomeAgentPicksBundle
+    /// `true` while the agent service is streaming new picks. Drives the
+    /// shimmer placeholder for the *next* pick the model is still emitting
+    /// so the user sees the rail filling in incrementally instead of
+    /// jumping from empty to fully populated.
+    var isStreaming: Bool = false
+    /// Top active threading topic. When set, a "Threaded Today" pill renders
+    /// below the rail; tapping it invokes `onOpenThread`. `nil` hides the
+    /// pill entirely so the section doesn't advertise an empty state.
+    var activeThread: ThreadingInferenceService.ActiveTopic? = nil
     @Binding var isExpanded: Bool
     let onPlayEpisode: (Episode) -> Void
     let onLongPressEpisode: (Episode) -> Void
+    var onOpenThread: () -> Void = { }
 
     @Environment(AppStateStore.self) private var store
 
@@ -21,6 +31,11 @@ struct HomeFeaturedSection: View {
             header
             if isExpanded {
                 rail
+                if let active = activeThread {
+                    HomeThreadedTodayPill(active: active, onTap: onOpenThread)
+                        .padding(.horizontal, AppTheme.Spacing.md)
+                        .padding(.top, AppTheme.Spacing.xs)
+                }
             }
         }
     }
@@ -109,10 +124,24 @@ struct HomeFeaturedSection: View {
                             Haptics.medium()
                             onLongPressEpisode(episode)
                         }
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                            removal: .opacity
+                        ))
                     }
+                }
+                if isStreaming {
+                    // Shimmer slot for the next pick still arriving from the
+                    // model. We don't know yet whether it'll be a hero or a
+                    // secondary, so the placeholder mirrors the secondary
+                    // dimensions — the hero (if any) has already streamed
+                    // first per the system prompt's ordering rule.
+                    HomeAgentPickShimmerCard(isHero: picksBundle.hero == nil)
+                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.md)
+            .animation(AppTheme.Animation.springFast, value: picksBundle.picks.count)
         }
         // Bound height so the rail doesn't push the subscription list off-
         // screen on small phones. The ~280pt budget the brief calls for

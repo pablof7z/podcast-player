@@ -16,7 +16,11 @@ enum AgentPicksPrompt {
     Reply with STRICT JSON only — no prose, no markdown fences. Shape:
 
       {
-        "hero": { "episode_id": "<UUID>", "reason": "<two-sentence reason>" },
+        "hero": {
+          "episode_id": "<UUID>",
+          "reason": "<two-sentence reason>",
+          "spoken_reason": "<2-3 sentence spoken variant, ≤30 words>"
+        },
         "secondaries": [
           { "episode_id": "<UUID>", "reason": "<one-sentence reason>" },
           { "episode_id": "<UUID>", "reason": "<one-sentence reason>" }
@@ -27,9 +31,16 @@ enum AgentPicksPrompt {
       • Pick exactly one hero and zero, one, or two secondaries.
       • Every episode_id MUST appear verbatim in the candidate list below.
       • Hero reason: 2 sentences (~140 chars total).
-      • Secondary reason: 1 sentence (~80 chars).
+      • Hero spoken_reason: 2–3 sentences, ≤30 words, conversational tone
+        because it will be read aloud by a TTS voice. Avoid bullet points,
+        URLs, em-dashes, or anything that doesn't read naturally.
+      • Secondary reason: 1 sentence (~80 chars). No spoken_reason needed
+        for secondaries.
       • Reasons should reference what the user cares about (memories, topics,
         in-progress shows) — not just "you might like this."
+      • Emit `hero` FIRST in your JSON output, then `secondaries`. This
+        ordering lets the client surface the hero before the secondaries
+        have arrived in the stream.
     """
 
     static func build(inputs: AgentPicksInputs) -> String {
@@ -80,7 +91,13 @@ enum AgentPicksPrompt {
            let id = UUID(uuidString: idStr),
            knownEpisodeIDs.contains(id) {
             let reason = (hero["reason"] as? String) ?? ""
-            picks.append(HomeAgentPick(episodeID: id, rationale: reason, isHero: true))
+            let spoken = (hero["spoken_reason"] as? String) ?? ""
+            picks.append(HomeAgentPick(
+                episodeID: id,
+                rationale: reason,
+                spokenRationale: spoken,
+                isHero: true
+            ))
         }
         if let seconds = dict["secondaries"] as? [[String: Any]] {
             for entry in seconds.prefix(2) {
@@ -88,7 +105,13 @@ enum AgentPicksPrompt {
                       let id = UUID(uuidString: idStr),
                       knownEpisodeIDs.contains(id) else { continue }
                 let reason = (entry["reason"] as? String) ?? ""
-                picks.append(HomeAgentPick(episodeID: id, rationale: reason, isHero: false))
+                let spoken = (entry["spoken_reason"] as? String) ?? ""
+                picks.append(HomeAgentPick(
+                    episodeID: id,
+                    rationale: reason,
+                    spokenRationale: spoken,
+                    isHero: false
+                ))
             }
         }
         return picks

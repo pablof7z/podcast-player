@@ -96,6 +96,50 @@ final class ThreadingInferenceService {
         store?.threadingMentions(forTopic: id) ?? []
     }
 
+    /// Topics with the most *unplayed* episode mentions, descending. Used by
+    /// the Home "Threaded Today" pill to surface a thread the user can
+    /// listen through in one sitting. A topic only qualifies if at least
+    /// three distinct unplayed episodes mention it — anything thinner is
+    /// just a recommendation, not a thread.
+    ///
+    /// Returns an empty list if no store is attached or no topic clears
+    /// the threshold. The pill hides itself in that case.
+    func topActiveTopics(limit: Int) -> [ActiveTopic] {
+        guard let store else { return [] }
+        let unplayedIDs = Set(store.state.episodes.filter { !$0.played }.map(\.id))
+        guard !unplayedIDs.isEmpty else { return [] }
+
+        // Build (topicID → unique-unplayed-episodeIDs). Going through the
+        // raw mention array directly avoids pulling
+        // `threadingMentions(forTopic:)` for every topic, which would do an
+        // n*m scan over the mention table.
+        var unplayedByTopic: [UUID: Set<UUID>] = [:]
+        for mention in store.state.threadingMentions where unplayedIDs.contains(mention.episodeID) {
+            unplayedByTopic[mention.topicID, default: []].insert(mention.episodeID)
+        }
+
+        let qualifying: [ActiveTopic] = unplayedByTopic.compactMap { topicID, episodes in
+            guard episodes.count >= 3,
+                  let topic = store.threadingTopic(id: topicID) else { return nil }
+            return ActiveTopic(topic: topic, unplayedEpisodeCount: episodes.count)
+        }
+        return Array(
+            qualifying
+                .sorted { $0.unplayedEpisodeCount > $1.unplayedEpisodeCount }
+                .prefix(max(1, limit))
+        )
+    }
+
+    /// Topic + its unplayed-mention count. Surfaced by `topActiveTopics`
+    /// so consumers can render `"3 episodes touch on $TOPIC"` without
+    /// recomputing the count. Conforms to `Identifiable` (by the topic's
+    /// id) so it can drive a SwiftUI `.sheet(item:)` directly.
+    struct ActiveTopic: Sendable, Equatable, Identifiable {
+        let topic: ThreadingTopic
+        let unplayedEpisodeCount: Int
+        var id: UUID { topic.id }
+    }
+
     /// Idempotent get-or-create. If a topic with the canonicalised `slug`
     /// already exists, returns it untouched; otherwise inserts a fresh row
     /// and returns the stored instance. Used by deep-links from the wiki

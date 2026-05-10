@@ -22,6 +22,12 @@ struct WikiGenerateSheet: View {
     /// been persisted. The host view is responsible for refreshing.
     var onCompile: (WikiPage) -> Void
 
+    /// Optional prefill for the `topic` field. Used by callers that hand
+    /// off into the sheet with a topic already in hand (e.g. the Home
+    /// Related sheet's "Compose a wiki page from these"). Applied once on
+    /// first appearance so the user can still edit it.
+    var initialTopic: String = ""
+
     @Environment(\.dismiss) private var dismiss
     @Environment(AppStateStore.self) private var store
 
@@ -70,7 +76,12 @@ struct WikiGenerateSheet: View {
             }
         }
         .presentationDragIndicator(.visible)
-        .onAppear { refreshProviderStatus() }
+        .onAppear {
+            refreshProviderStatus()
+            if topic.isEmpty {
+                topic = initialTopic
+            }
+        }
     }
 
     // MARK: - Sections
