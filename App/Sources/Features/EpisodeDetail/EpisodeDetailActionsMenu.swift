@@ -38,16 +38,20 @@ struct EpisodeDetailActionsMenu: View {
                 .font(.title3)
         }
         .accessibilityLabel("Episode options")
-        .confirmationDialog(
+        // `.alert` rather than `.confirmationDialog` — anchored to a Menu,
+        // iOS 26 promotes confirmationDialog to a popover that elides the
+        // Cancel button. See `ShowDetailView` and `StorageSettingsView`
+        // for the same trap. `.alert` is a centred modal and reliably
+        // renders both buttons.
+        .alert(
             "Remove download?",
-            isPresented: $confirmDelete,
-            titleVisibility: .visible
+            isPresented: $confirmDelete
         ) {
+            Button("Cancel", role: .cancel) {}
             Button("Remove", role: .destructive) {
                 EpisodeDownloadService.shared.attach(appStore: store)
                 EpisodeDownloadService.shared.delete(episodeID: episode.id)
             }
-            Button("Cancel", role: .cancel) {}
         } message: {
             Text("The local file will be deleted. You can download it again later.")
         }

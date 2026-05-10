@@ -39,16 +39,20 @@ struct PlayerQueueSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .confirmationDialog(
+            // `.alert` rather than `.confirmationDialog` — iOS 26 elides
+            // the Cancel button on dialogs anchored close to a tappable
+            // element (the trash icon in the queue footer here). See
+            // `ShowDetailView`, `StorageSettingsView`, and
+            // `EpisodeDetailActionsMenu` for the same trap.
+            .alert(
                 "Clear the queue?",
-                isPresented: $confirmClear,
-                titleVisibility: .visible
+                isPresented: $confirmClear
             ) {
+                Button("Cancel", role: .cancel) {}
                 Button("Clear queue", role: .destructive) {
                     Haptics.warning()
                     state.clearQueue()
                 }
-                Button("Cancel", role: .cancel) {}
             } message: {
                 Text("All \(resolvedEpisodes.count) queued episodes will be removed. This cannot be undone.")
             }

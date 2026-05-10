@@ -40,16 +40,22 @@ struct StorageSettingsView: View {
         .navigationBarTitleDisplayMode(.large)
         .task { await refresh() }
         .refreshable { await refresh() }
-        .confirmationDialog(
+        // `.alert` instead of `.confirmationDialog` because iOS 26 promotes
+        // dialogs anchored close to a tappable element (the trash button)
+        // into popovers and elides the `role: .cancel` button — leaving
+        // the user staring at a single red "Delete All Downloads" with no
+        // visible escape. Same trap as the unsubscribe confirmation in
+        // `ShowDetailView`. `.alert` reliably renders both buttons as a
+        // centred modal regardless of layout context.
+        .alert(
             "Delete every downloaded episode?",
-            isPresented: $confirmDeleteAll,
-            titleVisibility: .visible
+            isPresented: $confirmDeleteAll
         ) {
+            Button("Cancel", role: .cancel) {}
             Button("Delete All Downloads", role: .destructive) {
                 Haptics.warning()
                 deleteAll()
             }
-            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Frees \(formattedSize(snapshot.totalBytes)) on this device. Your subscription list and playback positions are kept.")
         }

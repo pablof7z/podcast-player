@@ -47,16 +47,22 @@ struct DataExportView: View {
         }
         .navigationTitle("Export Data")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
+        // `.alert` rather than `.confirmationDialog` — iOS 26 elides the
+        // Cancel button when the dialog gets popover-promoted, leaving
+        // the user staring at a single red destructive button. The
+        // catastrophic nature of "Clear All Data" makes this especially
+        // bad — a missing Cancel here could wipe a user's entire library
+        // by accident. See same fix in ShowDetailView, StorageSettingsView,
+        // EpisodeDetailActionsMenu, PlayerQueueSheet.
+        .alert(
             "Clear All Data",
-            isPresented: $showClearConfirmation,
-            titleVisibility: .visible
+            isPresented: $showClearConfirmation
         ) {
+            Button("Cancel", role: .cancel) {}
             Button("Clear All Data", role: .destructive) {
                 store.clearAllData()
                 Haptics.success()
             }
-            Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. This action cannot be undone.")
         }
