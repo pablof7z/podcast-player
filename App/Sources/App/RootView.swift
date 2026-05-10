@@ -8,7 +8,6 @@ import SwiftUI
 /// expands into `PlayerView` on tap.
 enum RootTab: String, CaseIterable {
     case home = "Home"
-    case library = "Library"
     case search = "Search"
     case wiki = "Wiki"
     case ask = "Ask"
@@ -16,7 +15,6 @@ enum RootTab: String, CaseIterable {
     var icon: String {
         switch self {
         case .home:    "house.fill"
-        case .library: "books.vertical.fill"
         case .search:  "magnifyingglass"
         case .wiki:    "book.closed.fill"
         case .ask:     "bubble.left.and.bubble.right.fill"
@@ -245,10 +243,8 @@ struct RootView: View {
     private func tabContent(for tab: RootTab) -> some View {
         switch tab {
         case .home:
-            NavigationStack { HomeView().toolbar { sharedToolbar(showAgent: true) } }
-        case .library:
             NavigationStack {
-                LibraryView(onOpenSearch: { selectedTab = .search })
+                HomeView(onOpenSearch: { selectedTab = .search })
                     .toolbar { sharedToolbar(showAgent: true) }
             }
         case .search:
