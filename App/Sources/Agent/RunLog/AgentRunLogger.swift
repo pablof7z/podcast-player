@@ -10,6 +10,18 @@ final class AgentRunLogger: ObservableObject {
     private let directoryURL: URL
     private let fileURL: URL
 
+    /// Configured once and reused — every `log(run:)` triggered a save
+    /// that allocated a fresh encoder, configured it (`.iso8601` +
+    /// `.sortedKeys`), then discarded it. Per-run agent transcripts can
+    /// grow to several KB once turns + tool calls + system prompts add
+    /// up, so the per-call configuration was a real (if small) tax.
+    private static let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        e.outputFormatting = [.sortedKeys]
+        return e
+    }()
+
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
@@ -30,10 +42,7 @@ final class AgentRunLogger: ObservableObject {
     }
 
     private func save() {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(runs) else { return }
+        guard let data = try? Self.encoder.encode(runs) else { return }
         try? data.write(to: fileURL, options: [.atomic])
     }
 
