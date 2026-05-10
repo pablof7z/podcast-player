@@ -4,18 +4,30 @@ import Foundation
 
 /// Playback rates surfaced in the speed sheet. Stored as `Double` so the value
 /// maps directly onto `AVPlayer.rate` via the audio engine.
+///
+/// Preset set is wider than the original 5 rates — power podcast listeners
+/// commonly run at 1.7× / 2× / 2.5×, and the +0.1 increments (1.1, 1.3) are
+/// the most-tapped "just slightly faster" values across Apple Podcasts /
+/// Pocket Casts / Overcast user research. Apple's player surfaces 0.5–3.0
+/// in 0.1 steps; we ship the most-common 10 of those rather than 26 rows.
 enum PlaybackRate: Double, CaseIterable, Identifiable {
+    case slowest = 0.5
     case slow = 0.8
     case normal = 1.0
+    case slightlyFast = 1.1
     case quick = 1.2
+    case quicker = 1.3
     case fast = 1.5
+    case fasterStill = 1.7
     case fastest = 2.0
+    case turbo = 2.5
+    case max = 3.0
 
     var id: Double { rawValue }
     var label: String {
         switch self {
         case .normal: return "1×"
-        default:      return String(format: "%.1f×", rawValue)
+        default:      return String(format: "%g×", rawValue)
         }
     }
 
