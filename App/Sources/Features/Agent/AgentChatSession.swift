@@ -82,7 +82,7 @@ final class AgentChatSession {
         rawMessages = Array(rawMessages.prefix(rawMessageCountAtLastSendStart))
         messages = Array(messages.prefix(messageCountAtLastSendStart))
         lastFailedMessage = nil
-        sendingTask = Task { await send(msg) }
+        sendingTask = Task { await send(msg, source: .typedChat) }
     }
 
     /// Regenerates the last assistant response by dropping it from the
@@ -139,12 +139,12 @@ final class AgentChatSession {
         lastFailedMessage = nil
 
         history.save(messages)
-        sendingTask = Task { await regenerateSend(userText) }
+        sendingTask = Task { await regenerateSend(userText, source: .typedChat) }
     }
 
     /// Like `send(_:)` but skips appending the user message — it's already in
     /// both `messages` and `rawMessages` from the original turn.
-    private func regenerateSend(_ text: String) async {
+    private func regenerateSend(_ text: String, source: AgentRunSource) async {
         guard selectedProviderHasCredential() else {
             phase = .failed(missingCredentialMessage())
             return
@@ -161,18 +161,18 @@ final class AgentChatSession {
         phase = .sending
         history.save(messages)
 
-        await runAgentTurns(batchID: UUID())
+        await runAgentTurns(batchID: UUID(), source: source, initialInput: text)
     }
 
     /// Begins an agent turn in a stored `Task` so the caller can cancel it via
     /// `cancelSend()`. Returns immediately; observe `phase` for progress.
-    func startSend(_ text: String) {
+    func startSend(_ text: String, source: AgentRunSource = .typedChat) {
         let trimmed = text.trimmed
         guard !trimmed.isEmpty, canSend else { return }
-        sendingTask = Task { await send(trimmed) }
+        sendingTask = Task { await send(trimmed, source: source) }
     }
 
-    private func send(_ text: String) async {
+    private func send(_ text: String, source: AgentRunSource) async {
         let trimmed = text.trimmed
         guard !trimmed.isEmpty else { return }
 
@@ -206,7 +206,7 @@ final class AgentChatSession {
         phase = .sending
         history.save(messages)
 
-        await runAgentTurns(batchID: UUID())
+        await runAgentTurns(batchID: UUID(), source: source, initialInput: trimmed)
     }
 
     /// Executes the streaming agent turn-loop, processing LLM responses and tool
@@ -220,12 +220,21 @@ final class AgentChatSession {
     ///
     /// - Parameters:
     ///   - batchID: Stable identifier for the tool-action batch started by this turn.
-    private func runAgentTurns(batchID: UUID) async {
+    private func runAgentTurns(batchID: UUID, source: AgentRunSource, initialInput: String) async {
         var batchActionCount = 0
+        let systemPromptSnapshot = (rawMessages.first?["content"] as? String) ?? ""
+        let collector = AgentRunCollector(
+            id: batchID,
+            source: source,
+            initialInput: initialInput,
+            systemPrompt: systemPromptSnapshot
+        )
+        var turnNumber = 0
 
         for _ in 0..<maxTurns {
             streamingContent = ""
 
+            let messagesBeforeCall = rawMessages
             let result: AgentResult
             do {
                 result = try await AgentLLMClient.streamCompletion(
@@ -237,6 +246,13 @@ final class AgentChatSession {
                 }
             } catch is CancellationError {
                 // User tapped Stop — discard partial content and return to idle.
+                collector.appendTurn(
+                    turnNumber: turnNumber,
+                    messagesBeforeCall: messagesBeforeCall,
+                    apiResponse: nil,
+                    toolDispatches: []
+                )
+                collector.finish(outcome: .cancelled)
                 resetStreamingState()
                 lastFailedMessage = nil
                 phase = .idle
@@ -247,6 +263,13 @@ final class AgentChatSession {
                 // error so the user can see what it was saying and retry with
                 // that context visible. Only save if there is meaningful content.
                 preservePartialContentIfNeeded()
+                collector.appendTurn(
+                    turnNumber: turnNumber,
+                    messagesBeforeCall: messagesBeforeCall,
+                    apiResponse: nil,
+                    toolDispatches: []
+                )
+                collector.finish(outcome: .failed, failureReason: error.localizedDescription)
                 resetStreamingState()
                 let msg = "Couldn't reach the agent. \(error.localizedDescription)"
                 messages.append(ChatMessage(role: .error, text: msg))
@@ -263,15 +286,32 @@ final class AgentChatSession {
                 messages.append(ChatMessage(role: .assistant, text: content))
             }
 
+            let apiResponse = makeAPIResponse(from: result)
+
             if result.toolCalls.isEmpty {
+                collector.appendTurn(
+                    turnNumber: turnNumber,
+                    messagesBeforeCall: messagesBeforeCall,
+                    apiResponse: apiResponse,
+                    toolDispatches: []
+                )
+                collector.finish(outcome: .completed)
                 lastFailedMessage = nil
                 phase = .idle
                 history.save(messages)
                 return
             }
 
+            var toolDispatches: [AgentToolDispatch] = []
             for toolCall in result.toolCalls {
                 guard !Task.isCancelled else {
+                    collector.appendTurn(
+                        turnNumber: turnNumber,
+                        messagesBeforeCall: messagesBeforeCall,
+                        apiResponse: apiResponse,
+                        toolDispatches: toolDispatches
+                    )
+                    collector.finish(outcome: .cancelled)
                     resetStreamingState()
                     lastFailedMessage = nil
                     phase = .idle
@@ -297,7 +337,15 @@ final class AgentChatSession {
                     "content": resultJSON,
                 ])
                 batchActionCount += store.state.agentActivity.count - activityCountBefore
+                toolDispatches.append(makeToolDispatch(call: toolCall, resultJSON: resultJSON))
             }
+            collector.appendTurn(
+                turnNumber: turnNumber,
+                messagesBeforeCall: messagesBeforeCall,
+                apiResponse: apiResponse,
+                toolDispatches: toolDispatches
+            )
+            turnNumber += 1
             resetStreamingState()
 
             // Only render a tool-batch chip when at least one mutating action
@@ -323,11 +371,43 @@ final class AgentChatSession {
             history.save(messages)
         }
 
+        collector.finish(outcome: .turnsExhausted)
         resetStreamingState()
         let limitMsg = "The agent reached its turn limit. Try a simpler request or start a new conversation."
         messages.append(ChatMessage(role: .error, text: limitMsg))
         phase = .failed(limitMsg)
         history.save(messages)
+    }
+
+    private func makeAPIResponse(from result: AgentResult) -> AgentAPIResponse {
+        let runToolCalls: [AgentRunToolCall] = result.toolCalls.map { call in
+            let parsedArgs = (try? JSONSerialization.jsonObject(with: Data(call.arguments.utf8)) as? [String: Any]) ?? [:]
+            return AgentRunToolCall(id: call.id, name: call.name, arguments: parsedArgs)
+        }
+        let usage = result.tokensUsed ?? AgentTokenUsage(promptTokens: 0, completionTokens: 0, cachedTokens: nil)
+        return AgentAPIResponse(
+            assistantMessage: result.assistantMessage,
+            toolCalls: runToolCalls,
+            tokensUsed: usage
+        )
+    }
+
+    private func makeToolDispatch(call: AgentToolCall, resultJSON: String) -> AgentToolDispatch {
+        let argsDict = (try? JSONSerialization.jsonObject(with: Data(call.arguments.utf8)) as? [String: Any]) ?? [:]
+        let resultDict: [String: Any]
+        if let parsed = try? JSONSerialization.jsonObject(with: Data(resultJSON.utf8)) as? [String: Any] {
+            resultDict = parsed
+        } else {
+            resultDict = ["raw": resultJSON]
+        }
+        let errorMessage = resultDict["error"] as? String
+        return AgentToolDispatch(
+            toolCallID: call.id,
+            toolName: call.name,
+            arguments: argsDict,
+            result: resultDict,
+            error: errorMessage
+        )
     }
 
     /// Clears transient streaming state that must be reset on every exit path.

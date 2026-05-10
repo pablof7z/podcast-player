@@ -161,7 +161,19 @@ enum AgentOpenRouterClient {
         }
 
         let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
-        let result = accumulator.toResult()
+        let baseResult = accumulator.toResult()
+        let tokensUsed: AgentTokenUsage? = capturedUsage.map { usage in
+            AgentTokenUsage(
+                promptTokens: usage.prompt_tokens ?? 0,
+                completionTokens: usage.completion_tokens ?? 0,
+                cachedTokens: usage.prompt_tokens_details?.cached_tokens
+            )
+        }
+        let result = AgentResult(
+            assistantMessage: baseResult.assistantMessage,
+            toolCalls: baseResult.toolCalls,
+            tokensUsed: tokensUsed
+        )
         let preview = (result.assistantMessage["content"] as? String)?.isEmpty == false
             ? result.assistantMessage["content"] as? String
             : "tool_calls: \(result.toolCalls.map(\.name).joined(separator: ", "))"
@@ -227,6 +239,17 @@ struct AgentToolCall: Sendable {
 struct AgentResult: @unchecked Sendable {
     let assistantMessage: [String: Any]
     let toolCalls: [AgentToolCall]
+    let tokensUsed: AgentTokenUsage?
+
+    init(
+        assistantMessage: [String: Any],
+        toolCalls: [AgentToolCall],
+        tokensUsed: AgentTokenUsage? = nil
+    ) {
+        self.assistantMessage = assistantMessage
+        self.toolCalls = toolCalls
+        self.tokensUsed = tokensUsed
+    }
 }
 
 enum AgentError: LocalizedError {

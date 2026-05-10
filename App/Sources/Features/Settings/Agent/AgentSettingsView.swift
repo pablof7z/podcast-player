@@ -82,6 +82,17 @@ struct AgentSettingsView: View {
             }
 
             NavigationLink {
+                AgentRunListView()
+            } label: {
+                SettingsRow(
+                    icon: "doc.text.magnifyingglass",
+                    tint: .orange,
+                    title: "Run History",
+                    badge: AgentRunLogger.shared.runs.count
+                )
+            }
+
+            NavigationLink {
                 AgentActivityLogView()
             } label: {
                 SettingsRow(

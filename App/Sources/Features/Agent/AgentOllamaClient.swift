@@ -80,7 +80,16 @@ enum AgentOllamaClient {
         }
 
         let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
-        let agentResult = result(content: content, ollamaToolCalls: toolCalls)
+        let baseResult = result(content: content, ollamaToolCalls: toolCalls)
+        let agentResult = AgentResult(
+            assistantMessage: baseResult.assistantMessage,
+            toolCalls: baseResult.toolCalls,
+            tokensUsed: AgentTokenUsage(
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                cachedTokens: nil
+            )
+        )
         let preview = content.isEmpty
             ? "tool_calls: \(agentResult.toolCalls.map(\.name).joined(separator: ", "))"
             : String(content.prefix(500))
