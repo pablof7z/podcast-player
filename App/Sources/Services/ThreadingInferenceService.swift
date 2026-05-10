@@ -102,19 +102,38 @@ final class ThreadingInferenceService {
     /// three distinct unplayed episodes mention it — anything thinner is
     /// just a recommendation, not a thread.
     ///
+    /// Pass `subscriptionFilter` to scope the count to one category's
+    /// shows: only mentions whose episode belongs to a subscription in
+    /// the set are counted, and a topic with fewer than three qualifying
+    /// mentions is dropped. `nil` keeps the original global behaviour the
+    /// "All Categories" pseudo-category expects.
+    ///
     /// Returns an empty list if no store is attached or no topic clears
     /// the threshold. The pill hides itself in that case.
-    func topActiveTopics(limit: Int) -> [ActiveTopic] {
+    func topActiveTopics(
+        limit: Int,
+        subscriptionFilter: Set<UUID>? = nil
+    ) -> [ActiveTopic] {
         guard let store else { return [] }
-        let unplayedIDs = Set(store.state.episodes.filter { !$0.played }.map(\.id))
-        guard !unplayedIDs.isEmpty else { return [] }
 
-        // Build (topicID → unique-unplayed-episodeIDs). Going through the
+        // Build the eligible-episode id set up front. When a subscription
+        // filter is supplied we narrow on `subscriptionID` first so the
+        // "is this mention's episode unplayed" check downstream stays an
+        // O(1) set membership.
+        var eligibleEpisodeIDs: Set<UUID> = []
+        for episode in store.state.episodes where !episode.played {
+            if let allowed = subscriptionFilter,
+               !allowed.contains(episode.subscriptionID) { continue }
+            eligibleEpisodeIDs.insert(episode.id)
+        }
+        guard !eligibleEpisodeIDs.isEmpty else { return [] }
+
+        // Build (topicID → unique-eligible-episodeIDs). Going through the
         // raw mention array directly avoids pulling
         // `threadingMentions(forTopic:)` for every topic, which would do an
         // n*m scan over the mention table.
         var unplayedByTopic: [UUID: Set<UUID>] = [:]
-        for mention in store.state.threadingMentions where unplayedIDs.contains(mention.episodeID) {
+        for mention in store.state.threadingMentions where eligibleEpisodeIDs.contains(mention.episodeID) {
             unplayedByTopic[mention.topicID, default: []].insert(mention.episodeID)
         }
 

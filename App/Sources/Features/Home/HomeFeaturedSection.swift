@@ -7,6 +7,13 @@ import SwiftUI
 /// Default expanded with ~280pt height; collapsed state shows just the
 /// section header so the user can dismiss the curated surface and get
 /// straight to the subscription list below.
+///
+/// Magazine mode (May 2026): when the user picks a category from the
+/// toolbar, every rail in this section narrows to that category — resume
+/// rail, agent picks, threaded-today pill — so flipping from "Learning"
+/// to "Entertainment" feels like turning to a different magazine section.
+/// The content swap is animated via a `.id(categoryID)` on the rail so
+/// the new section's shows fade in over the old.
 struct HomeFeaturedSection: View {
     let resumeEpisodes: [Episode]
     let picksBundle: HomeAgentPicksBundle
@@ -19,6 +26,12 @@ struct HomeFeaturedSection: View {
     /// below the rail; tapping it invokes `onOpenThread`. `nil` hides the
     /// pill entirely so the section doesn't advertise an empty state.
     var activeThread: ThreadingInferenceService.ActiveTopic? = nil
+    /// Active category id (nil = All). Drives the section header label
+    /// ("Featured" vs "Featured in Learning") and the `.id`-based rail
+    /// content swap that crossfades the shows on category change.
+    var activeCategoryID: UUID? = nil
+    /// Active category name, surfaced in the header when set.
+    var activeCategoryName: String? = nil
     @Binding var isExpanded: Bool
     let onPlayEpisode: (Episode) -> Void
     let onLongPressEpisode: (Episode) -> Void
@@ -30,14 +43,25 @@ struct HomeFeaturedSection: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             header
             if isExpanded {
+                // `.id` keyed off the active category so SwiftUI treats the
+                // rail as a *new* view when the user switches sections —
+                // gives us the cross-fade animation the brief calls for
+                // without juggling per-card transitions. `Optional<UUID>`
+                // is `Hashable`, so the nil case (All Categories) is its
+                // own stable identity without a sentinel uuid.
                 rail
+                    .id(activeCategoryID)
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
                 if let active = activeThread {
                     HomeThreadedTodayPill(active: active, onTap: onOpenThread)
                         .padding(.horizontal, AppTheme.Spacing.md)
                         .padding(.top, AppTheme.Spacing.xs)
+                        .id(activeCategoryID)
+                        .transition(.opacity)
                 }
             }
         }
+        .animation(AppTheme.Animation.spring, value: activeCategoryID)
     }
 
     private var header: some View {
@@ -48,7 +72,7 @@ struct HomeFeaturedSection: View {
             }
         } label: {
             HStack(spacing: AppTheme.Spacing.sm) {
-                Text("Featured")
+                Text(headerTitle)
                     .font(AppTheme.Typography.title3)
                     .foregroundStyle(.primary)
                 if picksBundle.source == .fallback && !picksBundle.picks.isEmpty {
@@ -72,14 +96,25 @@ struct HomeFeaturedSection: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isExpanded ? "Featured, expanded" : "Featured, collapsed")
+        .accessibilityLabel(isExpanded ? "\(headerTitle), expanded" : "\(headerTitle), collapsed")
         .accessibilityHint("Double tap to toggle")
+    }
+
+    private var headerTitle: String {
+        if let name = activeCategoryName, !name.isEmpty {
+            return "Featured in \(name)"
+        }
+        return "Featured"
     }
 
     @ViewBuilder
     private var rail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+                // Resume rail. Hidden entirely when empty in the active
+                // category — the brief calls this out: "if empty, hide
+                // the rail (don't show 'Pick up where you left off' with
+                // nothing under it)".
                 ForEach(resumeEpisodes) { ep in
                     HomeResumeCard(
                         episode: ep,

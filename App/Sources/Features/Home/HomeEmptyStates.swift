@@ -41,19 +41,25 @@ struct HomeFirstRunEmptyState: View {
 /// "No shows match this filter" state. Distinct from the first-run state
 /// so a user with 40 subs and an active Transcribed filter doesn't see
 /// the onboarding pitch as if their library disappeared.
+///
+/// When `categoryName` is set, the title/subtitle pair switches to a
+/// category-aware copy ("No shows in Learning yet…") so the user knows
+/// to either populate the section or flip back to All Categories.
 struct HomeFilteredEmptyState: View {
     let filter: LibraryFilter
+    var categoryName: String? = nil
     let onClearFilters: () -> Void
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
-            Image(systemName: filter.emptyStateGlyph)
+            Image(systemName: glyph)
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.tertiary)
             VStack(spacing: AppTheme.Spacing.xs) {
-                Text(filter.emptyStateTitle)
+                Text(title)
                     .font(AppTheme.Typography.title)
-                Text(filter.emptyStateSubtitle)
+                    .multilineTextAlignment(.center)
+                Text(subtitle)
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -70,5 +76,30 @@ struct HomeFilteredEmptyState: View {
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity)
+    }
+
+    private var glyph: String {
+        // When the category is set with the default `.all` library
+        // filter, fall back to a folder-style glyph instead of the
+        // library-filter-specific one.
+        if categoryName != nil, filter == .all { return "tray" }
+        return filter.emptyStateGlyph
+    }
+
+    private var title: String {
+        if let categoryName, filter == .all {
+            return "No shows in \(categoryName) yet."
+        }
+        return filter.emptyStateTitle
+    }
+
+    private var subtitle: String {
+        if categoryName != nil, filter == .all {
+            return "Add some, or switch categories."
+        }
+        if let categoryName {
+            return "Nothing in \(categoryName) matches \(filter.label). Try clearing the filter."
+        }
+        return filter.emptyStateSubtitle
     }
 }

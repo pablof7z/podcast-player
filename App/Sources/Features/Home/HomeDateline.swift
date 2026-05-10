@@ -6,8 +6,12 @@ import SwiftUI
 /// surfaced as a value type so the composition rule is testable independent
 /// of the SwiftUI render layer.
 ///
-/// Example: `TUESDAY · MAY 5 · 4 NEW · 1 CONTRADICTION`
+/// Example: `LEARNING · TUESDAY · MAY 5 · 4 NEW · 1 CONTRADICTION`
 struct HomeDatelineComponents: Equatable, Sendable {
+    /// Optional category-name prefix, uppercased, e.g. `"LEARNING"`. When
+    /// non-empty it leads the rendered line so switching categories reads
+    /// like flipping to a different magazine section.
+    let categoryPrefix: String
     /// Weekday name uppercased — e.g. `"TUESDAY"`.
     let weekday: String
     /// Month + day — e.g. `"MAY 5"`.
@@ -19,7 +23,12 @@ struct HomeDatelineComponents: Equatable, Sendable {
 
     /// Joined small-caps line ready for rendering.
     var rendered: String {
-        var parts = ["\(weekday)", "\(monthDay)"]
+        var parts: [String] = []
+        if !categoryPrefix.isEmpty {
+            parts.append(categoryPrefix)
+        }
+        parts.append(weekday)
+        parts.append(monthDay)
         if newCount > 0 {
             parts.append("\(newCount) NEW")
         }
@@ -38,12 +47,22 @@ enum HomeDateline {
     /// Compose the dateline tokens from the live store + a clock.
     /// Pure function — no environment access — so the tests can pin a
     /// timezone, locale, and "now" without spinning up a SwiftUI view.
+    ///
+    /// When `categoryName` is non-nil and `allowedSubscriptionIDs` is
+    /// supplied, the trailing `NEW` and `CONTRADICTION` counts narrow to
+    /// just that category and the rendered line gains an uppercased
+    /// category prefix. The contradiction count stays scoped by passing
+    /// in only the topics whose mentions land in the category — callers
+    /// resolve that upstream because the dateline derivation has no
+    /// access to the mention table.
     static func components(
         episodes: [Episode],
         topics: [ThreadingTopic],
         now: Date,
         calendar: Calendar = .current,
-        locale: Locale = .current
+        locale: Locale = .current,
+        categoryName: String? = nil,
+        allowedSubscriptionIDs: Set<UUID>? = nil
     ) -> HomeDatelineComponents {
         let weekdayFormatter = DateFormatter()
         weekdayFormatter.calendar = calendar
@@ -57,13 +76,18 @@ enum HomeDateline {
 
         let weekday = weekdayFormatter.string(from: now).uppercased(with: locale)
         let monthDay = monthDayFormatter.string(from: now).uppercased(with: locale)
+        let prefix = (categoryName ?? "").uppercased(with: locale)
 
         // Unplayed in the last 24h. We count `!played` episodes whose
         // `pubDate` is within the trailing 24-hour window — the brief asks
         // for "count of unplayed episodes from last 24h" which we read as
         // recent-by-publish-date, not last-fetched.
         let cutoff = now.addingTimeInterval(-86_400)
-        let newCount = episodes.reduce(0) { acc, ep in
+        let scopedEpisodes = HomeCategoryScope.episodesInCategory(
+            episodes,
+            allowedSubscriptionIDs: allowedSubscriptionIDs
+        )
+        let newCount = scopedEpisodes.reduce(0) { acc, ep in
             (!ep.played && ep.pubDate >= cutoff && ep.pubDate <= now) ? acc + 1 : acc
         }
 
@@ -72,6 +96,7 @@ enum HomeDateline {
         }
 
         return HomeDatelineComponents(
+            categoryPrefix: prefix,
             weekday: weekday,
             monthDay: monthDay,
             newCount: newCount,
@@ -96,7 +121,11 @@ struct HomeDatelineView: View {
     }
 
     private var accessibilityLabel: String {
-        var parts: [String] = ["\(components.weekday), \(components.monthDay)"]
+        var parts: [String] = []
+        if !components.categoryPrefix.isEmpty {
+            parts.append(components.categoryPrefix)
+        }
+        parts.append("\(components.weekday), \(components.monthDay)")
         if components.newCount > 0 {
             parts.append("\(components.newCount) new")
         }
