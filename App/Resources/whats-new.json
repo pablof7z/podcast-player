@@ -2,7 +2,7 @@
   "schema_version": 1,
   "entries": [
     {
-      "id": "PENDING_SLICE_3",
+      "id": "eab59ec",
       "shipped_at": "2026-05-10T23:40:00Z",
       "lines": [
         "Ad reads detected from the transcript now show an amber stripe and a speaker.slash glyph on the chapter list. Settings → Playback adds an Auto-skip ads toggle (off by default while detection quality settles). Pre-roll ads get a one-tap Skip button above the scrubber."
