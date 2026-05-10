@@ -384,6 +384,44 @@ final class UserIdentityStore {
         guard let s = String(data: data, encoding: .utf8) else { return }
         try KeychainStore.saveString(s, service: Self.nip46MetaService, account: Self.nip46MetaAccount)
     }
+
+    // MARK: - Process-wide singleton (slice B)
+
+    /// Process-wide instance used by the wiring layer (`AppStateStore+Notes`,
+    /// `AppStateStore+Clips`, `EditProfileView.save`) so domain-level
+    /// extensions can publish without DI threading. The SwiftUI environment
+    /// instance in `AppMain` references the same object so observation stays
+    /// consistent.
+    static let shared = UserIdentityStore()
+
+    // MARK: - Slice-B internal helpers
+
+    /// Internal alias for the file-private `generateGeneratedKey()` so the
+    /// extension file `UserIdentityStore+Publishing.swift` can self-heal
+    /// when invoked without an active signer.
+    func _ensureGeneratedKey() throws {
+        try generateGeneratedKey()
+    }
+
+    // MARK: - Test seam (slice B)
+
+    /// Test-only: swap in a recording signer so wiring tests can verify
+    /// which call-sites reach the signer without standing up a real keypair.
+    /// Production code never calls this. Lives in the core file because
+    /// `signer` / `publicKeyHex` / `mode` use file-private `private(set)`.
+    func _setSignerForTesting(_ signer: any NostrSigner, publicKeyHex: String = String(repeating: "0", count: 64)) {
+        self.signer = signer
+        self.publicKeyHex = publicKeyHex
+        self.mode = .localKey
+    }
+
+    /// Test-only: drop the active signer so tests can verify the
+    /// `signer == nil` → `generateGeneratedKey()` self-heal path.
+    func _clearSignerForTesting() {
+        self.signer = nil
+        self.publicKeyHex = nil
+        self.mode = .none
+    }
 }
 
 // MARK: - Supporting types

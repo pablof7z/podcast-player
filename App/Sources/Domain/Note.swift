@@ -15,18 +15,23 @@ struct Note: Codable, Identifiable, Hashable, Sendable {
     var target: Anchor?
     var createdAt: Date
     var deleted: Bool
+    /// Who authored this note. Drives the publish-layer wiring contract from
+    /// `docs/spec/briefs/identity-05-synthesis.md` §5: `.user` notes sign and
+    /// publish with the user identity, `.agent` notes stay local-only.
+    var author: NoteAuthor
 
-    init(text: String, kind: NoteKind = .free, target: Anchor? = nil) {
+    init(text: String, kind: NoteKind = .free, target: Anchor? = nil, author: NoteAuthor = .user) {
         self.id = UUID()
         self.text = text
         self.kind = kind
         self.target = target
         self.createdAt = Date()
         self.deleted = false
+        self.author = author
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, text, kind, target, createdAt, deleted
+        case id, text, kind, target, createdAt, deleted, author
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding
@@ -39,5 +44,8 @@ struct Note: Codable, Identifiable, Hashable, Sendable {
         target = try c.decodeIfPresent(Anchor.self, forKey: .target)
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         deleted = try c.decodeIfPresent(Bool.self, forKey: .deleted) ?? false
+        // Legacy snapshots (pre-NoteAuthor) default to `.user` — they were all
+        // user-authored in practice; the agent path is new in this slice.
+        author = try c.decodeIfPresent(NoteAuthor.self, forKey: .author) ?? .user
     }
 }

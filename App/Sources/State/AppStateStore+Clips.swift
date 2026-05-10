@@ -17,6 +17,13 @@ extension AppStateStore {
 
     func addClip(_ clip: Clip) {
         state.clips.append(clip)
+        // Wiring contract per `identity-05-synthesis.md` §5.3: every clip
+        // source signs and publishes (kind 9802 / NIP-84) except `.agent`,
+        // which stays local. Fire-and-forget so a relay outage never blocks
+        // the user's local capture.
+        if clip.source != .agent {
+            Task { try? await UserIdentityStore.shared.publishUserClip(clip) }
+        }
     }
 
     /// Convenience: build + persist in one call. Used by `AutoSnipController`
@@ -44,7 +51,9 @@ extension AppStateStore {
             transcriptText: transcriptText ?? "",
             source: source
         )
-        state.clips.append(clip)
+        // Route through the primary `addClip(_:)` so the publish wiring
+        // fires uniformly for every entry-point (composer + auto-snip).
+        addClip(clip)
         return clip
     }
 
