@@ -23,7 +23,8 @@ env:
   PROJECT_PATH: Podcastr.xcodeproj
   APP_INFO_PLIST: App/Resources/Info.plist
   APPLE_TEAM_ID: 456SHKPP26
-  APP_BUNDLE_ID: com.podcastr.podcastr
+  APP_BUNDLE_ID: io.f7z.podcast
+  WIDGET_BUNDLE_ID: io.f7z.podcast.widget
 
 jobs:
   deploy:
@@ -48,6 +49,7 @@ jobs:
           APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
           APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
           APP_PROVISION_PROFILE_BASE64: ${{ secrets.APP_PROVISION_PROFILE_BASE64 }}
+          WIDGET_PROVISION_PROFILE_BASE64: ${{ secrets.WIDGET_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: ./ci_scripts/install_signing_assets.sh
 

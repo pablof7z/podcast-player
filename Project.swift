@@ -22,7 +22,7 @@ let widgetBundleID = "\(appBundleID).widget"
 
 let project = Project(
     name: appName,
-    organizationName: "Your Company",
+    organizationName: "f7z",
     options: .options(
         automaticSchemesOptions: .disabled,
         developmentRegion: "en"
@@ -111,6 +111,7 @@ let project = Project(
                     "TARGETED_DEVICE_FAMILY": "1,2",
                     "SWIFT_VERSION": "6.0",
                     "SWIFT_STRICT_CONCURRENCY": "complete",
+                    "PROVISIONING_PROFILE_SPECIFIER": "$(CI_WIDGET_PROFILE_SPECIFIER)",
                 ]
             )
         ),

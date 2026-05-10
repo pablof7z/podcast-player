@@ -2,6 +2,7 @@
 build/
 DerivedData/
 Derived/
+DerivedDevice/
 *.xcodeproj/
 *.xcworkspace/
 .worktrees/

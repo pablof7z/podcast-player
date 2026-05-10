@@ -18,12 +18,12 @@ require_env APP_STORE_CONNECT_KEY_ID
 require_env APP_STORE_CONNECT_ISSUER_ID
 require_env APP_STORE_CONNECT_API_KEY_P8
 
-APP_SCHEME="${APP_SCHEME:-AppTemplate}"
-PROJECT_PATH="${PROJECT_PATH:-AppTemplate.xcodeproj}"
+APP_SCHEME="${APP_SCHEME:-Podcastr}"
+PROJECT_PATH="${PROJECT_PATH:-Podcastr.xcodeproj}"
 APP_INFO_PLIST="${APP_INFO_PLIST:-App/Resources/Info.plist}"
-APPLE_TEAM_ID="${APPLE_TEAM_ID:-XXXXXXXXXX}"
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-456SHKPP26}"
 BUILD_ROOT="${BUILD_ROOT:-$PWD/build}"
-ARCHIVE_PATH="${ARCHIVE_PATH:-$BUILD_ROOT/AppTemplate.xcarchive}"
+ARCHIVE_PATH="${ARCHIVE_PATH:-$BUILD_ROOT/Podcastr.xcarchive}"
 EXPORT_PATH="${EXPORT_PATH:-$BUILD_ROOT/testflight-export}"
 EXPORT_OPTIONS_PLIST="${EXPORT_OPTIONS_PLIST:-$BUILD_ROOT/ExportOptions.plist}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$BUILD_ROOT/DerivedData}"
@@ -56,17 +56,25 @@ if [[ -n "${KEYCHAIN_PATH:-}" ]]; then
     CODE_SIGN_STYLE=Manual
     "CODE_SIGN_IDENTITY=Apple Distribution"
     "CI_APP_PROFILE_SPECIFIER=${CI_APP_PROFILE_SPECIFIER:-}"
+    "CI_WIDGET_PROFILE_SPECIFIER=${CI_WIDGET_PROFILE_SPECIFIER:-}"
   )
 fi
 
 PROVISIONING_PROFILES_XML=""
 if [[ "$SIGNING_STYLE" == "manual" ]] && [[ -n "${CI_APP_PROFILE_SPECIFIER:-}" ]]; then
-  APP_BUNDLE_ID="${APP_BUNDLE_ID:-com.yourcompany.apptemplate}"
+  APP_BUNDLE_ID="${APP_BUNDLE_ID:-io.f7z.podcast}"
+  WIDGET_BUNDLE_ID="${WIDGET_BUNDLE_ID:-io.f7z.podcast.widget}"
   PROVISIONING_PROFILES_XML="
   <key>provisioningProfiles</key>
   <dict>
     <key>${APP_BUNDLE_ID}</key>
-    <string>${CI_APP_PROFILE_SPECIFIER}</string>
+    <string>${CI_APP_PROFILE_SPECIFIER}</string>"
+  if [[ -n "${CI_WIDGET_PROFILE_SPECIFIER:-}" ]]; then
+    PROVISIONING_PROFILES_XML="${PROVISIONING_PROFILES_XML}
+    <key>${WIDGET_BUNDLE_ID}</key>
+    <string>${CI_WIDGET_PROFILE_SPECIFIER}</string>"
+  fi
+  PROVISIONING_PROFILES_XML="${PROVISIONING_PROFILES_XML}
   </dict>"
 fi
 
