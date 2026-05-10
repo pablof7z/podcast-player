@@ -117,6 +117,8 @@ struct MiniPlayerView: View {
 
             inlineDownloadBadge
 
+            inlineDownloadBadge
+
             Button {
                 state.togglePlayPause()
             } label: {
@@ -180,6 +182,26 @@ struct MiniPlayerView: View {
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
+        }
+    }
+
+    /// Inline-only download surface — narrow visibility rule per spec:
+    /// only render when the live episode is actively downloading or has
+    /// failed. The collapsed pill has no horizontal slack for `.queued`
+    /// or terminal `.downloaded` states, and they'd add visual noise to
+    /// the tab bar without informing an in-flight action.
+    @ViewBuilder
+    private var inlineDownloadBadge: some View {
+        if let resolved = liveDownloadEpisode {
+            switch resolved.downloadState {
+            case .downloading, .failed:
+                DownloadProgressBadge(
+                    episode: resolved,
+                    liveProgress: downloadService.progress[resolved.id]
+                )
+            default:
+                EmptyView()
+            }
         }
     }
 
