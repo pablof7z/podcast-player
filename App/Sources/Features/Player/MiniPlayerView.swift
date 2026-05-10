@@ -150,17 +150,22 @@ struct MiniPlayerView: View {
     // MARK: - Subviews
 
     private var progressLine: some View {
+        // 3px is the readable minimum on top of a glass material — 2px
+        // disappears against the translucent backdrop. Background uses
+        // `Color.accentColor.opacity(0.20)` so the unfilled segment also
+        // tints toward the accent and the bar reads as a meter even before
+        // the playhead has moved.
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(Color.primary.opacity(0.10))
+                    .fill(Color.accentColor.opacity(0.20))
                 Rectangle()
                     .fill(Color.accentColor)
                     .frame(width: proxy.size.width * progressFraction)
                     .animation(.linear(duration: 0.15), value: state.currentTime)
             }
         }
-        .frame(height: 2)
+        .frame(height: 3)
     }
 
     private var content: some View {

@@ -71,6 +71,7 @@ struct ShowDetailView: View {
         .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(liveSubscription.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar { toolbarContent }
         .refreshable { await refresh() }
         .sheet(isPresented: $showSettings) {
