@@ -70,17 +70,14 @@ struct HomeRelatedSheet: View {
 
         case .ready:
             List(matches) { match in
-                Button {
-                    // Tap a related row → open episode detail. We can't push
-                    // navigation from a sheet's NavigationStack into the
-                    // host's stack, so dismiss + rely on the user opening it
-                    // from the row context menu / featured tap. Quick and
-                    // honest for v1; a deep-link route can land later.
-                    Haptics.selection()
+                NavigationLink {
+                    EpisodeDetailView(episodeID: match.episode.id)
                 } label: {
                     relatedRow(match)
                 }
-                .buttonStyle(.plain)
+                .simultaneousGesture(TapGesture().onEnded {
+                    Haptics.selection()
+                })
             }
             .listStyle(.plain)
         }

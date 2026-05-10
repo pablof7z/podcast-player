@@ -100,13 +100,15 @@ struct HomeView: View {
                     )
                 }
 
-                HomeFeaturedSection(
-                    resumeEpisodes: store.inProgressEpisodes,
-                    picksBundle: picksService.bundle,
-                    isExpanded: $featuredExpanded,
-                    onPlayEpisode: playEpisode,
-                    onLongPressEpisode: { relatedSheetEpisode = $0 }
-                )
+                if shouldShowFeaturedSection {
+                    HomeFeaturedSection(
+                        resumeEpisodes: store.inProgressEpisodes,
+                        picksBundle: picksService.bundle,
+                        isExpanded: $featuredExpanded,
+                        onPlayEpisode: playEpisode,
+                        onLongPressEpisode: { relatedSheetEpisode = $0 }
+                    )
+                }
 
                 searchEntryBar
                     .padding(.horizontal, AppTheme.Spacing.md)
@@ -122,11 +124,17 @@ struct HomeView: View {
     @ViewBuilder
     private var subscriptionsSurface: some View {
         if store.state.subscriptions.isEmpty {
-            firstRunEmptyState
+            HomeFirstRunEmptyState(onAddShow: { showAddShowSheet = true })
                 .padding(.top, AppTheme.Spacing.xl)
         } else if filteredSubs.isEmpty {
-            filteredEmptyState
-                .padding(.top, AppTheme.Spacing.xl)
+            HomeFilteredEmptyState(
+                filter: filter,
+                onClearFilters: {
+                    categoryFilterID = ""
+                    filter = .all
+                }
+            )
+            .padding(.top, AppTheme.Spacing.xl)
         } else {
             HomeSubscriptionListSection(
                 subscriptions: filteredSubs,
@@ -183,6 +191,12 @@ struct HomeView: View {
         )
     }
 
+    private var shouldShowFeaturedSection: Bool {
+        !store.inProgressEpisodes.isEmpty
+            || !picksService.bundle.picks.isEmpty
+            || picksService.isRefreshing
+    }
+
     private func dismissChip(_ chip: HomeActiveFilterChip) {
         switch chip.kind {
         case .libraryFilter: filter = .all
@@ -220,63 +234,6 @@ struct HomeView: View {
         .accessibilityHint("Opens Search")
     }
 
-    // MARK: - Empty states
-
-    private var firstRunEmptyState: some View {
-        VStack(spacing: AppTheme.Spacing.lg) {
-            Image(systemName: "books.vertical")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.tertiary)
-            VStack(spacing: AppTheme.Spacing.xs) {
-                Text("Your shows live here.")
-                    .font(AppTheme.Typography.title)
-                Text("Search Apple Podcasts, paste a feed URL, or import an OPML file to begin.")
-                    .font(AppTheme.Typography.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Button {
-                Haptics.light()
-                showAddShowSheet = true
-            } label: {
-                Label("Add Show", systemImage: "plus.circle.fill")
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.vertical, AppTheme.Spacing.sm)
-            }
-            .buttonStyle(.glassProminent)
-        }
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var filteredEmptyState: some View {
-        VStack(spacing: AppTheme.Spacing.lg) {
-            Image(systemName: filter.emptyStateGlyph)
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(.tertiary)
-            VStack(spacing: AppTheme.Spacing.xs) {
-                Text(filter.emptyStateTitle)
-                    .font(AppTheme.Typography.title)
-                Text(filter.emptyStateSubtitle)
-                    .font(AppTheme.Typography.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Button {
-                Haptics.light()
-                categoryFilterID = ""
-                filter = .all
-            } label: {
-                Label("Clear filters", systemImage: "line.3.horizontal.decrease.circle")
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.vertical, AppTheme.Spacing.sm)
-            }
-            .buttonStyle(.glass)
-        }
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .frame(maxWidth: .infinity)
-    }
-
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -312,7 +269,8 @@ struct HomeView: View {
     private func refreshAllFeeds() async {
         await SubscriptionRefreshService.shared.refreshAll(store: store)
         // Library state moved meaningfully — let the agent picks update on
-        // the next user-driven appearance instead of waiting on the 6h TTL.
+        // the next turn instead of waiting on the 6h TTL.
         picksService.invalidate()
+        picksService.ensureFreshPicks(store: store)
     }
 }

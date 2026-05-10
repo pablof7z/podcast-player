@@ -17,20 +17,18 @@ struct HomeAgentPickCard: View {
     @State private var isExpanded: Bool = false
 
     var body: some View {
-        Button(action: onPlay) {
-            HStack(alignment: .top, spacing: 0) {
-                accentBar
-                content
-                    .padding(AppTheme.Spacing.sm)
-            }
-            .frame(width: cardWidth, alignment: .leading)
-            .background(
-                Color(.secondarySystemBackground),
-                in: RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
+        HStack(alignment: .top, spacing: 0) {
+            accentBar
+            content
+                .padding(AppTheme.Spacing.sm)
         }
-        .buttonStyle(.plain)
+        .frame(width: cardWidth, alignment: .leading)
+        .background(
+            Color(.secondarySystemBackground),
+            in: RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
+        .onTapGesture(perform: onPlay)
         .contextMenu {
             EpisodeRowContextMenu(
                 episode: episode,
@@ -41,6 +39,9 @@ struct HomeAgentPickCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: Text("Play")) {
+            onPlay()
+        }
     }
 
     // MARK: - Layout
