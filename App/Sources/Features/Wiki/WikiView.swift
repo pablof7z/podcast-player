@@ -13,6 +13,10 @@ struct WikiView: View {
     @State private var model = WikiHomeViewModel()
     @State private var generateSheet = false
     @State private var selectedPage: WikiPage?
+    /// Pushes the cross-episode `ThreadingTopicListView`. The threading
+    /// surface intentionally has no tab — it's reached as a leaf of the
+    /// wiki destination per UX-09 §3.
+    @State private var showThreads = false
 
     var body: some View {
         NavigationStack {
@@ -45,6 +49,9 @@ struct WikiView: View {
                             selectedPage = newPage
                         }
                     )
+                }
+                .navigationDestination(isPresented: $showThreads) {
+                    ThreadingTopicListView()
                 }
         }
         .task { await model.load() }
@@ -158,6 +165,14 @@ struct WikiView: View {
                 Image(systemName: "plus")
             }
             .accessibilityLabel("Compile a page")
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                showThreads = true
+            } label: {
+                Image(systemName: "point.3.connected.trianglepath.dotted")
+            }
+            .accessibilityLabel("Open threads")
         }
     }
 

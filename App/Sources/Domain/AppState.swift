@@ -27,6 +27,14 @@ struct AppState: Codable, Sendable {
     /// User-authored transcript excerpts. See `Clip` and the composer in
     /// `App/Sources/Features/EpisodeDetail/Clip/`.
     var clips: [Clip] = []
+    /// Cross-episode threading topics inferred by `ThreadingInferenceService`.
+    /// Empty until the user runs a recompute (or the seed-mock path fires in
+    /// Debug). UX-09 surfaces are reserved for >=3-mention patterns.
+    var threadingTopics: [ThreadingTopic] = []
+    /// Per-topic mentions powering the timeline view. One row per transcript
+    /// span. Carries its own `topicID` so adapters can build the mention list
+    /// without scanning the topic array.
+    var threadingMentions: [ThreadingMention] = []
 
     init() {}
 
@@ -37,6 +45,7 @@ struct AppState: Codable, Sendable {
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
         case clips
+        case threadingTopics, threadingMentions
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -57,5 +66,7 @@ struct AppState: Codable, Sendable {
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
         clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
+        threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []
+        threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
     }
 }
