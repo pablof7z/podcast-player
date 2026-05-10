@@ -98,7 +98,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         defer { completionHandler() }
         let userInfo = response.notification.request.content.userInfo
-        guard let episodeID = userInfo["episodeID"] as? String,
+        guard let episodeID = userInfo[NotificationService.episodeIDUserInfoKey] as? String,
               UUID(uuidString: episodeID) != nil,
               let url = URL(string: "podcastr://episode/\(episodeID)")
         else { return }

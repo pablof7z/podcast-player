@@ -8,15 +8,22 @@ enum NotificationService {
 
     private static let logger = Logger.app("NotificationService")
 
+    /// `userInfo` key carrying the new episode's UUID string. Exposed so
+    /// `AppDelegate` reads the same constant the writer uses — the
+    /// previous shape duplicated the literal `"episodeID"` on the
+    /// consumer side, so a rename of the writer-side constant would
+    /// silently break notification-tap routing.
+    ///
+    /// `nonisolated` because the consumer (`AppDelegate`'s
+    /// `userNotificationCenter(_:didReceive:...)`) is non-isolated and
+    /// it's a plain `String` constant — no actor crossing concern.
+    nonisolated static let episodeIDUserInfoKey = "episodeID"
+
     private enum Content {
         static let approvalTitle = "New contact request"
         static let approvalBody = "Someone wants to reach your agent. Open the app to review."
         static let approvalIDPrefix = "nostr-approval:"
         static let newEpisodeIDPrefix = "new-episode:"
-        /// `userInfo` key carrying the new episode's UUID string. The
-        /// `AppDelegate` pulls this out of a tap and turns it into a
-        /// `podcastr://episode/<uuid>` deep-link.
-        static let episodeIDUserInfoKey = "episodeID"
     }
 
     /// Fan-out cap: at most this many new-episode notifications fire per
@@ -105,7 +112,7 @@ enum NotificationService {
             content.title = subscription.title
             content.body = "New episode: \(episode.title)"
             content.sound = .default
-            content.userInfo = [Content.episodeIDUserInfoKey: episode.id.uuidString]
+            content.userInfo = [Self.episodeIDUserInfoKey: episode.id.uuidString]
             // Threading by subscription so iOS groups multiple new-episode
             // banners from the same show into one stack on the lock screen.
             content.threadIdentifier = "subscription:\(subscription.id.uuidString)"
