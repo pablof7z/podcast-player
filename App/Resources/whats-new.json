@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "feedback-search-fold",
+      "shipped_at": "2026-05-10T22:55:00Z",
+      "lines": [
+        "Feedback search now matches across Unicode case folds (same fix the wiki just got)"
+      ]
+    },
+    {
       "id": "wiki-search-fold",
       "shipped_at": "2026-05-10T22:50:00Z",
       "lines": [

@@ -16,12 +16,14 @@ struct FeedbackView: View {
         guard !searchText.isBlank else {
             return segmentFilteredThreads
         }
-        let query = searchText.lowercased()
+        // Locale-aware fold: matches "Straße" against "STRASSE", "İstanbul"
+        // against "istanbul", and avoids the four `.lowercased()`
+        // allocations per row the previous shape did per render.
         return segmentFilteredThreads.filter { thread in
-            (thread.title ?? "").lowercased().contains(query)
-            || thread.content.lowercased().contains(query)
-            || (thread.summary ?? "").lowercased().contains(query)
-            || thread.category.rawValue.lowercased().contains(query)
+            (thread.title ?? "").localizedCaseInsensitiveContains(searchText)
+            || thread.content.localizedCaseInsensitiveContains(searchText)
+            || (thread.summary ?? "").localizedCaseInsensitiveContains(searchText)
+            || thread.category.rawValue.localizedCaseInsensitiveContains(searchText)
         }
     }
 
