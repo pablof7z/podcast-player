@@ -44,6 +44,13 @@ enum NowPlayingSnapshotStore {
 
     nonisolated private static let logger = Logger.app("NowPlayingSnapshot")
 
+    /// Shared encoder. `write(_:)` is called on every snapshot update —
+    /// throttled to 5s in the playback layer, so a 60-minute episode
+    /// produces roughly 720 writes; minting a fresh `JSONEncoder` each
+    /// time was wasted Foundation allocation. The encoder is reentrant
+    /// for `encode` after construction.
+    nonisolated(unsafe) private static let encoder = JSONEncoder()
+
     /// App Group identifier — must match `Project.swift`'s `appGroupID` and the
     /// entitlements on both targets. Hard-coded here (rather than read from
     /// `Info.plist`) so the call site is synchronous and can't fail.
@@ -62,7 +69,7 @@ enum NowPlayingSnapshotStore {
             return
         }
         do {
-            let data = try JSONEncoder().encode(snapshot)
+            let data = try encoder.encode(snapshot)
             defaults.set(data, forKey: defaultsKey)
         } catch {
             logger.error("Failed to encode NowPlayingSnapshot: \(error, privacy: .public)")
