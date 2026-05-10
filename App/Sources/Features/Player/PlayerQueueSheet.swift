@@ -98,7 +98,8 @@ struct PlayerQueueSheet: View {
                     } label: {
                         PlayerQueueRow(
                             episode: episode,
-                            showName: store.subscription(id: episode.subscriptionID)?.title ?? ""
+                            showName: store.subscription(id: episode.subscriptionID)?.title ?? "",
+                            showImageURL: store.subscription(id: episode.subscriptionID)?.imageURL
                         )
                             .contentShape(Rectangle())
                     }
@@ -195,6 +196,11 @@ struct PlayerQueueRow: View {
 
     let episode: Episode
     let showName: String
+    /// Show-level cover art used as a fallback when the episode has no
+    /// per-episode `<itunes:image>`. Most feeds only ship show-level
+    /// artwork; without this fallback the row would render a generic
+    /// waveform glyph for those episodes.
+    var showImageURL: URL? = nil
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
@@ -226,7 +232,7 @@ struct PlayerQueueRow: View {
 
     private var artwork: some View {
         Group {
-            if let url = episode.imageURL {
+            if let url = episode.imageURL ?? showImageURL {
                 CachedAsyncImage(url: url, targetSize: CGSize(width: 44, height: 44)) { phase in
                     switch phase {
                     case .success(let image):

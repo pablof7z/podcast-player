@@ -61,11 +61,15 @@ final class SubscriptionAddErrorTests: XCTestCase {
         )
     }
 
-    func testParseIncludesUnderlyingMessage() {
+    func testParseSurfacesUnderlyingMessageAsIs() {
+        // `.parse` payloads come from `RSSParser.ParseError.errorDescription`,
+        // which already speaks in full user-facing sentences. The error
+        // surface deliberately doesn't add a "Couldn't read this feed:"
+        // prefix to avoid double-narrating the failure.
         let error = SubscriptionService.AddError.parse("malformed XML at line 42")
         XCTAssertEqual(
             error.errorDescription,
-            "Couldn't read this feed: malformed XML at line 42"
+            "malformed XML at line 42"
         )
     }
 
