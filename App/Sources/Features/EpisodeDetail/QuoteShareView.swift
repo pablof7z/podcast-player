@@ -14,6 +14,14 @@ struct QuoteShareView: View {
     let segment: Segment
     let speaker: Speaker?
     let deepLink: String
+    /// Hook the parent surface up to its audio-clip-with-subtitles
+    /// pipeline. When `nil` the "Audio + Sub" button is hidden because
+    /// rendering an audio clip with burned-in subtitles is heavy
+    /// (video composition) and the parent doesn't have it wired —
+    /// better to hide than to look like a dead button.
+    var onShareAudioWithSubtitles: (() -> Void)? = nil
+
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
@@ -125,16 +133,19 @@ struct QuoteShareView: View {
 
     private var actionRow: some View {
         HStack(spacing: AppTheme.Spacing.md) {
-            actionButton(label: "Image", systemImage: "photo")
-            actionButton(label: "Audio + Sub", systemImage: "waveform")
-            actionButton(label: "Link", systemImage: "link")
+            actionButton(label: "Image", systemImage: "photo", action: shareImage)
+            if let handler = onShareAudioWithSubtitles {
+                actionButton(label: "Audio + Sub", systemImage: "waveform") {
+                    Haptics.light()
+                    handler()
+                }
+            }
+            actionButton(label: "Link", systemImage: "link", action: shareLink)
         }
     }
 
-    private func actionButton(label: String, systemImage: String) -> some View {
-        Button {
-            // Hooked up by the parent surface.
-        } label: {
+    private func actionButton(label: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: systemImage)
                     .font(.title3)
@@ -150,6 +161,38 @@ struct QuoteShareView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
+    }
+
+    // MARK: - Share handlers
+
+    @MainActor
+    private func shareImage() {
+        // Render the same card view at the same logical width the user
+        // sees in the sheet. Without an explicit frame the renderer
+        // would size the view to its intrinsic content, which wraps
+        // weirdly for long quotes.
+        let renderer = ImageRenderer(content: card.frame(width: 360))
+        renderer.scale = displayScale
+        guard let image = renderer.uiImage else { return }
+        Haptics.light()
+        // Image attaches the deep link as a second activity item so the
+        // recipient can long-press the share sheet preview and still
+        // get back to the quote — image-only would lose all context.
+        var items: [Any] = [image]
+        if let url = URL(string: deepLink) {
+            items.append(url)
+        }
+        SystemShareSheet.present(items: items)
+    }
+
+    @MainActor
+    private func shareLink() {
+        Haptics.light()
+        if let url = URL(string: deepLink) {
+            SystemShareSheet.present(items: [url])
+        } else {
+            SystemShareSheet.present(items: [deepLink])
+        }
     }
 }
 
