@@ -56,6 +56,16 @@ struct SettingsView: View {
                     value: subscriptionCountLabel
                 )
             }
+            NavigationLink {
+                CategoriesListView()
+            } label: {
+                SettingsRow(
+                    icon: "square.grid.2x2.fill",
+                    tint: .mint,
+                    title: "Categories",
+                    value: categoryCountLabel
+                )
+            }
         }
     }
 
@@ -243,6 +253,12 @@ struct SettingsView: View {
 
     private var subscriptionCountLabel: String? {
         let count = store.state.subscriptions.count
+        guard count > 0 else { return nil }
+        return "\(count)"
+    }
+
+    private var categoryCountLabel: String? {
+        let count = store.state.categories.count
         guard count > 0 else { return nil }
         return "\(count)"
     }

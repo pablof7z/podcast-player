@@ -208,8 +208,11 @@ final class EpisodeDownloadService {
     func evaluateAutoDownload(forSubscription subscriptionID: UUID, newEpisodeIDs: [UUID]) {
         guard !newEpisodeIDs.isEmpty,
               let store = appStore,
-              let subscription = store.subscription(id: subscriptionID) else { return }
-        let policy = subscription.autoDownload
+              store.subscription(id: subscriptionID) != nil else { return }
+        // Honour any per-category auto-download override before falling back
+        // to the per-subscription policy. `effectiveAutoDownload` resolves
+        // to `subscription.autoDownload` when no category settings apply.
+        let policy = store.effectiveAutoDownload(forSubscription: subscriptionID)
         if case .off = policy.mode { return }
         if policy.wifiOnly, !isOnWiFi {
             logger.notice(
