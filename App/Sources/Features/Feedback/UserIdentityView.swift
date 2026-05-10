@@ -227,12 +227,21 @@ struct UserIdentityView: View {
         }
         .buttonStyle(.bordered)
         .tint(.red)
-        .confirmationDialog("Remove your Nostr identity from this device?", isPresented: $showClearConfirm, titleVisibility: .visible) {
+        // `.alert` rather than `.confirmationDialog` — iOS 26's
+        // popover-promotion can elide the Cancel button on dialogs
+        // anchored to a tappable element (the red Remove button below).
+        // Particularly important here: deleting the private key is
+        // irreversible if the user doesn't have their nsec backed up
+        // elsewhere. See same fix in ShowDetailView et al.
+        .alert(
+            "Remove your Nostr identity from this device?",
+            isPresented: $showClearConfirm
+        ) {
+            Button("Cancel", role: .cancel) {}
             Button("Remove", role: .destructive) {
                 identity.clearIdentity()
                 Haptics.medium()
             }
-            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your private key will be deleted. Import your nsec again to restore access.")
         }

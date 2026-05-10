@@ -66,13 +66,17 @@ struct WikiPageView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.regularMaterial)
         }
-        .confirmationDialog(
+        // `.alert` rather than `.confirmationDialog` — iOS 26 promotes
+        // dialogs anchored close to a tappable element (the toolbar Menu's
+        // Delete button below) into popovers and elides the Cancel
+        // button. See same fix in ShowDetailView, StorageSettingsView,
+        // EpisodeDetailActionsMenu, PlayerQueueSheet, DataExportView.
+        .alert(
             "Delete this wiki page?",
-            isPresented: $showDeleteConfirm,
-            titleVisibility: .visible
+            isPresented: $showDeleteConfirm
         ) {
-            Button("Delete", role: .destructive) { performDelete() }
             Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { performDelete() }
         } message: {
             Text("\(page.title) will be removed from your library.")
         }

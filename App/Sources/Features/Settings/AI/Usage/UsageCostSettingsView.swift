@@ -31,13 +31,16 @@ struct UsageCostSettingsView: View {
                 }
             }
         }
-        .confirmationDialog(
+        // `.alert` rather than `.confirmationDialog` — iOS 26's
+        // popover-promotion can elide the Cancel button. The tap target
+        // for this confirm is a red trash glyph in the toolbar; same
+        // trap as the other destructive confirms across the app.
+        .alert(
             "Clear usage log?",
-            isPresented: $confirmClear,
-            titleVisibility: .visible
+            isPresented: $confirmClear
         ) {
-            Button("Clear", role: .destructive) { ledger.clear() }
             Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) { ledger.clear() }
         } message: {
             Text("Removes all usage history. Your API bill won't change.")
         }
