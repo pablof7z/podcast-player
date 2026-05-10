@@ -71,6 +71,15 @@ struct PlayerView: View {
                     store: store
                 )
             }
+            // Idempotent — wires the singleton's MPRemoteCommand once and
+            // refreshes its playback/store handles every time the episode
+            // changes so the snip path always sees live state.
+            AutoSnipController.shared.attach(playback: state, store: store)
+        }
+        .overlay(alignment: .top) {
+            AutoSnipBanner(controller: AutoSnipController.shared)
+                .padding(.top, AppTheme.Spacing.lg)
+                .allowsHitTesting(true)
         }
     }
 

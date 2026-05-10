@@ -298,6 +298,17 @@ final class TranscriptIngestService {
                 "transcript saved for \(episode.id, privacy: .public) but RAG indexing failed: \(String(describing: error), privacy: .public) — episode is readable; search won't find it until the user re-embeds with a configured key"
             )
         }
+
+        // STEP 3: Fire-and-forget AI chapter compilation when the episode
+        // lacks publisher chapters. The compiler is internally idempotent and
+        // early-returns when chapters already exist, so re-runs of the ingest
+        // pipeline are cheap. Decoupled from the embed step because chapter
+        // compilation runs even when embeddings can't (no API key).
+        let episodeID = episode.id
+        Task { @MainActor [weak appStore] in
+            guard let appStore else { return }
+            await AIChapterCompiler.shared.compileIfNeeded(episodeID: episodeID, store: appStore)
+        }
     }
 
     // MARK: - Helpers

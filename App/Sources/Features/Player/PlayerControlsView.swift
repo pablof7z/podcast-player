@@ -48,6 +48,8 @@ struct PlayerControlsView: View {
                     state.seekToNextChapter(in: chapters)
                 }
             )
+
+            AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
     }
