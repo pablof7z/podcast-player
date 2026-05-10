@@ -69,21 +69,28 @@ struct MiniPlayerView: View {
         // non-button regions via `.contentShape` + `.onTapGesture` on the
         // background, not the whole stack.
         //
-        // Progress line sits at the TOP, Overcast-style — a high-glance,
-        // always-visible read on how far through the episode the user is.
-        // Bottom placement reads as a divider rather than a meter.
-        VStack(spacing: 0) {
-            progressLine
-            content
-        }
-        .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-        .glassEffectID("player.surface", in: glassNamespace)
-        .contentShape(.rect(cornerRadius: AppTheme.Corner.lg))
-        .onTapGesture {
-            Haptics.light()
-            onTap()
-        }
-        .accessibilityElement(children: .contain)
+        // Progress line is an OVERLAY at the top edge — Overcast-style,
+        // high-glance, always-visible. Putting it inside the VStack
+        // *under* the glassEffect makes the bar disappear into the glass
+        // material; lifting it into an overlay renders it crisply on top.
+        content
+            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+            .glassEffectID("player.surface", in: glassNamespace)
+            .overlay(alignment: .top) {
+                progressLine
+                    .clipShape(.rect(
+                        topLeadingRadius: AppTheme.Corner.lg,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: AppTheme.Corner.lg
+                    ))
+            }
+            .contentShape(.rect(cornerRadius: AppTheme.Corner.lg))
+            .onTapGesture {
+                Haptics.light()
+                onTap()
+            }
+            .accessibilityElement(children: .contain)
     }
 
     // MARK: - Inline (compact) layout
