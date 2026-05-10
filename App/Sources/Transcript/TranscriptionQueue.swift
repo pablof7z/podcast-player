@@ -112,9 +112,19 @@ actor TranscriptionQueue {
                 states[job.episodeID] = .completed
                 await onResult(transcript)
             } catch {
-                let message = String(describing: error)
-                Self.logger.error("Job failed for episode \(job.episodeID, privacy: .public): \(message, privacy: .public)")
-                states[job.episodeID] = .failed(message: message)
+                // Two messages: a developer one (full enum-case rendering)
+                // for the log, and a user-facing one for the failed-state
+                // surface. `String(describing:)` is fine in the log — it's
+                // diagnostic — but the UI message has to come through
+                // `LocalizedError.errorDescription` (or the bridged
+                // NSError fallback) so the user doesn't see things like
+                // `http(status: 401, body: Optional("..."))` in the
+                // transcript "Failed" panel.
+                let logMessage = String(describing: error)
+                Self.logger.error("Job failed for episode \(job.episodeID, privacy: .public): \(logMessage, privacy: .public)")
+                let displayMessage = (error as? LocalizedError)?.errorDescription
+                    ?? error.localizedDescription
+                states[job.episodeID] = .failed(message: displayMessage)
             }
         }
         workerRunning = false

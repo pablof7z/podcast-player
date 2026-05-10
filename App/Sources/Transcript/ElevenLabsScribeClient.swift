@@ -19,13 +19,41 @@ import os.log
 /// endpoint) it falls back to throwing `.webhookOnlyMode`.
 actor ElevenLabsScribeClient {
 
-    enum ScribeError: Swift.Error, Sendable {
+    enum ScribeError: Swift.Error, LocalizedError, Sendable {
         case missingAPIKey
         case invalidResponse
         case http(status: Int, body: String?)
         case decoding(String)
         case webhookOnlyMode
         case timedOut
+
+        /// User-facing copy. These messages land directly in the
+        /// `TranscribingInProgressView` "Failed" panel via
+        /// `TranscriptionQueue.failed(message:)` — without `LocalizedError`
+        /// the user would see raw Swift case names like
+        /// `http(status: 401, body: Optional("..."))`.
+        var errorDescription: String? {
+            switch self {
+            case .missingAPIKey:
+                return "Add an ElevenLabs API key in Settings → AI to transcribe episodes."
+            case .invalidResponse:
+                return "ElevenLabs returned an unexpected response. Try again in a moment."
+            case .http(let status, _) where status == 401 || status == 403:
+                return "ElevenLabs rejected your API key. Update it in Settings → AI."
+            case .http(let status, _) where status == 429:
+                return "ElevenLabs rate-limited the request. Wait a minute and retry."
+            case .http(let status, _) where status >= 500:
+                return "ElevenLabs is having trouble (\(status)). Retry in a few minutes."
+            case .http(let status, _):
+                return "ElevenLabs returned an unexpected error (\(status))."
+            case .decoding:
+                return "ElevenLabs returned a transcript shape we couldn't read."
+            case .webhookOnlyMode:
+                return "This ElevenLabs configuration only delivers via webhook, which Podcastr can't receive."
+            case .timedOut:
+                return "Transcription took too long. Try again — the second attempt usually completes faster."
+            }
+        }
     }
 
     private static let logger = Logger.app("ElevenLabsScribeClient")
