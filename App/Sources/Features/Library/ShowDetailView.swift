@@ -410,6 +410,8 @@ struct ShowDetailSettingsSheet: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                             .multilineTextAlignment(.trailing)
+                            .textSelection(.enabled)
+                            .copyableTextMenu(subscription.feedURL.absoluteString)
                     }
                     if let refreshed = subscription.lastRefreshedAt {
                         LabeledContent("Last refreshed") {
