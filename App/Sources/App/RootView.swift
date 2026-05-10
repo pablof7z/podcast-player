@@ -313,15 +313,20 @@ struct RootView: View {
         case .subscription(let uuid):
             spotlightSheet = .subscription(uuid)
         case .clip(let clipID):
-            // `podcastr://clip/<uuid>` — clip share. The clip store lives
-            // on the sister agent's branch (Clip composer); this branch
-            // only ships the parser + share-target plumbing. Once the
-            // store lands, look up the `Clip`, resolve `episodeID`, seek
-            // the playback engine to `startSeconds`, and surface the
-            // detail sheet (mirrors the `episodeByGUID` path above).
-            // Until then this is a no-op so the link round-trip is at
-            // least non-crashy when the share is opened in-app.
-            _ = clipID
+            // `podcastr://clip/<uuid>` — resolve the clip → episode,
+            // seek the engine to `startSeconds`, and surface the detail
+            // sheet. Mirrors the `episodeByGUID` pattern. When the clip
+            // is no longer in the local store (e.g. a friend's share for
+            // a podcast you don't have) we silently no-op rather than
+            // leaving a "missing" sheet open — the friend's audio isn't
+            // recoverable from the link alone.
+            if let clip = store.clip(id: clipID),
+               let episode = store.episode(id: clip.episodeID) {
+                playbackState.setEpisode(episode)
+                playbackState.seek(to: clip.startSeconds)
+                playbackState.play()
+                spotlightSheet = .episode(episode.id)
+            }
         }
     }
 

@@ -215,4 +215,25 @@ final class DeepLinkHandlerTests: XCTestCase {
         // `podcastr://e` with no path is not a valid link.
         XCTAssertNil(DeepLinkHandler.resolve(URL(string: "podcastr://e")!))
     }
+
+    // MARK: - Clip share
+
+    func testResolvesClipByUUID() {
+        let id = UUID()
+        let url = URL(string: "podcastr://clip/\(id.uuidString)")!
+        guard case .clip(let resolved) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .clip"); return
+        }
+        XCTAssertEqual(resolved, id)
+    }
+
+    func testRejectsClipWithMalformedUUID() {
+        // Anything that isn't a valid UUID should bail rather than
+        // surfacing a nonsense link the consumer can't resolve anyway.
+        XCTAssertNil(DeepLinkHandler.resolve(URL(string: "podcastr://clip/not-a-uuid")!))
+    }
+
+    func testRejectsClipWithEmptyPath() {
+        XCTAssertNil(DeepLinkHandler.resolve(URL(string: "podcastr://clip")!))
+    }
 }
