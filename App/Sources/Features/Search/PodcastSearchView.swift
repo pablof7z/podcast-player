@@ -181,8 +181,17 @@ struct PodcastSearchView: View {
     private func openTranscriptHit(_ hit: PodcastTranscriptSearchHit) {
         Haptics.selection()
         if let episode = store.episode(id: hit.chunk.episodeID) {
+            // Tapping a transcript hit reads as "play this moment" — load
+            // the episode, seek to the chunk's start, and start playback.
+            // Previously this only set + seeked, leaving the user on a
+            // paused episode with no obvious cue why nothing was rolling.
+            // setEpisode is idempotent on same-id, so calling it when the
+            // episode is already loaded is a no-op and won't re-buffer.
             playback.setEpisode(episode)
             playback.seek(to: Double(hit.chunk.startMS) / 1000)
+            if !playback.isPlaying {
+                playback.play()
+            }
         }
         destination = .episode(hit.chunk.episodeID)
     }
