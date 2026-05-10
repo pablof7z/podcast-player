@@ -95,6 +95,19 @@ extension View {
         onDelete: @escaping () -> Void
     ) -> some View {
         self
+            // Tap = open the edit sheet. Without this, the only path into
+            // editing a note/memory was long-press → context menu → Edit
+            // (or leading-edge swipe → Edit). Tapping a typed-content row
+            // and getting nothing is a paper-cut — the iOS-default user
+            // expectation for any list of writable items is tap-to-open.
+            // SwiftUI's `.onTapGesture` cooperates with `.contextMenu`
+            // (long-press) and `.swipeActions` (horizontal drags), so the
+            // existing affordances stay intact.
+            .contentShape(Rectangle())
+            .onTapGesture {
+                Haptics.selection()
+                onEdit()
+            }
             .contextMenu {
                 Button { onEdit() } label: {
                     Label("Edit", systemImage: "pencil")
