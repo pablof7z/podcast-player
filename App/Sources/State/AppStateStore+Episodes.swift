@@ -85,6 +85,7 @@ extension AppStateStore {
                 merged.id = prior.id
                 merged.playbackPosition = prior.playbackPosition
                 merged.played = prior.played
+                merged.isStarred = prior.isStarred
                 merged.downloadState = prior.downloadState
                 merged.transcriptState = prior.transcriptState
                 updated[idx] = merged
@@ -173,6 +174,27 @@ extension AppStateStore {
             state.episodes = episodes
             // Cached unplayed counts + recent feed must re-include this episode.
             invalidateEpisodeProjections()
+        }
+    }
+
+    /// Flips the user-set "starred" flag for an episode.
+    func toggleEpisodeStarred(_ id: UUID) {
+        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
+        var episodes = state.episodes
+        episodes[idx].isStarred.toggle()
+        performMutationBatch {
+            state.episodes = episodes
+        }
+    }
+
+    /// Sets the user-set "starred" flag explicitly.
+    func setEpisodeStarred(_ id: UUID, _ starred: Bool) {
+        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
+        guard state.episodes[idx].isStarred != starred else { return }
+        var episodes = state.episodes
+        episodes[idx].isStarred = starred
+        performMutationBatch {
+            state.episodes = episodes
         }
     }
 

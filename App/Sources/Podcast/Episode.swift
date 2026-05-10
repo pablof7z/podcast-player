@@ -61,6 +61,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     var playbackPosition: TimeInterval
     /// `true` once the user (or auto-played threshold) marked the episode done.
     var played: Bool
+    /// User-flagged "starred" / favorite. Toggled from Library context menu.
+    var isStarred: Bool
     /// Lifecycle of the local enclosure download.
     var downloadState: DownloadState
     /// Lifecycle of transcript ingestion.
@@ -85,6 +87,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         chaptersURL: URL? = nil,
         playbackPosition: TimeInterval = 0,
         played: Bool = false,
+        isStarred: Bool = false,
         downloadState: DownloadState = .notDownloaded,
         transcriptState: TranscriptState = .none
     ) {
@@ -106,6 +109,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         self.chaptersURL = chaptersURL
         self.playbackPosition = playbackPosition
         self.played = played
+        self.isStarred = isStarred
         self.downloadState = downloadState
         self.transcriptState = transcriptState
     }
@@ -117,7 +121,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         case enclosureURL, enclosureMimeType, imageURL
         case chapters, persons, soundBites
         case publisherTranscriptURL, publisherTranscriptType, chaptersURL
-        case playbackPosition, played, downloadState, transcriptState
+        case playbackPosition, played, isStarred, downloadState, transcriptState
     }
 
     init(from decoder: Decoder) throws {
@@ -140,6 +144,7 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         chaptersURL = try c.decodeIfPresent(URL.self, forKey: .chaptersURL)
         playbackPosition = try c.decodeIfPresent(TimeInterval.self, forKey: .playbackPosition) ?? 0
         played = try c.decodeIfPresent(Bool.self, forKey: .played) ?? false
+        isStarred = try c.decodeIfPresent(Bool.self, forKey: .isStarred) ?? false
         downloadState = try c.decodeIfPresent(DownloadState.self, forKey: .downloadState) ?? .notDownloaded
         transcriptState = try c.decodeIfPresent(TranscriptState.self, forKey: .transcriptState) ?? .none
     }
