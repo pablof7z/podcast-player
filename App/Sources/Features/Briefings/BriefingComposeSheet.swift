@@ -10,6 +10,15 @@ struct BriefingComposeSheet: View {
     // MARK: Inputs
 
     var onCompose: (BriefingRequest) -> Void
+    /// Optional prefill for the freeform query field. Used by surfaces
+    /// outside Briefings that hand off into compose with a topic context
+    /// already in hand (e.g. the Home "Threaded Today" sheet → "Save as
+    /// briefing"). Empty by default.
+    var initialFreeformQuery: String = ""
+    /// Optional prefill for scope. Same handoff path — when a caller knows
+    /// the user has a specific topic in mind, we drop them straight onto
+    /// the matching scope chip so they can hit Compose immediately.
+    var initialScope: BriefingScope?
 
     // MARK: Local state
 
@@ -39,6 +48,16 @@ struct BriefingComposeSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
+                }
+            }
+            .onAppear {
+                // Apply prefills exactly once on first appearance so a
+                // re-presentation doesn't clobber whatever the user edited.
+                if freeformQuery.isEmpty {
+                    freeformQuery = initialFreeformQuery
+                }
+                if let initialScope {
+                    scope = initialScope
                 }
             }
         }

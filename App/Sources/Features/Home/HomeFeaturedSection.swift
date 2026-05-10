@@ -15,9 +15,14 @@ struct HomeFeaturedSection: View {
     /// so the user sees the rail filling in incrementally instead of
     /// jumping from empty to fully populated.
     var isStreaming: Bool = false
+    /// Top active threading topic. When set, a "Threaded Today" pill renders
+    /// below the rail; tapping it invokes `onOpenThread`. `nil` hides the
+    /// pill entirely so the section doesn't advertise an empty state.
+    var activeThread: ThreadingInferenceService.ActiveTopic? = nil
     @Binding var isExpanded: Bool
     let onPlayEpisode: (Episode) -> Void
     let onLongPressEpisode: (Episode) -> Void
+    var onOpenThread: () -> Void = { }
 
     @Environment(AppStateStore.self) private var store
 
@@ -26,6 +31,11 @@ struct HomeFeaturedSection: View {
             header
             if isExpanded {
                 rail
+                if let active = activeThread {
+                    HomeThreadedTodayPill(active: active, onTap: onOpenThread)
+                        .padding(.horizontal, AppTheme.Spacing.md)
+                        .padding(.top, AppTheme.Spacing.xs)
+                }
             }
         }
     }

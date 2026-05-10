@@ -25,8 +25,10 @@ struct HomeView: View {
     @AppStorage("home.featuredExpanded") private var featuredExpanded: Bool = true
 
     @State private var picksService = AgentPicksService.shared
+    @State private var threadingService = ThreadingInferenceService.shared
     @State private var unsubscribeTarget: PodcastSubscription?
     @State private var relatedSheetEpisode: Episode?
+    @State private var threadedTodaySheet: ThreadingInferenceService.ActiveTopic?
     @State private var voiceOverDetailRoute: HomeEpisodeRoute?
     @State private var showAddShowSheet: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
@@ -61,6 +63,11 @@ struct HomeView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(item: $threadedTodaySheet) { active in
+                HomeThreadedTodayView(active: active)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            }
             .alert(
                 "Unsubscribe from \(unsubscribeTarget?.title ?? "")?",
                 isPresented: Binding(
@@ -77,8 +84,20 @@ struct HomeView: View {
             } message: { _ in
                 Text("This removes the show and all its episodes from your library.")
             }
-            .task { picksService.ensureFreshPicks(store: store) }
+            .task {
+                picksService.ensureFreshPicks(store: store)
+                // Bind the threading service to the store so the
+                // "Threaded Today" derivation has somewhere to look.
+                threadingService.attach(store: store)
+            }
             .onAppear { renderedAt = Date() }
+    }
+
+    /// Top active threading topic for the "Threaded Today" affordance.
+    /// Nil when no topic has at least three unplayed mentions, which is
+    /// also the signal to hide the pill entirely.
+    private var topActiveThread: ThreadingInferenceService.ActiveTopic? {
+        threadingService.topActiveTopics(limit: 1).first
     }
 
     // MARK: - Layout
@@ -103,9 +122,11 @@ struct HomeView: View {
                         resumeEpisodes: store.inProgressEpisodes,
                         picksBundle: picksService.bundle,
                         isStreaming: picksService.isStreaming,
+                        activeThread: topActiveThread,
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
-                        onLongPressEpisode: { relatedSheetEpisode = $0 }
+                        onLongPressEpisode: { relatedSheetEpisode = $0 },
+                        onOpenThread: { threadedTodaySheet = topActiveThread }
                     )
                 }
 
