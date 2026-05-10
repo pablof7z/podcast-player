@@ -102,6 +102,7 @@ struct HomeView: View {
                     HomeFeaturedSection(
                         resumeEpisodes: store.inProgressEpisodes,
                         picksBundle: picksService.bundle,
+                        isStreaming: picksService.isStreaming,
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
                         onLongPressEpisode: { relatedSheetEpisode = $0 }

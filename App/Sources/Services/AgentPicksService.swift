@@ -48,6 +48,18 @@ final class AgentPicksService {
     /// shimmer/placeholder when this is set and `bundle.picks.isEmpty`.
     private(set) var isRefreshing: Bool = false
 
+    /// `true` while picks are being streamed in from the LLM mid-flight.
+    /// Distinct from `isRefreshing` so the view can render a skeleton
+    /// *slot* (next pick about to arrive) only during real streaming, not
+    /// during cache hits or the heuristic fallback path.
+    private(set) var isStreaming: Bool = false
+
+    /// Wall-clock idle-stall budget for streaming. If no `onPartialContent`
+    /// callback arrives within this window the in-flight request is cancelled
+    /// and whatever picks already streamed in are surfaced (or the fallback
+    /// fires if nothing landed).
+    static let streamStallTimeout: TimeInterval = 20
+
     /// Fingerprint captured when the current `bundle` was generated. The
     /// next refresh checks this to decide whether the cached bundle is
     /// still semantically valid.
@@ -82,6 +94,7 @@ final class AgentPicksService {
         defer {
             refreshTask = nil
             isRefreshing = false
+            isStreaming = false
         }
         isRefreshing = true
 
@@ -94,8 +107,11 @@ final class AgentPicksService {
 
         if hasAPIKey(model: store.state.settings.llmModel) {
             do {
-                let picks = try await runLLMPicks(store: store, inputs: inputs)
+                let picks = try await runLLMPicks(store: store, inputs: inputs, now: now)
                 if !picks.isEmpty {
+                    // The final bundle is set inside `runLLMPicks` as picks
+                    // stream in. Here we just refresh the timestamp +
+                    // fingerprint to the post-stream snapshot.
                     bundle = HomeAgentPicksBundle(picks: picks, source: .agent, generatedAt: now)
                     lastFingerprint = fingerprint
                     return
@@ -164,22 +180,119 @@ final class AgentPicksService {
 
     private func runLLMPicks(
         store: AppStateStore,
-        inputs: AgentPicksInputs
+        inputs: AgentPicksInputs,
+        now: Date
     ) async throws -> [HomeAgentPick] {
         let prompt = AgentPicksPrompt.build(inputs: inputs)
         let messages: [[String: Any]] = [
             ["role": "system", "content": AgentPicksPrompt.systemInstruction],
             ["role": "user", "content": prompt]
         ]
-        let result = try await AgentLLMClient.streamCompletion(
-            messages: messages,
-            tools: [],
-            model: store.state.settings.llmModel,
-            feature: CostFeature.agentChat,
-            onPartialContent: { _ in }
+        let knownIDs = Set(inputs.unplayed.map(\.id) + inputs.inProgress.map(\.id))
+
+        // Incremental parser + last-token timestamp for stall detection.
+        let parser = AgentPicksStreamingParser()
+        // Mutable cell so the stall watchdog and the streaming task can
+        // share the "last activity" timestamp without each owning their
+        // own actor.
+        let activity = StreamActivity()
+        await activity.bump(to: Date())
+
+        isStreaming = true
+        streamStalled = false
+        bundle = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
+
+        let model = store.state.settings.llmModel
+
+        // Streaming task — does the actual network call and incremental parse.
+        let streamingTask = Task<[HomeAgentPick], Error> { @MainActor [weak self] in
+            let result = try await AgentLLMClient.streamCompletion(
+                messages: messages,
+                tools: [],
+                model: model,
+                feature: CostFeature.agentChat,
+                onPartialContent: { [weak self] partial in
+                    guard let self else { return }
+                    Task { await activity.bump(to: Date()) }
+                    let events = parser.feed(partial, knownEpisodeIDs: knownIDs)
+                    for event in events {
+                        self.appendStreamedPick(event, now: now)
+                    }
+                }
+            )
+            // Safety-net parse: if the model emitted everything in a
+            // single non-incremental chunk (some providers do this), the
+            // incremental parser may have nothing to do, so re-parse the
+            // full string with the tolerant end-of-stream parser.
+            let text = (result.assistantMessage["content"] as? String) ?? ""
+            if self?.bundle.picks.isEmpty != false {
+                return AgentPicksPrompt.parse(text, knownEpisodeIDs: knownIDs)
+            }
+            return self?.bundle.picks ?? []
+        }
+
+        // Stall watchdog — cancels the streaming task if no new content
+        // has arrived inside `streamStallTimeout`. Polls in 500ms slices so
+        // it catches the latest `lastTokenAt` produced by the SSE callback.
+        let watchdog = Task { [weak self] in
+            while !Task.isCancelled {
+                let last = await activity.lastTokenAt
+                if Date().timeIntervalSince(last) >= Self.streamStallTimeout {
+                    await MainActor.run { self?.streamStalled = true }
+                    streamingTask.cancel()
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
+        defer { watchdog.cancel() }
+
+        do {
+            return try await streamingTask.value
+        } catch {
+            // Stall path: prefer whatever streamed in to nothing.
+            if streamStalled, !bundle.picks.isEmpty {
+                Self.logger.notice("Agent picks stream stalled; surfacing \(self.bundle.picks.count, privacy: .public) early picks.")
+                return bundle.picks
+            }
+            throw error
+        }
+    }
+
+    /// Append one streamed pick to the current bundle so the view layer
+    /// re-renders progressively. Dedupes by `episodeID` — the streaming
+    /// parser shouldn't emit the same id twice, but if a model echoes
+    /// an episode across hero+secondary the first emission wins.
+    private func appendStreamedPick(_ event: AgentPicksStreamEvent, now: Date) {
+        guard !bundle.picks.contains(where: { $0.episodeID == event.episodeID }) else {
+            return
+        }
+        let pick = HomeAgentPick(
+            episodeID: event.episodeID,
+            rationale: event.reason,
+            spokenRationale: event.spokenReason,
+            isHero: event.slot == .hero
         )
-        let text = (result.assistantMessage["content"] as? String) ?? ""
-        return AgentPicksPrompt.parse(text, knownEpisodeIDs: Set(inputs.unplayed.map(\.id) + inputs.inProgress.map(\.id)))
+        var next = bundle.picks
+        next.append(pick)
+        bundle = HomeAgentPicksBundle(picks: next, source: .agent, generatedAt: now)
+    }
+
+    /// Set to `true` by the stall watchdog when no content has streamed
+    /// inside `streamStallTimeout`. Read by the `runLLMPicks` error path
+    /// to decide whether to surface partial picks vs. fall through.
+    private var streamStalled: Bool = false
+}
+
+// MARK: - StreamActivity
+
+/// Tiny actor holding the "last token arrived at" timestamp. Lets the
+/// streaming task (MainActor) and the watchdog (background) share state
+/// without either owning the other.
+private actor StreamActivity {
+    private(set) var lastTokenAt: Date = .distantPast
+    func bump(to date: Date) {
+        lastTokenAt = date
     }
 }
 
