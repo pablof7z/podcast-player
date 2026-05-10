@@ -30,8 +30,25 @@ struct PublisherTranscriptIngestor: Sendable {
     }
 
     /// Default fetch: `URLSession.shared`, returns body + response MIME.
+    ///
+    /// Goes through `URLRequest` so we can tighten the timeout and
+    /// identify ourselves consistently with `FeedClient` and the AI
+    /// catalog services. Without these:
+    /// - A hung publisher transcript URL froze the loading state for
+    ///   the full 60s default timeout before falling through to the
+    ///   Scribe path.
+    /// - Some publisher CDNs serve `.vtt` / `.srt` as `text/plain` to
+    ///   default user agents, then send the correct MIME when an
+    ///   `Accept` header advertises the formats we can parse.
     static let defaultFetch: @Sendable (URL) async throws -> (Data, String?) = { url in
-        let (data, response) = try await URLSession.shared.data(from: url)
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 30
+        request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue(
+            "application/json;q=1.0, text/vtt;q=0.9, application/x-subrip;q=0.9, */*;q=0.5",
+            forHTTPHeaderField: "Accept"
+        )
+        let (data, response) = try await URLSession.shared.data(for: request)
         return (data, (response as? HTTPURLResponse)?.mimeType)
     }
 
