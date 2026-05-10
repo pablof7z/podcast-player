@@ -57,9 +57,22 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
 
         downloadButton
 
-        ShareLink(item: episode.enclosureURL) {
+        // Share with a `SharePreview` so the destination app sees the show
+        // title + episode title prominently — the previous bare-URL share
+        // surfaced an ugly enclosure URL (e.g. traffic.megaphone.fm/<id>.mp3)
+        // with no context. The preview header now reads "<Show>: <Episode>"
+        // and falls back to "<Episode>" when the show isn't resolvable.
+        ShareLink(
+            item: episode.enclosureURL,
+            preview: SharePreview(sharePreviewTitle, image: Image(systemName: "headphones"))
+        ) {
             Label("Share", systemImage: "square.and.arrow.up")
         }
+    }
+
+    private var sharePreviewTitle: String {
+        let showName = store.subscription(id: episode.subscriptionID)?.title ?? ""
+        return showName.isEmpty ? episode.title : "\(showName): \(episode.title)"
     }
 
     // MARK: - Download affordance
