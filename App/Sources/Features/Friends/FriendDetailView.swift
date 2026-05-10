@@ -9,6 +9,7 @@ struct FriendDetailView: View {
     @State private var showCopiedFeedback = false
     @State private var showAddNote = false
     @State private var editingNote: Note? = nil
+    @State private var showRemoveConfirm = false
     @Environment(\.dismiss) private var dismiss
     @Namespace private var glassNS
 
@@ -64,9 +65,7 @@ struct FriendDetailView: View {
 
             Section {
                 Button("Remove Friend", role: .destructive) {
-                    store.removeFriend(friend.id)
-                    Haptics.delete()
-                    dismiss()
+                    showRemoveConfirm = true
                 }
             }
         }
@@ -80,6 +79,24 @@ struct FriendDetailView: View {
                     Label("Add note", systemImage: "square.and.pencil")
                 }
             }
+        }
+        // Two-step confirm before removal — matches the Unsubscribe
+        // dialog pattern in `ShowDetailView`. The previous one-tap
+        // `Button(role: .destructive)` was a real footgun: tapping the
+        // row immediately wiped the friend and the Nostr-allowed
+        // pubkey, with no undo, while leaving any notes orphaned.
+        .alert(
+            "Remove \(currentFriend.displayName) from friends?",
+            isPresented: $showRemoveConfirm
+        ) {
+            Button("Cancel", role: .cancel) {}
+            Button("Remove", role: .destructive) {
+                store.removeFriend(friend.id)
+                Haptics.delete()
+                dismiss()
+            }
+        } message: {
+            Text("They'll disappear from your friends list and stop receiving inbound replies. Any notes you've written about them stay.")
         }
         .alert("Rename Friend", isPresented: $showRenameAlert) {
             TextField("Display Name", text: $newName)
