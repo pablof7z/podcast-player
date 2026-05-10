@@ -18,6 +18,7 @@ struct WikiPageView: View {
     let onDeleted: (UUID) -> Void
     let onRegenerated: (WikiPage) -> Void
 
+    @Environment(AppStateStore.self) private var store
     @State private var peeking: WikiCitation?
     @State private var isRegenerating = false
     @State private var actionError: String?
@@ -61,10 +62,13 @@ struct WikiPageView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .sheet(item: $peeking) { citation in
-            CitationPeekView(citation: citation)
-                .presentationDetents([.fraction(0.42), .medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(.regularMaterial)
+            CitationPeekSheet(
+                citation: citation,
+                resolveEpisode: { [store] id in store.episode(id: id) }
+            )
+            .presentationDetents([.fraction(0.42), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.regularMaterial)
         }
         // `.alert` rather than `.confirmationDialog` — iOS 26 promotes
         // dialogs anchored close to a tappable element (the toolbar Menu's
@@ -160,55 +164,32 @@ struct WikiPageView: View {
     }
 
     private func claimView(_ claim: WikiClaim) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            confidenceMargin(for: claim.confidence)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(claim.text)
-                    .font(.system(.body, design: .serif))
-                    .lineSpacing(4)
-                    .foregroundStyle(.primary)
-                if !claim.citations.isEmpty {
-                    citationChips(for: claim)
-                }
-                if claim.isContestedByUser {
-                    Label("You flagged this", systemImage: "exclamationmark.bubble")
-                        .font(.caption2)
-                        .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(claim.text)
+                .font(.system(.body, design: .serif))
+                .lineSpacing(4)
+                .foregroundStyle(.primary)
+            if !claim.citations.isEmpty {
+                citationChips(for: claim)
+            }
+            if claim.isContestedByUser {
+                Label("You flagged this", systemImage: "exclamationmark.bubble")
+                    .font(.caption2)
+                    .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
             }
         }
+        .modifier(EvidenceGradedRule(grade: claim.evidenceGrade))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(claim.text)
         .accessibilityValue(claim.confidence.accessibilityValue)
     }
 
-    private func confidenceMargin(for band: WikiConfidenceBand) -> some View {
-        Rectangle()
-            .fill(color(for: band))
-            .frame(width: 2)
-            .frame(maxHeight: .infinity)
-    }
-
     private func citationChips(for claim: WikiClaim) -> some View {
         FlexibleChipRow(items: claim.citations) { citation in
-            Button {
-                peeking = citation
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "play.fill")
-                        .font(.caption2)
-                    Text(citation.formattedTimestamp)
-                        .font(.system(.caption, design: .monospaced))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule().fill(Color(red: 0.72, green: 0.45, blue: 0.10).opacity(0.14))
-                )
-                .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Citation at \(citation.formattedTimestamp), plays clip")
+            CitationChip(
+                citation: citation,
+                resolveEpisode: { [store] id in store.episode(id: id) }
+            )
         }
     }
 
@@ -310,14 +291,6 @@ struct WikiPageView: View {
     private var metadataLine: String {
         let count = page.allClaims.flatMap(\.citations).count
         return "\(page.kind.displayName) \u{00B7} \(count) citations \u{00B7} confidence \(Int(page.confidence * 100))%"
-    }
-
-    private func color(for band: WikiConfidenceBand) -> Color {
-        switch band {
-        case .high: Color(red: 0.18, green: 0.55, blue: 0.34)
-        case .medium: Color(red: 0.78, green: 0.55, blue: 0.10)
-        case .low: Color(red: 0.78, green: 0.18, blue: 0.30)
-        }
     }
 
     private var paperBackground: some View {

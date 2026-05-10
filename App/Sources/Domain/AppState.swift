@@ -17,6 +17,14 @@ struct AppState: Codable, Sendable {
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
     var agentActivity: [AgentActivityEntry] = []
+    /// Cross-episode threading topics inferred by `ThreadingInferenceService`.
+    /// Empty until the user runs a recompute (or the seed-mock path fires in
+    /// Debug). UX-09 surfaces are reserved for >=3-mention patterns.
+    var threadingTopics: [ThreadingTopic] = []
+    /// Per-topic mentions powering the timeline view. One row per transcript
+    /// span. Carries its own `topicID` so adapters can build the mention list
+    /// without scanning the topic array.
+    var threadingMentions: [ThreadingMention] = []
 
     init() {}
 
@@ -25,6 +33,7 @@ struct AppState: Codable, Sendable {
         case notes, friends, agentMemories, settings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
+        case threadingTopics, threadingMentions
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -42,5 +51,7 @@ struct AppState: Codable, Sendable {
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
+        threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []
+        threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
     }
 }
