@@ -49,18 +49,19 @@ final class PlaybackAutoPlayNextTests: XCTestCase {
         XCTAssertEqual(state.episode?.id, a.id)
     }
 
-    func testPlayNextSkipsHeadWhenResolverReturnsNil() {
+    func testPlayNextSkipsStaleHeadAndPlaysNextResolvableEpisode() {
         // If the queue head's episode no longer exists in the store
-        // (e.g. user unsubscribed mid-listening), `playNext` should NOT
-        // succeed — the caller will retry on the next episode-finish.
-        // We dequeue the head regardless to avoid an infinite loop on
-        // a permanently-unresolvable id.
+        // (e.g. user unsubscribed mid-listening), autoplay should keep
+        // walking the queue so one invisible stale ID cannot block a valid tail.
         let state = PlaybackState()
         let stale = UUID()
+        let tail = makeEpisode()
         state.enqueue(stale)
-        let played = state.playNext { _ in nil }
-        XCTAssertFalse(played)
-        XCTAssertEqual(state.queue, [], "Stale id should be dequeued so the loop progresses")
+        state.enqueue(tail.id)
+        let played = state.playNext { $0 == tail.id ? tail : nil }
+        XCTAssertTrue(played)
+        XCTAssertEqual(state.episode?.id, tail.id)
+        XCTAssertEqual(state.queue, [], "Stale id and played tail should both be dequeued")
     }
 
     func testPlayNextRespectsQueueOrder() {

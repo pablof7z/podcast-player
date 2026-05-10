@@ -139,7 +139,7 @@ struct PlayerQueueSheet: View {
                     }
                 }
                 .onMove { indices, destination in
-                    state.moveQueue(from: indices, to: destination)
+                    state.moveQueue(from: indices, to: destination) { store.episode(id: $0) }
                     Haptics.selection()
                 }
             } footer: {
@@ -148,6 +148,9 @@ struct PlayerQueueSheet: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, .constant(.active))
+        .onAppear {
+            state.pruneQueue { store.episode(id: $0) }
+        }
     }
 
     // MARK: - Footer

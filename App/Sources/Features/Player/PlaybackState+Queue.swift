@@ -26,10 +26,25 @@ extension PlaybackState {
         queue.move(fromOffsets: source, toOffset: destination)
     }
 
+    /// Move queue entries after first dropping stale IDs that no longer resolve
+    /// to live episodes. SwiftUI hands `source`/`destination` in visible-row
+    /// coordinates; after pruning, `queue` matches that visible list.
+    func moveQueue(from source: IndexSet, to destination: Int, resolve: (UUID) -> Episode?) {
+        pruneQueue(resolve: resolve)
+        queue.move(fromOffsets: source, toOffset: min(destination, queue.count))
+    }
+
     /// Clear the entire Up Next queue. Used by the queue sheet's destructive
     /// "Clear queue" footer action.
     func clearQueue() {
         queue.removeAll()
+    }
+
+    @discardableResult
+    func pruneQueue(resolve: (UUID) -> Episode?) -> Int {
+        let oldCount = queue.count
+        queue.removeAll { resolve($0) == nil }
+        return oldCount - queue.count
     }
 
     /// Pop the head of the queue and start playing it. Returns `true` when an
@@ -42,11 +57,13 @@ extension PlaybackState {
     /// the UI pass `{ store.episode(id: $0) }`.
     @discardableResult
     func playNext(resolve: (UUID) -> Episode?) -> Bool {
-        guard !queue.isEmpty else { return false }
-        let nextID = queue.removeFirst()
-        guard let next = resolve(nextID) else { return false }
-        setEpisode(next)
-        play()
-        return true
+        while !queue.isEmpty {
+            let nextID = queue.removeFirst()
+            guard let next = resolve(nextID) else { continue }
+            setEpisode(next)
+            play()
+            return true
+        }
+        return false
     }
 }

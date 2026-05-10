@@ -126,7 +126,7 @@ final class PlaybackQueueTests: XCTestCase {
         XCTAssertEqual(state.episode?.id, head.id)
     }
 
-    func testPlayNextReturnsFalseWhenResolverFails() {
+    func testPlayNextReturnsFalseWhenNoQueuedEpisodeResolves() {
         let state = PlaybackState()
         let stale = UUID()
         state.enqueue(stale)
@@ -134,16 +134,27 @@ final class PlaybackQueueTests: XCTestCase {
         let played = state.playNext { _ in nil }
 
         XCTAssertFalse(played)
-        // Spec choice: the head is still consumed even when the resolver
-        // returns nil. Re-enqueuing a missing episode would risk an infinite
-        // retry loop in autoplay.
         XCTAssertTrue(state.queue.isEmpty)
+    }
+
+    func testMoveQueueCanPruneStaleEntriesBeforeReordering() {
+        let state = PlaybackState()
+        let stale = UUID()
+        let a = UUID(), b = UUID(), c = UUID()
+        state.queue = [stale, a, b, c]
+
+        state.moveQueue(from: IndexSet(integer: 0), to: 3) { id in
+            id == stale ? nil : makeEpisode(id: id)
+        }
+
+        XCTAssertEqual(state.queue, [b, c, a])
     }
 
     // MARK: - Fixtures
 
-    private func makeEpisode(guid: String = UUID().uuidString) -> Episode {
+    private func makeEpisode(id: UUID = UUID(), guid: String = UUID().uuidString) -> Episode {
         Episode(
+            id: id,
             subscriptionID: UUID(),
             guid: guid,
             title: "Episode \(guid)",
