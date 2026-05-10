@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "PENDING_SLICE_2",
+      "shipped_at": "2026-05-10T23:25:00Z",
+      "lines": [
+        "Episodes without publisher chapters now get AI-compiled chapters as soon as the transcript is ready — look for the small AI pill next to those titles. The player triggers compilation on first open too, so older episodes light up without re-ingesting."
+      ]
+    },
+    {
       "id": "2725d34",
       "shipped_at": "2026-05-10T23:15:00Z",
       "lines": [

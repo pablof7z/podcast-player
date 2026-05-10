@@ -78,6 +78,15 @@ struct PlayerView: View {
                     episode: episode,
                     store: store
                 )
+                // Auto-compile AI chapters when publisher chapters are
+                // absent. Idempotent — returns immediately if chapters
+                // already exist or the transcript isn't `.ready`. Covers
+                // the case where the user lands on the player without
+                // first visiting EpisodeDetail (which has the same call).
+                await AIChapterCompiler.shared.compileIfNeeded(
+                    episodeID: episode.id,
+                    store: store
+                )
             }
             // Idempotent — wires the singleton's MPRemoteCommand once and
             // refreshes its playback/store handles every time the episode

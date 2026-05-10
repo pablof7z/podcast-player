@@ -77,6 +77,9 @@ struct PlayerChaptersScrollView: View {
                     .foregroundStyle(isActive ? .primary : .secondary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
+                if chapter.isAIGenerated {
+                    aiPill
+                }
                 Spacer(minLength: 0)
                 if isActive {
                     // `speaker.wave.2.fill` reads as audible-from-this-row.
@@ -126,6 +129,25 @@ struct PlayerChaptersScrollView: View {
             episode: state.episode,
             store: store
         )
+    }
+
+    /// Compact "AI" pill rendered next to chapter titles that came from
+    /// `AIChapterCompiler` rather than the publisher feed. Uses the agent
+    /// accent colour so AI-flavoured surfaces stay visually coherent.
+    private var aiPill: some View {
+        Text("AI")
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .tracking(0.4)
+            .foregroundStyle(AppTheme.Tint.agentSurface)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule().fill(AppTheme.Tint.agentSurface.opacity(0.12))
+            )
+            .overlay(
+                Capsule().stroke(AppTheme.Tint.agentSurface.opacity(0.35), lineWidth: 0.5)
+            )
+            .accessibilityLabel("AI-generated chapter")
     }
 
     @ViewBuilder
