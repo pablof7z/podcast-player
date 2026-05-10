@@ -222,6 +222,18 @@ struct ShowDetailView: View {
                 } label: {
                     Label("Settings for this show", systemImage: "slider.horizontal.3")
                 }
+                // Share-show — recipients with podcast apps will recognize
+                // the RSS URL and subscribe; everyone else gets a clickable
+                // link with the show name above it via SharePreview.
+                ShareLink(
+                    item: liveSubscription.feedURL,
+                    preview: SharePreview(
+                        sharePreviewTitle,
+                        image: Image(systemName: "antenna.radiowaves.left.and.right")
+                    )
+                ) {
+                    Label("Share show", systemImage: "square.and.arrow.up")
+                }
                 Button(role: .destructive) {
                     Haptics.warning()
                     showUnsubscribeConfirm = true
@@ -234,6 +246,18 @@ struct ShowDetailView: View {
             }
             .accessibilityLabel("Show options")
         }
+    }
+
+    /// "Show by Author" when the author is known, otherwise just the title.
+    /// Used as the SharePreview header so destination apps see the show
+    /// name + attribution rather than the raw RSS URL.
+    private var sharePreviewTitle: String {
+        let title = liveSubscription.title.isEmpty
+            ? (liveSubscription.feedURL.host ?? "Podcast")
+            : liveSubscription.title
+        return liveSubscription.author.isEmpty
+            ? title
+            : "\(title) by \(liveSubscription.author)"
     }
 
     // MARK: - Filtering
