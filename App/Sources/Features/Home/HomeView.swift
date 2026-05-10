@@ -6,18 +6,16 @@ import SwiftUI
 // editorial surface:
 //   • Dateline + active-filter chip strip
 //   • Featured (resume cards + agent picks), collapsible
-//   • Search-entry affordance
 //   • Subscription list (default) or grid, recency-sorted, filterable
 //
 // Persistence keys mirror what `LibraryView` used so the user's chosen
 // filter / category carries over without a one-time reset.
+//
+// Search lives on its own tab. The earlier inline search-entry bar was
+// removed — it duplicated the tab-bar affordance and burned vertical
+// space in the editorial scroll.
 
 struct HomeView: View {
-    /// Closure invoked when the user taps the search-entry bar. Mirrors
-    /// the `LibraryView` pattern: `RootView` constructs Home with a
-    /// `selectedTab = .search` closure.
-    var onOpenSearch: () -> Void = { Haptics.light() }
-
     @Environment(AppStateStore.self) private var store
     @Environment(PlaybackState.self) private var playback
 
@@ -110,9 +108,6 @@ struct HomeView: View {
                     )
                 }
 
-                searchEntryBar
-                    .padding(.horizontal, AppTheme.Spacing.md)
-
                 subscriptionsSurface
                     .padding(.bottom, AppTheme.Spacing.xl)
             }
@@ -202,36 +197,6 @@ struct HomeView: View {
         case .libraryFilter: filter = .all
         case .category:      categoryFilterID = ""
         }
-    }
-
-    // MARK: - Search entry
-
-    private var searchEntryBar: some View {
-        Button {
-            Haptics.light()
-            onOpenSearch()
-        } label: {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(AppTheme.Tint.agentSurface)
-                Text("Search Podcastr…")
-                    .font(AppTheme.Typography.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.md)
-            .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
-            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Search Podcastr")
-        .accessibilityHint("Opens Search")
     }
 
     // MARK: - Toolbar

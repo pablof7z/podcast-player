@@ -252,7 +252,7 @@ struct RootView: View {
         switch tab {
         case .home:
             NavigationStack {
-                HomeView(onOpenSearch: { selectedTab = .search })
+                HomeView()
                     .toolbar { sharedToolbar(showAgent: true) }
             }
         case .search:
