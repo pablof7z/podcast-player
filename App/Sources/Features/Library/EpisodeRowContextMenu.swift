@@ -31,6 +31,12 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
     let episode: Episode
     let store: AppStateStore
     let openDetailsRoute: Route
+    /// Optional playback handle. When supplied, the menu surfaces
+    /// "Add to Queue" / "Remove from Queue" affordances and a
+    /// "Share with timestamp" target when this episode is the currently
+    /// playing one and the playhead is meaningful. Defaults to `nil` so
+    /// existing call sites (Home cards) keep their current behavior.
+    var playback: PlaybackState? = nil
 
     /// Live download service — observed so the surfaced affordance flips between
     /// Download / Cancel / Remove / Retry as the underlying state moves.
@@ -55,24 +61,112 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
             )
         }
 
+        queueButton
+
         downloadButton
 
-        // Share with a `SharePreview` so the destination app sees the show
-        // title + episode title prominently — the previous bare-URL share
-        // surfaced an ugly enclosure URL (e.g. traffic.megaphone.fm/<id>.mp3)
-        // with no context. The preview header now reads "<Show>: <Episode>"
-        // and falls back to "<Episode>" when the show isn't resolvable.
-        ShareLink(
-            item: episode.enclosureURL,
-            preview: SharePreview(sharePreviewTitle, image: Image(systemName: "headphones"))
-        ) {
-            Label("Share", systemImage: "square.and.arrow.up")
-        }
+        shareSection
     }
 
     private var sharePreviewTitle: String {
         let showName = store.subscription(id: episode.subscriptionID)?.title ?? ""
         return showName.isEmpty ? episode.title : "\(showName): \(episode.title)"
+    }
+
+    // MARK: - Queue affordance
+
+    /// Surfaced only when a `PlaybackState` was supplied. The flip between
+    /// "Add to Queue" and "Remove from Queue" reads the live `queue` so the
+    /// label always matches the underlying state — a long-press immediately
+    /// after a swipe-add lands on "Remove" without a second render pass.
+    @ViewBuilder
+    private var queueButton: some View {
+        if let playback {
+            let isQueued = playback.queue.contains(episode.id)
+            let isCurrent = playback.episode?.id == episode.id
+            // The currently-playing episode is intentionally omitted from the
+            // queue (`PlaybackState.enqueue` rejects it) so neither affordance
+            // is meaningful — hide the row entirely instead of surfacing a
+            // no-op button.
+            if !isCurrent {
+                Button {
+                    if isQueued {
+                        Haptics.light()
+                        playback.removeFromQueue(episode.id)
+                    } else {
+                        Haptics.success()
+                        playback.enqueue(episode.id)
+                    }
+                } label: {
+                    Label(
+                        isQueued ? "Remove from Queue" : "Add to Queue",
+                        systemImage: isQueued ? "text.badge.minus" : "text.badge.plus"
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Share affordances
+
+    /// Two share targets:
+    ///   - Always: a `ShareLink` over the `podcastr://e/<guid>` deep link.
+    ///   - When the episode is the currently-playing one with a meaningful
+    ///     playhead: a second `ShareLink` carrying `?t=<seconds>` so the
+    ///     recipient lands at the same point in time. Mirrors the player's
+    ///     own share-sheet semantics in `PlayerShareSheet`.
+    @ViewBuilder
+    private var shareSection: some View {
+        // Bare deep-link share. Falls back to the enclosure URL when the
+        // deep-link string fails to parse (defensive — `podcastr://e/<guid>`
+        // is generated from a non-empty GUID, so this branch is unreachable
+        // in practice).
+        if let deepLinkURL = URL(string: episodeDeepLink) {
+            ShareLink(
+                item: deepLinkURL,
+                subject: Text(episode.title),
+                preview: SharePreview(sharePreviewTitle, image: Image(systemName: "headphones"))
+            ) {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        } else {
+            ShareLink(
+                item: episode.enclosureURL,
+                preview: SharePreview(sharePreviewTitle, image: Image(systemName: "headphones"))
+            ) {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        }
+
+        if let timestampedURL = timestampedDeepLinkURL {
+            ShareLink(
+                item: timestampedURL,
+                subject: Text(episode.title),
+                preview: SharePreview(sharePreviewTitle, image: Image(systemName: "clock"))
+            ) {
+                Label("Share with timestamp", systemImage: "clock.arrow.circlepath")
+            }
+        }
+    }
+
+    /// Spec literal: `podcastr://e/<guid>` — matches `PlayerShareSheet`'s
+    /// `episodeDeepLink` so a long-press share and a player-sheet share point
+    /// at the same canonical URL.
+    private var episodeDeepLink: String {
+        "podcastr://e/\(episode.guid)"
+    }
+
+    /// `nil` when the episode isn't the currently-playing one or when the
+    /// playhead is too close to the start to be meaningful — the player
+    /// share-sheet uses the same gate (`hasMeaningfulPlayhead`) and we
+    /// match its threshold here so the two surfaces stay in lockstep.
+    private var timestampedDeepLinkURL: URL? {
+        guard let playback else { return nil }
+        guard playback.episode?.id == episode.id else { return nil }
+        let currentTime = playback.currentTime
+        guard PlayerShareSheet.isMeaningfulPlayhead(currentTime) else { return nil }
+        let seconds = max(0, Int(currentTime))
+        return URL(string: "\(episodeDeepLink)?t=\(seconds)")
     }
 
     // MARK: - Download affordance
@@ -172,114 +266,7 @@ struct EpisodeRowAccessibilityActions: View {
     }
 }
 
-// MARK: - Swipe-action helpers
-
-/// Leading-edge swipe action: "Add to Queue".
-///
-/// Appends the episode to `PlaybackState.queue` so it's picked up by the
-/// "Up Next" rail. No-op (silently absorbed by `PlaybackState.enqueue`)
-/// when the episode is already queued or is the currently-playing item —
-/// the swipe still resolves visually so the user gets affordance feedback.
-///
-/// Apply via `.swipeActions(edge: .leading, allowsFullSwipe: true) { ... }`
-/// on a `List` row — the enclosing call site decides where this lives so
-/// non-`List` surfaces (the Home rail card) can opt out cleanly. The
-/// download / mark-played affordances that previously lived on the swipe
-/// edges are still available via `EpisodeRowContextMenu` (long-press).
-struct EpisodeRowLeadingSwipeAction: View {
-    let episode: Episode
-    let playback: PlaybackState
-
-    var body: some View {
-        Button {
-            Haptics.success()
-            playback.enqueue(episode.id)
-        } label: {
-            Label("Add to Queue", systemImage: "text.badge.plus")
-        }
-        .tint(.indigo)
-    }
-}
-
-/// Trailing-edge swipe action: destructive "Remove" — drops the episode
-/// from the visible list.
-///
-/// "Remove from list" semantically means "treat as done": calling
-/// `markEpisodePlayed` removes the episode from `recentEpisodes`
-/// (filters on `!played`) and from `inProgressEpisodes`, which is what
-/// the user actually wants when they swipe away an item they're not
-/// going to listen to. The mark-unplayed affordance remains available
-/// via `EpisodeRowContextMenu` (long-press).
-struct EpisodeRowTrailingSwipeAction: View {
-    let episode: Episode
-    let store: AppStateStore
-
-    var body: some View {
-        Button(role: .destructive) {
-            Haptics.warning()
-            store.markEpisodePlayed(episode.id)
-        } label: {
-            Label("Remove", systemImage: "trash")
-        }
-    }
-}
-
-/// Trailing-edge swipe action: state-aware Download / Cancel / Remove / Retry.
-///
-/// Pairs with `EpisodeRowTrailingSwipeAction` on the trailing edge so the
-/// download affordance is discoverable without long-pressing. Order matters:
-/// SwiftUI lays the first declared button rightmost (closest to the swipe
-/// edge), so the destructive `Remove` action sits outermost and Download
-/// occupies the inner slot — a deliberate trade-off so a quick partial
-/// swipe still surfaces the more dangerous action behind a deliberate tap
-/// while the safer Download is one tap further in.
-struct EpisodeRowDownloadSwipeAction: View {
-    let episode: Episode
-    let store: AppStateStore
-
-    var body: some View {
-        switch episode.downloadState {
-        case .notDownloaded, .queued:
-            Button {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.download(episodeID: episode.id)
-            } label: {
-                Label("Download", systemImage: "arrow.down.circle")
-            }
-            .tint(.blue)
-        case .downloading:
-            Button {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.cancel(episodeID: episode.id)
-            } label: {
-                Label("Cancel", systemImage: "xmark.circle")
-            }
-            .tint(.orange)
-        case .downloaded:
-            // Not `role: .destructive` — that paints the swipe button red and
-            // makes it visually identical to the existing "Remove" (mark-played)
-            // action that sits next to it. Removing the local audio file just
-            // frees storage; the episode and its progress survive. A neutral
-            // gray tint signals "secondary cleanup" instead of "destroy data".
-            Button {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.delete(episodeID: episode.id)
-            } label: {
-                Label("Free up", systemImage: "internaldrive")
-            }
-            .tint(.gray)
-        case .failed:
-            Button {
-                Haptics.light()
-                EpisodeDownloadService.shared.attach(appStore: store)
-                EpisodeDownloadService.shared.download(episodeID: episode.id)
-            } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
-            }
-            .tint(.blue)
-        }
-    }
-}
+// Swipe-action helpers (`EpisodeRowLeadingSwipeAction`,
+// `EpisodeRowTrailingSwipeAction`, `EpisodeRowDownloadSwipeAction`) live in
+// `EpisodeRowSwipeActions.swift` so this file stays focused on the
+// long-press menu and its accessibility mirror.

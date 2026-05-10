@@ -23,12 +23,13 @@ struct PodcastSearchView: View {
     var body: some View {
         List {
             if model.query.isBlank {
-                emptyState
+                PodcastSearchPromptEmptyState { example in
+                    model.query = example
+                }
             } else {
                 resultSections
                 if !hasAnyResults && !model.isSearchingTranscripts {
-                    ContentUnavailableView.search(text: model.query)
-                        .listRowBackground(Color.clear)
+                    PodcastSearchNoResultsView(query: model.query)
                 }
             }
         }
@@ -140,47 +141,11 @@ struct PodcastSearchView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: AppTheme.Spacing.md) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.tertiary)
-            Text("Search")
-                .font(AppTheme.Typography.title)
-            HStack(spacing: AppTheme.Spacing.xs) {
-                scopePill("Shows", icon: "square.stack")
-                scopePill("Episodes", icon: "play.rectangle")
-                scopePill("Transcripts", icon: "text.quote")
-                scopePill("Wiki", icon: "book.closed")
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AppTheme.Spacing.xl)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-    }
-
     private var resultCount: Int {
         localResults.shows.count
             + localResults.episodes.count
             + model.transcriptResults.count
             + model.wikiResults.count
-    }
-
-    /// Decorative scope hint — describes what the search covers. NOT a
-    /// button. Dropped the capsule background because the rounded pill +
-    /// icon read as tappable and users were tapping them expecting a
-    /// filter; the search itself is universal across all four scopes, so
-    /// pre-filtering would only constrain — not enhance — the result.
-    /// Keep them flat and hint-style so they read as a description, not
-    /// an action.
-    private func scopePill(_ label: String, icon: String) -> some View {
-        Label(label, systemImage: icon)
-            .labelStyle(.titleAndIcon)
-            .font(AppTheme.Typography.caption2)
-            .foregroundStyle(.tertiary)
     }
 
     private func openTranscriptHit(_ hit: PodcastTranscriptSearchHit) {
