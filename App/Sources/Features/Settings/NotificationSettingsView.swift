@@ -167,7 +167,7 @@ private extension UNAuthorizationStatus {
         case .authorized: "Notifications are enabled for this app."
         case .provisional: "Notifications are delivered quietly."
         case .ephemeral: "Notifications are temporary."
-        case .denied: "Enable in iOS Settings to receive new-episode, briefing, and contact-request alerts."
+        case .denied: "Enable in iOS Settings to receive new-episode and briefing alerts."
         case .notDetermined: "We'll ask the first time something needs to notify you."
         @unknown default: ""
         }
