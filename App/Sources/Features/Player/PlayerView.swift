@@ -239,13 +239,16 @@ struct PlayerView: View {
         }
     }
 
-    // MARK: - Secondary surface (chapters / transcript)
+    // MARK: - Secondary surface (chapters only)
 
-    /// Player body below the editorial header. Chapters take precedence
-    /// when the episode exposes navigable ones — otherwise we fall back to
-    /// the transcript scroller so chapter-less episodes don't regress to a
-    /// blank box. Clipping/share flows read the transcript directly via
-    /// `PlayerShareSheet` regardless of which surface is visible here.
+    /// Player body below the editorial header. Always shows chapters — the
+    /// transcript is an internal extraction substrate (feeds RAG, clip
+    /// composer, ad detection, agent tools) and is never rendered as a
+    /// primary surface. When no chapters exist yet we show a minimal
+    /// placeholder that reflects the transcript's lifecycle so the user
+    /// understands chapters will appear once ingestion finishes — without
+    /// surfacing transcript text. Clipping / share flows still read the
+    /// transcript directly via `PlayerShareSheet`.
     @ViewBuilder
     private var secondarySurface: some View {
         if let chapters = navigableChapters, !chapters.isEmpty {
@@ -255,8 +258,17 @@ struct PlayerView: View {
                 useGlassCard: true
             )
         } else {
-            PlayerTranscriptScrollView(state: state, useGlassCard: true)
+            PlayerNoChaptersPlaceholder(episode: liveEpisode)
         }
+    }
+
+    /// Live store-resolved copy of the playing episode. Reads from
+    /// `AppStateStore` so post-load mutations (chapter hydration, transcript
+    /// state transitions) reach the secondary surface without the player
+    /// having to be re-presented.
+    private var liveEpisode: Episode? {
+        guard let id = state.episode?.id else { return nil }
+        return store.episode(id: id) ?? state.episode
     }
 
     private var navigableChapters: [Episode.Chapter]? {

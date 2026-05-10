@@ -1,5 +1,12 @@
 import SwiftUI
 
+// USAGE:
+// Internal-only renderer used by clip composer (`ClipComposerSheet`) and
+// quote share (`QuoteShareView`) to display transcript segments inside their
+// own surfaces. NOT a primary player view — transcripts are an extraction
+// substrate, not user-visible content. The player surfaces chapters via
+// `PlayerChaptersScrollView`.
+
 // MARK: - PlayerTranscriptRow
 
 /// Single transcript line as it appears inside the dark-chrome player surface.

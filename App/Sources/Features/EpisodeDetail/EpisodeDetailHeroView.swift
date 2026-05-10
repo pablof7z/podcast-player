@@ -15,7 +15,6 @@ struct EpisodeDetailHeroView: View {
     let isPlayed: Bool
     let onPlay: () -> Void
     let onPlayChapter: (Episode.Chapter) -> Void
-    let onReadTranscript: () -> Void
     /// `true` when this episode is already queued in `PlaybackState.queue` —
     /// drives the "Queued" disabled state on the Add to Queue button.
     var isInQueue: Bool = false
@@ -51,7 +50,6 @@ struct EpisodeDetailHeroView: View {
                 if !descriptionPlain.isEmpty {
                     showNotesSection
                 }
-                readTranscriptCTA
                 Spacer(minLength: 80)
             }
             .padding(.horizontal, AppTheme.Spacing.md)
@@ -282,84 +280,6 @@ struct EpisodeDetailHeroView: View {
         }
     }
 
-    /// State-aware transcript CTA. Was "Read transcript" unconditionally —
-    /// misleading for episodes that don't have one yet, or are mid-ingest.
-    /// Now reflects the live `transcriptState` so the label matches what
-    /// actually happens on tap.
-    @ViewBuilder
-    private var readTranscriptCTA: some View {
-        switch episode.transcriptState {
-        case .ready:
-            transcriptButton(
-                title: "Read transcript",
-                systemImage: "text.alignleft",
-                style: .prominent,
-                disabled: false
-            )
-        case .transcribing(let progress):
-            transcriptButton(
-                title: progress > 0
-                    ? "Transcribing… \(Int((progress * 100).rounded()))%"
-                    : "Transcribing…",
-                systemImage: "waveform",
-                style: .bordered,
-                disabled: true
-            )
-        case .queued, .fetchingPublisher:
-            transcriptButton(
-                title: "Preparing transcript…",
-                systemImage: "clock",
-                style: .bordered,
-                disabled: true
-            )
-        case .failed:
-            transcriptButton(
-                title: "Retry transcription",
-                systemImage: "arrow.clockwise",
-                style: .bordered,
-                disabled: false
-            )
-        case .none:
-            transcriptButton(
-                title: episode.publisherTranscriptURL != nil
-                    ? "Get transcript"
-                    : "Transcribe with Scribe",
-                systemImage: "text.badge.plus",
-                style: .bordered,
-                disabled: false
-            )
-        }
-    }
-
-    private func transcriptButton(
-        title: String,
-        systemImage: String,
-        style: TranscriptButtonStyle,
-        disabled: Bool
-    ) -> some View {
-        Button(action: onReadTranscript) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-        }
-        .modifier(TranscriptButtonStyleModifier(style: style))
-        .disabled(disabled)
-        .padding(.vertical, AppTheme.Spacing.md)
-    }
-
-    enum TranscriptButtonStyle { case prominent, bordered }
-
-    private struct TranscriptButtonStyleModifier: ViewModifier {
-        let style: TranscriptButtonStyle
-        func body(content: Content) -> some View {
-            switch style {
-            case .prominent: content.buttonStyle(.borderedProminent)
-            case .bordered:  content.buttonStyle(.bordered)
-            }
-        }
-    }
-
     // MARK: Helpers
 
     private func sectionDivider(_ label: String) -> some View {
@@ -421,8 +341,7 @@ private extension Double {
             showImageURL: nil,
             isPlayed: false,
             onPlay: {},
-            onPlayChapter: { _ in },
-            onReadTranscript: {}
+            onPlayChapter: { _ in }
         )
     }
 }

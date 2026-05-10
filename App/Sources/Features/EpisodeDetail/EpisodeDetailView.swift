@@ -2,29 +2,23 @@ import SwiftUI
 
 // MARK: - EpisodeDetailView
 
-/// Episode Detail surface. Three modes per UX-03 §3:
-///   - **detail** — magazine cover (artwork hero, summary lede, chapters,
-///     show notes, "Read transcript" CTA, floating glass player).
-///   - **reading** — pure prose, player vanishes, single column.
-///   - **followAlong** — transcript visible while audio plays, chapter rail
-///     trailing edge, docked glass pill player.
+/// Episode Detail surface. Single-mode magazine cover: artwork hero, summary
+/// lede, chapters (publisher or AI-synthesised), show notes, and a floating
+/// global mini player.
+///
+/// Transcripts are an internal extraction layer — they feed RAG, clip
+/// selection, ad detection, and the agent's tools — but they are never the
+/// primary "what's playing now" reading surface. Background ingest still
+/// kicks off here when a publisher transcript URL is present, so the agent
+/// stack lights up without an explicit user step; the transcript text itself
+/// stays out of sight.
 ///
 /// Driven by the real `Episode` looked up out of `AppStateStore` via the
-/// passed `episodeID`. When `episode.transcriptState == .ready` the transcript
-/// is loaded from `TranscriptStore`; otherwise we show
-/// `TranscribingInProgressView`. On first appearance for an episode that has
-/// a `publisherTranscriptURL` and a `.none` state, we kick off a background
-/// `TranscriptIngestService` warm so the user's intent ("read this episode")
-/// translates into a fetched transcript without an extra tap.
+/// passed `episodeID`. On first appearance for an episode that has a
+/// `publisherTranscriptURL` and a `.none` state, we kick off a background
+/// `TranscriptIngestService` warm so RAG / agent paths fill in without
+/// blocking the user surface.
 struct EpisodeDetailView: View {
-
-    // MARK: Mode
-
-    enum Mode: Hashable, CaseIterable, Sendable {
-        case detail
-        case reading
-        case followAlong
-    }
 
     // MARK: Inputs
 
@@ -37,8 +31,6 @@ struct EpisodeDetailView: View {
 
     // MARK: State
 
-    @State private var mode: Mode = .detail
-    @State private var sharingSegment: Segment?
     /// Live download service — observed so the toolbar's progress indicator
     /// updates smoothly without re-persisting `AppStateStore` on every tick.
     @State private var downloadService = EpisodeDownloadService.shared
@@ -63,37 +55,52 @@ struct EpisodeDetailView: View {
         let subscription = store.subscription(id: episode.subscriptionID)
         let showName = subscription?.title ?? "Podcast"
         let showImageURL = subscription?.imageURL
-        let transcript = Self.readyTranscript(for: episode)
 
         // No inline player chrome — the global `MiniPlayerView` lives as
         // the tab's bottom accessory and is always visible while an episode
-        // is loaded, so a second player surface here would duplicate it
-        // (the previous `DockedPlayerPlaceholder` was a stub from an early
-        // lane that never got removed).
-        content(
+        // is loaded.
+        EpisodeDetailHeroView(
             episode: episode,
             showName: showName,
             showImageURL: showImageURL,
-            transcript: transcript
+            isPlayed: episode.played,
+            onPlay: {
+                playback.setEpisode(episode)
+                playback.play()
+            },
+            onPlayChapter: { chapter in
+                if playback.episode?.id != episode.id {
+                    playback.setEpisode(episode)
+                }
+                playback.seek(to: chapter.startTime)
+                if !playback.isPlaying {
+                    playback.play()
+                }
+            },
+            isInQueue: playback.queue.contains(episode.id),
+            onAddToQueue: {
+                Haptics.success()
+                playback.enqueue(episode.id)
+            },
+            activeChapterID: liveActiveChapterID(for: episode),
+            downloadProgress: downloadService.progress[episode.id],
+            onToggleDownload: { toggleDownload(episode: episode) }
         )
-        .navigationTitle(navigationTitle(episode: episode, showName: showName))
+        .navigationTitle(showName)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { modeToolbar(hasTranscript: transcript != nil) }
         .toolbar { actionsToolbar(episode: episode) }
-        .sheet(item: $sharingSegment) { seg in
-            QuoteShareView(
-                episode: episode,
-                showName: showName,
-                showImageURL: showImageURL,
-                segment: seg,
-                speaker: transcript?.speaker(for: seg.speakerID),
-                deepLink: deepLink(for: episode, segment: seg)
-            )
-        }
         .task(id: episode.id) {
             await warmTranscriptIfNeeded(episode: episode)
             ChaptersHydrationService.shared.hydrateIfNeeded(
                 episode: episode,
+                store: store
+            )
+            // Compile AI chapters for episodes that finished ingesting before
+            // the auto-compile hook in `TranscriptIngestService.persistAndIndex`
+            // existed. Idempotent — returns immediately when chapters already
+            // exist or the transcript isn't `.ready`.
+            await AIChapterCompiler.shared.compileIfNeeded(
+                episodeID: episode.id,
                 store: store
             )
         }
@@ -101,10 +108,9 @@ struct EpisodeDetailView: View {
 
     /// Warm the transcript on first appearance. Strict gating: we only kick off
     /// an ingest if the state is `.none` and the publisher exposes a transcript
-    /// URL. We deliberately do not retry `.failed` here — that's the user's
-    /// "Request transcript" button to re-arm. We also don't try to gate on
-    /// Scribe-only configs (no publisher URL); the explicit CTA in
-    /// `TranscribingInProgressView` covers that path.
+    /// URL. We deliberately do not retry `.failed` here — failures sit until
+    /// the user re-arms ingestion via Settings → Transcripts. We also don't
+    /// try to gate on Scribe-only configs (no publisher URL).
     private func warmTranscriptIfNeeded(episode: Episode) async {
         guard case .none = episode.transcriptState else { return }
         guard episode.publisherTranscriptURL != nil else { return }
@@ -121,110 +127,7 @@ struct EpisodeDetailView: View {
         )
     }
 
-    // MARK: - Content per mode
-
-    @ViewBuilder
-    private func content(episode: Episode,
-                         showName: String,
-                         showImageURL: URL?,
-                         transcript: Transcript?) -> some View {
-        switch mode {
-        case .detail:
-            EpisodeDetailHeroView(
-                episode: episode,
-                showName: showName,
-                showImageURL: showImageURL,
-                isPlayed: episode.played,
-                onPlay: {
-                    playback.setEpisode(episode)
-                    playback.play()
-                },
-                onPlayChapter: { chapter in
-                    // Tapping a chapter row in detail mode is "play this
-                    // chapter" — make sure the episode is actually loaded
-                    // and audio is rolling, not just an engine seek that
-                    // silently no-ops when nothing is loaded yet.
-                    if playback.episode?.id != episode.id {
-                        playback.setEpisode(episode)
-                    }
-                    playback.seek(to: chapter.startTime)
-                    if !playback.isPlaying {
-                        playback.play()
-                    }
-                    // Only switch to follow-along when a transcript is
-                    // ready. Without one, follow-along mode shows the
-                    // "transcribing…" surface, which would hijack the
-                    // user's screen for what was really just "play from
-                    // here."
-                    if Self.readyTranscript(for: episode) != nil {
-                        withAnimation(.spring(duration: 0.45, bounce: 0.12)) { mode = .followAlong }
-                    }
-                },
-                onReadTranscript: {
-                    withAnimation(.spring(duration: 0.35, bounce: 0.15)) { mode = .reading }
-                },
-                isInQueue: playback.queue.contains(episode.id),
-                onAddToQueue: {
-                    Haptics.success()
-                    playback.enqueue(episode.id)
-                },
-                activeChapterID: liveActiveChapterID(for: episode),
-                downloadProgress: downloadService.progress[episode.id],
-                onToggleDownload: { toggleDownload(episode: episode) }
-            )
-        case .reading:
-            if let transcript {
-                TranscriptReaderView(
-                    episode: episode,
-                    transcript: transcript,
-                    currentTime: nil,
-                    followAlong: false,
-                    onJump: { _ in mode = .followAlong },
-                    onShare: { sharingSegment = $0 }
-                )
-            } else {
-                TranscribingInProgressView(episode: episode)
-            }
-        case .followAlong:
-            if let transcript {
-                ZStack(alignment: .trailing) {
-                    TranscriptReaderView(
-                        episode: episode,
-                        transcript: transcript,
-                        currentTime: playback.currentTime,
-                        followAlong: true,
-                        onJump: { playback.seek(to: $0) },
-                        onShare: { sharingSegment = $0 }
-                    )
-                    if let chapters = navigableChapters(for: episode), !chapters.isEmpty {
-                        ChapterRailView(
-                            chapters: chapters,
-                            activeID: activeChapterID(in: chapters),
-                            onTap: { playback.seek(to: $0.startTime) }
-                        )
-                        .padding(.trailing, AppTheme.Spacing.sm)
-                    }
-                }
-            } else {
-                TranscribingInProgressView(episode: episode)
-            }
-        }
-    }
-
     // MARK: - Helpers
-
-    private func navigationTitle(episode: Episode, showName: String) -> String {
-        switch mode {
-        case .detail: return showName
-        case .reading: return "Reader"
-        case .followAlong:
-            if let chapters = navigableChapters(for: episode),
-               let active = chapters.active(at: playback.currentTime) {
-                return active.title
-            }
-            return "Now Playing"
-        }
-    }
 
     private func navigableChapters(for episode: Episode) -> [Episode.Chapter]? {
         episode.chapters?.filter(\.includeInTableOfContents)
@@ -246,11 +149,10 @@ struct EpisodeDetailView: View {
     }
 
     /// Resolve the persisted `Transcript` for `episode` when its lifecycle is
-    /// `.ready`. Returns `nil` for any other state (so the caller renders the
-    /// in-progress / empty surface) and also `nil` if the on-disk file is
-    /// missing — which can happen if the user wiped Application Support but
-    /// the `AppState` snapshot still records `.ready`. Static + store-injected
-    /// so tests can drive it with a temp-directory `TranscriptStore`.
+    /// `.ready`. Kept as a thin static helper because tests pin its behaviour
+    /// — see `EpisodeDetailTranscriptTests`. The transcript itself is no
+    /// longer rendered as a primary surface here; it remains the extraction
+    /// substrate for RAG, clip composer, and the agent's tool layer.
     static func readyTranscript(
         for episode: Episode,
         store: TranscriptStore = .shared
@@ -262,8 +164,7 @@ struct EpisodeDetailView: View {
     /// Drives the inline Download pill on the hero. Mirrors the menu's
     /// state machine so the user can start, cancel, or retry from the
     /// primary surface — and sees a live "Downloading 42%" badge while
-    /// bytes move (the persisted `downloadState` only updates at coarse
-    /// transitions to spare AppStateStore from per-tick writes).
+    /// bytes move.
     private func toggleDownload(episode: Episode) {
         EpisodeDownloadService.shared.attach(appStore: store)
         switch episode.downloadState {
@@ -275,43 +176,8 @@ struct EpisodeDetailView: View {
             EpisodeDownloadService.shared.cancel(episodeID: episode.id)
         case .downloaded:
             // Inline pill is non-interactive in the downloaded state; the
-            // ellipsis menu handles delete confirmation. No-op here so a
-            // double-bind from a parent doesn't accidentally wipe the file.
+            // ellipsis menu handles delete confirmation.
             break
-        }
-    }
-
-    private func deepLink(for episode: Episode, segment: Segment) -> String {
-        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid, startTime: segment.start)
-            ?? episode.enclosureURL.absoluteString
-    }
-
-    @ToolbarContentBuilder
-    private func modeToolbar(hasTranscript: Bool) -> some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            // Conditional "Along" segment requires the @ViewBuilder init
-            // — the convenience [(value, label)] form can't express
-            // "show this segment only when a transcript exists".
-            let values: [Mode] = hasTranscript
-                ? [.detail, .reading, .followAlong]
-                : [.detail, .reading]
-
-            LiquidGlassSegmentedPicker(
-                "Mode",
-                selection: $mode,
-                values: values,
-                accessibilityLabel: { Self.modeLabel($0) },
-                label: { value, _ in Text(Self.modeLabel(value)) }
-            )
-            .frame(maxWidth: 280)
-        }
-    }
-
-    private static func modeLabel(_ mode: Mode) -> String {
-        switch mode {
-        case .detail: return "Detail"
-        case .reading: return "Read"
-        case .followAlong: return "Along"
         }
     }
 
@@ -319,8 +185,7 @@ struct EpisodeDetailView: View {
     private func actionsToolbar(episode: Episode) -> some ToolbarContent {
         // Inline progress indicator — only present while a download is in
         // flight. Reads `EpisodeDownloadService.progress` directly so it
-        // updates at the throttled service cadence (5% / 200ms) instead of
-        // waiting on coarse `.downloaded` / `.failed` state writes.
+        // updates at the throttled service cadence (5% / 200ms).
         if case .downloading = episode.downloadState {
             ToolbarItem(placement: .topBarTrailing) {
                 let live = downloadService.progress[episode.id] ?? 0

@@ -1,6 +1,14 @@
 import Foundation
 
-// MARK: - Ask-the-agent dispatcher
+// USAGE:
+// Internal-only dispatcher used by transcript-segment surfaces (clip composer,
+// quote share) when their own long-press chooses to escalate a single line to
+// the agent. The primary chapter-row long-press now uses
+// `ChapterAskAgentDispatcher` instead, which writes a `ChapterAgentContext`
+// with no transcript text. Both paths share the `.askAgentRequested`
+// notification and `AgentChatSession`'s drain.
+
+// MARK: - Ask-the-agent dispatcher (transcript-segment flavour)
 //
 // Long-press → "Ask the agent about this" wiring.
 //

@@ -60,7 +60,17 @@ final class AgentChatSession {
         // Drain the long-press → ask-agent context. Read-and-clear so a later
         // sheet re-open starts blank. Auto-send is intentionally NOT done here
         // — long-press is too easy to mistrigger; let the user confirm via Send.
-        if let pending = store.pendingTranscriptAgentContext {
+        //
+        // Chapter context wins over transcript context: the chapter long-press
+        // is the primary user-visible affordance now; transcript-segment
+        // contexts only get written by internal-only surfaces (clip composer,
+        // quote share). If both happen to be pending, the chapter one is the
+        // one the user just tapped.
+        if let chapter = store.pendingChapterAgentContext {
+            self.seededDraft = chapter.prefilledDraft
+            store.pendingChapterAgentContext = nil
+            store.pendingTranscriptAgentContext = nil
+        } else if let pending = store.pendingTranscriptAgentContext {
             self.seededDraft = pending.prefilledDraft
             store.pendingTranscriptAgentContext = nil
         }

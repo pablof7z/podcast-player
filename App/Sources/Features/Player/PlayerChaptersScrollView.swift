@@ -21,6 +21,11 @@ struct PlayerChaptersScrollView: View {
     /// hero-card framing PlayerView uses for its secondary surface.
     let useGlassCard: Bool
 
+    /// Live store handle — needed for the long-press "Ask agent about this
+    /// chapter" dispatch, which mirrors the transcript-row pattern by
+    /// writing a `ChapterAgentContext` and posting `.askAgentRequested`.
+    @Environment(AppStateStore.self) private var store
+
     /// The chapter that contains the current playhead — see
     /// `Collection<Episode.Chapter>.active(at:)` for the resolution rule.
     private var activeChapterID: UUID? {
@@ -100,6 +105,27 @@ struct PlayerChaptersScrollView: View {
         // VoiceOver already announces "double-tap to activate" via the
         // button trait, so saying "double-tap to..." is redundant.
         .accessibilityHint("Seeks playback to this chapter")
+        .contextMenu {
+            Button {
+                askAgent(about: chapter)
+            } label: {
+                Label("Ask agent about this chapter", systemImage: "sparkles")
+            }
+        }
+    }
+
+    /// Long-press → "Ask the agent about this chapter." Forwards to
+    /// `ChapterAskAgentDispatcher`, which writes a `ChapterAgentContext`
+    /// (chapter title + time range — no transcript text) and posts the
+    /// `askAgentRequested` notification `RootView` observes to present the
+    /// agent chat sheet.
+    private func askAgent(about chapter: Episode.Chapter) {
+        ChapterAskAgentDispatcher.dispatch(
+            chapter: chapter,
+            in: chapters,
+            episode: state.episode,
+            store: store
+        )
     }
 
     @ViewBuilder
