@@ -17,7 +17,13 @@ struct LibraryView: View {
     var onOpenSearch: () -> Void = { Haptics.light() }
 
     @Environment(AppStateStore.self) private var store
-    @State private var filter: LibraryFilter = .all
+    /// Persisted across cold launches via `@AppStorage` so the user's
+    /// filter preference (e.g. "I always want to see Unplayed first")
+    /// sticks. Backed by `LibraryFilter`'s `RawRepresentable: String`
+    /// conformance so the value round-trips through UserDefaults as the
+    /// case rawValue. Falls back to `.all` for a fresh install or when
+    /// the stored string doesn't match a known case (e.g. after a rename).
+    @AppStorage("library.filter") private var filter: LibraryFilter = .all
     @State private var showAddShowSheet: Bool = false
 
     var body: some View {
