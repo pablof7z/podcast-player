@@ -40,6 +40,10 @@ struct PlayerChaptersScrollView: View {
                 .padding(.horizontal, useGlassCard ? AppTheme.Spacing.md : 0)
             }
             .background(cardBackground)
+            .onAppear {
+                guard let activeChapterID else { return }
+                proxy.scrollTo(activeChapterID, anchor: .center)
+            }
             .onChange(of: activeChapterID) { _, newID in
                 guard let newID else { return }
                 withAnimation(AppTheme.Animation.spring) {
@@ -123,9 +127,14 @@ struct PlayerChaptersScrollView: View {
     // MARK: - Behavior
 
     private func handleTap(_ chapter: Episode.Chapter) {
+        // Seek every time the user taps a chapter; only auto-resume on
+        // a fresh open (currentTime ≈ 0). A user who deliberately paused
+        // mid-playback to read chapter titles ahead would otherwise lose
+        // their pause every time they explored the list.
+        let isFreshSession = state.currentTime <= 0.5
         Haptics.selection()
         state.seek(to: chapter.startTime)
-        if !state.isPlaying {
+        if !state.isPlaying && isFreshSession {
             state.play()
         }
     }

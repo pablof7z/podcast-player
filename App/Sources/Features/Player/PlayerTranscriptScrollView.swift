@@ -133,12 +133,15 @@ struct PlayerTranscriptScrollView: View {
         }
     }
 
-    /// Tap-to-seek + auto-resume. The user tapped a line because they want to
-    /// hear it — if the player is currently paused, start playback so they
-    /// don't have to follow up with a second tap on the play button.
+    /// Tap-to-seek that respects the user's pause intent. Tapping a line
+    /// ALWAYS seeks; auto-resume is gated on `currentTime == 0`, i.e. the
+    /// user just opened a fresh episode. A user who paused mid-playback
+    /// to read ahead would otherwise lose their pause every time they
+    /// scrubbed via a transcript line.
     private func tapSegment(_ segment: Segment) {
+        let isFreshSession = state.currentTime <= 0.5
         state.seek(to: segment.start)
-        if !state.isPlaying {
+        if !state.isPlaying && isFreshSession {
             state.play()
         }
     }
