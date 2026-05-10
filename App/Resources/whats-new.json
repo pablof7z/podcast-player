@@ -2,6 +2,14 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "995edfa",
+      "shipped_at": "2026-05-10T22:30:00Z",
+      "lines": [
+        "Categories now reshape the whole Home like flipping to a different magazine section — agent picks, Resume rail, Threaded Today, and the dateline all re-curate to whichever category you're in",
+        "The agent's pick rationale changes voice per category — Learning is more 'continue this thread', Entertainment is more 'long-form, narrative', and so on"
+      ]
+    },
+    {
       "id": "bcd321b",
       "shipped_at": "2026-05-10T22:02:15Z",
       "lines": [
