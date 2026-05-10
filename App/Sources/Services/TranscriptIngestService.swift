@@ -185,34 +185,67 @@ final class TranscriptIngestService {
     }
 
     /// Triggered from `AppStateStore.upsertEpisodes` whenever a feed refresh
-    /// surfaces brand-new episode IDs. Filters down to episodes the user
-    /// would actually benefit from ingesting (publisher URL present, state
-    /// not yet ready), gates on `Settings.autoIngestPublisherTranscripts`,
-    /// and dispatches an async ingest per candidate.
+    /// surfaces brand-new episode IDs. Filters to episodes the user would
+    /// benefit from ingesting and dispatches an async `ingest` per candidate.
     ///
-    /// Without this hook the publisher transcript URL was parsed and stored
-    /// but never *fetched* unless the user happened to open Episode Detail
-    /// — leaving most subscribed shows with `transcriptState == .none`
-    /// forever despite shipping a `<podcast:transcript>` element.
+    /// **Inclusion rule** (the unlock for cross-episode RAG):
+    ///   - Episode is not already `.ready`.
+    ///   - At least one path is available — either a `publisherTranscriptURL`
+    ///     with `autoIngestPublisherTranscripts` on, OR a configured
+    ///     ElevenLabs key with `autoFallbackToScribe` on.
+    ///
+    /// `ingest()` itself handles per-category opt-out, dedup, and the
+    /// publisher → Scribe fallback inside one call — so this method only has
+    /// to decide *whether to bother trying*. Without the relaxed filter,
+    /// shows that don't ship `<podcast:transcript>` (most indie podcasts)
+    /// get NOTHING auto-fetched even with Scribe configured, and the agent's
+    /// RAG layer comes up dark for those subscriptions.
     func evaluateAutoIngest(newEpisodeIDs: [UUID]) {
         guard !newEpisodeIDs.isEmpty else { return }
         guard let appStore = rag.appStore else {
             Self.logger.warning("evaluateAutoIngest: no AppStateStore attached — skipping")
             return
         }
-        guard appStore.state.settings.autoIngestPublisherTranscripts else { return }
-        let candidates = newEpisodeIDs
-            .compactMap { appStore.episode(id: $0) }
-            .filter { $0.publisherTranscriptURL != nil && !Self.isReady($0.transcriptState) }
+        let episodes = newEpisodeIDs.compactMap { appStore.episode(id: $0) }
+        let candidates = Self.autoIngestCandidates(
+            among: episodes,
+            settings: appStore.state.settings,
+            elevenLabsKey: elevenLabsKey()
+        )
         guard !candidates.isEmpty else { return }
         Self.logger.info(
-            "evaluateAutoIngest: queueing \(candidates.count, privacy: .public) publisher-transcript ingests"
+            "evaluateAutoIngest: queueing \(candidates.count, privacy: .public) ingests (publisher+Scribe paths)"
         )
-        for episode in candidates {
-            let episodeID = episode.id
+        for episodeID in candidates {
             Task { @MainActor [weak self] in
                 await self?.ingest(episodeID: episodeID)
             }
+        }
+    }
+
+    /// Pure decision logic for `evaluateAutoIngest`. Exposed `internal` so
+    /// `TranscriptAutoIngestTests` can pin the branching without driving the
+    /// full ingest pipeline (which needs network + ElevenLabs + sqlite-vec).
+    ///
+    /// Inclusion rule:
+    ///   - Episode is not already `.ready`.
+    ///   - At least one path is available — either the publisher transcript
+    ///     URL is present and `autoIngestPublisherTranscripts` is on, OR the
+    ///     ElevenLabs key is configured and `autoFallbackToScribe` is on.
+    static func autoIngestCandidates(
+        among episodes: [Episode],
+        settings: Settings,
+        elevenLabsKey: String?
+    ) -> [UUID] {
+        let publisherOn = settings.autoIngestPublisherTranscripts
+        let scribeOn = settings.autoFallbackToScribe && !(elevenLabsKey ?? "").isEmpty
+        guard publisherOn || scribeOn else { return [] }
+        return episodes.compactMap { episode -> UUID? in
+            guard !Self.isReady(episode.transcriptState) else { return nil }
+            if episode.publisherTranscriptURL != nil {
+                return publisherOn ? episode.id : nil
+            }
+            return scribeOn ? episode.id : nil
         }
     }
 
