@@ -144,15 +144,9 @@ struct PlayerShareSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    /// Mirror of `EpisodeDetailView.deepLink(for:segment:)` — the prefix is the
-    /// first alphanumeric run of the episode GUID so the link stays stable
-    /// across pretty-print serializers without leaking publisher slashes.
     private func quoteDeepLink(for segment: Segment) -> String {
-        let prefix = episode.guid
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .first
-            .map(String.init) ?? "ep"
-        return "podcastr://e/\(prefix)?t=\(Int(segment.start))"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid, startTime: segment.start)
+            ?? episode.enclosureURL.absoluteString
     }
 
     // MARK: - Row plumbing
@@ -188,12 +182,13 @@ struct PlayerShareSheet: View {
     /// recognises — kept this way for forward compat with publisher-side
     /// link unfurling once a `e/` route lands.
     private var episodeDeepLink: String {
-        "podcastr://e/\(episode.guid)"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid)
+            ?? episode.enclosureURL.absoluteString
     }
 
     private var timestampedDeepLink: String {
-        let seconds = max(0, Int(state.currentTime))
-        return "\(episodeDeepLink)?t=\(seconds)"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid, startTime: state.currentTime)
+            ?? episodeDeepLink
     }
 
     private var hasReadyTranscript: Bool {

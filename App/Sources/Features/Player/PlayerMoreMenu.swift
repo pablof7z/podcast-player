@@ -103,7 +103,8 @@ struct PlayerMoreMenu: View {
     /// recognises today, but matches what the spec asks the share/copy paths
     /// to surface for forward compat with publisher-side link unfurling.
     private var episodeDeepLink: String {
-        "podcastr://e/\(episode.guid)"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid)
+            ?? episode.enclosureURL.absoluteString
     }
 
     /// Dismiss the player, then route via the existing `podcastr://episode/<uuid>`

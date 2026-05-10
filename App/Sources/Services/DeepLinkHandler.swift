@@ -86,7 +86,14 @@ enum DeepLinkHandler {
 
     /// Returns the first non-empty path component of `url` (`podcastr://episode/<uuid>` → `<uuid>`).
     private static func firstPathComponent(of url: URL) -> String? {
-        url.pathComponents.first(where: { $0 != "/" && !$0.isEmpty })
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        let path = components.percentEncodedPath
+        guard path.hasPrefix("/") else { return nil }
+        return path
+            .dropFirst()
+            .split(separator: "/", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map(String.init)
     }
 
     // MARK: - Link builder
@@ -104,4 +111,31 @@ enum DeepLinkHandler {
         components.queryItems = items
         return components.url
     }
+
+    /// Builds the canonical share URL for an RSS GUID. GUIDs are path data, not
+    /// URL syntax, so encode them as one conservative path component.
+    static func episodeGUIDURL(guid: String, startTime: TimeInterval? = nil) -> URL? {
+        let trimmed = guid.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let encodedGUID = trimmed.addingPercentEncoding(withAllowedCharacters: episodeGUIDAllowedCharacters)
+        else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "podcastr"
+        components.host = "e"
+        components.percentEncodedPath = "/\(encodedGUID)"
+        if let startTime {
+            components.queryItems = [
+                URLQueryItem(name: "t", value: "\(max(0, Int(startTime)))")
+            ]
+        }
+        return components.url
+    }
+
+    static func episodeGUIDDeepLink(guid: String, startTime: TimeInterval? = nil) -> String? {
+        episodeGUIDURL(guid: guid, startTime: startTime)?.absoluteString
+    }
+
+    private static let episodeGUIDAllowedCharacters = CharacterSet.alphanumerics
+        .union(CharacterSet(charactersIn: "-._~"))
 }

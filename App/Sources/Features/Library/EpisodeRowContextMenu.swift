@@ -163,7 +163,8 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
     /// `episodeDeepLink` so a long-press share and a player-sheet share point
     /// at the same canonical URL.
     private var episodeDeepLink: String {
-        "podcastr://e/\(episode.guid)"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid)
+            ?? episode.enclosureURL.absoluteString
     }
 
     /// `nil` when the episode isn't the currently-playing one or when the
@@ -175,8 +176,7 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
         guard playback.episode?.id == episode.id else { return nil }
         let currentTime = playback.currentTime
         guard PlayerShareSheet.isMeaningfulPlayhead(currentTime) else { return nil }
-        let seconds = max(0, Int(currentTime))
-        return URL(string: "\(episodeDeepLink)?t=\(seconds)")
+        return DeepLinkHandler.episodeGUIDURL(guid: episode.guid, startTime: currentTime)
     }
 
     // MARK: - Download affordance

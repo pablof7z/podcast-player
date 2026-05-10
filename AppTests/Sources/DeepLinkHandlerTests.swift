@@ -211,6 +211,19 @@ final class DeepLinkHandlerTests: XCTestCase {
         XCTAssertEqual(guid, "tag:acme.com,2024:ep-7")
     }
 
+    func testEpisodeGUIDBuilderEncodesReservedCharacters() throws {
+        let url = try XCTUnwrap(DeepLinkHandler.episodeGUIDURL(
+            guid: "tag:acme.com,2024:/episode?x=1",
+            startTime: 42.8
+        ))
+        XCTAssertEqual(url.absoluteString, "podcastr://e/tag%3Aacme.com%2C2024%3A%2Fepisode%3Fx%3D1?t=42")
+        guard case .episodeByGUID(let guid, let t) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(guid, "tag:acme.com,2024:/episode?x=1")
+        XCTAssertEqual(t, 42)
+    }
+
     func testRejectsEmptyEpisodeByGUID() {
         // `podcastr://e` with no path is not a valid link.
         XCTAssertNil(DeepLinkHandler.resolve(URL(string: "podcastr://e")!))

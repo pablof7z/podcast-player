@@ -282,8 +282,8 @@ struct EpisodeDetailView: View {
     }
 
     private func deepLink(for episode: Episode, segment: Segment) -> String {
-        let prefix = episode.guid.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).first.map(String.init) ?? "ep"
-        return "podcastr://e/\(prefix)?t=\(Int(segment.start))"
+        DeepLinkHandler.episodeGUIDDeepLink(guid: episode.guid, startTime: segment.start)
+            ?? episode.enclosureURL.absoluteString
     }
 
     @ToolbarContentBuilder
