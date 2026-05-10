@@ -42,6 +42,10 @@ protocol VoiceTurnDelegate: AnyObject {
     ///
     /// The stream MUST be cancellable: when the user barges in, the manager
     /// cancels the consuming `Task` to unwind any in-flight LLM call.
+    ///
+    /// TODO(run-logs): The eventual `AgentChatSession` adapter MUST pass
+    /// `source: .voiceMessage` when invoking `startSend(...)`, otherwise
+    /// voice runs will be mis-tagged as `.typedChat` in Run History.
     func submitUtterance(_ text: String) -> AsyncThrowingStream<VoiceTurnEvent, Error>
 
     /// Whether the underlying agent session can accept a new utterance

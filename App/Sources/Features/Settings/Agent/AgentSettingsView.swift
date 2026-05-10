@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AgentSettingsView: View {
     @Environment(AppStateStore.self) private var store
+    @ObservedObject private var runLogger = AgentRunLogger.shared
     @State private var settings: Settings = Settings()
     @State private var hasNostrKey: Bool = false
 
@@ -88,7 +89,7 @@ struct AgentSettingsView: View {
                     icon: "doc.text.magnifyingglass",
                     tint: .orange,
                     title: "Run History",
-                    badge: AgentRunLogger.shared.runs.count
+                    badge: runLogger.runs.count
                 )
             }
 

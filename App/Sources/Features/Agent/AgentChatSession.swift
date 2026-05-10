@@ -219,7 +219,11 @@ final class AgentChatSession {
     /// leaves `phase` in `.idle` or `.failed` and persists `messages` via `history`.
     ///
     /// - Parameters:
-    ///   - batchID: Stable identifier for the tool-action batch started by this turn.
+    ///   - batchID: Stable identifier for the tool-action batch *and* the
+    ///     `AgentRun` produced by this turn loop.
+    ///   - source: How this run was triggered (typed chat, voice, Nostr, etc.).
+    ///   - initialInput: User-visible prompt that started the run, recorded on
+    ///     the `AgentRun` for the Run History UI.
     private func runAgentTurns(batchID: UUID, source: AgentRunSource, initialInput: String) async {
         var batchActionCount = 0
         let systemPromptSnapshot = (rawMessages.first?["content"] as? String) ?? ""
