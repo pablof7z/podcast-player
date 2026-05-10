@@ -119,7 +119,14 @@ private struct NowPlayingMediumView: View {
             ProgressView(value: fraction)
                 .progressViewStyle(.linear)
                 .tint(WidgetTheme.Colors.brandIndigo)
-            HStack {
+            HStack(spacing: 4) {
+                // Tiny play/pause indicator — without this the widget
+                // shows a progress bar that looks like it's advancing
+                // even when the user has paused, since timeline refresh
+                // and on-disk position both update on a delay.
+                Image(systemName: (snapshot.isPlaying ?? false) ? "play.fill" : "pause.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text(remainingLabel(position: position, duration: total))
                     .font(WidgetTheme.Typography.accessoryRow)

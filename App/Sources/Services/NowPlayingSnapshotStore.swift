@@ -22,6 +22,12 @@ struct NowPlayingSnapshot: Codable, Equatable, Sendable {
     /// navigable chapters. Optional so existing on-disk snapshots written
     /// by older app builds decode without migration.
     var chapterTitle: String?
+    /// Whether the engine is currently playing (or buffering, which the
+    /// UI treats as playing). Surfaces on the widget as a tiny play /
+    /// pause glyph so the user can tell from a glance whether something
+    /// is actually rolling. Optional + defaults to `false` so older
+    /// snapshots decode without flagging "playing" incorrectly.
+    var isPlaying: Bool?
 }
 
 // MARK: - NowPlayingSnapshotStore

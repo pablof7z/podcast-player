@@ -281,6 +281,10 @@ final class PlaybackState {
         Haptics.medium()
         engine.play()
         startPersistenceLoop()
+        // Force-write the snapshot so the widget's play/pause glyph
+        // flips immediately — the throttled persistence-loop write would
+        // otherwise lag up to 5s.
+        writeNowPlayingSnapshot(force: true)
     }
 
     func pause() {
@@ -290,6 +294,9 @@ final class PlaybackState {
         // position cache so the playhead survives a force-quit-after-
         // pause cycle. Cheap when the cache is empty.
         onFlushPositions()
+        // Same reasoning as `play()` — keep the widget's glyph in sync
+        // with the engine state without waiting on the next tick.
+        writeNowPlayingSnapshot(force: true)
     }
 
     func seek(to time: TimeInterval) {
@@ -557,7 +564,8 @@ final class PlaybackState {
             // Reuse the engine's chapter resolver — same closure that drives
             // the lock-screen album line. `nil` for chapter-less episodes
             // so the widget falls back cleanly to show name only.
-            chapterTitle: engine.resolveActiveChapterTitle(episode, engine.currentTime)
+            chapterTitle: engine.resolveActiveChapterTitle(episode, engine.currentTime),
+            isPlaying: isPlaying
         )
         NowPlayingSnapshotStore.write(snapshot)
         lastSnapshotWrite = now

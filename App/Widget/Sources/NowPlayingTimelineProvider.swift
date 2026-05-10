@@ -17,6 +17,10 @@ struct NowPlayingSnapshot: Codable, Equatable {
     /// Title of the chapter at the playhead, when the episode has
     /// navigable chapters. Optional so older snapshots decode cleanly.
     var chapterTitle: String?
+    /// `true` while the engine is playing (or buffering). Optional with
+    /// a `false` fallback so snapshots written before this field decode
+    /// without misreporting playback state.
+    var isPlaying: Bool?
 }
 
 // MARK: - NowPlayingEntry
