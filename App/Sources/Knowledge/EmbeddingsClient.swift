@@ -33,6 +33,14 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
     private static let endpoint = URL(string: "https://openrouter.ai/api/v1/embeddings")!
     private static let xTitle = "Podcastr"
 
+    /// Shared encoder/decoder. Each batch in `embedBatch` was minting
+    /// one encoder + two decoders, and a full transcript ingest spends
+    /// dozens of batches — that's a lot of Foundation allocator
+    /// pressure on an already-network-bound path. Both types are
+    /// reentrant for `encode` / `decode` after construction.
+    nonisolated(unsafe) private static let encoder = JSONEncoder()
+    nonisolated(unsafe) private static let decoder = JSONDecoder()
+
     private let apiKeyProvider: @Sendable () throws -> String?
     private let model: String
     private let dimensions: Int
@@ -90,7 +98,7 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
             input: batch,
             dimensions: dimensions
         )
-        let bodyData = try JSONEncoder().encode(payload)
+        let bodyData = try Self.encoder.encode(payload)
         req.httpBody = bodyData
         let requestPayloadJSON = String(data: bodyData, encoding: .utf8)
 
@@ -116,7 +124,7 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
 
         let decoded: ResponsePayload
         do {
-            decoded = try JSONDecoder().decode(ResponsePayload.self, from: data)
+            decoded = try Self.decoder.decode(ResponsePayload.self, from: data)
         } catch {
             Self.logger.error("OpenRouter embeddings decode failed: \(error, privacy: .public)")
             throw EmbeddingsError.decoding
@@ -125,7 +133,7 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let usageRaw = json["usage"] {
             let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
-            let usage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+            let usage = usageData.flatMap { try? Self.decoder.decode(OpenRouterUsagePayload.self, from: $0) }
             let modelUsed = (json["model"] as? String) ?? model
             let preview = "embed: \(batch.count) input(s)"
             Task { @MainActor in
