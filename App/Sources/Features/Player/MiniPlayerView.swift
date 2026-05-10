@@ -20,6 +20,11 @@ struct MiniPlayerView: View {
 
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
+    /// Observed so the inline download badge tracks the service's
+    /// `progress[id]` map without each 5%/200ms tick re-rendering through
+    /// `AppStateStore`. Mirrors the pattern used by `EpisodeRow`.
+    @State private var downloadService = EpisodeDownloadService.shared
+
     private var showName: String {
         guard let subID = state.episode?.subscriptionID,
               let sub = store.subscription(id: subID) else { return "" }
@@ -102,6 +107,8 @@ struct MiniPlayerView: View {
 
             Spacer(minLength: 0)
 
+            inlineDownloadBadge
+
             Button {
                 state.togglePlayPause()
             } label: {
@@ -115,6 +122,34 @@ struct MiniPlayerView: View {
             .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
         .padding(.horizontal, AppTheme.Spacing.xs)
+    }
+
+    /// Inline-only download surface — narrow visibility rule per spec:
+    /// only render when the live episode is actively downloading or has
+    /// failed. The collapsed pill has no horizontal slack for `.queued`
+    /// or terminal `.downloaded` states, and they'd add visual noise to
+    /// the tab bar without informing an in-flight action.
+    @ViewBuilder
+    private var inlineDownloadBadge: some View {
+        if let resolved = liveDownloadEpisode {
+            switch resolved.downloadState {
+            case .downloading, .failed:
+                DownloadProgressBadge(
+                    episode: resolved,
+                    liveProgress: downloadService.progress[resolved.id]
+                )
+            default:
+                EmptyView()
+            }
+        }
+    }
+
+    /// Re-resolves `state.episode` through the store so coarse download
+    /// transitions (`.downloading → .downloaded`) reach the badge without
+    /// requiring `PlaybackState` to refresh its cached snapshot.
+    private var liveDownloadEpisode: Episode? {
+        guard let id = state.episode?.id else { return nil }
+        return store.episode(id: id) ?? state.episode
     }
 
     private var inlineArtwork: some View {

@@ -20,6 +20,11 @@ struct PlayerView: View {
     @State private var showQueueSheet: Bool = false
     @State private var showShareSheet: Bool = false
 
+    /// Observed so the editorial-header download badge tracks the service's
+    /// `progress[id]` map at 5%/200ms without each tick re-rendering through
+    /// `AppStateStore`. Mirrors the pattern used by `EpisodeRow`.
+    @State private var downloadService = EpisodeDownloadService.shared
+
     private var subscription: PodcastSubscription? {
         guard let subID = state.episode?.subscriptionID else { return nil }
         return store.subscription(id: subID)
@@ -238,9 +243,25 @@ struct PlayerView: View {
                     .font(AppTheme.Typography.title)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                downloadBadge
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Ambient download indicator. Reads through the store so coarse
+    /// transitions written by `EpisodeDownloadService` reach the badge
+    /// even when `PlaybackState`'s cached `episode` snapshot is stale.
+    /// Hidden for `.notDownloaded` via the badge itself.
+    @ViewBuilder
+    private var downloadBadge: some View {
+        if let id = state.episode?.id,
+           let resolved = store.episode(id: id) ?? state.episode {
+            DownloadProgressBadge(
+                episode: resolved,
+                liveProgress: downloadService.progress[id]
+            )
+        }
     }
 
     // MARK: - Playback chrome (waveform + transport + actions)
