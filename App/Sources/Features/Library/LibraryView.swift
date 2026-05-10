@@ -25,6 +25,11 @@ struct LibraryView: View {
     /// the stored string doesn't match a known case (e.g. after a rename).
     @AppStorage("library.filter") private var filter: LibraryFilter = .all
     @State private var showAddShowSheet: Bool = false
+    /// Set when the user picks "Unsubscribe" from a grid cell's long-press
+    /// context menu. The presented alert reads from this — clearing it
+    /// dismisses the alert. Without the menu, unsubscribe was a 3-tap path
+    /// (tile → ⓘ → Unsubscribe → confirm); now it's 2 taps.
+    @State private var unsubscribeTarget: PodcastSubscription?
 
     var body: some View {
         ScrollView {
@@ -65,6 +70,22 @@ struct LibraryView: View {
         }
         .sheet(isPresented: $showAddShowSheet) {
             AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
+        }
+        .alert(
+            "Unsubscribe from \(unsubscribeTarget?.title ?? "")?",
+            isPresented: Binding(
+                get: { unsubscribeTarget != nil },
+                set: { if !$0 { unsubscribeTarget = nil } }
+            ),
+            presenting: unsubscribeTarget
+        ) { sub in
+            Button("Cancel", role: .cancel) {}
+            Button("Unsubscribe", role: .destructive) {
+                Haptics.warning()
+                store.removeSubscription(sub.id)
+            }
+        } message: { _ in
+            Text("This removes the show and all its episodes from your library.")
         }
     }
 
@@ -149,6 +170,18 @@ struct LibraryView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button {
+                        Task { await SubscriptionService(store: store).refresh(sub) }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    Button(role: .destructive) {
+                        unsubscribeTarget = sub
+                    } label: {
+                        Label("Unsubscribe", systemImage: "minus.circle")
+                    }
+                }
             }
         }
     }
