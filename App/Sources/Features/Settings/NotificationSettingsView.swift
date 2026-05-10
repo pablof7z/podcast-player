@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UserNotifications
 import os.log
 
@@ -31,6 +32,15 @@ struct NotificationSettingsView: View {
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
         .task { await refreshAuthStatus() }
+        // The "Open Settings" button hands off to iOS Settings; when
+        // the user flips the permission and switches back, refresh
+        // so the banner reflects the new state instead of caching
+        // "Denied" until the view is fully re-entered.
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.willEnterForegroundNotification
+        )) { _ in
+            Task { await refreshAuthStatus() }
+        }
     }
 
     // MARK: - Sections
