@@ -35,6 +35,10 @@ struct RootView: View {
     /// Sparkles toolbar shortcut presents the agent chat as a dismissible
     /// sheet — distinct from the dedicated Ask tab.
     @State private var showAgentChat = false
+    /// Drives the Voice surface presentation. Toggled by the
+    /// `voiceModeRequested` notification fired by `StartVoiceModeIntent`
+    /// (Action Button, Siri, Spotlight, AirPods squeeze).
+    @State private var showVoiceMode = false
     @State private var lastShakeTime: Date = .distantPast
     /// Drives a Spotlight-continuation sheet for a note or memory.
     @State private var spotlightSheet: SpotlightIndexer.DeepLink?
@@ -182,6 +186,20 @@ struct RootView: View {
                 )
             ) {
                 OnboardingView()
+            }
+            // Voice mode surface — opened by `StartVoiceModeIntent` (Action
+            // Button / Siri / Spotlight / AirPods squeeze). The intent
+            // posts `voiceModeRequested`; we observe it below and pop the
+            // cover. Without this wiring the intent ran in the background
+            // and the user saw nothing happen.
+            .fullScreenCover(isPresented: $showVoiceMode) {
+                VoiceView(onSwitchToText: {
+                    showVoiceMode = false
+                    selectedTab = .ask
+                })
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
+                showVoiceMode = true
             }
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
