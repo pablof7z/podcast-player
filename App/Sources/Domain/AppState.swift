@@ -24,6 +24,9 @@ struct AppState: Codable, Sendable {
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
     var agentActivity: [AgentActivityEntry] = []
+    /// User-authored transcript excerpts. See `Clip` and the composer in
+    /// `App/Sources/Features/EpisodeDetail/Clip/`.
+    var clips: [Clip] = []
 
     init() {}
 
@@ -33,6 +36,7 @@ struct AppState: Codable, Sendable {
         case categories, categorySettings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case agentActivity
+        case clips
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -52,5 +56,6 @@ struct AppState: Codable, Sendable {
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
+        clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
     }
 }
