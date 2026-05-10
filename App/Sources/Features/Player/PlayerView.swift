@@ -35,21 +35,28 @@ struct PlayerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: AppTheme.Spacing.lg) {
-                    heroArtwork
-                    editorialHeader
-                    secondarySurface
-                        .frame(minHeight: 240, maxHeight: 320)
-                }
-                .padding(.horizontal, AppTheme.Spacing.md)
-            }
+        ZStack {
+            // Editorial backdrop: scaled-and-blurred artwork tints the whole
+            // surface so the player feels like the episode, not a chrome.
+            // Behind everything; controls' Liquid Glass material reflects it.
+            PlayerEditorialBackdrop(artworkURL: artworkURL)
 
-            playbackChrome
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.md)
+            VStack(spacing: 0) {
+                topBar
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: AppTheme.Spacing.lg) {
+                        heroArtwork
+                        editorialHeader
+                        secondarySurface
+                            .frame(minHeight: 240, maxHeight: 320)
+                    }
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                }
+
+                playbackChrome
+                    .padding(.horizontal, AppTheme.Spacing.md)
+                    .padding(.bottom, AppTheme.Spacing.md)
+            }
         }
         .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
@@ -77,9 +84,15 @@ struct PlayerView: View {
             AutoSnipController.shared.attach(playback: state, store: store)
         }
         .overlay(alignment: .top) {
+            // The banner is feedback chrome — it must not steal taps from
+            // the dismiss chevron or More menu sitting at the same Y in
+            // the top bar. `.allowsHitTesting(false)` scopes interaction
+            // to the banner's own buttons (it manages its own taps via
+            // its internal Button) without it eating taps that miss the
+            // visible chrome.
             AutoSnipBanner(controller: AutoSnipController.shared)
                 .padding(.top, AppTheme.Spacing.lg)
-                .allowsHitTesting(true)
+                .allowsHitTesting(false)
         }
     }
 
@@ -94,17 +107,29 @@ struct PlayerView: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
                     .glassEffect(.regular.interactive(), in: .circle)
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Minimize player")
+            .accessibilityHint("Returns to the previous screen")
 
             Spacer()
 
-            Text("NOW PLAYING")
-                .font(.caption2.weight(.semibold))
-                .tracking(1.4)
-                .foregroundStyle(.secondary)
+            // Show name carries the screen's identity — the previous
+            // tracked-uppercase "NOW PLAYING" eyebrow burned the slot on
+            // a static label that the user already knows from the
+            // surrounding context (the player is open). Mixed-case show
+            // name reads naturally and matches Apple Music / Castro.
+            if !showName.isEmpty {
+                Text(showName)
+                    .font(AppTheme.Typography.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.horizontal, AppTheme.Spacing.sm)
+            }
 
             Spacer()
 
@@ -178,11 +203,14 @@ struct PlayerView: View {
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-        )
-        .scaleEffect(isScrubbing ? 0.92 : 1.0)
+        // Drop the 0.08-opacity primary stroke. In dark mode `.primary`
+        // flips to white over a vivid podcast cover and reads as a frame
+        // around the art instead of a subtle separator. Apple Music's
+        // hero is unstroked.
+        // Keep the blur during scrubbing as the depth-shift cue (matches
+        // iOS 26 motion guidance), but drop the simultaneous scale —
+        // running both produces three motion vectors at once with the
+        // waveform expanding alongside.
         .blur(radius: isScrubbing ? 8 : 0)
         .glassEffectID("player.artwork", in: glassNamespace)
         .animation(AppTheme.Animation.spring, value: isScrubbing)
@@ -242,16 +270,14 @@ struct PlayerView: View {
     private var editorialHeader: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
             if let episode = state.episode {
-                if !showName.isEmpty {
-                    Text(showName.uppercased())
-                        .font(.caption2.weight(.semibold))
-                        .tracking(1.0)
-                        .foregroundStyle(.secondary)
-                }
+                // Top bar already shows the show name in `.secondary` — no
+                // need to repeat it as a tracked-uppercase eyebrow here.
+                // Let the episode title own the visual hierarchy.
                 Text(episode.title)
                     .font(AppTheme.Typography.title)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
                 downloadBadge
             }
         }

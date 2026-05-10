@@ -26,22 +26,26 @@ struct PlayerTranscriptRow: View {
                 Text(speakerName.uppercased())
                     .font(.system(.caption2, design: .rounded).weight(.semibold))
                     .tracking(0.6)
-                    .foregroundStyle(.white.opacity(isActive ? 0.92 : 0.50))
+                    .foregroundStyle(isActive ? Color.primary : Color.secondary)
             }
             Text(segment.text)
                 .font(.system(.body, design: .serif))
                 .lineSpacing(6)
-                .foregroundStyle(.white.opacity(isActive ? 1.0 : 0.55))
+                .foregroundStyle(isActive ? Color.primary : Color.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(
+            // Active row uses the system accent at low opacity instead
+            // of hardcoded white — the whole player no longer assumes a
+            // dark chrome background, so white-on-anything broke in
+            // light mode.
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isActive ? Color.white.opacity(0.14) : Color.clear)
+                .fill(isActive ? Color.accentColor.opacity(0.12) : Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(.white.opacity(isActive ? 0.18 : 0), lineWidth: 0.5)
+                        .stroke(isActive ? Color.accentColor.opacity(0.20) : Color.clear, lineWidth: 0.5)
                 )
         )
         .contentShape(Rectangle())

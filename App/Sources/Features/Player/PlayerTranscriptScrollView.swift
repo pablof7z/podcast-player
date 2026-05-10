@@ -150,13 +150,13 @@ struct PlayerTranscriptScrollView: View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: "text.quote")
                 .font(.system(size: 28, weight: .light))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(.secondary)
             Text("No transcript yet")
                 .font(AppTheme.Typography.headline)
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.primary)
             Text(fallbackSubtitle(for: episode))
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, AppTheme.Spacing.lg)
@@ -165,14 +165,10 @@ struct PlayerTranscriptScrollView: View {
                 Button { requestIngest(for: episode) } label: {
                     Text(buttonLabel(for: episode))
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .padding(.horizontal, AppTheme.Spacing.lg)
                         .padding(.vertical, 10)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.18))
-                                .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 0.5))
-                        )
+                        .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.plain)
                 .disabled(!isIngestEnabled(for: episode))
@@ -185,10 +181,10 @@ struct PlayerTranscriptScrollView: View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: "text.quote")
                 .font(.system(size: 28, weight: .light))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(.secondary)
             Text("Pick something to play")
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(.secondary)
         }
     }
 
