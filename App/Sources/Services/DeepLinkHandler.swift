@@ -5,7 +5,7 @@ import Foundation
 /// All work is pure URL parsing with no shared state, so no actor isolation is required.
 enum DeepLinkHandler {
     /// The set of deep-link destinations recognised by the app.
-    enum Link {
+    enum Link: Equatable {
         /// Opens the Settings sheet.
         case settings
         /// Opens the Feedback sheet.
@@ -18,6 +18,12 @@ enum DeepLinkHandler {
         /// Opens the Episode Detail surface for the given episode UUID.
         /// Posted by tapped new-episode notifications.
         case episode(UUID)
+        /// Opens the Episode Detail surface for the given episode `guid`,
+        /// optionally seeking to `startTime` seconds. Built by
+        /// `PlayerMoreMenu.episodeDeepLink` and the transcript-segment share
+        /// path — both share-out a `podcastr://e/<guid>?t=<sec>` URL that
+        /// pasting back into the app needs to resolve cleanly.
+        case episodeByGUID(String, startTime: TimeInterval?)
         /// Opens the Show Detail surface for the given subscription UUID.
         case subscription(UUID)
     }
@@ -43,6 +49,18 @@ enum DeepLinkHandler {
                   let uuid = UUID(uuidString: raw)
             else { return nil }
             return .episode(uuid)
+        case "e":
+            // `podcastr://e/<guid>?t=<seconds>` — short-link format for
+            // share/copy paths. `<guid>` is the episode's RSS guid, not a
+            // UUID. `t` is optional and clamped to non-negative.
+            guard let raw = firstPathComponent(of: url),
+                  !raw.isEmpty
+            else { return nil }
+            let guid = raw.removingPercentEncoding ?? raw
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let tValue = components?.queryItems?.first(where: { $0.name == "t" })?.value
+            let startTime = tValue.flatMap(TimeInterval.init).map { max(0, $0) }
+            return .episodeByGUID(guid, startTime: startTime)
         case "subscription":
             guard let raw = firstPathComponent(of: url),
                   let uuid = UUID(uuidString: raw)

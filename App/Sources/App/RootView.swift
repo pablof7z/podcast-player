@@ -282,6 +282,20 @@ struct RootView: View {
             // tabs each own their own NavigationStack; presenting the detail
             // as a sheet lands the user on the right record either way.
             spotlightSheet = .episode(uuid)
+        case .episodeByGUID(let guid, let startTime):
+            // `podcastr://e/<guid>?t=<sec>` — resolve the guid against the
+            // local store. When the episode is loaded and a `t=` was
+            // provided, seek the playback engine to that timestamp before
+            // surfacing the detail sheet so the user lands at the
+            // referenced point in time instead of the saved playhead.
+            if let episode = store.state.episodes.first(where: { $0.id.uuidString == guid || $0.guid == guid }) {
+                if let startTime {
+                    playbackState.setEpisode(episode)
+                    playbackState.seek(to: startTime)
+                    playbackState.play()
+                }
+                spotlightSheet = .episode(episode.id)
+            }
         case .subscription(let uuid):
             spotlightSheet = .subscription(uuid)
         }

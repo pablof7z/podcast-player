@@ -152,4 +152,67 @@ final class DeepLinkHandlerTests: XCTestCase {
         XCTAssertEqual(npub, "npub1abc")
         XCTAssertEqual(name, "Alice")
     }
+
+    // MARK: - Episode-by-GUID short-link
+    //
+    // PlayerMoreMenu's "Copy episode link" produces `podcastr://e/<guid>` —
+    // historically dropped on the floor by `resolve()`. The transcript
+    // share path additionally appends `?t=<seconds>` so deep-linking
+    // lands on the referenced timestamp. Both forms must resolve.
+
+    func testResolvesEpisodeByGUID() {
+        let url = URL(string: "podcastr://e/podcast-1234")!
+        guard case .episodeByGUID(let guid, let t) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(guid, "podcast-1234")
+        XCTAssertNil(t)
+    }
+
+    func testResolvesEpisodeByGUIDWithStartTime() {
+        let url = URL(string: "podcastr://e/podcast-1234?t=420")!
+        guard case .episodeByGUID(let guid, let t) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(guid, "podcast-1234")
+        XCTAssertEqual(t, 420)
+    }
+
+    func testResolvesEpisodeByGUIDClampsNegativeT() {
+        // Defensive: if a corrupted or hand-edited link arrives with a
+        // negative timestamp, clamp to zero rather than seeking to a
+        // negative offset that the engine would have to defend against.
+        let url = URL(string: "podcastr://e/abc?t=-30")!
+        guard case .episodeByGUID(_, let t) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(t, 0)
+    }
+
+    func testResolvesEpisodeByGUIDIgnoresMalformedT() {
+        // Non-numeric `t=` shouldn't poison the resolve — we just drop
+        // the timestamp and surface the link as a no-time episode jump.
+        let url = URL(string: "podcastr://e/abc?t=banana")!
+        guard case .episodeByGUID(let guid, let t) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(guid, "abc")
+        XCTAssertNil(t)
+    }
+
+    func testEpisodeByGUIDDecodesPercentEncoding() {
+        // Some publisher GUIDs include reserved characters (commonly `:`
+        // and `=`). The share path percent-encodes them; the resolver
+        // must round-trip cleanly.
+        let url = URL(string: "podcastr://e/tag%3Aacme.com%2C2024%3Aep-7")!
+        guard case .episodeByGUID(let guid, _) = DeepLinkHandler.resolve(url) else {
+            XCTFail("Expected .episodeByGUID"); return
+        }
+        XCTAssertEqual(guid, "tag:acme.com,2024:ep-7")
+    }
+
+    func testRejectsEmptyEpisodeByGUID() {
+        // `podcastr://e` with no path is not a valid link.
+        XCTAssertNil(DeepLinkHandler.resolve(URL(string: "podcastr://e")!))
+    }
 }
