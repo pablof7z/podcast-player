@@ -159,6 +159,8 @@ struct OPMLImportSheet: View {
                                 .font(AppTheme.Typography.monoCaption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
+                                .textSelection(.enabled)
+                                .copyableTextMenu(entry.feedURL.absoluteString)
                         }
                         .padding(AppTheme.Spacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)

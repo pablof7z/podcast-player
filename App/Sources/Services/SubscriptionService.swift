@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// Coordinates `FeedClient` fetches with `AppStateStore` writes.
 ///
@@ -13,6 +14,8 @@ import Foundation
 /// `await MainActor.run` blocks at the call sites.
 @MainActor
 struct SubscriptionService {
+
+    private static let logger = Logger.app("SubscriptionService")
 
     /// Underlying feed client. Tests can pass a stub session via
     /// `FeedClient(session:)`.
@@ -158,9 +161,7 @@ struct SubscriptionService {
                 store.updateSubscription(bumped)
             }
         } catch {
-            #if DEBUG
-            print("SubscriptionService.refresh failed for \(live.feedURL): \(error)")
-            #endif
+            Self.logger.error("refresh failed for \(live.feedURL, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
