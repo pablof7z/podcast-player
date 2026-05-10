@@ -169,6 +169,25 @@ private struct TopicRow: View {
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(topic.displayName), \(topic.episodeMentionCount) mentions, \(topic.contradictionCount) contradictions")
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    /// VoiceOver assembly. The previous label hard-coded plural-s
+    /// ("1 mentions, 1 contradictions") and chattily announced
+    /// "0 contradictions" for topics that didn't have any. Now we
+    /// plural-match each count and skip contradictions entirely when
+    /// there are none, mirroring the visual row.
+    private var accessibilityLabel: String {
+        var parts: [String] = [topic.displayName]
+        let mentions = topic.episodeMentionCount
+        parts.append("\(mentions) mention\(mentions == 1 ? "" : "s")")
+        if topic.contradictionCount > 0 {
+            let n = topic.contradictionCount
+            parts.append("\(n) contradiction\(n == 1 ? "" : "s")")
+        }
+        if let last = topic.lastMentionedAt {
+            parts.append("last mentioned \(TopicRow.relative.localizedString(for: last, relativeTo: Date()))")
+        }
+        return parts.joined(separator: ", ")
     }
 }
