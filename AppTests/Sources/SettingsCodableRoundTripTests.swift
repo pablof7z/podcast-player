@@ -67,5 +67,6 @@ final class SettingsCodableRoundTripTests: XCTestCase {
         XCTAssertEqual(decoded.defaultPlaybackRate, 1.5)
         XCTAssertEqual(decoded.autoPlayNext, true, "Missing key should fall back to property default")
         XCTAssertEqual(decoded.autoDeleteDownloadsAfterPlayed, false)
+        XCTAssertEqual(decoded.autoIngestPublisherTranscripts, true)
     }
 }
