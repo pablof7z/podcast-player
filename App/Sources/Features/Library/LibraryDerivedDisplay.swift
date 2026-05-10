@@ -92,14 +92,20 @@ extension Episode {
     /// every whitespace run — including the paragraph breaks the formatter
     /// inserts — into a single space so the preview fits the row's
     /// `lineLimit(2)` cleanly.
+    ///
+    /// Uses `components(separatedBy:.whitespacesAndNewlines).joined(separator:)`
+    /// instead of `replacingOccurrences(of: "\\s+", options: .regularExpression)`
+    /// — the previous shape compiled a regex on every row render (and this
+    /// runs for every row in a long episode list), while the new shape is
+    /// pure UTF-16 scanning that's also Unicode-whitespace-aware via
+    /// `CharacterSet`. The filter-empty + join steps also handle leading
+    /// and trailing whitespace, so the explicit `trimmingCharacters` call
+    /// at the tail is no longer needed.
     var plainTextSummary: String {
-        let decoded = EpisodeShowNotesFormatter.plainText(from: description)
-        return decoded.replacingOccurrences(
-            of: "\\s+",
-            with: " ",
-            options: .regularExpression
-        )
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+        EpisodeShowNotesFormatter.plainText(from: description)
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 
     /// View-model adapter for `DownloadStatusCapsule`. Translates the two
