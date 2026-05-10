@@ -147,7 +147,11 @@ struct SubscriptionService {
             switch result {
             case .updated(let updated, let episodes, _):
                 store.updateSubscription(updated)
-                store.upsertEpisodes(episodes, forSubscription: updated.id)
+                store.upsertEpisodes(
+                    episodes,
+                    forSubscription: updated.id,
+                    evaluateAutoDownload: true
+                )
             case .notModified(let when):
                 var bumped = live
                 bumped.lastRefreshedAt = when

@@ -201,7 +201,11 @@ struct HomeView: View {
                     store.updateSubscription(refreshed)
                 case .updated(let updatedSub, let episodes, _):
                     store.updateSubscription(updatedSub)
-                    store.upsertEpisodes(episodes, forSubscription: updatedSub.id)
+                    store.upsertEpisodes(
+                        episodes,
+                        forSubscription: updatedSub.id,
+                        evaluateAutoDownload: true
+                    )
                 }
             } catch {
                 Self.logger.error(

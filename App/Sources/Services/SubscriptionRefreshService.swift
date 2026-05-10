@@ -81,7 +81,11 @@ final class SubscriptionRefreshService {
             // accurate. Anything in `episodes` whose GUID isn't already known
             // is brand-new and a notification candidate.
             let priorGUIDs = Set(store.episodes(forSubscription: subscriptionID).map(\.guid))
-            store.upsertEpisodes(episodes, forSubscription: subscriptionID)
+            store.upsertEpisodes(
+                episodes,
+                forSubscription: subscriptionID,
+                evaluateAutoDownload: true
+            )
             store.updateSubscription(updatedSubscription)
             notifyIfNeeded(
                 priorGUIDs: priorGUIDs,
@@ -178,7 +182,11 @@ final class SubscriptionRefreshService {
                 let priorGUIDs = Set(
                     store.episodes(forSubscription: updatedSubscription.id).map(\.guid)
                 )
-                store.upsertEpisodes(episodes, forSubscription: updatedSubscription.id)
+                store.upsertEpisodes(
+                    episodes,
+                    forSubscription: updatedSubscription.id,
+                    evaluateAutoDownload: true
+                )
                 store.updateSubscription(updatedSubscription)
                 notifyIfNeeded(
                     priorGUIDs: priorGUIDs,

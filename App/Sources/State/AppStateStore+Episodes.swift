@@ -67,7 +67,7 @@ extension AppStateStore {
     func upsertEpisodes(
         _ incoming: [Episode],
         forSubscription subscriptionID: UUID,
-        evaluateAutoDownload: Bool = true
+        evaluateAutoDownload: Bool = false
     ) -> [UUID] {
         guard !incoming.isEmpty else { return [] }
         var updated = state.episodes
