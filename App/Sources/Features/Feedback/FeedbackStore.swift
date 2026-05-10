@@ -303,8 +303,13 @@ actor FeedbackRelayClient {
     private static func decodeEvent(_ value: Any) -> SignedNostrEvent? {
         guard JSONSerialization.isValidJSONObject(value),
               let data = try? JSONSerialization.data(withJSONObject: value) else { return nil }
-        return try? JSONDecoder().decode(SignedNostrEvent.self, from: data)
+        return try? Self.eventDecoder.decode(SignedNostrEvent.self, from: data)
     }
+
+    /// Shared. `decodeEvent` runs for every Nostr event the relay
+    /// streams (text notes + metadata for the feedback project), so
+    /// a busy session reallocated a `JSONDecoder` per event.
+    nonisolated(unsafe) private static let eventDecoder = JSONDecoder()
 
     private enum RelayMessage {
         case event(String, SignedNostrEvent)
