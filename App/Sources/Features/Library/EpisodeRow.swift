@@ -134,10 +134,18 @@ struct EpisodeRow: View {
     // MARK: - Helpers
 
     private var relativePublished: String {
+        Self.relativeFormatter.localizedString(for: episode.pubDate, relativeTo: Date())
+    }
+
+    /// Cached — `EpisodeRow` is the per-row view inside a show's
+    /// episode list, so a 200-episode show was minting 200
+    /// `RelativeDateTimeFormatter` instances per render.
+    /// `RelativeDateTimeFormatter` is reentrant for `localizedString(...)`.
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
-        return f.localizedString(for: episode.pubDate, relativeTo: Date())
-    }
+        return f
+    }()
 
     /// Compound VoiceOver label per ux-02 §8 — title, duration, played-state,
     /// transcript-status read as one phrase.

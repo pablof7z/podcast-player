@@ -123,8 +123,12 @@ struct ShowDetailHeader: View {
     }
 
     private func relative(_ date: Date) -> String {
+        Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
-        return f.localizedString(for: date, relativeTo: Date())
-    }
+        return f
+    }()
 }
