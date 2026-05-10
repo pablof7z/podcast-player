@@ -130,11 +130,14 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
             throw EmbeddingsError.decoding
         }
 
-        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let usageRaw = json["usage"] {
-            let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
-            let usage = usageData.flatMap { try? Self.decoder.decode(OpenRouterUsagePayload.self, from: $0) }
-            let modelUsed = (json["model"] as? String) ?? model
+        if let usage = decoded.usage {
+            // `decoded` already carries `model` + `usage` via the typed
+            // `ResponsePayload` — the previous shape re-parsed `data`
+            // through `JSONSerialization` to fish them out, which
+            // allocated a `[String: Any]` dictionary plus a follow-up
+            // `JSONSerialization.data` + `JSONDecoder` round-trip per
+            // batch. One typed parse is enough.
+            let modelUsed = decoded.model ?? model
             let preview = "embed: \(batch.count) input(s)"
             Task { @MainActor in
                 CostLedger.shared.log(
@@ -164,6 +167,8 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
 
     private struct ResponsePayload: Decodable {
         let data: [Item]
+        let model: String?
+        let usage: OpenRouterUsagePayload?
         struct Item: Decodable {
             let index: Int
             let embedding: [Float]
