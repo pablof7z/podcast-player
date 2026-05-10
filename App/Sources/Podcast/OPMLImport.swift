@@ -25,8 +25,24 @@ import Foundation
 /// queues the new subscriptions through `FeedClient` after import.
 struct OPMLImport: Sendable {
 
-    enum OPMLError: Error, Sendable {
+    enum OPMLError: Error, LocalizedError, Sendable {
         case malformedXML(underlying: String)
+
+        /// User-facing copy. `OPMLImportSheet` reads
+        /// `error.localizedDescription` directly into the inline error
+        /// label — without a `LocalizedError` conformance the user would
+        /// see `malformedXML(underlying: "NSXMLParserErrorDomain error 5")`
+        /// (Apple's `Error.localizedDescription` falls back to a raw
+        /// `String(describing:)` for unconformed enums). Same trap that
+        /// previously hit `RSSParser.ParseError`.
+        var errorDescription: String? {
+            switch self {
+            case .malformedXML:
+                return "This file isn't a valid OPML export. " +
+                    "If you exported it from another podcast app, " +
+                    "check that the export completed and try again."
+            }
+        }
     }
 
     /// Parses raw OPML bytes. Outline nodes without an `xmlUrl` attribute are
