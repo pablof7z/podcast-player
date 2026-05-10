@@ -177,6 +177,10 @@ extension Episode {
         var linkURL: URL?
         /// `toc=false` chapters are non-navigable (e.g. ad markers).
         var includeInTableOfContents: Bool
+        /// `true` when the chapter was synthesised by `AIChapterCompiler`
+        /// from the transcript rather than parsed from a publisher source.
+        /// Defaults to `false`; the player surfaces a subtle "AI" tag for true.
+        var isAIGenerated: Bool
 
         init(
             id: UUID = UUID(),
@@ -185,7 +189,8 @@ extension Episode {
             title: String,
             imageURL: URL? = nil,
             linkURL: URL? = nil,
-            includeInTableOfContents: Bool = true
+            includeInTableOfContents: Bool = true,
+            isAIGenerated: Bool = false
         ) {
             self.id = id
             self.startTime = startTime
@@ -194,6 +199,24 @@ extension Episode {
             self.imageURL = imageURL
             self.linkURL = linkURL
             self.includeInTableOfContents = includeInTableOfContents
+            self.isAIGenerated = isAIGenerated
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case id, startTime, endTime, title, imageURL, linkURL
+            case includeInTableOfContents, isAIGenerated
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decode(UUID.self, forKey: .id)
+            startTime = try c.decode(TimeInterval.self, forKey: .startTime)
+            endTime = try c.decodeIfPresent(TimeInterval.self, forKey: .endTime)
+            title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+            imageURL = try c.decodeIfPresent(URL.self, forKey: .imageURL)
+            linkURL = try c.decodeIfPresent(URL.self, forKey: .linkURL)
+            includeInTableOfContents = try c.decodeIfPresent(Bool.self, forKey: .includeInTableOfContents) ?? true
+            isAIGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAIGenerated) ?? false
         }
     }
 

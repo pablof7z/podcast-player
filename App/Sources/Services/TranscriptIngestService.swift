@@ -216,6 +216,16 @@ final class TranscriptIngestService {
             state: .ready(source: source)
         )
 
+        // 6. Fire-and-forget AI chapter compilation when the episode lacks
+        //    publisher chapters. The compiler is internally idempotent and
+        //    early-returns when chapters already exist, so re-runs of the
+        //    ingest pipeline are cheap.
+        let episodeID = episode.id
+        Task { @MainActor [weak appStore] in
+            guard let appStore else { return }
+            await AIChapterCompiler.shared.compileIfNeeded(episodeID: episodeID, store: appStore)
+        }
+
         Self.logger.info(
             "ingested transcript for \(episode.id, privacy: .public) — \(chunks.count, privacy: .public) chunks, source=\(String(describing: source), privacy: .public)"
         )
