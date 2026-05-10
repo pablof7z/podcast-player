@@ -23,7 +23,6 @@ struct AgentIdentityView: View {
     @State private var editingPictureURL: Bool = false
     @State private var keyManagementExpanded: Bool = false
     @State private var keychainErrorMessage: String?
-    @State private var showShareInvite: Bool = false
     @FocusState private var nameFocused: Bool
     @FocusState private var bioFocused: Bool
 
@@ -72,16 +71,21 @@ struct AgentIdentityView: View {
                     .accessibilityLabel("Show QR code")
                     .disabled(!hasPrivateKey)
 
-                    Button { showShareInvite = true } label: {
+                    Button {
+                        // `SystemShareSheet.present` rather than a SwiftUI
+                        // `.sheet { ShareSheet(items:) }` because the items
+                        // array contains a deep-link `URL`, and the SwiftUI
+                        // sheet wrapper renders blank for any items
+                        // `UIActivityViewController` treats as files /
+                        // URL-handlers on iOS 16+.
+                        SystemShareSheet.present(items: shareInviteItems)
+                    } label: {
                         Image(systemName: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Share my identity")
                     .disabled(!hasPrivateKey || npubFull.isEmpty)
                 }
             }
-        }
-        .sheet(isPresented: $showShareInvite) {
-            ShareSheet(items: shareInviteItems)
         }
         .onAppear {
             settings = store.state.settings
@@ -164,8 +168,8 @@ struct AgentIdentityView: View {
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
             Button {
-                showShareInvite = true
                 Haptics.selection()
+                SystemShareSheet.present(items: shareInviteItems)
             } label: {
                 Label("Share My Identity", systemImage: "square.and.arrow.up")
                     .font(.system(.body, design: .rounded, weight: .semibold))

@@ -29,7 +29,6 @@ struct DataExportView: View {
     @State private var fileSize: Int?
     @State private var errorMessage: String?
     @State private var generatedAt: Date?
-    @State private var showShareSheet = false
     @State private var showClearConfirmation = false
 
     var body: some View {
@@ -48,11 +47,6 @@ struct DataExportView: View {
         }
         .navigationTitle("Export Data")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showShareSheet) {
-            if let fileURL {
-                ShareSheet(items: [fileURL])
-            }
-        }
         .confirmationDialog(
             "Clear All Data",
             isPresented: $showClearConfirmation,
@@ -194,7 +188,11 @@ struct DataExportView: View {
             generatedAt = now
             errorMessage = nil
             Haptics.success()
-            showShareSheet = true
+            // Imperative present rather than `.sheet { ShareSheet(items:) }`
+            // — the SwiftUI sheet wrapper renders blank for file-URL items
+            // on iOS 16+ (`UIActivityViewController` needs its own
+            // presentation context, not a SwiftUI modal scope).
+            SystemShareSheet.present(items: [url])
         } catch {
             errorMessage = "Could not generate export: \(error.localizedDescription)"
             fileURL = nil
