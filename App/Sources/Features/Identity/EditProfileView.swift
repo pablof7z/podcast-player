@@ -2,9 +2,10 @@ import SwiftUI
 
 // MARK: - EditProfileView
 //
-// Push from `IdentityRootView`. Per identity-05-synthesis §4.3. Save publishes
-// kind-0; until Slice B wires `UserIdentityStore.publishProfile`, save is a
-// local-only stub (TODO Slice B).
+// Push from `IdentityRootView`. Per identity-05-synthesis §4.3. Save signs and
+// publishes a kind-0 profile event via `UserIdentityStore.publishProfile`.
+// Failure (relay unreachable) falls back to a local-only banner so the user's
+// edit isn't lost; next launch's auto-publish path retries.
 //
 // Field rules from §4.3:
 //   - Display name: 0-48 chars, empty allowed (falls back to slug)
@@ -243,15 +244,24 @@ struct EditProfileView: View {
     }
 
     private func save() async {
-        // TODO Slice B: call `identity.publishProfile(name:displayName:about:picture:)`
-        // (new method) — sign + publish kind-0 to FeedbackRelayClient.profileRelayURLs.
-        // For Slice A we accept the edit, post a success haptic, and pop.
         Haptics.success()
         initialSnapshot = currentSnapshot
-        saveBanner = SaveBanner(
-            message: "Saved on this device. Sync arrives with Slice B.",
-            isWarning: true
-        )
+        let snapshot = currentSnapshot
+        saveBanner = SaveBanner(message: "Publishing…", isWarning: false)
+        do {
+            _ = try await identity.publishProfile(
+                name: snapshot.username,
+                displayName: snapshot.displayName,
+                about: snapshot.about,
+                picture: snapshot.pictureURL
+            )
+            saveBanner = SaveBanner(message: "Profile published.", isWarning: false)
+        } catch {
+            saveBanner = SaveBanner(
+                message: "Saved locally — couldn't reach the relay. We'll retry next launch.",
+                isWarning: true
+            )
+        }
         try? await Task.sleep(for: .seconds(0.3))
         dismiss()
     }
