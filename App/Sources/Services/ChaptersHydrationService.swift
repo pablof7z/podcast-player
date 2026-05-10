@@ -23,7 +23,15 @@ final class ChaptersHydrationService {
     /// Tracks which `chaptersURL`s we've already fetched (or are fetching)
     /// this session. Keyed by absolute URL so two episodes that happen to
     /// reference the same JSON file share one network round-trip.
-    private var attempted: [URL: Task<Void, Never>] = [:]
+    ///
+    /// Previously held `Task<Void, Never>` values for each URL — and
+    /// never removed them after completion. Each retained task pinned
+    /// its closure capture (`client`, `store`, `episodeID`, `url`) for
+    /// the rest of the app session, so a heavy browser could leak
+    /// hundreds of closures over a long session. A plain `Set<URL>`
+    /// preserves the dedup semantics with zero per-URL retention beyond
+    /// the URL itself.
+    private var attempted: Set<URL> = []
 
     init(client: ChaptersClient = ChaptersClient()) {
         self.client = client
@@ -38,10 +46,14 @@ final class ChaptersHydrationService {
         // ships both `<podcast:chapters>` and `chaptersURL`, the inline
         // version is authoritative.
         if let existing = episode.chapters, !existing.isEmpty { return }
-        guard attempted[url] == nil else { return }
+        guard !attempted.contains(url) else { return }
+        // Mark *before* dispatching so a concurrent second caller for the
+        // same URL short-circuits without racing to start a duplicate
+        // fetch.
+        attempted.insert(url)
 
         let episodeID = episode.id
-        let task = Task { [client] in
+        Task { [client] in
             do {
                 let chapters = try await client.fetch(url: url)
                 store.setEpisodeChapters(episodeID, chapters: chapters)
@@ -52,13 +64,11 @@ final class ChaptersHydrationService {
                 )
             }
         }
-        attempted[url] = task
     }
 
     /// Test hook: clears the per-session dedup cache so a fresh fetch can
     /// be observed. Production code never needs this.
     func resetForTesting() {
-        for (_, task) in attempted { task.cancel() }
         attempted.removeAll()
     }
 }
