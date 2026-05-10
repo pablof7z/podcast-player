@@ -140,6 +140,7 @@ struct Settings: Codable, Hashable, Sendable {
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
+        case autoDeleteDownloadsAfterPlayed, autoPlayNext
         case wikiAutoGenerateOnTranscriptIngest
         case autoIngestPublisherTranscripts, autoFallbackToScribe
         case notifyOnNewEpisodes, notifyOnBriefingReady
@@ -181,6 +182,8 @@ struct Settings: Codable, Hashable, Sendable {
         skipForwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipForwardSeconds) ?? Defaults.skipForwardSeconds
         skipBackwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipBackwardSeconds) ?? Defaults.skipBackwardSeconds
         autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
+        autoDeleteDownloadsAfterPlayed = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) ?? false
+        autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
         wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
         autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? false
         autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
@@ -232,6 +235,8 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(skipForwardSeconds, forKey: .skipForwardSeconds)
         try c.encode(skipBackwardSeconds, forKey: .skipBackwardSeconds)
         try c.encode(autoMarkPlayedAtEnd, forKey: .autoMarkPlayedAtEnd)
+        try c.encode(autoDeleteDownloadsAfterPlayed, forKey: .autoDeleteDownloadsAfterPlayed)
+        try c.encode(autoPlayNext, forKey: .autoPlayNext)
         try c.encode(wikiAutoGenerateOnTranscriptIngest, forKey: .wikiAutoGenerateOnTranscriptIngest)
         try c.encode(autoIngestPublisherTranscripts, forKey: .autoIngestPublisherTranscripts)
         try c.encode(autoFallbackToScribe, forKey: .autoFallbackToScribe)
