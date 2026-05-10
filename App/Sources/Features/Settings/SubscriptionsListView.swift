@@ -18,8 +18,13 @@ struct SubscriptionsListView: View {
     nonisolated private static let logger = Logger.app("SubscriptionsListView")
 
     @State private var pendingDelete: PodcastSubscription?
+    /// Tmp-file URL of the latest exported OPML. Generated lazily inside
+    /// `.task` (and re-generated whenever the subscription list mutates) so
+    /// the `ShareLink` below has a real URL ready by the time the user
+    /// reaches the export row. Kept on disk in `temporaryDirectory` so iOS
+    /// can clean up after itself; small enough (~25 KB for ~50 subs) that
+    /// the redundancy is harmless.
     @State private var opmlURL: URL?
-    @State private var showShareSheet: Bool = false
     @State private var exportError: String?
 
     var body: some View {
@@ -60,8 +65,15 @@ struct SubscriptionsListView: View {
         } message: { msg in
             Text(msg)
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let opmlURL { ShareSheet(items: [opmlURL]) }
+        // Eagerly regenerate the OPML file when the screen appears (and
+        // whenever the subscription list count changes). Keeps the
+        // `ShareLink` in `exportSection` ready to fire without a roundtrip
+        // through a SwiftUI `.sheet { ShareSheet(...) }`, which renders
+        // blank on iOS 16+ when wrapping a `UIActivityViewController` in
+        // a sheet container — the activity controller wants its own
+        // presentation context, not a SwiftUI modal scope.
+        .task(id: store.sortedSubscriptions.count) {
+            await regenerateOPMLIfNeeded()
         }
     }
 
@@ -97,18 +109,41 @@ struct SubscriptionsListView: View {
 
     private var exportSection: some View {
         Section {
-            Button {
-                exportOPML()
-            } label: {
+            // Two-state row: ShareLink once the OPML file is ready, plain
+            // disabled row while it's still being generated (rare — the
+            // file lands in single-digit ms for typical libraries). Using
+            // `ShareLink` directly instead of the previous
+            // `Button + .sheet { ShareSheet(...) }` pattern because the
+            // SwiftUI sheet wrapper renders the underlying
+            // UIActivityViewController as a blank white sheet on iOS 16+.
+            if let opmlURL, !store.sortedSubscriptions.isEmpty {
+                ShareLink(
+                    item: opmlURL,
+                    subject: Text("Podcastr Subscriptions"),
+                    preview: SharePreview(
+                        "Podcastr Subscriptions (\(store.sortedSubscriptions.count) shows)",
+                        image: Image(systemName: "list.bullet.rectangle")
+                    )
+                ) {
+                    SettingsRow(
+                        icon: "square.and.arrow.up",
+                        tint: .teal,
+                        title: "Export OPML",
+                        subtitle: "Share with another podcast app"
+                    )
+                }
+                .buttonStyle(.pressable)
+            } else {
                 SettingsRow(
                     icon: "square.and.arrow.up",
                     tint: .teal,
                     title: "Export OPML",
-                    subtitle: "Share with another podcast app"
+                    subtitle: store.sortedSubscriptions.isEmpty
+                        ? "No subscriptions to export"
+                        : "Preparing export…"
                 )
+                .opacity(0.5)
             }
-            .buttonStyle(.pressable)
-            .disabled(store.sortedSubscriptions.isEmpty)
         } footer: {
             Text("Exports all subscribed feed URLs as a standard OPML 2.0 document.")
         }
@@ -226,16 +261,23 @@ struct SubscriptionsListView: View {
 
     // MARK: - OPML export
 
-    private func exportOPML() {
+    /// Generates a fresh OPML file and stores its URL in `opmlURL` so the
+    /// `ShareLink` lights up. Skips the work when the subscription list is
+    /// empty (the export row stays disabled in that case). Errors land in
+    /// `exportError` and surface via the `.alert` modifier.
+    private func regenerateOPMLIfNeeded() async {
+        guard !store.sortedSubscriptions.isEmpty else {
+            opmlURL = nil
+            return
+        }
+        let subs = store.sortedSubscriptions
         let exporter = OPMLExport()
-        let data = exporter.exportOPML(subscriptions: store.sortedSubscriptions)
+        let data = exporter.exportOPML(subscriptions: subs)
         let filename = "Podcastr-Subscriptions-\(Self.dateStamp()).opml"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
             try data.write(to: url, options: [.atomic])
             opmlURL = url
-            showShareSheet = true
-            Haptics.success()
         } catch {
             Self.logger.error("OPML export write failed: \(error, privacy: .public)")
             exportError = error.localizedDescription
