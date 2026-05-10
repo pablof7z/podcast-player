@@ -21,12 +21,11 @@ struct AgentAccessControlView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Tab", selection: $selectedTab) {
-                ForEach(AccessTab.allCases, id: \.self) { tab in
-                    Text(tabLabel(tab)).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Tab",
+                selection: $selectedTab,
+                segments: AccessTab.allCases.map { ($0, tabLabel($0)) }
+            )
             .padding(.horizontal)
             .padding(.vertical, Layout.pickerVerticalPadding)
 

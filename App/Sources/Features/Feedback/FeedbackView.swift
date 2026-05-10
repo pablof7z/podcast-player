@@ -140,11 +140,11 @@ struct FeedbackView: View {
 
     @ViewBuilder
     private var mineEveryoneSegmentedControl: some View {
-        Picker("Show", selection: $showMine) {
-            Text("Mine").tag(true)
-            Text("Everyone").tag(false)
-        }
-        .pickerStyle(.segmented)
+        LiquidGlassSegmentedPicker(
+            "Show",
+            selection: $showMine,
+            segments: [(true, "Mine"), (false, "Everyone")]
+        )
     }
 
     // MARK: - Loading skeleton

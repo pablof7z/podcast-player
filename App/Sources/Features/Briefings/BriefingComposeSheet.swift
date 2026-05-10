@@ -67,12 +67,11 @@ struct BriefingComposeSheet: View {
     private var lengthSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             Text("Length").font(.headline)
-            Picker("Length", selection: $length) {
-                ForEach(BriefingLength.allCases, id: \.self) { l in
-                    Text(l.displayLabel).tag(l)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Length",
+                selection: $length,
+                segments: BriefingLength.allCases.map { ($0, $0.displayLabel) }
+            )
         }
     }
 

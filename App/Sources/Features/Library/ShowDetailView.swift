@@ -373,12 +373,13 @@ struct ShowDetailSettingsSheet: View {
                         }
                 }
                 Section("Auto-download") {
-                    Picker("New episodes", selection: $autoDownloadChoice) {
-                        ForEach(AutoDownloadChoice.allCases) { choice in
-                            Text(choice.label).tag(choice)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+                    LiquidGlassSegmentedPicker(
+                        "New episodes",
+                        selection: $autoDownloadChoice,
+                        segments: AutoDownloadChoice.allCases.map { ($0, $0.label) }
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
                     .onChange(of: autoDownloadChoice) { _, _ in persistPolicy() }
 
                     if autoDownloadChoice == .latestN {

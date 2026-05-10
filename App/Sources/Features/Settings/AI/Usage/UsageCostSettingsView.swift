@@ -80,12 +80,11 @@ struct UsageCostSettingsView: View {
     }
 
     private var rangePicker: some View {
-        Picker("Range", selection: $range) {
-            ForEach(CostRange.allCases) { r in
-                Text(r.shortLabel).tag(r)
-            }
-        }
-        .pickerStyle(.segmented)
+        LiquidGlassSegmentedPicker(
+            "Range",
+            selection: $range,
+            segments: CostRange.allCases.map { ($0, $0.shortLabel) }
+        )
     }
 
     // MARK: Hero stats

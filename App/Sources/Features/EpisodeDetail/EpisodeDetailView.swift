@@ -289,15 +289,29 @@ struct EpisodeDetailView: View {
     @ToolbarContentBuilder
     private func modeToolbar(hasTranscript: Bool) -> some ToolbarContent {
         ToolbarItem(placement: .principal) {
-            Picker("Mode", selection: $mode) {
-                Text("Detail").tag(Mode.detail)
-                Text("Read").tag(Mode.reading)
-                if hasTranscript {
-                    Text("Along").tag(Mode.followAlong)
-                }
-            }
-            .pickerStyle(.segmented)
+            // Conditional "Along" segment requires the @ViewBuilder init
+            // — the convenience [(value, label)] form can't express
+            // "show this segment only when a transcript exists".
+            let values: [Mode] = hasTranscript
+                ? [.detail, .reading, .followAlong]
+                : [.detail, .reading]
+
+            LiquidGlassSegmentedPicker(
+                "Mode",
+                selection: $mode,
+                values: values,
+                accessibilityLabel: { Self.modeLabel($0) },
+                label: { value, _ in Text(Self.modeLabel(value)) }
+            )
             .frame(maxWidth: 280)
+        }
+    }
+
+    private static func modeLabel(_ mode: Mode) -> String {
+        switch mode {
+        case .detail: return "Detail"
+        case .reading: return "Read"
+        case .followAlong: return "Along"
         }
     }
 

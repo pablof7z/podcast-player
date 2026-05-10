@@ -31,12 +31,11 @@ struct AddShowSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: AppTheme.Spacing.lg) {
-                Picker("Add show source", selection: $mode) {
-                    ForEach(Mode.allCases) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
+                LiquidGlassSegmentedPicker(
+                    "Add show source",
+                    selection: $mode,
+                    segments: Mode.allCases.map { ($0, $0.rawValue) }
+                )
                 .padding(.horizontal, AppTheme.Spacing.lg)
                 .padding(.top, AppTheme.Spacing.md)
 

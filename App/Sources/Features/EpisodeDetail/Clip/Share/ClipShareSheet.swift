@@ -75,12 +75,11 @@ struct ClipShareSheet: View {
             Text("Subtitle style")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Picker("Subtitle style", selection: $style) {
-                ForEach(ClipExporter.SubtitleStyle.allCases, id: \.self) { s in
-                    Text(s.displayName).tag(s)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Subtitle style",
+                selection: $style,
+                segments: ClipExporter.SubtitleStyle.allCases.map { ($0, $0.displayName) }
+            )
         }
     }
 
@@ -89,12 +88,11 @@ struct ClipShareSheet: View {
             Text("Video aspect ratio")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Picker("Aspect", selection: $aspect) {
-                ForEach(ClipVideo.Aspect.allCases, id: \.self) { a in
-                    Text(a.displayName).tag(a)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Aspect",
+                selection: $aspect,
+                segments: ClipVideo.Aspect.allCases.map { ($0, $0.displayName) }
+            )
         }
     }
 

@@ -115,12 +115,11 @@ struct ClipComposerSheet: View {
 
     private var togglesSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Picker("Subtitle style", selection: $subtitleStyle) {
-                ForEach(ClipSubtitleStyle.allCases) { style in
-                    Text(style.label).tag(style)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Subtitle style",
+                selection: $subtitleStyle,
+                segments: ClipSubtitleStyle.allCases.map { ($0, $0.label) }
+            )
 
             Toggle(isOn: $showSpeakerLabel) {
                 Text("Show speaker label")

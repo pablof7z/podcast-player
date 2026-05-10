@@ -66,12 +66,13 @@ struct CategoryAutoDownloadSection: View {
                 .onChange(of: overrideEnabled) { _, _ in persist() }
 
             if overrideEnabled {
-                Picker("New episodes", selection: $choice) {
-                    ForEach(Choice.allCases) { c in
-                        Text(c.label).tag(c)
-                    }
-                }
-                .pickerStyle(.segmented)
+                LiquidGlassSegmentedPicker(
+                    "New episodes",
+                    selection: $choice,
+                    segments: Choice.allCases.map { ($0, $0.label) }
+                )
+                .listRowBackground(Color.clear)
+                .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
                 .onChange(of: choice) { _, _ in persist() }
 
                 if choice == .latestN {

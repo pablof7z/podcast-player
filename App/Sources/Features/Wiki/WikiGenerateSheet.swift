@@ -81,12 +81,15 @@ struct WikiGenerateSheet: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .disabled(phase == .compiling)
-            Picker("Kind", selection: $selectedKind) {
-                ForEach(WikiPageKind.allCases.filter { $0 != .index }, id: \.self) { kind in
-                    Text(kind.displayName).tag(kind)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Kind",
+                selection: $selectedKind,
+                segments: WikiPageKind.allCases
+                    .filter { $0 != .index }
+                    .map { ($0, $0.displayName) }
+            )
+            .listRowBackground(Color.clear)
+            .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
             .disabled(phase == .compiling)
         } header: {
             Text("Topic")
@@ -99,12 +102,13 @@ struct WikiGenerateSheet: View {
     @ViewBuilder
     private var scopeSection: some View {
         Section {
-            Picker("Scope", selection: $scopeChoice) {
-                ForEach(ScopeChoice.allCases, id: \.self) { choice in
-                    Text(choice.rawValue).tag(choice)
-                }
-            }
-            .pickerStyle(.segmented)
+            LiquidGlassSegmentedPicker(
+                "Scope",
+                selection: $scopeChoice,
+                segments: ScopeChoice.allCases.map { ($0, $0.rawValue) }
+            )
+            .listRowBackground(Color.clear)
+            .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
             .disabled(phase == .compiling)
 
             if scopeChoice == .podcast {
