@@ -229,7 +229,19 @@ private struct WikiHomeRow: View {
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(page.title), \(page.kind.displayName) page, \(citationCount) citations")
+        .accessibilityLabel(rowAccessibilityLabel)
+    }
+
+    /// Plural-match the citation count — pages with a single citation
+    /// announced as "1 citations" before. Drops the citation segment
+    /// entirely when there are none, mirroring how the visual line
+    /// behaves.
+    private var rowAccessibilityLabel: String {
+        var parts: [String] = [page.title, "\(page.kind.displayName) page"]
+        if citationCount > 0 {
+            parts.append("\(citationCount) citation\(citationCount == 1 ? "" : "s")")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var citationCount: Int {

@@ -48,6 +48,16 @@ struct HomeThreadedTodayPill: View {
             .contentShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(active.unplayedEpisodeCount) episodes touch on \(active.topic.displayName). Tap to open the thread.")
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Opens the thread")
+    }
+
+    /// Plural-match the episode count — "1 episodes" was the previous
+    /// shape on a topic with a single mention. The "Tap to..." part
+    /// moved into `accessibilityHint` so VoiceOver doesn't double-narrate
+    /// alongside its own button-trait announcement.
+    private var accessibilityLabel: String {
+        let n = active.unplayedEpisodeCount
+        return "\(n) episode\(n == 1 ? "" : "s") touch\(n == 1 ? "es" : "") on \(active.topic.displayName)"
     }
 }
