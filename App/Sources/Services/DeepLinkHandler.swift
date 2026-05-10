@@ -26,6 +26,12 @@ enum DeepLinkHandler {
         case episodeByGUID(String, startTime: TimeInterval?)
         /// Opens the Show Detail surface for the given subscription UUID.
         case subscription(UUID)
+        /// Opens the Episode Detail surface for the episode that owns the
+        /// given clip, seeking playback to the clip's start. Built by
+        /// `ClipExporter.deepLink(_:)` (`podcastr://clip/<uuid>`). The
+        /// clip→episode lookup is performed by the consumer (RootView)
+        /// against the local clip store.
+        case clip(UUID)
     }
 
     /// Converts a URL into a ``Link``, or returns `nil` if the URL is not a recognised deep-link.
@@ -66,6 +72,14 @@ enum DeepLinkHandler {
                   let uuid = UUID(uuidString: raw)
             else { return nil }
             return .subscription(uuid)
+        case "clip":
+            // `podcastr://clip/<uuid>` — clip share path. Resolution to
+            // the underlying episode happens at the consumer; we only
+            // parse the id here.
+            guard let raw = firstPathComponent(of: url),
+                  let uuid = UUID(uuidString: raw)
+            else { return nil }
+            return .clip(uuid)
         default: return nil
         }
     }
