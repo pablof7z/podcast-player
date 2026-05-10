@@ -5,9 +5,20 @@ import os.log
 // MARK: - AgentPicksService
 //
 // Curates the "agent picks" surface in the merged Home featured section.
-// One LLM call per ~6 hours (or on material library change), cached in
-// memory; degrades to a deterministic heuristic when no API key is set
-// or the call fails.
+// One LLM call per ~6 hours per category (or on material library change),
+// cached in memory; degrades to a deterministic heuristic when no API key
+// is set or the call fails.
+//
+// Magazine mode (May 2026):
+//   - Bundles, fingerprints, and refresh tasks are keyed by `UUID?` where
+//     `nil` is the All-Categories pseudo-category. Switching from
+//     "Learning" to "Entertainment" reads a separate cache slot, so each
+//     section feels like flipping the page on a different magazine.
+//   - The streaming refresh captures the category id it was started for
+//     and writes streamed picks into THAT slot regardless of which
+//     category the user is currently viewing — flipping back to the
+//     mid-stream category surfaces its (now complete) bundle without a
+//     refetch.
 //
 // Design notes:
 //   - We do NOT reuse `AgentChatSession`'s tool loop. The picks need
@@ -15,9 +26,9 @@ import os.log
 //     the full chat-history + tool-dispatch pipeline would be wasted work
 //     and would fight the cache (every send mutates session history).
 //   - Cache key combines time + a cheap fingerprint over the inputs the
-//     prompt actually depends on. If the user marks several episodes
-//     played the picks should refresh sooner than the 6-hour TTL — we'd
-//     rather recompute than surface a pick the user already finished.
+//     prompt actually depends on, scoped to the active category. Marking
+//     a Learning episode played invalidates the Learning slot but leaves
+//     the Entertainment slot untouched.
 //   - Fallback heuristic ("rarely-opened shows"): the store does not
 //     track per-show open counts. As a defensible v1 proxy we pick the
 //     three subscriptions whose newest unplayed episode is the LEAST
@@ -30,7 +41,7 @@ final class AgentPicksService {
 
     static let shared = AgentPicksService()
 
-    private static let logger = Logger.app("AgentPicksService")
+    static let logger = Logger.app("AgentPicksService")
 
     /// Cache TTL. The brief asks for ~6 hours; we honour it as the upper
     /// bound. The fingerprint check below can invalidate sooner.
@@ -38,21 +49,7 @@ final class AgentPicksService {
 
     /// Soft cap on subscriptions enumerated in the prompt. Picks against
     /// a 200-show library otherwise blow past sensible token budgets.
-    private static let promptSubscriptionCap = 30
-
-    /// Latest known bundle. Drives the view layer; updated atomically
-    /// so SwiftUI re-renders once when a refresh completes.
-    private(set) var bundle: HomeAgentPicksBundle = .empty
-
-    /// `true` while a network refresh is in flight. View shows a
-    /// shimmer/placeholder when this is set and `bundle.picks.isEmpty`.
-    private(set) var isRefreshing: Bool = false
-
-    /// `true` while picks are being streamed in from the LLM mid-flight.
-    /// Distinct from `isRefreshing` so the view can render a skeleton
-    /// *slot* (next pick about to arrive) only during real streaming, not
-    /// during cache hits or the heuristic fallback path.
-    private(set) var isStreaming: Bool = false
+    static let promptSubscriptionCap = 30
 
     /// Wall-clock idle-stall budget for streaming. If no `onPartialContent`
     /// callback arrives within this window the in-flight request is cancelled
@@ -60,60 +57,143 @@ final class AgentPicksService {
     /// fires if nothing landed).
     static let streamStallTimeout: TimeInterval = 20
 
-    /// Fingerprint captured when the current `bundle` was generated. The
-    /// next refresh checks this to decide whether the cached bundle is
-    /// still semantically valid.
-    private var lastFingerprint: PicksFingerprint?
-    private var refreshTask: Task<Void, Never>?
+    /// Cache + active-stream state. See `AgentPicksService+Cache.swift`.
+    var bundles: [PicksCategoryKey: HomeAgentPicksBundle] = [:]
+    var fingerprints: [PicksCategoryKey: PicksFingerprint] = [:]
+    var refreshTasks: [PicksCategoryKey: Task<Void, Never>] = [:]
+    var streamingCategory: PicksCategoryKey?
+    var streamStalled: Bool = false
+
+    /// Currently-displayed category, set by the view layer at body
+    /// composition. Drives the unscoped `bundle` / `isStreaming` accessors
+    /// kept around for compatibility with surfaces that don't pipe a
+    /// category through (and for the "All" pseudo-category).
+    private(set) var activeCategoryKey: PicksCategoryKey = .all
 
     init() {}
 
-    /// Trigger a refresh if the cache is stale. Cheap to call from
-    /// `.task`; coalesces concurrent calls into a single network turn.
-    func ensureFreshPicks(store: AppStateStore, now: Date = Date()) {
-        let fingerprint = makeFingerprint(store: store)
-        if shouldUseCache(now: now, fingerprint: fingerprint) {
+    /// Trigger a refresh for the given category if its cache slot is
+    /// stale. Cheap to call from `.task`; coalesces concurrent calls into
+    /// a single network turn per category.
+    func ensureFreshPicks(
+        store: AppStateStore,
+        category: PodcastCategory? = nil,
+        now: Date = Date()
+    ) {
+        let key = PicksCategoryKey(categoryID: category?.id)
+        activeCategoryKey = key
+        let fingerprint = makeFingerprint(store: store, category: category)
+        if shouldUseCache(now: now, key: key, fingerprint: fingerprint) {
             return
         }
-        guard refreshTask == nil else { return }
-        refreshTask = Task { [weak self] in
-            await self?.refresh(store: store, fingerprint: fingerprint, now: now)
+        guard refreshTasks[key] == nil else { return }
+        let task = Task<Void, Never> { [weak self] in
+            await self?.refresh(
+                store: store,
+                category: category,
+                key: key,
+                fingerprint: fingerprint,
+                now: now
+            )
         }
+        refreshTasks[key] = task
     }
 
-    /// Discard the cache so the next `ensureFreshPicks` makes a fresh
-    /// call. Used by the manual "Refresh picks" affordance.
+    /// Discard every cached slot so the next `ensureFreshPicks` makes a
+    /// fresh call. Used by the manual "Refresh picks" affordance and by
+    /// the pull-to-refresh on Home.
     func invalidate() {
-        bundle = .empty
-        lastFingerprint = nil
+        bundles.removeAll()
+        fingerprints.removeAll()
+    }
+
+    /// Discard a single category's slot. Used when only that section's
+    /// inputs changed and a global wipe would penalise other sections.
+    func invalidate(categoryID: UUID?) {
+        let key = PicksCategoryKey(categoryID: categoryID)
+        bundles[key] = nil
+        fingerprints[key] = nil
+    }
+
+    /// Mark `categoryID` (nil = All) as the surface the view is currently
+    /// rendering. Drives `isStreaming` / `bundle` accessors that don't
+    /// take an explicit key.
+    func setActiveCategory(_ categoryID: UUID?) {
+        activeCategoryKey = PicksCategoryKey(categoryID: categoryID)
+    }
+
+    // MARK: - Public accessors
+
+    /// Bundle for the currently-active category. Empty when no slot has
+    /// been populated yet for this category.
+    var bundle: HomeAgentPicksBundle {
+        bundles[activeCategoryKey] ?? .empty
+    }
+
+    /// `true` while the active category's slot is being streamed in.
+    var isStreaming: Bool {
+        streamingCategory == activeCategoryKey
+    }
+
+    /// `true` while the active category has a network refresh in flight.
+    var isRefreshing: Bool {
+        refreshTasks[activeCategoryKey] != nil
+    }
+
+    /// Bundle for an arbitrary category. Used by the view layer to read
+    /// the slot for the category being rendered without mutating the
+    /// active key.
+    func bundle(for categoryID: UUID?) -> HomeAgentPicksBundle {
+        bundles[PicksCategoryKey(categoryID: categoryID)] ?? .empty
+    }
+
+    func isStreaming(for categoryID: UUID?) -> Bool {
+        streamingCategory == PicksCategoryKey(categoryID: categoryID)
+    }
+
+    func isRefreshing(for categoryID: UUID?) -> Bool {
+        refreshTasks[PicksCategoryKey(categoryID: categoryID)] != nil
     }
 
     // MARK: - Refresh
 
-    private func refresh(store: AppStateStore, fingerprint: PicksFingerprint, now: Date) async {
+    private func refresh(
+        store: AppStateStore,
+        category: PodcastCategory?,
+        key: PicksCategoryKey,
+        fingerprint: PicksFingerprint,
+        now: Date
+    ) async {
         defer {
-            refreshTask = nil
-            isRefreshing = false
-            isStreaming = false
+            refreshTasks[key] = nil
+            if streamingCategory == key {
+                streamingCategory = nil
+            }
         }
-        isRefreshing = true
 
-        let inputs = collectInputs(store: store)
+        let inputs = collectInputs(store: store, category: category)
         guard !inputs.unplayed.isEmpty else {
-            bundle = .empty
-            lastFingerprint = fingerprint
+            bundles[key] = .empty
+            fingerprints[key] = fingerprint
             return
         }
 
         if hasAPIKey(model: store.state.settings.llmModel) {
             do {
-                let picks = try await runLLMPicks(store: store, inputs: inputs, now: now)
+                let picks = try await runLLMPicks(
+                    store: store,
+                    inputs: inputs,
+                    category: category,
+                    key: key,
+                    now: now
+                )
                 if !picks.isEmpty {
-                    // The final bundle is set inside `runLLMPicks` as picks
-                    // stream in. Here we just refresh the timestamp +
-                    // fingerprint to the post-stream snapshot.
-                    bundle = HomeAgentPicksBundle(picks: picks, source: .agent, generatedAt: now)
-                    lastFingerprint = fingerprint
+                    bundles[key] = HomeAgentPicksBundle(
+                        picks: picks,
+                        source: .agent,
+                        generatedAt: now
+                    )
+                    fingerprints[key] = fingerprint
                     return
                 }
             } catch {
@@ -125,50 +205,12 @@ final class AgentPicksService {
         // newest-unplayed. The view surfaces these without the agent
         // rationale styling so the source is honest to the user.
         let fallback = AgentPicksFallback.derive(inputs: inputs)
-        bundle = HomeAgentPicksBundle(picks: fallback, source: .fallback, generatedAt: now)
-        lastFingerprint = fingerprint
-    }
-
-    // MARK: - Cache decision
-
-    private func shouldUseCache(now: Date, fingerprint: PicksFingerprint) -> Bool {
-        guard !bundle.picks.isEmpty else { return false }
-        guard let last = lastFingerprint, last == fingerprint else { return false }
-        return now.timeIntervalSince(bundle.generatedAt) < Self.cacheTTL
-    }
-
-    private func makeFingerprint(store: AppStateStore) -> PicksFingerprint {
-        // Cheap stable signature: subscription count + (count, newest pubDate)
-        // of unplayed episodes. Marking an episode played changes the unplayed
-        // count and bumps the fingerprint — exactly the case we want to refresh.
-        let unplayed = store.state.episodes.filter { !$0.played }
-        let newest = unplayed.map(\.pubDate).max() ?? .distantPast
-        return PicksFingerprint(
-            subscriptionCount: store.state.subscriptions.count,
-            unplayedCount: unplayed.count,
-            newestUnplayed: newest
+        bundles[key] = HomeAgentPicksBundle(
+            picks: fallback,
+            source: .fallback,
+            generatedAt: now
         )
-    }
-
-    // MARK: - Inputs
-
-    private func collectInputs(store: AppStateStore) -> AgentPicksInputs {
-        let unplayed = store.recentEpisodes(limit: 30)
-        let inProgress = store.inProgressEpisodes
-        let memories = store.state.agentMemories.filter { !$0.deleted }.prefix(10).map(\.content)
-        let topics = store.threadingTopics
-            .prefix(3)
-            .map { $0.displayName }
-        let lookup = Dictionary(
-            uniqueKeysWithValues: store.state.subscriptions.map { ($0.id, $0.title) }
-        )
-        return AgentPicksInputs(
-            unplayed: unplayed,
-            inProgress: inProgress,
-            subscriptionTitles: lookup,
-            memorySnippets: Array(memories),
-            topicNames: Array(topics)
-        )
+        fingerprints[key] = fingerprint
     }
 
     // MARK: - LLM call
@@ -181,26 +223,28 @@ final class AgentPicksService {
     private func runLLMPicks(
         store: AppStateStore,
         inputs: AgentPicksInputs,
+        category: PodcastCategory?,
+        key: PicksCategoryKey,
         now: Date
     ) async throws -> [HomeAgentPick] {
-        let prompt = AgentPicksPrompt.build(inputs: inputs)
+        let framing = category.flatMap(AgentPicksPrompt.CategoryFraming.make(from:))
+        let prompt = AgentPicksPrompt.build(inputs: inputs, framing: framing)
         let messages: [[String: Any]] = [
-            ["role": "system", "content": AgentPicksPrompt.systemInstruction],
+            ["role": "system", "content": AgentPicksPrompt.systemInstruction(for: framing)],
             ["role": "user", "content": prompt]
         ]
         let knownIDs = Set(inputs.unplayed.map(\.id) + inputs.inProgress.map(\.id))
 
         // Incremental parser + last-token timestamp for stall detection.
         let parser = AgentPicksStreamingParser()
-        // Mutable cell so the stall watchdog and the streaming task can
-        // share the "last activity" timestamp without each owning their
-        // own actor.
         let activity = StreamActivity()
         await activity.bump(to: Date())
 
-        isStreaming = true
+        streamingCategory = key
         streamStalled = false
-        bundle = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
+        // Reset the slot for THIS category only — leave other categories'
+        // cached bundles intact.
+        bundles[key] = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
 
         let model = store.state.settings.llmModel
 
@@ -216,7 +260,7 @@ final class AgentPicksService {
                     Task { await activity.bump(to: Date()) }
                     let events = parser.feed(partial, knownEpisodeIDs: knownIDs)
                     for event in events {
-                        self.appendStreamedPick(event, now: now)
+                        self.appendStreamedPick(event, key: key, now: now)
                     }
                 }
             )
@@ -225,7 +269,7 @@ final class AgentPicksService {
             // incremental parser may have nothing to do, so re-parse the
             // full string with the tolerant end-of-stream parser.
             let text = (result.assistantMessage["content"] as? String) ?? ""
-            let alreadyPicked = self?.bundle.picks ?? []
+            let alreadyPicked = self?.bundles[key]?.picks ?? []
             if alreadyPicked.isEmpty {
                 return AgentPicksPrompt.parse(text, knownEpisodeIDs: knownIDs)
             }
@@ -233,8 +277,7 @@ final class AgentPicksService {
         }
 
         // Stall watchdog — cancels the streaming task if no new content
-        // has arrived inside `streamStallTimeout`. Polls in 500ms slices so
-        // it catches the latest `lastTokenAt` produced by the SSE callback.
+        // has arrived inside `streamStallTimeout`.
         let watchdog = Task { [weak self] in
             while !Task.isCancelled {
                 let last = await activity.lastTokenAt
@@ -252,20 +295,26 @@ final class AgentPicksService {
             return try await streamingTask.value
         } catch {
             // Stall path: prefer whatever streamed in to nothing.
-            if streamStalled, !bundle.picks.isEmpty {
-                Self.logger.notice("Agent picks stream stalled; surfacing \(self.bundle.picks.count, privacy: .public) early picks.")
-                return bundle.picks
+            let partial = bundles[key]?.picks ?? []
+            if streamStalled, !partial.isEmpty {
+                Self.logger.notice("Agent picks stream stalled; surfacing \(partial.count, privacy: .public) early picks.")
+                return partial
             }
             throw error
         }
     }
 
-    /// Append one streamed pick to the current bundle so the view layer
-    /// re-renders progressively. Dedupes by `episodeID` — the streaming
-    /// parser shouldn't emit the same id twice, but if a model echoes
-    /// an episode across hero+secondary the first emission wins.
-    private func appendStreamedPick(_ event: AgentPicksStreamEvent, now: Date) {
-        guard !bundle.picks.contains(where: { $0.episodeID == event.episodeID }) else {
+    /// Append one streamed pick to the slot for `key`. Dedupes by
+    /// `episodeID` — the streaming parser shouldn't emit the same id twice,
+    /// but if a model echoes an episode across hero+secondary the first
+    /// emission wins.
+    private func appendStreamedPick(
+        _ event: AgentPicksStreamEvent,
+        key: PicksCategoryKey,
+        now: Date
+    ) {
+        let current = bundles[key] ?? HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
+        guard !current.picks.contains(where: { $0.episodeID == event.episodeID }) else {
             return
         }
         let pick = HomeAgentPick(
@@ -274,15 +323,10 @@ final class AgentPicksService {
             spokenRationale: event.spokenReason,
             isHero: event.slot == .hero
         )
-        var next = bundle.picks
+        var next = current.picks
         next.append(pick)
-        bundle = HomeAgentPicksBundle(picks: next, source: .agent, generatedAt: now)
+        bundles[key] = HomeAgentPicksBundle(picks: next, source: .agent, generatedAt: now)
     }
-
-    /// Set to `true` by the stall watchdog when no content has streamed
-    /// inside `streamStallTimeout`. Read by the `runLLMPicks` error path
-    /// to decide whether to surface partial picks vs. fall through.
-    private var streamStalled: Bool = false
 }
 
 // MARK: - StreamActivity
@@ -295,14 +339,6 @@ private actor StreamActivity {
     func bump(to date: Date) {
         lastTokenAt = date
     }
-}
-
-// MARK: - Cache fingerprint
-
-private struct PicksFingerprint: Equatable, Sendable {
-    let subscriptionCount: Int
-    let unplayedCount: Int
-    let newestUnplayed: Date
 }
 
 // MARK: - Inputs to both LLM + fallback

@@ -85,19 +85,49 @@ struct HomeView: View {
                 Text("This removes the show and all its episodes from your library.")
             }
             .task {
-                picksService.ensureFreshPicks(store: store)
+                picksService.ensureFreshPicks(store: store, category: activeCategory)
                 // Bind the threading service to the store so the
                 // "Threaded Today" derivation has somewhere to look.
                 threadingService.attach(store: store)
+            }
+            // Re-curate the featured section whenever the user flips
+            // categories. The picks service treats each category as its
+            // own cache slot, so this either reads a cached bundle or
+            // kicks off a fresh stream. The cross-fade itself is handled
+            // by the `.id`-keyed transition on `HomeFeaturedSection`'s
+            // rail; this `onChange` only owns the data side.
+            .onChange(of: categoryFilterID) { _, _ in
+                picksService.setActiveCategory(selectedCategoryID)
+                picksService.ensureFreshPicks(store: store, category: activeCategory)
             }
             .onAppear { renderedAt = Date() }
     }
 
     /// Top active threading topic for the "Threaded Today" affordance.
     /// Nil when no topic has at least three unplayed mentions, which is
-    /// also the signal to hide the pill entirely.
+    /// also the signal to hide the pill entirely. Scoped to the active
+    /// category when one is set so flipping sections re-curates the pill
+    /// to a thread that lives inside that section.
     private var topActiveThread: ThreadingInferenceService.ActiveTopic? {
-        threadingService.topActiveTopics(limit: 1).first
+        threadingService.topActiveTopics(
+            limit: 1,
+            subscriptionFilter: allowedSubscriptionIDs
+        ).first
+    }
+
+    /// Subscription-id set for the active category, or `nil` for All.
+    /// Resolved once and passed down so the featured surface, dateline,
+    /// and threaded-today rail all narrow to the same set of shows.
+    private var allowedSubscriptionIDs: Set<UUID>? {
+        guard let id = selectedCategoryID,
+              let category = store.category(id: id) else { return nil }
+        return Set(category.subscriptionIDs)
+    }
+
+    /// Resolved `PodcastCategory` for the active filter, or `nil` for All.
+    private var activeCategory: PodcastCategory? {
+        guard let id = selectedCategoryID else { return nil }
+        return store.category(id: id)
     }
 
     // MARK: - Layout
@@ -119,10 +149,12 @@ struct HomeView: View {
 
                 if shouldShowFeaturedSection {
                     HomeFeaturedSection(
-                        resumeEpisodes: store.inProgressEpisodes,
-                        picksBundle: picksService.bundle,
-                        isStreaming: picksService.isStreaming,
+                        resumeEpisodes: scopedResumeEpisodes,
+                        picksBundle: picksService.bundle(for: selectedCategoryID),
+                        isStreaming: picksService.isStreaming(for: selectedCategoryID),
                         activeThread: topActiveThread,
+                        activeCategoryID: selectedCategoryID,
+                        activeCategoryName: activeCategory?.name,
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
                         onLongPressEpisode: { relatedSheetEpisode = $0 },
@@ -136,6 +168,16 @@ struct HomeView: View {
         }
     }
 
+    /// Resume rail filtered to the active category when one is set, or
+    /// the global rail otherwise. Empty list collapses the rail entirely
+    /// in `HomeFeaturedSection`.
+    private var scopedResumeEpisodes: [Episode] {
+        HomeCategoryScope.episodesInCategory(
+            store.inProgressEpisodes,
+            allowedSubscriptionIDs: allowedSubscriptionIDs
+        )
+    }
+
     // MARK: - Subscription surface
 
     @ViewBuilder
@@ -146,6 +188,7 @@ struct HomeView: View {
         } else if filteredSubs.isEmpty {
             HomeFilteredEmptyState(
                 filter: filter,
+                categoryName: activeCategory?.name,
                 onClearFilters: {
                     categoryFilterID = ""
                     filter = .all
@@ -193,10 +236,28 @@ struct HomeView: View {
     }
 
     private var datelineComponents: HomeDatelineComponents {
+        // Topic list narrows to the category before being passed in: a
+        // contradiction in a topic whose mentions live outside the
+        // active category shouldn't bump the section's contradiction
+        // count, otherwise switching to "Learning" reads
+        // "1 CONTRADICTION" for a thread that doesn't live there.
         HomeDateline.components(
             episodes: store.state.episodes,
+            topics: scopedThreadingTopics,
+            now: renderedAt,
+            categoryName: activeCategory?.name,
+            allowedSubscriptionIDs: allowedSubscriptionIDs
+        )
+    }
+
+    /// Threading topics whose mentions land in the active category. When
+    /// no category is active this returns the global topic list.
+    private var scopedThreadingTopics: [ThreadingTopic] {
+        HomeCategoryScope.topicsInCategory(
             topics: store.state.threadingTopics,
-            now: renderedAt
+            mentions: store.state.threadingMentions,
+            episodes: store.state.episodes,
+            allowedSubscriptionIDs: allowedSubscriptionIDs
         )
     }
 
@@ -209,9 +270,10 @@ struct HomeView: View {
     }
 
     private var shouldShowFeaturedSection: Bool {
-        !store.inProgressEpisodes.isEmpty
-            || !picksService.bundle.picks.isEmpty
-            || picksService.isRefreshing
+        let bundle = picksService.bundle(for: selectedCategoryID)
+        return !scopedResumeEpisodes.isEmpty
+            || !bundle.picks.isEmpty
+            || picksService.isRefreshing(for: selectedCategoryID)
     }
 
     private func dismissChip(_ chip: HomeActiveFilterChip) {
@@ -256,8 +318,10 @@ struct HomeView: View {
     private func refreshAllFeeds() async {
         await SubscriptionRefreshService.shared.refreshAll(store: store)
         // Library state moved meaningfully — let the agent picks update on
-        // the next turn instead of waiting on the 6h TTL.
+        // the next turn instead of waiting on the 6h TTL. We blow every
+        // cached category slot away so each section recurates on first
+        // visit; the active section gets its refresh triggered now.
         picksService.invalidate()
-        picksService.ensureFreshPicks(store: store)
+        picksService.ensureFreshPicks(store: store, category: activeCategory)
     }
 }
