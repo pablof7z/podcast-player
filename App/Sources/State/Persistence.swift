@@ -144,7 +144,7 @@ final class Persistence: Sendable {
         if FileManager.default.fileExists(atPath: fileURL.path) {
             let data = try Data(contentsOf: fileURL)
             var state = try Self.decoder.decode(AppState.self, from: data)
-            try hydrateEpisodes(into: &state)
+            hydrateEpisodesPreservingMetadata(into: &state)
             return state
         }
         // One-shot migration: an earlier build wrote `AppState` to App Group
@@ -280,6 +280,14 @@ final class Persistence: Sendable {
         }
         if !jsonEpisodes.isEmpty {
             try writeMetadataSnapshot(state)
+        }
+    }
+
+    private func hydrateEpisodesPreservingMetadata(into state: inout AppState) {
+        do {
+            try hydrateEpisodes(into: &state)
+        } catch {
+            Self.logger.error("Persistence.load: episode SQLite hydration failed: \(error, privacy: .public); preserving JSON metadata")
         }
     }
 

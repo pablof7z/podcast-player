@@ -61,6 +61,27 @@ final class PersistenceDurabilityTests: XCTestCase {
         XCTAssertTrue(reopened.store.state.settings.hasCompletedOnboarding)
     }
 
+    func testCorruptEpisodeSidecarDoesNotDiscardMetadata() async throws {
+        let sharedFileURL = AppStateTestSupport.uniqueTempFileURL()
+        defer { AppStateTestSupport.disposeIsolatedStore(at: sharedFileURL) }
+
+        do {
+            let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
+            let sub = makeSubscription(title: "Metadata Survives")
+            XCTAssertTrue(made.store.addSubscription(sub))
+            var settings = made.store.state.settings
+            settings.hasCompletedOnboarding = true
+            made.store.updateSettings(settings)
+        }
+
+        let episodeStoreURL = Persistence.episodeStoreURL(for: sharedFileURL)
+        try Data("not sqlite".utf8).write(to: episodeStoreURL, options: [.atomic])
+
+        let reopened = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
+        XCTAssertTrue(reopened.store.state.settings.hasCompletedOnboarding)
+        XCTAssertEqual(reopened.store.state.subscriptions.map(\.title), ["Metadata Survives"])
+    }
+
     private func makeSubscription(
         feedURL: URL = URL(string: "https://example.com/\(UUID().uuidString).xml")!,
         title: String = "Test Show"
