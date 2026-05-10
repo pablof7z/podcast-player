@@ -75,6 +75,7 @@ struct TranscriptReaderView: View {
                         onLongPress: { onShare(seg) }
                     )
                     .id(seg.id)
+                    .holdToClip(episode: episode, transcript: transcript, segment: seg)
                 }
             }
         }
