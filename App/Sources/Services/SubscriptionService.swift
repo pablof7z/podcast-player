@@ -46,7 +46,12 @@ struct SubscriptionService {
             case .http(let status):
                 return "The feed server returned HTTP \(status)."
             case .parse(let message):
-                return "Couldn't read this feed: \(message)"
+                // The parse error already speaks in user-facing language
+                // (see `RSSParser.ParseError.errorDescription`). Don't
+                // double-prefix with "Couldn't read this feed:" — the
+                // parse messages already explain the problem in full
+                // sentences.
+                return message
             }
         }
     }
@@ -102,6 +107,15 @@ struct SubscriptionService {
     /// separately from errors.
     @discardableResult
     func adopt(opmlEntry seed: PodcastSubscription) async throws -> PodcastSubscription? {
+        guard let payload = try await fetchForAdoption(opmlEntry: seed) else { return nil }
+        let result = store.addSubscriptions([payload])
+        return result.imported == 1 ? payload.subscription : nil
+    }
+
+    /// Fetches and enriches an OPML entry without mutating the store. The
+    /// import sheet uses this to gather many feeds and then commit them in
+    /// one store batch, instead of forcing a growing full-state save per feed.
+    func fetchForAdoption(opmlEntry seed: PodcastSubscription) async throws -> SubscriptionImportPayload? {
         if store.subscription(feedURL: seed.feedURL) != nil { return nil }
         let result: FeedClient.FeedFetchResult
         do {
@@ -111,12 +125,9 @@ struct SubscriptionService {
         }
         switch result {
         case .updated(let subscription, let episodes, _):
-            guard store.addSubscription(subscription) else { return nil }
-            store.upsertEpisodes(episodes, forSubscription: subscription.id)
-            return subscription
+            return SubscriptionImportPayload(subscription: subscription, episodes: episodes)
         case .notModified:
-            guard store.addSubscription(seed) else { return nil }
-            return seed
+            return SubscriptionImportPayload(subscription: seed, episodes: [])
         }
     }
 
@@ -177,7 +188,14 @@ struct SubscriptionService {
         case .http(let status):
             return .http(status)
         case .parse(let parseError):
-            return .parse(String(describing: parseError))
+            // Use `errorDescription` (friendly copy on
+            // `RSSParser.ParseError`) instead of `String(describing:)` —
+            // the latter surfaced raw Swift case names like
+            // `malformedXML(underlying: "NSXMLParserErrorDomain error 111")`
+            // straight to the user.
+            let message = parseError.errorDescription
+                ?? (parseError as NSError).localizedDescription
+            return .parse(message)
         }
     }
 }

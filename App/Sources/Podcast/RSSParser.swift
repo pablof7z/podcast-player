@@ -29,10 +29,31 @@ struct RSSParser: Sendable {
         var episodes: [Episode]
     }
 
-    enum ParseError: Error, Sendable {
+    enum ParseError: Error, LocalizedError, Sendable {
         case malformedXML(underlying: String)
         case missingChannel
         case missingFeedURL
+
+        /// User-facing copy. Plain prose, no Swift case names or NSError
+        /// codes — those leak straight into the Add Show error label
+        /// otherwise (the previous `String(describing:)` rendering printed
+        /// `malformedXML(underlying: "NSXMLParserErrorDomain error 111")`
+        /// to the user, which means nothing to anyone who isn't a Swift
+        /// developer).
+        var errorDescription: String? {
+            switch self {
+            case .malformedXML:
+                return "This URL doesn't look like a podcast feed. " +
+                    "The server returned something other than valid RSS — " +
+                    "double-check the URL and try again."
+            case .missingChannel:
+                return "The feed is missing its <channel> element, so " +
+                    "there's nothing to subscribe to."
+            case .missingFeedURL:
+                return "The feed didn't include its own URL, so we can't " +
+                    "fetch updates for it later."
+            }
+        }
     }
 
     /// Parses raw feed bytes. The caller supplies the canonical `feedURL`
