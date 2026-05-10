@@ -168,7 +168,9 @@ struct EpisodeDetailView: View {
                     Haptics.success()
                     playback.enqueue(episode.id)
                 },
-                activeChapterID: liveActiveChapterID(for: episode)
+                activeChapterID: liveActiveChapterID(for: episode),
+                downloadProgress: downloadService.progress[episode.id],
+                onToggleDownload: { toggleDownload(episode: episode) }
             )
         case .reading:
             if let transcript {
@@ -255,6 +257,28 @@ struct EpisodeDetailView: View {
     ) -> Transcript? {
         guard case .ready = episode.transcriptState else { return nil }
         return store.load(episodeID: episode.id)
+    }
+
+    /// Drives the inline Download pill on the hero. Mirrors the menu's
+    /// state machine so the user can start, cancel, or retry from the
+    /// primary surface — and sees a live "Downloading 42%" badge while
+    /// bytes move (the persisted `downloadState` only updates at coarse
+    /// transitions to spare AppStateStore from per-tick writes).
+    private func toggleDownload(episode: Episode) {
+        EpisodeDownloadService.shared.attach(appStore: store)
+        switch episode.downloadState {
+        case .notDownloaded, .queued, .failed:
+            Haptics.success()
+            EpisodeDownloadService.shared.download(episodeID: episode.id)
+        case .downloading:
+            Haptics.light()
+            EpisodeDownloadService.shared.cancel(episodeID: episode.id)
+        case .downloaded:
+            // Inline pill is non-interactive in the downloaded state; the
+            // ellipsis menu handles delete confirmation. No-op here so a
+            // double-bind from a parent doesn't accidentally wipe the file.
+            break
+        }
     }
 
     private func deepLink(for episode: Episode, segment: Segment) -> String {

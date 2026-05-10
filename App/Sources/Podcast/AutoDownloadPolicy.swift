@@ -25,7 +25,14 @@ struct AutoDownloadPolicy: Codable, Sendable, Hashable {
     }
 
     /// Convenience: app default for new subscriptions.
-    static let `default` = AutoDownloadPolicy(mode: .off, wifiOnly: true)
+    ///
+    /// We default to `.allNew` so a fresh subscription auto-pulls every new
+    /// episode the feed reports (Wi-Fi-only). Users who want manual control
+    /// can flip the show to `.off` or `.latestN` from Show Detail. This is
+    /// the right default for an offline-first listening + transcript app:
+    /// nothing else in the agent layer (transcripts, RAG, wiki, briefings)
+    /// works well until the audio is local.
+    static let `default` = AutoDownloadPolicy(mode: .allNew, wifiOnly: true)
 
     /// Compact human-readable description used by management surfaces
     /// (Subscriptions list, per-show details). Returns `nil` for the

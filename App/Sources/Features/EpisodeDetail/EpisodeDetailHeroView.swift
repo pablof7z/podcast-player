@@ -27,6 +27,15 @@ struct EpisodeDetailHeroView: View {
     /// playback is on a different episode (or no chapters); the list
     /// renders flat in that case.
     var activeChapterID: UUID? = nil
+    /// Live download progress in `0...1`, observed from
+    /// `EpisodeDownloadService`. Drives the inline progress pill on the
+    /// action row so the user sees a smooth "Downloading 42%" badge while
+    /// the file is in flight (the Episode's persisted `downloadState` only
+    /// updates at coarse transitions to spare AppStateStore).
+    var downloadProgress: Double? = nil
+    /// Download / cancel / delete handler bound by the parent. The hero
+    /// flips the affordance based on the episode's `downloadState`.
+    var onToggleDownload: () -> Void = {}
 
     var body: some View {
         ScrollView {
@@ -148,6 +157,60 @@ struct EpisodeDetailHeroView: View {
             .foregroundStyle(isInQueue ? .secondary : .primary)
             .disabled(isInQueue)
             .accessibilityHint(isInQueue ? "Already in your Up Next queue" : "Add to Up Next queue")
+
+            // Download pill — promoted from the menu so the user sees a
+            // primary affordance and a live progress badge while bytes are
+            // moving. Flips between Download / Cancel (with %) / Downloaded.
+            downloadPill
+        }
+    }
+
+    @ViewBuilder
+    private var downloadPill: some View {
+        switch episode.downloadState {
+        case .notDownloaded, .queued:
+            Button(action: onToggleDownload) {
+                Label("Download", systemImage: "arrow.down.circle")
+                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: true)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .accessibilityHint("Download episode for offline listening")
+        case .downloading(let persistedProgress, _):
+            Button(action: onToggleDownload) {
+                let live = downloadProgress ?? persistedProgress
+                let pct = Int((live.clamped01 * 100).rounded())
+                Label("Downloading \(pct)%", systemImage: "arrow.down.circle.fill")
+                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: true)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .accessibilityLabel("Downloading, \(Int(((downloadProgress ?? persistedProgress).clamped01 * 100).rounded())) percent. Tap to cancel.")
+        case .downloaded:
+            Label("Downloaded", systemImage: "checkmark.circle.fill")
+                .font(.system(.subheadline, design: .rounded).weight(.medium))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: false)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Downloaded")
+        case .failed:
+            Button(action: onToggleDownload) {
+                Label("Retry", systemImage: "arrow.clockwise")
+                    .font(.system(.subheadline, design: .rounded).weight(.medium))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .glassSurface(cornerRadius: AppTheme.Corner.pill, interactive: true)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(AppTheme.Tint.error)
+            .accessibilityLabel("Download failed. Tap to retry.")
         }
     }
 
@@ -324,6 +387,12 @@ struct EpisodeDetailHeroView: View {
             ? String(format: "%02d:%02d:%02d", h, m, s)
             : String(format: "%02d:%02d", m, s)
     }
+}
+
+// MARK: - Helpers
+
+private extension Double {
+    var clamped01: Double { Swift.max(0, Swift.min(1, self)) }
 }
 
 // MARK: - Preview
