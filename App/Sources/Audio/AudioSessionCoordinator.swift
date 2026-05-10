@@ -117,6 +117,53 @@ final class AudioSessionCoordinator {
         mode = .idle
     }
 
+    // MARK: - Voice mode high-level state
+
+    /// Coarse-grained session state used by the conversational voice layer.
+    ///
+    /// The fine-grained `Mode` API (above) survives because the briefing
+    /// player and the podcast engine reason about it directly. `SessionState`
+    /// is a higher-level facade Voice mode flips between when a conversation
+    /// starts or ends — exactly the two stable shapes called for in the
+    /// research note (`docs/spec/research/voice-stt-tts-stack.md` §3):
+    ///
+    /// - **`.playbackOnly`** → `.playback` + `.spokenAudio`. Briefings and
+    ///   episodes; ducks for system spoken audio (Siri / nav).
+    /// - **`.conversation`** → `.playAndRecord` + `.voiceChat` +
+    ///   `setPrefersEchoCancelledInput(true)` + `.duckOthers`. Used while
+    ///   the conversational agent is active. Never `.mixWithOthers` — it
+    ///   would disable AEC and reintroduce speaker bleed into barge-in.
+    enum SessionState: Sendable, Equatable {
+        case playbackOnly
+        case conversation
+    }
+
+    /// Single mutation point for conversational voice mode. Maps the high
+    /// level state to the fine-grained `Mode` enum and re-routes the
+    /// underlying session. Idempotent — no-op when already in the
+    /// requested state.
+    func setState(_ state: SessionState) throws {
+        switch state {
+        case .playbackOnly:
+            // Prefer briefing context if we were already in conversation
+            // backed by briefing playback; otherwise plain podcast.
+            let target: Mode = (mode == .duckedForVoice && lastPlaybackContext == .briefingPlayback)
+                ? .briefingPlayback
+                : .podcastPlayback
+            try activate(target)
+        case .conversation:
+            // Remember the playback context so we can return to it.
+            if mode == .podcastPlayback || mode == .briefingPlayback {
+                lastPlaybackContext = mode
+            }
+            try activate(.duckedForVoice)
+        }
+    }
+
+    /// Tracks the last playback mode prior to entering `.duckedForVoice` so
+    /// `setState(.playbackOnly)` can return to the correct context.
+    private var lastPlaybackContext: Mode = .podcastPlayback
+
     // MARK: - Configurations
 
     private func configurePlayback() throws {

@@ -111,6 +111,12 @@ final class AudioConversationManager {
     /// True when in continuous ambient (hands-free) mode.
     private(set) var isAmbient: Bool = false
 
+    /// True between `.optimisticPreview` and `.confirmed` (or the speaking
+    /// task ending). The orb keys its rim-light + tint snap on this so the
+    /// magic of the barge-in moment is visible even before the manager
+    /// formally transitions to listening.
+    private(set) var isUserBargingIn: Bool = false
+
     // MARK: - Internal task handles
 
     private var listeningTask: Task<Void, Never>?
@@ -207,6 +213,7 @@ final class AudioConversationManager {
         speakingTask = nil
         bargeTask?.cancel()
         bargeTask = nil
+        isUserBargingIn = false
         avFallback.stopSpeaking()
         if isAmbient {
             beginListening(ambient: true)
@@ -419,14 +426,25 @@ final class AudioConversationManager {
 
     private func armBargeIn() {
         bargeTask?.cancel()
+        isUserBargingIn = false
         let stream = barge.start()
         bargeTask = Task { [weak self] in
             for await event in stream {
                 guard let self else { return }
                 if Task.isCancelled { return }
-                self.logger.info("Barge-in fired: \(String(describing: event), privacy: .public)")
-                self.interruptCurrentSpeech()
-                return
+                self.logger.info("Barge-in event: \(String(describing: event), privacy: .public)")
+                switch event {
+                case .optimisticPreview:
+                    // Surface the rim-light state without halting TTS — if
+                    // the confirm never arrives the speaking task continues
+                    // and the orb returns to its breath rhythm. This is the
+                    // 'magic' window from the UX spec §5.
+                    self.isUserBargingIn = true
+                case .confirmed:
+                    self.isUserBargingIn = false
+                    self.interruptCurrentSpeech()
+                    return
+                }
             }
         }
     }
@@ -450,6 +468,7 @@ final class AudioConversationManager {
         thinkingTask = nil
         speakingTask = nil
         bargeTask = nil
+        isUserBargingIn = false
         stt.stop()
         barge.stop()
     }

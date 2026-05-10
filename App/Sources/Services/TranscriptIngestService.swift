@@ -90,28 +90,53 @@ final class TranscriptIngestService {
         defer { inFlight.remove(episodeID) }
 
         // Path A: publisher transcript URL.
+        //
+        // Two error stages here, kept distinct so the log reflects which
+        // step actually failed. The fetch+parse stage tells us whether
+        // the publisher URL was usable at all; the persist stage tells
+        // us whether on-disk storage worked. With the persistAndIndex
+        // refactor, embedding failures no longer throw — so a thrown
+        // error from `persistAndIndex` is a real disk problem, not a
+        // missing-key one, and falling through to Scribe wouldn't help.
         if let url = episode.publisherTranscriptURL {
             appStore.setEpisodeTranscriptState(episodeID, state: .fetchingPublisher)
+            let fetched: Transcript?
             do {
-                let transcript = try await ingestor.ingest(
+                fetched = try await ingestor.ingest(
                     url: url,
                     mimeHint: episode.publisherTranscriptType?.rawValue,
                     episodeID: episodeID,
                     language: "en-US"
                 )
-                try await persistAndIndex(
-                    transcript: transcript,
-                    episode: episode,
-                    source: .publisher,
-                    appStore: appStore
-                )
-                return
             } catch {
                 Self.logger.notice(
                     "publisher transcript fetch failed for \(episodeID, privacy: .public): \(String(describing: error), privacy: .public) — trying Scribe fallback"
                 )
-                // Fall through to Scribe path.
+                // Reset state so the Scribe path can take over cleanly.
+                appStore.setEpisodeTranscriptState(episodeID, state: .none)
+                fetched = nil
             }
+            if let transcript = fetched {
+                do {
+                    try await persistAndIndex(
+                        transcript: transcript,
+                        episode: episode,
+                        source: .publisher,
+                        appStore: appStore
+                    )
+                    return
+                } catch {
+                    Self.logger.error(
+                        "publisher transcript persist failed for \(episodeID, privacy: .public): \(String(describing: error), privacy: .public) — disk error, not falling through to Scribe"
+                    )
+                    appStore.setEpisodeTranscriptState(
+                        episodeID,
+                        state: .failed(message: error.localizedDescription)
+                    )
+                    return
+                }
+            }
+            // fetched == nil: fetch threw above; let the Scribe path below run.
         }
 
         // Path B: ElevenLabs Scribe (only if a key is configured *and* the
@@ -217,40 +242,53 @@ final class TranscriptIngestService {
         source: TranscriptState.Source,
         appStore: AppStateStore
     ) async throws {
-        // 1. Build chunks with the episode's podcast (subscription) FK.
+        // STEP 1: Persist + flip to `.ready` BEFORE embedding.
+        //
+        // The user's primary value out of this pipeline is "I can read the
+        // transcript." Embedding for RAG search is a nice-to-have that
+        // requires a separate provider key (`OpenRouter` / `Ollama`).
+        // Folding embedding into the same throw-path used to mean: a fresh
+        // user with no embeddings key never sees a transcript at all,
+        // because `VectorIndex.upsert` throws `.missingAPIKey` and the
+        // caller catches it and either falls through to Scribe (which
+        // would hit the same throw) or sets `.failed`. This was the
+        // default first-run experience and matches the reported bug:
+        // "no transcript works, not even ElevenLabs Scribe."
+        //
+        // Save first, mark ready, then attempt embedding. RAG just won't
+        // find this episode's content until the user adds an embeddings
+        // key and explicitly re-embeds; the transcript itself is readable
+        // immediately.
+        try store.save(transcript)
+        appStore.setEpisodeTranscriptState(
+            episode.id,
+            state: .ready(source: source)
+        )
+
+        // STEP 2: Best-effort embed. Failures are logged but don't throw.
         let chunkable = ChunkableTranscript(
             transcript: transcript,
             podcastID: episode.subscriptionID
         )
         let chunks = chunkBuilder.build(from: chunkable)
 
-        // 2. Drop any prior chunks for this episode so re-ingestion replaces
-        //    rather than accumulates. The vector store's upsert path is
-        //    already idempotent on `chunk.id`, but old chunks (e.g. from a
-        //    Scribe re-run with different segment boundaries) would otherwise
-        //    linger.
-        try await rag.index.deleteAll(forEpisodeID: episode.id)
-
-        // 3. Embed + upsert. `VectorIndex.upsert` calls the embeddings client
-        //    internally; if no API key is configured this throws and we
-        //    surface the failure on `transcriptState`.
-        if !chunks.isEmpty {
-            try await rag.index.upsert(chunks: chunks)
+        do {
+            // Drop any prior chunks for this episode so re-ingestion
+            // replaces rather than accumulates. Idempotent on chunk.id,
+            // but old chunks from a different segment-boundary run would
+            // otherwise linger.
+            try await rag.index.deleteAll(forEpisodeID: episode.id)
+            if !chunks.isEmpty {
+                try await rag.index.upsert(chunks: chunks)
+            }
+            Self.logger.info(
+                "ingested transcript for \(episode.id, privacy: .public) — \(chunks.count, privacy: .public) chunks indexed, source=\(String(describing: source), privacy: .public)"
+            )
+        } catch {
+            Self.logger.notice(
+                "transcript saved for \(episode.id, privacy: .public) but RAG indexing failed: \(String(describing: error), privacy: .public) — episode is readable; search won't find it until the user re-embeds with a configured key"
+            )
         }
-
-        // 4. Persist the parsed transcript so the EpisodeDetail view can
-        //    render it without re-fetching.
-        try store.save(transcript)
-
-        // 5. Flip state to .ready.
-        appStore.setEpisodeTranscriptState(
-            episode.id,
-            state: .ready(source: source)
-        )
-
-        Self.logger.info(
-            "ingested transcript for \(episode.id, privacy: .public) — \(chunks.count, privacy: .public) chunks, source=\(String(describing: source), privacy: .public)"
-        )
     }
 
     // MARK: - Helpers
