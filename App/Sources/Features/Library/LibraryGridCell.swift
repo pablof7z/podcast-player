@@ -108,18 +108,49 @@ struct LibraryGridCell: View {
     }
 
     private var unplayedDot: some View {
+        // iOS-standard cap: show 1–9 verbatim, 10–99 verbatim with a
+        // smaller font, "99+" past the threshold. Previously the badge
+        // capped at "9" so a show with 9 unplayed and one with 90
+        // looked identical to the user.
         ZStack {
             Circle()
                 .fill(.red)
-                .frame(width: 14, height: 14)
+                .frame(width: badgeWidth, height: 14)
                 .appShadow(AppTheme.Shadow.subtle)
             if unplayedCount > 1 {
-                Text("\(min(unplayedCount, 9))")
-                    .font(.system(size: 9, weight: .bold))
+                Text(unplayedCountLabel)
+                    .font(.system(size: badgeFontSize, weight: .bold))
                     .foregroundStyle(.white)
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// 14pt circle for single-digit counts; pill stretches horizontally
+    /// for two-digit and the "99+" string so the digits don't get
+    /// clipped against the show artwork's corner.
+    private var badgeWidth: CGFloat {
+        switch unplayedCount {
+        case ..<10:  return 14
+        case ..<100: return 18
+        default:     return 24
+        }
+    }
+
+    /// Font size shrinks from 9pt → 8pt → 7pt as the digits widen so
+    /// the text always sits cleanly inside the badge without going
+    /// monospaced (which would clash with the rounded counts elsewhere
+    /// in the grid).
+    private var badgeFontSize: CGFloat {
+        switch unplayedCount {
+        case ..<10:  return 9
+        case ..<100: return 8
+        default:     return 7
+        }
+    }
+
+    private var unplayedCountLabel: String {
+        unplayedCount > 99 ? "99+" : "\(unplayedCount)"
     }
 
     private func categoryBadge(_ category: PodcastCategory) -> some View {
