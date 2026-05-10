@@ -78,13 +78,19 @@ final class WikiHomeViewModel {
 
     /// Pages filtered by `searchQuery`. Empty query returns the full
     /// list. Match is case-insensitive against title + summary.
+    ///
+    /// Uses `localizedCaseInsensitiveContains` (Foundation's
+    /// Unicode-aware fold) instead of double-lowercasing both sides
+    /// and substring-matching. The lowercase-then-contains shape misses
+    /// folded cases like German "Straße" matching "STRASSE" — same
+    /// bug that bit `HighlightedText`. The locale-aware path also
+    /// avoids two `.lowercased()` allocations per row per render.
     var filteredPages: [WikiPage] {
         let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return recentPages }
-        let needle = trimmed.lowercased()
         return recentPages.filter { page in
-            page.title.lowercased().contains(needle)
-                || page.summary.lowercased().contains(needle)
+            page.title.localizedCaseInsensitiveContains(trimmed)
+                || page.summary.localizedCaseInsensitiveContains(trimmed)
         }
     }
 

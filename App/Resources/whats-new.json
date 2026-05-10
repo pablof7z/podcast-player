@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "wiki-search-fold",
+      "shipped_at": "2026-05-10T22:50:00Z",
+      "lines": [
+        "Wiki search now finds pages across Unicode case folds — searching 'strasse' matches 'Straße'"
+      ]
+    },
+    {
       "id": "995edfa",
       "shipped_at": "2026-05-10T22:30:00Z",
       "lines": [
