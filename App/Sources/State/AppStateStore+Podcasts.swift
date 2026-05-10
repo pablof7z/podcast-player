@@ -44,8 +44,8 @@ extension AppStateStore {
     }
 
     /// Adds a batch of fetched OPML/import results with one state assignment.
-    /// This avoids the large-library path where each feed writes the growing
-    /// JSON blob, rebuilds projections, and reindexes Spotlight separately.
+    /// Historical backlog episodes are stored but not auto-downloaded; the
+    /// per-show auto-download policy applies to future refreshes.
     @discardableResult
     func addSubscriptions(_ payloads: [SubscriptionImportPayload]) -> SubscriptionImportResult {
         guard !payloads.isEmpty else {
@@ -56,7 +56,6 @@ extension AppStateStore {
         var knownFeedURLs = Set(next.subscriptions.map { Self.feedURLKey($0.feedURL) })
         var imported = 0
         var skipped = 0
-        var autoDownloadBatches: [(subscriptionID: UUID, episodeIDs: [UUID])] = []
 
         next.subscriptions.reserveCapacity(next.subscriptions.count + payloads.count)
         next.episodes.reserveCapacity(next.episodes.count + payloads.reduce(0) { $0 + $1.episodes.count })
@@ -71,11 +70,6 @@ extension AppStateStore {
             next.subscriptions.append(payload.subscription)
             next.episodes.append(contentsOf: payload.episodes)
             imported += 1
-
-            let episodeIDs = payload.episodes.map(\.id)
-            if !episodeIDs.isEmpty {
-                autoDownloadBatches.append((payload.subscription.id, episodeIDs))
-            }
         }
 
         guard imported > 0 else {
@@ -84,16 +78,6 @@ extension AppStateStore {
 
         performMutationBatch {
             state = next
-        }
-
-        if !autoDownloadBatches.isEmpty {
-            EpisodeDownloadService.shared.attach(appStore: self)
-            for batch in autoDownloadBatches {
-                EpisodeDownloadService.shared.evaluateAutoDownload(
-                    forSubscription: batch.subscriptionID,
-                    newEpisodeIDs: batch.episodeIDs
-                )
-            }
         }
 
         return SubscriptionImportResult(imported: imported, skipped: skipped)

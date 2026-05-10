@@ -84,7 +84,11 @@ struct SubscriptionService {
             guard store.addSubscription(subscription) else {
                 throw AddError.alreadySubscribed(title: subscription.title)
             }
-            store.upsertEpisodes(episodes, forSubscription: subscription.id)
+            store.upsertEpisodes(
+                episodes,
+                forSubscription: subscription.id,
+                evaluateAutoDownload: false
+            )
             return subscription
         case .notModified:
             // First fetch can't realistically be 304 (no ETag was sent), but if

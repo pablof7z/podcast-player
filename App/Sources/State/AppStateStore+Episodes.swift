@@ -59,12 +59,16 @@ extension AppStateStore {
     /// mutable playback state (`playbackPosition`, `played`, `downloadState`,
     /// `transcriptState`) is preserved.
     ///
-    /// Triggers `EpisodeDownloadService.evaluateAutoDownload(...)` for any
-    /// genuinely new episode IDs so per-subscription `AutoDownloadPolicy`
-    /// (off / latest-N / all-new + Wi-Fi guard) fires on every feed refresh
-    /// without the refresh service having to know about the downloader.
+    /// When `evaluateAutoDownload` is true, triggers
+    /// `EpisodeDownloadService.evaluateAutoDownload(...)` for genuinely new
+    /// episode IDs. Initial subscription/import paths pass false so historical
+    /// back-catalog episodes do not queue thousands of downloads at once.
     @discardableResult
-    func upsertEpisodes(_ incoming: [Episode], forSubscription subscriptionID: UUID) -> [UUID] {
+    func upsertEpisodes(
+        _ incoming: [Episode],
+        forSubscription subscriptionID: UUID,
+        evaluateAutoDownload: Bool = true
+    ) -> [UUID] {
         guard !incoming.isEmpty else { return [] }
         var updated = state.episodes
         let existingByGUID = Dictionary(
@@ -95,7 +99,7 @@ extension AppStateStore {
             // merges where count stays equal; explicit invalidation covers both.
             invalidateEpisodeProjections()
         }
-        if !newlyInserted.isEmpty {
+        if evaluateAutoDownload, !newlyInserted.isEmpty {
             // Attach the service to this store on first reach so the
             // download lifecycle, the auto-download path, and the AudioEngine
             // local-file fallback all see the same `appStore`. Idempotent.
