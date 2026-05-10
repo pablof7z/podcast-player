@@ -52,7 +52,7 @@ struct AgentRunListView: View {
     private var scroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("\(logger.runs.count) runs")
+                Text("\(logger.runs.count) run\(logger.runs.count == 1 ? "" : "s")")
                     .font(.caption.weight(.semibold))
                     .tracking(1.2)
                     .textCase(.uppercase)
@@ -100,8 +100,8 @@ struct AgentRunListView: View {
                     .truncationMode(.tail)
 
                 HStack(spacing: 12) {
-                    Label("\(run.turns.count) turns", systemImage: "repeat")
-                    Label("\(run.totalTokensUsed) tokens", systemImage: "function")
+                    Label("\(run.turns.count) turn\(run.turns.count == 1 ? "" : "s")", systemImage: "repeat")
+                    Label("\(run.totalTokensUsed) token\(run.totalTokensUsed == 1 ? "" : "s")", systemImage: "function")
                     Label(AgentRunFormat.duration(run.durationMs), systemImage: "timer")
                 }
                 .font(.caption2)
@@ -178,8 +178,19 @@ struct AgentRunOutcomeBadge: View {
 }
 
 enum AgentRunFormat {
+    /// Compact wall-clock representation. Past 60 seconds we switch to
+    /// `Mm Ss` so a 2-minute run reads as "2m 0s" instead of "120.0s",
+    /// which was both ambiguous (long-tail decimal) and harder to scan
+    /// alongside other timestamps in the list.
     static func duration(_ ms: Int) -> String {
         if ms < 1000 { return "\(ms)ms" }
-        return String(format: "%.1fs", Double(ms) / 1000)
+        if ms < 60_000 { return String(format: "%.1fs", Double(ms) / 1000) }
+        let totalSeconds = ms / 1000
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        if minutes < 60 { return "\(minutes)m \(seconds)s" }
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        return "\(hours)h \(remainingMinutes)m"
     }
 }
