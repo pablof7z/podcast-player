@@ -228,8 +228,17 @@ final class PlaybackState {
     /// Replace the current item with `newEpisode`. Resumes from the persisted
     /// `playbackPosition` when present. Caller must follow with `play()` to
     /// actually start audio — matches the engine's deliberate two-step flow.
+    ///
+    /// **Idempotent.** When `newEpisode.id` matches the currently-loaded
+    /// episode, skip the `engine.load` reload — it would replace the
+    /// `AVPlayerItem` and interrupt in-flight playback for a caller that
+    /// just wanted "make sure this is loaded" semantics (the EpisodeDetail
+    /// hero "Play/Resume" button, chapter-row taps, deep-links). The
+    /// metadata refresh + snapshot write still run so any post-hydrate
+    /// changes (chapters, title) flush to the widget.
     func setEpisode(_ newEpisode: Episode) {
-        if episode?.id != newEpisode.id {
+        let isSameEpisode = (episode?.id == newEpisode.id)
+        if !isSameEpisode {
             // Drain any cached position for the previous episode before
             // we steal the persistence loop — otherwise the outgoing
             // playhead would only land on disk at the next 30s eager-cap
@@ -239,15 +248,22 @@ final class PlaybackState {
             lastSnapshotWrite = nil
         }
         episode = newEpisode
-        engine.load(newEpisode)
-        if newEpisode.playbackPosition > 0 {
-            engine.seek(to: newEpisode.playbackPosition)
+        if !isSameEpisode {
+            engine.load(newEpisode)
+            if newEpisode.playbackPosition > 0 {
+                engine.seek(to: newEpisode.playbackPosition)
+            }
         }
         // Episode change is the one event that always justifies a snapshot
         // write — title and artwork just changed, so the widget would
-        // otherwise show stale metadata until the next 5-second tick.
+        // otherwise show stale metadata until the next 5-second tick. For
+        // same-episode calls we still want the refresh in case chapter
+        // hydration or feed-refresh updated the metadata while playback
+        // was rolling.
         writeNowPlayingSnapshot(force: true)
-        startPersistenceLoop()
+        if !isSameEpisode {
+            startPersistenceLoop()
+        }
     }
 
     // MARK: - Imperative methods (binding contract for the player UI)
