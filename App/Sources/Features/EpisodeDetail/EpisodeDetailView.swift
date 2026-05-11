@@ -95,18 +95,11 @@ struct EpisodeDetailView: View {
                 episode: episode,
                 store: store
             )
-            // Compile AI chapters for episodes that finished ingesting before
-            // the auto-compile hook in `TranscriptIngestService.persistAndIndex`
-            // existed. Idempotent — returns immediately when chapters already
-            // exist or the transcript isn't `.ready`.
+            // Compile chapters + summaries + ad segments in a single LLM call
+            // for episodes that finished ingesting before the auto-compile hook
+            // in `TranscriptIngestService.persistAndIndex` existed. Idempotent —
+            // early returns once `Episode.adSegments` is non-nil.
             await AIChapterCompiler.shared.compileIfNeeded(
-                episodeID: episode.id,
-                store: store
-            )
-            // Detect ad segments for the same reason. Idempotent — early
-            // returns once `Episode.adSegments` is non-nil (including an
-            // empty array signalling "detection ran, found no ads").
-            await AdSegmentDetector.shared.detectIfNeeded(
                 episodeID: episode.id,
                 store: store
             )

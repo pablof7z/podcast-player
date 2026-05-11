@@ -392,21 +392,13 @@ final class TranscriptIngestService {
         // lacks publisher chapters. The compiler is internally idempotent and
         // early-returns when chapters already exist, so re-runs of the ingest
         // pipeline are cheap. Decoupled from the embed step because chapter
-        // compilation runs even when embeddings can't (no API key).
+        // compilation runs even when embeddings can't (no API key). The
+        // combined call produces chapters, per-chapter summaries, and ad
+        // segments in one LLM round trip.
         let episodeID = episode.id
         Task { @MainActor [weak appStore] in
             guard let appStore else { return }
             await AIChapterCompiler.shared.compileIfNeeded(episodeID: episodeID, store: appStore)
-        }
-
-        // STEP 4: Fire-and-forget ad-segment detection. Also idempotent —
-        // early-returns when `Episode.adSegments` is already set (including
-        // an explicit empty array meaning "no ads found"). Independent of
-        // the chapter compile so a chapter-rich episode still gets ad spans
-        // marked.
-        Task { @MainActor [weak appStore] in
-            guard let appStore else { return }
-            await AdSegmentDetector.shared.detectIfNeeded(episodeID: episodeID, store: appStore)
         }
     }
 

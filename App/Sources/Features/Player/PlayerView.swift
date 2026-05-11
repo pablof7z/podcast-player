@@ -69,10 +69,6 @@ struct PlayerView: View {
                     episodeID: episode.id,
                     store: store
                 )
-                await AdSegmentDetector.shared.detectIfNeeded(
-                    episodeID: episode.id,
-                    store: store
-                )
             }
             AutoSnipController.shared.attach(playback: state, store: store)
         }

@@ -6,6 +6,7 @@ struct AIModelsSettingsView: View {
     @State private var memorySelectorPresented = false
     @State private var wikiSelectorPresented = false
     @State private var categorizationSelectorPresented = false
+    @State private var chapterSelectorPresented = false
     @State private var embeddingsSelectorPresented = false
     @State private var catalog = OpenRouterModelSelectorViewModel()
 
@@ -49,6 +50,12 @@ struct AIModelsSettingsView: View {
         .sheet(isPresented: $categorizationSelectorPresented) {
             NavigationStack {
                 OpenRouterModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization")
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $chapterSelectorPresented) {
+            NavigationStack {
+                OpenRouterModelSelectorView(selectedModelID: chapterModelBinding, selectedModelName: chapterModelNameBinding, role: "Chapter Compilation")
             }
             .presentationDragIndicator(.visible)
         }
@@ -107,6 +114,17 @@ struct AIModelsSettingsView: View {
                 categorizationSelectorPresented = true
             }
             ModelPreviewCard(model: catalogModel(for: store.state.settings.categorizationModel))
+
+            modelRow(
+                icon: "list.bullet.indent",
+                tint: .green,
+                role: "Chapter Compilation",
+                modelID: store.state.settings.chapterCompilationModel,
+                modelName: store.state.settings.chapterCompilationModelName
+            ) {
+                chapterSelectorPresented = true
+            }
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.chapterCompilationModel))
 
             modelRow(
                 icon: "rectangle.stack.fill.badge.person.crop",
@@ -227,6 +245,20 @@ struct AIModelsSettingsView: View {
         )
     }
 
+    private var chapterModelBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.chapterCompilationModel },
+            set: { v in var s = store.state.settings; s.chapterCompilationModel = v; store.updateSettings(s) }
+        )
+    }
+
+    private var chapterModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.chapterCompilationModelName },
+            set: { v in var s = store.state.settings; s.chapterCompilationModelName = v; store.updateSettings(s) }
+        )
+    }
+
     private var embeddingsModelBinding: Binding<String> {
         Binding(
             get: { store.state.settings.embeddingsModel },
@@ -280,6 +312,10 @@ struct AIModelsSettingsView: View {
         }
         if s.categorizationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.categorizationModel }) {
             s.categorizationModelName = match.name
+            changed = true
+        }
+        if s.chapterCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.chapterCompilationModel }) {
+            s.chapterCompilationModelName = match.name
             changed = true
         }
         if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.embeddingsModel }) {

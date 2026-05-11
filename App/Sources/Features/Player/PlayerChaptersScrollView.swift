@@ -47,7 +47,7 @@ struct PlayerChaptersScrollView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                     ForEach(chapters) { chapter in
                         chapterRow(chapter, isActive: chapter.id == activeChapterID)
                             .id(chapter.id)
@@ -83,13 +83,24 @@ struct PlayerChaptersScrollView: View {
             HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.sm) {
                 Text(formatTimestamp(chapter.startTime))
                     .font(.system(.footnote, design: .monospaced).weight(.medium))
-                    .foregroundStyle(isActive ? Color.accentColor : .secondary)
+                    .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
                     .frame(width: 60, alignment: .leading)
-                Text(chapter.title)
-                    .font(.system(.body, design: .serif))
-                    .foregroundStyle(isActive ? .primary : .secondary)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(chapter.title)
+                        .font(.system(.body))
+                        .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    if let summary = chapter.summary?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !summary.isEmpty {
+                        Text(summary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(isActive ? 4 : 2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 if overlapsAd {
                     Image(systemName: "speaker.slash")
                         .font(.caption2.weight(.semibold))
@@ -116,7 +127,7 @@ struct PlayerChaptersScrollView: View {
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.sm)
-            .padding(.vertical, 8)
+            .padding(.vertical, AppTheme.Spacing.sm)
             .background(rowBackground(isActive: isActive))
             .overlay(alignment: .leading) {
                 if overlapsAd {

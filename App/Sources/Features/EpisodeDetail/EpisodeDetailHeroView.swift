@@ -249,9 +249,21 @@ struct EpisodeDetailHeroView: View {
                             .font(.system(.footnote, design: .monospaced).weight(.medium))
                             .foregroundStyle(isActive ? Color.accentColor : .secondary)
                             .frame(width: 64, alignment: .leading)
-                        Text(chapter.title)
-                            .font(AppTheme.Typography.body)
-                            .foregroundStyle(isActive ? Color.accentColor : .primary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(chapter.title)
+                                .font(AppTheme.Typography.body)
+                                .foregroundStyle(isActive ? Color.accentColor : .primary)
+                                .multilineTextAlignment(.leading)
+                            if let summary = chapter.summary?.trimmingCharacters(in: .whitespacesAndNewlines),
+                               !summary.isEmpty {
+                                Text(summary)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(isActive ? 4 : 2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                         Spacer()
                         if isActive {
                             Image(systemName: "waveform")

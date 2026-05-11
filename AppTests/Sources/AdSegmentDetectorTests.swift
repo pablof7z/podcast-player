@@ -1,114 +1,158 @@
 import XCTest
 @testable import Podcastr
 
-/// Pins the pure pieces of `AdSegmentDetector`:
-///   1. `parseAdSegments` — JSON contract, monotonic + non-overlapping
-///      validation, duration clamp, default `.midroll` kind fallback.
-///   2. `Episode.Chapter.overlapsAd(in:adSegments:)` — half-open interval
-///      overlap with implicit end-time resolution.
-///   3. `AppStateStore.setEpisodeAdSegments` round-trips through the
-///      Episode model's Codable layer.
-///
-/// The LLM round-trip itself isn't tested here — `WikiOpenRouterClient.live`
-/// would need a real key. Detector behaviour past the parse boundary is
+/// Pins the pure pieces of `AIChapterCompiler`'s ad-segment + chapter
+/// pipeline. The LLM round-trip itself isn't tested here — it requires a
+/// real OpenRouter / Ollama key. Anything past the parse boundary is
 /// integration territory.
+///
+/// Historical note: this file used to test `AdSegmentDetector`. That
+/// service was folded into `AIChapterCompiler` so chapters, summaries, and
+/// ads are produced in a single LLM call — same parsing contract, now
+/// shared with the chapter path.
 @MainActor
 final class AdSegmentDetectorTests: XCTestCase {
 
-    private var detector: AdSegmentDetector!
+    private var compiler: AIChapterCompiler!
 
     override func setUp() {
         super.setUp()
-        detector = AdSegmentDetector.shared
+        compiler = AIChapterCompiler.shared
     }
 
     override func tearDown() {
-        detector = nil
+        compiler = nil
         super.tearDown()
     }
 
-    // MARK: - parseAdSegments
+    // MARK: - parseEnrichOnly (ads + summaries by index)
 
-    func testParseAdSegmentsHappyPath() {
+    func testParseEnrichOnlyAdsHappyPath() {
         let raw = """
-        {"ads":[{"start_seconds":0,"end_seconds":30,"kind":"preroll"},{"start_seconds":600,"end_seconds":660,"kind":"midroll"}]}
+        {"summaries":[],"ads":[{"start":0,"end":30,"kind":"preroll"},{"start":600,"end":660,"kind":"midroll"}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.count, 2)
-        XCTAssertEqual(result?[0].kind, .preroll)
-        XCTAssertEqual(result?[0].start, 0)
-        XCTAssertEqual(result?[0].end, 30)
-        XCTAssertEqual(result?[1].kind, .midroll)
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertNotNil(ads)
+        XCTAssertEqual(ads?.count, 2)
+        XCTAssertEqual(ads?[0].kind, .preroll)
+        XCTAssertEqual(ads?[0].start, 0)
+        XCTAssertEqual(ads?[0].end, 30)
+        XCTAssertEqual(ads?[1].kind, .midroll)
     }
 
-    func testParseAdSegmentsReturnsEmptyForEmptyAdsArray() {
+    func testParseEnrichOnlyAcceptsLegacyStartEndSecondsFields() {
+        // The merged parser tolerates `start_seconds` / `end_seconds` so older
+        // prompt outputs still validate.
+        let raw = """
+        {"ads":[{"start_seconds":0,"end_seconds":30,"kind":"preroll"}]}
+        """
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(ads?.count, 1)
+        XCTAssertEqual(ads?.first?.start, 0)
+        XCTAssertEqual(ads?.first?.end, 30)
+    }
+
+    func testParseEnrichOnlyReturnsEmptyForEmptyAdsArray() {
         let raw = """
         {"ads":[]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertNotNil(result, "empty array is a valid 'no ads found' result, not nil")
-        XCTAssertEqual(result?.count, 0)
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertNotNil(ads, "empty array is a valid 'no ads found' result, not nil")
+        XCTAssertEqual(ads?.count, 0)
     }
 
-    func testParseAdSegmentsRejectsMalformedJSON() {
-        XCTAssertNil(detector.parseAdSegments("not json", durationCap: 3600))
-        XCTAssertNil(detector.parseAdSegments(#"{"chapters":[]}"#, durationCap: 3600))
+    func testParseEnrichOnlyRejectsMalformedJSON() {
+        let (s1, a1) = compiler.parseEnrichOnly("not json", durationCap: 3600)
+        XCTAssertTrue(s1.isEmpty)
+        XCTAssertNil(a1)
     }
 
-    func testParseAdSegmentsDropsZeroLengthRanges() {
+    func testParseEnrichOnlyDropsZeroLengthRanges() {
         let raw = """
-        {"ads":[{"start_seconds":100,"end_seconds":100,"kind":"midroll"},{"start_seconds":200,"end_seconds":260,"kind":"midroll"}]}
+        {"ads":[{"start":100,"end":100,"kind":"midroll"},{"start":200,"end":260,"kind":"midroll"}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.count, 1, "zero-length range should be rejected")
-        XCTAssertEqual(result?.first?.start, 200)
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(ads?.count, 1, "zero-length range should be rejected")
+        XCTAssertEqual(ads?.first?.start, 200)
     }
 
-    func testParseAdSegmentsRejectsOverlappingRanges() {
-        // Second range starts inside the first → drop the second.
+    func testParseEnrichOnlyRejectsOverlappingRanges() {
         let raw = """
-        {"ads":[{"start_seconds":0,"end_seconds":120,"kind":"preroll"},{"start_seconds":60,"end_seconds":180,"kind":"midroll"}]}
+        {"ads":[{"start":0,"end":120,"kind":"preroll"},{"start":60,"end":180,"kind":"midroll"}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.count, 1)
-        XCTAssertEqual(result?.first?.end, 120)
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(ads?.count, 1)
+        XCTAssertEqual(ads?.first?.end, 120)
     }
 
-    func testParseAdSegmentsRejectsNonMonotonicRanges() {
-        // Second range is BEFORE the first → drop the second.
+    func testParseEnrichOnlyClampsToDurationCap() {
         let raw = """
-        {"ads":[{"start_seconds":300,"end_seconds":360,"kind":"midroll"},{"start_seconds":100,"end_seconds":160,"kind":"midroll"}]}
+        {"ads":[{"start":3500,"end":9999,"kind":"postroll"}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.count, 1)
-        XCTAssertEqual(result?.first?.start, 300)
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(ads?.count, 1)
+        XCTAssertEqual(ads?.first?.end, 3600, "end past duration cap is clamped")
     }
 
-    func testParseAdSegmentsClampsToDurationCap() {
+    func testParseEnrichOnlyDefaultsKindToMidroll() {
         let raw = """
-        {"ads":[{"start_seconds":3500,"end_seconds":9999,"kind":"postroll"}]}
+        {"ads":[{"start":0,"end":30}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.count, 1)
-        XCTAssertEqual(result?.first?.end, 3600, "end past duration cap is clamped")
+        let (_, ads) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(ads?.first?.kind, .midroll)
     }
 
-    func testParseAdSegmentsDefaultsKindToMidroll() {
-        // Missing `kind` → midroll.
+    func testParseEnrichOnlySummariesIndexedByChapter() {
         let raw = """
-        {"ads":[{"start_seconds":0,"end_seconds":30}]}
+        {"summaries":[{"index":0,"summary":"Intro discussion."},{"index":2,"summary":"Topic B deep dive."}],"ads":[]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.first?.kind, .midroll)
+        let (summaries, _) = compiler.parseEnrichOnly(raw, durationCap: 3600)
+        XCTAssertEqual(summaries[0], "Intro discussion.")
+        XCTAssertEqual(summaries[2], "Topic B deep dive.")
+        XCTAssertNil(summaries[1])
     }
 
-    func testParseAdSegmentsRejectsUnknownKindAsMidroll() {
+    // MARK: - parseFull (chapters + summaries + ads)
+
+    func testParseFullHappyPath() {
         let raw = """
-        {"ads":[{"start_seconds":0,"end_seconds":30,"kind":"bumper"}]}
+        {"chapters":[
+          {"start":0,"title":"Cold open","summary":"Setup."},
+          {"start":120,"title":"Topic A","summary":"First topic."},
+          {"start":600,"title":"Topic B","summary":"Second topic."},
+          {"start":1200,"title":"Wrap","summary":"Closing."}
+        ],"ads":[{"start":60,"end":90,"kind":"preroll"}]}
         """
-        let result = detector.parseAdSegments(raw, durationCap: 3600)
-        XCTAssertEqual(result?.first?.kind, .midroll, "unknown kind defaults to .midroll")
+        let result = compiler.parseFull(raw, durationCap: 3600)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.chapters.count, 4)
+        XCTAssertEqual(result?.chapters.first?.summary, "Setup.")
+        XCTAssertTrue(result?.chapters.first?.isAIGenerated == true)
+        XCTAssertEqual(result?.ads.count, 1)
+        XCTAssertEqual(result?.ads.first?.kind, .preroll)
+    }
+
+    func testParseFullRejectsTooFewChapters() {
+        // Below `minChapters` (4) → unusable.
+        let raw = """
+        {"chapters":[{"start":0,"title":"Only","summary":"x"}],"ads":[]}
+        """
+        XCTAssertNil(compiler.parseFull(raw, durationCap: 3600))
+    }
+
+    // MARK: - applySummaries
+
+    func testApplySummariesByIndex() {
+        let existing = [
+            Episode.Chapter(startTime: 0, title: "A"),
+            Episode.Chapter(startTime: 100, title: "B"),
+            Episode.Chapter(startTime: 200, title: "C")
+        ]
+        let merged = compiler.applySummaries(to: existing, indexed: [0: "First.", 2: "Third."])
+        XCTAssertEqual(merged[0].summary, "First.")
+        XCTAssertNil(merged[1].summary)
+        XCTAssertEqual(merged[2].summary, "Third.")
+        XCTAssertEqual(merged[0].title, "A", "titles untouched")
     }
 
     // MARK: - Chapter overlap helper
@@ -131,8 +175,6 @@ final class AdSegmentDetectorTests: XCTestCase {
     }
 
     func testChapterOverlapsAdUsesExplicitEndTime() {
-        // Explicit endTime — ignore neighbouring chapters when computing
-        // the chapter window. Ad at 700 sits OUTSIDE [0, 500] → no overlap.
         let chapter = Episode.Chapter(startTime: 0, endTime: 500, title: "Cold open")
         let nextChapter = Episode.Chapter(startTime: 800, title: "Topic A")
         let ads = [Episode.AdSegment(start: 700, end: 750, kind: .midroll)]
@@ -144,16 +186,11 @@ final class AdSegmentDetectorTests: XCTestCase {
             Episode.Chapter(startTime: 0, title: "Cold open"),
             Episode.Chapter(startTime: 600, title: "Topic A")
         ]
-        // Ad sits after the last chapter's start with no upper bound — the
-        // last chapter must claim it.
         let ads = [Episode.AdSegment(start: 3500, end: 3580, kind: .postroll)]
         XCTAssertTrue(chapters[1].overlapsAd(in: chapters, adSegments: ads))
     }
 
     func testChapterOverlapsAdRespectsHalfOpenInterval() {
-        // Ad starts exactly at the next chapter's startTime → does NOT
-        // overlap the previous chapter. Half-open semantics keep adjacent
-        // chapter+ad pairs disjoint.
         let chapters = [
             Episode.Chapter(startTime: 0, title: "Cold open"),
             Episode.Chapter(startTime: 500, title: "Topic A")
@@ -185,10 +222,6 @@ final class AdSegmentDetectorTests: XCTestCase {
     }
 
     func testEpisodeAdSegmentsAbsentFieldDecodesAsNil() throws {
-        // Older saved state has no `adSegments` key — must decode silently.
-        // Build the fixture by encoding an Episode with `adSegments == nil`
-        // and stripping the field, which is more robust than hand-writing
-        // the tagged-enum JSON that `DownloadState` / `TranscriptState` use.
         let template = Episode(
             subscriptionID: UUID(),
             guid: "legacy",
@@ -198,9 +231,6 @@ final class AdSegmentDetectorTests: XCTestCase {
             adSegments: nil
         )
         let encoded = try JSONEncoder().encode(template)
-        // Confirm the encoder emits the field even when nil OR drops it — we
-        // just need the decoder to tolerate its absence. Strip the key
-        // explicitly to simulate an older saved-state blob.
         guard var dict = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
             return XCTFail("expected dict-shaped Episode encoding")
         }
@@ -237,8 +267,6 @@ final class AdSegmentDetectorTests: XCTestCase {
         XCTAssertEqual(resolved?.first?.kind, .preroll)
         XCTAssertEqual(resolved?.last?.start, 1500)
 
-        // Empty array means "detection ran, found no ads" — distinct from
-        // nil. The store must persist that distinction.
         store.setEpisodeAdSegments(episode.id, segments: [])
         XCTAssertEqual(store.episode(id: episode.id)?.adSegments?.count, 0)
         XCTAssertNotNil(store.episode(id: episode.id)?.adSegments, "empty != nil")
