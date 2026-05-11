@@ -131,9 +131,6 @@ struct DownloadStatusCapsule: View {
     }
 }
 
-// MARK: - Helpers
-
-private extension Double {
-    /// Clamp a progress fraction into `0...1` for safe display.
-    var clamped01: Double { Swift.max(0, Swift.min(1, self)) }
-}
+// `Double.clamped01` is defined in `Design/NumberExtensions.swift` —
+// consolidated across the three surfaces that each used to declare
+// their own private copy.

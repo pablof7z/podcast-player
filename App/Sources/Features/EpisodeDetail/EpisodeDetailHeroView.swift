@@ -311,11 +311,7 @@ struct EpisodeDetailHeroView: View {
     }
 }
 
-// MARK: - Helpers
-
-private extension Double {
-    var clamped01: Double { Swift.max(0, Swift.min(1, self)) }
-}
+// `Double.clamped01` lives in `Design/NumberExtensions.swift`.
 
 // MARK: - Preview
 
