@@ -118,14 +118,25 @@ struct BriefingPlayerView: View {
 
     private var transportControls: some View {
         HStack(spacing: AppTheme.Spacing.lg) {
-            Button { /* prev */ } label: { Image(systemName: "backward.fill") }
+            // The previous transport row had a "backward" placeholder
+            // wired to `/* prev */` — the engine has no `previousSegment`
+            // (the segment rail below handles jumping to any segment,
+            // including earlier ones via `jump(toSegment:)`), so the
+            // button was a silent no-op. Dropped rather than leave a
+            // visibly broken affordance.
             Button {
                 Task { engine.isPlaying ? await engine.pause() : await engine.resume() }
             } label: {
                 Image(systemName: engine.isPlaying ? "pause.fill" : "play.fill")
                     .font(.largeTitle)
             }
-            Button { /* next */ } label: { Image(systemName: "forward.fill") }
+            .accessibilityLabel(engine.isPlaying ? "Pause briefing" : "Resume briefing")
+            Button {
+                Task { await engine.skipCurrentSegment() }
+            } label: {
+                Image(systemName: "forward.fill")
+            }
+            .accessibilityLabel("Skip to next segment")
             Spacer()
             Text(formatProgress())
                 .font(.system(.caption, design: .monospaced).weight(.medium))
