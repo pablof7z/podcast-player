@@ -47,21 +47,15 @@ extension Transcript {
         )
     }
 
-    /// Extracts word-level timing from `speechAttributes.audioTimeRange` on
-    /// each run of the attributed string. Falls back to an empty array when
-    /// the attribute is absent (e.g. non-time-indexed presets).
+    /// Word-level timing extraction from `SpeechTranscriber.Result.text` runs
+    /// is gated on the `AttributeScopes.SpeechAttributes` shorthand resolving
+    /// against the runtime SDK; that path didn't compile on the iOS 26 SDK
+    /// available here, so we return `[]` until the access pattern is nailed
+    /// down. Segment-level timing (start/end on the segment itself) is
+    /// unaffected — only per-word highlighting falls back to interpolation.
     private static func extractWords(from result: SpeechTranscriber.Result) -> [Word] {
-        var words: [Word] = []
-        for run in result.text.runs {
-            guard let timeRange = run.speechAttributes.audioTimeRange else { continue }
-            let runText = String(result.text[run.range].characters)
-                .trimmingCharacters(in: .whitespaces)
-            guard !runText.isEmpty else { continue }
-            let start = timeRange.start.seconds.finiteOrZero
-            let end = (timeRange.start + timeRange.duration).seconds.finiteOrZero
-            words.append(Word(start: start, end: end, text: runText))
-        }
-        return words
+        _ = result
+        return []
     }
 }
 
