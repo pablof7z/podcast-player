@@ -56,6 +56,15 @@ final class SettingsCodableRoundTripTests: XCTestCase {
         XCTAssertEqual(restored.autoFallbackToScribe, false)
     }
 
+    func testAssemblyAISpeechSettingsPersist() throws {
+        var s = Settings()
+        s.sttProvider = .assemblyAI
+        s.assemblyAISTTModel = "universal-3-pro"
+        let restored = try roundTrip(s)
+        XCTAssertEqual(restored.sttProvider, .assemblyAI)
+        XCTAssertEqual(restored.assemblyAISTTModel, "universal-3-pro")
+    }
+
     // MARK: - Forward compatibility
 
     func testDecodingMissingKeyFallsBackToDefault() throws {

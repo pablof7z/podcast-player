@@ -25,6 +25,7 @@ enum TranscriptState: Codable, Sendable, Hashable {
         case scribe
         case whisper
         case onDevice
+        case assemblyAI
         case other
     }
 }

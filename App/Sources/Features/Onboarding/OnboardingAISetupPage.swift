@@ -38,7 +38,7 @@ struct OnboardingAISetupPage: View {
                 .font(AppTheme.Typography.largeTitle)
                 .foregroundStyle(.white)
 
-            Text("Connect BYOK once to approve OpenRouter, ElevenLabs, Ollama Cloud, and Perplexity. Skip and add them later in Settings.")
+            Text("Connect BYOK once to approve OpenRouter, ElevenLabs, AssemblyAI, Ollama Cloud, and Perplexity. Skip and add them later in Settings.")
                 .font(AppTheme.Typography.body)
                 .foregroundStyle(.white.opacity(0.8))
                 .multilineTextAlignment(.center)

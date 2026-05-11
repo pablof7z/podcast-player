@@ -90,7 +90,7 @@ Architecture mirrors win-the-day-app's `AgentSession`:
 
 Add new tools in `AgentTools.schema` and `AgentTools.dispatch`.
 
-Configure provider keys via **Settings → Intelligence → Providers**, then assign role-specific models via **Settings → Intelligence → Models**. Provider keys are stored in Keychain; app state stores only non-secret connection metadata.
+Configure provider keys via **Settings → Intelligence → Providers**, then assign role-specific models via **Settings → Intelligence → Models**. Provider keys are stored in Keychain; app state stores only non-secret connection metadata. Speech-to-text can use ElevenLabs, AssemblyAI, OpenRouter Whisper, or Apple on-device transcription; narration remains ElevenLabs-backed.
 
 ### Friends & Collaborators
 A `Friend` model representing trusted contacts whose agents can create/modify items in your app. When a friend's agent acts, items are tagged with `requestedByFriendID` and `requestedByDisplayName` for provenance display.

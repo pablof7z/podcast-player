@@ -18,6 +18,12 @@ struct SpeechModelsSettingsView: View {
         ("openai/whisper-1", "Whisper"),
     ]
 
+    private static let assemblyAIModels: [(id: String, label: String)] = [
+        ("universal-3-pro,universal-2", "Universal-3 Pro + Universal-2"),
+        ("universal-3-pro", "Universal-3 Pro"),
+        ("universal-2", "Universal-2"),
+    ]
+
     private static let ttsModels: [(id: String, label: String)] = [
         ("eleven_turbo_v2_5", "Turbo v2.5"),
         ("eleven_flash_v2_5", "Flash v2.5"),
@@ -83,6 +89,21 @@ struct SpeechModelsSettingsView: View {
                 }
                 .pickerStyle(.menu)
             }
+
+            if settings.sttProvider == .assemblyAI {
+                Picker(selection: $settings.assemblyAISTTModel) {
+                    ForEach(Self.assemblyAIModels, id: \.id) { entry in
+                        Text(entry.label).tag(entry.id)
+                    }
+                    customModelEntry(
+                        currentID: settings.assemblyAISTTModel,
+                        knownIDs: Self.assemblyAIModels.map(\.id)
+                    )
+                } label: {
+                    Label("Model", systemImage: "cpu")
+                }
+                .pickerStyle(.menu)
+            }
         } header: {
             Text("Transcription")
         } footer: {
@@ -94,6 +115,8 @@ struct SpeechModelsSettingsView: View {
         switch settings.sttProvider {
         case .elevenLabsScribe:
             return Text("ElevenLabs Scribe — diarization and word-level timestamps. Requires an ElevenLabs key.")
+        case .assemblyAI:
+            return Text("AssemblyAI - speaker labels and word timestamps. Requires an AssemblyAI key.")
         case .openRouterWhisper:
             return Text("OpenRouter Whisper — uses your OpenRouter key. Downloaded episodes are uploaded for transcription.")
         case .appleNative:
@@ -118,7 +141,7 @@ struct SpeechModelsSettingsView: View {
         } header: {
             Text("Narration")
         } footer: {
-            Text("Used for spoken agent picks, briefings, and voice previews.")
+            Text("Used for spoken agent picks, briefings, and voice previews. AssemblyAI is transcription-only, so narration still uses ElevenLabs.")
         }
     }
 

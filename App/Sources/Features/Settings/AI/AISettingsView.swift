@@ -46,6 +46,17 @@ struct AIProvidersSettingsView: View {
             }
 
             NavigationLink {
+                AssemblyAISettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "waveform.badge.mic",
+                    tint: .purple,
+                    title: "AssemblyAI",
+                    value: assemblyAIStatus
+                )
+            }
+
+            NavigationLink {
                 PerplexitySettingsView()
             } label: {
                 SettingsRow(
@@ -112,6 +123,10 @@ struct AIProvidersSettingsView: View {
         case .manual: return "Manual"
         case .none:   return "Connected"
         }
+    }
+
+    private var assemblyAIStatus: String {
+        AssemblyAICredentialStore.hasAPIKey() ? "Connected" : "Not set up"
     }
 
     private var perplexityStatus: String {

@@ -133,6 +133,10 @@ final class iCloudSettingsSync {
         if let v = string(.embeddingsModel),       !v.isEmpty { settings.embeddingsModel = v }
         if let v = string(.embeddingsModelName)               { settings.embeddingsModelName = v }
         if let v = bool(.rerankerEnabled)                     { settings.rerankerEnabled = v }
+        if let raw = string(.sttProvider),
+           let v = STTProvider(rawValue: raw)                  { settings.sttProvider = v }
+        if let v = string(.openRouterWhisperModel), !v.isEmpty { settings.openRouterWhisperModel = v }
+        if let v = string(.assemblyAISTTModel),     !v.isEmpty { settings.assemblyAISTTModel = v }
         if let v = string(.elevenLabsSTTModel),    !v.isEmpty { settings.elevenLabsSTTModel = v }
         if let v = string(.elevenLabsTTSModel),    !v.isEmpty { settings.elevenLabsTTSModel = v }
         if let v = string(.elevenLabsVoiceID)                 { settings.elevenLabsVoiceID = v }
@@ -174,6 +178,9 @@ final class iCloudSettingsSync {
         kvs.set(settings.embeddingsModel,                         forKey: Key.embeddingsModel.rawValue)
         kvs.set(settings.embeddingsModelName,                     forKey: Key.embeddingsModelName.rawValue)
         kvs.set(settings.rerankerEnabled,                         forKey: Key.rerankerEnabled.rawValue)
+        kvs.set(settings.sttProvider.rawValue,                    forKey: Key.sttProvider.rawValue)
+        kvs.set(settings.openRouterWhisperModel,                  forKey: Key.openRouterWhisperModel.rawValue)
+        kvs.set(settings.assemblyAISTTModel,                      forKey: Key.assemblyAISTTModel.rawValue)
         kvs.set(settings.elevenLabsSTTModel,                      forKey: Key.elevenLabsSTTModel.rawValue)
         kvs.set(settings.elevenLabsTTSModel,                      forKey: Key.elevenLabsTTSModel.rawValue)
         kvs.set(settings.elevenLabsVoiceID,                       forKey: Key.elevenLabsVoiceID.rawValue)
@@ -215,6 +222,9 @@ final class iCloudSettingsSync {
         case embeddingsModel                     = "sync.settings.embeddingsModel"
         case embeddingsModelName                 = "sync.settings.embeddingsModelName"
         case rerankerEnabled                     = "sync.settings.rerankerEnabled"
+        case sttProvider                         = "sync.settings.sttProvider"
+        case openRouterWhisperModel              = "sync.settings.openRouterWhisperModel"
+        case assemblyAISTTModel                  = "sync.settings.assemblyAISTTModel"
         case elevenLabsSTTModel                  = "sync.settings.elevenLabsSTTModel"
         case elevenLabsTTSModel                  = "sync.settings.elevenLabsTTSModel"
         case elevenLabsVoiceID                   = "sync.settings.elevenLabsVoiceID"

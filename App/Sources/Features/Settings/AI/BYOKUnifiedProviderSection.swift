@@ -49,7 +49,7 @@ struct BYOKUnifiedProviderSection: View {
         } header: {
             Text("BYOK Vault")
         } footer: {
-            Text("Approve OpenRouter, ElevenLabs, Ollama Cloud, and Perplexity together. BYOK returns only the keys you choose to share.")
+            Text("Approve OpenRouter, ElevenLabs, AssemblyAI, Ollama Cloud, and Perplexity together. BYOK returns only the keys you choose to share.")
         }
     }
 

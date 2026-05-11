@@ -46,6 +46,7 @@ enum TranscriptSource: String, Codable, Sendable, Hashable, CaseIterable {
     case scribeV1
     case whisper
     case onDevice
+    case assemblyAI
 }
 
 // MARK: - Segment

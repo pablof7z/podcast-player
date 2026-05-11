@@ -4,7 +4,7 @@ import os.log
 // MARK: - TranscriptIngestService
 //
 // Owns the end-to-end transcript ingestion pipeline:
-//   1. Pick a publisher transcript URL (or fall back to ElevenLabs Scribe).
+//   1. Pick a publisher transcript URL (or fall back to the selected STT provider).
 //   2. Fetch + parse via `PublisherTranscriptIngestor`.
 //   3. Slice into `Chunk`s via `ChunkBuilder`, supplying podcast/episode FKs.
 //   4. Embed + upsert via `RAGService.shared.index` (which calls the embedder).
@@ -28,15 +28,17 @@ final class TranscriptIngestService {
 
     // MARK: Dependencies
 
-    private let rag: RAGService
+    let rag: RAGService
     private let ingestor: PublisherTranscriptIngestor
     private let scribe: ElevenLabsScribeClient
     private let whisper: OpenRouterWhisperClient
+    private let assemblyAI: AssemblyAITranscriptClient
     private let appleSTT: AppleNativeSTTClient
     private let chunkBuilder: ChunkBuilder
     private let store: TranscriptStore
     private let elevenLabsKey: @Sendable () -> String?
     private let openRouterKey: @Sendable () -> String?
+    private let assemblyAIKey: @Sendable () -> String?
 
     // MARK: In-flight tracking (dedup)
 
@@ -49,6 +51,7 @@ final class TranscriptIngestService {
         ingestor: PublisherTranscriptIngestor = PublisherTranscriptIngestor(),
         scribe: ElevenLabsScribeClient = ElevenLabsScribeClient(),
         whisper: OpenRouterWhisperClient = OpenRouterWhisperClient(),
+        assemblyAI: AssemblyAITranscriptClient = AssemblyAITranscriptClient(),
         appleSTT: AppleNativeSTTClient = AppleNativeSTTClient(),
         chunkBuilder: ChunkBuilder = ChunkBuilder(),
         store: TranscriptStore = .shared,
@@ -57,18 +60,27 @@ final class TranscriptIngestService {
         },
         openRouterKey: @escaping @Sendable () -> String? = {
             (try? OpenRouterCredentialStore.apiKey()).flatMap { $0.isEmpty ? nil : $0 }
+        },
+        assemblyAIKey: @escaping @Sendable () -> String? = {
+            (try? AssemblyAICredentialStore.apiKey()).flatMap { $0.isEmpty ? nil : $0 }
         }
     ) {
         self.rag = rag
         self.ingestor = ingestor
         self.scribe = scribe
         self.whisper = whisper
+        self.assemblyAI = assemblyAI
         self.appleSTT = appleSTT
         self.chunkBuilder = chunkBuilder
         self.store = store
         self.elevenLabsKey = elevenLabsKey
         self.openRouterKey = openRouterKey
+        self.assemblyAIKey = assemblyAIKey
     }
+
+    func resolvedElevenLabsKey() -> String? { elevenLabsKey() }
+    func resolvedOpenRouterKey() -> String? { openRouterKey() }
+    func resolvedAssemblyAIKey() -> String? { assemblyAIKey() }
 
     // MARK: Public API
 
@@ -77,7 +89,14 @@ final class TranscriptIngestService {
     /// then persists the parsed transcript to disk and updates state.
     /// Idempotent — repeat calls for the same episode no-op while a prior
     /// call is in flight.
-    func ingest(episodeID: UUID) async {
+    ///
+    /// - Parameter forceProvider: When non-nil, bypass the publisher fetch
+    ///   path and the `autoFallbackToScribe` gate, and use this provider
+    ///   instead of `settings.sttProvider` for AI transcription. Used by the
+    ///   Diagnostics "Retry with…" menu so the user can try an alternative
+    ///   provider for one call without flipping their global setting. `nil`
+    ///   preserves existing publisher-first behaviour.
+    func ingest(episodeID: UUID, forceProvider: STTProvider? = nil) async {
         guard let appStore = rag.appStore else {
             Self.logger.warning(
                 "ingest(\(episodeID, privacy: .public)): no AppStateStore attached — skipping"
@@ -108,6 +127,21 @@ final class TranscriptIngestService {
 
         inFlight.insert(episodeID)
         defer { inFlight.remove(episodeID) }
+
+        // Force-provider path: the user picked a specific provider in
+        // Diagnostics. Skip the publisher fetch and the autoFallback gate
+        // and go straight to the chosen STT provider.
+        if let forced = forceProvider {
+            guard resolvedSTTKey(provider: forced) != nil else {
+                Self.logger.info(
+                    "forceProvider=\(forced.displayName, privacy: .public) but no key configured — leaving transcriptState=.none"
+                )
+                appStore.setEpisodeTranscriptState(episodeID, state: .none)
+                return
+            }
+            await runAITranscription(for: episode, provider: forced, appStore: appStore)
+            return
+        }
 
         // Path A: publisher transcript URL.
         //
@@ -178,96 +212,6 @@ final class TranscriptIngestService {
         await runAITranscription(for: episode, provider: provider, appStore: appStore)
     }
 
-    /// Convenience: walk the store and ingest up to `maxCount` episodes that
-    /// are not yet `.ready` and have a publisher transcript URL. Useful as a
-    /// background warmup once the user lands on the library.
-    func ingestPending(maxCount: Int = 5) async {
-        guard let appStore = rag.appStore else {
-            Self.logger.warning("ingestPending: no AppStateStore attached — skipping")
-            return
-        }
-        let candidates = appStore.state.episodes
-            .filter { $0.publisherTranscriptURL != nil && !Self.isReady($0.transcriptState) }
-            .sorted { $0.pubDate > $1.pubDate }
-            .prefix(maxCount)
-        for episode in candidates {
-            await ingest(episodeID: episode.id)
-        }
-    }
-
-    /// Triggered from `AppStateStore.upsertEpisodes` whenever a feed refresh
-    /// surfaces brand-new episode IDs. Filters to episodes the user would
-    /// benefit from ingesting and dispatches an async `ingest` per candidate.
-    ///
-    /// **Inclusion rule** (the unlock for cross-episode RAG):
-    ///   - Episode is not already `.ready`.
-    ///   - At least one path is available — either a `publisherTranscriptURL`
-    ///     with `autoIngestPublisherTranscripts` on, OR a configured
-    ///     ElevenLabs key with `autoFallbackToScribe` on.
-    ///
-    /// `ingest()` itself handles per-category opt-out, dedup, and the
-    /// publisher → Scribe fallback inside one call — so this method only has
-    /// to decide *whether to bother trying*. Without the relaxed filter,
-    /// shows that don't ship `<podcast:transcript>` (most indie podcasts)
-    /// get NOTHING auto-fetched even with Scribe configured, and the agent's
-    /// RAG layer comes up dark for those subscriptions.
-    func evaluateAutoIngest(newEpisodeIDs: [UUID]) {
-        guard !newEpisodeIDs.isEmpty else { return }
-        guard let appStore = rag.appStore else {
-            Self.logger.warning("evaluateAutoIngest: no AppStateStore attached — skipping")
-            return
-        }
-        let episodes = newEpisodeIDs.compactMap { appStore.episode(id: $0) }
-        let candidates = Self.autoIngestCandidates(
-            among: episodes,
-            settings: appStore.state.settings,
-            elevenLabsKey: elevenLabsKey(),
-            openRouterKey: openRouterKey()
-        )
-        guard !candidates.isEmpty else { return }
-        Self.logger.info(
-            "evaluateAutoIngest: queueing \(candidates.count, privacy: .public) ingests (publisher+Scribe paths)"
-        )
-        for episodeID in candidates {
-            Task { @MainActor [weak self] in
-                await self?.ingest(episodeID: episodeID)
-            }
-        }
-    }
-
-    /// Pure decision logic for `evaluateAutoIngest`. Exposed `internal` so
-    /// `TranscriptAutoIngestTests` can pin the branching without driving the
-    /// full ingest pipeline (which needs network + ElevenLabs + sqlite-vec).
-    ///
-    /// Inclusion rule:
-    ///   - Episode is not already `.ready`.
-    ///   - At least one path is available — either the publisher transcript
-    ///     URL is present and `autoIngestPublisherTranscripts` is on, OR the
-    ///     ElevenLabs key is configured and `autoFallbackToScribe` is on.
-    static func autoIngestCandidates(
-        among episodes: [Episode],
-        settings: Settings,
-        elevenLabsKey: String?,
-        openRouterKey: String? = nil
-    ) -> [UUID] {
-        let publisherOn = settings.autoIngestPublisherTranscripts
-        let sttReady: Bool
-        switch settings.sttProvider {
-        case .appleNative: sttReady = true   // no API key needed
-        case .openRouterWhisper: sttReady = !(openRouterKey ?? "").isEmpty
-        case .elevenLabsScribe: sttReady = !(elevenLabsKey ?? "").isEmpty
-        }
-        let scribeOn = settings.autoFallbackToScribe && sttReady
-        guard publisherOn || scribeOn else { return [] }
-        return episodes.compactMap { episode -> UUID? in
-            guard !Self.isReady(episode.transcriptState) else { return nil }
-            if episode.publisherTranscriptURL != nil {
-                return publisherOn ? episode.id : nil
-            }
-            return scribeOn ? episode.id : nil
-        }
-    }
-
     // MARK: - Private pipeline
 
     private func runAITranscription(for episode: Episode, provider: STTProvider, appStore: AppStateStore) async {
@@ -292,20 +236,40 @@ final class TranscriptIngestService {
         } else {
             audioURL = episode.enclosureURL
         }
+        // AssemblyAI is URL-based and fetches the audio server-side. Even when
+        // we have the file on disk, we override `audioURL` to the publisher
+        // enclosure so we don't try to base64-encode a 90+ MB local file
+        // through the gateway (the client rejects file:// URLs anyway).
+        let effectiveAudioURL: URL = (provider == .assemblyAI) ? episode.enclosureURL : audioURL
         do {
             let transcript: Transcript
             switch provider {
             case .elevenLabsScribe:
-                let job = try await scribe.submit(audioURL: audioURL, episodeID: episode.id)
+                let job = try await scribe.submit(audioURL: effectiveAudioURL, episodeID: episode.id)
                 transcript = try await scribe.pollResult(job)
+            case .assemblyAI:
+                let raw = appStore.state.settings.assemblyAISTTModel
+                let models = raw
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                let job = try await assemblyAI.submit(
+                    audioURL: effectiveAudioURL,
+                    episodeID: episode.id,
+                    speechModels: models.isEmpty ? ["universal-3-pro", "universal-2"] : models,
+                    speakerLabels: true,
+                    languageDetection: true
+                )
+                transcript = try await assemblyAI.pollResult(job)
             case .openRouterWhisper:
-                transcript = try await whisper.transcribe(audioURL: audioURL, episodeID: episode.id)
+                transcript = try await whisper.transcribe(audioURL: effectiveAudioURL, episodeID: episode.id)
             case .appleNative:
-                transcript = try await appleSTT.transcribe(audioFileURL: audioURL, episodeID: episode.id)
+                transcript = try await appleSTT.transcribe(audioFileURL: effectiveAudioURL, episodeID: episode.id)
             }
             let stateSource: TranscriptState.Source
             switch provider {
             case .elevenLabsScribe: stateSource = .scribe
+            case .assemblyAI: stateSource = .assemblyAI
             case .openRouterWhisper: stateSource = .whisper
             case .appleNative: stateSource = .onDevice
             }
@@ -330,6 +294,7 @@ final class TranscriptIngestService {
         switch provider {
         case .elevenLabsScribe: return elevenLabsKey()
         case .openRouterWhisper: return openRouterKey()
+        case .assemblyAI: return assemblyAIKey()
         case .appleNative: return "native"  // no API key needed; always available
         }
     }
@@ -404,36 +369,8 @@ final class TranscriptIngestService {
 
     // MARK: - Helpers
 
-    private static func isReady(_ state: TranscriptState) -> Bool {
+    static func isReady(_ state: TranscriptState) -> Bool {
         if case .ready = state { return true }
         return false
     }
-}
-
-// MARK: - ChunkableTranscript
-//
-// Adapter that lets `Transcript` (which has no `podcastID` and stores
-// timestamps in seconds) satisfy the `TranscriptLike` / `TranscriptSegment`
-// protocol pair `ChunkBuilder` requires.
-
-struct ChunkableTranscript: TranscriptLike {
-
-    typealias Segment = ChunkableSegment
-
-    let transcript: Transcript
-    let podcastID: UUID
-
-    var episodeID: UUID { transcript.episodeID }
-    var segments: [ChunkableSegment] {
-        transcript.segments.map { ChunkableSegment(segment: $0) }
-    }
-}
-
-struct ChunkableSegment: TranscriptSegment {
-    let segment: Segment
-
-    var text: String { segment.text }
-    var startMS: Int { Int((segment.start * 1000).rounded()) }
-    var endMS: Int { Int((segment.end * 1000).rounded()) }
-    var speakerID: UUID? { segment.speakerID }
 }

@@ -107,6 +107,23 @@ final class TranscriptAutoIngestTests: XCTestCase {
         XCTAssertEqual(idsEmptyKey, [pubEp.id])
     }
 
+    func testCandidatesIncludesNonPublisherEpisodesWhenAssemblyAIConfigured() {
+        let bareEp = Self.makeEpisode(hasPublisherURL: false)
+        var settings = Settings()
+        settings.sttProvider = .assemblyAI
+        settings.autoIngestPublisherTranscripts = false
+        settings.autoFallbackToScribe = true
+
+        let ids = TranscriptIngestService.autoIngestCandidates(
+            among: [bareEp],
+            settings: settings,
+            elevenLabsKey: nil,
+            assemblyAIKey: "assemblyai-test-key"
+        )
+
+        XCTAssertEqual(ids, [bareEp.id])
+    }
+
     func testCandidatesEmptyWhenBothPathsDisabled() {
         let pubEp = Self.makeEpisode(hasPublisherURL: true)
         let bareEp = Self.makeEpisode(hasPublisherURL: false)

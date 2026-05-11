@@ -149,7 +149,7 @@ extension AgentTools {
             ),
             podcastTool(
                 name: PodcastNames.requestTranscription,
-                description: "Request transcript ingestion for an episode, using publisher transcripts first and ElevenLabs fallback when configured.",
+                description: "Request transcript ingestion for an episode, using publisher transcripts first and the configured STT provider when needed.",
                 properties: [
                     "episode_id": ["type": "string", "description": "The episode to transcribe/index."],
                 ],

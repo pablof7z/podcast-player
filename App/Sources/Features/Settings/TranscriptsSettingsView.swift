@@ -55,6 +55,7 @@ struct TranscriptsSettingsView: View {
     private var hasActiveProviderKey: Bool {
         switch activeProvider {
         case .elevenLabsScribe: return ElevenLabsCredentialStore.hasAPIKey()
+        case .assemblyAI: return AssemblyAICredentialStore.hasAPIKey()
         case .openRouterWhisper: return OpenRouterCredentialStore.hasAPIKey()
         case .appleNative: return true  // no API key needed
         }

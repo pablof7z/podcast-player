@@ -249,10 +249,11 @@ struct SettingsView: View {
 
     private var transcriptStatus: String {
         let s = store.state.settings
+        let provider = s.sttProvider.displayName
         switch (s.autoIngestPublisherTranscripts, s.autoFallbackToScribe) {
-        case (true, true):  return "Auto + Scribe"
+        case (true, true):  return "Auto + \(provider)"
         case (true, false): return "Auto only"
-        case (false, true): return "Scribe fallback"
+        case (false, true): return "\(provider) fallback"
         case (false, false): return "Manual"
         }
     }

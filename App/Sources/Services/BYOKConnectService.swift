@@ -74,6 +74,22 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
         return token
     }
 
+    func connectAssemblyAI() async throws -> BYOKTokenResponse {
+        let pending = try makeAuthorization(provider: "assemblyai", scope: "key:assemblyai")
+        let callbackURL = try await authenticate(url: pending.authorizationURL)
+        let code = try authorizationCode(from: callbackURL, expectedState: pending.state)
+        let token = try await exchangeCode(code, pending: pending)
+
+        guard token.provider == "assemblyai" else {
+            throw BYOKConnectError.unexpectedProvider
+        }
+        guard token.tokenType == "raw_api_key", !token.apiKey.isEmpty else {
+            throw BYOKConnectError.invalidTokenResponse
+        }
+
+        return token
+    }
+
     func connectOllama() async throws -> BYOKTokenResponse {
         let pending = try makeAuthorization(provider: "ollama", scope: "key:ollama")
         let callbackURL = try await authenticate(url: pending.authorizationURL)

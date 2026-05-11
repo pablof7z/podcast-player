@@ -24,6 +24,8 @@ enum PodcastBYOKCredentialImporter {
             case .elevenLabs:
                 try ElevenLabsCredentialStore.saveAPIKey(token.apiKey)
                 settings.markElevenLabsBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            case .assemblyAI:
+                try AssemblyAICredentialStore.saveAPIKey(token.apiKey)
             case .ollama:
                 try OllamaCredentialStore.saveAPIKey(token.apiKey)
                 settings.markOllamaBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
@@ -43,6 +45,8 @@ enum PodcastBYOKCredentialImporter {
             OpenRouterCredentialStore.hasAPIKey()
         case .elevenLabs:
             ElevenLabsCredentialStore.hasAPIKey()
+        case .assemblyAI:
+            AssemblyAICredentialStore.hasAPIKey()
         case .ollama:
             OllamaCredentialStore.hasAPIKey()
         case .perplexity:

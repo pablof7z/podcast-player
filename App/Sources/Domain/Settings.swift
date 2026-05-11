@@ -44,6 +44,7 @@ enum HeadphoneGestureAction: String, Codable, Hashable, Sendable, CaseIterable {
 
 enum STTProvider: String, Codable, Hashable, Sendable, CaseIterable {
     case elevenLabsScribe = "elevenlabs_scribe"
+    case assemblyAI = "assemblyai"
     case openRouterWhisper = "openrouter_whisper"
     /// Apple's on-device `SpeechTranscriber` (iOS 26+). No API key required;
     /// uses Apple Silicon neural engine. Requires a locally downloaded episode.
@@ -52,6 +53,7 @@ enum STTProvider: String, Codable, Hashable, Sendable, CaseIterable {
     var displayName: String {
         switch self {
         case .elevenLabsScribe: return "ElevenLabs Scribe"
+        case .assemblyAI: return "AssemblyAI"
         case .openRouterWhisper: return "OpenRouter Whisper"
         case .appleNative: return "Apple on-device"
         }
@@ -120,6 +122,8 @@ struct Settings: Codable, Hashable, Sendable {
     /// Whisper model used when `sttProvider == .openRouterWhisper`. Must be a model
     /// accessible on OpenRouter's audio transcription endpoint.
     var openRouterWhisperModel: String = "openai/whisper-1"
+    /// Comma-separated AssemblyAI speech models submitted to `/v2/transcript`.
+    var assemblyAISTTModel: String = "universal-3-pro,universal-2"
 
     // ElevenLabs configuration
     var elevenLabsSTTModel: String = Defaults.elevenLabsSTTModel
@@ -214,7 +218,7 @@ struct Settings: Codable, Hashable, Sendable {
         case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
-        case sttProvider, openRouterWhisperModel
+        case sttProvider, openRouterWhisperModel, assemblyAISTTModel
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
         case autoDeleteDownloadsAfterPlayed, autoPlayNext, autoSkipAds
@@ -258,6 +262,7 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsConnectedAt = try c.decodeIfPresent(Date.self, forKey: .elevenLabsConnectedAt)
         sttProvider = try c.decodeIfPresent(STTProvider.self, forKey: .sttProvider) ?? .elevenLabsScribe
         openRouterWhisperModel = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) ?? "openai/whisper-1"
+        assemblyAISTTModel = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) ?? "universal-3-pro,universal-2"
         elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? Defaults.elevenLabsSTTModel
         elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? Defaults.elevenLabsTTSModel
         elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
@@ -320,6 +325,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(elevenLabsConnectedAt, forKey: .elevenLabsConnectedAt)
         try c.encode(sttProvider, forKey: .sttProvider)
         try c.encode(openRouterWhisperModel, forKey: .openRouterWhisperModel)
+        try c.encode(assemblyAISTTModel, forKey: .assemblyAISTTModel)
         try c.encode(elevenLabsSTTModel, forKey: .elevenLabsSTTModel)
         try c.encode(elevenLabsTTSModel, forKey: .elevenLabsTTSModel)
         try c.encode(elevenLabsVoiceID, forKey: .elevenLabsVoiceID)

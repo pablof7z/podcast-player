@@ -5,6 +5,7 @@ import Foundation
 enum BYOKProvider: String, CaseIterable, Identifiable, Sendable {
     case openRouter = "openrouter"
     case elevenLabs = "elevenlabs"
+    case assemblyAI = "assemblyai"
     case ollama = "ollama"
     case perplexity = "perplexity"
 
@@ -15,6 +16,7 @@ enum BYOKProvider: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .openRouter:  return "OpenRouter"
         case .elevenLabs:  return "ElevenLabs"
+        case .assemblyAI:  return "AssemblyAI"
         case .ollama:      return "Ollama Cloud"
         case .perplexity:  return "Perplexity"
         }
@@ -24,6 +26,7 @@ enum BYOKProvider: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .openRouter:  return "key.viewfinder"
         case .elevenLabs:  return "waveform"
+        case .assemblyAI:  return "waveform.badge.mic"
         case .ollama:      return "cloud.fill"
         case .perplexity:  return "magnifyingglass.circle.fill"
         }
@@ -32,6 +35,7 @@ enum BYOKProvider: String, CaseIterable, Identifiable, Sendable {
     static let podcastPlayerDefaults: [BYOKProvider] = [
         .openRouter,
         .elevenLabs,
+        .assemblyAI,
         .ollama,
         .perplexity,
     ]
