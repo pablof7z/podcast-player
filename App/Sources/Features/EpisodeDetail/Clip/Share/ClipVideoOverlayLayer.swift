@@ -117,9 +117,7 @@ enum ClipVideoOverlayLayer {
         let font: UIFont
         switch config.style {
         case .editorial:
-            // New York serif fallback to system serif when not present.
-            font = UIFont(name: "NewYork-SemiboldItalic", size: config.fontSize)
-                ?? UIFont.italicSystemFont(ofSize: config.fontSize)
+            font = UIFont.italicSystemFont(ofSize: config.fontSize)
         case .bold:
             font = UIFont.systemFont(ofSize: config.fontSize, weight: .semibold)
         }
