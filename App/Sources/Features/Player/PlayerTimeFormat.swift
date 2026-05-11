@@ -24,4 +24,12 @@ enum PlayerTimeFormat {
     static func progress(_ current: TimeInterval, _ duration: TimeInterval) -> String {
         "\(clock(current)) / \(clock(duration))"
     }
+
+    /// Remaining time with a leading `-`, e.g. `-12:34`. Returns `""` when
+    /// `duration` is 0 so callers can fall back gracefully before the asset loads.
+    static func remaining(_ current: TimeInterval, duration: TimeInterval) -> String {
+        guard duration > 0 else { return "" }
+        let rem = max(0, duration - current)
+        return "-\(clock(rem))"
+    }
 }

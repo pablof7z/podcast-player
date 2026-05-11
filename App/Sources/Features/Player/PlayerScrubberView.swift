@@ -53,10 +53,12 @@ struct PlayerScrubberView: View {
             HStack {
                 Text(PlayerTimeFormat.clock(isScrubbing ? scrubTime : state.currentTime))
                 Spacer()
-                Text(PlayerTimeFormat.clock(state.duration))
+                let elapsed = isScrubbing ? scrubTime : state.currentTime
+                let remainingStr = PlayerTimeFormat.remaining(elapsed, duration: state.duration)
+                Text(remainingStr.isEmpty ? PlayerTimeFormat.clock(state.duration) : remainingStr)
             }
-            .font(AppTheme.Typography.monoCaption)
-            .foregroundStyle(.secondary)
+            .font(AppTheme.Typography.monoCallout)
+            .foregroundStyle(.primary)
             .monospacedDigit()
         }
     }
