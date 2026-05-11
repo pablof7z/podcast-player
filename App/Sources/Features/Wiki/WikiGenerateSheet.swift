@@ -183,9 +183,19 @@ struct WikiGenerateSheet: View {
             case .done(let page):
                 doneCard(page: page)
             case .failed(let message):
-                Label(message, systemImage: "exclamationmark.triangle")
-                    .font(.callout)
-                    .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(message, systemImage: "exclamationmark.triangle")
+                        .font(.callout)
+                        .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+                    Button {
+                        Task { await runCompile() }
+                    } label: {
+                        Label("Retry", systemImage: "arrow.clockwise")
+                            .font(.callout.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!canGenerate)
+                }
             }
         } header: {
             Text("Status")
@@ -311,6 +321,9 @@ struct WikiGenerateSheet: View {
     private func humanize(_ error: Error) -> String {
         if let wiki = error as? WikiClientError {
             return wiki.errorDescription ?? "Compile failed."
+        }
+        if let gen = error as? WikiGeneratorError {
+            return gen.errorDescription ?? "Compile failed."
         }
         return error.localizedDescription
     }

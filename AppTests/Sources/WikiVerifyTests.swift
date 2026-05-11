@@ -157,6 +157,38 @@ final class WikiVerifyTests: XCTestCase {
         XCTAssertEqual(result.page.sections.first?.claims.first?.confidence, .low)
     }
 
+    /// General-knowledge passes ONLY inside a Definition section. The LLM
+    /// would otherwise sprinkle `general_knowledge: true` across Evolution
+    /// / Consensus / Contradictions to launder claims it couldn't source;
+    /// outside Definition the verifier still drops them.
+    func testVerifierDropsGeneralKnowledgeClaimOutsideDefinition() async throws {
+        let rag = InMemoryRAGSearch(chunks: [makeChunk(text: "anything")])
+        let claim = WikiClaim(
+            text: "Some unsourced consensus assertion.",
+            citations: [],
+            confidence: .high,
+            isGeneralKnowledge: true
+        )
+        let section = WikiSection(
+            heading: "Consensus",
+            kind: .consensus,
+            ordinal: 1,
+            claims: [claim]
+        )
+        let page = WikiPage(
+            slug: "ozempic",
+            title: "Ozempic",
+            kind: .topic,
+            scope: .global,
+            summary: "Test page",
+            sections: [section]
+        )
+
+        let result = try await WikiVerifier(rag: rag).verify(page)
+        XCTAssertEqual(result.keptClaims, 0)
+        XCTAssertEqual(result.droppedClaims, 1)
+    }
+
     // MARK: - Verifier — partial unresolved citations demote confidence
 
     func testVerifierDemotesClaimWithPartiallyMissingCitations() async throws {

@@ -48,7 +48,7 @@ struct WikiVerifier: Sendable {
         for section in page.sections {
             var keptClaims: [WikiClaim] = []
             for claim in section.claims {
-                let outcome = try await verify(claim: claim)
+                let outcome = try await verify(claim: claim, sectionKind: section.kind)
                 switch outcome {
                 case .kept(let updated):
                     keptClaims.append(updated)
@@ -95,11 +95,17 @@ struct WikiVerifier: Sendable {
 
     /// Resolves each citation in `claim` against the RAG store and
     /// decides whether to keep, demote, or drop the claim.
-    private func verify(claim: WikiClaim) async throws -> ClaimOutcome {
-        // General-knowledge claims (definition-only, marked by the LLM)
-        // are allowed to pass through with `low` confidence even when
-        // they have no citations.
-        if claim.isGeneralKnowledge {
+    private func verify(
+        claim: WikiClaim,
+        sectionKind: WikiSectionKind
+    ) async throws -> ClaimOutcome {
+        // General-knowledge claims are allowed to pass through with `low`
+        // confidence even when they have no citations — but ONLY inside a
+        // `definition` section, mirroring the llm-wiki rule. The LLM
+        // would otherwise sprinkle `general_knowledge: true` across
+        // Consensus / Evolution / Contradictions to launder claims it
+        // couldn't source; outside Definition we still drop it.
+        if claim.isGeneralKnowledge && sectionKind == .definition {
             return .kept(claim.demotingTo(.low))
         }
         if claim.citations.isEmpty {

@@ -4,11 +4,13 @@ import SwiftUI
 
 /// Small glass capsule rendering a single `WikiCitation`'s timestamp.
 ///
-/// Two gestures:
-///   - **Tap** dispatches `play_episode_at` via `PlaybackState` (set the
-///     episode, seek to `startMS`, play).
-///   - **Long-press** presents a `CitationPeekSheet` so the user can audition
-///     the cited 12 seconds without losing their place.
+/// Two gestures (peek-first, per the llm-wiki ethos — provenance comes
+/// before commitment):
+///   - **Tap** presents a `CitationPeekSheet` so the user can audition the
+///     cited ~12 seconds without losing their place.
+///   - **Long-press** dispatches `play_episode_at` via `PlaybackState` (set
+///     the episode, seek to `startMS`, play) for the user who already
+///     knows they want to commit to the full clip.
 ///
 /// Visually mirrors UX-04's amber chip palette but renders with the Liquid
 /// Glass material so it morphs alongside the rest of the floating wiki
@@ -26,10 +28,11 @@ struct CitationChip: View {
 
     var body: some View {
         Button {
-            playClipImmediate()
+            Haptics.selection()
+            peeking = true
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "play.fill")
+                Image(systemName: "quote.bubble")
                     .font(.caption2)
                 Text(citation.formattedTimestamp)
                     .font(.system(.caption, design: .monospaced))
@@ -51,8 +54,7 @@ struct CitationChip: View {
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.4)
                 .onEnded { _ in
-                    Haptics.selection()
-                    peeking = true
+                    playClipImmediate()
                 }
         )
         .sheet(isPresented: $peeking) {
@@ -67,9 +69,9 @@ struct CitationChip: View {
         .accessibilityLabel("Citation at \(citation.formattedTimestamp)")
         // Hints describe gesture effects; VoiceOver already announces
         // "double-tap to activate" via the button trait, so the label
-        // shouldn't repeat that. The long-press peek is the only
-        // non-obvious gesture and lives in the hint accordingly.
-        .accessibilityHint("Plays the cited moment. Long-press to peek at the clip without leaving this page.")
+        // shouldn't repeat that. The non-default long-press jump-to-play
+        // gesture lives in the hint accordingly.
+        .accessibilityHint("Peeks the cited moment. Long-press to play the full clip.")
     }
 
     // MARK: - Actions
