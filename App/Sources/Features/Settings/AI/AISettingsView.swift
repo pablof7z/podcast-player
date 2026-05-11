@@ -114,7 +114,9 @@ struct AIProvidersSettingsView: View {
     }
 
     private var perplexityStatus: String {
-        PerplexityCredentialStore.hasAPIKey() ? "Connected" : "Not set up"
+        if PerplexityCredentialStore.hasAPIKey() { return "Connected" }
+        if OpenRouterCredentialStore.hasAPIKey() { return "Via OpenRouter" }
+        return "Not set up"
     }
 
     private var ollamaStatus: String {
@@ -210,7 +212,7 @@ struct PerplexitySettingsView: View {
         } header: {
             Text("Connection")
         } footer: {
-            Text("BYOK opens byok.f7z.io for consent and stores the returned Perplexity key in Keychain. Manual keys are also saved only in Keychain.")
+            Text("If you have an OpenRouter key configured, online search routes through OpenRouter automatically — no separate Perplexity key needed. A dedicated Perplexity key takes priority if both are set.")
         }
     }
 

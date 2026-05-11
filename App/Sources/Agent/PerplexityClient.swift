@@ -24,6 +24,11 @@ public actor PerplexityClient: PerplexityClientProtocol {
     /// Default model the client requests. Conservative — small + online.
     public static let defaultModel = "sonar-small-online"
 
+    /// OpenRouter endpoint used when routing Perplexity searches via OpenRouter.
+    public static let openRouterEndpoint = URL(string: "https://openrouter.ai/api/v1/chat/completions")!
+    /// Perplexity model identifier as used on OpenRouter.
+    public static let openRouterModel = "perplexity/sonar"
+
     private let endpoint: URL
     private let model: String
     private let session: URLSession
@@ -47,9 +52,11 @@ public actor PerplexityClient: PerplexityClientProtocol {
             throw PerplexityClientError.invalidQuery
         }
 
-        let apiKey = try Self.readAPIKey()
+        let (apiKey, resolvedEndpoint, resolvedModel) = try Self.resolveRequest(
+            defaultEndpoint: endpoint, defaultModel: model
+        )
 
-        var request = URLRequest(url: endpoint)
+        var request = URLRequest(url: resolvedEndpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -61,7 +68,7 @@ public actor PerplexityClient: PerplexityClientProtocol {
         request.timeoutInterval = 90
 
         let body: [String: Any] = [
-            "model": model,
+            "model": resolvedModel,
             "messages": [
                 ["role": "user", "content": trimmed],
             ],
@@ -83,6 +90,29 @@ public actor PerplexityClient: PerplexityClientProtocol {
     }
 
     // MARK: - Helpers
+
+    /// Resolves which endpoint, model, and API key to use for a search request.
+    ///
+    /// Priority order:
+    /// 1. If a custom (test) endpoint was provided, use the direct Perplexity key with it.
+    /// 2. If an OpenRouter key is stored, route through OpenRouter using `perplexity/sonar` —
+    ///    no dedicated Perplexity key required.
+    /// 3. Fall back to a direct Perplexity API key.
+    static func resolveRequest(
+        defaultEndpoint: URL,
+        defaultModel: String
+    ) throws -> (apiKey: String, endpoint: URL, model: String) {
+        // Custom endpoint means a test override — skip the resolver entirely.
+        if defaultEndpoint != Self.defaultEndpoint {
+            return (try readAPIKey(), defaultEndpoint, defaultModel)
+        }
+        // Prefer OpenRouter if a key is available.
+        if let orKey = try? OpenRouterCredentialStore.apiKey(), let orKey, !orKey.isEmpty {
+            return (orKey, openRouterEndpoint, openRouterModel)
+        }
+        // Fall back to a dedicated Perplexity key.
+        return (try readAPIKey(), defaultEndpoint, defaultModel)
+    }
 
     /// Reads the API key via `PerplexityCredentialStore`. Throws if no key
     /// is present so the agent's `perplexity_search` tool can surface a
@@ -150,7 +180,7 @@ public enum PerplexityClientError: LocalizedError {
         case .invalidQuery:
             return "Empty Perplexity query."
         case .missingAPIKey:
-            return "No Perplexity API key configured. Add one in Settings."
+            return "No Perplexity or OpenRouter key configured. Add one in Settings → Providers."
         case .keychain(let detail):
             return "Keychain error reading Perplexity key: \(detail)"
         case .transport(let detail):
