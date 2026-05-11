@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "60f1257",
+      "shipped_at": "2026-05-11T19:00:00Z",
+      "lines": [
+        "AI-compiled chapters and ad-skip markers now survive feed refreshes — no more \"Compiling chapters\" flicker every time you reopen a podcast."
+      ]
+    },
+    {
       "id": "ab642c0",
       "shipped_at": "2026-05-11T18:30:00Z",
       "lines": [
