@@ -80,7 +80,7 @@ final class PodcastCategorizationService {
         guard !subscriptions.isEmpty else {
             throw CategorizationError.noSubscriptions
         }
-        let modelReference = LLMModelReference(storedID: store.state.settings.llmModel)
+        let modelReference = LLMModelReference(storedID: store.state.settings.categorizationModel)
         guard !modelReference.isEmpty else {
             throw CategorizationError.noModelSelected
         }

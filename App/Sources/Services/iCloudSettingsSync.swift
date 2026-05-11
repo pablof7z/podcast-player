@@ -126,6 +126,8 @@ final class iCloudSettingsSync {
         if let v = string(.memoryCompilationModelName)        { settings.memoryCompilationModelName = v }
         if let v = string(.wikiModel),             !v.isEmpty { settings.wikiModel = v }
         if let v = string(.wikiModelName)                     { settings.wikiModelName = v }
+        if let v = string(.categorizationModel),   !v.isEmpty { settings.categorizationModel = v }
+        if let v = string(.categorizationModelName)           { settings.categorizationModelName = v }
         if let v = string(.embeddingsModel),       !v.isEmpty { settings.embeddingsModel = v }
         if let v = string(.embeddingsModelName)               { settings.embeddingsModelName = v }
         if let v = bool(.rerankerEnabled)                     { settings.rerankerEnabled = v }
@@ -159,6 +161,8 @@ final class iCloudSettingsSync {
         kvs.set(settings.memoryCompilationModelName,              forKey: Key.memoryCompilationModelName.rawValue)
         kvs.set(settings.wikiModel,                               forKey: Key.wikiModel.rawValue)
         kvs.set(settings.wikiModelName,                           forKey: Key.wikiModelName.rawValue)
+        kvs.set(settings.categorizationModel,                     forKey: Key.categorizationModel.rawValue)
+        kvs.set(settings.categorizationModelName,                 forKey: Key.categorizationModelName.rawValue)
         kvs.set(settings.embeddingsModel,                         forKey: Key.embeddingsModel.rawValue)
         kvs.set(settings.embeddingsModelName,                     forKey: Key.embeddingsModelName.rawValue)
         kvs.set(settings.rerankerEnabled,                         forKey: Key.rerankerEnabled.rawValue)
@@ -194,6 +198,8 @@ final class iCloudSettingsSync {
         case memoryCompilationModelName          = "sync.settings.memoryCompilationModelName"
         case wikiModel                           = "sync.settings.wikiModel"
         case wikiModelName                       = "sync.settings.wikiModelName"
+        case categorizationModel                 = "sync.settings.categorizationModel"
+        case categorizationModelName             = "sync.settings.categorizationModelName"
         case embeddingsModel                     = "sync.settings.embeddingsModel"
         case embeddingsModelName                 = "sync.settings.embeddingsModelName"
         case rerankerEnabled                     = "sync.settings.rerankerEnabled"

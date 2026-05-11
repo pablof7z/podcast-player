@@ -53,6 +53,10 @@ struct Settings: Codable, Hashable, Sendable {
     /// as `memoryCompilationModel`.
     var wikiModel: String = Defaults.llmModel
     var wikiModelName: String = ""
+    /// Model used by `PodcastCategorizationService`. Kept distinct so users can pick a
+    /// cheaper model for one-shot categorization without affecting live agent chat.
+    var categorizationModel: String = Defaults.llmModel
+    var categorizationModelName: String = ""
     var embeddingsModel: String = Self.defaultEmbeddingsModel
     var embeddingsModelName: String = ""
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
@@ -158,7 +162,8 @@ struct Settings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
-        case wikiModel, wikiModelName, embeddingsModel, embeddingsModelName, rerankerEnabled
+        case wikiModel, wikiModelName, categorizationModel, categorizationModelName
+        case embeddingsModel, embeddingsModelName, rerankerEnabled
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
@@ -186,6 +191,8 @@ struct Settings: Codable, Hashable, Sendable {
         memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
         wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? Defaults.llmModel
         wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? ""
+        categorizationModel = try c.decodeIfPresent(String.self, forKey: .categorizationModel) ?? Defaults.llmModel
+        categorizationModelName = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) ?? ""
         embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
         embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
@@ -243,6 +250,8 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(memoryCompilationModelName, forKey: .memoryCompilationModelName)
         try c.encode(wikiModel, forKey: .wikiModel)
         try c.encode(wikiModelName, forKey: .wikiModelName)
+        try c.encode(categorizationModel, forKey: .categorizationModel)
+        try c.encode(categorizationModelName, forKey: .categorizationModelName)
         try c.encode(embeddingsModel, forKey: .embeddingsModel)
         try c.encode(embeddingsModelName, forKey: .embeddingsModelName)
         try c.encode(rerankerEnabled, forKey: .rerankerEnabled)

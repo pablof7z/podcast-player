@@ -5,6 +5,7 @@ struct AIModelsSettingsView: View {
     @State private var agentSelectorPresented = false
     @State private var memorySelectorPresented = false
     @State private var wikiSelectorPresented = false
+    @State private var categorizationSelectorPresented = false
     @State private var embeddingsSelectorPresented = false
     @State private var catalog = OpenRouterModelSelectorViewModel()
 
@@ -42,6 +43,12 @@ struct AIModelsSettingsView: View {
         .sheet(isPresented: $wikiSelectorPresented) {
             NavigationStack {
                 OpenRouterModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki")
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $categorizationSelectorPresented) {
+            NavigationStack {
+                OpenRouterModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization")
             }
             .presentationDragIndicator(.visible)
         }
@@ -89,6 +96,17 @@ struct AIModelsSettingsView: View {
                 wikiSelectorPresented = true
             }
             ModelPreviewCard(model: catalogModel(for: store.state.settings.wikiModel))
+
+            modelRow(
+                icon: "square.grid.2x2.fill",
+                tint: .teal,
+                role: "Categorization",
+                modelID: store.state.settings.categorizationModel,
+                modelName: store.state.settings.categorizationModelName
+            ) {
+                categorizationSelectorPresented = true
+            }
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.categorizationModel))
 
             modelRow(
                 icon: "rectangle.stack.fill.badge.person.crop",
@@ -195,6 +213,20 @@ struct AIModelsSettingsView: View {
         )
     }
 
+    private var categorizationModelBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.categorizationModel },
+            set: { v in var s = store.state.settings; s.categorizationModel = v; store.updateSettings(s) }
+        )
+    }
+
+    private var categorizationModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.categorizationModelName },
+            set: { v in var s = store.state.settings; s.categorizationModelName = v; store.updateSettings(s) }
+        )
+    }
+
     private var embeddingsModelBinding: Binding<String> {
         Binding(
             get: { store.state.settings.embeddingsModel },
@@ -244,6 +276,10 @@ struct AIModelsSettingsView: View {
         }
         if s.wikiModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.wikiModel }) {
             s.wikiModelName = match.name
+            changed = true
+        }
+        if s.categorizationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.categorizationModel }) {
+            s.categorizationModelName = match.name
             changed = true
         }
         if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.embeddingsModel }) {
