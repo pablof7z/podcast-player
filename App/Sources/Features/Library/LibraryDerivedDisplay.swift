@@ -107,33 +107,6 @@ extension Episode {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
-
-    /// View-model adapter for `DownloadStatusCapsule`. Translates the two
-    /// real lifecycle enums (`DownloadState` × `TranscriptState`) into the
-    /// single capsule status used by the row.
-    var displayDownloadStatus: DownloadStatus {
-        switch downloadState {
-        case .failed:
-            return .failed
-        case .downloading(let progress, _):
-            return .downloading(progress: progress)
-        case .downloaded:
-            switch transcriptState {
-            case .ready:
-                return .downloaded(transcribed: true)
-            case .transcribing(let progress):
-                return .transcribing(progress: progress)
-            case .queued, .fetchingPublisher:
-                return .transcriptionQueued(position: 1)
-            case .failed:
-                return .failed
-            case .none:
-                return .downloaded(transcribed: false)
-            }
-        case .queued, .notDownloaded:
-            return .none
-        }
-    }
 }
 
 // MARK: - Subscription stats from a store

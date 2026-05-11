@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "811a2a2",
+      "shipped_at": "2026-05-11T13:00:00Z",
+      "lines": [
+        "Episode rows now use a slim 2 px progress bar instead of text pills: primary-colored while downloading, accent-colored while transcribing. Not-yet-downloaded episodes are subtly dimmed so you can tell at a glance which ones are ready offline."
+      ]
+    },
+    {
       "id": "a261d20",
       "shipped_at": "2026-05-11T12:00:00Z",
       "lines": [

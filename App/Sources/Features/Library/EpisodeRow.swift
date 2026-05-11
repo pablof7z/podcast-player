@@ -4,17 +4,13 @@ import SwiftUI
 
 /// Episode list row for the show-detail screen.
 ///
-/// **Glass usage:** matte. The row sits on the elevated card surface and uses
-/// the system grouped-list look. The only glass-y element on this row is
-/// `DownloadStatusCapsule` (which is itself a structural status indicator,
-/// not a card).
-///
 /// **State surfaces:**
-///   - Unplayed:    leading red `circle.fill` dot, bold title.
-///   - In progress: leading `circle.lefthalf.filled` "crescent".
-///   - Played:      leading `checkmark.circle.fill`, dimmed title.
-///   - Downloaded:  trailing `DownloadStatusCapsule`.
-///   - Transcribing/queued: trailing capsule communicates state.
+///   - Unplayed:     leading red `circle.fill` dot, bold title.
+///   - In progress:  leading `circle.lefthalf.filled` "crescent".
+///   - Played:       leading `checkmark.circle.fill`, dimmed title.
+///   - Downloading:  2 px progress bar (primary color) pinned to bottom edge.
+///   - Transcribing: 2 px progress bar (accent color) pinned to bottom edge.
+///   - Downloaded:   title at full opacity; not-yet-downloaded titles are muted.
 struct EpisodeRow: View {
     let episode: Episode
     let showAccent: Color
@@ -24,10 +20,8 @@ struct EpisodeRow: View {
     /// mini-player without leaving the list.
     var onPlay: (() -> Void)? = nil
 
-    /// Live download service — observed so the trailing capsule's
-    /// "Downloading N%" label updates smoothly without each tick hitting
-    /// `AppStateStore` (which would re-persist + re-spotlight + reload
-    /// widgets on every progress event).
+    /// Live progress map — drives the bottom progress bar without hitting
+    /// `AppStateStore` on every 5%/200 ms tick.
     @State private var downloadService = EpisodeDownloadService.shared
 
     var body: some View {
@@ -39,7 +33,7 @@ struct EpisodeRow: View {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(episode.title)
                     .font(AppTheme.Typography.headline)
-                    .foregroundStyle(episode.played ? Color.secondary : Color.primary)
+                    .foregroundStyle(titleColor)
                     .lineLimit(2)
 
                 let summary = episode.plainTextSummary
@@ -54,6 +48,7 @@ struct EpisodeRow: View {
             }
         }
         .padding(.vertical, AppTheme.Spacing.sm)
+        .overlay(alignment: .bottom) { downloadProgressBar }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -121,17 +116,39 @@ struct EpisodeRow: View {
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(showAccent)
             }
-
-            Spacer(minLength: AppTheme.Spacing.xs)
-
-            DownloadStatusCapsule(
-                status: episode.displayDownloadStatus,
-                liveProgress: downloadService.progress[episode.id]
-            )
         }
     }
 
     // MARK: - Helpers
+
+    /// Mutes the title for not-yet-downloaded episodes so the user can
+    /// distinguish locally available episodes at a glance. Played episodes
+    /// stay secondary regardless of download state.
+    private var titleColor: Color {
+        if episode.played { return .secondary }
+        if case .downloaded = episode.downloadState { return .primary }
+        return Color.primary.opacity(0.55)
+    }
+
+    @ViewBuilder
+    private var downloadProgressBar: some View {
+        if case .downloading(let persisted, _) = episode.downloadState {
+            let p = (downloadService.progress[episode.id] ?? persisted).clamped01
+            thinProgressBar(progress: p, color: Color.primary)
+        } else if case .downloaded = episode.downloadState,
+                  case .transcribing(let p) = episode.transcriptState {
+            thinProgressBar(progress: p.clamped01, color: Color.accentColor)
+        }
+    }
+
+    private func thinProgressBar(progress: Double, color: Color) -> some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(color)
+                .frame(width: geo.size.width * progress, height: 2)
+        }
+        .frame(height: 2)
+    }
 
     private var relativePublished: String {
         Self.relativeFormatter.localizedString(for: episode.pubDate, relativeTo: Date())
@@ -147,8 +164,6 @@ struct EpisodeRow: View {
         return f
     }()
 
-    /// Compound VoiceOver label per ux-02 §8 — title, duration, played-state,
-    /// transcript-status read as one phrase.
     private var accessibilityLabel: String {
         var parts: [String] = [episode.title]
         parts.append(episode.formattedDuration)
@@ -159,13 +174,29 @@ struct EpisodeRow: View {
         } else {
             parts.append("unplayed")
         }
-        switch episode.displayDownloadStatus {
-        case .none:                            break
-        case .downloaded(let t):               parts.append(t ? "transcript available" : "downloaded")
-        case .downloading(let p):              parts.append("downloading \(Int(p * 100)) percent")
-        case .transcribing(let p):             parts.append("transcribing \(Int(p * 100)) percent")
-        case .transcriptionQueued(let pos):    parts.append("queued at position \(pos)")
-        case .failed:                          parts.append("failed")
+        switch episode.downloadState {
+        case .downloading(let persisted, _):
+            let pct = Int(((downloadService.progress[episode.id] ?? persisted).clamped01 * 100).rounded())
+            parts.append("downloading \(pct) percent")
+        case .downloaded:
+            switch episode.transcriptState {
+            case .transcribing(let p):
+                parts.append("transcribing \(Int((p.clamped01 * 100).rounded())) percent")
+            case .queued, .fetchingPublisher:
+                parts.append("transcript queued")
+            case .ready:
+                parts.append("transcript available")
+            case .failed:
+                parts.append("transcript failed")
+            case .none:
+                parts.append("downloaded")
+            }
+        case .failed:
+            parts.append("download failed")
+        case .queued:
+            parts.append("download queued")
+        case .notDownloaded:
+            break
         }
         return parts.joined(separator: ", ")
     }
