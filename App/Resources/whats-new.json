@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "a261d20",
+      "shipped_at": "2026-05-11T12:00:00Z",
+      "lines": [
+        "Tap the Home title to browse categories — each category shows podcast artwork, a description, and your unplayed count. Tap the gear on any category to set its transcription, wiki, and briefings preferences independently. Selecting a category scopes the whole feed to that section."
+      ]
+    },
+    {
       "id": "notif-settings-refresh",
       "shipped_at": "2026-05-11T01:35:00Z",
       "lines": [
