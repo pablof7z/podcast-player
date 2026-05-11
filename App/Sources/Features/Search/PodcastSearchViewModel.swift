@@ -5,6 +5,8 @@ import Observation
 @MainActor
 final class PodcastSearchViewModel {
     var query: String = ""
+    /// Lags `query` by the debounce interval; drives local + wiki search.
+    var debouncedQuery: String = ""
     private(set) var transcriptResults: [PodcastTranscriptSearchHit] = []
     private(set) var wikiPages: [WikiPage] = []
     private(set) var isSearchingTranscripts = false
@@ -21,7 +23,7 @@ final class PodcastSearchViewModel {
     }
 
     var wikiResults: [PodcastWikiSearchHit] {
-        PodcastSearchEngine.wikiResults(query: query, pages: wikiPages)
+        PodcastSearchEngine.wikiResults(query: debouncedQuery, pages: wikiPages)
     }
 
     func loadWikiPages() async {

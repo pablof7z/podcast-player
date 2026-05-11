@@ -7,7 +7,7 @@ struct PodcastSearchView: View {
     @State private var destination: PodcastSearchDestination?
 
     private var localResults: PodcastLocalSearchResults {
-        PodcastSearchEngine.localResults(query: model.query, state: store.state)
+        PodcastSearchEngine.localResults(query: model.debouncedQuery, state: store.state)
     }
 
     private var hasAnyResults: Bool {
@@ -44,11 +44,17 @@ struct PodcastSearchView: View {
         )
         .task { await model.loadWikiPages() }
         .task(id: model.query) {
+            guard !model.query.trimmed.isEmpty else {
+                model.debouncedQuery = ""
+                await model.searchTranscripts()
+                return
+            }
             do {
-                try await Task.sleep(nanoseconds: 250_000_000)
+                try await Task.sleep(nanoseconds: 300_000_000)
             } catch {
                 return
             }
+            model.debouncedQuery = model.query
             await model.searchTranscripts()
         }
         .navigationDestination(item: $destination) { destination in
