@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "20b6654",
+      "shipped_at": "2026-05-12T00:00:00Z",
+      "lines": [
+        "Wiki citation chips now peek the cited moment on tap — long-press to commit and play the full clip. Failed compiles show a Retry button, and the auto-refresh toggle finally does something: enable it and your wiki pages update as new transcripts land."
+      ]
+    },
+    {
       "id": "6cad7dc",
       "shipped_at": "2026-05-11T23:30:00Z",
       "lines": [
