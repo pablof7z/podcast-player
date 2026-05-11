@@ -453,6 +453,58 @@ public struct ClipResult: Sendable, Equatable {
     }
 }
 
+// MARK: - TTS / Agent podcast publishing
+
+/// One turn inside a `generate_tts_episode` request. Discriminated by `kind`:
+/// - `.speech` — synthesised via TTS, using the specified voice.
+/// - `.snippet` — an original-audio excerpt spliced from an existing episode.
+public struct TTSTurn: Sendable, Equatable {
+    public enum Kind: Sendable, Equatable {
+        /// Text to synthesise via ElevenLabs TTS. `voiceID` is an ElevenLabs
+        /// voice identifier; leave nil to use the agent's configured default.
+        case speech(text: String, voiceID: String?)
+        /// An original-audio clip from an existing episode to splice in verbatim.
+        case snippet(
+            episodeID: EpisodeID,
+            startSeconds: Double,
+            endSeconds: Double,
+            label: String?
+        )
+    }
+
+    public let kind: Kind
+
+    public init(kind: Kind) {
+        self.kind = kind
+    }
+}
+
+/// Result returned by the `generate_tts_episode` tool after the episode is
+/// synthesised, stitched, and published to the agent-generated podcast.
+public struct TTSEpisodeResult: Sendable, Equatable {
+    public let episodeID: EpisodeID
+    public let podcastID: PodcastID
+    public let title: String
+    public let durationSeconds: TimeInterval?
+    public let publishedToLibrary: Bool
+
+    public init(
+        episodeID: EpisodeID,
+        podcastID: PodcastID,
+        title: String,
+        durationSeconds: TimeInterval? = nil,
+        publishedToLibrary: Bool = true
+    ) {
+        self.episodeID = episodeID
+        self.podcastID = podcastID
+        self.title = title
+        self.durationSeconds = durationSeconds
+        self.publishedToLibrary = publishedToLibrary
+    }
+}
+
+// MARK: - Inventory rows
+
 /// One episode row returned by `list_episodes` / `list_in_progress` /
 /// `list_recent_unplayed`. Distinct from `EpisodeHit` (search/RAG result) —
 /// inventory rows carry the user's *state* (played, position) instead of a

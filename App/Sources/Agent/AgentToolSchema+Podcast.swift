@@ -302,6 +302,57 @@ extension AgentTools {
                 ],
                 required: ["segments"]
             ),
+            podcastTool(
+                name: PodcastNames.generateTTSEpisode,
+                description: """
+                Synthesise a custom audio episode using ElevenLabs TTS and/or original episode snippets, \
+                then publish it to the 'Agent Generated' podcast so the user can play it like any other episode. \
+                Use for requests like 'make me a TLDR of the ADHD stuff', 'create a fake podcast interview', \
+                or 'summarise X with snippets from Y and Z'. \
+                Turns are ordered: each turn is either a 'speech' turn (text → TTS with a specific voice) \
+                or a 'snippet' turn (an original audio clip from an existing episode). \
+                For multi-speaker dialogue, alternate speech turns with different voice_id values. \
+                You can use ElevenLabs emotion cues in text like '[cheerfully]', '[excitedly]', '[laughs]'. \
+                For snippet turns, resolve episode IDs and timestamps via query_transcripts first.
+                """,
+                properties: [
+                    "title": ["type": "string", "description": "Episode title shown in the library."],
+                    "description": ["type": "string", "description": "Short episode description (plain text)."],
+                    "turns": [
+                        "type": "array",
+                        "description": "Ordered sequence of turns that make up the episode. Must contain at least one entry.",
+                        "items": [
+                            "type": "object",
+                            "properties": [
+                                "kind": ["type": "string", "enum": ["speech", "snippet"], "description": "'speech' for TTS narration, 'snippet' for an original-audio excerpt from an existing episode."],
+                                "text": ["type": "string", "description": "Text to synthesise. Required when kind='speech'. Supports ElevenLabs emotion markers like [cheerfully]."],
+                                "voice_id": ["type": "string", "description": "ElevenLabs voice ID for this speech turn. Omit to use the agent's configured default voice."],
+                                "episode_id": ["type": "string", "description": "UUID of the source episode. Required when kind='snippet'."],
+                                "start_seconds": ["type": "number", "description": "Start of the audio excerpt in seconds. Required when kind='snippet'."],
+                                "end_seconds": ["type": "number", "description": "End of the audio excerpt in seconds. Required when kind='snippet'."],
+                                "label": ["type": "string", "description": "Optional label for a snippet turn (e.g. speaker name or topic)."],
+                            ] as [String: Any],
+                            "required": ["kind"],
+                        ] as [String: Any],
+                    ] as [String: Any],
+                    "play_now": ["type": "boolean", "description": "If true, immediately start playing the finished episode. Defaults to false."],
+                ],
+                required: ["title", "turns"]
+            ),
+            podcastTool(
+                name: PodcastNames.configureAgentVoice,
+                description: """
+                Set the agent's default ElevenLabs voice ID. Future 'generate_tts_episode' speech turns \
+                that omit 'voice_id' will use this voice. \
+                Use when the user says 'use a different voice', 'sound like X', or explicitly picks a voice \
+                from the ElevenLabs voice list. Always confirm the voice_id exists in the user's ElevenLabs \
+                account before setting.
+                """,
+                properties: [
+                    "voice_id": ["type": "string", "description": "ElevenLabs voice ID to set as the agent's default."],
+                ],
+                required: ["voice_id"]
+            ),
         ]
     }
 

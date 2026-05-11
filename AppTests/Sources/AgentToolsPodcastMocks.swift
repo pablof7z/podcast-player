@@ -241,6 +241,28 @@ actor MockDelegation: PodcastDelegationProtocol {
     }
 }
 
+actor MockTTSPublisher: TTSPublisherProtocol {
+    private var voiceID: String = "mock-voice"
+
+    nonisolated func defaultVoiceID() -> String { "mock-voice" }
+    nonisolated func setDefaultVoiceID(_ voiceID: String) {}
+
+    func generateAndPublish(
+        title: String,
+        description: String?,
+        turns: [TTSTurn],
+        playNow: Bool
+    ) async throws -> TTSEpisodeResult {
+        return TTSEpisodeResult(
+            episodeID: "mock-tts-episode",
+            podcastID: "mock-tts-podcast",
+            title: title,
+            durationSeconds: nil,
+            publishedToLibrary: true
+        )
+    }
+}
+
 actor MockPerplexity: PerplexityClientProtocol {
     private let result: PerplexityResult?
     private let error: Error?

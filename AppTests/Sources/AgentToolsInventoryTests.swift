@@ -260,7 +260,8 @@ final class AgentToolsInventoryTests: XCTestCase {
             inventory: inventory,
             categories: inventory,
             delegation: MockDelegation(),
-            perplexity: MockPerplexity()
+            perplexity: MockPerplexity(),
+            ttsPublisher: MockTTSPublisher()
         )
         // Round-trip through the JSON-string dispatcher so we don't have to
         // hand a non-Sendable `[String: Any]` across isolation boundaries.

@@ -180,6 +180,18 @@ public protocol PerplexityClientProtocol: Sendable {
     func search(query: String) async throws -> PerplexityResult
 }
 
+/// TTS episode generation and voice configuration (lane 10).
+public protocol TTSPublisherProtocol: Sendable {
+    func defaultVoiceID() -> String
+    func setDefaultVoiceID(_ voiceID: String)
+    func generateAndPublish(
+        title: String,
+        description: String?,
+        turns: [TTSTurn],
+        playNow: Bool
+    ) async throws -> TTSEpisodeResult
+}
+
 // MARK: - Aggregate
 
 /// Bundle of every protocol the podcast tool surface needs. Construct once at
@@ -196,6 +208,7 @@ public struct PodcastAgentToolDeps: Sendable {
     public let categories: PodcastCategoryProtocol
     public let delegation: PodcastDelegationProtocol
     public let perplexity: PerplexityClientProtocol
+    public let ttsPublisher: TTSPublisherProtocol
 
     public init(
         rag: PodcastAgentRAGSearchProtocol,
@@ -208,7 +221,8 @@ public struct PodcastAgentToolDeps: Sendable {
         inventory: PodcastInventoryProtocol,
         categories: PodcastCategoryProtocol,
         delegation: PodcastDelegationProtocol,
-        perplexity: PerplexityClientProtocol
+        perplexity: PerplexityClientProtocol,
+        ttsPublisher: TTSPublisherProtocol
     ) {
         self.rag = rag
         self.wiki = wiki
@@ -221,5 +235,6 @@ public struct PodcastAgentToolDeps: Sendable {
         self.categories = categories
         self.delegation = delegation
         self.perplexity = perplexity
+        self.ttsPublisher = ttsPublisher
     }
 }

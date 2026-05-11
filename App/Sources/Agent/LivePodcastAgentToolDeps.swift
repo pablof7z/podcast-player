@@ -13,6 +13,7 @@ import os.log
 //   • `EpisodeFetcherProtocol`         → `LiveEpisodeFetcherAdapter`
 //   • `PlaybackHostProtocol`           → `LivePlaybackHostAdapter`
 //   • `PerplexityClientProtocol`       → `PerplexityClient`
+//   • `TTSPublisherProtocol`           → `AgentTTSComposer`
 //
 // Constructed once per `AgentChatSession` / `AgentRelayBridge`, the bundle
 // holds weak references to `AppStateStore` and `PlaybackState` so the agent
@@ -48,7 +49,8 @@ enum LivePodcastAgentToolDeps {
             inventory: inventory,
             categories: inventory,
             delegation: LiveTENEXDelegationBridge(store: store),
-            perplexity: PerplexityClient()
+            perplexity: PerplexityClient(),
+            ttsPublisher: AgentTTSComposer(store: store, playback: playback)
         )
     }
 }

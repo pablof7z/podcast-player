@@ -52,6 +52,10 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
     /// Optional per-show playback rate override; falls back to
     /// `Settings.defaultPlaybackRate` when `nil`.
     var defaultPlaybackRate: Double?
+    /// `true` for the synthetic "Agent Generated" show that the AI agent uses
+    /// to publish locally-synthesised episodes. These entries are excluded from
+    /// OPML export, feed refresh, and download heuristics.
+    var isAgentGenerated: Bool
 
     init(
         id: UUID = UUID(),
@@ -68,7 +72,8 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         lastModified: String? = nil,
         autoDownload: AutoDownloadPolicy = .default,
         notificationsEnabled: Bool = true,
-        defaultPlaybackRate: Double? = nil
+        defaultPlaybackRate: Double? = nil,
+        isAgentGenerated: Bool = false
     ) {
         self.id = id
         self.feedURL = feedURL
@@ -85,6 +90,7 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         self.autoDownload = autoDownload
         self.notificationsEnabled = notificationsEnabled
         self.defaultPlaybackRate = defaultPlaybackRate
+        self.isAgentGenerated = isAgentGenerated
     }
 
     // MARK: - Codable (forward-compat decoding)
@@ -94,6 +100,7 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         case language, categories, subscribedAt, lastRefreshedAt
         case etag, lastModified
         case autoDownload, notificationsEnabled, defaultPlaybackRate
+        case isAgentGenerated
     }
 
     init(from decoder: Decoder) throws {
@@ -113,5 +120,6 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         autoDownload = try c.decodeIfPresent(AutoDownloadPolicy.self, forKey: .autoDownload) ?? .default
         notificationsEnabled = try c.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         defaultPlaybackRate = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate)
+        isAgentGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAgentGenerated) ?? false
     }
 }
