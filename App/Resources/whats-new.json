@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "697b990",
+      "shipped_at": "2026-05-11T15:00:00Z",
+      "lines": [
+        "Perplexity online search now works with just your OpenRouter key — no separate Perplexity account required."
+      ]
+    },
+    {
       "id": "87c080c",
       "shipped_at": "2026-05-11T15:00:00Z",
       "lines": [
