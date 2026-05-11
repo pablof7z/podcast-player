@@ -2,6 +2,20 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "TODO-replace-with-short-sha",
+      "shipped_at": "2026-05-12T00:00:00Z",
+      "lines": [
+        "New: Diagnostics sheet on every episode (••• → Diagnostics) shows the full audit log — what was downloaded, when, whether transcription was attempted, which provider, why it was skipped, and the exact error if it failed. Retry buttons let you re-run the pipeline and watch fresh events stream in."
+      ]
+    },
+    {
+      "id": "f324234",
+      "shipped_at": "2026-05-12T00:15:00Z",
+      "lines": [
+        "AirPods gestures: double-tap and triple-tap now do what you want — skip, jump chapters, or clip the moment you just heard. Configure under Settings → Playback. Heads-up: iOS also surfaces these as next/previous-track buttons on the lock screen, Control Center, and CarPlay — those fire the same actions."
+      ]
+    },
+    {
       "id": "896cbe7",
       "shipped_at": "2026-05-11T23:30:00Z",
       "lines": [
