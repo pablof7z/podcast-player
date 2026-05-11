@@ -88,6 +88,12 @@ extension AppStateStore {
                 merged.isStarred = prior.isStarred
                 merged.downloadState = prior.downloadState
                 merged.transcriptState = prior.transcriptState
+                // Preserve AI-compiled/hydrated chapters when the incoming RSS episode
+                // doesn't supply new ones; RSS never carries ad segments so always keep.
+                if merged.chapters == nil || merged.chapters!.isEmpty {
+                    merged.chapters = prior.chapters
+                }
+                merged.adSegments = prior.adSegments
                 updated[idx] = merged
             } else {
                 updated.append(episode)
