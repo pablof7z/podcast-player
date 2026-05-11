@@ -165,7 +165,8 @@ struct FeedbackThreadDetailView: View {
                     )
             }
             .buttonStyle(.pressable)
-            .accessibilityLabel("Attached screenshot — tap to expand")
+            .accessibilityLabel("Attached screenshot")
+            .accessibilityHint("Opens the screenshot full-screen")
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, Layout.rowPaddingV)

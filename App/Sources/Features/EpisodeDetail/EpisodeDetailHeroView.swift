@@ -189,7 +189,8 @@ struct EpisodeDetailHeroView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            .accessibilityLabel("Downloading, \(Int(((downloadProgress ?? persistedProgress).clamped01 * 100).rounded())) percent. Tap to cancel.")
+            .accessibilityLabel("Downloading, \(Int(((downloadProgress ?? persistedProgress).clamped01 * 100).rounded())) percent")
+            .accessibilityHint("Cancels the download")
         case .downloaded:
             Label("Downloaded", systemImage: "checkmark.circle.fill")
                 .font(.system(.subheadline, design: .rounded).weight(.medium))
@@ -208,7 +209,8 @@ struct EpisodeDetailHeroView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(AppTheme.Tint.error)
-            .accessibilityLabel("Download failed. Tap to retry.")
+            .accessibilityLabel("Download failed")
+            .accessibilityHint("Retries the download")
         }
     }
 
