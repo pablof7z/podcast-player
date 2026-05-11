@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "aa21a8c",
+      "shipped_at": "2026-05-11T22:30:00Z",
+      "lines": [
+        "Episode pages now have a comments section powered by Nostr — replies appear under every episode and are shared across podcast apps that support Podcasting 2.0."
+      ]
+    },
+    {
       "id": "8ff459e",
       "shipped_at": "2026-05-11T22:00:00Z",
       "lines": [
