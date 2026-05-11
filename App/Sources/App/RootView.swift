@@ -9,13 +9,15 @@ import SwiftUI
 enum RootTab: String, CaseIterable {
     case home = "Home"
     case search = "Search"
+    case clippings = "Clippings"
     case wiki = "Wiki"
 
     var icon: String {
         switch self {
-        case .home:    "house.fill"
-        case .search:  "magnifyingglass"
-        case .wiki:    "book.closed.fill"
+        case .home:      "house.fill"
+        case .search:    "magnifyingglass"
+        case .clippings: "scissors"
+        case .wiki:      "book.closed.fill"
         }
     }
 }
@@ -277,6 +279,8 @@ struct RootView: View {
         case .search:
             NavigationStack { PodcastSearchView().toolbar { sharedToolbar() } }
                 .tabBarMinimizeBehavior(.never)
+        case .clippings:
+            NavigationStack { ClippingsView().toolbar { sharedToolbar() } }
         case .wiki:
             NavigationStack { WikiView().toolbar { sharedToolbar() } }
         }

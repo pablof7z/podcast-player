@@ -68,9 +68,13 @@ struct AgentChatView: View {
             // Long-press → ask-agent prefill. Drained once per session so a
             // re-open without a new long-press starts blank. Focus the input
             // so the user can append a question and Send without a tap.
-            if let seed = session?.consumeSeededDraft(), !seed.isEmpty {
-                draft = seed
-                inputFocused = true
+            if let seeded = session?.consumeSeededDraftWithAutoSend(), !seeded.draft.isEmpty {
+                if seeded.autoSend {
+                    session?.startSend(seeded.draft, source: .typedChat)
+                } else {
+                    draft = seeded.draft
+                    inputFocused = true
+                }
             } else {
                 inputFocused = hasKey
             }

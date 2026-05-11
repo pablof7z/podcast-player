@@ -50,6 +50,7 @@ extension AgentTools {
         static let listEpisodes         = "list_episodes"
         static let listInProgress       = "list_in_progress"
         static let listRecentUnplayed   = "list_recent_unplayed"
+        static let createClip           = "create_clip"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch.
@@ -63,6 +64,7 @@ extension AgentTools {
                 openScreen, setNowPlaying, delegate,
                 listSubscriptions, listCategories, changePodcastCategory,
                 listEpisodes, listInProgress, listRecentUnplayed,
+                createClip,
             ]
         }
     }
@@ -164,6 +166,8 @@ extension AgentTools {
             return await listInProgressTool(args: args, deps: deps)
         case PodcastNames.listRecentUnplayed:
             return await listRecentUnplayedTool(args: args, deps: deps)
+        case PodcastNames.createClip:
+            return await createClipTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

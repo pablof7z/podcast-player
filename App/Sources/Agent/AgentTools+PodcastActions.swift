@@ -147,6 +147,53 @@ extension AgentTools {
 
     // MARK: - Delegation
 
+    static func createClipTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
+            return toolError("Missing or empty 'episode_id'")
+        }
+        guard let startSeconds = podcastActionNumericArg(args["start_seconds"]) else {
+            return toolError("Missing or invalid 'start_seconds'")
+        }
+        guard let endSeconds = podcastActionNumericArg(args["end_seconds"]) else {
+            return toolError("Missing or invalid 'end_seconds'")
+        }
+        guard startSeconds >= 0 else {
+            return toolError("'start_seconds' must be >= 0")
+        }
+        guard endSeconds > startSeconds else {
+            return toolError("'end_seconds' must be greater than 'start_seconds'")
+        }
+        let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
+        guard exists else {
+            return toolError("Episode not found: \(episodeID)")
+        }
+        let caption = (args["caption"] as? String)?.trimmed.nilIfEmpty
+        let transcriptText = (args["transcript_text"] as? String)?.trimmed.nilIfEmpty
+        do {
+            let result = try await deps.library.createClip(
+                episodeID: episodeID,
+                startSeconds: startSeconds,
+                endSeconds: endSeconds,
+                caption: caption,
+                transcriptText: transcriptText
+            )
+            var payload: [String: Any] = [
+                "clip_id": result.clipID,
+                "episode_id": result.episodeID,
+                "episode_title": result.episodeTitle,
+                "start_seconds": result.startSeconds,
+                "end_seconds": result.endSeconds,
+                "duration_seconds": result.endSeconds - result.startSeconds,
+            ]
+            if !result.transcriptText.isEmpty { payload["transcript_text"] = result.transcriptText }
+            if let caption = result.caption { payload["caption"] = caption }
+            if let podcastID = result.podcastID { payload["podcast_id"] = podcastID }
+            return toolSuccess(payload)
+        } catch {
+            return toolError("create_clip failed: \(error.localizedDescription)")
+        }
+    }
+
     static func delegateTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
         guard let recipient = (args["recipient"] as? String)?.trimmed, !recipient.isEmpty else {
             return toolError("Missing or empty 'recipient'")

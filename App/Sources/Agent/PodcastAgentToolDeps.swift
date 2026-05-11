@@ -105,6 +105,16 @@ public protocol PodcastLibraryProtocol: Sendable {
     func downloadEpisode(episodeID: EpisodeID) async throws -> EpisodeMutationResult
     func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult
     func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult
+    /// Create a clip on behalf of the user. `transcriptText` is pre-filled when
+    /// the agent already has it from a prior `query_transcripts` call; otherwise
+    /// the implementation should attempt to extract it from the local transcript.
+    func createClip(
+        episodeID: EpisodeID,
+        startSeconds: Double,
+        endSeconds: Double,
+        caption: String?,
+        transcriptText: String?
+    ) async throws -> ClipResult
 }
 
 /// TENEX-compatible async delegation.

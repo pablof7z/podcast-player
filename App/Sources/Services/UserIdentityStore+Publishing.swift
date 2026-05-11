@@ -73,21 +73,55 @@ extension UserIdentityStore {
         return event
     }
 
-    /// Sign + publish a user-authored clip as a kind:9802 highlight
-    /// (NIP-84). Matches the rows "Clips, source `.touch / .auto /
-    /// .headphone / .carplay / .watch / .siri`" in `identity-05-synthesis.md`
-    /// §5.3 — the `.agent` source is filtered at the call-site, not here.
-    func publishUserClip(_ clip: Clip) async throws -> SignedNostrEvent {
+    /// Sign + publish a user-authored clip as a kind:9802 highlight (NIP-84)
+    /// with NIP-73 external content IDs for the podcast ecosystem.
+    ///
+    /// Tag structure:
+    /// - `["r", enclosureURL]` — NIP-84 source URL (the audio file).
+    /// - `["r", feedURL]` — podcast feed reference.
+    /// - `["i", "podcast:item:guid:<guid>#t=<start>,<end>"]` — NIP-73
+    ///   external content ID with media-fragment time offset (seconds).
+    /// - `["context", transcriptText]` — NIP-84 surrounding context.
+    /// - `["alt", caption]` — human-readable description when present.
+    ///
+    /// `episode` and `subscription` are optional so callers that lack the
+    /// resolved models can still publish a degraded-but-valid event.
+    func publishUserClip(
+        _ clip: Clip,
+        episode: Episode? = nil,
+        subscription: PodcastSubscription? = nil
+    ) async throws -> SignedNostrEvent {
         if signer == nil {
             try _ensureGeneratedKey()
         }
         guard let signer else { throw UserIdentityError.noIdentity }
-        // No relay-side episode coordinate exists today; when a future
-        // schema lands, the `["a", episodeCoord]` tag joins this list.
-        var tags: [[String]] = [["context", clip.transcriptText]]
+
+        var tags: [[String]] = []
+
+        // NIP-84: source URL — the audio enclosure.
+        if let enclosureURL = episode?.enclosureURL {
+            tags.append(["r", enclosureURL.absoluteString])
+        }
+
+        // NIP-73: podcast feed reference (show level).
+        if let feedURL = subscription?.feedURL {
+            tags.append(["r", feedURL.absoluteString])
+        }
+
+        // NIP-73: episode external content ID with time-fragment offset.
+        if let guid = episode?.guid {
+            let startSec = clip.startMs / 1000
+            let endSec   = clip.endMs   / 1000
+            tags.append(["i", "podcast:item:guid:\(guid)#t=\(startSec),\(endSec)"])
+        }
+
+        // NIP-84: surrounding context.
+        tags.append(["context", clip.transcriptText])
+
         if let caption = clip.caption, !caption.isEmpty {
             tags.append(["alt", caption])
         }
+
         let event = try await signer.sign(NostrEventDraft(kind: 9802, content: clip.transcriptText, tags: tags))
         try await FeedbackRelayClient().publish(event, authSigner: signer)
         return event

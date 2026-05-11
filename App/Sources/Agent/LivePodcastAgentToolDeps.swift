@@ -346,6 +346,67 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
         )
     }
 
+    func createClip(
+        episodeID: EpisodeID,
+        startSeconds: Double,
+        endSeconds: Double,
+        caption: String?,
+        transcriptText: String?
+    ) async throws -> ClipResult {
+        guard let uuid = UUID(uuidString: episodeID) else {
+            throw PodcastAgentToolAdapterError.invalidID(episodeID)
+        }
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let episode = await store.episode(id: uuid) else {
+            throw PodcastAgentToolAdapterError.missingEpisode(episodeID)
+        }
+        let startMs = Int(startSeconds * 1000)
+        let endMs = Int(endSeconds * 1000)
+        let resolvedText: String
+        if let supplied = transcriptText, !supplied.isEmpty {
+            resolvedText = supplied
+        } else {
+            resolvedText = Self.extractTranscriptText(
+                episodeID: uuid,
+                startSeconds: startSeconds,
+                endSeconds: endSeconds
+            )
+        }
+        let clip = await MainActor.run {
+            store.addClip(
+                episodeID: uuid,
+                subscriptionID: episode.subscriptionID,
+                startMs: startMs,
+                endMs: endMs,
+                transcriptText: resolvedText,
+                source: .agent,
+                caption: caption
+            )
+        }
+        return ClipResult(
+            clipID: clip.id.uuidString,
+            episodeID: episodeID,
+            podcastID: episode.subscriptionID.uuidString,
+            episodeTitle: episode.title,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            transcriptText: resolvedText,
+            caption: caption
+        )
+    }
+
+    private static func extractTranscriptText(
+        episodeID: UUID,
+        startSeconds: Double,
+        endSeconds: Double
+    ) -> String {
+        guard let transcript = TranscriptStore.shared.load(episodeID: episodeID) else { return "" }
+        let matching = transcript.segments.filter { $0.end > startSeconds && $0.start < endSeconds }
+        return matching.map(\.text).joined(separator: " ")
+    }
+
     func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult {
         guard let uuid = UUID(uuidString: podcastID) else {
             throw PodcastAgentToolAdapterError.invalidID(podcastID)

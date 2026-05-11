@@ -2,10 +2,15 @@ import SwiftUI
 
 /// Full-screen Now Playing surface.
 ///
-/// Layout: compact episode header (artwork left, title/show/metadata right) →
-/// chapters → semantic waveform → primary transport → action cluster. Colors
-/// and fonts use semantic / Dynamic Type styles so the surface adapts to the
-/// user's appearance settings and accent color.
+/// Layout: a single vertical `ScrollView` whose content is the compact
+/// episode header (artwork left, title/show/metadata right) followed by the
+/// chapter rail. The top bar floats with the close button + the
+/// share/AirPlay/more cluster, swapping the middle label from show-name to a
+/// compact artwork+title once the hero has scrolled offscreen. The playback
+/// chrome (scrubber + transport + action cluster) floats at the bottom in a
+/// single glass island via `safeAreaInset(edge: .bottom)`. Colors and fonts
+/// use semantic / Dynamic Type styles so the surface adapts to the user's
+/// appearance settings and accent color.
 struct PlayerView: View {
 
     @Environment(AppStateStore.self) private var store
@@ -17,6 +22,12 @@ struct PlayerView: View {
     @State private var showSpeedSheet: Bool = false
     @State private var showSleepSheet: Bool = false
     @State private var showShareSheet: Bool = false
+    @State private var showVoiceNoteSheet: Bool = false
+
+    /// Vertical scroll offset of the content. Driven by
+    /// `.onScrollGeometryChange` rather than a preference key so the
+    /// title-swap doesn't ride the layout-pass treadmill.
+    @State private var scrollOffset: CGFloat = 0
 
     /// Observed so the editorial-header download badge tracks the service's
     /// `progress[id]` map at 5%/200ms without each tick re-rendering through
@@ -32,28 +43,51 @@ struct PlayerView: View {
         subscription?.title ?? ""
     }
 
+    /// Roughly the height of the hero artwork (110 pt) + a bit of padding —
+    /// once the user has scrolled past this, the compact title takes over
+    /// the top bar's middle slot.
+    private let titleSwapThreshold: CGFloat = 90
+
+    private var titleCollapsed: Bool {
+        scrollOffset > titleSwapThreshold
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
+        ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.lg) {
                     episodeHeader
-                    secondarySurface
-                        .frame(minHeight: 240, maxHeight: 320)
+                    chaptersContent
                 }
                 .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.lg)
             }
-
-            playbackChrome
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.md)
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top
+            } action: { _, newOffset in
+                scrollOffset = newOffset
+            }
+            .onAppear {
+                // One-time scroll-to-active on open. We intentionally do NOT
+                // re-center on chapter changes because the chapter rail now
+                // scrolls with the rest of the page — re-centering every
+                // boundary crossing would jerk the artwork header.
+                guard let activeID = navigableChapters?.active(at: state.currentTime)?.id else { return }
+                proxy.scrollTo(activeID, anchor: .center)
+            }
         }
+        .safeAreaInset(edge: .top, spacing: 0) { topBar }
+        .safeAreaInset(edge: .bottom, spacing: 0) { floatingChrome }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             PlayerEditorialBackdrop(artworkURL: artworkURL)
         }
         .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
+        .sheet(isPresented: $showVoiceNoteSheet) {
+            VoiceNoteRecordingSheet(state: state)
+                .environment(store)
+        }
         .sheet(isPresented: $showShareSheet) {
             if let episode = state.episode {
                 PlayerShareSheet(state: state, episode: episode, showName: showName)
@@ -85,89 +119,16 @@ struct PlayerView: View {
     // MARK: - Top bar
 
     private var topBar: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Circle())
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(.pressable)
-            .accessibilityLabel("Minimize player")
-            .accessibilityHint("Returns to the previous screen")
-
-            Spacer()
-
-            if !showName.isEmpty {
-                Text(showName)
-                    .font(AppTheme.Typography.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .padding(.horizontal, AppTheme.Spacing.sm)
-            }
-
-            Spacer()
-
-            HStack(spacing: AppTheme.Spacing.xs) {
-                if state.episode != nil {
-                    Button {
-                        showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Circle())
-                            .glassEffect(.regular.interactive(), in: .circle)
-                    }
-                    .buttonStyle(.pressable)
-                    .accessibilityLabel("Share episode")
-                }
-
-                topBarRoutePicker
-
-                if let episode = state.episode {
-                    PlayerMoreMenu(
-                        episode: episode,
-                        subscription: subscription,
-                        onMarkPlayed: { store.markEpisodePlayed(episode.id) },
-                        onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
-                        onDismissPlayer: { dismiss() },
-                        onShowSleepTimer: { showSleepSheet = true }
-                    )
-                }
-            }
-        }
-        .padding(.horizontal, AppTheme.Spacing.md)
-        .padding(.top, AppTheme.Spacing.sm)
-    }
-
-    /// Audio-output route picker styled to match the top-bar glass buttons.
-    private var topBarRoutePicker: some View {
-        ZStack {
-            Image(systemName: "airplayaudio")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-                .glassEffect(.regular.interactive(), in: .circle)
-                .accessibilityHidden(true)
-            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
-                .allowsHitTesting(true)
-                .accessibilityHidden(true)
-        }
-        .frame(width: 44, height: 44)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Audio output")
-        .accessibilityHint("Opens system output picker")
+        PlayerTopBar(
+            state: state,
+            subscription: subscription,
+            showName: showName,
+            artworkURL: artworkURL,
+            titleCollapsed: titleCollapsed,
+            onDismiss: { dismiss() },
+            onShare: { showShareSheet = true },
+            onShowSleepTimer: { showSleepSheet = true }
+        )
     }
 
     // MARK: - Episode header (compact: artwork left, text right)
@@ -263,15 +224,14 @@ struct PlayerView: View {
         return date
     }
 
-    // MARK: - Secondary surface (chapters only)
+    // MARK: - Chapters / placeholder
 
     @ViewBuilder
-    private var secondarySurface: some View {
+    private var chaptersContent: some View {
         if let chapters = navigableChapters, !chapters.isEmpty {
             PlayerChaptersScrollView(
                 chapters: chapters,
-                state: state,
-                useGlassCard: true
+                state: state
             )
         } else {
             PlayerNoChaptersPlaceholder(episode: liveEpisode)
@@ -301,22 +261,32 @@ struct PlayerView: View {
         }
     }
 
-    // MARK: - Playback chrome (waveform + transport + actions)
+    // MARK: - Floating playback chrome (scrubber + transport + actions)
 
-    private var playbackChrome: some View {
-        VStack(spacing: AppTheme.Spacing.md) {
-            PlayerPrerollSkipButton(state: state, episode: liveEpisode)
-                .animation(AppTheme.Animation.spring, value: state.currentTime)
-            PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
-            PlayerControlsView(
-                state: state,
-                glassNamespace: glassNamespace,
-                chapters: navigableChapters ?? []
-            )
-            PlayerActionClusterView(
-                state: state,
-                showSpeedSheet: $showSpeedSheet
-            )
+    /// Pulled out of the scroll body and attached via
+    /// `safeAreaInset(edge: .bottom)` so the chapter list scrolls under it.
+    /// Wrapped in a `GlassEffectContainer` so the morph-on-press animations
+    /// across all the round controls read as one floating island rather
+    /// than five disconnected glass coins.
+    private var floatingChrome: some View {
+        GlassEffectContainer(spacing: AppTheme.Spacing.md) {
+            VStack(spacing: AppTheme.Spacing.md) {
+                PlayerPrerollSkipButton(state: state, episode: liveEpisode)
+                    .animation(AppTheme.Animation.spring, value: state.currentTime)
+                PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
+                PlayerControlsView(
+                    state: state,
+                    glassNamespace: glassNamespace,
+                    chapters: navigableChapters ?? []
+                )
+                PlayerActionClusterView(
+                    state: state,
+                    showSpeedSheet: $showSpeedSheet,
+                    showVoiceNoteSheet: $showVoiceNoteSheet
+                )
+            }
         }
+        .padding(.horizontal, AppTheme.Spacing.md)
+        .padding(.bottom, AppTheme.Spacing.md)
     }
 }

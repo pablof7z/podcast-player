@@ -242,6 +242,18 @@ extension AgentTools {
                 ],
                 required: []
             ),
+            podcastTool(
+                name: PodcastNames.createClip,
+                description: "Save a clip of an episode on behalf of the user — creates a timestamped excerpt that appears in the user's Clippings tab. Use when the user says 'clip that', 'save that part', or asks you to bookmark a moment. Always confirm the start/end range with the user before clipping unless they were explicit. Prefer supplying transcript_text when you already have it from query_transcripts.",
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to clip (UUID string)."],
+                    "start_seconds": ["type": "number", "description": "Clip start time in seconds from the episode origin."],
+                    "end_seconds": ["type": "number", "description": "Clip end time in seconds from the episode origin."],
+                    "caption": ["type": "string", "description": "Optional user-visible headline for the clip."],
+                    "transcript_text": ["type": "string", "description": "Verbatim transcript text for the clipped span. Supply this when you have it from a prior query_transcripts call so it doesn't need to be re-fetched."],
+                ],
+                required: ["episode_id", "start_seconds", "end_seconds"]
+            ),
         ]
     }
 

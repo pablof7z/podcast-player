@@ -8,8 +8,10 @@ import SwiftUI
 // lifecycle the user is in — transcript ingesting, AI chapters compiling,
 // or simply no chapters available — without showing transcript text.
 //
-// Sizing matches `PlayerChaptersScrollView`'s glass-card framing so the
-// layout doesn't shift when chapters arrive mid-session.
+// Renders with a `minHeight` so it occupies useful real estate inside the
+// player's vertical ScrollView even with no intrinsic content height — a
+// `maxHeight: .infinity` here would collapse to zero because the parent
+// scroll axis is unbounded.
 
 struct PlayerNoChaptersPlaceholder: View {
     let episode: Episode?
@@ -31,7 +33,7 @@ struct PlayerNoChaptersPlaceholder: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, AppTheme.Spacing.lg)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 280)
         .padding(AppTheme.Spacing.lg)
         .background(cardBackground)
         .accessibilityElement(children: .combine)

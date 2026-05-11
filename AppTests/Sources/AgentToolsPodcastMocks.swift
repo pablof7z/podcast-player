@@ -137,6 +137,15 @@ actor MockLibrary: PodcastLibraryProtocol {
     private(set) var transcriptionIDs: [EpisodeID] = []
     private(set) var refreshedPodcastIDs: [PodcastID] = []
 
+    struct ClipCall: Equatable {
+        let episodeID: EpisodeID
+        let startSeconds: Double
+        let endSeconds: Double
+        let caption: String?
+        let transcriptText: String?
+    }
+    private(set) var clipCalls: [ClipCall] = []
+
     func markEpisodePlayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult {
         playedIDs.append(episodeID)
         return episodeResult(episodeID: episodeID, state: "played")
@@ -164,6 +173,32 @@ actor MockLibrary: PodcastLibraryProtocol {
             title: "Mock Show",
             episodeCount: 42,
             newEpisodeCount: 2
+        )
+    }
+
+    func createClip(
+        episodeID: EpisodeID,
+        startSeconds: Double,
+        endSeconds: Double,
+        caption: String?,
+        transcriptText: String?
+    ) async throws -> ClipResult {
+        clipCalls.append(ClipCall(
+            episodeID: episodeID,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            caption: caption,
+            transcriptText: transcriptText
+        ))
+        return ClipResult(
+            clipID: "mock-clip-1",
+            episodeID: episodeID,
+            podcastID: "pod1",
+            episodeTitle: "Episode \(episodeID)",
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            transcriptText: transcriptText ?? "",
+            caption: caption
         )
     }
 

@@ -122,6 +122,62 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         XCTAssertEqual(refreshedPodcastIDs, ["pod1"])
     }
 
+    func testCreateClipForwardsToLibrary() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.createClip,
+            args: ["episode_id": "ep1", "start_seconds": 30.0, "end_seconds": 90.0, "caption": "Great moment"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["clip_id"] as? String, "mock-clip-1")
+        XCTAssertEqual(decoded["episode_id"] as? String, "ep1")
+        XCTAssertEqual(decoded["start_seconds"] as? Double, 30.0)
+        XCTAssertEqual(decoded["end_seconds"] as? Double, 90.0)
+        XCTAssertEqual(decoded["duration_seconds"] as? Double, 60.0)
+        XCTAssertEqual(decoded["caption"] as? String, "Great moment")
+        let calls = await deps.library.clipCalls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(calls.first?.episodeID, "ep1")
+        XCTAssertEqual(calls.first?.caption, "Great moment")
+    }
+
+    func testCreateClipRejectsUnknownEpisode() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: []))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.createClip,
+            args: ["episode_id": "unknown", "start_seconds": 0.0, "end_seconds": 30.0],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testCreateClipRejectsInvertedRange() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.createClip,
+            args: ["episode_id": "ep1", "start_seconds": 90.0, "end_seconds": 30.0],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testCreateClipPassesTranscriptTextToLibrary() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.createClip,
+            args: ["episode_id": "ep1", "start_seconds": 10.0, "end_seconds": 40.0,
+                   "transcript_text": "Exactly what was said."],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["transcript_text"] as? String, "Exactly what was said.")
+        let calls = await deps.library.clipCalls
+        XCTAssertEqual(calls.first?.transcriptText, "Exactly what was said.")
+    }
+
     func testDelegateUsesTenexContractAndStopsTurn() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(

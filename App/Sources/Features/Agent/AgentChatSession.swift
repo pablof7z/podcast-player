@@ -31,6 +31,9 @@ final class AgentChatSession {
     /// `consumeSeededDraft()` on `.onAppear`; subsequent reads return nil so a
     /// re-presentation of the chat sheet starts blank.
     private var seededDraft: String?
+    /// When true, the view should auto-send `seededDraft` rather than placing
+    /// it in the composer. Set for voice-note contexts.
+    private(set) var seededDraftShouldAutoSend: Bool = false
 
     private let store: AppStateStore
     private let history: ChatHistoryStore
@@ -57,16 +60,19 @@ final class AgentChatSession {
         let loaded = history.load()
         self.messages = loaded
         self.loadedFromHistory = !loaded.isEmpty
-        // Drain the long-press → ask-agent context. Read-and-clear so a later
-        // sheet re-open starts blank. Auto-send is intentionally NOT done here
-        // — long-press is too easy to mistrigger; let the user confirm via Send.
+        // Drain the ask-agent context. Read-and-clear so a later sheet re-open
+        // starts blank. Priority: voice note > chapter > transcript.
         //
-        // Chapter context wins over transcript context: the chapter long-press
-        // is the primary user-visible affordance now; transcript-segment
-        // contexts only get written by internal-only surfaces (clip composer,
-        // quote share). If both happen to be pending, the chapter one is the
-        // one the user just tapped.
-        if let chapter = store.pendingChapterAgentContext {
+        // Voice notes are auto-sent (the user already spoke; no extra tap).
+        // Chapter long-press and transcript contexts stay in the composer for
+        // the user to review and optionally amend before sending.
+        if let voiceNote = store.pendingVoiceNoteAgentContext {
+            self.seededDraft = voiceNote.prefilledDraft
+            self.seededDraftShouldAutoSend = true
+            store.pendingVoiceNoteAgentContext = nil
+            store.pendingChapterAgentContext = nil
+            store.pendingTranscriptAgentContext = nil
+        } else if let chapter = store.pendingChapterAgentContext {
             self.seededDraft = chapter.prefilledDraft
             store.pendingChapterAgentContext = nil
             store.pendingTranscriptAgentContext = nil
@@ -82,6 +88,17 @@ final class AgentChatSession {
         let value = seededDraft
         seededDraft = nil
         return value
+    }
+
+    /// Returns the prefilled draft and the auto-send flag together, then
+    /// clears both. Use this instead of `consumeSeededDraft()` when the
+    /// caller needs to distinguish between "place in composer" and "auto-send".
+    func consumeSeededDraftWithAutoSend() -> (draft: String, autoSend: Bool)? {
+        guard let value = seededDraft else { return nil }
+        let shouldAutoSend = seededDraftShouldAutoSend
+        seededDraft = nil
+        seededDraftShouldAutoSend = false
+        return (value, shouldAutoSend)
     }
 
     var canSend: Bool {

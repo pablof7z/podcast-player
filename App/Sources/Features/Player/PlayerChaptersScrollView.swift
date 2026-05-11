@@ -2,24 +2,24 @@ import SwiftUI
 
 // MARK: - PlayerChaptersScrollView
 
-/// Chapter-focused secondary surface inside the full-screen `PlayerView`.
+/// Chapter rail for the full-screen `PlayerView`.
 ///
-/// Replaces the transcript scroller as the player's primary scrollable body
-/// when the episode has navigable chapters. Visual idiom is lifted from
-/// `EpisodeDetailHeroView.chaptersSection` (monospace timestamp column +
-/// serif title) so the reading surface feels editorially consistent with
-/// the episode-detail surface.
+/// Renders a non-scrolling `LazyVStack` of chapter rows — the parent owns the
+/// `ScrollView` so chapters scroll naturally with the rest of the page
+/// (artwork header → chapters) instead of in a self-contained box. Visual
+/// idiom is lifted from `EpisodeDetailHeroView.chaptersSection` (monospace
+/// timestamp column + serif title) so the reading surface feels editorially
+/// consistent with the episode-detail surface.
 ///
-/// Active chapter is highlighted and auto-scrolled into view as `currentTime`
-/// crosses each `startTime`. Tap to seek; if the player is paused, also start
-/// playback so the user doesn't need a follow-up tap.
+/// Active chapter is highlighted; the parent handles one-time scroll-to-
+/// active on open via its own `ScrollViewReader` (we intentionally don't
+/// re-center on every boundary crossing — that would jerk the whole page
+/// roughly once per minute). Tap to seek; if the player is paused on a
+/// fresh open, also start playback so the user doesn't need a follow-up tap.
 struct PlayerChaptersScrollView: View {
 
     let chapters: [Episode.Chapter]
     @Bindable var state: PlaybackState
-    /// When `true`, wraps the rail in a glass card to match the standard
-    /// hero-card framing PlayerView uses for its secondary surface.
-    let useGlassCard: Bool
 
     /// Live store handle — needed for the long-press "Ask agent about this
     /// chapter" dispatch, which mirrors the transcript-row pattern by
@@ -45,27 +45,10 @@ struct PlayerChaptersScrollView: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                    ForEach(chapters) { chapter in
-                        chapterRow(chapter, isActive: chapter.id == activeChapterID)
-                            .id(chapter.id)
-                    }
-                }
-                .padding(.vertical, AppTheme.Spacing.sm)
-                .padding(.horizontal, useGlassCard ? AppTheme.Spacing.md : 0)
-            }
-            .background(cardBackground)
-            .onAppear {
-                guard let activeChapterID else { return }
-                proxy.scrollTo(activeChapterID, anchor: .center)
-            }
-            .onChange(of: activeChapterID) { _, newID in
-                guard let newID else { return }
-                withAnimation(AppTheme.Animation.spring) {
-                    proxy.scrollTo(newID, anchor: .center)
-                }
+        LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+            ForEach(chapters) { chapter in
+                chapterRow(chapter, isActive: chapter.id == activeChapterID)
+                    .id(chapter.id)
             }
         }
         .accessibilityElement(children: .contain)
@@ -199,18 +182,6 @@ struct PlayerChaptersScrollView: View {
                 .fill(Color.accentColor.opacity(0.10))
         } else {
             Color.clear
-        }
-    }
-
-    @ViewBuilder
-    private var cardBackground: some View {
-        if useGlassCard {
-            RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                        .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
-                )
         }
     }
 

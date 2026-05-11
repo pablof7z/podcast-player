@@ -48,6 +48,12 @@ final class AppStateStore {
     /// fetches transcript context through its tool inventory.
     var pendingChapterAgentContext: ChapterAgentContext?
 
+    /// Voice note the user recorded via the mic button in the player. Drained
+    /// by `AgentChatSession.init` and auto-sent to the agent. The context
+    /// carries the timestamp anchor, the active chapter bounds, and the
+    /// transcribed utterance; the agent decides what to do with it.
+    var pendingVoiceNoteAgentContext: VoiceNoteAgentContext?
+
     var state: AppState {
         didSet {
             handleStateDidSet(previousEpisodes: oldValue.episodes)

@@ -22,7 +22,9 @@ extension AppStateStore {
         // which stays local. Fire-and-forget so a relay outage never blocks
         // the user's local capture.
         if clip.source != .agent {
-            Task { try? await UserIdentityStore.shared.publishUserClip(clip) }
+            let ep  = episode(id: clip.episodeID)
+            let sub = ep.flatMap { subscription(id: $0.subscriptionID) }
+            Task { try? await UserIdentityStore.shared.publishUserClip(clip, episode: ep, subscription: sub) }
         }
     }
 
@@ -88,8 +90,13 @@ extension AppStateStore {
         state.clips.first(where: { $0.id == id })
     }
 
+    /// All clips, newest first. Used by the Clippings tab.
+    func allClips() -> [Clip] {
+        state.clips.sorted { $0.createdAt > $1.createdAt }
+    }
+
     /// Clips for a single episode, newest first. Used by the episode detail
-    /// surface and (eventually) the global clips list.
+    /// surface and the global clips list.
     func clips(forEpisode id: UUID) -> [Clip] {
         state.clips
             .filter { $0.episodeID == id }

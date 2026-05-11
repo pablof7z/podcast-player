@@ -381,6 +381,38 @@ public struct PodcastCategoryChangeResult: Sendable, Equatable {
     }
 }
 
+/// Result returned after the agent creates a clip on behalf of the user.
+public struct ClipResult: Sendable, Equatable {
+    public let clipID: String
+    public let episodeID: EpisodeID
+    public let podcastID: PodcastID?
+    public let episodeTitle: String
+    public let startSeconds: Double
+    public let endSeconds: Double
+    public let transcriptText: String
+    public let caption: String?
+
+    public init(
+        clipID: String,
+        episodeID: EpisodeID,
+        podcastID: PodcastID? = nil,
+        episodeTitle: String,
+        startSeconds: Double,
+        endSeconds: Double,
+        transcriptText: String,
+        caption: String? = nil
+    ) {
+        self.clipID = clipID
+        self.episodeID = episodeID
+        self.podcastID = podcastID
+        self.episodeTitle = episodeTitle
+        self.startSeconds = startSeconds
+        self.endSeconds = endSeconds
+        self.transcriptText = transcriptText
+        self.caption = caption
+    }
+}
+
 /// One episode row returned by `list_episodes` / `list_in_progress` /
 /// `list_recent_unplayed`. Distinct from `EpisodeHit` (search/RAG result) —
 /// inventory rows carry the user's *state* (played, position) instead of a

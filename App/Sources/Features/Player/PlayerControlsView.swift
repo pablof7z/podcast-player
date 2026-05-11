@@ -164,11 +164,12 @@ private struct ChapterAccessibilityActionModifier: ViewModifier {
 
 // MARK: - Action cluster (speed / sleep / AirPlay / queue / share)
 
-/// The bottom-row "glass action cluster" — speed control and auto-snip.
+/// The bottom-row "glass action cluster" — speed control, voice note, and auto-snip.
 struct PlayerActionClusterView: View {
 
     @Bindable var state: PlaybackState
     @Binding var showSpeedSheet: Bool
+    @Binding var showVoiceNoteSheet: Bool
 
     var body: some View {
         HStack {
@@ -178,6 +179,11 @@ struct PlayerActionClusterView: View {
                 accessibilityValue: state.rate.label
             ) {
                 showSpeedSheet = true
+            }
+            Spacer(minLength: 0)
+            actionChip(glyph: "mic", accessibilityName: "Voice note") {
+                Haptics.selection()
+                showVoiceNoteSheet = true
             }
             Spacer(minLength: 0)
             AutoSnipButton()
