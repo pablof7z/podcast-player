@@ -34,11 +34,11 @@ struct OnboardingAISetupPage: View {
 
     private var pageHeader: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
-            Text("Connect your AI")
+            Text("Connect your providers")
                 .font(AppTheme.Typography.largeTitle)
                 .foregroundStyle(.white)
 
-            Text("Connect OpenRouter to power your agent. Skip and add it later in Settings.")
+            Text("Connect BYOK once to approve OpenRouter, ElevenLabs, Ollama Cloud, and Perplexity. Skip and add them later in Settings.")
                 .font(AppTheme.Typography.body)
                 .foregroundStyle(.white.opacity(0.8))
                 .multilineTextAlignment(.center)
@@ -75,7 +75,7 @@ struct OnboardingAISetupPage: View {
                 } else {
                     Image(systemName: "key.viewfinder")
                 }
-                Text(isConnectingBYOK ? "Connecting…" : "Connect with BYOK")
+                Text(isConnectingBYOK ? "Connecting…" : "Connect BYOK Vault")
                     .font(AppTheme.Typography.headline)
             }
             .frame(maxWidth: .infinity, minHeight: OnboardingLayout.primaryButtonMinHeight)
@@ -92,7 +92,7 @@ struct OnboardingAISetupPage: View {
         Button {
             withAnimation(AppTheme.Animation.springFast) { showManualEntry.toggle() }
         } label: {
-            Text(showManualEntry ? "Hide manual entry" : "Enter key manually")
+            Text(showManualEntry ? "Hide manual entry" : "Enter OpenRouter key manually")
                 .font(AppTheme.Typography.callout)
                 .foregroundStyle(.white.opacity(0.7))
         }

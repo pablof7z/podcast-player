@@ -23,6 +23,25 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
     private let redirectHost = "byok"
     private var currentSession: ASWebAuthenticationSession?
 
+    func connectPodcastProviders() async throws -> [BYOKProviderToken] {
+        try await connectProviders(BYOKProvider.podcastPlayerDefaults)
+    }
+
+    func connectProviders(_ providers: [BYOKProvider]) async throws -> [BYOKProviderToken] {
+        var seenProviders = Set<String>()
+        let uniqueProviders = providers.filter { seenProviders.insert($0.rawValue).inserted }
+        let pending = try makeAuthorization(providers: uniqueProviders)
+        let callbackURL = try await authenticate(url: pending.authorizationURL)
+        let code = try authorizationCode(from: callbackURL, expectedState: pending.state)
+        let response = try await exchangeCode(code, pending: pending)
+        let requested = Set(uniqueProviders.map(\.rawValue))
+        let returned = response.providers.filter { requested.contains($0.provider) && !$0.apiKey.isEmpty }
+        guard !returned.isEmpty else {
+            throw BYOKConnectError.noProviderKeysReturned
+        }
+        return returned
+    }
+
     func connectOpenRouter() async throws -> BYOKTokenResponse {
         let pending = try makeAuthorization(provider: "openrouter", scope: "key:openrouter")
         let callbackURL = try await authenticate(url: pending.authorizationURL)
@@ -134,6 +153,12 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
             state: state,
             codeVerifier: codeVerifier
         )
+    }
+
+    private func makeAuthorization(providers: [BYOKProvider]) throws -> BYOKPendingAuthorization {
+        let scope = providers.map(\.scope).joined(separator: " ")
+        let provider = providers.map(\.rawValue).joined(separator: ",")
+        return try makeAuthorization(provider: provider, scope: scope)
     }
 
     private func authenticate(url: URL) async throws -> URL {

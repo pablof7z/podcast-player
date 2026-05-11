@@ -38,10 +38,12 @@ extension OnboardingView {
         apiKeyError = nil
         defer { isConnectingBYOK = false }
         do {
-            let token = try await byokConnect.connectOpenRouter()
-            try OpenRouterCredentialStore.saveAPIKey(token.apiKey)
+            let tokens = try await byokConnect.connectPodcastProviders()
             var s = store.state.settings
-            s.markOpenRouterBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            let imported = try PodcastBYOKCredentialImporter.apply(tokens, to: &s)
+            guard !imported.isEmpty else {
+                throw BYOKConnectError.noProviderKeysReturned
+            }
             store.updateSettings(s)
             apiKeyDraft = ""
             Haptics.success()
@@ -50,31 +52,6 @@ extension OnboardingView {
             // user cancelled — no error shown
         } catch {
             apiKeyError = error.localizedDescription
-            Haptics.error()
-        }
-    }
-
-    func handleElevenLabsContinue() {
-        let trimmed = elevenKeyDraft.trimmed
-        guard !trimmed.isEmpty else {
-            elevenKeyError = nil
-            advance()
-            return
-        }
-        elevenKeySaving = true
-        elevenKeyError = nil
-        do {
-            try ElevenLabsCredentialStore.saveAPIKey(trimmed)
-            var s = store.state.settings
-            s.markElevenLabsManual()
-            store.updateSettings(s)
-            elevenKeyDraft = ""
-            elevenKeySaving = false
-            Haptics.success()
-            advance()
-        } catch {
-            elevenKeySaving = false
-            elevenKeyError = "Could not save key. Tap Skip or try again."
             Haptics.error()
         }
     }

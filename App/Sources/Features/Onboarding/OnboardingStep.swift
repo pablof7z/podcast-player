@@ -13,7 +13,6 @@ import Foundation
 enum OnboardingStep: Hashable {
     case welcome
     case aiSetup
-    case elevenLabs
     case identity
     case subscribe
     case ready
@@ -21,7 +20,7 @@ enum OnboardingStep: Hashable {
     /// Canonical order. Source of truth for `next`, `previous`, and `isLast`.
     /// Order is semantic, not alphabetical.
     static let order: [OnboardingStep] = [
-        .welcome, .aiSetup, .elevenLabs, .identity, .subscribe, .ready
+        .welcome, .aiSetup, .identity, .subscribe, .ready
     ]
 
     var next: OnboardingStep? {
@@ -41,7 +40,7 @@ enum OnboardingStep: Hashable {
     var allowsSkip: Bool {
         switch self {
         case .welcome, .ready: return false
-        case .aiSetup, .elevenLabs, .identity, .subscribe: return true
+        case .aiSetup, .identity, .subscribe: return true
         }
     }
 }

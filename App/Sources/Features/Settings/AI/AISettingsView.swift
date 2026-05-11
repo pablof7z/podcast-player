@@ -10,6 +10,7 @@ struct AIProvidersSettingsView: View {
                 .ignoresSafeArea()
 
             List {
+                BYOKUnifiedProviderSection()
                 providersSection
                 usageSection
             }
@@ -68,7 +69,7 @@ struct AIProvidersSettingsView: View {
         } header: {
             Text("Connections")
         } footer: {
-            Text("Connect provider keys here. Choose which provider and model each role uses in Models.")
+            Text("Use BYOK Vault to approve several keys at once, or open a provider for manual keys and validation. Choose each role's provider and model in Models.")
         }
     }
 

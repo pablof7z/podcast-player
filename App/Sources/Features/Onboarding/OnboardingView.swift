@@ -16,17 +16,12 @@ struct OnboardingView: View {
 
     @State var step: OnboardingStep = .welcome
 
-    // OpenRouter / API key state
+    // Provider setup state
     @State var apiKeyDraft: String = ""
     @State var apiKeyError: String?
     @State var apiKeySaving: Bool = false
     @State var isConnectingBYOK: Bool = false
     @State var byokConnect = BYOKConnectService()
-
-    // ElevenLabs state
-    @State var elevenKeyDraft: String = ""
-    @State var elevenKeyError: String?
-    @State var elevenKeySaving: Bool = false
 
     // Identity state
     @State var agentNameDraft: String = ""
@@ -75,14 +70,6 @@ struct OnboardingView: View {
                 onConnectBYOK: { Task { await handleBYOKConnect() } }
             )
             .tag(OnboardingStep.aiSetup)
-            .padding(.horizontal, AppTheme.Spacing.lg)
-
-            OnboardingElevenLabsPage(
-                apiKey: $elevenKeyDraft,
-                errorMessage: elevenKeyError,
-                isSaving: elevenKeySaving
-            )
-            .tag(OnboardingStep.elevenLabs)
             .padding(.horizontal, AppTheme.Spacing.lg)
 
             OnboardingIdentityPage(
@@ -192,7 +179,6 @@ struct OnboardingView: View {
         switch step {
         case .welcome:    return "Get Started"
         case .aiSetup:    return apiKeyDraft.isBlank ? "Skip for Now" : "Save Key"
-        case .elevenLabs: return elevenKeyDraft.isBlank ? "Skip for Now" : "Save Key"
         case .identity:   return agentNameDraft.isBlank ? "Skip for Now" : "Save"
         case .subscribe:  return hasSubscribedDuringOnboarding ? "Continue" : "Skip for Now"
         case .ready:      return "Enter App"
@@ -200,7 +186,7 @@ struct OnboardingView: View {
     }
 
     private var isPrimaryButtonDisabled: Bool {
-        apiKeySaving || elevenKeySaving || isConnectingBYOK
+        apiKeySaving || isConnectingBYOK
     }
 
     // MARK: - Routing
@@ -209,8 +195,6 @@ struct OnboardingView: View {
         switch step {
         case .aiSetup:
             handleAISetupContinue()
-        case .elevenLabs:
-            handleElevenLabsContinue()
         case .identity:
             handleIdentityContinue()
         case .ready:
