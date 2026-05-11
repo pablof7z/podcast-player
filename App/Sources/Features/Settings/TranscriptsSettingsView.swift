@@ -27,13 +27,12 @@ struct TranscriptsSettingsView: View {
                 Label("Auto-ingest publisher transcripts", systemImage: "square.and.arrow.down.fill")
             }
             Toggle(isOn: scribeFallbackBinding) {
-                Label("Fall back to Scribe", systemImage: "arrow.triangle.branch")
+                Label("AI transcription fallback", systemImage: "arrow.triangle.branch")
             }
-            if store.state.settings.autoFallbackToScribe && !hasElevenLabsKey {
-                // The toggle is on but the dependency isn't set up — surface
-                // the gap inline rather than letting the fallback silently
-                // no-op when an episode actually needs transcription.
-                Label("Requires an ElevenLabs API key — connect in Providers.", systemImage: "key.slash")
+            if store.state.settings.autoFallbackToScribe && !hasActiveProviderKey {
+                // The toggle is on but the active provider key isn't configured —
+                // surface the gap so the fallback doesn't silently no-op.
+                Label("\(activeProviderName) key not configured — connect in Providers.", systemImage: "key.slash")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.orange)
                     .padding(.vertical, 2)
@@ -41,12 +40,24 @@ struct TranscriptsSettingsView: View {
         } header: {
             Text("Automation")
         } footer: {
-            Text("Auto-ingest pre-fetches transcripts in the background as new episodes appear. Scribe fallback transcribes audio when the publisher hasn't supplied a transcript. Choose the Scribe model in Models → Speech.")
+            Text("Auto-ingest pre-fetches transcripts in the background as new episodes appear. AI fallback transcribes audio when the publisher hasn't supplied a transcript. Choose the transcription provider in Models → Speech.")
         }
     }
 
-    private var hasElevenLabsKey: Bool {
-        ElevenLabsCredentialStore.hasAPIKey()
+    private var activeProvider: STTProvider {
+        store.state.settings.sttProvider
+    }
+
+    private var activeProviderName: String {
+        activeProvider.displayName
+    }
+
+    private var hasActiveProviderKey: Bool {
+        switch activeProvider {
+        case .elevenLabsScribe: return ElevenLabsCredentialStore.hasAPIKey()
+        case .openRouterWhisper: return OpenRouterCredentialStore.hasAPIKey()
+        case .appleNative: return true  // no API key needed
+        }
     }
 
     // MARK: - Bindings

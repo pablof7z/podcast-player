@@ -36,6 +36,7 @@ struct HomeView: View {
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
     @State private var renderedAt: Date = Date()
+    @State private var cachedTopActiveThread: ThreadingInferenceService.ActiveTopic?
 
     var body: some View {
         scrollContent
@@ -112,18 +113,30 @@ struct HomeView: View {
                 picksService.ensureFreshPicks(store: store, category: activeCategory)
             }
             .onAppear { renderedAt = Date() }
+            .task(id: topActiveThreadKey) {
+                cachedTopActiveThread = threadingService.topActiveTopics(
+                    limit: 1,
+                    subscriptionFilter: allowedSubscriptionIDs
+                ).first
+            }
     }
 
-    /// Top active threading topic for the "Threaded Today" affordance.
-    /// Nil when no topic has at least three unplayed mentions, which is
-    /// also the signal to hide the pill entirely. Scoped to the active
-    /// category when one is set so flipping sections re-curates the pill
-    /// to a thread that lives inside that section.
-    private var topActiveThread: ThreadingInferenceService.ActiveTopic? {
-        threadingService.topActiveTopics(
-            limit: 1,
-            subscriptionFilter: allowedSubscriptionIDs
-        ).first
+    private var topActiveThread: ThreadingInferenceService.ActiveTopic? { cachedTopActiveThread }
+
+    private struct TopActiveThreadKey: Equatable {
+        var episodeCount: Int
+        var totalUnplayed: Int
+        var mentionCount: Int
+        var categoryID: UUID?
+    }
+
+    private var topActiveThreadKey: TopActiveThreadKey {
+        TopActiveThreadKey(
+            episodeCount: store.state.episodes.count,
+            totalUnplayed: store.unplayedCountByShow.values.reduce(0, +),
+            mentionCount: store.state.threadingMentions.count,
+            categoryID: selectedCategoryID
+        )
     }
 
     /// Subscription-id set for the active category, or `nil` for All.

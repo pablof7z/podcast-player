@@ -71,17 +71,16 @@ struct MiniPlayerView: View {
         // non-button regions via `.contentShape` + `.onTapGesture` on the
         // background, not the whole stack.
         //
-        // Progress line is an OVERLAY at the top edge — Overcast-style,
-        // high-glance, always-visible. Putting it inside the VStack
-        // *under* the glassEffect makes the bar disappear into the glass
-        // material; lifting it into an overlay renders it crisply on top.
-        // The overlay drops horizontal padding so the bar tracks the
-        // surface's full curvature instead of starting after the rounded
-        // corners (the previous 16pt inset made it read as a separate UI).
+        // Progress line is an OVERLAY at the bottom edge — Apple Music-style.
+        // Putting it inside the VStack *under* the glassEffect makes the bar
+        // disappear into the glass material; lifting it into an overlay renders
+        // it crisply on top. The overlay drops horizontal padding so the bar
+        // tracks the surface's full curvature instead of starting after the
+        // rounded corners.
         content
             .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
-            .overlay(alignment: .top) {
+            .overlay(alignment: .bottom) {
                 progressLine
                     .clipShape(.rect(cornerRadius: AppTheme.Corner.lg))
             }

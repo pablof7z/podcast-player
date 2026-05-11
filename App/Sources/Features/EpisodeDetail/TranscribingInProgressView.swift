@@ -98,7 +98,7 @@ struct TranscribingInProgressView: View {
     private var secondaryCopy: String {
         switch episode.transcriptState {
         case .none:
-            return "Fetch one below. We'll use the publisher's transcript when available, or ElevenLabs Scribe if your key is configured."
+            return "Fetch one below. We'll use the publisher's transcript when available, or your configured transcription provider if no publisher transcript exists."
         case .queued, .fetchingPublisher, .transcribing:
             return "The text will appear here when it's ready. Keep listening — this runs in the background."
         case .failed(let message):
@@ -144,7 +144,7 @@ struct TranscribingInProgressView: View {
         if episode.publisherTranscriptURL != nil {
             return "Publisher transcript available"
         }
-        return "We'll use ElevenLabs Scribe if your key is configured in Settings"
+        return "Configure your transcription provider in Settings → Intelligence → Models → Speech"
     }
 }
 

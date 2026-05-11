@@ -14,6 +14,10 @@ struct SpeechModelsSettingsView: View {
         ("scribe_v2", "Scribe v2"),
     ]
 
+    private static let whisperModels: [(id: String, label: String)] = [
+        ("openai/whisper-1", "Whisper"),
+    ]
+
     private static let ttsModels: [(id: String, label: String)] = [
         ("eleven_turbo_v2_5", "Turbo v2.5"),
         ("eleven_flash_v2_5", "Flash v2.5"),
@@ -41,22 +45,57 @@ struct SpeechModelsSettingsView: View {
 
     private var speechToTextSection: some View {
         Section {
-            Picker(selection: $settings.elevenLabsSTTModel) {
-                ForEach(Self.sttModels, id: \.id) { entry in
-                    Text(entry.label).tag(entry.id)
+            Picker(selection: $settings.sttProvider) {
+                ForEach(STTProvider.allCases, id: \.self) { provider in
+                    Text(provider.displayName).tag(provider)
                 }
-                customModelEntry(
-                    currentID: settings.elevenLabsSTTModel,
-                    knownIDs: Self.sttModels.map(\.id)
-                )
             } label: {
-                Label("Speech to Text", systemImage: "waveform.badge.mic")
+                Label("Provider", systemImage: "waveform.badge.mic")
             }
             .pickerStyle(.menu)
+
+            if settings.sttProvider == .elevenLabsScribe {
+                Picker(selection: $settings.elevenLabsSTTModel) {
+                    ForEach(Self.sttModels, id: \.id) { entry in
+                        Text(entry.label).tag(entry.id)
+                    }
+                    customModelEntry(
+                        currentID: settings.elevenLabsSTTModel,
+                        knownIDs: Self.sttModels.map(\.id)
+                    )
+                } label: {
+                    Label("Model", systemImage: "cpu")
+                }
+                .pickerStyle(.menu)
+            }
+
+            if settings.sttProvider == .openRouterWhisper {
+                Picker(selection: $settings.openRouterWhisperModel) {
+                    ForEach(Self.whisperModels, id: \.id) { entry in
+                        Text(entry.label).tag(entry.id)
+                    }
+                    customModelEntry(
+                        currentID: settings.openRouterWhisperModel,
+                        knownIDs: Self.whisperModels.map(\.id)
+                    )
+                } label: {
+                    Label("Model", systemImage: "cpu")
+                }
+                .pickerStyle(.menu)
+            }
         } header: {
             Text("Transcription")
         } footer: {
-            Text("Used when an episode needs ElevenLabs Scribe because no publisher transcript is available.")
+            transcriptionFooter
+        }
+    }
+
+    private var transcriptionFooter: Text {
+        switch settings.sttProvider {
+        case .elevenLabsScribe:
+            return Text("ElevenLabs Scribe — diarization and word-level timestamps. Requires an ElevenLabs key.")
+        case .openRouterWhisper:
+            return Text("OpenRouter Whisper — uses your OpenRouter key. Downloaded episodes are uploaded for transcription.")
         }
     }
 

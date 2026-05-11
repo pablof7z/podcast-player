@@ -31,9 +31,12 @@ final class TranscriptIngestService {
     private let rag: RAGService
     private let ingestor: PublisherTranscriptIngestor
     private let scribe: ElevenLabsScribeClient
+    private let whisper: OpenRouterWhisperClient
+    private let appleSTT: AppleNativeSTTClient
     private let chunkBuilder: ChunkBuilder
     private let store: TranscriptStore
     private let elevenLabsKey: @Sendable () -> String?
+    private let openRouterKey: @Sendable () -> String?
 
     // MARK: In-flight tracking (dedup)
 
@@ -45,18 +48,26 @@ final class TranscriptIngestService {
         rag: RAGService = .shared,
         ingestor: PublisherTranscriptIngestor = PublisherTranscriptIngestor(),
         scribe: ElevenLabsScribeClient = ElevenLabsScribeClient(),
+        whisper: OpenRouterWhisperClient = OpenRouterWhisperClient(),
+        appleSTT: AppleNativeSTTClient = AppleNativeSTTClient(),
         chunkBuilder: ChunkBuilder = ChunkBuilder(),
         store: TranscriptStore = .shared,
         elevenLabsKey: @escaping @Sendable () -> String? = {
             (try? ElevenLabsCredentialStore.apiKey()).flatMap { $0.isEmpty ? nil : $0 }
+        },
+        openRouterKey: @escaping @Sendable () -> String? = {
+            (try? OpenRouterCredentialStore.apiKey()).flatMap { $0.isEmpty ? nil : $0 }
         }
     ) {
         self.rag = rag
         self.ingestor = ingestor
         self.scribe = scribe
+        self.whisper = whisper
+        self.appleSTT = appleSTT
         self.chunkBuilder = chunkBuilder
         self.store = store
         self.elevenLabsKey = elevenLabsKey
+        self.openRouterKey = openRouterKey
     }
 
     // MARK: Public API
@@ -148,23 +159,23 @@ final class TranscriptIngestService {
             // fetched == nil: fetch threw above; let the Scribe path below run.
         }
 
-        // Path B: ElevenLabs Scribe (only if a key is configured *and* the
-        // user has opted in to the Scribe fallback under Settings → Transcripts).
+        // Path B: AI transcription fallback (ElevenLabs Scribe or OpenRouter Whisper).
         guard appStore.state.settings.autoFallbackToScribe else {
             Self.logger.info(
-                "publisher transcript missing for \(episodeID, privacy: .public) and Scribe fallback disabled in settings — leaving transcriptState=.none"
+                "publisher transcript missing for \(episodeID, privacy: .public) and AI transcription disabled in settings — leaving transcriptState=.none"
             )
             appStore.setEpisodeTranscriptState(episodeID, state: .none)
             return
         }
-        guard let key = elevenLabsKey(), !key.isEmpty else {
+        let provider = appStore.state.settings.sttProvider
+        guard resolvedSTTKey(provider: provider) != nil else {
             Self.logger.info(
-                "no publisher transcript and no ElevenLabs key for \(episodeID, privacy: .public) — leaving transcriptState=.none"
+                "no publisher transcript and no \(provider.displayName, privacy: .public) key for \(episodeID, privacy: .public) — leaving transcriptState=.none"
             )
             appStore.setEpisodeTranscriptState(episodeID, state: .none)
             return
         }
-        await runScribe(for: episode, appStore: appStore)
+        await runAITranscription(for: episode, provider: provider, appStore: appStore)
     }
 
     /// Convenience: walk the store and ingest up to `maxCount` episodes that
@@ -210,7 +221,8 @@ final class TranscriptIngestService {
         let candidates = Self.autoIngestCandidates(
             among: episodes,
             settings: appStore.state.settings,
-            elevenLabsKey: elevenLabsKey()
+            elevenLabsKey: elevenLabsKey(),
+            openRouterKey: openRouterKey()
         )
         guard !candidates.isEmpty else { return }
         Self.logger.info(
@@ -235,10 +247,17 @@ final class TranscriptIngestService {
     static func autoIngestCandidates(
         among episodes: [Episode],
         settings: Settings,
-        elevenLabsKey: String?
+        elevenLabsKey: String?,
+        openRouterKey: String? = nil
     ) -> [UUID] {
         let publisherOn = settings.autoIngestPublisherTranscripts
-        let scribeOn = settings.autoFallbackToScribe && !(elevenLabsKey ?? "").isEmpty
+        let sttReady: Bool
+        switch settings.sttProvider {
+        case .appleNative: sttReady = true   // no API key needed
+        case .openRouterWhisper: sttReady = !(openRouterKey ?? "").isEmpty
+        case .elevenLabsScribe: sttReady = !(elevenLabsKey ?? "").isEmpty
+        }
+        let scribeOn = settings.autoFallbackToScribe && sttReady
         guard publisherOn || scribeOn else { return [] }
         return episodes.compactMap { episode -> UUID? in
             guard !Self.isReady(episode.transcriptState) else { return nil }
@@ -251,13 +270,12 @@ final class TranscriptIngestService {
 
     // MARK: - Private pipeline
 
-    private func runScribe(for episode: Episode, appStore: AppStateStore) async {
+    private func runAITranscription(for episode: Episode, provider: STTProvider, appStore: AppStateStore) async {
         appStore.setEpisodeTranscriptState(episode.id, state: .transcribing(progress: 0))
-        // Prefer the on-disk download when present (fastest upload, no extra
-        // egress for the user). Fall back to the publisher's HTTPS enclosure
-        // URL — Scribe's `source_url` form field tells the server to fetch
-        // the audio itself, so we never have to download 100MB on-device
-        // just to hand it back over the wire.
+        // Prefer the on-disk download when present. ElevenLabs Scribe can also
+        // use a `source_url` for remote audio; OpenRouter Whisper only accepts
+        // file uploads so the client downloads the audio to a temp file when
+        // a remote URL is supplied.
         let audioURL: URL
         if EpisodeDownloadStore.shared.exists(for: episode) {
             audioURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
@@ -265,27 +283,44 @@ final class TranscriptIngestService {
             audioURL = episode.enclosureURL
         }
         do {
-            let job = try await scribe.submit(
-                audioURL: audioURL,
-                episodeID: episode.id,
-                languageHint: nil
-            )
-            let transcript = try await scribe.pollResult(job)
+            let transcript: Transcript
+            switch provider {
+            case .elevenLabsScribe:
+                let job = try await scribe.submit(audioURL: audioURL, episodeID: episode.id)
+                transcript = try await scribe.pollResult(job)
+            case .openRouterWhisper:
+                transcript = try await whisper.transcribe(audioURL: audioURL, episodeID: episode.id)
+            case .appleNative:
+                transcript = try await appleSTT.transcribe(audioFileURL: audioURL, episodeID: episode.id)
+            }
+            let stateSource: TranscriptState.Source
+            switch provider {
+            case .elevenLabsScribe: stateSource = .scribe
+            case .openRouterWhisper: stateSource = .whisper
+            case .appleNative: stateSource = .onDevice
+            }
             try await persistAndIndex(
                 transcript: transcript,
                 episode: episode,
-                source: .scribe,
+                source: stateSource,
                 appStore: appStore
             )
         } catch {
-            let message = String(describing: error)
             Self.logger.error(
-                "Scribe ingest failed for \(episode.id, privacy: .public): \(message, privacy: .public)"
+                "AI transcription failed for \(episode.id, privacy: .public): \(String(describing: error), privacy: .public)"
             )
             appStore.setEpisodeTranscriptState(
                 episode.id,
                 state: .failed(message: error.localizedDescription)
             )
+        }
+    }
+
+    private func resolvedSTTKey(provider: STTProvider) -> String? {
+        switch provider {
+        case .elevenLabsScribe: return elevenLabsKey()
+        case .openRouterWhisper: return openRouterKey()
+        case .appleNative: return "native"  // no API key needed; always available
         }
     }
 

@@ -44,6 +44,18 @@ struct HomeDatelineComponents: Equatable, Sendable {
 
 enum HomeDateline {
 
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+
+    private static let monthDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+
     /// Compose the dateline tokens from the live store + a clock.
     /// Pure function — no environment access — so the tests can pin a
     /// timezone, locale, and "now" without spinning up a SwiftUI view.
@@ -64,18 +76,23 @@ enum HomeDateline {
         categoryName: String? = nil,
         allowedSubscriptionIDs: Set<UUID>? = nil
     ) -> HomeDatelineComponents {
-        let weekdayFormatter = DateFormatter()
-        weekdayFormatter.calendar = calendar
-        weekdayFormatter.locale = locale
-        weekdayFormatter.dateFormat = "EEEE"
-
-        let monthDayFormatter = DateFormatter()
-        monthDayFormatter.calendar = calendar
-        monthDayFormatter.locale = locale
-        monthDayFormatter.dateFormat = "MMM d"
-
-        let weekday = weekdayFormatter.string(from: now).uppercased(with: locale)
-        let monthDay = monthDayFormatter.string(from: now).uppercased(with: locale)
+        let weekdayFmt: DateFormatter
+        let monthDayFmt: DateFormatter
+        if calendar == .current, locale == .current {
+            weekdayFmt = weekdayFormatter
+            monthDayFmt = monthDayFormatter
+        } else {
+            weekdayFmt = DateFormatter()
+            weekdayFmt.calendar = calendar
+            weekdayFmt.locale = locale
+            weekdayFmt.dateFormat = "EEEE"
+            monthDayFmt = DateFormatter()
+            monthDayFmt.calendar = calendar
+            monthDayFmt.locale = locale
+            monthDayFmt.dateFormat = "MMM d"
+        }
+        let weekday = weekdayFmt.string(from: now).uppercased(with: locale)
+        let monthDay = monthDayFmt.string(from: now).uppercased(with: locale)
         let prefix = (categoryName ?? "").uppercased(with: locale)
 
         // Unplayed in the last 24h. We count `!played` episodes whose

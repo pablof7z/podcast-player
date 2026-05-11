@@ -44,6 +44,7 @@ struct Transcript: Codable, Sendable, Identifiable, Hashable {
 enum TranscriptSource: String, Codable, Sendable, Hashable, CaseIterable {
     case publisher
     case scribeV1
+    case whisper
     case onDevice
 }
 

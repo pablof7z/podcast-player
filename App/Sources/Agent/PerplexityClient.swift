@@ -107,7 +107,7 @@ public actor PerplexityClient: PerplexityClientProtocol {
             return (try readAPIKey(), defaultEndpoint, defaultModel)
         }
         // Prefer OpenRouter if a key is available.
-        if let orKey = try? OpenRouterCredentialStore.apiKey(), let orKey, !orKey.isEmpty {
+        if let orKey = try? OpenRouterCredentialStore.apiKey(), !orKey.isEmpty {
             return (orKey, openRouterEndpoint, openRouterModel)
         }
         // Fall back to a dedicated Perplexity key.

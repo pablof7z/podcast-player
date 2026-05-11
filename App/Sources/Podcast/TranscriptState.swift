@@ -23,6 +23,7 @@ enum TranscriptState: Codable, Sendable, Hashable {
     enum Source: String, Codable, Sendable, Hashable {
         case publisher
         case scribe
+        case whisper
         case onDevice
         case other
     }

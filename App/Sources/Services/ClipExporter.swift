@@ -112,6 +112,21 @@ actor ClipExporter {
         URL(string: "podcastr://clip/\(clip.id.uuidString)")!
     }
 
+    /// Trims the episode's local audio to the clip's span and writes a
+    /// temp `.m4a` (AAC). The local-file precondition matches the video
+    /// path — see `ClipAudioComposer` for rationale.
+    func exportAudio(
+        _ clip: Clip,
+        episode: Episode,
+        subscription: PodcastSubscription
+    ) async throws -> URL {
+        try await ClipAudioComposer.export(
+            clip: clip,
+            episode: episode,
+            subscription: subscription
+        )
+    }
+
     /// Renders the audio segment + subtitle-burned video. v1 stubs this
     /// when AVFoundation wiring isn't ready in the build window — see
     /// commit message. Wires through `ClipVideoOverlayLayer` for the

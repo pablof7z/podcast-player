@@ -2,6 +2,20 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "whisper-openrouter",
+      "shipped_at": "2026-05-11T19:00:00Z",
+      "lines": [
+        "Transcription now supports OpenRouter Whisper in addition to ElevenLabs Scribe — switch providers under Settings → Intelligence → Models → Speech."
+      ]
+    },
+    {
+      "id": "b8f38d3",
+      "shipped_at": "2026-05-11T18:20:00Z",
+      "lines": [
+        "Mini-player now shows a progress bar at the bottom edge, Apple Music-style."
+      ]
+    },
+    {
       "id": "4f98733",
       "shipped_at": "2026-05-11T17:30:00Z",
       "lines": [

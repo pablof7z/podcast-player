@@ -21,6 +21,8 @@ struct ClipShareSheet: View {
 
     @State private var imageURL: URL?
     @State private var isRenderingImage = false
+    @State private var audioURL: URL?
+    @State private var isRenderingAudio = false
     @State private var lastError: String?
 
     private var deepLink: URL { ClipExporter.shared.deepLink(clip) }
@@ -101,6 +103,7 @@ struct ClipShareSheet: View {
     private var actionGrid: some View {
         VStack(spacing: AppTheme.Spacing.md) {
             imageAction
+            audioAction
             videoAction
             linkAction
         }
@@ -128,6 +131,38 @@ struct ClipShareSheet: View {
             // Style changes invalidate the rendered file.
             imageURL = nil
         }
+    }
+
+    /// Third fidelity: trimmed `.m4a` of the source audio. Tap renders +
+    /// caches; subsequent taps share the cached URL until the user
+    /// dismisses the sheet (temp files self-purge with iOS).
+    private var audioAction: some View {
+        Group {
+            if let audioURL {
+                ShareLink(item: audioURL) {
+                    actionRow(systemImage: "waveform.circle", title: "Share audio",
+                              subtitle: durationSubtitle, trailing: "Ready")
+                }
+            } else {
+                Button {
+                    Task { await renderAudio() }
+                } label: {
+                    actionRow(systemImage: "waveform.circle", title: "Render audio",
+                              subtitle: durationSubtitle,
+                              trailing: isRenderingAudio ? "…" : "Tap")
+                }
+                .disabled(isRenderingAudio)
+            }
+        }
+    }
+
+    /// Caption shown under the audio-share row — duration in `M:SS` plus
+    /// the m4a tag so the user knows what file type they'll be sharing.
+    private var durationSubtitle: String {
+        let total = Int(clip.durationSeconds.rounded())
+        let m = total / 60
+        let s = total % 60
+        return String(format: "%d:%02d · M4A", m, s)
     }
 
     private var videoAction: some View {
@@ -206,6 +241,24 @@ struct ClipShareSheet: View {
             imageURL = url
         } catch {
             lastError = "Couldn't render image: \(error.localizedDescription)"
+        }
+    }
+
+    private func renderAudio() async {
+        isRenderingAudio = true
+        lastError = nil
+        defer { isRenderingAudio = false }
+        do {
+            let url = try await ClipExporter.shared.exportAudio(
+                clip,
+                episode: episode,
+                subscription: subscription
+            )
+            audioURL = url
+        } catch ClipExporter.ExportError.audioUnavailable {
+            lastError = "Download this episode first — audio export needs the local file."
+        } catch {
+            lastError = "Couldn't render audio: \(error.localizedDescription)"
         }
     }
 
