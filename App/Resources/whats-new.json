@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "6cad7dc",
+      "shipped_at": "2026-05-11T23:30:00Z",
+      "lines": [
+        "Ask the agent to generate a custom audio episode — it can narrate a TLDR in any voice, weave in clips from your podcasts, or produce a multi-speaker fake interview — and the episode appears in your library ready to play."
+      ]
+    },
+    {
       "id": "8175671",
       "shipped_at": "2026-05-11T23:00:00Z",
       "lines": [
