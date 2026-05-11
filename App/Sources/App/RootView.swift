@@ -225,6 +225,13 @@ struct RootView: View {
                     .tag(tab)
             }
         }
+        // iOS 26: tab bar collapses to a compact pill on scroll-down. The
+        // bottom accessory below adapts to `.inline` placement and slots
+        // between the active-tab capsule and the trailing controls — same
+        // pattern Apple Music uses for its mini-player. Search and Ask
+        // override this to `.never` so the keyboard doesn't steal focus.
+        .tabBarMinimizeBehavior(.onScrollDown)
+
         // The accessory modifier itself reserves vertical space when applied,
         // even if its closure returns EmptyView — so apply it only while an
         // episode is loaded. Otherwise an empty bar shows above the tabs.
