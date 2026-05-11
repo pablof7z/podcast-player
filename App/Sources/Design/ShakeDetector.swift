@@ -40,11 +40,6 @@ final class ShakeDetectorViewController: UIViewController {
         activateFirstResponder()
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        activateFirstResponder()
-    }
-
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if motion == .motionShake {
             DispatchQueue.main.async { [onShake] in onShake?() }
