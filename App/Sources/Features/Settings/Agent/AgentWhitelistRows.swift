@@ -21,12 +21,12 @@ struct PendingApprovalRow: View {
             HStack(alignment: .center, spacing: AppTheme.Spacing.sm) {
                 ZStack {
                     Circle().fill(LinearGradient(
-                        colors: [.orange.opacity(0.3), .orange.opacity(0.1)],
+                        colors: [AppTheme.Tint.warning.opacity(0.3), AppTheme.Tint.warning.opacity(0.1)],
                         startPoint: .top,
                         endPoint: .bottom
                     ))
                     Image(systemName: "person.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AppTheme.Tint.warning)
                 }
                 .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
 
@@ -69,7 +69,7 @@ struct PendingApprovalRow: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.green)
+                .tint(AppTheme.Tint.success)
 
                 Button(action: onBlock) {
                     Label("Block", systemImage: "nosign")
@@ -77,7 +77,7 @@ struct PendingApprovalRow: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .tint(.red)
+                .tint(AppTheme.Tint.error)
 
                 Button(action: onDismiss) {
                     Label("Dismiss", systemImage: "xmark")
@@ -103,7 +103,7 @@ struct AllowedRow: View {
         Button { copyToClipboard(key, isCopied: $isCopied) } label: {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: "checkmark.shield.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(AppTheme.Tint.success)
 
                 Text("npub1\(key.prefix(NostrPubkeyDisplay.prefixLength))…")
                     .font(AppTheme.Typography.monoCallout)

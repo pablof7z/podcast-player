@@ -63,7 +63,7 @@ struct DiscoverSearchForm: View {
             if let searchError {
                 Label(searchError, systemImage: "exclamationmark.triangle.fill")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
                     .padding(.horizontal, AppTheme.Spacing.lg)
                     .padding(.bottom, AppTheme.Spacing.xs)
             }

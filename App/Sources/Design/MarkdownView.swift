@@ -55,7 +55,7 @@ struct MarkdownView: View {
                     HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.sm) {
                         Image(systemName: item.checked ? "checkmark.circle.fill" : "circle")
                             .font(AppTheme.Typography.body)
-                            .foregroundStyle(item.checked ? AnyShapeStyle(Color.green) : AnyShapeStyle(Color.secondary))
+                            .foregroundStyle(item.checked ? AnyShapeStyle(AppTheme.Tint.success) : AnyShapeStyle(Color.secondary))
                             .accessibilityHidden(true)
                         Text(inline(item.text))
                             .font(AppTheme.Typography.body)

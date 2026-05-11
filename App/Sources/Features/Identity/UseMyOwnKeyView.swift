@@ -37,10 +37,10 @@ struct UseMyOwnKeyView: View {
                 keyField
                 if let inlineError {
                     HStack(alignment: .top, spacing: AppTheme.Spacing.xs) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(AppTheme.Tint.error)
                         Text(inlineError)
                             .font(AppTheme.Typography.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppTheme.Tint.error)
                     }
                 }
 

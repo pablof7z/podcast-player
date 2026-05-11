@@ -61,7 +61,7 @@ struct CodeBlockView: View {
                     Text(copied ? "Copied!" : "Copy")
                         .font(AppTheme.Typography.caption)
                 }
-                .foregroundStyle(copied ? Color.green : Color.secondary)
+                .foregroundStyle(copied ? AppTheme.Tint.success : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)

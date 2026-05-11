@@ -93,7 +93,7 @@ struct PlayerChaptersScrollView: View {
                 if overlapsAd {
                     Image(systemName: "speaker.slash")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.orange)
+                        .foregroundStyle(AppTheme.Tint.warning)
                         .accessibilityLabel("Contains an ad")
                 }
                 if chapter.isAIGenerated {
@@ -124,7 +124,7 @@ struct PlayerChaptersScrollView: View {
                     // row still seeks normally; the stripe just tells the
                     // user this chapter overlaps a detected ad span.
                     RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(Color.orange)
+                        .fill(AppTheme.Tint.warning)
                         .frame(width: 3)
                         .padding(.vertical, 4)
                         .accessibilityHidden(true)

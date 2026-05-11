@@ -168,7 +168,7 @@ struct AgentPictureURLSheet: View {
                         pictureURL = ""
                         isPresented = false
                     }
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
                     .frame(maxWidth: .infinity)
 
                     Button("Done") {

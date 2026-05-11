@@ -151,7 +151,7 @@ struct OpenRouterModelSelectorView: View {
                 VStack(alignment: .leading, spacing: Layout.errorSpacing) {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AppTheme.Tint.warning)
 
                     Button {
                         Task { await viewModel.reload() }

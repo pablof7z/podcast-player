@@ -38,7 +38,7 @@ struct TranscribingInProgressView: View {
             HStack(spacing: AppTheme.Spacing.md) {
                 ProgressView(value: max(0, min(progress, 1)))
                     .progressViewStyle(.linear)
-                    .tint(.orange)
+                    .tint(AppTheme.Tint.warning)
                     .frame(maxWidth: .infinity)
                 Text("\(Int((progress * 100).rounded()))%")
                     .font(.system(.subheadline, design: .monospaced).weight(.medium))
@@ -57,7 +57,7 @@ struct TranscribingInProgressView: View {
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.triangle.fill")
                 .font(.system(.subheadline, design: .rounded).weight(.medium))
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
                 .padding(.horizontal, AppTheme.Spacing.md)
         case .none, .ready:
             EmptyView()

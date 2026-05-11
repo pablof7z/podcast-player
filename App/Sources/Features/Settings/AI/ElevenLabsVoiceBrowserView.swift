@@ -112,7 +112,7 @@ struct ElevenLabsVoiceBrowserView: View {
                 Section {
                     Label(message, systemImage: "exclamationmark.triangle")
                         .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AppTheme.Tint.warning)
                 }
             }
 

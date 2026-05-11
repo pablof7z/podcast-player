@@ -140,7 +140,7 @@ struct DiscoverResultRow: View {
             Button(action: onToggleErrorExpansion) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.title3)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
             }
@@ -157,7 +157,7 @@ struct DiscoverResultRow: View {
     private var errorCaption: some View {
         Label(rowError ?? "", systemImage: "exclamationmark.triangle.fill")
             .font(AppTheme.Typography.caption)
-            .foregroundStyle(.red)
+            .foregroundStyle(AppTheme.Tint.error)
             .padding(.leading, 64 + AppTheme.Spacing.md)
             .padding(.bottom, AppTheme.Spacing.sm)
             .accessibilityHint("Tap the warning icon again to dismiss")

@@ -81,8 +81,8 @@ struct Nip46ConnectCard: View {
                     .font(AppTheme.Typography.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.2), in: Capsule())
-                    .foregroundStyle(.green)
+                    .background(AppTheme.Tint.success.opacity(0.2), in: Capsule())
+                    .foregroundStyle(AppTheme.Tint.success)
             }
         }
     }
@@ -168,10 +168,10 @@ struct Nip46ConnectCard: View {
             inputRow
             HStack(alignment: .top, spacing: AppTheme.Spacing.xs) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
                 Text(truncated(message, max: 200))
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
             }
         }
     }
@@ -204,7 +204,7 @@ struct Nip46ConnectCard: View {
                     .padding(.vertical, AppTheme.Spacing.sm)
             }
             .buttonStyle(.bordered)
-            .tint(.red)
+            .tint(AppTheme.Tint.error)
         }
     }
 

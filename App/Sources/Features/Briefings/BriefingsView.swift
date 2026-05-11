@@ -77,7 +77,7 @@ struct BriefingsView: View {
     private func errorBanner(message: String) -> some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Couldn't compose briefing")
                     .font(.subheadline.weight(.semibold))
@@ -91,7 +91,7 @@ struct BriefingsView: View {
         .padding(AppTheme.Spacing.md)
         .glassSurface(
             cornerRadius: AppTheme.Corner.lg,
-            tint: Color.orange.opacity(0.18)
+            tint: AppTheme.Tint.warning.opacity(0.18)
         )
         .padding(.horizontal)
     }

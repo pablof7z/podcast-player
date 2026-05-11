@@ -170,7 +170,7 @@ struct AgentChatBubble: View {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: allUndone ? "wand.and.stars.inverse" : "wand.and.stars")
                     .font(.system(size: Layout.batchIconSize, weight: .semibold))
-                    .foregroundStyle(allUndone ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.indigo))
+                    .foregroundStyle(allUndone ? AnyShapeStyle(.tertiary) : AnyShapeStyle(AppTheme.Tint.agentSurface))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Layout.batchSubSpacing) {
                     if let summary = batchFirstSummary {
@@ -217,7 +217,7 @@ struct AgentChatBubble: View {
             .padding(.horizontal, Layout.batchPaddingH)
             .padding(.vertical, Layout.batchPaddingV)
             .glassEffect(
-                .regular.tint(allUndone ? .secondary.opacity(0.05) : .indigo.opacity(0.10)).interactive(),
+                .regular.tint(allUndone ? .secondary.opacity(0.05) : AppTheme.Tint.agentSurface.opacity(0.10)).interactive(),
                 in: .rect(cornerRadius: Layout.pillCornerRadius)
             )
         }
@@ -259,7 +259,7 @@ struct AgentChatBubble: View {
     private var errorBubble: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
                 .padding(.top, AppTheme.Spacing.sm)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
@@ -280,7 +280,7 @@ struct AgentChatBubble: View {
             .padding(.horizontal, Layout.bubblePaddingH)
             .padding(.vertical, Layout.bubblePaddingV)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular.tint(.orange.opacity(0.12)), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
+            .glassEffect(.regular.tint(AppTheme.Tint.warning.opacity(0.12)), in: .rect(cornerRadius: Layout.bubbleCornerRadius))
             .copyableTextMenu(message.text)
             Spacer(minLength: 0)
         }

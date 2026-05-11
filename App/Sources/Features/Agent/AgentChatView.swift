@@ -213,7 +213,7 @@ struct AgentChatView: View {
         if case .failed(let msg) = session.phase {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(AppTheme.Tint.warning)
                     .font(AppTheme.Typography.caption)
                     .accessibilityHidden(true)
                 Text(msg)

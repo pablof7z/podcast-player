@@ -143,11 +143,11 @@ struct AgentAccessControlView: View {
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button { store.allowNostrPubkey(approval.pubkeyHex); Haptics.success() } label: {
                             Label("Allow", systemImage: "checkmark.circle.fill")
-                        }.tint(.green)
+                        }.tint(AppTheme.Tint.success)
 
                         Button { store.blockNostrPubkey(approval.pubkeyHex); Haptics.selection() } label: {
                             Label("Block", systemImage: "nosign")
-                        }.tint(.red)
+                        }.tint(AppTheme.Tint.error)
                     }
                     .swipeActions(edge: .leading) {
                         Button { store.dismissNostrPendingApproval(approval.id); Haptics.selection() } label: {
@@ -189,7 +189,7 @@ struct AgentAccessControlView: View {
                                 Haptics.selection()
                             } label: {
                                 Label("Unblock", systemImage: "checkmark.circle")
-                            }.tint(.orange)
+                            }.tint(AppTheme.Tint.warning)
                         }
                 }
             }
@@ -219,7 +219,7 @@ struct AgentAccessControlView: View {
     var body: some View {
         Button { copyToClipboard(key, isCopied: $isCopied) } label: {
             HStack(spacing: AppTheme.Spacing.sm) {
-                Image(systemName: "nosign").foregroundStyle(.red)
+                Image(systemName: "nosign").foregroundStyle(AppTheme.Tint.error)
                 Text("npub1\(key.prefix(NostrPubkeyDisplay.prefixLength))…")
                     .font(AppTheme.Typography.monoCallout)
                     .foregroundStyle(.primary)

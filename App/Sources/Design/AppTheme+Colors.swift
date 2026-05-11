@@ -13,6 +13,8 @@ extension AppTheme {
     enum Tint {
         static let error = SwiftUI.Color.red
         static let errorOnDark = SwiftUI.Color(red: 1.0, green: 0.7, blue: 0.7)
+        static let success = SwiftUI.Color.green
+        static let warning = SwiftUI.Color.orange
         static let onboardingChipAI = SwiftUI.Color(red: 0.80, green: 0.70, blue: 1.0)
         static let onboardingChipFriends = SwiftUI.Color(red: 0.60, green: 0.88, blue: 1.0)
         static let onboardingChipFeedback = SwiftUI.Color(red: 0.70, green: 1.0, blue: 0.85)

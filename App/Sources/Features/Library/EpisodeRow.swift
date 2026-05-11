@@ -138,7 +138,7 @@ struct EpisodeRow: View {
             }
         } else {
             Circle()
-                .fill(Color.red)
+                .fill(AppTheme.Tint.error)
                 .frame(width: 10, height: 10)
                 .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
         }

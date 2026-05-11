@@ -29,7 +29,7 @@ struct OpenRouterKeyInfoCard: View {
     private var headerRow: some View {
         HStack(spacing: Layout.hStackSpacing) {
             Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(AppTheme.Tint.success)
                 .font(.system(size: Layout.headerIconSize, weight: .semibold))
             Text("Key validated")
                 .font(AppTheme.Typography.subheadline.weight(.semibold))
@@ -64,7 +64,7 @@ struct OpenRouterKeyInfoCard: View {
                             .fill(Color(.systemFill))
                             .frame(height: Layout.barHeight)
                         Capsule()
-                            .fill(keyInfoBarColor(fraction: fraction, highColor: .green))
+                            .fill(keyInfoBarColor(fraction: fraction, highColor: AppTheme.Tint.success))
                             .frame(width: geo.size.width * fraction, height: Layout.barHeight)
                     }
                 }
@@ -89,7 +89,7 @@ struct OpenRouterKeyInfoCard: View {
         KeyInfoTierChip(
             label: info.isFreeTier ? "Free tier" : "Paid",
             isFreeTier: info.isFreeTier,
-            paidColor: .green
+            paidColor: AppTheme.Tint.success
         )
     }
 

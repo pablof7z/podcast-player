@@ -25,7 +25,7 @@ struct AgentChatResumeBanner: View {
         HStack(spacing: AppTheme.Spacing.sm) {
             Image(systemName: "clock.arrow.circlepath")
                 .font(.system(size: Layout.bannerIconSize, weight: .semibold))
-                .foregroundStyle(.indigo)
+                .foregroundStyle(AppTheme.Tint.agentSurface)
                 .accessibilityHidden(true)
             Text("Continuing from your previous session")
                 .font(AppTheme.Typography.caption)
@@ -48,7 +48,7 @@ struct AgentChatResumeBanner: View {
         .padding(.horizontal, Layout.inputFieldPaddingH)
         .padding(.vertical, Layout.inputFieldPaddingV)
         .glassEffect(
-            .regular.tint(.indigo.opacity(0.10)),
+            .regular.tint(AppTheme.Tint.agentSurface.opacity(0.10)),
             in: .rect(cornerRadius: Layout.bannerCornerRadius)
         )
         .padding(.horizontal, AppTheme.Spacing.md)
@@ -129,7 +129,7 @@ struct AgentChatWelcomeView: View {
             HStack {
                 Image(systemName: "wand.and.stars")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.indigo)
+                    .foregroundStyle(AppTheme.Tint.agentSurface)
                     .accessibilityHidden(true)
                 Text(text)
                     .font(AppTheme.Typography.callout)
@@ -141,7 +141,7 @@ struct AgentChatWelcomeView: View {
             .padding(.vertical, Layout.inputFieldPaddingV)
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(
-                .regular.tint(.indigo.opacity(0.08)).interactive(),
+                .regular.tint(AppTheme.Tint.agentSurface.opacity(0.08)).interactive(),
                 in: .rect(cornerRadius: Layout.chipCornerRadius)
             )
         }
@@ -190,7 +190,7 @@ struct AgentChatDisconnectedView: View {
             Spacer()
             Image(systemName: "key.slash.fill")
                 .font(.system(size: Layout.disconnectedIconSize))
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
             Text("Connect \(provider.displayName) to chat")
                 .font(AppTheme.Typography.title)
                 .multilineTextAlignment(.center)

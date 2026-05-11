@@ -34,7 +34,7 @@ struct TranscriptsSettingsView: View {
                 // surface the gap so the fallback doesn't silently no-op.
                 Label("\(activeProviderName) key not configured — connect in Providers.", systemImage: "key.slash")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(AppTheme.Tint.warning)
                     .padding(.vertical, 2)
             }
         } header: {

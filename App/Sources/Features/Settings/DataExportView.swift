@@ -72,7 +72,7 @@ struct DataExportView: View {
     private func errorActionSection(message: String) -> some View {
         Section {
             Text(message)
-                .foregroundStyle(.red)
+                .foregroundStyle(AppTheme.Tint.error)
             Button("Try again") { generate() }
         }
     }

@@ -137,7 +137,7 @@ struct AddByURLForm: View {
             if let error {
                 Label(error.localizedDescription, systemImage: "exclamationmark.triangle.fill")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
             }
 
             Button {

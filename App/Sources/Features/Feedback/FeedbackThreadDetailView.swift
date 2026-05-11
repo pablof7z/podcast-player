@@ -201,7 +201,7 @@ struct FeedbackThreadDetailView: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppTheme.Spacing.md)
             }

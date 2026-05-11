@@ -145,7 +145,7 @@ struct OPMLImportContent: View {
             if let parseError {
                 Label(parseError, systemImage: "exclamationmark.triangle.fill")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.Tint.error)
             }
 
             Spacer(minLength: 0)
@@ -288,14 +288,14 @@ struct OPMLImportContent: View {
                             .font(AppTheme.Typography.caption.weight(.semibold))
                         Text(row.message)
                             .font(AppTheme.Typography.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppTheme.Tint.error)
                             .lineLimit(2)
                     }
                     .padding(AppTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
-                            .fill(Color.red.opacity(0.08))
+                            .fill(AppTheme.Tint.error.opacity(0.08))
                     )
                 }
             }

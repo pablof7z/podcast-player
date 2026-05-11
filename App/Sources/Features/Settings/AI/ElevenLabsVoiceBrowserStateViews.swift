@@ -44,7 +44,7 @@ struct ElevenLabsVoiceBrowserErrorView: View {
         VStack(spacing: Layout.stateSpacing) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: Layout.errorIconSize))
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
                 .accessibilityHidden(true)
             Text(message)
                 .font(AppTheme.Typography.subheadline)

@@ -170,7 +170,7 @@ struct AgentRunDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Failure", systemImage: "xmark.circle.fill")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.red)
+                .foregroundStyle(AppTheme.Tint.error)
             Text(reason)
                 .font(.caption.monospaced())
                 .foregroundStyle(.primary)
@@ -180,7 +180,7 @@ struct AgentRunDetailView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.red.opacity(0.12))
+                .fill(AppTheme.Tint.error.opacity(0.12))
         )
     }
 
@@ -242,7 +242,7 @@ struct AgentRunDetailView: View {
         return HStack(alignment: .top, spacing: 10) {
             Image(systemName: isError ? "xmark.circle.fill" : "checkmark.circle.fill")
                 .font(.callout)
-                .foregroundStyle(isError ? Color.red : Color.green)
+                .foregroundStyle(isError ? AppTheme.Tint.error : AppTheme.Tint.success)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -267,7 +267,7 @@ struct AgentRunDetailView: View {
                 if let error = entry.dispatch.error {
                     Text(error)
                         .font(.caption2)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.Tint.error)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

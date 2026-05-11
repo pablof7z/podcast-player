@@ -31,7 +31,7 @@ struct EpisodeRowLeadingSwipeAction: View {
         } label: {
             Label("Add to Queue", systemImage: "text.badge.plus")
         }
-        .tint(.indigo)
+        .tint(AppTheme.Tint.agentSurface)
     }
 }
 
@@ -90,7 +90,7 @@ struct EpisodeRowDownloadSwipeAction: View {
             } label: {
                 Label("Cancel", systemImage: "xmark.circle")
             }
-            .tint(.orange)
+            .tint(AppTheme.Tint.warning)
         case .downloaded:
             // Not `role: .destructive` — that paints the swipe button red and
             // makes it visually identical to the existing "Remove" (mark-played)

@@ -42,7 +42,7 @@ struct FeedbackComposeView: View {
                     if let error = errorMessage {
                         Text(error)
                             .font(AppTheme.Typography.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppTheme.Tint.error)
                             .transition(.opacity)
                     }
 
@@ -172,7 +172,7 @@ struct FeedbackComposeView: View {
                 if isOverLimit || charactersRemaining <= 40 {
                     Text("\(charactersRemaining)")
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(isOverLimit ? .red : charactersRemaining <= 15 ? .orange : .secondary)
+                        .foregroundStyle(isOverLimit ? AppTheme.Tint.error : charactersRemaining <= 15 ? AppTheme.Tint.warning : .secondary)
                         .monospacedDigit()
                         .contentTransition(.numericText(countsDown: true))
                         .animation(AppTheme.Animation.springFast, value: charactersRemaining)
@@ -192,10 +192,10 @@ struct FeedbackComposeView: View {
     }
 
     private var counterProgressColor: Color {
-        if isOverLimit { return .red }
+        if isOverLimit { return AppTheme.Tint.error }
         let ratio = Double(characterCount) / Double(characterLimit)
-        if ratio >= 0.90 { return .red }
-        if ratio >= 0.75 { return .orange }
+        if ratio >= 0.90 { return AppTheme.Tint.error }
+        if ratio >= 0.75 { return AppTheme.Tint.warning }
         return Color.accentColor
     }
 
@@ -234,7 +234,7 @@ struct FeedbackComposeView: View {
                 workflow.screenshot = nil
                 workflow.annotatedImage = nil
             }
-            .foregroundStyle(.red)
+            .foregroundStyle(AppTheme.Tint.error)
         }
         .font(AppTheme.Typography.caption)
     }

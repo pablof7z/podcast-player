@@ -111,7 +111,7 @@ struct CategoriesRecomputeSheet: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 36, weight: .semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(AppTheme.Tint.warning)
             Text("Couldn't generate categories")
                 .font(AppTheme.Typography.title3)
             if let errorMessage {
