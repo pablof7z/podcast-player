@@ -34,6 +34,7 @@ struct PodcastSearchView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .tabBarMinimizeBehavior(.never)
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.large)
         .searchable(
