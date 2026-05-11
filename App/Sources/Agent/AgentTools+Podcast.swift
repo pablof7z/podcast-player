@@ -52,6 +52,7 @@ extension AgentTools {
         static let listRecentUnplayed   = "list_recent_unplayed"
         static let createClip             = "create_clip"
         static let queueEpisodeSegments   = "queue_episode_segments"
+        static let downloadAndTranscribe  = "download_and_transcribe"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch.
@@ -65,7 +66,7 @@ extension AgentTools {
                 openScreen, setNowPlaying, delegate,
                 listSubscriptions, listCategories, changePodcastCategory,
                 listEpisodes, listInProgress, listRecentUnplayed,
-                createClip, queueEpisodeSegments,
+                createClip, queueEpisodeSegments, downloadAndTranscribe,
             ]
         }
     }
@@ -171,6 +172,8 @@ extension AgentTools {
             return await createClipTool(args: args, deps: deps)
         case PodcastNames.queueEpisodeSegments:
             return await queueEpisodeSegmentsTool(args: args, deps: deps)
+        case PodcastNames.downloadAndTranscribe:
+            return await downloadAndTranscribeTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

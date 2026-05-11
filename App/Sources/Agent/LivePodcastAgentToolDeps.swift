@@ -293,6 +293,60 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
         )
     }
 
+    func downloadAndTranscribe(episodeID: EpisodeID) async throws -> TranscriptRequestResult {
+        guard let uuid = UUID(uuidString: episodeID) else {
+            throw PodcastAgentToolAdapterError.invalidID(episodeID)
+        }
+        guard let store else {
+            throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
+        }
+        guard let episode = await store.episode(id: uuid) else {
+            throw PodcastAgentToolAdapterError.missingEpisode(episodeID)
+        }
+        // Already transcribed — skip the pipeline.
+        if case .ready(let source) = episode.transcriptState {
+            return TranscriptRequestResult(
+                episodeID: episodeID,
+                status: "ready",
+                source: source.rawValue,
+                message: "Transcript already available."
+            )
+        }
+        // Kick off download for offline playback (fire-and-forget).
+        // Transcription below will use the remote enclosure URL while
+        // the download proceeds in the background; Apple-native STT
+        // will pick up the local file on the post-download ingest trigger.
+        await MainActor.run {
+            downloadService.attach(appStore: store)
+            downloadService.download(episodeID: uuid)
+        }
+        // Await the full transcription pipeline. This call blocks until the
+        // transcript is persisted (.ready) or the pipeline gives up (.failed).
+        await transcriptService.ingest(episodeID: uuid)
+        // Read the final state.
+        let final = await store.episode(id: uuid) ?? episode
+        switch final.transcriptState {
+        case .ready(let src):
+            return TranscriptRequestResult(
+                episodeID: episodeID,
+                status: "ready",
+                source: src.rawValue
+            )
+        case .failed(let msg):
+            return TranscriptRequestResult(
+                episodeID: episodeID,
+                status: "failed",
+                message: msg
+            )
+        default:
+            return TranscriptRequestResult(
+                episodeID: episodeID,
+                status: "unavailable",
+                message: "Transcription could not complete. Check STT provider settings."
+            )
+        }
+    }
+
     func createClip(
         episodeID: EpisodeID,
         startSeconds: Double,

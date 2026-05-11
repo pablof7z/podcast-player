@@ -128,6 +128,10 @@ actor MockPlayback: PlaybackHostProtocol {
     func openScreen(route: String) async {
         recordedRoutes.append(route)
     }
+
+    func queueEpisodeSegments(segments: [EpisodeSegment], playNow: Bool) async -> QueueSegmentsResult {
+        return QueueSegmentsResult(segmentsQueued: segments.count, playingNow: playNow)
+    }
 }
 
 actor MockLibrary: PodcastLibraryProtocol {
@@ -164,6 +168,12 @@ actor MockLibrary: PodcastLibraryProtocol {
     func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult {
         transcriptionIDs.append(episodeID)
         return TranscriptRequestResult(episodeID: episodeID, status: "queued")
+    }
+
+    func downloadAndTranscribe(episodeID: EpisodeID) async throws -> TranscriptRequestResult {
+        downloadedIDs.append(episodeID)
+        transcriptionIDs.append(episodeID)
+        return TranscriptRequestResult(episodeID: episodeID, status: "ready", source: "mock")
     }
 
     func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult {

@@ -255,6 +255,21 @@ extension AgentTools {
                 required: ["episode_id", "start_seconds", "end_seconds"]
             ),
             podcastTool(
+                name: PodcastNames.downloadAndTranscribe,
+                description: """
+                Download an episode for offline playback AND await the full transcription pipeline \
+                before returning. Blocks until the transcript is ready (or fails). \
+                Use this when you need the transcript to be available immediately after the call \
+                — for example before calling query_transcripts on a fresh episode. \
+                Prefer this over separate download_episode + request_transcription calls when the \
+                goal is to have the transcript ready to query in the same turn.
+                """,
+                properties: [
+                    "episode_id": ["type": "string", "description": "The episode to download and transcribe (UUID string)."],
+                ],
+                required: ["episode_id"]
+            ),
+            podcastTool(
                 name: PodcastNames.queueEpisodeSegments,
                 description: """
                 Load one or more time-bounded segments from an episode (or multiple episodes) into the Up Next queue, \

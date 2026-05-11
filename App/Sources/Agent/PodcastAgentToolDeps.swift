@@ -112,6 +112,10 @@ public protocol PodcastLibraryProtocol: Sendable {
     func markEpisodeUnplayed(episodeID: EpisodeID) async throws -> EpisodeMutationResult
     func downloadEpisode(episodeID: EpisodeID) async throws -> EpisodeMutationResult
     func requestTranscription(episodeID: EpisodeID) async throws -> TranscriptRequestResult
+    /// Start the download (for offline) and **await** the full transcription pipeline.
+    /// Blocks until the transcript reaches `.ready` or `.failed` — use this when the
+    /// agent must have the transcript available before proceeding (e.g. `query_transcripts`).
+    func downloadAndTranscribe(episodeID: EpisodeID) async throws -> TranscriptRequestResult
     func refreshFeed(podcastID: PodcastID) async throws -> FeedRefreshResult
     /// Create a clip on behalf of the user. `transcriptText` is pre-filled when
     /// the agent already has it from a prior `query_transcripts` call; otherwise

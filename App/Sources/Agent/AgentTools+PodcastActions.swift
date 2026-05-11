@@ -124,6 +124,28 @@ extension AgentTools {
         }
     }
 
+    static func downloadAndTranscribeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
+            return toolError("Missing or empty 'episode_id'")
+        }
+        let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
+        guard exists else {
+            return toolError("Episode not found: \(episodeID)")
+        }
+        do {
+            let result = try await deps.library.downloadAndTranscribe(episodeID: episodeID)
+            var payload: [String: Any] = [
+                "episode_id": result.episodeID,
+                "status": result.status,
+            ]
+            if let source = result.source { payload["source"] = source }
+            if let message = result.message { payload["message"] = message }
+            return toolSuccess(payload)
+        } catch {
+            return toolError("download_and_transcribe failed: \(error.localizedDescription)")
+        }
+    }
+
     static func refreshFeedTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
         guard let podcastID = (args["podcast_id"] as? String)?.trimmed, !podcastID.isEmpty else {
             return toolError("Missing or empty 'podcast_id'")

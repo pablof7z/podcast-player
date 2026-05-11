@@ -178,6 +178,33 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         XCTAssertEqual(calls.first?.transcriptText, "Exactly what was said.")
     }
 
+    func testDownloadAndTranscribeReturnsReadyStatus() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.downloadAndTranscribe,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["status"] as? String, "ready")
+        XCTAssertEqual(decoded["source"] as? String, "mock")
+        let transcriptionIDs = await deps.library.transcriptionIDs
+        XCTAssertEqual(transcriptionIDs, ["ep1"])
+        let downloadedIDs = await deps.library.downloadedIDs
+        XCTAssertEqual(downloadedIDs, ["ep1"])
+    }
+
+    func testDownloadAndTranscribeRejectsUnknownEpisode() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: []))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.downloadAndTranscribe,
+            args: ["episode_id": "unknown"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
     func testDelegateUsesTenexContractAndStopsTurn() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
