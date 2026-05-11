@@ -100,5 +100,7 @@ struct CitationChip: View {
 
     // MARK: - Palette
 
-    static let amber = Color(red: 0.72, green: 0.45, blue: 0.10)
+    /// Editorial amber, shared with `ThreadingMentionRow` and wiki
+    /// contradiction surfaces. Lives once in `AppTheme.Tint.editorialAmber`.
+    static let amber = AppTheme.Tint.editorialAmber
 }

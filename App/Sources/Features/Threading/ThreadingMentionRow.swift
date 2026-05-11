@@ -135,5 +135,7 @@ struct ThreadingMentionRow: View {
         return parts.joined(separator: ", ")
     }
 
-    static let amber = Color(red: 0.72, green: 0.45, blue: 0.10)
+    /// Editorial amber, shared with `CitationChip` and wiki contradiction
+    /// surfaces. Lives once in `AppTheme.Tint.editorialAmber`.
+    static let amber = AppTheme.Tint.editorialAmber
 }

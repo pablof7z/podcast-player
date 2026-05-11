@@ -175,7 +175,7 @@ struct WikiPageView: View {
             if claim.isContestedByUser {
                 Label("You flagged this", systemImage: "exclamationmark.bubble")
                     .font(.caption2)
-                    .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
+                    .foregroundStyle(AppTheme.Tint.editorialAmber)
             }
         }
         .modifier(EvidenceGradedRule(grade: claim.evidenceGrade))
@@ -210,7 +210,7 @@ struct WikiPageView: View {
                         HStack(alignment: .top, spacing: 10) {
                             Text(citation.formattedTimestamp)
                                 .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
+                                .foregroundStyle(AppTheme.Tint.editorialAmber)
                                 .frame(width: 64, alignment: .leading)
                             VStack(alignment: .leading, spacing: 2) {
                                 if let speaker = citation.speaker {

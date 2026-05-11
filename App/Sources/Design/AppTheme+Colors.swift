@@ -22,6 +22,12 @@ extension AppTheme {
         static let surfaceFaint = SwiftUI.Color.secondary.opacity(0.04)
         static let dimmed = SwiftUI.Color.secondary.opacity(0.4)
         static let placeholder = SwiftUI.Color.secondary.opacity(0.15)
+        /// Editorial amber used by wiki citations, threading mentions,
+        /// and contradiction markers. Five sites previously inlined the
+        /// same RGB literal — `Color(red: 0.72, green: 0.45, blue: 0.10)` —
+        /// or declared their own `static let amber`. Consolidated here so
+        /// any future tone tweak lands in one place.
+        static let editorialAmber = SwiftUI.Color(red: 0.72, green: 0.45, blue: 0.10)
     }
 
     // MARK: - Gradients

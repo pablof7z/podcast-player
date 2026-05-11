@@ -182,7 +182,7 @@ struct ThreadingTopicView: View {
                 Text("Open the wiki entry for \u{201C}\(topic.displayName)\u{201D} \u{2192}")
                     .font(AppTheme.Typography.caption)
                     .italic()
-                    .foregroundStyle(Color(red: 0.72, green: 0.45, blue: 0.10))
+                    .foregroundStyle(AppTheme.Tint.editorialAmber)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
