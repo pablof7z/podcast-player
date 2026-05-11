@@ -3,11 +3,14 @@ import Foundation
 // MARK: - WhatsNewEntry
 //
 // One entry == one commit that shipped a user-facing change. The `id` is
-// the short commit SHA, which is naturally unique and gives us a stable
-// ordering key (alongside `shippedAt`).
+// the short commit SHA (or a slug for changes that span multiple commits),
+// kept around for human reference and changelog rendering. The
+// authoritative "did the user see this" comparison uses `shippedAt` — a
+// timestamp is robust to entries getting renamed, deleted, or trimmed in
+// future builds in a way SHA matching never was.
 
 struct WhatsNewEntry: Decodable, Sendable, Identifiable, Equatable {
-    let id: String           // short commit SHA
+    let id: String           // short commit SHA / slug
     let shippedAt: Date
     let lines: [String]
 
@@ -33,22 +36,30 @@ private struct WhatsNewPayload: Decodable {
 // MARK: - WhatsNewService
 //
 // Loads the bundled `whats-new.json` and answers two questions:
-//   1) Which entries has the user not yet seen since their last launch?
-//   2) Persists the "I've seen up through entry X" marker so we don't
-//      re-show old entries on every cold launch.
+//   1) Which entries have been shipped since the user's last-seen marker?
+//   2) Persists the "I've seen up to timestamp X" marker so the same
+//      content doesn't re-surface on every cold launch.
 //
-// The marker is stored under `whatsNew.lastSeenID` in `UserDefaults.standard`.
-// That's the same key the SwiftUI sheet reads through `@AppStorage`, so the
-// two stay in sync automatically.
+// The marker is a timestamp (ISO-8601, stored in `UserDefaults.standard`
+// under `whatsNew.lastSeenAt`). Earlier builds used an entry-ID marker
+// under `whatsNew.lastSeenID`; that key is migrated automatically if it
+// shows up.
+//
+// First-launch semantics: when no marker exists at all, the marker is
+// silently seeded to the newest entry's `shippedAt`. The user sees an
+// empty sheet on first install — i.e. NO sheet is shown, because there's
+// nothing newer than "everything that already shipped." From the next
+// build forward, any newly appended entry surfaces.
 
 @MainActor
 enum WhatsNewService {
 
     // MARK: Constants
 
-    /// `UserDefaults` key for the last-seen marker. Mirrored by
-    /// `@AppStorage("whatsNew.lastSeenID")` inside `WhatsNewSheet`.
-    static let lastSeenKey = "whatsNew.lastSeenID"
+    /// Timestamp marker — the current source of truth.
+    static let lastSeenAtKey = "whatsNew.lastSeenAt"
+    /// Legacy ID-based marker. Migrated on first launch then removed.
+    static let legacyLastSeenIDKey = "whatsNew.lastSeenID"
 
     /// Resource filename in the app bundle.
     private static let resourceName = "whats-new"
@@ -83,62 +94,79 @@ enum WhatsNewService {
 
     // MARK: Marker
 
-    /// The "I've seen up through this entry" marker, read directly from
-    /// `UserDefaults.standard`. The sheet uses `@AppStorage` against the
-    /// same key so writes stay in sync.
-    static var lastSeenID: String? {
-        UserDefaults.standard.string(forKey: lastSeenKey)
+    /// The "I've seen everything up through this timestamp" marker, read
+    /// from `UserDefaults.standard`. `nil` on a brand-new install (before
+    /// `migrateAndSeedIfNeeded` has run).
+    static var lastSeenAt: Date? {
+        guard let s = UserDefaults.standard.string(forKey: lastSeenAtKey),
+              !s.isEmpty else {
+            return nil
+        }
+        return Self.iso8601.date(from: s)
     }
 
-    /// Persists the marker. Pass the newest visible entry's id when the
-    /// user dismisses the sheet.
-    static func markSeen(upTo id: String) {
-        UserDefaults.standard.set(id, forKey: lastSeenKey)
+    /// Persist the marker. Call when the user dismisses the sheet, with the
+    /// newest visible entry's `shippedAt`.
+    static func markSeen(at date: Date) {
+        UserDefaults.standard.set(Self.iso8601.string(from: date), forKey: lastSeenAtKey)
     }
 
-    /// Seeds the marker to the newest entry on fresh installs so the user
-    /// is "caught up" silently. From the next deploy onward, any newly
-    /// appended entry will surface through `unseenEntries(lastSeenID:)`.
-    /// No-op once a marker exists.
-    static func seedMarkerIfNeeded(entries: [WhatsNewEntry]? = nil) {
-        guard lastSeenID == nil else { return }
-        let all = (entries ?? loadEntries()).sorted { $0.shippedAt > $1.shippedAt }
-        guard let newest = all.first else { return }
-        markSeen(upTo: newest.id)
+    /// Bring the marker up to date on cold launch.
+    ///
+    /// Two cases handled:
+    ///   1. Legacy `whatsNew.lastSeenID` exists from an older build — look
+    ///      up that entry's `shippedAt` and write it as the new timestamp
+    ///      marker, then delete the legacy key.
+    ///   2. No marker at all (fresh install) — silently seed the marker to
+    ///      the newest entry's `shippedAt` so the user doesn't see "the
+    ///      entire changelog ever" as their first impression of the app.
+    ///      Future entries appended after this build will still surface.
+    ///
+    /// Idempotent: a no-op once a current-format marker is present.
+    static func migrateAndSeedIfNeeded(entries: [WhatsNewEntry]? = nil) {
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: lastSeenAtKey) != nil { return }
+
+        let sorted = (entries ?? loadEntries()).sorted { $0.shippedAt > $1.shippedAt }
+
+        if let legacyID = defaults.string(forKey: legacyLastSeenIDKey),
+           !legacyID.isEmpty,
+           let entry = sorted.first(where: { $0.id == legacyID }) {
+            markSeen(at: entry.shippedAt)
+            defaults.removeObject(forKey: legacyLastSeenIDKey)
+            return
+        }
+        // No usable legacy marker — seed silently.
+        if let newest = sorted.first {
+            markSeen(at: newest.shippedAt)
+        }
+        defaults.removeObject(forKey: legacyLastSeenIDKey)
     }
 
     // MARK: Diff
 
-    /// Entries the user hasn't seen yet, in newest-first order.
+    /// Entries strictly newer than `lastSeenAt`, in newest-first order.
     ///
-    /// Behaviour:
-    ///   - `lastSeenID == nil` (fresh install / no marker): returns the
-    ///     most recent `recentFallbackCount` entries so new users see
-    ///     something useful on first launch.
-    ///   - `lastSeenID` matches an entry: returns the slice of entries
-    ///     newer than (above) that entry.
-    ///   - `lastSeenID` is unknown (stale marker from a trimmed changelog):
-    ///     same as nil — returns the most recent `recentFallbackCount`
-    ///     entries rather than silently returning nothing.
+    /// `lastSeenAt == nil` returns `[]` rather than the full changelog —
+    /// `migrateAndSeedIfNeeded` is responsible for seeding the marker on
+    /// fresh installs; if it hasn't run yet, the caller should not surface
+    /// anything.
     static func unseenEntries(
-        lastSeenID: String?,
-        now: Date = Date(),
-        entries: [WhatsNewEntry]? = nil,
-        recentFallbackCount: Int = 10
+        lastSeenAt: Date?,
+        entries: [WhatsNewEntry]? = nil
     ) -> [WhatsNewEntry] {
-        _ = now
+        guard let marker = lastSeenAt else { return [] }
         let all = entries ?? loadEntries()
-
-        // Newest first in the file already; defensively re-sort so we
-        // don't depend on author discipline.
-        let sorted = all.sorted { $0.shippedAt > $1.shippedAt }
-
-        guard let marker = lastSeenID,
-              let markerIndex = sorted.firstIndex(where: { $0.id == marker }) else {
-            // No marker or stale marker → show recent entries.
-            return Array(sorted.prefix(recentFallbackCount))
-        }
-        // Return everything strictly newer than the marker.
-        return Array(sorted.prefix(upTo: markerIndex))
+        return all
+            .filter { $0.shippedAt > marker }
+            .sorted { $0.shippedAt > $1.shippedAt }
     }
+
+    // MARK: Helpers
+
+    private static let iso8601: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
 }

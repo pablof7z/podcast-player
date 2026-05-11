@@ -39,8 +39,12 @@ struct PodcastrApp: App {
                     service.start()
                 }
                 .task {
+                    // Migrate any legacy ID-based marker and seed a fresh
+                    // install silently so the first launch doesn't dump
+                    // the entire changelog as "new."
+                    WhatsNewService.migrateAndSeedIfNeeded()
                     let unseen = WhatsNewService.unseenEntries(
-                        lastSeenID: WhatsNewService.lastSeenID
+                        lastSeenAt: WhatsNewService.lastSeenAt
                     )
                     if !unseen.isEmpty {
                         whatsNewPresentation = WhatsNewPresentation(entries: unseen)

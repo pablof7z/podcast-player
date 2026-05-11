@@ -17,9 +17,10 @@ struct WhatsNewSheet: View {
     let entries: [WhatsNewEntry]
     @Environment(\.dismiss) private var dismiss
 
-    /// Mirrors `WhatsNewService.lastSeenKey` — keeps the @AppStorage view
-    /// state in sync with reads through `WhatsNewService.lastSeenID`.
-    @AppStorage("whatsNew.lastSeenID") private var lastSeenID: String = ""
+    /// Mirrors `WhatsNewService.lastSeenAtKey` so dismissing the sheet
+    /// advances the marker via the same UserDefaults key the service
+    /// reads on next cold launch.
+    @AppStorage("whatsNew.lastSeenAt") private var lastSeenAtString: String = ""
 
     var body: some View {
         NavigationStack {
@@ -87,7 +88,7 @@ struct WhatsNewSheet: View {
             Spacer()
             Button("Got it") {
                 if let newest = entries.first {
-                    lastSeenID = newest.id
+                    lastSeenAtString = Self.iso8601.string(from: newest.shippedAt)
                 }
                 Haptics.success()
                 dismiss()
@@ -96,6 +97,12 @@ struct WhatsNewSheet: View {
             Spacer()
         }
     }
+
+    private static let iso8601: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
 
     // MARK: - Formatting
 

@@ -11,9 +11,9 @@ final class WhatsNewServiceTests: XCTestCase {
 
     // MARK: - Fixture
 
-    /// Three entries, newest first. Hashes are short SHAs to mirror the
-    /// real format. Dates are spaced one day apart so sort-by-shippedAt
-    /// is unambiguous.
+    /// Three entries, newest first. IDs are short SHAs to mirror the real
+    /// format. Dates are spaced one day apart so sort-by-shippedAt is
+    /// unambiguous.
     private let fixtureJSON = #"""
     {
       "schema_version": 1,
@@ -42,6 +42,12 @@ final class WhatsNewServiceTests: XCTestCase {
         return try WhatsNewService.decode(data)
     }
 
+    private func date(_ iso: String) -> Date {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: iso)!
+    }
+
     // MARK: - Decoding
 
     func testFixtureJSONDecodes() throws {
@@ -66,41 +72,48 @@ final class WhatsNewServiceTests: XCTestCase {
 
     func testUnseenEntriesEmptyOnFreshInstall() throws {
         let entries = try fixtureEntries()
-        // Fresh install: no marker stored.
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: nil, entries: entries)
+        // Fresh install: no marker stored. The seeding step is the caller's
+        // responsibility — `unseenEntries` itself should return empty so the
+        // sheet doesn't dump the entire changelog at first launch.
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: nil, entries: entries)
         XCTAssertTrue(unseen.isEmpty, "Fresh install must not dump the entire changelog at first launch.")
     }
 
     func testUnseenEntriesEmptyWhenMarkerIsNewest() throws {
         let entries = try fixtureEntries()
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: "ccc3333", entries: entries)
+        let marker = date("2026-05-10T22:00:00Z")
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
         XCTAssertTrue(unseen.isEmpty, "User has already seen the newest entry — nothing to show.")
     }
 
     func testUnseenEntriesReturnsNewerSliceWhenMarkerIsMiddle() throws {
         let entries = try fixtureEntries()
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: "bbb2222", entries: entries)
+        let marker = date("2026-05-09T12:00:00Z")
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
         XCTAssertEqual(unseen.map(\.id), ["ccc3333"])
     }
 
     func testUnseenEntriesReturnsAllNewerWhenMarkerIsOldest() throws {
         let entries = try fixtureEntries()
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: "aaa1111", entries: entries)
+        let marker = date("2026-05-08T08:00:00Z")
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
         XCTAssertEqual(unseen.map(\.id), ["ccc3333", "bbb2222"])
     }
 
-    func testUnseenEntriesEmptyForUnknownMarker() throws {
+    func testUnseenEntriesEmptyWhenMarkerIsAfterEverything() throws {
         let entries = try fixtureEntries()
-        // Marker references a commit that's no longer in the changelog
-        // (could happen if entries get trimmed). Conservative: don't
-        // re-show everything.
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: "deadbee", entries: entries)
+        // Marker is in the future relative to all entries — could happen if
+        // the user's clock drifted, or after entries are trimmed below the
+        // marker. Nothing newer = nothing to show.
+        let marker = date("2030-01-01T00:00:00Z")
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
         XCTAssertTrue(unseen.isEmpty)
     }
 
     func testUnseenEntriesAreNewestFirst() throws {
         let entries = try fixtureEntries()
-        let unseen = WhatsNewService.unseenEntries(lastSeenID: "aaa1111", entries: entries)
+        let marker = date("2026-05-08T08:00:00Z")
+        let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
         let dates = unseen.map(\.shippedAt)
         XCTAssertEqual(dates, dates.sorted(by: >), "Unseen entries must be newest-first.")
     }
