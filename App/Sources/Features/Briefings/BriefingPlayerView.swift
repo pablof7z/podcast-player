@@ -45,7 +45,8 @@ struct BriefingPlayerView: View {
         }
         .background(background)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { toolbar }
+        // No toolbar items yet — the previous "share-card" placeholder
+        // was dead, see `toolbar` for context.
         .sheet(isPresented: $isShowingBranchPrompt) {
             BriefingBranchPromptSheet(
                 promptDraft: $promptDraft,
@@ -303,16 +304,11 @@ struct BriefingPlayerView: View {
         }
     }
 
-    // MARK: Toolbar
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { /* share-card */ } label: {
-                Image(systemName: "square.and.arrow.up")
-            }
-        }
-    }
+    // The toolbar used to carry a "share-card" Button wired to a
+    // `/* share-card */` placeholder — tapping did nothing because
+    // briefings don't yet have a share representation (no deep link,
+    // no image-renderer card). Visible-but-dead is worse than absent,
+    // so the toolbar block is gone until a real share path exists.
 
     // MARK: Helpers
 
