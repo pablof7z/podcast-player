@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "319a3e6",
+      "shipped_at": "2026-05-11T16:00:00Z",
+      "lines": [
+        "Show pages got a redesign — artwork sits on the left next to the title and description, the tint gradient bleeds to the top of the screen, and episodes now show their own artwork in the feed."
+      ]
+    },
+    {
       "id": "95ca122",
       "shipped_at": "2026-05-11T15:00:00Z",
       "lines": [
