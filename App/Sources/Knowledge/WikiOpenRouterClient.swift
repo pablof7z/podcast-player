@@ -21,6 +21,13 @@ import Foundation
 /// API key (lane 7's "real LLM calls are stubbed" constraint).
 struct WikiOpenRouterClient: Sendable {
 
+    /// Shared decoder for the per-call `OpenRouterUsagePayload` parse —
+    /// the previous shape allocated one per wiki compile, on top of the
+    /// already-expensive LLM round-trip. Tiny win individually; matches
+    /// the pattern other clients in the codebase already follow.
+    nonisolated(unsafe) private static let usageDecoder = JSONDecoder()
+
+
     // MARK: - Modes
 
     enum Mode: Sendable {
@@ -181,7 +188,7 @@ struct WikiOpenRouterClient: Sendable {
 
         if let usageRaw = json["usage"] {
             let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
-            let usage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+            let usage = usageData.flatMap { try? Self.usageDecoder.decode(OpenRouterUsagePayload.self, from: $0) }
             let modelUsed = (json["model"] as? String) ?? model
             Task { @MainActor in
                 CostLedger.shared.log(

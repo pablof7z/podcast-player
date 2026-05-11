@@ -63,6 +63,12 @@ enum AgentOpenRouterClient {
         static let maxErrorBodyBytes: Int = 512
     }
 
+    /// Shared decoder. Streaming SSE chunks call into `OpenRouterUsagePayload`
+    /// decoding once per usage-bearing chunk — over a long agent run with
+    /// multiple turns and a streaming model that fires usage chunks
+    /// per-segment, that adds up. Reentrant for `decode` after construction.
+    nonisolated(unsafe) private static let usageDecoder = JSONDecoder()
+
     /// Streams a chat-completion request and returns the accumulated result.
     ///
     /// - Parameters:
@@ -144,7 +150,7 @@ enum AgentOpenRouterClient {
             if let usageRaw = json["usage"],
                (json["choices"] as? [[String: Any]])?.isEmpty != false {
                 let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
-                capturedUsage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
+                capturedUsage = usageData.flatMap { try? Self.usageDecoder.decode(OpenRouterUsagePayload.self, from: $0) }
                 continue
             }
 
