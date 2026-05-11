@@ -129,4 +129,11 @@ protocol BriefingPlayerHostProtocol: AnyObject {
 
     /// Current playback time in the loaded asset, sampled when called.
     var currentTimeSeconds: TimeInterval { get }
+
+    /// Invoked when the currently-loaded asset plays to completion. The
+    /// engine wires this to the `.briefingPlaybackEnded` notification so the
+    /// river coordinator (`BriefingRiverView`) can auto-advance to the next
+    /// briefing without polling. Set by `BriefingPlayerEngine.load(_:tracks:host:)`;
+    /// hosts should call it on the main actor exactly once per playthrough.
+    var onPlaybackEnded: (@MainActor () -> Void)? { get set }
 }

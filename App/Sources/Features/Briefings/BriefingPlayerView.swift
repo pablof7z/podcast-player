@@ -17,6 +17,13 @@ struct BriefingPlayerView: View {
     // MARK: Inputs
 
     let context: BriefingPlaybackContext
+    /// When `true`, `prepareEngine()` calls `engine.play(stitchedURL:)`
+    /// immediately after `engine.load(...)` so the surface starts speaking
+    /// without a user tap. Default `false` preserves the existing
+    /// tap-one-to-play library entry behaviour. The lean-back river
+    /// (`BriefingRiverView`) passes `true`. Guarded inside `prepareEngine` so
+    /// a nil / `/dev/null` asset URL never auto-plays silence.
+    var autoplay: Bool = false
 
     // MARK: State
 
@@ -393,5 +400,13 @@ struct BriefingPlayerView: View {
             cursor += duration
         }
         engine.load(context.script, tracks: tracks, host: FakeBriefingPlayerHost())
+
+        // Lean-back river opt-in: auto-play once tracks are loaded. Skip when
+        // the on-disk stitched audio resolved to the `/dev/null` placeholder
+        // — that path is the "no audio file" fallback and auto-playing it
+        // would swallow the missing-asset bug behind silent playback.
+        if autoplay, let url = assetURL, url.path != "/dev/null" {
+            await engine.play(stitchedURL: url)
+        }
     }
 }

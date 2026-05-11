@@ -66,9 +66,17 @@ final class BriefingPlayerEngine {
         self.branchContinuation = continuation
     }
 
+    deinit {
+        branchContinuation.finish()
+    }
+
     // MARK: Loading
 
     /// Loads a script + its tracks for playback. Replaces any prior session.
+    ///
+    /// Wires the host's `onPlaybackEnded` to flip `isPlaying = false` and
+    /// post the `.briefingPlaybackEnded` notification — `BriefingRiverView`
+    /// observes that to auto-advance to the next briefing in the queue.
     func load(
         _ script: BriefingScript,
         tracks: [BriefingTrack],
@@ -81,6 +89,18 @@ final class BriefingPlayerEngine {
         sessionBranches = []
         activeSegmentID = tracks.first?.segmentID
         isPlaying = false
+        // Capture the loaded script's id so the notification carries the
+        // briefing that actually ended (re-loads during a session would
+        // otherwise let stale closures post the wrong id).
+        let scriptID = script.id
+        self.host?.onPlaybackEnded = { [weak self] in
+            self?.isPlaying = false
+            NotificationCenter.default.post(
+                name: .briefingPlaybackEnded,
+                object: nil,
+                userInfo: ["briefingID": scriptID]
+            )
+        }
     }
 
     // MARK: Transport
@@ -198,6 +218,16 @@ final class BriefingPlayerEngine {
         case began(prompt: String, atSeconds: TimeInterval, segmentID: UUID?)
         case ended(branch: BriefingBranch)
     }
+}
+
+// MARK: - Notification
+
+extension Notification.Name {
+    /// Fired by `BriefingPlayerEngine` when the host signals end-of-stream
+    /// for the loaded briefing. `userInfo["briefingID"]` carries the
+    /// `BriefingScript.id` that just ended so the river can verify it's
+    /// advancing past the briefing it thinks it is.
+    static let briefingPlaybackEnded = Notification.Name("io.f7z.podcast.briefingPlaybackEnded")
 }
 
 // MARK: - Array safe subscript

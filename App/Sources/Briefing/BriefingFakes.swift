@@ -255,6 +255,13 @@ struct ElevenLabsBriefingTTS: TTSProtocol {
 @MainActor
 final class FakeBriefingPlayerHost: BriefingPlayerHostProtocol {
     private var player: AVPlayer?
+    /// Item-scoped end-of-stream observer. Held so we can remove it on
+    /// re-entry — otherwise back-to-back `play(assetURL:)` calls (e.g.
+    /// `BriefingRiverView` advancing between briefings) would stack
+    /// observers and fire the callback N times for the Nth briefing.
+    private var endObserver: NSObjectProtocol?
+
+    var onPlaybackEnded: (@MainActor () -> Void)?
 
     var currentTimeSeconds: TimeInterval {
         guard let player else { return 0 }
@@ -263,6 +270,25 @@ final class FakeBriefingPlayerHost: BriefingPlayerHostProtocol {
 
     func play(assetURL: URL, startAt seconds: TimeInterval) async {
         let item = AVPlayerItem(url: assetURL)
+        // Tear down any prior observer; the new item replaces the old.
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+        }
+        // Scope to `object: item` — without it every AVPlayerItem in the
+        // process fires this callback (podcast player, voice mode, etc.).
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            // Hop to MainActor — the notification arrives on the main queue
+            // (per the operationQueue arg) but the closure is `@Sendable`,
+            // so Swift 6 strict concurrency won't let us call the actor-
+            // isolated `onPlaybackEnded` directly without the assumption.
+            MainActor.assumeIsolated {
+                self?.onPlaybackEnded?()
+            }
+        }
         let player = AVPlayer(playerItem: item)
         self.player = player
         if seconds > 0 {
@@ -276,6 +302,11 @@ final class FakeBriefingPlayerHost: BriefingPlayerHostProtocol {
     func seek(to seconds: TimeInterval) async {
         await player?.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
     }
+
+    // No deinit cleanup: the closure captures `[weak self]`, so once the host
+    // deallocates the callback is a no-op and the observer becomes harmless
+    // bookkeeping that NotificationCenter releases naturally. Swift 6's
+    // nonisolated-deinit rule blocks touching `endObserver` here anyway.
 }
 
 // MARK: - Debug-only data fakes

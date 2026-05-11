@@ -22,6 +22,9 @@ struct BriefingsView: View {
 
     @State private var isComposing = false
     @State private var pendingPlayback: BriefingPlaybackContext?
+    /// Drives the lean-back river presentation. `true` while
+    /// `BriefingRiverView` is on the navigation stack.
+    @State private var isPlayingRiver = false
 
     // MARK: Body
 
@@ -61,6 +64,9 @@ struct BriefingsView: View {
         }
         .navigationDestination(item: $pendingPlayback) { ctx in
             BriefingPlayerView(context: ctx)
+        }
+        .navigationDestination(isPresented: $isPlayingRiver) {
+            BriefingRiverView(queue: model.briefings)
         }
         .task { await model.reload() }
     }
@@ -134,6 +140,17 @@ struct BriefingsView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        if !model.briefings.isEmpty {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    Haptics.selection()
+                    isPlayingRiver = true
+                } label: {
+                    Label("Lean back", systemImage: "play.square.stack.fill")
+                }
+                .accessibilityHint("Auto-plays every briefing in sequence")
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button { isComposing = true } label: {
                 Label("Compose", systemImage: "sparkles")
