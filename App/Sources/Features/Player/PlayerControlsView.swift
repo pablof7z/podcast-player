@@ -15,18 +15,14 @@ struct PlayerControlsView: View {
     @Bindable var state: PlaybackState
     let glassNamespace: Namespace.ID
     var chapters: [Episode.Chapter] = []
-    @Binding var showSpeedSheet: Bool
     @Binding var showVoiceNoteSheet: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: AppTheme.Spacing.sm) {
-            // Left action: playback speed
-            actionChip(
-                glyph: "speedometer",
-                accessibilityName: "Playback speed",
-                accessibilityValue: state.rate.label
-            ) {
-                showSpeedSheet = true
+            // Right actions: voice note + auto-snip (left side of transport)
+            actionChip(glyph: "mic", accessibilityName: "Voice note") {
+                Haptics.selection()
+                showVoiceNoteSheet = true
             }
 
             Spacer(minLength: 0)
@@ -52,11 +48,6 @@ struct PlayerControlsView: View {
 
             Spacer(minLength: 0)
 
-            // Right actions: voice note + auto-snip
-            actionChip(glyph: "mic", accessibilityName: "Voice note") {
-                Haptics.selection()
-                showVoiceNoteSheet = true
-            }
             AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
@@ -72,6 +63,7 @@ struct PlayerControlsView: View {
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(.primary)
                 .frame(width: 76, height: 76)
+                .contentShape(Circle())
                 .glassEffect(.regular.interactive(), in: .circle)
                 .glassEffectID("player.play", in: glassNamespace)
                 .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
@@ -90,6 +82,7 @@ struct PlayerControlsView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 44, height: 44)
+                .contentShape(Circle())
                 .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.pressable)
@@ -129,6 +122,7 @@ private struct SkipButton: View {
             .font(.title3.weight(.semibold))
             .foregroundStyle(.primary)
             .frame(width: 56, height: 56)
+            .contentShape(Circle())
             .glassEffect(.regular.interactive(), in: .circle)
 
         let baseLabel: String = direction == .backward

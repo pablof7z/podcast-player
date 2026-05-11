@@ -127,7 +127,8 @@ struct PlayerView: View {
             titleCollapsed: titleCollapsed,
             onDismiss: { dismiss() },
             onShare: { showShareSheet = true },
-            onShowSleepTimer: { showSleepSheet = true }
+            onShowSleepTimer: { showSleepSheet = true },
+            showSpeedSheet: $showSpeedSheet
         )
     }
 
@@ -290,7 +291,6 @@ struct PlayerView: View {
                     state: state,
                     glassNamespace: glassNamespace,
                     chapters: navigableChapters ?? [],
-                    showSpeedSheet: $showSpeedSheet,
                     showVoiceNoteSheet: $showVoiceNoteSheet
                 )
             }

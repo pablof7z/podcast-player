@@ -20,6 +20,7 @@ struct PlayerTopBar: View {
     let onDismiss: () -> Void
     let onShare: () -> Void
     let onShowSleepTimer: () -> Void
+    @Binding var showSpeedSheet: Bool
 
     @Environment(AppStateStore.self) private var store
 
@@ -67,6 +68,8 @@ struct PlayerTopBar: View {
                     .accessibilityLabel("Share episode")
                 }
 
+                speedButton
+
                 routePicker
 
                 if let episode = state.episode {
@@ -84,6 +87,22 @@ struct PlayerTopBar: View {
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.sm)
         .padding(.bottom, AppTheme.Spacing.xs)
+    }
+
+    private var speedButton: some View {
+        Button {
+            showSpeedSheet = true
+        } label: {
+            Text(state.rate.label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .buttonStyle(.pressable)
+        .accessibilityLabel("Playback speed")
+        .accessibilityValue(state.rate.label)
     }
 
     /// Shows a "< Jump back" text button when there is navigation history,
