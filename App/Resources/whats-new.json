@@ -2,6 +2,20 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "4f98733",
+      "shipped_at": "2026-05-11T17:30:00Z",
+      "lines": [
+        "What's New now reliably shows the changelog on first launch — the sheet was rendering empty after onboarding because of a SwiftUI render race."
+      ]
+    },
+    {
+      "id": "byok-multi-provider",
+      "shipped_at": "2026-05-11T17:00:00Z",
+      "lines": [
+        "BYOK setup is now one flow: approve OpenRouter, ElevenLabs, Ollama Cloud, and Perplexity together during onboarding or from Settings."
+      ]
+    },
+    {
       "id": "319a3e6",
       "shipped_at": "2026-05-11T16:00:00Z",
       "lines": [
