@@ -113,7 +113,6 @@ final class AppStateStore {
     var mutationBatchDepth = 0
     var deferredStateSideEffects = false
     var deferredEpisodeProjectionRebuild = false
-    var spotlightReindexTask: Task<Void, Never>?
     /// Trailing-debounce task for `WidgetCenter.reloadAllTimelines()`.
     /// Cancelled and re-armed on each mutation so a burst (e.g. marking
     /// 50 episodes played) collapses to a single reload signal — the
@@ -184,10 +183,12 @@ final class AppStateStore {
         // doesn't grow unboundedly across many months of use. This fires one
         // Persistence.save only when stale entries are actually found.
         pruneStaleActivityEntries()
-        // Seed Spotlight after first render. The persisted library can contain
-        // tens of thousands of episodes, so building the bounded Spotlight
-        // snapshot must not compete with launch UI work on the main actor.
-        scheduleSpotlightReindex(for: loadedState, delay: .seconds(2))
+        // Spotlight indexing is disabled — the formatter pass over hundreds of
+        // multi-KB show-notes blobs was monopolizing a cooperative worker for
+        // tens of seconds on every state change. Clear anything we previously
+        // published so the app doesn't continue to litter the system index
+        // with stale entries that no longer get refreshed.
+        SpotlightIndexer.clearAll()
         // Observe external iCloud changes so settings stay in sync while the
         // app is running on multiple devices simultaneously.
         iCloudObserver = NotificationCenter.default.addObserver(
@@ -257,8 +258,6 @@ final class AppStateStore {
         // next flush.
         positionFlushTask?.cancel()
         positionFlushTask = nil
-        spotlightReindexTask?.cancel()
-        spotlightReindexTask = nil
         widgetReloadTask?.cancel()
         widgetReloadTask = nil
         positionCache.removeAll()
@@ -297,7 +296,6 @@ final class AppStateStore {
                 NotificationCenter.default.removeObserver(iCloudObserver)
             }
             positionFlushTask?.cancel()
-            spotlightReindexTask?.cancel()
             widgetReloadTask?.cancel()
         }
     }

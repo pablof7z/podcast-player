@@ -166,11 +166,23 @@ final class EpisodeDownloadService {
         guard episodeIDToTask[episodeID] == nil else { return }
 
         let task: URLSessionDownloadTask
-        if let resumeData = EpisodeDownloadStore.shared.loadResumeData(for: episode) {
+        let resumeData = EpisodeDownloadStore.shared.loadResumeData(for: episode)
+        if let resumeData {
             task = session.downloadTask(withResumeData: resumeData)
         } else {
             task = session.downloadTask(with: episode.enclosureURL)
         }
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadRequested,
+            severity: .info,
+            summary: resumeData != nil ? "Resuming download" : "Starting download",
+            details: [
+                .init("URL", episode.enclosureURL.absoluteString),
+                .init("MIME", episode.enclosureMimeType ?? "—"),
+                .init("Resume data", resumeData.map { "\($0.count) bytes" } ?? "none"),
+            ]
+        )
         // taskDescription lets the coordinator recover the episode ID even
         // after the in-memory map is lost (e.g. background relaunch).
         task.taskDescription = episodeID.uuidString
@@ -183,6 +195,16 @@ final class EpisodeDownloadService {
 
         store.setEpisodeDownloadState(episodeID, state: .downloading(progress: 0, bytesWritten: nil))
         task.resume()
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadStarted,
+            severity: .info,
+            summary: "URLSession task resumed",
+            details: [
+                .init("Task ID", String(task.taskIdentifier)),
+                .init("Cellular allowed", "yes"),
+            ]
+        )
         logger.info("download started for \(episodeID, privacy: .public)")
     }
 
@@ -206,6 +228,12 @@ final class EpisodeDownloadService {
         }
         episodeIDToTask[episodeID] = nil
         taskIDToEpisodeID = taskIDToEpisodeID.filter { $0.value != episodeID }
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadCancelled,
+            severity: .warning,
+            summary: "Download cancelled by user"
+        )
         logger.info("download cancelled for \(episodeID, privacy: .public)")
     }
 
@@ -225,6 +253,12 @@ final class EpisodeDownloadService {
         }
         clearProgress(for: episodeID)
         store.setEpisodeDownloadState(episodeID, state: .notDownloaded)
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadDeleted,
+            severity: .info,
+            summary: "Local file removed"
+        )
     }
 
     // MARK: - Internal helpers (also called from the delegate extension)

@@ -2,10 +2,24 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "TODO-replace-with-short-sha-episode-list-nav",
+      "shipped_at": "2026-05-11T13:00:00Z",
+      "lines": [
+        "Tap an episode to open its detail page; use the play button on the right to start playback directly from the list."
+      ]
+    },
+    {
       "id": "assemblyai-stt",
       "shipped_at": "2026-05-11T12:00:00Z",
       "lines": [
         "AssemblyAI is now available for transcription. Connect it with BYOK or a manual key, then choose it under Settings > Intelligence > Models > Speech."
+      ]
+    },
+    {
+      "id": "TODO-replace-with-short-sha-clipboundary",
+      "shipped_at": "2026-05-12T00:30:00Z",
+      "lines": [
+        "Smarter clips and quotes: tap Snip or Share Quote and the LLM picks clean sentence boundaries from the surrounding transcript — no more mid-sentence cuts or missing the punchline you reacted to. Needs an AI key under Settings → AI keys."
       ]
     },
     {

@@ -24,15 +24,20 @@ struct ShowDetailEpisodeList: View {
 
     var body: some View {
         ForEach(episodes) { ep in
-            Button {
-                Haptics.selection()
-                playback.setEpisode(ep)
-                playback.play()
-            } label: {
+            NavigationLink(value: LibraryEpisodeRoute(
+                episodeID: ep.id,
+                subscriptionID: subscription.id,
+                title: ep.title
+            )) {
                 EpisodeRow(
                     episode: ep,
                     showAccent: subscription.accentColor,
-                    fallbackImageURL: subscription.imageURL
+                    fallbackImageURL: subscription.imageURL,
+                    onPlay: {
+                        playback.setEpisode(ep)
+                        playback.play()
+                        NotificationCenter.default.post(name: .openPlayerRequested, object: nil)
+                    }
                 )
                 .contentShape(Rectangle())
             }

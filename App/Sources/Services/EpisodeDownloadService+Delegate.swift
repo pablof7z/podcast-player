@@ -102,11 +102,19 @@ final class DownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unchecke
             try FileManager.default.moveItem(at: location, to: interim)
         } catch {
             Self.logger.error("staging move failed: \(error, privacy: .public)")
+            let errorString = String(describing: error)
             Task { @MainActor [weak service] in
                 guard let service else { return }
                 let episodeID = service.taskIDToEpisodeID[taskID] ?? descID
                 guard let episodeID else { return }
-                service.handleFailure(episodeID: episodeID, message: "Could not save download.")
+                service.handleFailure(
+                    episodeID: episodeID,
+                    message: "Could not save download.",
+                    auditDetails: [
+                        .init("Stage", "staging move"),
+                        .init("Error", errorString),
+                    ]
+                )
             }
             return
         }
@@ -139,6 +147,11 @@ final class DownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unchecke
         let taskID = task.taskIdentifier
         let descID = task.taskDescription.flatMap(UUID.init(uuidString:))
         let resumeData = nserr.userInfo[NSURLSessionDownloadTaskResumeData] as? Data
+        let httpStatus = (task.response as? HTTPURLResponse)?.statusCode
+        let requestURL = task.originalRequest?.url?.absoluteString
+        let errorDescription = error.localizedDescription
+        let errorDomain = nserr.domain
+        let errorCode = nserr.code
         Task { @MainActor [weak service] in
             guard let service else { return }
             let episodeID = service.taskIDToEpisodeID[taskID] ?? descID
@@ -148,7 +161,18 @@ final class DownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unchecke
                let episode = store.episode(id: episodeID) {
                 EpisodeDownloadStore.shared.writeResumeData(resumeData, for: episode)
             }
-            service.handleFailure(episodeID: episodeID, message: error.localizedDescription)
+            var details: [EpisodeAuditEvent.Detail] = [
+                .init("Error domain", errorDomain),
+                .init("Error code", String(errorCode)),
+            ]
+            if let httpStatus { details.append(.init("HTTP status", String(httpStatus))) }
+            if let requestURL { details.append(.init("URL", requestURL)) }
+            if resumeData != nil { details.append(.init("Resume data saved", "yes")) }
+            service.handleFailure(
+                episodeID: episodeID,
+                message: errorDescription,
+                auditDetails: details
+            )
         }
     }
 
@@ -212,7 +236,15 @@ extension EpisodeDownloadService {
             try fm.moveItem(at: interim, to: destination)
         } catch {
             logger.error("move-to-final failed: \(error, privacy: .public)")
-            handleFailure(episodeID: episodeID, message: "Could not save download to library.")
+            handleFailure(
+                episodeID: episodeID,
+                message: "Could not save download to library.",
+                auditDetails: [
+                    .init("Stage", "move to final destination"),
+                    .init("Destination", destination.lastPathComponent),
+                    .init("Error", String(describing: error)),
+                ]
+            )
             return
         }
         EpisodeDownloadStore.shared.clearResumeData(for: episode)
@@ -226,6 +258,17 @@ extension EpisodeDownloadService {
         store.setEpisodeDownloadState(
             episodeID,
             state: .downloaded(localFileURL: destination, byteCount: size)
+        )
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadFinished,
+            severity: .success,
+            summary: "Downloaded \(Self.formatBytes(size))",
+            details: [
+                .init("Bytes", String(size)),
+                .init("File", destination.lastPathComponent),
+                .init("URL", episode.enclosureURL.absoluteString),
+            ]
         )
         logger.info(
             "download finished for \(episodeID, privacy: .public) (\(size, privacy: .public) bytes)"
@@ -242,8 +285,14 @@ extension EpisodeDownloadService {
     }
 
     /// Pushes the terminal `.failed` state. Caller has already squirreled
-    /// resume data away if any was attached to the error.
-    func handleFailure(episodeID: UUID, message: String) {
+    /// resume data away if any was attached to the error. Extra audit detail
+    /// (HTTP status, error domain + code) is captured into the audit log so
+    /// the Diagnostics sheet can show *why* a download failed.
+    func handleFailure(
+        episodeID: UUID,
+        message: String,
+        auditDetails: [EpisodeAuditEvent.Detail] = []
+    ) {
         guard let store = appStore else { return }
         if let task = episodeIDToTask[episodeID] {
             taskIDToEpisodeID[task.taskIdentifier] = nil
@@ -251,8 +300,23 @@ extension EpisodeDownloadService {
         episodeIDToTask[episodeID] = nil
         clearProgress(for: episodeID)
         store.setEpisodeDownloadState(episodeID, state: .failed(message: message))
+        EpisodeAuditLogStore.shared.record(
+            episodeID: episodeID,
+            kind: .downloadFailed,
+            severity: .failure,
+            summary: message,
+            details: auditDetails
+        )
         logger.notice(
             "download failed for \(episodeID, privacy: .public): \(message, privacy: .public)"
         )
+    }
+
+    /// Pretty-prints a byte count. Kept on the service so both the delegate
+    /// and any future caller can use the same units.
+    static func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 }

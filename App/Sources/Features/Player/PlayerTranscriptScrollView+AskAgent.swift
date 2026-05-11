@@ -35,6 +35,9 @@ extension Notification.Name {
     /// Posted by the player's transcript long-press to open the agent chat
     /// sheet. `RootView` observes and presents `AgentChatView`.
     static let askAgentRequested = Notification.Name("io.f7z.podcast.askAgentRequested")
+    /// Posted when episode playback is initiated from a list row's play button.
+    /// `RootView` observes and expands the full player sheet.
+    static let openPlayerRequested = Notification.Name("io.f7z.podcast.openPlayerRequested")
 }
 
 enum AskAgentDispatcher {

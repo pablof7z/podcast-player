@@ -22,6 +22,8 @@ struct ShowDetailView: View {
 
     @State private var showSettings: Bool = false
     @State private var showUnsubscribeConfirm: Bool = false
+    @State private var searchText: String = ""
+    @State private var isSearchActive: Bool = false
     /// Drives the VoiceOver "Open episode details" custom action — bound into
     /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
     /// so the same `EpisodeDetailView` opens regardless of how the user got there.
@@ -73,6 +75,12 @@ struct ShowDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar { toolbarContent }
+        .searchable(
+            text: $searchText,
+            isPresented: $isSearchActive,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search episodes"
+        )
         .refreshable { await refresh() }
         .sheet(isPresented: $showSettings) {
             ShowDetailSettingsSheet(
@@ -120,12 +128,27 @@ struct ShowDetailView: View {
         store.episodes(forSubscription: subscription.id)
     }
 
+    private var filteredEpisodes: [Episode] {
+        guard !searchText.isEmpty else { return episodes }
+        return episodes.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText) ||
+            $0.description.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
     // MARK: - Pieces
 
     private var episodesHeader: some View {
-        Text("Episodes")
-            .font(AppTheme.Typography.title)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        HStack {
+            Text("Episodes")
+                .font(AppTheme.Typography.title)
+            if !searchText.isEmpty {
+                Text("\(filteredEpisodes.count) of \(episodes.count)")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
     }
 
     @ViewBuilder
@@ -141,11 +164,18 @@ struct ShowDetailView: View {
                 .listRowBackground(Color.clear)
                 .padding(.top, AppTheme.Spacing.xl)
             }
+        } else if filteredEpisodes.isEmpty {
+            Section {
+                ContentUnavailableView.search(text: searchText)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .padding(.top, AppTheme.Spacing.xl)
+            }
         } else {
             Section {
                 ShowDetailEpisodeList(
                     subscription: liveSubscription,
-                    episodes: episodes,
+                    episodes: filteredEpisodes,
                     voiceOverDetailRoute: $voiceOverDetailRoute
                 )
             }
@@ -156,6 +186,16 @@ struct ShowDetailView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                Haptics.light()
+                isSearchActive = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.title3)
+            }
+            .accessibilityLabel("Search episodes")
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Button {

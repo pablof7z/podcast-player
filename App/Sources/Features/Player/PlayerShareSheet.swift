@@ -17,6 +17,7 @@ import UIKit
 struct PlayerShareSheet: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppStateStore.self) private var store
     @Bindable var state: PlaybackState
     let episode: Episode
     let showName: String
@@ -31,6 +32,11 @@ struct PlayerShareSheet: View {
     /// sheet dismisses. Optional `Segment` is `Identifiable`, which `sheet(item:)`
     /// requires.
     @State private var quotingSegment: Segment?
+
+    /// True while the LLM is resolving boundaries for "Share quote". The row
+    /// swaps its glyph for a spinner so the user sees the latency is purposeful
+    /// instead of dead-air.
+    @State private var quoteResolving: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -105,28 +111,77 @@ struct PlayerShareSheet: View {
     }
 
     private var shareQuoteButton: some View {
-        shareRow(label: "Share quote", systemImage: "text.quote") {
-            presentQuoteAtPlayhead()
+        Button(action: { presentQuoteAtPlayhead() }) {
+            HStack(spacing: AppTheme.Spacing.md) {
+                Group {
+                    if quoteResolving {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "text.quote")
+                            .font(.body.weight(.semibold))
+                    }
+                }
+                .frame(width: 22, alignment: .center)
+                Text(quoteResolving ? "Finding a clean quote…" : "Share quote")
+                    .font(AppTheme.Typography.subheadline)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular.interactive(), in: .capsule)
+            .accessibilityLabel(quoteResolving ? "Finding a clean quote" : "Share quote")
         }
+        .buttonStyle(.pressable)
+        .disabled(quoteResolving)
     }
 
-    /// Load the persisted transcript for this episode, find the segment at the
-    /// current playhead, and present `QuoteShareView` for it. We resolve via
-    /// `EpisodeDetailView.readyTranscript(for:)` to share the same defensive
-    /// "state says ready but file is missing" handling — no point reimplementing
-    /// the gate in two places.
+    /// Load the persisted transcript for this episode, ask the LLM to pick
+    /// semantic boundaries around the playhead, and present `QuoteShareView`
+    /// for the resulting span. On any failure (no key, network blip, malformed
+    /// response, no transcript) we fall back to today's single-segment behavior
+    /// so the share affordance still works — same defensive path the previous
+    /// implementation took, just preceded by an LLM round-trip when possible.
     private func presentQuoteAtPlayhead() {
-        guard let transcript = EpisodeDetailView.readyTranscript(for: episode),
-              let segment = transcript.segment(at: state.currentTime) else {
-            // Soft-fail: the gate above keeps us out of here when transcripts
-            // aren't ready, but file-missing or pre-first-segment scrub is
-            // still possible. A muted error haptic is the most honest signal —
-            // a thrown alert would be disproportionate for a share affordance.
+        guard let transcript = EpisodeDetailView.readyTranscript(for: episode) else {
             Haptics.error()
             return
         }
         Haptics.light()
-        quotingSegment = segment
+        let modelID = store.state.settings.wikiModel
+        let modelReference = LLMModelReference(storedID: modelID)
+        // Surface the one-time hint when we'd otherwise silently degrade.
+        // Falls through to the mechanical fallback below regardless.
+        if !LLMProviderCredentialResolver.hasAPIKey(for: modelReference.provider) {
+            AutoSnipController.shared.noLLMKeyHintPending = true
+            quotingSegment = transcript.segment(at: state.currentTime)
+            return
+        }
+        quoteResolving = true
+        let playhead = state.currentTime
+        Task { @MainActor in
+            defer { quoteResolving = false }
+            let resolved = await ClipBoundaryResolver.shared.resolveBoundaries(
+                transcript: transcript,
+                playheadSeconds: playhead,
+                intent: .quote,
+                modelID: modelID
+            )
+            if let resolved {
+                quotingSegment = Segment(
+                    start: resolved.startSeconds,
+                    end: resolved.endSeconds,
+                    speakerID: resolved.speakerID,
+                    text: resolved.quotedText
+                )
+            } else {
+                // Mechanical fallback so a failed LLM call still lets the
+                // user share something. Same shape as the pre-LLM behavior.
+                quotingSegment = transcript.segment(at: playhead)
+            }
+        }
     }
 
     @ViewBuilder

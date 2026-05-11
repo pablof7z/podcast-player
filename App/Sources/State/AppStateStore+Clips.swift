@@ -57,6 +57,28 @@ extension AppStateStore {
         return clip
     }
 
+    /// In-place rewrite for the optimistic-then-refine flow used by
+    /// `AutoSnipController`: the mechanical clip lands first (instant haptic +
+    /// toast), then a background LLM call refines the boundaries and calls
+    /// this to overwrite the span and frozen transcript. We deliberately do
+    /// NOT re-publish NIP-84 here — the initial publish in `addClip(_:)` is
+    /// the user-visible event; refinement is local polish.
+    func updateClipBoundaries(
+        id: UUID,
+        startMs: Int,
+        endMs: Int,
+        transcriptText: String,
+        speakerID: UUID?
+    ) {
+        guard let idx = state.clips.firstIndex(where: { $0.id == id }) else { return }
+        var clip = state.clips[idx]
+        clip.startMs = startMs
+        clip.endMs = endMs
+        clip.transcriptText = transcriptText
+        clip.speakerID = speakerID?.uuidString
+        state.clips[idx] = clip
+    }
+
     func deleteClip(id: UUID) {
         guard let idx = state.clips.firstIndex(where: { $0.id == id }) else { return }
         state.clips.remove(at: idx)

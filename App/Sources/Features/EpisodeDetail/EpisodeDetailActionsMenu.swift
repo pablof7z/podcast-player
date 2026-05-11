@@ -22,6 +22,7 @@ struct EpisodeDetailActionsMenu: View {
     @Environment(PlaybackState.self) private var playback
 
     @State private var confirmDelete: Bool = false
+    @State private var showDiagnostics: Bool = false
 
     var body: some View {
         Menu {
@@ -32,6 +33,12 @@ struct EpisodeDetailActionsMenu: View {
             } label: {
                 Label(episode.played ? "Mark as unplayed" : "Mark as played",
                       systemImage: episode.played ? "circle" : "checkmark.circle.fill")
+            }
+            Divider()
+            Button {
+                showDiagnostics = true
+            } label: {
+                Label("Diagnostics", systemImage: "stethoscope")
             }
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -54,6 +61,10 @@ struct EpisodeDetailActionsMenu: View {
             }
         } message: {
             Text("The local file will be deleted. You can download it again later.")
+        }
+        .sheet(isPresented: $showDiagnostics) {
+            EpisodeAuditLogView(episode: episode)
+                .environment(store)
         }
     }
 

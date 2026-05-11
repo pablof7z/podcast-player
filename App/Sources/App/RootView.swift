@@ -222,6 +222,9 @@ struct RootView: View {
                 showFullPlayer = false
                 showAgentChat = true
             }
+            .onReceive(NotificationCenter.default.publisher(for: .openPlayerRequested)) { _ in
+                showFullPlayer = true
+            }
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
                 NotificationCenter.default.publisher(for: AppDelegate.shortcutURLNotification)

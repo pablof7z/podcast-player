@@ -17,10 +17,8 @@ struct EpisodeRow: View {
     /// Fallback artwork URL when the episode has no per-item `<itunes:image>`.
     /// Typically the parent subscription's image.
     var fallbackImageURL: URL? = nil
-    /// Tap action for the leading state indicator. `nil` means the indicator
-    /// is decorative (the historical default); supplying it converts the
-    /// indicator into a Play affordance that loads the episode into the
-    /// mini-player without leaving the list.
+    /// When provided, a trailing play button is rendered that calls this closure
+    /// instead of navigating to the episode detail screen.
     var onPlay: (() -> Void)? = nil
 
     private static let thumbnailSize: CGFloat = 56
@@ -30,7 +28,7 @@ struct EpisodeRow: View {
     @State private var downloadService = EpisodeDownloadService.shared
 
     var body: some View {
-        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+        HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
             thumbnail
                 .overlay(alignment: .topLeading) { stateBadge }
 
@@ -49,6 +47,22 @@ struct EpisodeRow: View {
                 }
 
                 metaRow
+            }
+
+            if let onPlay {
+                Spacer()
+                Button {
+                    Haptics.medium()
+                    onPlay()
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(showAccent)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Play \(episode.title)")
             }
         }
         .padding(.vertical, AppTheme.Spacing.sm)
@@ -101,25 +115,9 @@ struct EpisodeRow: View {
 
     // MARK: - Subviews
 
-    /// State badge in the top-leading corner of the thumbnail. Tappable when
-    /// `onPlay` is supplied; decorative otherwise.
-    @ViewBuilder
+    /// Decorative state badge in the top-leading corner of the thumbnail.
     private var stateBadge: some View {
-        if let onPlay {
-            Button {
-                Haptics.medium()
-                onPlay()
-            } label: {
-                stateIndicator
-                    .padding(6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.pressable)
-            .accessibilityLabel("Play \(episode.title)")
-        } else {
-            stateIndicator
-                .padding(6)
-        }
+        stateIndicator.padding(6)
     }
 
     @ViewBuilder

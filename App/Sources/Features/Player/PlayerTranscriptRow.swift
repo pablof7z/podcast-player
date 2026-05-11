@@ -40,7 +40,7 @@ struct PlayerTranscriptRow: View {
                     .foregroundStyle(isActive ? Color.primary : Color.secondary)
             }
             Text(segment.text)
-                .font(.system(.body, design: .serif))
+                .font(.system(.body))
                 .lineSpacing(6)
                 .foregroundStyle(isActive ? Color.primary : Color.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)

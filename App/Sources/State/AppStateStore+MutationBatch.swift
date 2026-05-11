@@ -57,24 +57,8 @@ extension AppStateStore {
     private func runStateSideEffects() {
         let snapshot = state
         persistence.save(snapshot)
-        scheduleSpotlightReindex(for: snapshot)
         scheduleWidgetReload()
         iCloudSettingsSync.shared.push(state.settings)
-    }
-
-    func scheduleSpotlightReindex(for snapshot: AppState, delay: Duration = .milliseconds(750)) {
-        spotlightReindexTask?.cancel()
-        spotlightReindexTask = Task { [snapshot] in
-            do {
-                try await Task.sleep(for: delay)
-            } catch {
-                return
-            }
-            guard !Task.isCancelled else { return }
-            await Task.detached(priority: .utility) {
-                SpotlightIndexer.reindex(state: snapshot)
-            }.value
-        }
     }
 
     /// Trailing-debounce `WidgetCenter.reloadAllTimelines()`. Bursts of

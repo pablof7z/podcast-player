@@ -73,9 +73,12 @@ struct PlayerView: View {
             AutoSnipController.shared.attach(playback: state, store: store)
         }
         .overlay(alignment: .top) {
-            AutoSnipBanner(controller: AutoSnipController.shared)
-                .padding(.top, AppTheme.Spacing.lg)
-                .allowsHitTesting(false)
+            VStack(spacing: AppTheme.Spacing.sm) {
+                AutoSnipBanner(controller: AutoSnipController.shared)
+                    .allowsHitTesting(false)
+                NoLLMKeyHintBanner(controller: AutoSnipController.shared)
+            }
+            .padding(.top, AppTheme.Spacing.lg)
         }
     }
 

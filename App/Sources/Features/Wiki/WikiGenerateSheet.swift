@@ -201,7 +201,7 @@ struct WikiGenerateSheet: View {
                     .font(.headline)
             }
             Text(page.title)
-                .font(.system(.title3, design: .serif).weight(.semibold))
+                .font(.system(.title3).weight(.semibold))
             if !page.summary.isEmpty {
                 Text(page.summary)
                     .font(.callout)
