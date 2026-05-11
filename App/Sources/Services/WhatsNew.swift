@@ -112,33 +112,31 @@ enum WhatsNewService {
     /// Entries the user hasn't seen yet, in newest-first order.
     ///
     /// Behaviour:
-    ///   - `lastSeenID == nil` (fresh install): returns an empty list. We
-    ///     don't want to dump the entire changelog on the first launch
-    ///     after install — that's noise, not a feature.
+    ///   - `lastSeenID == nil` (fresh install / no marker): returns the
+    ///     most recent `recentFallbackCount` entries so new users see
+    ///     something useful on first launch.
     ///   - `lastSeenID` matches an entry: returns the slice of entries
     ///     newer than (above) that entry.
-    ///   - `lastSeenID` is unknown (probably a stale marker from a
-    ///     reordered or trimmed changelog): returns an empty list,
-    ///     conservative-by-default.
-    ///
-    /// `now` is unused today but kept on the signature so we can later
-    /// gate entries by ship date without churning every call site.
+    ///   - `lastSeenID` is unknown (stale marker from a trimmed changelog):
+    ///     same as nil — returns the most recent `recentFallbackCount`
+    ///     entries rather than silently returning nothing.
     static func unseenEntries(
         lastSeenID: String?,
         now: Date = Date(),
-        entries: [WhatsNewEntry]? = nil
+        entries: [WhatsNewEntry]? = nil,
+        recentFallbackCount: Int = 10
     ) -> [WhatsNewEntry] {
         _ = now
         let all = entries ?? loadEntries()
-        guard let marker = lastSeenID else { return [] }
 
         // Newest first in the file already; defensively re-sort so we
         // don't depend on author discipline.
         let sorted = all.sorted { $0.shippedAt > $1.shippedAt }
 
-        guard let markerIndex = sorted.firstIndex(where: { $0.id == marker }) else {
-            // Unknown marker → treat as already-caught-up.
-            return []
+        guard let marker = lastSeenID,
+              let markerIndex = sorted.firstIndex(where: { $0.id == marker }) else {
+            // No marker or stale marker → show recent entries.
+            return Array(sorted.prefix(recentFallbackCount))
         }
         // Return everything strictly newer than the marker.
         return Array(sorted.prefix(upTo: markerIndex))

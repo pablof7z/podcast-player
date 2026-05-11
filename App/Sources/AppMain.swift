@@ -30,10 +30,6 @@ struct PodcastrApp: App {
                     service.start()
                 }
                 .task {
-                    // First launch with this feature seeds the marker
-                    // silently (so the user is "caught up"); subsequent
-                    // launches surface only entries newer than the marker.
-                    WhatsNewService.seedMarkerIfNeeded()
                     let unseen = WhatsNewService.unseenEntries(
                         lastSeenID: WhatsNewService.lastSeenID
                     )
