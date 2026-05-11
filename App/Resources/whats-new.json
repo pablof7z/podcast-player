@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "87c080c",
+      "shipped_at": "2026-05-11T15:00:00Z",
+      "lines": [
+        "What's New now actually shows you what's new — the modal was always marking everything as seen before you could read it."
+      ]
+    },
+    {
       "id": "d576f2d",
       "shipped_at": "2026-05-11T14:00:00Z",
       "lines": [
