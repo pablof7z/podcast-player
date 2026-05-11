@@ -58,7 +58,7 @@ extension AppStateStore {
         let snapshot = state
         persistence.save(snapshot)
         scheduleSpotlightReindex(for: snapshot)
-        WidgetCenter.shared.reloadAllTimelines()
+        scheduleWidgetReload()
         iCloudSettingsSync.shared.push(state.settings)
     }
 
@@ -74,6 +74,23 @@ extension AppStateStore {
             await Task.detached(priority: .utility) {
                 SpotlightIndexer.reindex(state: snapshot)
             }.value
+        }
+    }
+
+    /// Trailing-debounce `WidgetCenter.reloadAllTimelines()`. Bursts of
+    /// state mutations (refresh round upserting episodes, mark-many-
+    /// played, OPML import) collapse to a single reload signal so we
+    /// don't burn WidgetKit's daily reload budget.
+    func scheduleWidgetReload(delay: Duration = .milliseconds(500)) {
+        widgetReloadTask?.cancel()
+        widgetReloadTask = Task {
+            do {
+                try await Task.sleep(for: delay)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 }

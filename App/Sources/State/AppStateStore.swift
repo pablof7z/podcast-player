@@ -114,6 +114,12 @@ final class AppStateStore {
     var deferredStateSideEffects = false
     var deferredEpisodeProjectionRebuild = false
     var spotlightReindexTask: Task<Void, Never>?
+    /// Trailing-debounce task for `WidgetCenter.reloadAllTimelines()`.
+    /// Cancelled and re-armed on each mutation so a burst (e.g. marking
+    /// 50 episodes played) collapses to a single reload signal — the
+    /// system has a daily timeline-reload budget that flooding burns
+    /// without producing extra refreshes.
+    var widgetReloadTask: Task<Void, Never>?
 
     // MARK: - Position debounce
     //
@@ -253,6 +259,8 @@ final class AppStateStore {
         positionFlushTask = nil
         spotlightReindexTask?.cancel()
         spotlightReindexTask = nil
+        widgetReloadTask?.cancel()
+        widgetReloadTask = nil
         positionCache.removeAll()
 
         let preserved = state.settings
@@ -290,6 +298,7 @@ final class AppStateStore {
             }
             positionFlushTask?.cancel()
             spotlightReindexTask?.cancel()
+            widgetReloadTask?.cancel()
         }
     }
 }
