@@ -188,17 +188,10 @@ struct SubscriptionService {
         }
     }
 
-    /// Refreshes every subscription in the store. Runs the fetches sequentially
-    /// — the typical library is a handful of feeds, and a sequential walk keeps
-    /// us safely inside the main-actor isolation domain (the store mutations
-    /// have to be main-actor anyway). If a 50-show library shows up later we
-    /// can revisit with a bounded `TaskGroup`.
-    func refreshAll() async {
-        let snapshot = store.sortedSubscriptions
-        for sub in snapshot {
-            await refresh(sub)
-        }
-    }
+    // (The previous `refreshAll()` here was sequential and is now superseded
+    // by `SubscriptionRefreshService.refreshAll(store:)` which fans out with
+    // bounded concurrency. It was removed when the Home/Library merge
+    // replaced the only caller with the service-based path.)
 
     // MARK: - Helpers
 
