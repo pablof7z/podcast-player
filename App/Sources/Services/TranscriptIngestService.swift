@@ -271,6 +271,16 @@ final class TranscriptIngestService {
     // MARK: - Private pipeline
 
     private func runAITranscription(for episode: Episode, provider: STTProvider, appStore: AppStateStore) async {
+        // Apple on-device STT requires a local file. Skip silently rather than
+        // setting `.failed` — the post-download hook in
+        // `EpisodeDownloadService.handleFinished` re-enters `ingest()` once
+        // the file lands, at which point this guard passes and the AI run
+        // proceeds. Setting `.failed` here at feed-refresh time would mark
+        // every Apple-Native-bound episode as failed before the user has
+        // done anything, which is misleading.
+        if provider == .appleNative && !EpisodeDownloadStore.shared.exists(for: episode) {
+            return
+        }
         appStore.setEpisodeTranscriptState(episode.id, state: .transcribing(progress: 0))
         // Prefer the on-disk download when present. ElevenLabs Scribe can also
         // use a `source_url` for remote audio; OpenRouter Whisper only accepts

@@ -230,6 +230,15 @@ extension EpisodeDownloadService {
         logger.info(
             "download finished for \(episodeID, privacy: .public) (\(size, privacy: .public) bytes)"
         )
+        // Transcription is data extraction, not a user action. The moment a
+        // file lands on disk we kick the pipeline so the publisher transcript
+        // (or the user's configured STT provider) fills the transcript before
+        // they ever ask. The service is idempotent (`inFlight` dedup) and
+        // gated on per-category opt-out + STT settings/key resolution, so
+        // a double-fire here from any other entry point is harmless.
+        Task { @MainActor in
+            await TranscriptIngestService.shared.ingest(episodeID: episodeID)
+        }
     }
 
     /// Pushes the terminal `.failed` state. Caller has already squirreled
