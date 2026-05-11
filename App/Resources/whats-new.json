@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "1d40884",
+      "shipped_at": "2026-05-11T21:00:00Z",
+      "lines": [
+        "Fixed a hard crash when Apple's on-device transcription kicked off — the analyzer was being driven twice through different init paths."
+      ]
+    },
+    {
       "id": "e2043e1",
       "shipped_at": "2026-05-11T20:30:00Z",
       "lines": [
