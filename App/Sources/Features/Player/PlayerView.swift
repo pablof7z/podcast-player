@@ -2,11 +2,10 @@ import SwiftUI
 
 /// Full-screen Now Playing surface.
 ///
-/// Layered top-down: hero artwork placeholder → editorial metadata →
-/// chapters (with transcript fallback when no chapters exist) → semantic
-/// waveform → primary transport → action cluster. All colors and fonts use
-/// semantic / Dynamic Type styles so the surface adapts to the user's
-/// appearance settings and accent color.
+/// Layout: compact episode header (artwork left, title/show/metadata right) →
+/// chapters → semantic waveform → primary transport → action cluster. Colors
+/// and fonts use semantic / Dynamic Type styles so the surface adapts to the
+/// user's appearance settings and accent color.
 struct PlayerView: View {
 
     @Environment(AppStateStore.self) private var store
@@ -17,7 +16,6 @@ struct PlayerView: View {
     @State private var isScrubbing: Bool = false
     @State private var showSpeedSheet: Bool = false
     @State private var showSleepSheet: Bool = false
-    @State private var showQueueSheet: Bool = false
     @State private var showShareSheet: Bool = false
 
     /// Observed so the editorial-header download badge tracks the service's
@@ -39,8 +37,7 @@ struct PlayerView: View {
             topBar
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: AppTheme.Spacing.lg) {
-                    heroArtwork
-                    editorialHeader
+                    episodeHeader
                     secondarySurface
                         .frame(minHeight: 240, maxHeight: 320)
                 }
@@ -52,61 +49,34 @@ struct PlayerView: View {
                 .padding(.bottom, AppTheme.Spacing.md)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Backdrop is applied as .background so its .ignoresSafeArea()
-        // doesn't inflate the layout size reported to the sheet container —
-        // a ZStack sibling with .ignoresSafeArea() made the parent ZStack
-        // wider than the viewport, cutting off content on both edges.
         .background {
             PlayerEditorialBackdrop(artworkURL: artworkURL)
         }
         .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
-        .sheet(isPresented: $showQueueSheet) {
-            PlayerQueueSheet(state: state)
-        }
         .sheet(isPresented: $showShareSheet) {
             if let episode = state.episode {
                 PlayerShareSheet(state: state, episode: episode, showName: showName)
             }
         }
         .task(id: state.episode?.id) {
-            // Best-effort hydrate Podcasting 2.0 chapters JSON when the
-            // current episode references one. Idempotent per-URL across
-            // the session, so re-opening the player is free.
             if let episode = state.episode {
                 ChaptersHydrationService.shared.hydrateIfNeeded(
                     episode: episode,
                     store: store
                 )
-                // Auto-compile AI chapters when publisher chapters are
-                // absent. Idempotent — returns immediately if chapters
-                // already exist or the transcript isn't `.ready`. Covers
-                // the case where the user lands on the player without
-                // first visiting EpisodeDetail (which has the same call).
                 await AIChapterCompiler.shared.compileIfNeeded(
                     episodeID: episode.id,
                     store: store
                 )
-                // Same idempotency story for ad-segment detection. Cheap
-                // when ads were already detected (early return on
-                // `adSegments != nil`).
                 await AdSegmentDetector.shared.detectIfNeeded(
                     episodeID: episode.id,
                     store: store
                 )
             }
-            // Idempotent — wires the singleton's MPRemoteCommand once and
-            // refreshes its playback/store handles every time the episode
-            // changes so the snip path always sees live state.
             AutoSnipController.shared.attach(playback: state, store: store)
         }
         .overlay(alignment: .top) {
-            // The banner is feedback chrome — it must not steal taps from
-            // the dismiss chevron or More menu sitting at the same Y in
-            // the top bar. `.allowsHitTesting(false)` scopes interaction
-            // to the banner's own buttons (it manages its own taps via
-            // its internal Button) without it eating taps that miss the
-            // visible chrome.
             AutoSnipBanner(controller: AutoSnipController.shared)
                 .padding(.top, AppTheme.Spacing.lg)
                 .allowsHitTesting(false)
@@ -134,11 +104,6 @@ struct PlayerView: View {
 
             Spacer()
 
-            // Show name carries the screen's identity — the previous
-            // tracked-uppercase "NOW PLAYING" eyebrow burned the slot on
-            // a static label that the user already knows from the
-            // surrounding context (the player is open). Mixed-case show
-            // name reads naturally and matches Apple Music / Castro.
             if !showName.isEmpty {
                 Text(showName)
                     .font(AppTheme.Typography.caption.weight(.semibold))
@@ -150,121 +115,157 @@ struct PlayerView: View {
 
             Spacer()
 
-            if let episode = state.episode {
-                PlayerMoreMenu(
-                    episode: episode,
-                    subscription: subscription,
-                    onMarkPlayed: { store.markEpisodePlayed(episode.id) },
-                    onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
-                    onDismissPlayer: { dismiss() }
-                )
+            HStack(spacing: AppTheme.Spacing.xs) {
+                if state.episode != nil {
+                    Button {
+                        showShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                            .glassEffect(.regular.interactive(), in: .circle)
+                    }
+                    .buttonStyle(.pressable)
+                    .accessibilityLabel("Share episode")
+                }
+
+                topBarRoutePicker
+
+                if let episode = state.episode {
+                    PlayerMoreMenu(
+                        episode: episode,
+                        subscription: subscription,
+                        onMarkPlayed: { store.markEpisodePlayed(episode.id) },
+                        onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
+                        onDismissPlayer: { dismiss() },
+                        onShowSleepTimer: { showSleepSheet = true }
+                    )
+                }
             }
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.sm)
     }
 
-    // MARK: - Hero artwork
+    /// Audio-output route picker styled to match the top-bar glass buttons.
+    private var topBarRoutePicker: some View {
+        ZStack {
+            Image(systemName: "airplayaudio")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+                .glassEffect(.regular.interactive(), in: .circle)
+                .accessibilityHidden(true)
+            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
+                .allowsHitTesting(true)
+                .accessibilityHidden(true)
+        }
+        .frame(width: 44, height: 44)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Audio output")
+        .accessibilityHint("Opens system output picker")
+    }
+
+    // MARK: - Episode header (compact: artwork left, text right)
 
     /// Resolved artwork URL with per-chapter override. Priority:
-    ///
-    ///   1. Active chapter's `imageURL` (Podcasting 2.0 chapters often
-    ///      ship topic-aligned imagery — e.g. a guest photo for an
-    ///      interview segment). This swaps mid-playback as the chapter
-    ///      changes and is the user-visible payoff for chapter hydration.
-    ///   2. Per-episode artwork (`<itunes:image>` override).
-    ///   3. Show-level cover art via `PlaybackState.resolveShowImage`.
+    ///   1. Active chapter's `imageURL`
+    ///   2. Per-episode artwork (`<itunes:image>` override)
+    ///   3. Show-level cover art via `PlaybackState.resolveShowImage`
     private var artworkURL: URL? {
         guard let episode = state.episode else { return nil }
         if let chapterImage = activeChapterImageURL { return chapterImage }
         return episode.imageURL ?? state.resolveShowImage(episode)
     }
 
-    /// Active chapter's `img` URL, or `nil` when the active chapter has
-    /// none (or the episode has no navigable chapters at all). Reads from
-    /// the live store so chapters hydrated after playback started — via
-    /// `ChaptersHydrationService` — still produce per-chapter art.
     private var activeChapterImageURL: URL? {
         guard let chapters = navigableChapters, !chapters.isEmpty else { return nil }
         return chapters.active(at: state.currentTime)?.imageURL
     }
 
-    /// Square hero cover art. `AsyncImage` distinguishes loading (neutral
-    /// surface, no glyph) from failure (neutral surface + subtle waveform
-    /// glyph) so the user never reads the loading state as "no artwork".
-    /// The image is keyed on `artworkURL` so a chapter-image swap mid-
-    /// playback fades through opacity instead of snapping.
-    private var heroArtwork: some View {
+    private var episodeHeader: some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+            compactArtwork
+            if let episode = state.episode {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(episode.title.uppercased())
+                        .font(AppTheme.Typography.title)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !showName.isEmpty {
+                        Text(showName)
+                            .font(.system(.subheadline, design: .rounded).weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    if !metadataLine.isEmpty {
+                        Text(metadataLine)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    downloadBadge
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var compactArtwork: some View {
         ZStack {
             if let url = artworkURL {
                 CachedAsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        artworkFailureFallback
-                    case .empty:
-                        artworkLoadingPlaceholder
-                    @unknown default:
-                        artworkLoadingPlaceholder
+                        image.resizable().scaledToFill()
+                    default:
+                        compactArtworkFallback
                     }
                 }
                 .id(url)
                 .transition(.opacity)
             } else {
-                artworkFailureFallback
+                compactArtworkFallback
             }
         }
-        .aspectRatio(1, contentMode: .fit)
-        .frame(maxWidth: 280)
-        .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.xl, style: .continuous))
-        // Drop the 0.08-opacity primary stroke. In dark mode `.primary`
-        // flips to white over a vivid podcast cover and reads as a frame
-        // around the art instead of a subtle separator. Apple Music's
-        // hero is unstroked.
-        // Keep the blur during scrubbing as the depth-shift cue (matches
-        // iOS 26 motion guidance), but drop the simultaneous scale —
-        // running both produces three motion vectors at once with the
-        // waveform expanding alongside.
-        .blur(radius: isScrubbing ? 8 : 0)
+        .frame(width: 110, height: 110)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
+        .blur(radius: isScrubbing ? 4 : 0)
         .glassEffectID("player.artwork", in: glassNamespace)
         .animation(AppTheme.Animation.spring, value: isScrubbing)
         .animation(.easeInOut(duration: 0.35), value: artworkURL)
         .accessibilityHidden(true)
     }
 
-    /// Neutral surface shown while the artwork is fetching. Intentionally
-    /// glyph-free — a placeholder symbol here would read as "no artwork
-    /// available" rather than "loading".
-    private var artworkLoadingPlaceholder: some View {
-        Color.secondary.opacity(0.10)
-    }
-
-    /// Neutral surface plus a subtle waveform glyph, shown when artwork
-    /// resolution failed (or the episode has no artwork at all) so the hero
-    /// area doesn't look broken.
-    private var artworkFailureFallback: some View {
+    private var compactArtworkFallback: some View {
         ZStack {
             Color.secondary.opacity(0.10)
             Image(systemName: "waveform")
-                .font(.system(size: 56, weight: .light))
+                .font(.system(size: 28, weight: .light))
                 .foregroundStyle(.secondary)
         }
     }
 
+    private var metadataLine: String {
+        guard let episode = state.episode else { return "" }
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        let date = f.string(from: episode.pubDate)
+        if let duration = episode.duration {
+            let mins = Int(duration / 60)
+            let h = mins / 60
+            let m = mins % 60
+            let durString = h > 0 ? "\(h)h \(m)m" : "\(m)m"
+            return "\(date) · \(durString)"
+        }
+        return date
+    }
+
     // MARK: - Secondary surface (chapters only)
 
-    /// Player body below the editorial header. Always shows chapters — the
-    /// transcript is an internal extraction substrate (feeds RAG, clip
-    /// composer, ad detection, agent tools) and is never rendered as a
-    /// primary surface. When no chapters exist yet we show a minimal
-    /// placeholder that reflects the transcript's lifecycle so the user
-    /// understands chapters will appear once ingestion finishes — without
-    /// surfacing transcript text. Clipping / share flows still read the
-    /// transcript directly via `PlayerShareSheet`.
     @ViewBuilder
     private var secondarySurface: some View {
         if let chapters = navigableChapters, !chapters.isEmpty {
@@ -278,46 +279,18 @@ struct PlayerView: View {
         }
     }
 
-    /// Live store-resolved copy of the playing episode. Reads from
-    /// `AppStateStore` so post-load mutations (chapter hydration, transcript
-    /// state transitions) reach the secondary surface without the player
-    /// having to be re-presented.
     private var liveEpisode: Episode? {
         guard let id = state.episode?.id else { return nil }
         return store.episode(id: id) ?? state.episode
     }
 
     private var navigableChapters: [Episode.Chapter]? {
-        // Prefer the live store copy so chapters fetched after the episode
-        // entered playback (e.g. async `chaptersURL` JSON hydration) appear
-        // without re-opening the player.
         let liveEpisode = state.episode.flatMap { store.episode(id: $0.id) } ?? state.episode
         return liveEpisode?.chapters?.filter(\.includeInTableOfContents)
     }
 
-    // MARK: - Editorial header
+    // MARK: - Download badge
 
-    private var editorialHeader: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-            if let episode = state.episode {
-                // Top bar already shows the show name in `.secondary` — no
-                // need to repeat it as a tracked-uppercase eyebrow here.
-                // Let the episode title own the visual hierarchy.
-                Text(episode.title)
-                    .font(AppTheme.Typography.title)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                downloadBadge
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Ambient download indicator. Reads through the store so coarse
-    /// transitions written by `EpisodeDownloadService` reach the badge
-    /// even when `PlaybackState`'s cached `episode` snapshot is stale.
-    /// Hidden for `.notDownloaded` via the badge itself.
     @ViewBuilder
     private var downloadBadge: some View {
         if let id = state.episode?.id,
@@ -333,9 +306,6 @@ struct PlayerView: View {
 
     private var playbackChrome: some View {
         VStack(spacing: AppTheme.Spacing.md) {
-            // Pre-roll skip button — only renders while the playhead sits
-            // inside a `.preroll` ad segment. Animates in/out with the
-            // surrounding chrome so it doesn't jump-cut on dismiss.
             PlayerPrerollSkipButton(state: state, episode: liveEpisode)
                 .animation(AppTheme.Animation.spring, value: state.currentTime)
             PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
@@ -346,10 +316,7 @@ struct PlayerView: View {
             )
             PlayerActionClusterView(
                 state: state,
-                showSpeedSheet: $showSpeedSheet,
-                showSleepSheet: $showSleepSheet,
-                showQueueSheet: $showQueueSheet,
-                showShareSheet: $showShareSheet
+                showSpeedSheet: $showSpeedSheet
             )
         }
     }

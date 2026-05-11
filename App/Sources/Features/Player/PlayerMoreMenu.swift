@@ -20,6 +20,7 @@ struct PlayerMoreMenu: View {
     let onMarkPlayed: () -> Void
     let onMarkUnplayed: () -> Void
     let onDismissPlayer: () -> Void
+    let onShowSleepTimer: () -> Void
 
     /// Drives the brief "Copied!" label swap on the Copy item. Resets after
     /// `Self.copyAckDuration` so the next pull-down shows the canonical label.
@@ -32,6 +33,15 @@ struct PlayerMoreMenu: View {
 
     var body: some View {
         Menu {
+            Button {
+                Haptics.selection()
+                onShowSleepTimer()
+            } label: {
+                Label("Sleep Timer", systemImage: "moon.fill")
+            }
+
+            Divider()
+
             Button {
                 Haptics.selection()
                 if episode.played {

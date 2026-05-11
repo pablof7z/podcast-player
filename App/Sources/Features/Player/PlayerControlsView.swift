@@ -164,16 +164,11 @@ private struct ChapterAccessibilityActionModifier: ViewModifier {
 
 // MARK: - Action cluster (speed / sleep / AirPlay / queue / share)
 
-/// The bottom-row "glass action cluster" — secondary actions per UX-01 §3
-/// Zone F. Lives in its own view so the main `PlayerView` body stays under
-/// the soft line limit.
+/// The bottom-row "glass action cluster" — speed control and auto-snip.
 struct PlayerActionClusterView: View {
 
     @Bindable var state: PlaybackState
     @Binding var showSpeedSheet: Bool
-    @Binding var showSleepSheet: Bool
-    @Binding var showQueueSheet: Bool
-    @Binding var showShareSheet: Bool
 
     var body: some View {
         HStack {
@@ -185,67 +180,9 @@ struct PlayerActionClusterView: View {
                 showSpeedSheet = true
             }
             Spacer(minLength: 0)
-            actionChip(
-                glyph: "moon.fill",
-                accessibilityName: "Sleep timer",
-                accessibilityValue: sleepTimerSpokenValue
-            ) {
-                showSleepSheet = true
-            }
-            Spacer(minLength: 0)
-            routePickerChip
-            Spacer(minLength: 0)
-            actionChip(
-                glyph: "list.bullet",
-                accessibilityName: "Up Next queue"
-            ) {
-                showQueueSheet = true
-            }
-            Spacer(minLength: 0)
-            actionChip(
-                glyph: "ellipsis.circle",
-                accessibilityName: "Share and copy options"
-            ) {
-                showShareSheet = true
-            }
-            Spacer(minLength: 0)
             AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
-    }
-
-    /// VoiceOver-friendly spoken form of the sleep-timer state. The chip's
-    /// visible label is just `state.sleepTimerChipLabel` (e.g. "29:42") —
-    /// fine for sighted users next to a moon glyph, but a bare time read out
-    /// loud is meaningless.
-    private var sleepTimerSpokenValue: String {
-        switch state.sleepTimer {
-        case .off: return "Off"
-        case .minutes: return "\(state.sleepTimerChipLabel) remaining"
-        case .endOfEpisode: return "Until end of episode"
-        }
-    }
-
-    /// Output-route chip backed by `AVRoutePickerView`. Tapping presents
-    /// the system route picker (AirPlay, Bluetooth, USB-C) — replaces the
-    /// previous fake toggle that flipped a `PlaybackState.isAirPlayActive`
-    /// bool but never actually changed the audio route.
-    private var routePickerChip: some View {
-        ZStack {
-            Image(systemName: "airplayaudio")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
-                .accessibilityHidden(true)
-            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
-                .allowsHitTesting(true)
-                .accessibilityHidden(true)
-        }
-        .frame(width: 44, height: 44)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Audio output")
-        .accessibilityHint("Opens system output picker")
     }
 
     private func actionChip(

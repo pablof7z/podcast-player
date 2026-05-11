@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "896cbe7",
+      "shipped_at": "2026-05-11T23:30:00Z",
+      "lines": [
+        "Player redesigned — compact artwork and episode info at the top, AirPlay and share in the toolbar, sleep timer in the ••• menu."
+      ]
+    },
+    {
       "id": "4e7db58",
       "shipped_at": "2026-05-11T23:00:00Z",
       "lines": [
