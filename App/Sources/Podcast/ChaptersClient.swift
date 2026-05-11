@@ -28,6 +28,10 @@ struct ChaptersClient: Sendable {
     func fetch(url: URL) async throws -> [Episode.Chapter] {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        // Chapter JSONs are small (a few KB); 20s is plenty for a
+        // healthy response and bails fast on hung hosts so the player
+        // chrome doesn't sit waiting on the default 60s timeout.
+        request.timeoutInterval = 20
         request.setValue("application/json, */*;q=0.8", forHTTPHeaderField: "Accept")
         request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
 

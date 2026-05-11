@@ -50,6 +50,14 @@ struct FeedClient: Sendable {
     func fetch(_ subscription: PodcastSubscription) async throws -> FeedFetchResult {
         var request = URLRequest(url: subscription.feedURL)
         request.httpMethod = "GET"
+        // RSS feeds should respond fast — a healthy one returns in
+        // 1–5s and slow ones in 15–30s. Cap at 30s instead of the
+        // default 60s so a hung feed doesn't block the refresh sweep
+        // for a full minute; `SubscriptionRefreshService.refreshAll`
+        // already runs feeds concurrently in chunks of 4, but a single
+        // stuck feed inside a chunk delays the whole chunk's
+        // completion under bounded concurrency.
+        request.timeoutInterval = 30
         request.setValue(
             "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
             forHTTPHeaderField: "Accept"
