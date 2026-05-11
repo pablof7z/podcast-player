@@ -140,6 +140,48 @@ extension AppStateStore {
         state.subscriptions[idx].autoDownload = policy
     }
 
+    /// Returns the ID of a synthetic `isExternalPlayback` subscription for the
+    /// given podcast title, creating one if it doesn't exist yet. One record is
+    /// created per unique title so episodes from the same show share a row in
+    /// the in-progress carousel. The synthetic feed URL is
+    /// `external-episode://<percent-encoded title>` and is never fetched.
+    @discardableResult
+    func upsertExternalPlaybackSubscription(podcastTitle: String, imageURL: URL?) -> UUID {
+        let normalized = podcastTitle.trimmingCharacters(in: .whitespaces)
+        let encoded = normalized.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "unknown"
+        let feedURLString = "external-episode://\(encoded)"
+        guard let feedURL = URL(string: feedURLString) else {
+            // Fallback: create with a random ID (should never happen for valid titles)
+            let fallback = PodcastSubscription(
+                feedURL: URL(string: "external-episode://unknown")!,
+                title: normalized.isEmpty ? "External Episode" : normalized,
+                imageURL: imageURL,
+                autoDownload: AutoDownloadPolicy(mode: .off),
+                notificationsEnabled: false,
+                isExternalPlayback: true
+            )
+            state.subscriptions.append(fallback)
+            return fallback.id
+        }
+        if let existing = subscription(feedURL: feedURL) {
+            if let imageURL, existing.imageURL != imageURL,
+               let idx = state.subscriptions.firstIndex(where: { $0.id == existing.id }) {
+                state.subscriptions[idx].imageURL = imageURL
+            }
+            return existing.id
+        }
+        let newSub = PodcastSubscription(
+            feedURL: feedURL,
+            title: normalized.isEmpty ? "External Episode" : normalized,
+            imageURL: imageURL,
+            autoDownload: AutoDownloadPolicy(mode: .off),
+            notificationsEnabled: false,
+            isExternalPlayback: true
+        )
+        state.subscriptions.append(newSub)
+        return newSub.id
+    }
+
     private static func feedURLKey(_ url: URL) -> String {
         url.absoluteString.lowercased()
     }

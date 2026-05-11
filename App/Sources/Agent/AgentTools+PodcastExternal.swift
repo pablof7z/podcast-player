@@ -96,7 +96,7 @@ extension AgentTools {
             "audio_url": audioURLString,
             "title": title,
             "timestamp": timestamp,
-            "note": "Playback started. Position is not saved for external episodes — subscribe to save progress.",
+            "note": "Playback started. Position is saved so the user can resume; episode appears in Current Listens on the Home tab.",
         ]
         if let podcastTitle { payload["podcast_title"] = podcastTitle }
         if let dur = durationSeconds { payload["duration_seconds"] = dur }

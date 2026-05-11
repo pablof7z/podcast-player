@@ -27,9 +27,15 @@ struct SubscriptionsListView: View {
     @State private var opmlURL: URL?
     @State private var exportError: String?
 
+    /// Real RSS subscriptions only — excludes agent-generated and external-playback
+    /// synthetic records, which the user never explicitly subscribed to.
+    private var userSubscriptions: [PodcastSubscription] {
+        store.sortedSubscriptions.filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
+    }
+
     var body: some View {
         List {
-            if store.sortedSubscriptions.isEmpty {
+            if userSubscriptions.isEmpty {
                 emptyStateSection
             } else {
                 subscriptionsSection
@@ -99,11 +105,11 @@ struct SubscriptionsListView: View {
 
     private var subscriptionsSection: some View {
         Section {
-            ForEach(store.sortedSubscriptions) { sub in
+            ForEach(userSubscriptions) { sub in
                 row(for: sub)
             }
         } header: {
-            Text("\(store.sortedSubscriptions.count) show\(store.sortedSubscriptions.count == 1 ? "" : "s")")
+            Text("\(userSubscriptions.count) show\(userSubscriptions.count == 1 ? "" : "s")")
         }
     }
 
@@ -116,12 +122,12 @@ struct SubscriptionsListView: View {
             // `Button + .sheet { ShareSheet(...) }` pattern because the
             // SwiftUI sheet wrapper renders the underlying
             // UIActivityViewController as a blank white sheet on iOS 16+.
-            if let opmlURL, !store.sortedSubscriptions.isEmpty {
+            if let opmlURL, !userSubscriptions.isEmpty {
                 ShareLink(
                     item: opmlURL,
                     subject: Text("Podcastr Subscriptions"),
                     preview: SharePreview(
-                        "Podcastr Subscriptions (\(store.sortedSubscriptions.count) shows)",
+                        "Podcastr Subscriptions (\(userSubscriptions.count) shows)",
                         image: Image(systemName: "list.bullet.rectangle")
                     )
                 ) {
@@ -138,7 +144,7 @@ struct SubscriptionsListView: View {
                     icon: "square.and.arrow.up",
                     tint: .teal,
                     title: "Export OPML",
-                    subtitle: store.sortedSubscriptions.isEmpty
+                    subtitle: userSubscriptions.isEmpty
                         ? "No subscriptions to export"
                         : "Preparing export…"
                 )
@@ -266,11 +272,11 @@ struct SubscriptionsListView: View {
     /// empty (the export row stays disabled in that case). Errors land in
     /// `exportError` and surface via the `.alert` modifier.
     private func regenerateOPMLIfNeeded() async {
-        guard !store.sortedSubscriptions.isEmpty else {
+        guard !userSubscriptions.isEmpty else {
             opmlURL = nil
             return
         }
-        let subs = store.sortedSubscriptions.filter { !$0.isAgentGenerated }
+        let subs = userSubscriptions
         let exporter = OPMLExport()
         let data = exporter.exportOPML(subscriptions: subs)
         let filename = "Podcastr-Subscriptions-\(Self.dateStamp()).opml"

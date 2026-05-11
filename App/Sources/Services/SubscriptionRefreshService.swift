@@ -86,7 +86,7 @@ final class SubscriptionRefreshService {
     /// to `maxConcurrent` in-flight fetches. Errors are logged and swallowed
     /// per-subscription so one failing feed doesn't sink the whole sweep.
     func refreshAll(store: AppStateStore, maxConcurrent: Int = 4) async {
-        let subscriptions = store.sortedSubscriptions.filter { !$0.isAgentGenerated }
+        let subscriptions = store.sortedSubscriptions.filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
         guard !subscriptions.isEmpty else { return }
         let bounded = max(1, maxConcurrent)
         let client = self.client

@@ -230,6 +230,53 @@ extension AppStateStore {
         }
     }
 
+    /// Upserts an external-playback episode that was not fetched from a
+    /// subscribed RSS feed. Creates a synthetic `isExternalPlayback`
+    /// subscription for `podcastTitle` if one doesn't exist yet, then
+    /// finds-or-creates the episode by `guid = audioURL.absoluteString`.
+    ///
+    /// Re-entrant: if the same audio URL is played again the existing episode
+    /// is returned with its persisted `playbackPosition` intact so the user
+    /// can resume. `imageURL` / `duration` are refreshed if changed.
+    @discardableResult
+    func upsertExternalEpisode(
+        audioURL: URL,
+        title: String,
+        podcastTitle: String?,
+        imageURL: URL?,
+        duration: TimeInterval?
+    ) -> Episode {
+        let subscriptionID = upsertExternalPlaybackSubscription(
+            podcastTitle: podcastTitle ?? "External Episode",
+            imageURL: imageURL
+        )
+        let guid = audioURL.absoluteString
+        if let idx = state.episodes.firstIndex(where: {
+            $0.subscriptionID == subscriptionID && $0.guid == guid
+        }) {
+            var updated = state.episodes[idx]
+            var changed = false
+            if let imageURL, updated.imageURL != imageURL { updated.imageURL = imageURL; changed = true }
+            if let duration, updated.duration != duration { updated.duration = duration; changed = true }
+            if changed { state.episodes[idx] = updated }
+            return state.episodes[idx]
+        }
+        let episode = Episode(
+            subscriptionID: subscriptionID,
+            guid: guid,
+            title: title,
+            pubDate: Date(),
+            duration: duration,
+            enclosureURL: audioURL,
+            imageURL: imageURL
+        )
+        performMutationBatch {
+            state.episodes.append(episode)
+            invalidateEpisodeProjections()
+        }
+        return episode
+    }
+
     /// Persist hydrated chapters for an episode. Used by
     /// `ChaptersHydrationService` after asynchronously fetching the JSON
     /// referenced by `episode.chaptersURL`. No-op when `chapters` is empty

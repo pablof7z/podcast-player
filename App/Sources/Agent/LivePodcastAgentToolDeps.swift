@@ -206,23 +206,20 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         timestampSeconds: Double
     ) async {
         await MainActor.run {
-            guard let playback else {
+            guard let store, let playback else {
                 logger.error("playExternalEpisode: playback host missing")
                 return
             }
-            // Sentinel UUID marks this episode as external (not in any subscription).
-            let sentinelSubscriptionID = UUID(uuidString: "00000000-EEEE-EEEE-EEEE-000000000000")!
-            let episode = Episode(
-                id: UUID(),
-                subscriptionID: sentinelSubscriptionID,
-                guid: audioURL.absoluteString,
+            let episode = store.upsertExternalEpisode(
+                audioURL: audioURL,
                 title: title,
-                pubDate: Date(),
-                duration: durationSeconds,
-                enclosureURL: audioURL,
-                imageURL: imageURL
+                podcastTitle: podcastTitle,
+                imageURL: imageURL,
+                duration: durationSeconds
             )
             playback.setEpisode(episode)
+            // Only seek when the caller requests a specific position; otherwise
+            // resume from the persisted playbackPosition on the episode record.
             if timestampSeconds > 0 { playback.seek(to: timestampSeconds) }
             playback.play()
             logger.info("playExternalEpisode: '\(title, privacy: .public)' at \(timestampSeconds)")

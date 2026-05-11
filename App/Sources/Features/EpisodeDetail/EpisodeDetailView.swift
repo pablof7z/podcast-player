@@ -106,14 +106,17 @@ struct EpisodeDetailView: View {
         }
     }
 
-    /// Warm the transcript on first appearance. Strict gating: we only kick off
-    /// an ingest if the state is `.none` and the publisher exposes a transcript
-    /// URL. We deliberately do not retry `.failed` here — failures sit until
-    /// the user re-arms ingestion via Settings → Transcripts. We also don't
-    /// try to gate on Scribe-only configs (no publisher URL).
+    /// Warm the transcript on first appearance. Kicks off ingest when:
+    /// - state is `.none` (not already ingested or in-flight), AND
+    /// - a publisher transcript URL is present, OR the episode belongs to a
+    ///   synthetic external-playback subscription (STT fallback path).
+    ///
+    /// We deliberately do not retry `.failed` here — failures sit until
+    /// the user re-arms ingestion via Settings → Transcripts.
     private func warmTranscriptIfNeeded(episode: Episode) async {
         guard case .none = episode.transcriptState else { return }
-        guard episode.publisherTranscriptURL != nil else { return }
+        let isExternal = store.subscription(id: episode.subscriptionID)?.isExternalPlayback ?? false
+        guard episode.publisherTranscriptURL != nil || isExternal else { return }
         await TranscriptIngestService.shared.ingest(episodeID: episode.id)
     }
 
