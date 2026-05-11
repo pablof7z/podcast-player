@@ -2,7 +2,7 @@
   "schema_version": 1,
   "entries": [
     {
-      "id": "PLACEHOLDER_SHA",
+      "id": "571210e",
       "shipped_at": "2026-05-11T20:00:00Z",
       "lines": [
         "The scrubber now shows your clips as highlights on the timeline — tap one to jump straight to it. Chapter breaks appear as faint tick marks. A new '< Jump back' button lets you return to where you were before any seek, like browser back."
