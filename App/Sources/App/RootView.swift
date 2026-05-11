@@ -43,6 +43,9 @@ struct RootView: View {
     /// the wrapper stays independent of `AppStateStore`'s type.
     @State private var playbackState = PlaybackState()
     @State private var showFullPlayer = false
+    /// Drives the episode-detail sheet opened when the player's clip-source
+    /// chip is tapped (notification `openEpisodeDetailRequested`).
+    @State private var clipSourceEpisodeID: UUID?
     /// Shared namespace for matched-geometry between mini-bar and full player.
     @Namespace private var playerNamespace
 
@@ -233,6 +236,20 @@ struct RootView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .openPlayerRequested)) { _ in
                 showFullPlayer = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openEpisodeDetailRequested)) { note in
+                guard let idString = note.userInfo?["episodeID"] as? String,
+                      let uuid = UUID(uuidString: idString) else { return }
+                showFullPlayer = false
+                clipSourceEpisodeID = uuid
+            }
+            .sheet(item: Binding(
+                get: { clipSourceEpisodeID.map(IdentifiedUUID.init) },
+                set: { clipSourceEpisodeID = $0?.id }
+            )) { identified in
+                NavigationStack {
+                    EpisodeDetailView(episodeID: identified.id)
+                }
             }
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
@@ -444,6 +461,14 @@ struct RootView: View {
         else { return nil }
         let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
         return renderer.image { ctx in window.layer.render(in: ctx.cgContext) }
+    }
+
+    // MARK: - IdentifiedUUID
+
+    /// Thin `Identifiable` wrapper so a `UUID` can drive `.sheet(item:)`
+    /// via optional binding (same pattern as `IdentifiedSpotlightLink`).
+    private struct IdentifiedUUID: Identifiable {
+        let id: UUID
     }
 
     // MARK: - IdentifiedSpotlightLink

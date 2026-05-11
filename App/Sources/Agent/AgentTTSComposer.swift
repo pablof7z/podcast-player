@@ -229,7 +229,6 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             case .snippet(let sourceID, _, _, let label):
                 // Close any open speech chapter first.
                 flushSpeechChapter()
-                speechCursor = cursor
 
                 // Resolve the source episode's artwork for the mid-play swap.
                 let artworkURL = await MainActor.run { [weak self] () -> URL? in

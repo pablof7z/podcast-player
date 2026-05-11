@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "8d08dfd",
+      "shipped_at": "2026-05-12T12:30:00Z",
+      "lines": [
+        "Agent-generated podcasts now auto-build a transcript and chapters from their script — no extra steps. When a clip from another episode plays, the artwork swaps to that show's cover and a chip appears so you can jump straight to the source episode."
+      ]
+    },
+    {
       "id": "101a845",
       "shipped_at": "2026-05-12T12:00:00Z",
       "lines": [
