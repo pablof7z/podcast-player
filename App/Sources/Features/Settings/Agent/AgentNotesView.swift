@@ -164,7 +164,10 @@ struct AgentNotesView: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityLabel("\(label), \(count) note\(count == 1 ? "" : "s")\(isSelected ? ", selected" : "")")
+        // The `.isSelected` trait already drives VoiceOver's "selected"
+        // announcement — the previous shape also appended ", selected"
+        // to the label, causing a double-narrate.
+        .accessibilityLabel("\(label), \(count) note\(count == 1 ? "" : "s")")
     }
 
     @ViewBuilder

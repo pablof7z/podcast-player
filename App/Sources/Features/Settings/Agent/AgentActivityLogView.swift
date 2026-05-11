@@ -126,7 +126,10 @@ struct AgentActivityLogView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityAddTraits(isSelected ? .isSelected : [])
-                        .accessibilityLabel("\(category.rawValue), \(count) item\(count == 1 ? "" : "s")\(isSelected ? ", selected" : "")")
+                        // `.isSelected` trait drives VoiceOver's "selected"
+                        // announcement; the previous shape also appended
+                        // ", selected" to the label, causing a double-narrate.
+                        .accessibilityLabel("\(category.rawValue), \(count) item\(count == 1 ? "" : "s")")
                     }
                 }
                 .padding(.horizontal, AppTheme.Spacing.md)
