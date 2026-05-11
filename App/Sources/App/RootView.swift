@@ -225,10 +225,6 @@ struct RootView: View {
                     .tag(tab)
             }
         }
-        // Keep the tab bar stable while editing. The iOS 26 scroll-down
-        // minimization path currently steals focus as the keyboard appears,
-        // which makes searchable fields and chat composers immediately resign.
-
         // The accessory modifier itself reserves vertical space when applied,
         // even if its closure returns EmptyView — so apply it only while an
         // episode is loaded. Otherwise an empty bar shows above the tabs.
@@ -255,11 +251,13 @@ struct RootView: View {
             }
         case .search:
             NavigationStack { PodcastSearchView().toolbar { sharedToolbar(showAgent: true) } }
+                .tabBarMinimizeBehavior(.never)
         case .wiki:
             NavigationStack { WikiView().toolbar { sharedToolbar(showAgent: true) } }
         case .ask:
             // Ask tab IS the agent — no need for a redundant agent shortcut here.
             NavigationStack { AskAgentView().toolbar { sharedToolbar(showAgent: false) } }
+                .tabBarMinimizeBehavior(.never)
         }
     }
 

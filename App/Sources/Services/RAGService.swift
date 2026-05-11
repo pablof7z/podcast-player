@@ -4,8 +4,8 @@ import os.log
 // MARK: - RAGService
 //
 // Singleton entry point for the live RAG stack: on-device sqlite-vec
-// `VectorIndex`, provider-selected embeddings client, OpenRouter reranker, and the
-// `RAGSearch` orchestrator that wires them together.
+// `VectorIndex`, provider-selected embeddings client, settings-gated reranker,
+// and the `RAGSearch` orchestrator that wires them together.
 //
 // Why a `@MainActor` singleton:
 //   - The wiki and briefing surfaces want a stable, ready-on-launch handle.
@@ -37,8 +37,8 @@ final class RAGService {
     /// Provider-selected embeddings client. Defaults to OpenRouter, but can
     /// route to Ollama Cloud when the user chooses an Ollama embedding model.
     let embedder: any EmbeddingsClient
-    /// OpenRouter reranker. Same no-key behaviour as the embedder; handed
-    /// to `RAGSearch` so the rerank stage degrades gracefully when absent.
+    /// Settings-aware reranker. When `settings.rerankerEnabled` is off, it
+    /// preserves retrieval order without making an OpenRouter network call.
     let reranker: any RerankerClient
     /// End-to-end retrieval pipeline (embed → hybrid → rerank).
     let search: RAGSearch
@@ -85,7 +85,14 @@ final class RAGService {
         let resolvedURL: URL?
         let openedIndex: VectorIndex
         let embedder = ProviderEmbeddingsClient()
-        let reranker = OpenRouterRerankerClient()
+        let reranker = SettingsAwareRerankerClient(
+            base: OpenRouterRerankerClient(),
+            isEnabled: {
+                await MainActor.run {
+                    RAGService.shared.appStore?.state.settings.rerankerEnabled ?? false
+                }
+            }
+        )
 
         do {
             let url = try VectorIndex.defaultStoreURL()

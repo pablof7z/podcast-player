@@ -6,6 +6,31 @@ struct EpisodeSQLiteSignature: Equatable, Sendable {
     let hash: Int
 }
 
+struct EpisodeSQLiteRowSnapshot: Equatable, Sendable {
+    let id: UUID
+    let payloadHash: Int
+}
+
+struct EpisodeSQLiteSnapshot: Equatable, Sendable {
+    let signature: EpisodeSQLiteSignature
+    let rows: [EpisodeSQLiteRowSnapshot]
+    let indexByID: [UUID: Int]
+
+    var hasUniqueIDs: Bool {
+        indexByID.count == rows.count
+    }
+}
+
+struct EpisodeSQLiteRowMutation: Sendable {
+    let episode: Episode
+    let sortOrder: Int
+}
+
+struct EpisodeSQLiteSortOrderMutation: Sendable {
+    let id: UUID
+    let sortOrder: Int
+}
+
 enum EpisodeSQLiteStoreError: LocalizedError {
     case open(String)
     case execute(String)
@@ -108,6 +133,37 @@ struct EpisodeSQLiteStore: Sendable {
         }
     }
 
+    func upsert(_ rows: [EpisodeSQLiteRowMutation]) throws {
+        try applyDelta(upserts: rows, deleteIDs: [], sortOrderUpdates: [])
+    }
+
+    func delete(ids: [UUID]) throws {
+        try applyDelta(upserts: [], deleteIDs: ids, sortOrderUpdates: [])
+    }
+
+    func applyDelta(
+        upserts: [EpisodeSQLiteRowMutation],
+        deleteIDs: [UUID],
+        sortOrderUpdates: [EpisodeSQLiteSortOrderMutation]
+    ) throws {
+        guard !upserts.isEmpty || !deleteIDs.isEmpty || !sortOrderUpdates.isEmpty else {
+            return
+        }
+        try withDatabase { db in
+            try ensureSchema(in: db)
+            try execute("BEGIN IMMEDIATE TRANSACTION", in: db)
+            do {
+                try deleteRows(deleteIDs, in: db)
+                try upsertRows(upserts, in: db)
+                try updateSortOrders(sortOrderUpdates, in: db)
+                try execute("COMMIT TRANSACTION", in: db)
+            } catch {
+                try? execute("ROLLBACK TRANSACTION", in: db)
+                throw error
+            }
+        }
+    }
+
     func reset() {
         for suffix in ["", "-wal", "-shm"] {
             try? FileManager.default.removeItem(
@@ -117,11 +173,29 @@ struct EpisodeSQLiteStore: Sendable {
     }
 
     static func signature(for episodes: [Episode]) -> EpisodeSQLiteSignature {
+        snapshot(for: episodes).signature
+    }
+
+    static func snapshot(for episodes: [Episode]) -> EpisodeSQLiteSnapshot {
         var hasher = Hasher()
-        for episode in episodes {
-            hasher.combine(episode)
+        var rows: [EpisodeSQLiteRowSnapshot] = []
+        var indexByID: [UUID: Int] = [:]
+        rows.reserveCapacity(episodes.count)
+        indexByID.reserveCapacity(episodes.count)
+        for (index, episode) in episodes.enumerated() {
+            var rowHasher = Hasher()
+            rowHasher.combine(episode)
+            let payloadHash = rowHasher.finalize()
+            rows.append(EpisodeSQLiteRowSnapshot(id: episode.id, payloadHash: payloadHash))
+            indexByID[episode.id] = index
+            hasher.combine(episode.id)
+            hasher.combine(payloadHash)
         }
-        return EpisodeSQLiteSignature(count: episodes.count, hash: hasher.finalize())
+        return EpisodeSQLiteSnapshot(
+            signature: EpisodeSQLiteSignature(count: episodes.count, hash: hasher.finalize()),
+            rows: rows,
+            indexByID: indexByID
+        )
     }
 
     private func withDatabase<T>(_ body: (OpaquePointer) throws -> T) throws -> T {
@@ -180,6 +254,65 @@ struct EpisodeSQLiteStore: Sendable {
             throw EpisodeSQLiteStoreError.prepare(Self.errorMessage(db))
         }
         return statement
+    }
+
+    private func deleteRows(_ ids: [UUID], in db: OpaquePointer) throws {
+        guard !ids.isEmpty else { return }
+        let statement = try prepare("DELETE FROM episodes WHERE id = ?", in: db)
+        defer { sqlite3_finalize(statement) }
+        for id in ids {
+            try bindText(id.uuidString, at: 1, to: statement, in: db)
+            try step(statement, in: db)
+            sqlite3_reset(statement)
+            sqlite3_clear_bindings(statement)
+        }
+    }
+
+    private func upsertRows(_ rows: [EpisodeSQLiteRowMutation], in db: OpaquePointer) throws {
+        guard !rows.isEmpty else { return }
+        let statement = try prepare(
+            """
+            INSERT INTO episodes(
+                id, subscription_id, guid, pub_date, sort_order, payload
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                subscription_id = excluded.subscription_id,
+                guid = excluded.guid,
+                pub_date = excluded.pub_date,
+                sort_order = excluded.sort_order,
+                payload = excluded.payload
+            """,
+            in: db
+        )
+        defer { sqlite3_finalize(statement) }
+        for row in rows {
+            try bind(row.episode, sortOrder: row.sortOrder, to: statement, in: db)
+            try step(statement, in: db)
+            sqlite3_reset(statement)
+            sqlite3_clear_bindings(statement)
+        }
+    }
+
+    private func updateSortOrders(_ updates: [EpisodeSQLiteSortOrderMutation], in db: OpaquePointer) throws {
+        guard !updates.isEmpty else { return }
+        let statement = try prepare("UPDATE episodes SET sort_order = ? WHERE id = ?", in: db)
+        defer { sqlite3_finalize(statement) }
+        for update in updates {
+            guard sqlite3_bind_int64(statement, 1, Int64(update.sortOrder)) == SQLITE_OK else {
+                throw EpisodeSQLiteStoreError.bind(Self.errorMessage(db))
+            }
+            try bindText(update.id.uuidString, at: 2, to: statement, in: db)
+            try step(statement, in: db)
+            sqlite3_reset(statement)
+            sqlite3_clear_bindings(statement)
+        }
+    }
+
+    private func step(_ statement: OpaquePointer, in db: OpaquePointer) throws {
+        let code = sqlite3_step(statement)
+        guard code == SQLITE_DONE else {
+            throw EpisodeSQLiteStoreError.step(Self.errorMessage(db))
+        }
     }
 
     private func bind(_ episode: Episode, sortOrder: Int, to statement: OpaquePointer, in db: OpaquePointer) throws {

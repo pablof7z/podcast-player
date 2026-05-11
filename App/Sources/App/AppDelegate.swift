@@ -54,6 +54,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         completionHandler(true)
     }
 
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            EpisodeDownloadService.shared.handleEventsForBackgroundURLSession(
+                identifier: identifier,
+                completionHandler: completionHandler
+            )
+        }
+    }
+
     /// Maps an `UIApplicationShortcutItem.type` to a `podcastr://` deep-link
     /// the rest of the app already knows how to route via `DeepLinkHandler`.
     /// The bundle-id prefix is stripped so the suffix alone identifies the

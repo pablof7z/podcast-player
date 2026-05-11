@@ -28,6 +28,16 @@ final class NowPlayingCenter {
         var changeRate: (Double) -> Void = { _ in }
     }
 
+    enum RemoteCommand: Equatable {
+        case play
+        case pause
+        case toggle
+        case skipForward
+        case skipBackward
+        case seek(TimeInterval)
+        case changeRate(Double)
+    }
+
     // MARK: - State
 
     private let logger = Logger.app("NowPlayingCenter")
@@ -50,6 +60,27 @@ final class NowPlayingCenter {
     func setCallbacks(_ callbacks: Callbacks) {
         self.callbacks = callbacks
         wireCommandsIfNeeded()
+    }
+
+    @discardableResult
+    func performRemoteCommand(_ command: RemoteCommand) -> MPRemoteCommandHandlerStatus {
+        switch command {
+        case .play:
+            callbacks.play()
+        case .pause:
+            callbacks.pause()
+        case .toggle:
+            callbacks.toggle()
+        case .skipForward:
+            callbacks.skipForward()
+        case .skipBackward:
+            callbacks.skipBackward()
+        case .seek(let time):
+            callbacks.seek(time)
+        case .changeRate(let rate):
+            callbacks.changeRate(rate)
+        }
+        return .success
     }
 
     /// Asymmetric skip — the lock-screen glyphs render based on these values.
@@ -119,42 +150,35 @@ final class NowPlayingCenter {
         didWireCommands = true
 
         commandCenter.playCommand.addTarget { [weak self] _ in
-            self?.callbacks.play()
-            return .success
+            self?.performRemoteCommand(.play) ?? .commandFailed
         }
         commandCenter.pauseCommand.addTarget { [weak self] _ in
-            self?.callbacks.pause()
-            return .success
+            self?.performRemoteCommand(.pause) ?? .commandFailed
         }
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            self?.callbacks.toggle()
-            return .success
+            self?.performRemoteCommand(.toggle) ?? .commandFailed
         }
 
         commandCenter.skipForwardCommand.preferredIntervals = [NSNumber(value: skipForwardSeconds)]
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
-            self?.callbacks.skipForward()
-            return .success
+            self?.performRemoteCommand(.skipForward) ?? .commandFailed
         }
 
         commandCenter.skipBackwardCommand.preferredIntervals = [NSNumber(value: skipBackwardSeconds)]
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
-            self?.callbacks.skipBackward()
-            return .success
+            self?.performRemoteCommand(.skipBackward) ?? .commandFailed
         }
 
         commandCenter.changePlaybackPositionCommand.isEnabled = true
         commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
-            self?.callbacks.seek(event.positionTime)
-            return .success
+            return self?.performRemoteCommand(.seek(event.positionTime)) ?? .commandFailed
         }
 
         commandCenter.changePlaybackRateCommand.supportedPlaybackRates = [0.8, 1.0, 1.2, 1.5, 2.0]
         commandCenter.changePlaybackRateCommand.addTarget { [weak self] event in
             guard let event = event as? MPChangePlaybackRateCommandEvent else { return .commandFailed }
-            self?.callbacks.changeRate(Double(event.playbackRate))
-            return .success
+            return self?.performRemoteCommand(.changeRate(Double(event.playbackRate))) ?? .commandFailed
         }
 
         // Disable redundant next/previous track — we ship explicit asymmetric skip.

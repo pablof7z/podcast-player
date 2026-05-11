@@ -9,9 +9,9 @@ import Foundation
 //
 // Mapping rules between the agent's freeform strings and the strict enums
 // `BriefingComposer` expects live in the static helpers at the bottom — the
-// agent picks scopes like `"this_week"`, `"unlistened"`, or a topic phrase;
-// we collapse anything we don't recognise to the broadest `mySubscriptions`
-// scope so the composer always has something to chew on.
+// agent picks scopes like `"this_week"`, `"unlistened"`, or a topic phrase.
+// Unknown strings are treated as topic prompts, and UUID-like show scopes stay
+// narrow so the composer can fail explicitly until show-id scoping is modeled.
 
 struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
 
@@ -58,8 +58,8 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
     // MARK: Mapping
 
     /// The agent passes free-form scope strings (`"this_week"`, `"unlistened"`,
-    /// or a podcast UUID). Map them to the closest `BriefingScope` enum case;
-    /// anything we can't recognise widens to the whole library.
+    /// or a podcast UUID). Map them to the closest `BriefingScope` enum case
+    /// without silently widening unknown scoped requests to the whole library.
     static func briefingScope(from raw: String) -> BriefingScope {
         let key = raw.lowercased()
         switch key {
@@ -67,7 +67,8 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
         case "unlistened":                            return .mySubscriptions
         case "this_show", "thisshow", "show":         return .thisShow
         case "this_topic", "thistopic", "topic":      return .thisTopic
-        default:                                      return .mySubscriptions
+        default:
+            return UUID(uuidString: raw) == nil ? .thisTopic : .thisShow
         }
     }
 

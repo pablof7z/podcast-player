@@ -59,6 +59,8 @@ enum ChunkScope: Sendable, Hashable, Codable {
     case all
     /// Only chunks from a specific podcast subscription.
     case podcast(UUID)
+    /// Only chunks from a known set of episodes.
+    case episodes(Set<UUID>)
     /// Only chunks from a specific episode.
     case episode(UUID)
     /// Only chunks attributed to a specific speaker (diarized).

@@ -6,8 +6,6 @@ import SwiftUI
 // under Settings → Intelligence → Models → Wiki.
 
 struct WikiSettingsView: View {
-    @Environment(AppStateStore.self) private var store
-
     var body: some View {
         Form {
             automationSection
@@ -20,25 +18,9 @@ struct WikiSettingsView: View {
 
     private var automationSection: some View {
         Section {
-            Toggle(isOn: autoGenerateBinding) {
-                Label("Generate when transcript ingests", systemImage: "sparkles.rectangle.stack.fill")
-            }
+            Label("Manual refresh", systemImage: "arrow.triangle.2.circlepath")
         } footer: {
-            Text("When on, finishing a transcript automatically refreshes any existing wiki pages whose topics overlap with the new episode. Choose the compilation model in Models → Wiki.")
+            Text("Automatic transcript-triggered wiki refresh is not active in this build. Refresh a page from the Wiki tab after new transcripts finish ingesting; choose the compilation model in Models → Wiki.")
         }
-    }
-
-    // MARK: - Bindings
-
-    private var autoGenerateBinding: Binding<Bool> {
-        Binding(
-            get: { store.state.settings.wikiAutoGenerateOnTranscriptIngest },
-            set: { v in
-                var s = store.state.settings
-                s.wikiAutoGenerateOnTranscriptIngest = v
-                store.updateSettings(s)
-                Haptics.selection()
-            }
-        )
     }
 }

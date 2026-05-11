@@ -162,7 +162,7 @@ let notes = store.activeNotes.filter { $0.target == .item(id: someID) }
 
 ### Strategy
 
-Single JSON blob in **App Group UserDefaults** (`group.com.yourcompany.apptemplate`). App Group is required to share state with widgets, watch extensions, or share extensions.
+Single JSON blob in **App Group UserDefaults** (`group.com.podcastr.app`). App Group is required to share state with widgets, watch extensions, or share extensions.
 
 JSON uses ISO8601 dates and sorted keys for deterministic output (stable diffs).
 
@@ -171,7 +171,7 @@ JSON uses ISO8601 dates and sorted keys for deterministic output (stable diffs).
 For iCloud sync, add `NSUbiquitousKeyValueStore` alongside the local save:
 ```swift
 // After UserDefaults.set:
-NSUbiquitousKeyValueStore.default.set(data, forKey: "apptemplate.state.v1")
+NSUbiquitousKeyValueStore.default.set(data, forKey: "podcastr.state.v1")
 NSUbiquitousKeyValueStore.default.synchronize()
 ```
 
@@ -192,15 +192,15 @@ For SwiftData (used in cut-tracker), replace the JSON blob with a `ModelContaine
 
 ### Key difference from win-the-day
 
-win-the-day uses XcodeGen (`xcodegen generate`). This template uses Tuist (`tuist generate --no-open`). The rest of the CI pipeline is identical.
+win-the-day uses XcodeGen (`xcodegen generate`). Podcastr uses Tuist (`tuist generate --no-open`). The rest of the CI pipeline is similar.
 
 ### Version numbering
 
-`archive_and_upload.sh` reads `CFBundleShortVersionString` from `Info.plist` for the marketing version. Build number is a UTC timestamp (`YYYYMMDDHHmm`) — unique per submission, monotonically increasing, requires no manual bump.
+`archive_and_upload.sh` reads `CFBundleShortVersionString` from the app `Info.plist` for the marketing version, applies the same marketing/build values to the app and widget plists, and verifies the archived app/widget metadata before export. Build number is a UTC timestamp (`YYYYMMDDHHmm`) — unique per submission, monotonically increasing, requires no manual bump.
 
 ### Signing modes
 
 - **Automatic** (default): Xcode manages profiles. Works when runner has Apple Developer account in Xcode.
-- **Manual**: Triggered when `APPLE_DISTRIBUTION_CERTIFICATE_BASE64` secret is set. Creates a temporary keychain with the certificate, then passes explicit `CODE_SIGN_IDENTITY=Apple Distribution` and profile specifier to xcodebuild.
+- **Manual**: Triggered when `APPLE_DISTRIBUTION_CERTIFICATE_BASE64` secret is set. Creates a temporary keychain with the certificate, then passes explicit `CODE_SIGN_IDENTITY=Apple Distribution` plus app/widget profile specifiers to xcodebuild.
 
 The manual mode workaround exists because Xcode 26 beta has a bug where automatic provisioning auth always fails in CI. Manual signing avoids the auth entirely.

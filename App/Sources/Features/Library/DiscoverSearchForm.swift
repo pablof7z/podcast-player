@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 import os.log
 
 // MARK: - DiscoverSearchForm
@@ -37,6 +36,7 @@ struct DiscoverSearchForm: View {
     @State private var query: String = ""
     @State private var isSearching: Bool = false
     @State private var results: [ITunesSearchClient.Result] = []
+    @State private var lastCompletedSearchTerm: String?
     @State private var searchError: String?
     @State private var subscribingID: Int?
     /// Per-row subscribe failure messages, keyed by `collectionId`. Cleared
@@ -68,10 +68,12 @@ struct DiscoverSearchForm: View {
                     .padding(.bottom, AppTheme.Spacing.xs)
             }
 
-            if results.isEmpty && !isSearching {
-                emptyOrTrendingState
-            } else {
+            if isSearching || !results.isEmpty {
                 resultsList
+            } else if shouldShowNoResults {
+                noResultsState
+            } else {
+                emptyOrTrendingState
             }
         }
         .onAppear {
@@ -130,14 +132,14 @@ struct DiscoverSearchForm: View {
 
     // MARK: - Empty / results
 
-    /// Pre-search empty area: shows the "Popular Now" rail when the
-    /// trending fetch succeeded; falls back to the calm prompt when the
-    /// fetch is still in flight, failed, or returned nothing.
+    /// Pre-search empty area: shows the "Popular Now" rail only while the
+    /// query is blank; once the user has searched, an empty result set gets
+    /// its own no-results state instead of unrelated trending shows.
     @ViewBuilder
     private var emptyOrTrendingState: some View {
-        if !trending.isEmpty {
+        if normalizedQuery.isEmpty, !trending.isEmpty {
             trendingSection
-        } else if isLoadingTrending {
+        } else if normalizedQuery.isEmpty, isLoadingTrending {
             VStack {
                 Spacer(minLength: 60)
                 ProgressView()
@@ -147,6 +149,26 @@ struct DiscoverSearchForm: View {
         } else {
             calmPrompt
         }
+    }
+
+    private var noResultsState: some View {
+        VStack(spacing: AppTheme.Spacing.md) {
+            Spacer(minLength: 48)
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(.tertiary)
+            Text("No shows found")
+                .font(AppTheme.Typography.headline)
+            if let lastCompletedSearchTerm {
+                Text("Try a different show, host, or topic than \"\(lastCompletedSearchTerm)\".")
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, AppTheme.Spacing.lg)
     }
 
     private var calmPrompt: some View {
@@ -231,6 +253,18 @@ struct DiscoverSearchForm: View {
 
     // MARK: - Logic
 
+    private var normalizedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var shouldShowNoResults: Bool {
+        guard searchError == nil,
+              let lastCompletedSearchTerm,
+              !lastCompletedSearchTerm.isEmpty
+        else { return false }
+        return normalizedQuery == lastCompletedSearchTerm && results.isEmpty
+    }
+
     private func isAlreadySubscribed(_ result: ITunesSearchClient.Result) -> Bool {
         guard let url = result.feedURL else { return false }
         return store.subscription(feedURL: url) != nil
@@ -252,6 +286,7 @@ struct DiscoverSearchForm: View {
     private func clearQuery() {
         query = ""
         results = []
+        lastCompletedSearchTerm = nil
         searchError = nil
         rowErrors.removeAll()
         expandedErrorIDs.removeAll()
@@ -283,11 +318,16 @@ struct DiscoverSearchForm: View {
         searchTask?.cancel()
         if trimmed.isEmpty {
             results = []
+            lastCompletedSearchTerm = nil
             searchError = nil
             isSearching = false
             return
         }
-        guard trimmed.count >= Self.minAutoSearchChars else { return }
+        guard trimmed.count >= Self.minAutoSearchChars else {
+            results = []
+            lastCompletedSearchTerm = nil
+            return
+        }
         searchTask = Task {
             try? await Task.sleep(nanoseconds: Self.debounceMS * 1_000_000)
             if Task.isCancelled { return }
@@ -303,6 +343,7 @@ struct DiscoverSearchForm: View {
             let fetched = try await ITunesSearchClient.search(term)
             guard !Task.isCancelled else { return }
             results = fetched
+            lastCompletedSearchTerm = term
             // Clear stale per-row errors that don't apply to this result set.
             let fetchedIDs = Set(fetched.map(\.collectionId))
             rowErrors = rowErrors.filter { fetchedIDs.contains($0.key) }
@@ -375,95 +416,6 @@ struct DiscoverSearchForm: View {
             )
             rowErrors[result.collectionId] = error.localizedDescription
             Haptics.warning()
-        }
-    }
-}
-
-private struct DiscoverSearchTextField: UIViewRepresentable {
-    let placeholder: String
-    @Binding var text: String
-    @Binding var isFocused: Bool
-    let onSubmit: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, isFocused: $isFocused, onSubmit: onSubmit)
-    }
-
-    func makeUIView(context: Context) -> UITextField {
-        let field = UITextField(frame: .zero)
-        field.placeholder = placeholder
-        field.autocapitalizationType = .none
-        field.autocorrectionType = .no
-        field.returnKeyType = .search
-        field.backgroundColor = .clear
-        field.font = .preferredFont(forTextStyle: .body)
-        field.adjustsFontForContentSizeCategory = true
-        field.delegate = context.coordinator
-        field.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
-        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        field.setContentHuggingPriority(.required, for: .vertical)
-        field.setContentCompressionResistancePriority(.required, for: .vertical)
-        return field
-    }
-
-    func updateUIView(_ field: UITextField, context: Context) {
-        context.coordinator.text = $text
-        context.coordinator.isFocused = $isFocused
-        context.coordinator.onSubmit = onSubmit
-        field.placeholder = placeholder
-        if field.text != text {
-            field.text = text
-        }
-        if isFocused, !field.isFirstResponder {
-            field.becomeFirstResponder()
-        } else if !isFocused, field.isFirstResponder {
-            field.resignFirstResponder()
-        }
-    }
-
-    final class Coordinator: NSObject, UITextFieldDelegate {
-        var text: Binding<String>
-        var isFocused: Binding<Bool>
-        var onSubmit: () -> Void
-        private var keepFocusUntil: Date = .distantPast
-
-        init(text: Binding<String>, isFocused: Binding<Bool>, onSubmit: @escaping () -> Void) {
-            self.text = text
-            self.isFocused = isFocused
-            self.onSubmit = onSubmit
-        }
-
-        @objc func textDidChange(_ field: UITextField) {
-            keepFocusUntil = Date().addingTimeInterval(1)
-            text.wrappedValue = field.text ?? ""
-            if !isFocused.wrappedValue {
-                isFocused.wrappedValue = true
-            }
-        }
-
-        func textFieldDidBeginEditing(_ textField: UITextField) {
-            isFocused.wrappedValue = true
-        }
-
-        func textFieldDidEndEditing(_ textField: UITextField) {
-            guard isFocused.wrappedValue else { return }
-            guard Date() < keepFocusUntil else {
-                isFocused.wrappedValue = false
-                return
-            }
-            DispatchQueue.main.async { [weak self, weak textField] in
-                guard let self, self.isFocused.wrappedValue else { return }
-                textField?.becomeFirstResponder()
-            }
-        }
-
-        func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
-            !isFocused.wrappedValue || Date() >= keepFocusUntil
-        }
-
-        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            onSubmit()
-            return false
         }
     }
 }

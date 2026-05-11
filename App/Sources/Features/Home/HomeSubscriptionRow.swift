@@ -17,8 +17,6 @@ struct HomeSubscriptionRow: View {
     /// next to the rest of the list state, not inside the row).
     let onRequestUnsubscribe: () -> Void
 
-    @Environment(AppStateStore.self) private var store
-
     var body: some View {
         NavigationLink(value: subscription) {
             HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
@@ -31,16 +29,10 @@ struct HomeSubscriptionRow: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button {
-                Task { await SubscriptionService(store: store).refresh(subscription) }
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            Button(role: .destructive) {
-                onRequestUnsubscribe()
-            } label: {
-                Label("Unsubscribe", systemImage: "minus.circle")
-            }
+            SubscriptionContextMenu(
+                subscription: subscription,
+                onRequestUnsubscribe: onRequestUnsubscribe
+            )
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)

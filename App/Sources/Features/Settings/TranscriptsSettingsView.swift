@@ -46,7 +46,7 @@ struct TranscriptsSettingsView: View {
     }
 
     private var hasElevenLabsKey: Bool {
-        store.state.settings.elevenLabsCredentialSource != .none
+        ElevenLabsCredentialStore.hasAPIKey()
     }
 
     // MARK: - Bindings

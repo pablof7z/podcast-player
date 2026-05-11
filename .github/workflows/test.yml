@@ -23,10 +23,4 @@ jobs:
         run: ./ci_scripts/bootstrap_project.sh
 
       - name: Build and test
-        run: |
-          xcodebuild \
-            -project Podcastr.xcodeproj \
-            -scheme Podcastr \
-            -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
-            -skipPackagePluginValidation \
-            test
+        run: ./ci_scripts/run_tests.sh

@@ -7,6 +7,10 @@ import Foundation
 /// `internal` so the parser delegate (in the same module) can build it; not
 /// part of the public API surface.
 struct RSSItemAccumulator {
+    /// Stable floor date for missing/malformed pubDate. Keeps broken feeds
+    /// from appearing as "new now" on every refresh.
+    static let fallbackPubDate = Date(timeIntervalSince1970: 0)
+
     var title: String = ""
     var description: String = ""
     var pubDateRaw: String?
@@ -39,7 +43,8 @@ struct RSSItemAccumulator {
             )
         }()
 
-        let parsedDate: Date = pubDateRaw.flatMap(DateParsing.parseRFC822) ?? Date()
+        let parsedDate: Date = pubDateRaw.flatMap(DateParsing.parseRFC822)
+            ?? Self.fallbackPubDate
 
         return Episode(
             subscriptionID: subscriptionID,

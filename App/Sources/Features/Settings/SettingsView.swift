@@ -278,7 +278,7 @@ struct SettingsView: View {
     }
 
     private var wikiRowValue: String {
-        store.state.settings.wikiAutoGenerateOnTranscriptIngest ? "Auto" : "Manual"
+        "Manual"
     }
 
     private var dataStorageSummary: String? {

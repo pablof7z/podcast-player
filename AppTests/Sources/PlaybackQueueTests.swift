@@ -150,6 +150,16 @@ final class PlaybackQueueTests: XCTestCase {
         XCTAssertEqual(state.queue, [b, c, a])
     }
 
+    func testPruneQueueDropsAllStaleEntries() {
+        let state = PlaybackState()
+        state.queue = [UUID(), UUID(), UUID()]
+
+        let pruned = state.pruneQueue { _ in nil }
+
+        XCTAssertEqual(pruned, 3)
+        XCTAssertTrue(state.queue.isEmpty)
+    }
+
     // MARK: - Fixtures
 
     private func makeEpisode(id: UUID = UUID(), guid: String = UUID().uuidString) -> Episode {

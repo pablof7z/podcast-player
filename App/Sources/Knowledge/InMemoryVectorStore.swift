@@ -135,6 +135,7 @@ actor InMemoryVectorStore: VectorStore {
         switch scope {
         case .all:                  return true
         case let .podcast(id):      return chunk.podcastID == id
+        case let .episodes(ids):    return ids.contains(chunk.episodeID)
         case let .episode(id):      return chunk.episodeID == id
         case let .speaker(id):      return chunk.speakerID == id
         }

@@ -236,6 +236,30 @@ actor VectorIndex: VectorStore {
         }
     }
 
+    func chunk(episodeID: UUID, overlappingStartMS startMS: Int, endMS: Int) async throws -> Chunk? {
+        try await ensureSchema()
+        let rows = try await db.query(
+            """
+            SELECT chunk_id, episode_id, podcast_id, speaker_id, start_ms, end_ms, text
+            FROM chunks_meta
+            WHERE episode_id = ? AND start_ms < ? AND end_ms > ?
+            ORDER BY ABS(start_ms - ?), start_ms
+            LIMIT 1
+            """,
+            params: [episodeID.uuidString, endMS, startMS, startMS]
+        )
+        guard let row = rows.first,
+              let cid = row["chunk_id"] as? String,
+              let eid = (row["episode_id"] as? String).flatMap(UUID.init),
+              let pid = (row["podcast_id"] as? String).flatMap(UUID.init),
+              let rowStart = row["start_ms"] as? Int,
+              let rowEnd = row["end_ms"] as? Int,
+              let text = row["text"] as? String,
+              let id = UUID(uuidString: cid) else { return nil }
+        let speaker = (row["speaker_id"] as? String).flatMap { $0.isEmpty ? nil : UUID(uuidString: $0) }
+        return Chunk(id: id, episodeID: eid, podcastID: pid, text: text, startMS: rowStart, endMS: rowEnd, speakerID: speaker)
+    }
+
     func topK(
         _ k: Int,
         for queryVector: [Float],
@@ -402,6 +426,11 @@ actor VectorIndex: VectorStore {
             case let .podcast(pid):
                 sql += " AND podcast_id = ?"
                 params.append(pid.uuidString)
+            case let .episodes(ids):
+                guard !ids.isEmpty else { return [:] }
+                let episodePlaceholders = Array(repeating: "?", count: ids.count).joined(separator: ",")
+                sql += " AND episode_id IN (\(episodePlaceholders))"
+                params.append(contentsOf: ids.map(\.uuidString))
             case let .episode(eid):
                 sql += " AND episode_id = ?"
                 params.append(eid.uuidString)

@@ -9,6 +9,7 @@ import Foundation
 /// `Sendable`.
 final class RSSParserDelegate: NSObject, XMLParserDelegate {
     let subscriptionID: UUID
+    private let feedURL: URL
 
     // Channel-level accumulated state
     var sawChannel: Bool = false
@@ -33,8 +34,9 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
     // Output
     var episodes: [Episode] = []
 
-    init(subscriptionID: UUID) {
+    init(subscriptionID: UUID, feedURL: URL) {
         self.subscriptionID = subscriptionID
+        self.feedURL = feedURL
     }
 
     // MARK: XMLParserDelegate
@@ -63,14 +65,14 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
 
         case "enclosure":
             if inItem {
-                if let urlString = attributeDict["url"], let url = URL(string: urlString) {
+                if let urlString = attributeDict["url"], let url = resolvedURL(urlString) {
                     item.enclosureURL = url
                 }
                 item.enclosureMimeType = attributeDict["type"]
             }
 
         case "itunes:image":
-            if let href = attributeDict["href"], let url = URL(string: href) {
+            if let href = attributeDict["href"], let url = resolvedURL(href) {
                 if inItem { item.itunesImageURL = url }
                 else { channelImageURL = channelImageURL ?? url }
             }
@@ -83,7 +85,7 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
             }
 
         case "podcast:transcript":
-            if inItem, let urlString = attributeDict["url"], let url = URL(string: urlString) {
+            if inItem, let urlString = attributeDict["url"], let url = resolvedURL(urlString) {
                 let kind = TranscriptKind.from(mimeType: attributeDict["type"])
                 let currentRank = RSSItemAccumulator.transcriptRank(item.preferredTranscript?.kind)
                 let proposedRank = RSSItemAccumulator.transcriptRank(kind)
@@ -93,7 +95,7 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
             }
 
         case "podcast:chapters":
-            if inItem, let urlString = attributeDict["url"], let url = URL(string: urlString) {
+            if inItem, let urlString = attributeDict["url"], let url = resolvedURL(urlString) {
                 item.chaptersURL = url
             }
 
@@ -103,8 +105,8 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
                     name: "",
                     role: attributeDict["role"],
                     group: attributeDict["group"],
-                    imageURL: attributeDict["img"].flatMap(URL.init(string:)),
-                    linkURL: attributeDict["href"].flatMap(URL.init(string:))
+                    imageURL: attributeDict["img"].flatMap { resolvedURL($0) },
+                    linkURL: attributeDict["href"].flatMap { resolvedURL($0) }
                 )
             }
 
@@ -167,7 +169,7 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
             if channelAuthor.isEmpty { channelAuthor = trimmed }
 
         case "url" where inChannelImage:
-            if let url = URL(string: trimmed) { channelImageURL = channelImageURL ?? url }
+            if let url = resolvedURL(trimmed) { channelImageURL = channelImageURL ?? url }
 
         case "image" where !inItem:
             inChannelImage = false
@@ -243,5 +245,18 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
             seconds = seconds * 60 + value
         }
         return seconds
+    }
+
+    private func resolvedURL(_ raw: String) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if trimmed.hasPrefix("//") {
+            let scheme = feedURL.scheme ?? "https"
+            return URL(string: "\(scheme):\(trimmed)")
+        }
+        if let absolute = URL(string: trimmed), absolute.scheme != nil {
+            return absolute
+        }
+        return URL(string: trimmed, relativeTo: feedURL)?.absoluteURL
     }
 }

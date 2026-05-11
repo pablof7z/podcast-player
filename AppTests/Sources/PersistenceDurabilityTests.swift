@@ -24,6 +24,11 @@ final class PersistenceDurabilityTests: XCTestCase {
                 episodes.append(ep)
             }
             firstStore.upsertEpisodes(episodes, forSubscription: sub.id)
+            XCTAssertEqual(
+                firstStore.persistence.lastEpisodeWriteSummary.kind,
+                .replaceAll,
+                "Large initial episode imports should keep using the full-rebuild path."
+            )
 
             var settings = firstStore.state.settings
             settings.hasCompletedOnboarding = true
@@ -44,6 +49,77 @@ final class PersistenceDurabilityTests: XCTestCase {
         XCTAssertTrue(reopened.store.state.settings.hasCompletedOnboarding)
         XCTAssertEqual(reopened.store.state.subscriptions.count, 1)
         XCTAssertEqual(reopened.store.state.episodes.count, 1_500)
+    }
+
+    func testSingleEpisodeMutationUsesDeltaWriteAndRoundTrips() async throws {
+        let sharedFileURL = AppStateTestSupport.uniqueTempFileURL()
+        defer { AppStateTestSupport.disposeIsolatedStore(at: sharedFileURL) }
+
+        let targetID: UUID
+        do {
+            let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
+            let store = made.store
+            let sub = makeSubscription(title: "Delta Mutations")
+            XCTAssertTrue(store.addSubscription(sub))
+            let episodes = [
+                makeEpisode(subscriptionID: sub.id, guid: "delta-1"),
+                makeEpisode(subscriptionID: sub.id, guid: "delta-2"),
+                makeEpisode(subscriptionID: sub.id, guid: "delta-3"),
+            ]
+            targetID = episodes[1].id
+            store.upsertEpisodes(episodes, forSubscription: sub.id)
+
+            store.persistence.resetEpisodeWriteSummary()
+            store.setEpisodeStarred(targetID, true)
+
+            let summary = store.persistence.lastEpisodeWriteSummary
+            XCTAssertEqual(summary.kind, .delta)
+            XCTAssertEqual(summary.upsertCount, 1)
+            XCTAssertEqual(summary.deleteCount, 0)
+            XCTAssertEqual(summary.sortOrderUpdateCount, 0)
+        }
+
+        let reopened = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
+        let target = try XCTUnwrap(reopened.store.state.episodes.first { $0.id == targetID })
+        XCTAssertTrue(target.isStarred)
+        XCTAssertEqual(reopened.store.state.episodes.count, 3)
+    }
+
+    func testSmallEpisodeDeleteUsesRowDeleteAndRoundTrips() async throws {
+        let sharedFileURL = AppStateTestSupport.uniqueTempFileURL()
+        defer { AppStateTestSupport.disposeIsolatedStore(at: sharedFileURL) }
+
+        let deletedID: UUID
+        let survivingIDs: [UUID]
+        do {
+            let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
+            let store = made.store
+            let sub = makeSubscription(title: "Delta Deletes")
+            XCTAssertTrue(store.addSubscription(sub))
+            let episodes = [
+                makeEpisode(subscriptionID: sub.id, guid: "delete-1"),
+                makeEpisode(subscriptionID: sub.id, guid: "delete-2"),
+                makeEpisode(subscriptionID: sub.id, guid: "delete-3"),
+            ]
+            deletedID = episodes[1].id
+            survivingIDs = [episodes[0].id, episodes[2].id]
+            store.upsertEpisodes(episodes, forSubscription: sub.id)
+
+            store.persistence.resetEpisodeWriteSummary()
+            store.performMutationBatch {
+                store.state.episodes.removeAll { $0.id == deletedID }
+            }
+
+            let summary = store.persistence.lastEpisodeWriteSummary
+            XCTAssertEqual(summary.kind, .delta)
+            XCTAssertEqual(summary.upsertCount, 0)
+            XCTAssertEqual(summary.deleteCount, 1)
+            XCTAssertEqual(summary.sortOrderUpdateCount, 1)
+        }
+
+        let reopened = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
+        XCTAssertNil(reopened.store.state.episodes.first { $0.id == deletedID })
+        XCTAssertEqual(reopened.store.state.episodes.map(\.id), survivingIDs)
     }
 
     func testHasCompletedOnboardingPersistsAcrossStoreInstances() async throws {

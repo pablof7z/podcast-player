@@ -44,12 +44,35 @@ final class Persistence: Sendable {
         case background
     }
 
+    enum EpisodeWriteKind: Equatable, Sendable {
+        case none
+        case replaceAll
+        case delta
+    }
+
+    struct EpisodeWriteSummary: Equatable, Sendable {
+        let kind: EpisodeWriteKind
+        let upsertCount: Int
+        let deleteCount: Int
+        let sortOrderUpdateCount: Int
+        let totalEpisodeCount: Int
+
+        static let none = EpisodeWriteSummary(
+            kind: .none,
+            upsertCount: 0,
+            deleteCount: 0,
+            sortOrderUpdateCount: 0,
+            totalEpisodeCount: 0
+        )
+    }
+
     /// File this instance reads from / writes to.
     let fileURL: URL
     let episodeStore: EpisodeSQLiteStore
     private let writeMode: WriteMode
     private let backgroundWriter = PersistenceBackgroundWriter()
-    private let episodeSignature = OSAllocatedUnfairLock<EpisodeSQLiteSignature?>(initialState: nil)
+    private let episodeSnapshot = OSAllocatedUnfairLock<EpisodeSQLiteSnapshot?>(initialState: nil)
+    private let lastEpisodeWriteSummaryLock = OSAllocatedUnfairLock<EpisodeWriteSummary>(initialState: .none)
 
     /// Lock-protected count of successful `save(_:)` invocations. Production
     /// code never reads this; the per-second-write regression tests use it
@@ -76,11 +99,23 @@ final class Persistence: Sendable {
         saveCounter.withLock { $0 }
     }
 
+    /// Test-only diagnostic for the most recent episode-sidecar write plan.
+    /// Production writes never branch on this; regression tests use it to prove
+    /// small episode mutations go through row-level deltas instead of a full
+    /// `DELETE` + reinsert.
+    var lastEpisodeWriteSummary: EpisodeWriteSummary {
+        lastEpisodeWriteSummaryLock.withLock { $0 }
+    }
+
     /// Resets the save counter back to 0. Tests call this after the
     /// `AppStateStore` initialiser has performed its eager save so subsequent
     /// assertions count only the writes the test itself triggers.
     func resetSaveInvocationCount() {
         saveCounter.withLock { $0 = 0 }
+    }
+
+    func resetEpisodeWriteSummary() {
+        lastEpisodeWriteSummaryLock.withLock { $0 = .none }
     }
 
     // MARK: - State persistence
@@ -104,14 +139,30 @@ final class Persistence: Sendable {
     }
 
     func write(_ state: AppState) {
-        let signature = EpisodeSQLiteStore.signature(for: state.episodes)
-        if episodeSignature.withLock({ $0 }) != signature {
+        let snapshot = EpisodeSQLiteStore.snapshot(for: state.episodes)
+        let previousSnapshot = episodeSnapshot.withLock { $0 }
+        if previousSnapshot?.signature != snapshot.signature {
             do {
-                try episodeStore.replaceAll(state.episodes)
-                episodeSignature.withLock { $0 = signature }
+                let summary = try writeEpisodes(
+                    state.episodes,
+                    snapshot: snapshot,
+                    previousSnapshot: previousSnapshot
+                )
+                episodeSnapshot.withLock { $0 = snapshot }
+                lastEpisodeWriteSummaryLock.withLock { $0 = summary }
             } catch {
                 Self.logger.error("Persistence.save: episode SQLite write failed: \(error, privacy: .public)")
                 return
+            }
+        } else {
+            lastEpisodeWriteSummaryLock.withLock {
+                $0 = EpisodeWriteSummary(
+                    kind: .none,
+                    upsertCount: 0,
+                    deleteCount: 0,
+                    sortOrderUpdateCount: 0,
+                    totalEpisodeCount: snapshot.signature.count
+                )
             }
         }
 
@@ -175,7 +226,8 @@ final class Persistence: Sendable {
     func reset() {
         try? FileManager.default.removeItem(at: fileURL)
         episodeStore.reset()
-        episodeSignature.withLock { $0 = nil }
+        episodeSnapshot.withLock { $0 = nil }
+        resetEpisodeWriteSummary()
     }
 
     // MARK: - Suite resolution
@@ -249,6 +301,19 @@ final class Persistence: Sendable {
         return d
     }()
 
+    private static let maxIncrementalEpisodePayloadChanges = 128
+    private static let maxIncrementalEpisodeDeletes = 128
+
+    private struct EpisodeSQLiteDelta {
+        let upserts: [EpisodeSQLiteRowMutation]
+        let deleteIDs: [UUID]
+        let sortOrderUpdates: [EpisodeSQLiteSortOrderMutation]
+
+        var isEmpty: Bool {
+            upserts.isEmpty && deleteIDs.isEmpty && sortOrderUpdates.isEmpty
+        }
+    }
+
     /// Creates the parent directory tree for `fileURL` if it doesn't already
     /// exist. App Group containers ship with `Library/` but not necessarily
     /// `Library/Application Support/`; `Data.write` would fail with ENOENT
@@ -258,25 +323,116 @@ final class Persistence: Sendable {
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
     }
 
+    private func writeEpisodes(
+        _ episodes: [Episode],
+        snapshot: EpisodeSQLiteSnapshot,
+        previousSnapshot: EpisodeSQLiteSnapshot?
+    ) throws -> EpisodeWriteSummary {
+        guard let previousSnapshot,
+              let delta = Self.delta(from: previousSnapshot, to: snapshot, episodes: episodes) else {
+            try episodeStore.replaceAll(episodes)
+            return EpisodeWriteSummary(
+                kind: .replaceAll,
+                upsertCount: episodes.count,
+                deleteCount: 0,
+                sortOrderUpdateCount: 0,
+                totalEpisodeCount: episodes.count
+            )
+        }
+
+        guard !delta.isEmpty else {
+            return EpisodeWriteSummary(
+                kind: .none,
+                upsertCount: 0,
+                deleteCount: 0,
+                sortOrderUpdateCount: 0,
+                totalEpisodeCount: episodes.count
+            )
+        }
+
+        do {
+            try episodeStore.applyDelta(
+                upserts: delta.upserts,
+                deleteIDs: delta.deleteIDs,
+                sortOrderUpdates: delta.sortOrderUpdates
+            )
+            return EpisodeWriteSummary(
+                kind: .delta,
+                upsertCount: delta.upserts.count,
+                deleteCount: delta.deleteIDs.count,
+                sortOrderUpdateCount: delta.sortOrderUpdates.count,
+                totalEpisodeCount: episodes.count
+            )
+        } catch {
+            Self.logger.error("Persistence.save: episode SQLite delta failed, rebuilding sidecar: \(error, privacy: .public)")
+            try episodeStore.replaceAll(episodes)
+            return EpisodeWriteSummary(
+                kind: .replaceAll,
+                upsertCount: episodes.count,
+                deleteCount: 0,
+                sortOrderUpdateCount: 0,
+                totalEpisodeCount: episodes.count
+            )
+        }
+    }
+
+    private static func delta(
+        from previous: EpisodeSQLiteSnapshot,
+        to current: EpisodeSQLiteSnapshot,
+        episodes: [Episode]
+    ) -> EpisodeSQLiteDelta? {
+        guard previous.hasUniqueIDs, current.hasUniqueIDs else { return nil }
+
+        let deleteIDs = previous.rows.compactMap { row in
+            current.indexByID[row.id] == nil ? row.id : nil
+        }
+        guard deleteIDs.count <= maxIncrementalEpisodeDeletes else { return nil }
+
+        var upserts: [EpisodeSQLiteRowMutation] = []
+        var sortOrderUpdates: [EpisodeSQLiteSortOrderMutation] = []
+        upserts.reserveCapacity(min(episodes.count, maxIncrementalEpisodePayloadChanges))
+
+        for (index, row) in current.rows.enumerated() {
+            guard let previousIndex = previous.indexByID[row.id] else {
+                upserts.append(EpisodeSQLiteRowMutation(episode: episodes[index], sortOrder: index))
+                continue
+            }
+
+            let previousRow = previous.rows[previousIndex]
+            if previousRow.payloadHash != row.payloadHash {
+                upserts.append(EpisodeSQLiteRowMutation(episode: episodes[index], sortOrder: index))
+            } else if previousIndex != index {
+                sortOrderUpdates.append(EpisodeSQLiteSortOrderMutation(id: row.id, sortOrder: index))
+            }
+        }
+
+        guard upserts.count <= maxIncrementalEpisodePayloadChanges else { return nil }
+        return EpisodeSQLiteDelta(
+            upserts: upserts,
+            deleteIDs: deleteIDs,
+            sortOrderUpdates: sortOrderUpdates
+        )
+    }
+
     private func hydrateEpisodes(into state: inout AppState) throws {
         let jsonEpisodes = state.episodes
         let sqliteEpisodes = try episodeStore.loadAll()
         if sqliteEpisodes.isEmpty {
             guard !jsonEpisodes.isEmpty else {
-                episodeSignature.withLock { $0 = EpisodeSQLiteStore.signature(for: []) }
+                episodeSnapshot.withLock { $0 = EpisodeSQLiteStore.snapshot(for: []) }
                 return
             }
             try episodeStore.replaceAll(jsonEpisodes)
-            episodeSignature.withLock {
-                $0 = EpisodeSQLiteStore.signature(for: jsonEpisodes)
+            episodeSnapshot.withLock {
+                $0 = EpisodeSQLiteStore.snapshot(for: jsonEpisodes)
             }
             try writeMetadataSnapshot(state)
             return
         }
 
         state.episodes = sqliteEpisodes
-        episodeSignature.withLock {
-            $0 = EpisodeSQLiteStore.signature(for: sqliteEpisodes)
+        episodeSnapshot.withLock {
+            $0 = EpisodeSQLiteStore.snapshot(for: sqliteEpisodes)
         }
         if !jsonEpisodes.isEmpty {
             try writeMetadataSnapshot(state)

@@ -38,22 +38,38 @@ struct OPMLImportSheet: View {
     let store: AppStateStore
     let onDismiss: () -> Void
 
+    var body: some View {
+        NavigationStack {
+            OPMLImportContent(store: store, onDismiss: onDismiss, showsCloseButton: true)
+                .navigationTitle("Import from OPML")
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+// MARK: - OPMLImportContent
+
+/// File-importer + paste-OPML-text-mode + per-row enrichment progress. This is
+/// split from `OPMLImportSheet` so `AddShowSheet` can embed OPML as a segment
+/// without nesting one navigation stack and close button inside another.
+struct OPMLImportContent: View {
+
+    let store: AppStateStore
+    let onDismiss: () -> Void
+    var showsCloseButton: Bool = false
+
     @State private var phase: OPMLImportPhase = .pick
     @State private var pastedText: String = ""
     @State private var fileImporterShown: Bool = false
     @State private var parseError: String?
 
     var body: some View {
-        NavigationStack {
-            content
-                .padding(AppTheme.Spacing.lg)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .background(.ultraThinMaterial)
-                .toolbar { toolbarContent }
-                .navigationTitle("Import from OPML")
-                .navigationBarTitleDisplayMode(.inline)
-                .animation(AppTheme.Animation.spring, value: phase)
-        }
+        content
+            .padding(AppTheme.Spacing.lg)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.ultraThinMaterial)
+            .toolbar { toolbarContent }
+            .animation(AppTheme.Animation.spring, value: phase)
         .fileImporter(
             isPresented: $fileImporterShown,
             allowedContentTypes: [opmlContentType, .xml],
@@ -211,7 +227,7 @@ struct OPMLImportSheet: View {
 
             errorList(errors)
 
-            Text("This continues in the background. You can close this sheet at any time.")
+            Text("Import keeps running while the app stays open. Shows are saved when the batch finishes.")
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
 
@@ -290,16 +306,18 @@ struct OPMLImportSheet: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                Haptics.light()
-                onDismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+        if showsCloseButton {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.light()
+                    onDismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("Close import")
             }
-            .accessibilityLabel("Close import")
         }
     }
 

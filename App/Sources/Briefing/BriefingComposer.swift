@@ -38,9 +38,8 @@ struct BriefingComposeResult: Sendable {
 /// Pipeline (UX-08 §1, §3):
 ///  1. Gather candidate episodes / clips / wikis via `BriefingRAGSearchProtocol`
 ///     (Lane 6) and `BriefingWikiStorageProtocol` (Lane 7).
-///  2. Compose script via OpenRouter chat completion. When the API key is
-///     missing or the request fails, fall back to a fixture script — the
-///     data flow is real, only the contents are stubbed.
+///  2. Compose script via the selected LLM provider. Fixture scripts are
+///     available only when the caller explicitly opts into test fallback.
 ///  3. Segment the script into `BriefingSegment[]`.
 ///  4. Stitch audio: each segment produces TTS tracks (synthesised via
 ///     `TTSProtocol` — Lane 8) interleaved with original-audio quote tracks
@@ -55,13 +54,16 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
     let tts: TTSProtocol
     let storage: BriefingStorage
     /// OpenRouter API key. When `nil`, the composer skips the network call and
-    /// emits a deterministic fixture script instead.
+    /// asks the provider resolver for the selected model's credential.
     let apiKey: String?
     /// Model identifier for OpenRouter. Defaults to a balanced model; callers
     /// override at construction time.
     let model: String
     /// TTS voice id. Empty string = provider default.
     let voiceID: String
+    /// Tests/previews may opt into deterministic scripts. Production keeps
+    /// provider failures visible instead of fabricating a briefing.
+    let allowFixtureFallback: Bool
 
     /// Production default: wires live RAG + WikiStorage + ElevenLabs TTS.
     /// Marked `@MainActor` because the singletons are main-actor isolated;
@@ -73,7 +75,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
         storage: BriefingStorage,
         apiKey: String? = nil,
         model: String = "openai/gpt-4o-mini",
-        voiceID: String = ""
+        voiceID: String = "",
+        allowFixtureFallback: Bool = false
     ) {
         self.init(
             rag: RAGService.shared.briefingRAG,
@@ -82,7 +85,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
             storage: storage,
             apiKey: apiKey,
             model: model,
-            voiceID: voiceID
+            voiceID: voiceID,
+            allowFixtureFallback: allowFixtureFallback
         )
     }
 
@@ -93,7 +97,8 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
         storage: BriefingStorage,
         apiKey: String? = nil,
         model: String = "openai/gpt-4o-mini",
-        voiceID: String = ""
+        voiceID: String = "",
+        allowFixtureFallback: Bool = false
     ) {
         self.rag = rag
         self.wiki = wiki
@@ -102,6 +107,7 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
         self.apiKey = apiKey
         self.model = model
         self.voiceID = voiceID
+        self.allowFixtureFallback = allowFixtureFallback
     }
 
     // MARK: Compose
@@ -110,18 +116,29 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
         request: BriefingRequest,
         progress: @escaping @Sendable (BriefingComposeProgress) -> Void
     ) async throws -> BriefingComposeResult {
+        try validate(request)
+
         // 1) Gather candidates.
         let query = effectiveQuery(for: request)
-        let candidates = (try? await rag.search(query: query, scope: request.scope, limit: 12)) ?? []
+        let candidates = try await rag.search(query: query, scope: request.scope, limit: 12)
+        guard !candidates.isEmpty else {
+            throw BriefingComposerError.noEvidence(scope: request.scope)
+        }
         progress(.selectedEpisodes(count: countDistinctEpisodes(candidates)))
         let wikiTitles = try await relevantWikiTitles(for: request)
 
-        // 2) LLM-compose. Fixture fallback on missing key / network failure.
-        let llmScript = await composeViaLLM(
-            request: request,
-            candidates: candidates,
-            wikiTitles: wikiTitles
-        ) ?? BriefingFixtureScript.make(request: request, candidates: candidates)
+        // 2) LLM-compose. Fixture fallback is opt-in for tests/previews only.
+        let llmScript: LLMScriptDraft
+        do {
+            llmScript = try await composeViaLLM(
+                request: request,
+                candidates: candidates,
+                wikiTitles: wikiTitles
+            )
+        } catch {
+            guard allowFixtureFallback else { throw error }
+            llmScript = BriefingFixtureScript.make(request: request, candidates: candidates)
+        }
         progress(.draftedSegments(count: llmScript.segments.count))
 
         // 3) Synthesise per-segment narration + assemble tracks.
@@ -171,6 +188,19 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
 
     // MARK: - Private helpers
 
+    private func validate(_ request: BriefingRequest) throws {
+        switch request.scope {
+        case .thisShow:
+            throw BriefingComposerError.unsupportedScope(
+                "This-show briefings need a specific show id; the current compose request does not carry one."
+            )
+        case .thisTopic where request.freeformQuery.trimmedOrEmpty.isEmpty:
+            throw BriefingComposerError.missingTopic
+        case .mySubscriptions, .thisTopic, .thisWeek:
+            return
+        }
+    }
+
     private func effectiveQuery(for request: BriefingRequest) -> String {
         if let q = request.freeformQuery, !q.isEmpty { return q }
         switch request.style {
@@ -197,21 +227,26 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
         request: BriefingRequest,
         candidates: [RAGCandidate],
         wikiTitles: [String]
-    ) async -> LLMScriptDraft? {
-        guard let apiKey, !apiKey.isEmpty else { return nil }
-        _ = BriefingPrompts.systemPrompt(for: request.style)
-        _ = BriefingPrompts.userPrompt(
+    ) async throws -> LLMScriptDraft {
+        let systemPrompt = BriefingPrompts.systemPrompt(for: request.style)
+        let userPrompt = BriefingPrompts.userPrompt(
             for: request,
             candidates: candidates,
             wikiTitles: wikiTitles
         )
-        // Real OpenRouter call lands here. We deliberately do not wire up
-        // a streaming chat completion in this lane — Lane 10's agent tool
-        // owns model selection and retries. For now, the fixture path is
-        // used whenever the key is set but the network would be required;
-        // returning `nil` lets the caller fall back gracefully.
-        _ = (apiKey, model)
-        return nil
+        let client = WikiOpenRouterClient(
+            mode: .live(apiKey: apiKey, modelReference: LLMModelReference(storedID: model))
+        )
+        let json = try await client.compile(
+            systemPrompt: systemPrompt,
+            userPrompt: userPrompt,
+            feature: CostFeature.briefingCompose
+        )
+        return try BriefingLLMResponseParser.parse(
+            json: json,
+            request: request,
+            candidates: candidates
+        )
     }
 
     private func synthesizeSegment(
@@ -319,3 +354,19 @@ final class BriefingComposer: BriefingComposing, @unchecked Sendable {
     }
 }
 
+enum BriefingComposerError: LocalizedError, Sendable {
+    case missingTopic
+    case noEvidence(scope: BriefingScope)
+    case unsupportedScope(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingTopic:
+            return "Add a topic before composing a topic briefing."
+        case .noEvidence(let scope):
+            return "No transcript evidence was found for \(scope.displayName)."
+        case .unsupportedScope(let message):
+            return message
+        }
+    }
+}

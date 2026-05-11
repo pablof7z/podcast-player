@@ -34,6 +34,9 @@ struct PlayerQueueSheet: View {
             }
             .navigationTitle("Up Next")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                pruneStaleQueue()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -148,9 +151,6 @@ struct PlayerQueueSheet: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, .constant(.active))
-        .onAppear {
-            state.pruneQueue { store.episode(id: $0) }
-        }
     }
 
     // MARK: - Footer
@@ -201,6 +201,10 @@ struct PlayerQueueSheet: View {
     private func removeFromQueue(_ id: UUID) {
         state.removeFromQueue(id)
         Haptics.light()
+    }
+
+    private func pruneStaleQueue() {
+        state.pruneQueue { store.episode(id: $0) }
     }
 }
 

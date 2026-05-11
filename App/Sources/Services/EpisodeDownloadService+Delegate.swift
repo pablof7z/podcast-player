@@ -151,6 +151,12 @@ final class DownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unchecke
             service.handleFailure(episodeID: episodeID, message: error.localizedDescription)
         }
     }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        Task { @MainActor [weak service] in
+            service?.handleBackgroundEventsFinished(for: session)
+        }
+    }
 }
 
 // MARK: - EpisodeDownloadService progress handlers

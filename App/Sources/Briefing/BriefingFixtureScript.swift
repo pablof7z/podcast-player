@@ -10,11 +10,159 @@ struct LLMScriptDraft: Sendable {
     var segments: [BriefingSegment]
 }
 
+// MARK: - BriefingLLMResponseParser
+
+enum BriefingLLMResponseParser {
+
+    static func parse(
+        json: String,
+        request: BriefingRequest,
+        candidates: [RAGCandidate]
+    ) throws -> LLMScriptDraft {
+        guard
+            let data = json.data(using: .utf8),
+            let root = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            throw ParseError.invalidJSON
+        }
+
+        let rawSegments = (root["segments"] as? [[String: Any]]) ?? []
+        let segments = rawSegments.enumerated().compactMap { ordinal, dict in
+            parseSegment(dict, ordinal: ordinal, candidates: candidates)
+        }
+        guard !segments.isEmpty else { throw ParseError.missingSegments }
+
+        let title = (root["title"] as? String)?.trimmed
+        let subtitle = (root["subtitle"] as? String)?.trimmed
+
+        return LLMScriptDraft(
+            title: title?.isEmpty == false ? title! : fallbackTitle(for: request),
+            subtitle: subtitle?.isEmpty == false ? subtitle! : fallbackSubtitle(for: request, candidates: candidates),
+            segments: segments
+        )
+    }
+
+    private static func parseSegment(
+        _ dict: [String: Any],
+        ordinal: Int,
+        candidates: [RAGCandidate]
+    ) -> BriefingSegment? {
+        let body = ((dict["body_text"] as? String) ?? (dict["bodyText"] as? String) ?? "").trimmed
+        guard !body.isEmpty else { return nil }
+        let title = ((dict["title"] as? String) ?? "Segment \(ordinal + 1)").trimmed
+        let targetSeconds = parseDouble(dict["target_seconds"] ?? dict["targetSeconds"]) ?? 60
+        return BriefingSegment(
+            index: ordinal,
+            title: title.isEmpty ? "Segment \(ordinal + 1)" : title,
+            bodyText: body,
+            attributions: parseAttributions(dict["attributions"], candidates: candidates),
+            quotes: parseQuotes(dict["quotes"], candidates: candidates, bodyCount: body.count),
+            targetSeconds: max(10, targetSeconds)
+        )
+    }
+
+    private static func parseAttributions(
+        _ raw: Any?,
+        candidates: [RAGCandidate]
+    ) -> [BriefingAttribution] {
+        let rows = raw as? [[String: Any]] ?? []
+        return rows.compactMap { row in
+            guard let candidate = candidate(from: row, candidates: candidates) else { return nil }
+            let label = ((row["label"] as? String)?.trimmed).flatMap { $0.isEmpty ? nil : $0 }
+            return BriefingAttribution(
+                episodeID: candidate.episodeID,
+                wikiPageID: candidate.wikiPageID,
+                displayLabel: label ?? candidate.sourceLabel,
+                timestampSeconds: candidate.startSeconds
+            )
+        }
+    }
+
+    private static func parseQuotes(
+        _ raw: Any?,
+        candidates: [RAGCandidate],
+        bodyCount: Int
+    ) -> [BriefingQuote] {
+        let rows = raw as? [[String: Any]] ?? []
+        return rows.compactMap { row in
+            guard
+                let candidate = candidate(from: row, candidates: candidates),
+                let episodeID = candidate.episodeID,
+                let enclosureURL = candidate.enclosureURL,
+                let start = candidate.startSeconds,
+                let end = candidate.endSeconds,
+                end > start
+            else { return nil }
+            let insertAfter = parseInt(row["insert_after_char"] ?? row["insertAfterChar"]) ?? bodyCount
+            let text = ((row["transcript_text"] as? String) ?? (row["transcriptText"] as? String))?.trimmed
+            return BriefingQuote(
+                episodeID: episodeID,
+                enclosureURL: enclosureURL,
+                startSeconds: start,
+                endSeconds: end,
+                insertAfterChar: max(0, min(insertAfter, bodyCount)),
+                transcriptText: text?.isEmpty == false ? text! : candidate.text
+            )
+        }
+    }
+
+    private static func candidate(
+        from row: [String: Any],
+        candidates: [RAGCandidate]
+    ) -> RAGCandidate? {
+        guard let rawIndex = parseInt(row["candidate_index"] ?? row["candidateIndex"]) else {
+            return nil
+        }
+        let index = rawIndex > 0 ? rawIndex - 1 : rawIndex
+        guard candidates.indices.contains(index) else { return nil }
+        return candidates[index]
+    }
+
+    private static func fallbackTitle(for request: BriefingRequest) -> String {
+        request.freeformQuery.trimmedOrEmpty.isEmpty
+            ? request.style.displayLabel
+            : request.freeformQuery.trimmedOrEmpty
+    }
+
+    private static func fallbackSubtitle(
+        for request: BriefingRequest,
+        candidates: [RAGCandidate]
+    ) -> String {
+        let episodeCount = Set(candidates.compactMap(\.episodeID)).count
+        return "\(request.length.displayLabel) · drawn from \(episodeCount) episode\(episodeCount == 1 ? "" : "s")"
+    }
+
+    private static func parseInt(_ value: Any?) -> Int? {
+        if let int = value as? Int { return int }
+        if let double = value as? Double { return Int(double) }
+        if let string = value as? String { return Int(string) }
+        return nil
+    }
+
+    private static func parseDouble(_ value: Any?) -> Double? {
+        if let double = value as? Double { return double }
+        if let int = value as? Int { return Double(int) }
+        if let string = value as? String { return Double(string) }
+        return nil
+    }
+
+    enum ParseError: LocalizedError {
+        case invalidJSON
+        case missingSegments
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidJSON: "Briefing response was not valid JSON."
+            case .missingSegments: "Briefing response did not include any playable segments."
+            }
+        }
+    }
+}
+
 // MARK: - BriefingFixtureScript
 
-/// Deterministic script the composer falls back to when no OpenRouter API
-/// key is configured (the fixture path called out in the lane brief —
-/// *"Real LLM/TTS calls stubbed — return fixture script + silent audio asset"*).
+/// Deterministic script used only by tests/previews when `BriefingComposer`
+/// is constructed with `allowFixtureFallback: true`.
 ///
 /// The fixture is opinionated rather than pretty: it produces a 4-segment
 /// structure (intro · two body segments · outro) shaped like the W2 player

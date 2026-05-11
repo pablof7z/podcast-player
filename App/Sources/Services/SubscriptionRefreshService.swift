@@ -7,9 +7,10 @@ import os.log
 /// Background poller for the user's podcast subscriptions.
 ///
 /// Owns the foreground refresh loop:
-///   1. On `startPeriodicRefresh(...)` we kick a `Task` that waits one
-///      `interval` then calls `refreshAll`. Re-entrant calls cancel and
-///      replace the in-flight task so the call site is idempotent.
+///   1. On `startPeriodicRefresh(...)` we kick a `Task` that refreshes once
+///      immediately, then sleeps `interval` between later `refreshAll` calls.
+///      Re-entrant calls cancel and replace the in-flight task so the call
+///      site is idempotent.
 ///   2. We register for `UIApplication.didEnterBackgroundNotification` to
 ///      cancel the loop when the app suspends, and
 ///      `UIApplication.willEnterForegroundNotification` to restart it.
@@ -71,28 +72,14 @@ final class SubscriptionRefreshService {
             return
         }
         let result = try await client.fetch(subscription)
-        switch result {
-        case .notModified(let lastRefreshedAt):
-            var bumped = subscription
-            bumped.lastRefreshedAt = lastRefreshedAt
-            store.updateSubscription(bumped)
-        case .updated(let updatedSubscription, let episodes, _):
-            // Snapshot the existing GUIDs *before* the upsert so the delta is
-            // accurate. Anything in `episodes` whose GUID isn't already known
-            // is brand-new and a notification candidate.
-            let priorGUIDs = Set(store.episodes(forSubscription: subscriptionID).map(\.guid))
-            store.upsertEpisodes(
-                episodes,
-                forSubscription: subscriptionID,
-                evaluateAutoDownload: true
-            )
-            store.updateSubscription(updatedSubscription)
-            notifyIfNeeded(
-                priorGUIDs: priorGUIDs,
-                incoming: episodes,
-                subscription: updatedSubscription
-            )
-        }
+        apply(
+            outcome: .success(
+                originalID: subscriptionID,
+                original: subscription,
+                result: result
+            ),
+            store: store
+        )
     }
 
     /// Refreshes every subscription in `store.sortedSubscriptions`, bounded
@@ -226,10 +213,9 @@ final class SubscriptionRefreshService {
     private func startLoop(store: AppStateStore, interval: Duration) {
         pollingTask?.cancel()
         pollingTask = Task { [weak self] in
-            // First refresh fires after `interval` rather than immediately —
-            // app launch already pulls feeds when the user opens Library
-            // (pull-to-refresh, baseline §2). A 30-minute warm-up keeps
-            // launch quiet.
+            guard let self else { return }
+            await self.refreshAll(store: store)
+
             while !Task.isCancelled {
                 do {
                     try await Task.sleep(for: interval)
@@ -237,7 +223,6 @@ final class SubscriptionRefreshService {
                     return
                 }
                 if Task.isCancelled { return }
-                guard let self else { return }
                 await self.refreshAll(store: store)
             }
         }

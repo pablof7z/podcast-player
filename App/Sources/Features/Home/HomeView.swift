@@ -56,6 +56,16 @@ struct HomeView: View {
             .sheet(isPresented: $showAddShowSheet) {
                 AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
             }
+            .sheet(isPresented: $showCategoryPicker) {
+                HomeCategoryPickerSheet(
+                    selectedCategoryID: selectedCategoryID,
+                    onSelect: { id in
+                        categoryFilterID = id?.uuidString ?? ""
+                    }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
             .sheet(item: $relatedSheetEpisode) { episode in
                 HomeRelatedSheet(
                     seedEpisode: episode,

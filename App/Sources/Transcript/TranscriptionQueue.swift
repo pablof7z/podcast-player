@@ -7,6 +7,11 @@ import os.log
 /// dispatch (publisher-ingestor vs Scribe) so the rest of the app submits a
 /// single high-level intent: "transcribe this episode."
 ///
+/// Runtime app ingestion goes through `TranscriptIngestService`, which owns
+/// user settings, state transitions, persistence, and RAG indexing. This queue
+/// is a lower-level executor for callers that have already decided whether
+/// Scribe fallback is allowed for a job.
+///
 /// Why an actor: callers from `@MainActor` (UI) and from background tasks
 /// (downloads finishing) both push work in. We need serialised access to the
 /// pending set without risking re-entrant races.
@@ -24,6 +29,12 @@ actor TranscriptionQueue {
         let publisherTranscriptMime: String?
         let audioURL: URL?
         let languageHint: String?
+        let fallbackPolicy: FallbackPolicy = .publisherThenScribe
+    }
+
+    enum FallbackPolicy: Sendable, Hashable {
+        case publisherOnly
+        case publisherThenScribe
     }
 
     enum Priority: Int, Sendable, Comparable {
@@ -146,10 +157,16 @@ actor TranscriptionQueue {
                     language: job.languageHint ?? "en-US"
                 )
             } catch {
+                guard job.fallbackPolicy == .publisherThenScribe else {
+                    throw error
+                }
                 Self.logger.notice(
                     "Publisher transcript failed (\(String(describing: error), privacy: .public)) — falling back to Scribe"
                 )
             }
+        }
+        guard job.fallbackPolicy == .publisherThenScribe else {
+            throw QueueError.publisherTranscriptUnavailable(job.episodeID)
         }
         guard let audio = job.audioURL else {
             throw QueueError.missingAudioForScribe(job.episodeID)
@@ -163,6 +180,7 @@ actor TranscriptionQueue {
     }
 
     enum QueueError: Swift.Error, Sendable {
+        case publisherTranscriptUnavailable(UUID)
         case missingAudioForScribe(UUID)
     }
 }

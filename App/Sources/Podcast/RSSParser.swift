@@ -65,7 +65,10 @@ struct RSSParser: Sendable {
         feedURL: URL,
         subscriptionID: UUID = UUID()
     ) throws -> ParsedFeed {
-        let delegate = RSSParserDelegate(subscriptionID: subscriptionID)
+        let delegate = RSSParserDelegate(
+            subscriptionID: subscriptionID,
+            feedURL: feedURL
+        )
         let parser = XMLParser(data: data)
         parser.delegate = delegate
         parser.shouldProcessNamespaces = false

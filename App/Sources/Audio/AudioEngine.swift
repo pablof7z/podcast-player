@@ -69,6 +69,11 @@ final class AudioEngine {
     /// Sleep-timer surface so the player UI can render the countdown.
     let sleepTimer = SleepTimer()
 
+    /// Called when `SleepTimer` fires. `PlaybackState` overrides this so timer
+    /// pauses travel through the same persistence and snapshot side effects as
+    /// an in-app pause.
+    var onSleepTimerFire: () -> Void = {}
+
     /// NowPlaying surface — exposed so the player can push artwork mid-playback
     /// once Lane 4 has it loaded (artwork isn't on `Episode` yet — Lane 2 owns).
     let nowPlaying = NowPlayingCenter()
@@ -137,6 +142,7 @@ final class AudioEngine {
 
     init() {
         configureNowPlayingCallbacks()
+        onSleepTimerFire = { [weak self] in self?.pause() }
         configureSleepTimerHooks()
         nowPlaying.setSkipIntervals(forward: skipForwardSeconds, backward: skipBackwardSeconds)
     }
@@ -177,6 +183,22 @@ final class AudioEngine {
         installItemObservers(for: item)
         installTimeObserver()
 
+        publishNowPlaying()
+    }
+
+    /// Refresh metadata for the already-loaded episode without replacing the
+    /// `AVPlayerItem`. Used when the store rehydrates chapters/artwork/title
+    /// for the same episode while audio keeps rolling.
+    func refreshMetadata(for refreshed: Episode) {
+        let previousFeedDuration = episode?.duration
+        episode = refreshed
+        if let refreshedDuration = refreshed.duration {
+            if duration <= 0 {
+                duration = refreshedDuration
+            } else if let previousFeedDuration, duration == previousFeedDuration {
+                duration = refreshedDuration
+            }
+        }
         publishNowPlaying()
     }
 
@@ -265,6 +287,10 @@ final class AudioEngine {
         sleepTimer.set(mode)
     }
 
+    func setNowPlayingCallbacks(_ callbacks: NowPlayingCenter.Callbacks) {
+        nowPlaying.setCallbacks(callbacks)
+    }
+
     // MARK: - Now Playing wiring
 
     private func configureNowPlayingCallbacks() {
@@ -285,7 +311,7 @@ final class AudioEngine {
             self.player.volume = self.fadeBaseVolume * multiplier
         }
         sleepTimer.onFire = { [weak self] in
-            self?.pause()
+            self?.onSleepTimerFire()
             self?.player.volume = self?.fadeBaseVolume ?? 1.0
         }
     }
@@ -295,6 +321,9 @@ final class AudioEngine {
     func publishNowPlaying() {
         let chapterTitle = episode.flatMap { resolveActiveChapterTitle($0, currentTime) }
         let artworkURL = episode.flatMap { resolveArtworkURL($0, currentTime) }
+        if artworkURL != lastPublishedArtworkURL {
+            lastPublishedArtworkImage = nil
+        }
         nowPlaying.update(
             title: episode?.title,
             artist: episode.flatMap { resolveShowName($0) },

@@ -90,6 +90,7 @@ final class EpisodeDownloadService {
 
     /// Strong reference to keep the delegate alive for the session's lifetime.
     let coordinator: DownloadCoordinator
+    private var backgroundCompletionHandlers: [String: () -> Void] = [:]
 
     // MARK: Init
 
@@ -104,7 +105,13 @@ final class EpisodeDownloadService {
         self.session = URLSession(configuration: config, delegate: coordinator, delegateQueue: nil)
         coordinator.bind(service: self)
         pathMonitor.pathUpdateHandler = { [pathState] path in
-            pathState.set(path.usesInterfaceType(.wifi))
+            let isWiFi = path.usesInterfaceType(.wifi)
+            pathState.set(isWiFi)
+            if isWiFi {
+                Task { @MainActor in
+                    EpisodeDownloadService.shared.resumeQueuedDownloadsIfPossible()
+                }
+            }
         }
         pathMonitor.start(queue: pathQueue)
     }
@@ -115,6 +122,29 @@ final class EpisodeDownloadService {
     /// stores mutate the right state.
     func attach(appStore: AppStateStore) {
         self.appStore = appStore
+        resumeQueuedDownloadsIfPossible()
+    }
+
+    func handleEventsForBackgroundURLSession(
+        identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        guard identifier == Self.backgroundSessionIdentifier else {
+            completionHandler()
+            return
+        }
+        backgroundCompletionHandlers[identifier] = completionHandler
+        logger.info("background URLSession handoff registered for \(identifier, privacy: .public)")
+    }
+
+    func handleBackgroundEventsFinished(for session: URLSession) {
+        let identifier = session.configuration.identifier ?? Self.backgroundSessionIdentifier
+        guard identifier == Self.backgroundSessionIdentifier else { return }
+        guard let completionHandler = backgroundCompletionHandlers.removeValue(forKey: identifier) else {
+            return
+        }
+        completionHandler()
+        logger.info("background URLSession handoff completed for \(identifier, privacy: .public)")
     }
 
     // MARK: - Public API
@@ -195,53 +225,6 @@ final class EpisodeDownloadService {
         }
         clearProgress(for: episodeID)
         store.setEpisodeDownloadState(episodeID, state: .notDownloaded)
-    }
-
-    // MARK: - AutoDownloadPolicy
-
-    /// Evaluates the per-subscription `AutoDownloadPolicy` against a batch of
-    /// episode IDs that were just inserted by `upsertEpisodes`. Queues the
-    /// matching ones via `download(episodeID:)`.
-    ///
-    /// - Parameter newEpisodeIDs: episodes inserted in publish-date order
-    ///   (newest first is fine — we sort defensively).
-    func evaluateAutoDownload(forSubscription subscriptionID: UUID, newEpisodeIDs: [UUID]) {
-        guard !newEpisodeIDs.isEmpty,
-              let store = appStore,
-              store.subscription(id: subscriptionID) != nil else { return }
-        // Honour any per-category auto-download override before falling back
-        // to the per-subscription policy. `effectiveAutoDownload` resolves
-        // to `subscription.autoDownload` when no category settings apply.
-        let policy = store.effectiveAutoDownload(forSubscription: subscriptionID)
-        if case .off = policy.mode { return }
-        if policy.wifiOnly, !isOnWiFi {
-            logger.notice(
-                "auto-download skipped for \(subscriptionID, privacy: .public) — Wi-Fi unavailable"
-            )
-            return
-        }
-        // Resolve each ID to an Episode and sort by pubDate desc.
-        let episodes: [Episode] = newEpisodeIDs
-            .compactMap { store.episode(id: $0) }
-            .sorted { $0.pubDate > $1.pubDate }
-        let targets: [Episode]
-        switch policy.mode {
-        case .off:
-            return
-        case .latestN(let n):
-            targets = Array(episodes.prefix(max(0, n)))
-        case .allNew:
-            targets = episodes
-        }
-        for episode in targets {
-            // Only queue ones we don't already have on disk / in flight.
-            switch episode.downloadState {
-            case .downloaded, .downloading:
-                continue
-            default:
-                download(episodeID: episode.id)
-            }
-        }
     }
 
     // MARK: - Internal helpers (also called from the delegate extension)

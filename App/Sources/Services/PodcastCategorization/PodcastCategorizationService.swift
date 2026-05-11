@@ -5,17 +5,20 @@ import os.log
 // MARK: - Errors
 
 enum CategorizationError: LocalizedError {
-    case noAPIKey
+    case noAPIKey(provider: String)
     case noSubscriptions
+    case noModelSelected
     case invalidResponse
     case httpError(status: Int, body: String)
 
     var errorDescription: String? {
         switch self {
-        case .noAPIKey:
-            return "OpenRouter is not connected. Add a key in Settings → Intelligence → Providers."
+        case .noAPIKey(let provider):
+            return "\(provider) is not connected. Add a key in Settings → Intelligence → Providers."
         case .noSubscriptions:
             return "Add at least one podcast subscription before generating categories."
+        case .noModelSelected:
+            return "Choose a categorization model in Settings → Intelligence → Models."
         case .invalidResponse:
             return "The model returned an invalid response. Try again."
         case .httpError(let status, let body):
@@ -34,11 +37,9 @@ enum CategorizationError: LocalizedError {
 /// `isRunning` before starting; `recompute(store:)` returns immediately
 /// if a run is already in progress.
 ///
-/// Networking is direct to OpenRouter's chat-completions endpoint, mirroring
-/// the pattern in `WikiOpenRouterClient`. The OAuth-flavoured
-/// `BYOKConnectService` only handles key acquisition, not chat — referenced
-/// here because the credential lookup goes through `OpenRouterCredentialStore`
-/// which the BYOK flow populates.
+/// Networking goes through `WikiOpenRouterClient`, which already owns the
+/// provider-specific OpenRouter/Ollama request shape. `BYOKConnectService`
+/// only handles key acquisition.
 @MainActor
 @Observable
 final class PodcastCategorizationService {
@@ -55,10 +56,6 @@ final class PodcastCategorizationService {
     /// disabled-button state.
     private(set) var isRunning: Bool = false
 
-    private static let endpoint = URL(string: "https://openrouter.ai/api/v1/chat/completions")!
-    private static let temperature: Double = 0.3
-    private static let requestTimeout: TimeInterval = 90
-
     private let urlSession: URLSession
 
     init(urlSession: URLSession = .shared) {
@@ -67,10 +64,10 @@ final class PodcastCategorizationService {
 
     // MARK: - Public entry point
 
-    /// Sends one prompt to the configured OpenRouter model, validates the
+    /// Sends one prompt to the configured model/provider, validates the
     /// response, and persists the resulting categories on the store.
     ///
-    /// Throws `.noAPIKey` if OpenRouter isn't connected, `.noSubscriptions`
+    /// Throws `.noAPIKey` if the selected provider isn't connected, `.noSubscriptions`
     /// if the library is empty, `.invalidResponse` for any parser/validation
     /// failure, and `.httpError` for non-2xx responses.
     func recompute(store: AppStateStore) async throws {
@@ -83,29 +80,39 @@ final class PodcastCategorizationService {
         guard !subscriptions.isEmpty else {
             throw CategorizationError.noSubscriptions
         }
+        let modelReference = LLMModelReference(storedID: store.state.settings.llmModel)
+        guard !modelReference.isEmpty else {
+            throw CategorizationError.noModelSelected
+        }
+
         let apiKey: String
         do {
-            guard let key = try OpenRouterCredentialStore.apiKey() else {
-                throw CategorizationError.noAPIKey
+            guard let key = try LLMProviderCredentialResolver.apiKey(for: modelReference.provider),
+                  !key.isEmpty else {
+                throw CategorizationError.noAPIKey(provider: modelReference.provider.displayName)
             }
             apiKey = key
         } catch let error as CategorizationError {
             throw error
         } catch {
-            Self.logger.error("OpenRouterCredentialStore.apiKey failed: \(error, privacy: .public)")
-            throw CategorizationError.noAPIKey
+            Self.logger.error("credential resolve failed: \(error, privacy: .public)")
+            throw CategorizationError.noAPIKey(provider: modelReference.provider.displayName)
         }
 
-        let requestedModel = store.state.settings.llmModel
+        let requestedModel = modelReference.storedID
         Self.logger.info("recompute starting subs=\(subscriptions.count, privacy: .public) model=\(requestedModel, privacy: .public)")
 
         isRunning = true
         defer { isRunning = false }
 
-        let (rawContent, resolvedModel) = try await callOpenRouter(
-            apiKey: apiKey,
-            model: requestedModel,
-            subscriptions: subscriptions
+        let client = WikiOpenRouterClient(
+            mode: .live(apiKey: apiKey, modelReference: modelReference),
+            urlSession: urlSession
+        )
+        let rawContent = try await client.compile(
+            systemPrompt: PodcastCategorizationPrompt.systemPrompt(),
+            userPrompt: PodcastCategorizationPrompt.userPrompt(subscriptions: subscriptions),
+            feature: CostFeature.categorizationRecompute
         )
 
         let generatedAt = Date()
@@ -113,7 +120,7 @@ final class PodcastCategorizationService {
             from: rawContent,
             subscriptions: subscriptions,
             generatedAt: generatedAt,
-            model: resolvedModel ?? requestedModel
+            model: requestedModel
         )
 
         store.setCategories(categories)
@@ -121,70 +128,4 @@ final class PodcastCategorizationService {
         Self.logger.info("recompute complete categories=\(categories.count, privacy: .public)")
     }
 
-    // MARK: - Network
-
-    private func callOpenRouter(
-        apiKey: String,
-        model: String,
-        subscriptions: [PodcastSubscription]
-    ) async throws -> (content: String, modelEcho: String?) {
-        var request = URLRequest(url: Self.endpoint)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = Self.requestTimeout
-
-        let body: [String: Any] = [
-            "model": model,
-            "messages": [
-                ["role": "system", "content": PodcastCategorizationPrompt.systemPrompt()],
-                ["role": "user", "content": PodcastCategorizationPrompt.userPrompt(subscriptions: subscriptions)],
-            ],
-            "response_format": ["type": "json_object"],
-            "temperature": Self.temperature,
-            "stream": false,
-        ]
-        let bodyData = try JSONSerialization.data(withJSONObject: body)
-        request.httpBody = bodyData
-        let requestPayloadJSON = String(data: bodyData, encoding: .utf8)
-
-        let start = Date()
-        let (data, response) = try await urlSession.data(for: request)
-        let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
-
-        guard let http = response as? HTTPURLResponse else {
-            throw CategorizationError.invalidResponse
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            let bodyString = String(data: data, encoding: .utf8) ?? ""
-            throw CategorizationError.httpError(status: http.statusCode, body: bodyString)
-        }
-
-        guard
-            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let choices = json["choices"] as? [[String: Any]],
-            let message = choices.first?["message"] as? [String: Any],
-            let content = message["content"] as? String
-        else {
-            throw CategorizationError.invalidResponse
-        }
-
-        let modelEcho = json["model"] as? String
-
-        if let usageRaw = json["usage"] {
-            let usageData = try? JSONSerialization.data(withJSONObject: usageRaw)
-            let usage = usageData.flatMap { try? JSONDecoder().decode(OpenRouterUsagePayload.self, from: $0) }
-            let modelUsed = modelEcho ?? model
-            CostLedger.shared.log(
-                feature: CostFeature.categorizationRecompute,
-                model: modelUsed,
-                usage: usage,
-                latencyMs: latencyMs,
-                requestPayloadJSON: requestPayloadJSON,
-                responseContentPreview: content
-            )
-        }
-
-        return (content, modelEcho)
-    }
 }

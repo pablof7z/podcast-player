@@ -176,6 +176,7 @@ final class PlaybackState {
 
     init(engine: AudioEngine = AudioEngine()) {
         self.engine = engine
+        configureAudioEngineCallbacks()
     }
 
     // MARK: - Episode lifecycle
@@ -225,6 +226,13 @@ final class PlaybackState {
             if newEpisode.playbackPosition > 0 {
                 engine.seek(to: newEpisode.playbackPosition)
             }
+        } else {
+            engine.refreshMetadata(for: newEpisode)
+            if engine.didReachNaturalEnd {
+                let resume = newEpisode.playbackPosition
+                let target = resume > 0 && resume < max(0, duration - 5) ? resume : 0
+                engine.seek(to: target)
+            }
         }
         // Episode change is the one event that always justifies a snapshot
         // write — title and artwork just changed, so the widget would
@@ -261,6 +269,11 @@ final class PlaybackState {
 
     func pause() {
         Haptics.soft()
+        let pausedEpisodeID = episode?.id
+        if engine.didReachNaturalEnd {
+            tickPersistence()
+        }
+        guard episode?.id == pausedEpisodeID else { return }
         engine.pause()
         // Stop the 1-second persistence + snapshot loop while paused —
         // otherwise it keeps re-writing the same `currentTime` and

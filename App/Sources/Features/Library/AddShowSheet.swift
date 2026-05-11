@@ -46,7 +46,7 @@ struct AddShowSheet: View {
                     case .url:
                         AddByURLForm(store: store, onAdded: handleAddedFromURL)
                     case .opml:
-                        OPMLImportSheet(store: store, onDismiss: onDismiss)
+                        OPMLImportContent(store: store, onDismiss: onDismiss)
                             .padding(.top, -AppTheme.Spacing.md)
                     }
                 }

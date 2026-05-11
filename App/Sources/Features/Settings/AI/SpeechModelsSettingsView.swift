@@ -132,7 +132,7 @@ struct SpeechModelsSettingsView: View {
     }
 
     private var hasElevenLabsKey: Bool {
-        store.state.settings.elevenLabsCredentialSource != .none
+        ElevenLabsCredentialStore.hasAPIKey()
     }
 
     private var voiceDisplayName: String {

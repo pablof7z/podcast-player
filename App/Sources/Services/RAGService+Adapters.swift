@@ -37,31 +37,12 @@ struct WikiRAGSearchAdapter: WikiRAGSearchProtocol {
         startMS: Int,
         endMS: Int
     ) async throws -> RAGChunk? {
-        // Verifier path: locate a chunk that overlaps the cited span. We
-        // don't have a direct "fetch by range" API on `VectorIndex`, so we
-        // ask `topK` over the episode scope using a synthetic zero-vector
-        // query — `VectorIndex.topK` rejects mismatched dimensions, so
-        // instead we route through `hybridTopK` with an empty query +
-        // dummy vector via the embeddings client. That's expensive.
-        //
-        // Cheaper alternative: scope the search to the episode + the
-        // citation's quote text. The verifier already calls this with
-        // (episodeID, span); we can use a narrow text query around the
-        // span by re-running search with the chunk text as the query. But
-        // we don't have the text yet — that's exactly what we're trying
-        // to retrieve.
-        //
-        // Pragmatic fix: ask the search pipeline for everything in this
-        // episode using a generic query string ("."), then linearly scan
-        // for an overlapping span. This is O(k) per verification (k is
-        // small) and avoids leaking sqlite specifics into the adapter.
-        let scope = ChunkScope.episode(episodeID)
-        let opts = RAGSearch.Options(k: 64, overfetchMultiplier: 1, hybrid: false, rerank: false)
-        let matches = (try? await search.search(query: ".", scope: scope, options: opts)) ?? []
-        for m in matches {
-            if startMS < m.chunk.endMS && endMS > m.chunk.startMS {
-                return Self.makeRAGChunk(from: m)
-            }
+        if let chunk = try await index.chunk(
+            episodeID: episodeID,
+            overlappingStartMS: startMS,
+            endMS: endMS
+        ) {
+            return Self.makeRAGChunk(from: ChunkMatch(chunk: chunk, score: 1))
         }
         return nil
     }
@@ -107,6 +88,9 @@ struct BriefingRAGSearchAdapter: BriefingRAGSearchProtocol {
         limit: Int
     ) async throws -> [RAGCandidate] {
         let chunkScope = await Self.chunkScope(for: scope, service: service)
+        if case .episodes(let ids) = chunkScope, ids.isEmpty {
+            return []
+        }
         let options = RAGSearch.Options(k: max(1, limit))
         let matches = try await service.search.search(
             query: query,
@@ -119,15 +103,20 @@ struct BriefingRAGSearchAdapter: BriefingRAGSearchProtocol {
     // MARK: - Helpers
 
     /// Translate the briefing-domain scope to the vector-store-domain scope.
-    /// `mySubscriptions` and `thisWeek` map to `nil` (everything in the
-    /// store). `thisShow` and `thisTopic` would carry an id from the UI; the
-    /// current request shape doesn't expose one, so they also widen to
-    /// "everything" for now.
+    /// Scopes that cannot be represented by the current request shape resolve
+    /// to an empty episode set instead of widening to the whole corpus.
     @MainActor
-    static func chunkScope(for briefing: BriefingScope, service _: RAGService) -> ChunkScope? {
+    static func chunkScope(for briefing: BriefingScope, service: RAGService) -> ChunkScope {
         switch briefing {
-        case .mySubscriptions, .thisWeek, .thisTopic, .thisShow:
-            return nil
+        case .mySubscriptions, .thisTopic:
+            return .all
+        case .thisWeek:
+            guard let store = service.appStore else { return .episodes([]) }
+            let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+            let ids = Set(store.state.episodes.filter { $0.pubDate >= cutoff }.map(\.id))
+            return .episodes(ids)
+        case .thisShow:
+            return .episodes([])
         }
     }
 

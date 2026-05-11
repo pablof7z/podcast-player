@@ -4,7 +4,7 @@ A next-generation iOS podcast player built around an embedded AI agent that has 
 
 > Bootstrapped from [`ios-app-template`](https://github.com/pablofernandez/ios-app-template). The sections below describe the inherited template foundations (shake-to-feedback, agent loop, friends, TestFlight CI). Podcast-specific modules live under `App/Sources/{Audio,Podcast,Transcript,Knowledge,Voice,Briefing}` and the new feature folders under `App/Sources/Features/`.
 
-See [`docs/spec/PRODUCT_SPEC.md`](docs/spec/PRODUCT_SPEC.md) for the full product spec, or [`docs/spec/PROJECT_CONTEXT.md`](docs/spec/PROJECT_CONTEXT.md) for the vision summary. Engineering guidelines (file-size limits, etc.) in [`AGENTS.md`](AGENTS.md).
+See [`docs/spec/PRODUCT_SPEC.md`](docs/spec/PRODUCT_SPEC.md) for the product spec entry point, or [`docs/spec/PROJECT_CONTEXT.md`](docs/spec/PROJECT_CONTEXT.md) for the vision summary. Engineering guidelines (file-size limits, etc.) in [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -193,22 +193,22 @@ App/Sources/
 
    ```bash
    git clone <your-repo>
-   cd ios-app-template
+   cd podcast-player
    ```
 
    Edit `Project.swift`:
    ```swift
-   let appName = "YourAppName"
-   let appDisplayName = "Your App"
-   let bundleIdPrefix = "com.yourcompany"
-   let appleTeamID = "YOUR_TEAM_ID"
+   let appName = "Podcastr"
+   let appDisplayName = "Podcastr"
+   let appBundleID = "io.f7z.podcast"
+   let appleTeamID = "456SHKPP26"
    ```
 
 2. **Generate Xcode project**
 
    ```bash
    tuist generate
-   open YourAppName.xcodeproj
+   open Podcastr.xcodeproj
    ```
 
 3. **Rename the App Group**
@@ -228,7 +228,7 @@ tuist generate && open Podcastr.xcodeproj
 
 ## TestFlight Auto-Deployment
 
-Push to `main` → GitHub Actions archives and uploads to TestFlight automatically.
+Push to `main` → GitHub Actions runs tests, then archives and uploads to TestFlight automatically.
 
 ### Initial Setup
 
@@ -244,7 +244,8 @@ Create an API key at [appstoreconnect.apple.com/access/api](https://appstoreconn
   --auth-key ~/Downloads/AuthKey_KEYID.p8 \
   [--p12 ~/Downloads/Certificates.p12] \
   [--p12-password your_p12_password] \
-  [--app-profile ~/Downloads/Podcastr.mobileprovision]
+  [--app-profile ~/Downloads/Podcastr.mobileprovision] \
+  [--widget-profile ~/Downloads/PodcastrWidget.mobileprovision]
 ```
 
 Omit `--p12` to use Xcode automatic signing (requires a logged-in Apple account on the runner).
@@ -253,16 +254,9 @@ Omit `--p12` to use Xcode automatic signing (requires a logged-in Apple account 
 
 The workflow uses `runs-on: self-hosted`. You need a macOS machine registered as a GitHub Actions runner (free tier, or your own Mac). See [GitHub docs](https://docs.github.com/en/actions/hosting-your-own-runners).
 
-**Step 4 — Update workflow env**
+**Step 4 — Verify workflow env**
 
-In `.github/workflows/testflight.yml`:
-```yaml
-env:
-  APP_SCHEME: YourAppName
-  PROJECT_PATH: YourAppName.xcodeproj
-  APPLE_TEAM_ID: YOUR_TEAM_ID
-  APP_BUNDLE_ID: com.yourcompany.yourapp
-```
+`.github/workflows/testflight.yml` is configured for `Podcastr`, `io.f7z.podcast`, and `io.f7z.podcast.widget`. Update those env vars only when release IDs change.
 
 **Step 5 — First deploy**
 
@@ -279,8 +273,8 @@ git push origin main
 | `ci_post_clone.sh` | Wrapper for Xcode Cloud post-clone hook |
 | `install_signing_assets.sh` | Installs certificate + provisioning profile from base64 secrets |
 | `archive_and_upload.sh` | Archives, exports IPA, uploads to TestFlight via `altool` |
-| `cleanup_signing_assets.sh` | Removes temporary CI keychain |
-| `set_github_secrets.sh` | Local helper to push secrets to GitHub |
+| `cleanup_signing_assets.sh` | Removes temporary CI keychain and App Store Connect key material |
+| `set_github_secrets.sh` | Local helper to push App Store Connect, certificate, app profile, and widget profile secrets to GitHub |
 
 ### Required GitHub Secrets
 
@@ -293,9 +287,10 @@ git push origin main
 | `APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD` | Optional | P12 export password |
 | `KEYCHAIN_PASSWORD` | Optional | Random password for temp keychain |
 | `APP_PROVISION_PROFILE_BASE64` | Optional | `base64 -i App.mobileprovision` |
+| `WIDGET_PROVISION_PROFILE_BASE64` | Optional | `base64 -i Widget.mobileprovision` |
 | `APP_STORE_CONNECT_PROVIDER` | Optional | ASC provider short name |
 
-Automatic signing works without the certificate/profile secrets if your runner has a valid Apple account in Xcode.
+Automatic signing works without the certificate/profile secrets if your runner has a valid Apple account in Xcode. For manual signing, upload both the app and widget provisioning profiles so the archive exports both bundle IDs.
 
 ---
 
@@ -303,7 +298,7 @@ Automatic signing works without the certificate/profile secrets if your runner h
 
 ### Renaming the app
 
-1. Change `appName`, `appDisplayName`, `bundleIdPrefix` in `Project.swift`
+1. Change `appName`, `appDisplayName`, `appBundleID`, and `widgetBundleID` in `Project.swift`
 2. Update `APP_GROUP_IDENTIFIER` in entitlements
 3. Update `Persistence.swift` suite name
 4. Update `.github/workflows/testflight.yml` env vars

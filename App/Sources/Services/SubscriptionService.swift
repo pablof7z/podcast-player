@@ -169,20 +169,7 @@ struct SubscriptionService {
     func refresh(_ subscription: PodcastSubscription) async {
         guard let live = store.subscription(id: subscription.id) else { return }
         do {
-            let result = try await client.fetch(live)
-            switch result {
-            case .updated(let updated, let episodes, _):
-                store.updateSubscription(updated)
-                store.upsertEpisodes(
-                    episodes,
-                    forSubscription: updated.id,
-                    evaluateAutoDownload: true
-                )
-            case .notModified(let when):
-                var bumped = live
-                bumped.lastRefreshedAt = when
-                store.updateSubscription(bumped)
-            }
+            try await SubscriptionRefreshService(client: client).refresh(live.id, store: store)
         } catch {
             Self.logger.error("refresh failed for \(live.feedURL, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }

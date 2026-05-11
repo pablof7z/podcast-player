@@ -54,6 +54,15 @@ enum BriefingScope: String, Codable, Sendable, Hashable, CaseIterable {
     case thisShow
     case thisTopic
     case thisWeek
+
+    var displayName: String {
+        switch self {
+        case .mySubscriptions: "my subscriptions"
+        case .thisShow:        "this show"
+        case .thisTopic:       "this topic"
+        case .thisWeek:        "this week"
+        }
+    }
 }
 
 /// Discrete length puck stops from the spec (3 / 8 / 15 / 25 min).

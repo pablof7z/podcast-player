@@ -58,16 +58,10 @@ struct HomeSubscriptionListSection: View {
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
-                    Button {
-                        Task { await SubscriptionService(store: store).refresh(sub) }
-                    } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                    Button(role: .destructive) {
-                        onRequestUnsubscribe(sub)
-                    } label: {
-                        Label("Unsubscribe", systemImage: "minus.circle")
-                    }
+                    SubscriptionContextMenu(
+                        subscription: sub,
+                        onRequestUnsubscribe: { onRequestUnsubscribe(sub) }
+                    )
                 }
             }
         }

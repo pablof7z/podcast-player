@@ -14,13 +14,45 @@ set_plist_string() {
     /usr/libexec/PlistBuddy -c "Add :${key} string ${value}" "$plist_path"
 }
 
+plist_value() {
+  local plist_path="$1"
+  local key="$2"
+  /usr/libexec/PlistBuddy -c "Print :${key}" "$plist_path"
+}
+
+require_file() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    echo "Required file not found: $path" >&2
+    exit 1
+  fi
+}
+
+assert_bundle_version() {
+  local plist_path="$1"
+  local label="$2"
+  local marketing_version
+  local build_number
+
+  marketing_version="$(plist_value "$plist_path" "CFBundleShortVersionString")"
+  build_number="$(plist_value "$plist_path" "CFBundleVersion")"
+
+  if [[ "$marketing_version" != "$MARKETING_VERSION" ]] || [[ "$build_number" != "$BUILD_NUMBER" ]]; then
+    echo "${label} has version ${marketing_version} (${build_number}); expected ${MARKETING_VERSION} (${BUILD_NUMBER})." >&2
+    exit 1
+  fi
+}
+
 require_env APP_STORE_CONNECT_KEY_ID
 require_env APP_STORE_CONNECT_ISSUER_ID
 require_env APP_STORE_CONNECT_API_KEY_P8
 
 APP_SCHEME="${APP_SCHEME:-Podcastr}"
+APP_PRODUCT_NAME="${APP_PRODUCT_NAME:-$APP_SCHEME}"
 PROJECT_PATH="${PROJECT_PATH:-Podcastr.xcodeproj}"
 APP_INFO_PLIST="${APP_INFO_PLIST:-App/Resources/Info.plist}"
+WIDGET_INFO_PLIST="${WIDGET_INFO_PLIST:-App/Widget/Resources/Info.plist}"
+WIDGET_EXTENSION_NAME="${WIDGET_EXTENSION_NAME:-${APP_PRODUCT_NAME}Widget}"
 APPLE_TEAM_ID="${APPLE_TEAM_ID:-456SHKPP26}"
 BUILD_ROOT="${BUILD_ROOT:-$PWD/build}"
 ARCHIVE_PATH="${ARCHIVE_PATH:-$BUILD_ROOT/Podcastr.xcarchive}"
@@ -30,12 +62,22 @@ DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$BUILD_ROOT/DerivedData}"
 AUTH_KEY_DIR="$HOME/.appstoreconnect/private_keys"
 AUTH_KEY_PATH="$AUTH_KEY_DIR/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
 
+cleanup_auth_key() {
+  if [[ -f "$AUTH_KEY_PATH" ]]; then
+    rm -f "$AUTH_KEY_PATH"
+    rmdir "$AUTH_KEY_DIR" 2>/dev/null || true
+    echo "Removed temporary App Store Connect API key."
+  fi
+}
+trap cleanup_auth_key EXIT
+
 MARKETING_VERSION="${MARKETING_VERSION:-}"
 if [[ -z "$MARKETING_VERSION" ]]; then
   MARKETING_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_INFO_PLIST")"
 fi
 
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}"
+VERSION_PLISTS=("$APP_INFO_PLIST" "$WIDGET_INFO_PLIST")
 
 mkdir -p "$BUILD_ROOT" "$DERIVED_DATA_PATH"
 rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
@@ -45,8 +87,11 @@ mkdir -p "$AUTH_KEY_DIR"
 printf '%s' "$APP_STORE_CONNECT_API_KEY_P8" > "$AUTH_KEY_PATH"
 chmod 600 "$AUTH_KEY_PATH"
 
-set_plist_string "$APP_INFO_PLIST" "CFBundleShortVersionString" "$MARKETING_VERSION"
-set_plist_string "$APP_INFO_PLIST" "CFBundleVersion" "$BUILD_NUMBER"
+for info_plist in "${VERSION_PLISTS[@]}"; do
+  require_file "$info_plist"
+  set_plist_string "$info_plist" "CFBundleShortVersionString" "$MARKETING_VERSION"
+  set_plist_string "$info_plist" "CFBundleVersion" "$BUILD_NUMBER"
+done
 
 SIGNING_STYLE="automatic"
 CODE_SIGN_ARGS=()
@@ -112,6 +157,13 @@ xcodebuild \
   "DEVELOPMENT_TEAM=${APPLE_TEAM_ID}" \
   archive \
   "${CODE_SIGN_ARGS[@]}"
+
+ARCHIVED_APP_INFO_PLIST="$ARCHIVE_PATH/Products/Applications/${APP_PRODUCT_NAME}.app/Info.plist"
+ARCHIVED_WIDGET_INFO_PLIST="$ARCHIVE_PATH/Products/Applications/${APP_PRODUCT_NAME}.app/PlugIns/${WIDGET_EXTENSION_NAME}.appex/Info.plist"
+require_file "$ARCHIVED_APP_INFO_PLIST"
+require_file "$ARCHIVED_WIDGET_INFO_PLIST"
+assert_bundle_version "$ARCHIVED_APP_INFO_PLIST" "App archive"
+assert_bundle_version "$ARCHIVED_WIDGET_INFO_PLIST" "Widget archive"
 
 xcodebuild \
   -exportArchive \
