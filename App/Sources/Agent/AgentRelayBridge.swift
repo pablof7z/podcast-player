@@ -20,11 +20,15 @@ final class AgentRelayBridge {
         let trimmed = content.trimmed
         guard !trimmed.isEmpty else { return nil }
 
-        let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+        let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
         guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             logger.warning("No \(reference.provider.displayName, privacy: .public) key available for Nostr agent reply")
             return nil
         }
+        // Local upgrade flag mirrors AgentChatSession.isUpgraded — flipped when
+        // the agent calls `upgrade_thinking`. Scoped to a single inbound reply
+        // (each Nostr message gets a fresh bridge run).
+        var isUpgraded = false
 
         let senderName = displayName(for: senderPubkey)
         let systemPrompt = AgentPrompt.build(for: store.state)
@@ -45,11 +49,14 @@ final class AgentRelayBridge {
         for _ in 0..<maxTurns {
             let messagesBeforeCall = messages
             let result: AgentResult
+            let modelForTurn = isUpgraded
+                ? store.state.settings.agentThinkingModel
+                : store.state.settings.agentInitialModel
             do {
                 result = try await AgentLLMClient.streamCompletion(
                     messages: messages,
                     tools: AgentTools.schema + AgentTools.podcastSchema,
-                    model: store.state.settings.llmModel,
+                    model: modelForTurn,
                     feature: CostFeature.agentNostr,
                     onPartialContent: { _ in }
                 )
@@ -82,13 +89,22 @@ final class AgentRelayBridge {
 
             var toolDispatches: [AgentToolDispatch] = []
             for toolCall in result.toolCalls {
-                let resultJSON = await AgentTools.dispatch(
-                    name: toolCall.name,
-                    argsJSON: toolCall.arguments,
-                    store: store,
-                    batchID: batchID,
-                    podcastDeps: podcastDeps
-                )
+                let resultJSON: String
+                if toolCall.name == AgentTools.Names.upgradeThinking {
+                    isUpgraded = true
+                    resultJSON = AgentTools.toolSuccess([
+                        "upgraded": true,
+                        "model": store.state.settings.agentThinkingModel,
+                    ])
+                } else {
+                    resultJSON = await AgentTools.dispatch(
+                        name: toolCall.name,
+                        argsJSON: toolCall.arguments,
+                        store: store,
+                        batchID: batchID,
+                        podcastDeps: podcastDeps
+                    )
+                }
                 messages.append([
                     "role": "tool",
                     "tool_call_id": toolCall.id,

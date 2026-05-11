@@ -22,6 +22,17 @@ extension AgentTools {
                 properties: ["content": ["type": "string", "description": "The fact to remember"]],
                 required: ["content"]
             ),
+            tool(
+                name: Names.upgradeThinking,
+                description: "Switch the agent to a stronger reasoning model for the rest of this conversation. Call this BEFORE answering when the task needs multi-step reasoning, planning, writing code, careful synthesis, or you are unsure. Do NOT call for simple lookups, single-tool answers, or short factual replies. Idempotent — calling again is harmless.",
+                properties: [
+                    "reason": [
+                        "type": "string",
+                        "description": "One short sentence explaining why the stronger model is needed.",
+                    ],
+                ],
+                required: []
+            ),
         ]
     }
 

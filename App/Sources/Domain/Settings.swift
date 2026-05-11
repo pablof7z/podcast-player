@@ -74,8 +74,17 @@ struct Settings: Codable, Hashable, Sendable {
     }
 
     // AI / LLM
-    var llmModel: String = Defaults.llmModel
-    var llmModelName: String = ""
+    /// Model the agent chat session starts on. Designed to be a cheap/fast model
+    /// — the agent decides per-task whether to call `upgrade_thinking`, which
+    /// switches the session over to `agentThinkingModel` for subsequent turns.
+    var agentInitialModel: String = Defaults.llmModel
+    var agentInitialModelName: String = ""
+    /// Stronger model the agent escalates to via the `upgrade_thinking` tool when
+    /// a task needs more reasoning than the initial model can reliably provide.
+    /// Defaults to the same value as `agentInitialModel` so behavior is unchanged
+    /// until the user picks something stronger in Settings.
+    var agentThinkingModel: String = Defaults.llmModel
+    var agentThinkingModelName: String = ""
     var memoryCompilationModel: String = Defaults.llmModel
     var memoryCompilationModelName: String = ""
     /// Model used by `WikiGenerator`. Kept distinct from `llmModel` so users can pick a
@@ -208,7 +217,12 @@ struct Settings: Codable, Hashable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
+        // RawValues preserved as "llmModel" / "llmModelName" so existing
+        // user data continues to decode after the rename to agentInitialModel.
+        case agentInitialModel = "llmModel"
+        case agentInitialModelName = "llmModelName"
+        case agentThinkingModel, agentThinkingModelName
+        case memoryCompilationModel, memoryCompilationModelName
         case wikiModel, wikiModelName, categorizationModel, categorizationModelName
         case chapterCompilationModel, chapterCompilationModelName
         case embeddingsModel, embeddingsModelName, rerankerEnabled
@@ -234,8 +248,10 @@ struct Settings: Codable, Hashable, Sendable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        llmModel = try c.decodeIfPresent(String.self, forKey: .llmModel) ?? Defaults.llmModel
-        llmModelName = try c.decodeIfPresent(String.self, forKey: .llmModelName) ?? ""
+        agentInitialModel = try c.decodeIfPresent(String.self, forKey: .agentInitialModel) ?? Defaults.llmModel
+        agentInitialModelName = try c.decodeIfPresent(String.self, forKey: .agentInitialModelName) ?? ""
+        agentThinkingModel = try c.decodeIfPresent(String.self, forKey: .agentThinkingModel) ?? agentInitialModel
+        agentThinkingModelName = try c.decodeIfPresent(String.self, forKey: .agentThinkingModelName) ?? ""
         memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? Defaults.llmModel
         memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
         wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? Defaults.llmModel
@@ -298,8 +314,10 @@ struct Settings: Codable, Hashable, Sendable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(llmModel, forKey: .llmModel)
-        try c.encode(llmModelName, forKey: .llmModelName)
+        try c.encode(agentInitialModel, forKey: .agentInitialModel)
+        try c.encode(agentInitialModelName, forKey: .agentInitialModelName)
+        try c.encode(agentThinkingModel, forKey: .agentThinkingModel)
+        try c.encode(agentThinkingModelName, forKey: .agentThinkingModelName)
         try c.encode(memoryCompilationModel, forKey: .memoryCompilationModel)
         try c.encode(memoryCompilationModelName, forKey: .memoryCompilationModelName)
         try c.encode(wikiModel, forKey: .wikiModel)

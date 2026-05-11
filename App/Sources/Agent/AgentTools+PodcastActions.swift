@@ -125,8 +125,26 @@ extension AgentTools {
     }
 
     static func downloadAndTranscribeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
-            return toolError("Missing or empty 'episode_id'")
+        let episodeIDRaw = (args["episode_id"] as? String)?.trimmed.nilIfEmpty
+        let audioURLRaw  = (args["audio_url"] as? String)?.trimmed.nilIfEmpty
+        let feedURLRaw   = (args["feed_url"] as? String)?.trimmed.nilIfEmpty
+
+        // External path: no episode_id — route through auto-subscribe.
+        if episodeIDRaw == nil, let audioURL = audioURLRaw {
+            guard let feedURL = feedURLRaw else {
+                return toolError("'feed_url' is required when 'episode_id' is not provided. " +
+                    "Use subscribe_podcast or search_podcast_directory to get the feed URL first.")
+            }
+            return await downloadAndTranscribeExternalTool(
+                feedURLString: feedURL,
+                audioURLString: audioURL,
+                deps: deps
+            )
+        }
+
+        guard let episodeID = episodeIDRaw else {
+            return toolError("Provide 'episode_id' (for subscribed episodes) or " +
+                "'audio_url' + 'feed_url' (for external episodes)")
         }
         let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
         guard exists else {

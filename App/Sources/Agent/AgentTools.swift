@@ -19,8 +19,13 @@ enum AgentTools {
 
     /// Canonical string identifiers for every tool the agent can call.
     enum Names {
-        static let createNote   = "create_note"
-        static let recordMemory = "record_memory"
+        static let createNote        = "create_note"
+        static let recordMemory      = "record_memory"
+        /// Sentinel name for the in-band model upgrade. Handled directly by
+        /// the turn loop (AgentChatSession / AgentRelayBridge) — NOT routed
+        /// through `AgentTools.dispatch`, because the "side effect" is a
+        /// session-local flag, not anything in `AppStateStore`.
+        static let upgradeThinking   = "upgrade_thinking"
     }
 
     // MARK: - Cached formatters

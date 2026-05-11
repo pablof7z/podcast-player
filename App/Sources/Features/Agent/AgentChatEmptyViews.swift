@@ -214,6 +214,6 @@ struct AgentChatDisconnectedView: View {
     }
 
     private var provider: LLMProvider {
-        LLMModelReference(storedID: store.state.settings.llmModel).provider
+        LLMModelReference(storedID: store.state.settings.agentInitialModel).provider
     }
 }

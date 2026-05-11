@@ -197,8 +197,8 @@ struct SettingsView: View {
 
     private var currentModelShortName: String {
         Settings.modelDisplayName(
-            modelID: store.state.settings.llmModel,
-            modelName: store.state.settings.llmModelName
+            modelID: store.state.settings.agentInitialModel,
+            modelName: store.state.settings.agentInitialModelName
         )
     }
 

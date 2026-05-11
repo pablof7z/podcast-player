@@ -120,8 +120,10 @@ final class iCloudSettingsSync {
             (kvs.object(forKey: key.rawValue) as? NSNumber)?.intValue
         }
 
-        if let v = string(.llmModel),              !v.isEmpty { settings.llmModel = v }
-        if let v = string(.llmModelName)                      { settings.llmModelName = v }
+        if let v = string(.agentInitialModel),     !v.isEmpty { settings.agentInitialModel = v }
+        if let v = string(.agentInitialModelName)             { settings.agentInitialModelName = v }
+        if let v = string(.agentThinkingModel),    !v.isEmpty { settings.agentThinkingModel = v }
+        if let v = string(.agentThinkingModelName)            { settings.agentThinkingModelName = v }
         if let v = string(.memoryCompilationModel), !v.isEmpty { settings.memoryCompilationModel = v }
         if let v = string(.memoryCompilationModelName)        { settings.memoryCompilationModelName = v }
         if let v = string(.wikiModel),             !v.isEmpty { settings.wikiModel = v }
@@ -165,8 +167,10 @@ final class iCloudSettingsSync {
     // MARK: - Write helper
 
     private func write(_ settings: Settings, to kvs: NSUbiquitousKeyValueStore) {
-        kvs.set(settings.llmModel,                                forKey: Key.llmModel.rawValue)
-        kvs.set(settings.llmModelName,                            forKey: Key.llmModelName.rawValue)
+        kvs.set(settings.agentInitialModel,                       forKey: Key.agentInitialModel.rawValue)
+        kvs.set(settings.agentInitialModelName,                   forKey: Key.agentInitialModelName.rawValue)
+        kvs.set(settings.agentThinkingModel,                      forKey: Key.agentThinkingModel.rawValue)
+        kvs.set(settings.agentThinkingModelName,                  forKey: Key.agentThinkingModelName.rawValue)
         kvs.set(settings.memoryCompilationModel,                  forKey: Key.memoryCompilationModel.rawValue)
         kvs.set(settings.memoryCompilationModelName,              forKey: Key.memoryCompilationModelName.rawValue)
         kvs.set(settings.wikiModel,                               forKey: Key.wikiModel.rawValue)
@@ -209,8 +213,12 @@ final class iCloudSettingsSync {
     /// Namespaced keys for `NSUbiquitousKeyValueStore` to avoid collisions
     /// with any other KV store entries.
     enum Key: String {
-        case llmModel                            = "sync.settings.llmModel"
-        case llmModelName                        = "sync.settings.llmModelName"
+        // RawValues preserved as "sync.settings.llmModel" / "llmModelName" so
+        // existing iCloud KVS entries continue to roundtrip after the rename.
+        case agentInitialModel                   = "sync.settings.llmModel"
+        case agentInitialModelName               = "sync.settings.llmModelName"
+        case agentThinkingModel                  = "sync.settings.agentThinkingModel"
+        case agentThinkingModelName              = "sync.settings.agentThinkingModelName"
         case memoryCompilationModel              = "sync.settings.memoryCompilationModel"
         case memoryCompilationModelName          = "sync.settings.memoryCompilationModelName"
         case wikiModel                           = "sync.settings.wikiModel"

@@ -30,6 +30,32 @@ enum AgentPrompt {
         Help the user surface, recall, and reason about what they've been listening to.
         Be concise and action-oriented. For specifics that aren't in this prompt
         (transcripts, episode contents, semantic search), call your tools.
+
+        You can create custom audio episodes with `generate_tts_episode`. Use it when
+        the user asks for a TLDR, summary, or compilation episode. You can mix speech
+        turns (TTS narration, any ElevenLabs voice, emotion cues like [cheerfully]) with
+        snippet turns (original audio clips from existing episodes). Multi-speaker
+        dialogue works by alternating speech turns with different voice_id values.
+        The finished episode appears in the 'Agent Generated' podcast in the user's
+        library. Use `configure_agent_voice` to set the default voice ID. Always call
+        `upgrade_thinking` before planning a complex episode — it needs careful scripting.
+
+        You can play episodes the user is NOT subscribed to. When asked to play
+        a guest appearance, a one-off episode, or anything not in the library:
+        1. Use `search_podcast_directory` to find the feed URL + audio URL.
+        2. Use `play_external_episode(audio_url, title, podcast_title)` to start playing immediately.
+        3. Optionally offer `subscribe_podcast(feed_url)` so the user can follow the show.
+        For transcripts of external episodes, call `subscribe_podcast` first then
+        `download_and_transcribe(feed_url, audio_url)`.
+
+        You are running on a fast/cheap model by default. Before answering, judge
+        the request: simple lookups, one-tool answers, short factual replies →
+        just answer. If the task needs multi-step reasoning, planning, writing
+        code, careful synthesis, or you're not confident you can answer well →
+        call `upgrade_thinking` first (no arguments needed; a one-line reason
+        helps). Subsequent turns will run on a stronger model. Default to NOT
+        upgrading — only upgrade when you're genuinely unsure or the task is
+        clearly complex.
         """)
 
         if !state.subscriptions.isEmpty {
@@ -72,12 +98,8 @@ enum AgentPrompt {
         }
 
         if !state.friends.isEmpty {
-            // Expose only displayName + truncated public identifier. Internal
-            // UUIDs have no value to the LLM (no tool consumes a friend UUID),
-            // and leaking them broadens the prompt-injection / data-exfiltration
-            // surface unnecessarily.
             let list = state.friends
-                .map { "- \($0.displayName) (\($0.shortIdentifier))" }
+                .map { "- \($0.displayName)" }
                 .joined(separator: "\n")
             sections.append("## Friends\n\(list)")
         }

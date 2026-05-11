@@ -3,6 +3,7 @@ import SwiftUI
 struct AIModelsSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var agentSelectorPresented = false
+    @State private var thinkingSelectorPresented = false
     @State private var memorySelectorPresented = false
     @State private var wikiSelectorPresented = false
     @State private var categorizationSelectorPresented = false
@@ -31,7 +32,13 @@ struct AIModelsSettingsView: View {
         }
         .sheet(isPresented: $agentSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent")
+                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent (Initial)")
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $thinkingSelectorPresented) {
+            NavigationStack {
+                OpenRouterModelSelectorView(selectedModelID: thinkingModelBinding, selectedModelName: thinkingModelNameBinding, role: "Agent (Thinking)")
             }
             .presentationDragIndicator(.visible)
         }
@@ -74,13 +81,24 @@ struct AIModelsSettingsView: View {
             modelRow(
                 icon: "brain.head.profile",
                 tint: .orange,
-                role: "Agent",
-                modelID: store.state.settings.llmModel,
-                modelName: store.state.settings.llmModelName
+                role: "Agent (Initial)",
+                modelID: store.state.settings.agentInitialModel,
+                modelName: store.state.settings.agentInitialModelName
             ) {
                 agentSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.llmModel))
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.agentInitialModel))
+
+            modelRow(
+                icon: "sparkles",
+                tint: .pink,
+                role: "Agent (Thinking)",
+                modelID: store.state.settings.agentThinkingModel,
+                modelName: store.state.settings.agentThinkingModelName
+            ) {
+                thinkingSelectorPresented = true
+            }
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.agentThinkingModel))
 
             modelRow(
                 icon: "memories",
@@ -139,7 +157,7 @@ struct AIModelsSettingsView: View {
         } header: {
             Text("Language Roles")
         } footer: {
-            Text("Each role can use a different connected provider and model. Connect provider keys in Providers first.")
+            Text("Each role can use a different connected provider and model. The agent starts on the Initial model and can self-upgrade to the Thinking model when a task needs more reasoning. Connect provider keys in Providers first.")
         }
     }
 
@@ -191,15 +209,29 @@ struct AIModelsSettingsView: View {
 
     private var agentModelBinding: Binding<String> {
         Binding(
-            get: { store.state.settings.llmModel },
-            set: { v in var s = store.state.settings; s.llmModel = v; store.updateSettings(s) }
+            get: { store.state.settings.agentInitialModel },
+            set: { v in var s = store.state.settings; s.agentInitialModel = v; store.updateSettings(s) }
         )
     }
 
     private var agentModelNameBinding: Binding<String> {
         Binding(
-            get: { store.state.settings.llmModelName },
-            set: { v in var s = store.state.settings; s.llmModelName = v; store.updateSettings(s) }
+            get: { store.state.settings.agentInitialModelName },
+            set: { v in var s = store.state.settings; s.agentInitialModelName = v; store.updateSettings(s) }
+        )
+    }
+
+    private var thinkingModelBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.agentThinkingModel },
+            set: { v in var s = store.state.settings; s.agentThinkingModel = v; store.updateSettings(s) }
+        )
+    }
+
+    private var thinkingModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.agentThinkingModelName },
+            set: { v in var s = store.state.settings; s.agentThinkingModelName = v; store.updateSettings(s) }
         )
     }
 
@@ -298,8 +330,12 @@ struct AIModelsSettingsView: View {
     private func backfillModelNames() {
         var s = store.state.settings
         var changed = false
-        if s.llmModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.llmModel }) {
-            s.llmModelName = match.name
+        if s.agentInitialModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.agentInitialModel }) {
+            s.agentInitialModelName = match.name
+            changed = true
+        }
+        if s.agentThinkingModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.agentThinkingModel }) {
+            s.agentThinkingModelName = match.name
             changed = true
         }
         if s.memoryCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.memoryCompilationModel }) {

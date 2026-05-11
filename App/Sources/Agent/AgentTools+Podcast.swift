@@ -56,6 +56,11 @@ extension AgentTools {
         static let generateTTSEpisode     = "generate_tts_episode"
         static let configureAgentVoice    = "configure_agent_voice"
 
+        // External-podcast tools
+        static let searchPodcastDirectory = "search_podcast_directory"
+        static let subscribePodcast       = "subscribe_podcast"
+        static let playExternalEpisode    = "play_external_episode"
+
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch.
         static var all: [String] {
@@ -70,6 +75,7 @@ extension AgentTools {
                 listEpisodes, listInProgress, listRecentUnplayed,
                 createClip, queueEpisodeSegments, downloadAndTranscribe,
                 generateTTSEpisode, configureAgentVoice,
+                searchPodcastDirectory, subscribePodcast, playExternalEpisode,
             ]
         }
     }
@@ -181,6 +187,12 @@ extension AgentTools {
             return await generateTTSEpisodeTool(args: args, deps: deps)
         case PodcastNames.configureAgentVoice:
             return await configureAgentVoiceTool(args: args, deps: deps)
+        case PodcastNames.searchPodcastDirectory:
+            return await searchPodcastDirectoryTool(args: args, deps: deps)
+        case PodcastNames.subscribePodcast:
+            return await subscribePodcastTool(args: args, deps: deps)
+        case PodcastNames.playExternalEpisode:
+            return await playExternalEpisodeTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

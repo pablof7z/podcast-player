@@ -138,12 +138,25 @@ final class AudioEngine {
     var endObserver: NSObjectProtocol?
     var fadeBaseVolume: Float = 1.0
 
+    /// Audible cue played around every seek. Owns its own AVAudioPlayer and
+    /// drives the duck-restore choreography via `seekDuckMultiplier`.
+    let seekCue = SeekCue()
+
+    /// Per-effect multipliers that compose into `player.volume` via
+    /// `applyEffectiveVolume`. Sleep timer drives `sleepFadeMultiplier`; the
+    /// seek cue drives `seekDuckMultiplier`. Keeping them separate lets a
+    /// seek during the sleep-timer fade dip and restore without erasing the
+    /// in-flight fade.
+    private var sleepFadeMultiplier: Float = 1.0
+    private var seekDuckMultiplier: Float = 1.0
+
     // MARK: - Init / deinit
 
     init() {
         configureNowPlayingCallbacks()
         onSleepTimerFire = { [weak self] in self?.pause() }
         configureSleepTimerHooks()
+        configureSeekCueHooks()
         nowPlaying.setSkipIntervals(forward: skipForwardSeconds, backward: skipBackwardSeconds)
     }
 
@@ -183,6 +196,7 @@ final class AudioEngine {
         installItemObservers(for: item)
         installTimeObserver()
 
+        seekCue.trigger()
         publishNowPlaying()
     }
 
@@ -213,8 +227,7 @@ final class AudioEngine {
             state = .failed(EngineError("Could not activate audio session: \(error.localizedDescription)"))
             return
         }
-        // Restore base volume in case a fade was active.
-        player.volume = fadeBaseVolume
+        applyEffectiveVolume()
         player.playImmediately(atRate: Float(rate))
         if state != .buffering { state = .playing }
         publishNowPlaying()
@@ -255,6 +268,7 @@ final class AudioEngine {
         }
         currentTime = target
         let time = CMTime(seconds: target, preferredTimescale: 600)
+        seekCue.trigger()
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             Task { @MainActor in
                 self?.publishNowPlayingElapsed()
@@ -314,12 +328,31 @@ final class AudioEngine {
     private func configureSleepTimerHooks() {
         sleepTimer.onFadeTick = { [weak self] multiplier in
             guard let self else { return }
-            self.player.volume = self.fadeBaseVolume * multiplier
+            self.sleepFadeMultiplier = multiplier
+            self.applyEffectiveVolume()
         }
         sleepTimer.onFire = { [weak self] in
-            self?.onSleepTimerFire()
-            self?.player.volume = self?.fadeBaseVolume ?? 1.0
+            guard let self else { return }
+            self.onSleepTimerFire()
+            self.sleepFadeMultiplier = 1.0
+            self.applyEffectiveVolume()
         }
+    }
+
+    private func configureSeekCueHooks() {
+        seekCue.applyDuck = { [weak self] mult in
+            guard let self else { return }
+            self.seekDuckMultiplier = mult
+            self.applyEffectiveVolume()
+        }
+    }
+
+    /// Compose `fadeBaseVolume` with the sleep-timer fade and the seek-cue
+    /// duck into a single `AVPlayer.volume` value. Both effects multiply,
+    /// so a seek mid-fade dips relative to the in-flight fade level rather
+    /// than overriding it.
+    private func applyEffectiveVolume() {
+        player.volume = fadeBaseVolume * sleepFadeMultiplier * seekDuckMultiplier
     }
 
     // MARK: - Internal Now Playing helpers (used from +Observers extension)

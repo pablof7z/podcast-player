@@ -45,7 +45,7 @@ struct AgentChatView: View {
     @State private var showSettingsHint = false
     @State private var bannerDismissed = false
     @State private var didSendInSession = false
-    @State private var showClearConfirm = false
+    @State private var showHistory = false
     @State private var scrolledMessageID: AnyHashable? = nil
     // `transcriptURL` is no longer held as state — the export handler
     // presents the share sheet imperatively via `SystemShareSheet`.
@@ -59,10 +59,9 @@ struct AgentChatView: View {
         .navigationTitle("Agent")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
-        .alert("Clear conversation?", isPresented: $showClearConfirm, actions: clearAlertActions, message: clearAlertMessage)
         .onAppear {
             if session == nil { session = AgentChatSession(store: store, playback: playback) }
-            let reference = LLMModelReference(storedID: store.state.settings.llmModel)
+            let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
             let hasKey = LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
             showSettingsHint = !hasKey
             // Long-press → ask-agent prefill. Drained once per session so a
@@ -96,22 +95,65 @@ struct AgentChatView: View {
         )) { batch in
             AgentActivitySheet(batchID: batch.id)
         }
+        .sheet(isPresented: $showHistory) {
+            if let session {
+                AgentChatHistoryView(
+                    history: session.history,
+                    currentID: session.currentConversationID,
+                    onSelect: { convo in
+                        Task {
+                            await session.switchToConversation(convo.id)
+                            // A fresh switch is a fresh sheet — reset transient
+                            // banners and bookkeeping so the loaded thread acts
+                            // like the chat the user picked.
+                            bannerDismissed = false
+                            didSendInSession = false
+                            draft = ""
+                        }
+                    },
+                    onNew: {
+                        Task {
+                            await session.startNewConversation()
+                            bannerDismissed = false
+                            didSendInSession = false
+                            draft = ""
+                        }
+                    }
+                )
+            }
+        }
     }
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        if let session, !session.messages.isEmpty {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Haptics.selection()
-                    showClearConfirm = true
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .accessibilityLabel("Clear conversation")
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                Haptics.selection()
+                showHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel("Conversation history")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                Haptics.selection()
+                Task {
+                    await session?.startNewConversation()
+                    bannerDismissed = false
+                    didSendInSession = false
+                    draft = ""
+                }
+            } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel("New conversation")
+        }
+        if let session, !session.messages.isEmpty {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     exportTranscript(messages: session.messages)
@@ -139,21 +181,6 @@ struct AgentChatView: View {
         // renders the activity controller as a blank sheet on iOS 16+ for
         // file-URL items.
         SystemShareSheet.present(items: [url])
-    }
-
-    @ViewBuilder
-    private func clearAlertActions() -> some View {
-        Button("Clear", role: .destructive) {
-            session?.clearHistory()
-            bannerDismissed = false
-            didSendInSession = false
-            Haptics.success()
-        }
-        Button("Cancel", role: .cancel) {}
-    }
-
-    private func clearAlertMessage() -> some View {
-        Text("This permanently deletes the chat history on this device.")
     }
 
     @ViewBuilder

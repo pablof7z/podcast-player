@@ -270,7 +270,7 @@ struct SubscriptionsListView: View {
             opmlURL = nil
             return
         }
-        let subs = store.sortedSubscriptions
+        let subs = store.sortedSubscriptions.filter { !$0.isAgentGenerated }
         let exporter = OPMLExport()
         let data = exporter.exportOPML(subscriptions: subs)
         let filename = "Podcastr-Subscriptions-\(Self.dateStamp()).opml"

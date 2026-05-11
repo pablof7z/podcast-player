@@ -178,7 +178,7 @@ final class AgentPicksService {
             return
         }
 
-        if hasAPIKey(model: store.state.settings.llmModel) {
+        if hasAPIKey(model: store.state.settings.agentInitialModel) {
             do {
                 let picks = try await runLLMPicks(
                     store: store,
@@ -246,7 +246,7 @@ final class AgentPicksService {
         // cached bundles intact.
         bundles[key] = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
 
-        let model = store.state.settings.llmModel
+        let model = store.state.settings.agentInitialModel
 
         // Streaming task — does the actual network call and incremental parse.
         let streamingTask = Task<[HomeAgentPick], Error> { @MainActor [weak self] in

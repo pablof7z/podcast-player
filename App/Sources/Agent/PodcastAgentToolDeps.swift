@@ -68,6 +68,12 @@ public protocol EpisodeFetcherProtocol: Sendable {
     /// Returns `(podcastTitle, episodeTitle, durationSeconds?)` for an episode,
     /// or nil if not found. Best-effort metadata for tool result envelopes.
     func episodeMetadata(episodeID: EpisodeID) async -> (podcastTitle: String, episodeTitle: String, durationSeconds: Int?)?
+
+    /// Scan a subscribed podcast's episodes and return the EpisodeID whose
+    /// `enclosureURL` matches `audioURLString`. Returns `nil` when not found.
+    /// Used by `download_and_transcribe` (external path) to locate an episode
+    /// after an auto-subscribe.
+    func episodeIDForAudioURL(_ audioURLString: String, podcastID: PodcastID) async -> EpisodeID?
 }
 
 // MARK: - Player / library / delegation
@@ -96,6 +102,18 @@ public protocol PlaybackHostProtocol: Sendable {
     /// Navigate the UI to a named route. Routes are app-defined strings, e.g.
     /// `"library"`, `"now_playing"`, `"briefings"`, `"wiki/zone-2"`.
     func openScreen(route: String) async
+
+    /// Play a publicly-accessible episode by URL without requiring a prior
+    /// subscription. Constructs a transient episode value (not persisted to the
+    /// store) so playback position is not saved across app launches.
+    func playExternalEpisode(
+        audioURL: URL,
+        title: String,
+        podcastTitle: String?,
+        imageURL: URL?,
+        durationSeconds: TimeInterval?,
+        timestampSeconds: Double
+    ) async
 
     /// Enqueue one or more time-bounded episode segments and optionally start
     /// playing the first one immediately. Used by the `queue_episode_segments`
@@ -192,6 +210,24 @@ public protocol TTSPublisherProtocol: Sendable {
     ) async throws -> TTSEpisodeResult
 }
 
+/// Global podcast directory search (iTunes Search API).
+public protocol PodcastDirectoryProtocol: Sendable {
+    /// Search for shows or episodes in the Apple Podcasts directory.
+    /// `type` selects podcast-level or episode-level results.
+    func searchDirectory(
+        query: String,
+        type: PodcastDirectorySearchType,
+        limit: Int
+    ) async throws -> [PodcastDirectoryHit]
+}
+
+/// Subscribing to a new podcast feed by URL.
+public protocol PodcastSubscribeProtocol: Sendable {
+    /// Fetch and persist a podcast feed. Idempotent — if the URL is already
+    /// in the user's library the result carries `alreadySubscribed: true`.
+    func subscribe(feedURLString: String) async throws -> PodcastSubscribeResult
+}
+
 // MARK: - Aggregate
 
 /// Bundle of every protocol the podcast tool surface needs. Construct once at
@@ -209,6 +245,8 @@ public struct PodcastAgentToolDeps: Sendable {
     public let delegation: PodcastDelegationProtocol
     public let perplexity: PerplexityClientProtocol
     public let ttsPublisher: TTSPublisherProtocol
+    public let directory: PodcastDirectoryProtocol
+    public let subscribe: PodcastSubscribeProtocol
 
     public init(
         rag: PodcastAgentRAGSearchProtocol,
@@ -222,7 +260,9 @@ public struct PodcastAgentToolDeps: Sendable {
         categories: PodcastCategoryProtocol,
         delegation: PodcastDelegationProtocol,
         perplexity: PerplexityClientProtocol,
-        ttsPublisher: TTSPublisherProtocol
+        ttsPublisher: TTSPublisherProtocol,
+        directory: PodcastDirectoryProtocol,
+        subscribe: PodcastSubscribeProtocol
     ) {
         self.rag = rag
         self.wiki = wiki
@@ -236,5 +276,7 @@ public struct PodcastAgentToolDeps: Sendable {
         self.delegation = delegation
         self.perplexity = perplexity
         self.ttsPublisher = ttsPublisher
+        self.directory = directory
+        self.subscribe = subscribe
     }
 }

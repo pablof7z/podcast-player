@@ -24,9 +24,13 @@ final class LiveTENEXDelegationBridge: PodcastDelegationProtocol, @unchecked Sen
     func delegate(recipient: String, prompt: String) async throws -> DelegationResult {
         let createdAt = Date()
         let createdAtSeconds = Int(createdAt.timeIntervalSince1970)
-        let recipientTag = Self.recipientPubkeyOrSlug(recipient)
+        let recipientTag = await recipientPubkeyOrSlug(recipient)
+        guard !recipientTag.isEmpty else {
+            throw TENEXDelegationPublishError.unresolvableRecipient(recipient)
+        }
         let tags = [
             ["p", recipientTag],
+            ["a", "31933:09d48a1a5dbe13404a729634f1d6ba722d40513468dd713c8ea38ca9b7b6f2c7:podcast"],
             ["delegation", "podcastr"],
             ["tool", "delegate"],
             ["client", "Podcastr"],
@@ -90,8 +94,14 @@ final class LiveTENEXDelegationBridge: PodcastDelegationProtocol, @unchecked Sen
         return try await LocalKeySigner(keyPair: pair).sign(draft)
     }
 
-    private static func recipientPubkeyOrSlug(_ value: String) -> String {
+    private func recipientPubkeyOrSlug(_ value: String) async -> String {
         let trimmed = value.trimmed
+        // Resolve a friend display name to its stored hex pubkey.
+        // Must hop to MainActor because AppStateStore is @MainActor-isolated.
+        let friends: [Friend] = await MainActor.run { store?.state.friends ?? [] }
+        if let match = friends.first(where: { $0.displayName.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+            return match.identifier.lowercased()
+        }
         if trimmed.count == 64, Data(hexString: trimmed) != nil {
             return trimmed.lowercased()
         }
@@ -100,7 +110,9 @@ final class LiveTENEXDelegationBridge: PodcastDelegationProtocol, @unchecked Sen
            bytes.count == 32 {
             return bytes.hexString
         }
-        return trimmed
+        // No match — fail loudly so the caller surfaces an error rather than
+        // publishing a useless slug in the p-tag.
+        return ""
     }
 }
 
@@ -233,12 +245,15 @@ enum TENEXDelegationPublishError: LocalizedError {
     case encodingFailed
     case missingOK
     case rejected(String)
+    case unresolvableRecipient(String)
 
     var errorDescription: String? {
         switch self {
         case .encodingFailed: return "Could not encode Nostr EVENT message."
         case .missingOK: return "Relay did not acknowledge the delegation event."
         case .rejected(let reason): return reason
+        case .unresolvableRecipient(let name):
+            return "'\(name)' is not a known friend name, hex pubkey, or npub. Add them to Friends first."
         }
     }
 }

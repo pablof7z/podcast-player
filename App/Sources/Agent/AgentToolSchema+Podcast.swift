@@ -262,12 +262,17 @@ extension AgentTools {
                 Use this when you need the transcript to be available immediately after the call \
                 — for example before calling query_transcripts on a fresh episode. \
                 Prefer this over separate download_episode + request_transcription calls when the \
-                goal is to have the transcript ready to query in the same turn.
+                goal is to have the transcript ready to query in the same turn. \
+                For episodes not yet in the library, supply feed_url and audio_url instead of \
+                episode_id — the tool will auto-subscribe to the feed, locate the episode, then \
+                download and transcribe it.
                 """,
                 properties: [
-                    "episode_id": ["type": "string", "description": "The episode to download and transcribe (UUID string)."],
+                    "episode_id": ["type": "string", "description": "The episode to download and transcribe (UUID string). Omit when using feed_url + audio_url for external episodes."],
+                    "feed_url": ["type": "string", "description": "RSS feed URL of the podcast. Required when episode_id is omitted."],
+                    "audio_url": ["type": "string", "description": "Direct audio URL of the specific episode. Required when episode_id is omitted, used to locate the episode within the feed."],
                 ],
-                required: ["episode_id"]
+                required: []
             ),
             podcastTool(
                 name: PodcastNames.queueEpisodeSegments,
@@ -352,6 +357,55 @@ extension AgentTools {
                     "voice_id": ["type": "string", "description": "ElevenLabs voice ID to set as the agent's default."],
                 ],
                 required: ["voice_id"]
+            ),
+            podcastTool(
+                name: PodcastNames.searchPodcastDirectory,
+                description: """
+                Search the global Apple Podcasts directory by show name, episode title, or guest name. \
+                Use this when the user asks about a podcast or episode that may not be in their library \
+                — e.g. 'find the Lyn Alden episode on Library of Wealth' or 'is there a show about X?'. \
+                Returns feed URLs, episode audio URLs, and metadata. \
+                For recency-sensitive lookups ('most recent appearance', 'May 2026') combine with perplexity_search. \
+                After finding a feed URL you can call subscribe_podcast or play_external_episode.
+                """,
+                properties: [
+                    "query": ["type": "string", "description": "Show name, episode title, guest name, or topic to search for."],
+                    "type": ["type": "string", "enum": ["podcast", "episode"], "description": "Search for shows ('podcast') or individual episodes ('episode'). Defaults to 'episode'."],
+                    "limit": ["type": "integer", "description": "Maximum results (1–20). Defaults to 5."],
+                ],
+                required: ["query"]
+            ),
+            podcastTool(
+                name: PodcastNames.subscribePodcast,
+                description: """
+                Subscribe to a podcast feed by RSS URL. Fetches the feed, imports all known episodes, \
+                and returns the new podcast_id for follow-up calls (e.g. list_episodes, download_and_transcribe). \
+                Idempotent — if already subscribed, returns the existing show info with alreadySubscribed=true. \
+                Use after search_podcast_directory resolves a feed_url, or when the user supplies one directly.
+                """,
+                properties: [
+                    "feed_url": ["type": "string", "description": "RSS feed URL of the podcast to subscribe to."],
+                ],
+                required: ["feed_url"]
+            ),
+            podcastTool(
+                name: PodcastNames.playExternalEpisode,
+                description: """
+                Play any publicly accessible podcast episode by audio URL, without requiring a prior subscription. \
+                Use when the user wants to hear a specific episode from a show they don't follow \
+                — e.g. a guest appearance or a one-off recommendation. \
+                Playback position is NOT saved across app launches for external episodes. \
+                If the user wants to save progress or get a transcript, call subscribe_podcast first.
+                """,
+                properties: [
+                    "audio_url": ["type": "string", "description": "Direct audio URL of the episode (e.g. the enclosure URL from search_podcast_directory)."],
+                    "title": ["type": "string", "description": "Episode title shown in the player."],
+                    "podcast_title": ["type": "string", "description": "Show name shown as the subtitle in the player."],
+                    "image_url": ["type": "string", "description": "Optional artwork URL for the lock-screen Now Playing card."],
+                    "duration_seconds": ["type": "number", "description": "Optional episode duration in seconds."],
+                    "timestamp": ["type": "number", "description": "Position to seek to in seconds. Defaults to 0 (beginning)."],
+                ],
+                required: ["audio_url", "title"]
             ),
         ]
     }

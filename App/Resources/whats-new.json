@@ -2,6 +2,34 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "external-episode-tools",
+      "shipped_at": "2026-05-11T04:00:00Z",
+      "lines": [
+        "The assistant can now play any podcast episode without a subscription — just ask it to find and play a guest appearance or one-off episode. New tools: search the global podcast directory, subscribe to any show by feed URL, and play external episodes directly."
+      ]
+    },
+    {
+      "id": "agent-new-convo-plus",
+      "shipped_at": "2026-05-11T00:00:00Z",
+      "lines": [
+        "Agent chat toolbar now shows a + button to start a new conversation instead of a trash/delete button."
+      ]
+    },
+    {
+      "id": "delegate-atag",
+      "shipped_at": "2026-05-12T01:30:00Z",
+      "lines": [
+        "Delegate tool events now include the project 'a' tag so they're properly routed in TENEX."
+      ]
+    },
+    {
+      "id": "TODO-chat-history",
+      "shipped_at": "2026-05-12T01:00:00Z",
+      "lines": [
+        "Agent chats now have history — tap the clock in the top-left to revisit any past conversation, swipe to delete, or start a fresh thread. The agent auto-resumes recent chats and starts a new one after you've been away a few hours; titles for each thread are generated automatically."
+      ]
+    },
+    {
       "id": "20b6654",
       "shipped_at": "2026-05-12T00:00:00Z",
       "lines": [

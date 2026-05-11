@@ -50,7 +50,9 @@ enum LivePodcastAgentToolDeps {
             categories: inventory,
             delegation: LiveTENEXDelegationBridge(store: store),
             perplexity: PerplexityClient(),
-            ttsPublisher: AgentTTSComposer(store: store, playback: playback)
+            ttsPublisher: AgentTTSComposer(store: store, playback: playback),
+            directory: LivePodcastDirectoryAdapter(),
+            subscribe: LivePodcastSubscribeAdapter(store: store)
         )
     }
 }
@@ -84,6 +86,12 @@ struct LiveEpisodeFetcherAdapter: EpisodeFetcherProtocol {
             episodeTitle: episode.title,
             durationSeconds: episode.duration.map { Int($0) }
         )
+    }
+
+    func episodeIDForAudioURL(_ audioURLString: String, podcastID: PodcastID) async -> EpisodeID? {
+        guard let store, let podcastUUID = UUID(uuidString: podcastID) else { return nil }
+        let episodes = await store.episodes(forSubscription: podcastUUID)
+        return episodes.first { $0.enclosureURL.absoluteString == audioURLString }?.id.uuidString
     }
 }
 
@@ -187,6 +195,38 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         // intent is visible in Console.app and so tests can assert the call
         // shape unchanged.
         logger.info("openScreen: route='\(route, privacy: .public)' (no-op until nav router lands)")
+    }
+
+    func playExternalEpisode(
+        audioURL: URL,
+        title: String,
+        podcastTitle: String?,
+        imageURL: URL?,
+        durationSeconds: TimeInterval?,
+        timestampSeconds: Double
+    ) async {
+        await MainActor.run {
+            guard let playback else {
+                logger.error("playExternalEpisode: playback host missing")
+                return
+            }
+            // Sentinel UUID marks this episode as external (not in any subscription).
+            let sentinelSubscriptionID = UUID(uuidString: "00000000-EEEE-EEEE-EEEE-000000000000")!
+            let episode = Episode(
+                id: UUID(),
+                subscriptionID: sentinelSubscriptionID,
+                guid: audioURL.absoluteString,
+                title: title,
+                pubDate: Date(),
+                duration: durationSeconds,
+                enclosureURL: audioURL,
+                imageURL: imageURL
+            )
+            playback.setEpisode(episode)
+            if timestampSeconds > 0 { playback.seek(to: timestampSeconds) }
+            playback.play()
+            logger.info("playExternalEpisode: '\(title, privacy: .public)' at \(timestampSeconds)")
+        }
     }
 
     func queueEpisodeSegments(

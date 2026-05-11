@@ -3,6 +3,7 @@ import Foundation
 
 enum CostFeature {
     static let agentChat = "agent.chat"
+    static let agentChatTitle = "agent.chat.title"
     static let agentNostr = "agent.nostr"
     static let episodeSummary = "episode.summary"
     static let briefingCompose = "briefing.compose"
@@ -24,6 +25,7 @@ enum CostFeature {
     static func displayName(for feature: String) -> String {
         switch feature {
         case agentChat:              return "Agent chat"
+        case agentChatTitle:         return "Agent chat title"
         case agentNostr:             return "Agent (Nostr)"
         case episodeSummary:         return "Episode summary"
         case briefingCompose:        return "Briefing"
