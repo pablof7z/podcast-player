@@ -35,29 +35,29 @@ struct PlayerView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Editorial backdrop: scaled-and-blurred artwork tints the whole
-            // surface so the player feels like the episode, not a chrome.
-            // Behind everything; controls' Liquid Glass material reflects it.
-            PlayerEditorialBackdrop(artworkURL: artworkURL)
-
-            VStack(spacing: 0) {
-                topBar
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: AppTheme.Spacing.lg) {
-                        heroArtwork
-                        editorialHeader
-                        secondarySurface
-                            .frame(minHeight: 240, maxHeight: 320)
-                    }
-                    .padding(.horizontal, AppTheme.Spacing.md)
+        VStack(spacing: 0) {
+            topBar
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: AppTheme.Spacing.lg) {
+                    heroArtwork
+                    editorialHeader
+                    secondarySurface
+                        .frame(minHeight: 240, maxHeight: 320)
                 }
-
-                playbackChrome
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.bottom, AppTheme.Spacing.md)
+                .padding(.horizontal, AppTheme.Spacing.md)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            playbackChrome
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.md)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Backdrop is applied as .background so its .ignoresSafeArea()
+        // doesn't inflate the layout size reported to the sheet container —
+        // a ZStack sibling with .ignoresSafeArea() made the parent ZStack
+        // wider than the viewport, cutting off content on both edges.
+        .background {
+            PlayerEditorialBackdrop(artworkURL: artworkURL)
         }
         .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
