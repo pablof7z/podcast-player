@@ -96,6 +96,8 @@ struct SpeechModelsSettingsView: View {
             return Text("ElevenLabs Scribe — diarization and word-level timestamps. Requires an ElevenLabs key.")
         case .openRouterWhisper:
             return Text("OpenRouter Whisper — uses your OpenRouter key. Downloaded episodes are uploaded for transcription.")
+        case .appleNative:
+            return Text("Apple on-device — uses Apple Silicon's neural engine via iOS 26 SpeechTranscriber. No API key required. Episode must be downloaded first.")
         }
     }
 
