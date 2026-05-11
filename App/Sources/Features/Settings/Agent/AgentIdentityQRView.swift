@@ -86,7 +86,10 @@ struct AgentIdentityQRView: View {
                     .appShadow(AppTheme.Shadow.lifted)
                     .onTapGesture { copyNpub() }
                     .accessibilityLabel("QR code")
-                    .accessibilityHint("Tap to copy npub to clipboard")
+                    // Hints describe the effect — VoiceOver already
+                    // narrates "double-tap to activate" via the button
+                    // trait, so the hint shouldn't repeat the gesture.
+                    .accessibilityHint("Copies your npub to the clipboard")
                     .accessibilityAddTraits(.isButton)
                 npubCaption
                 actionRow
