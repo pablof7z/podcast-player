@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "6591526",
+      "shipped_at": "2026-05-11T13:30:00Z",
+      "lines": [
+        "Fixed the Now Playing screen clipping controls and text on both sides of the screen."
+      ]
+    },
+    {
       "id": "811a2a2",
       "shipped_at": "2026-05-11T13:00:00Z",
       "lines": [
