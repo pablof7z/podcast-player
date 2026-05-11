@@ -2,6 +2,20 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "e2043e1",
+      "shipped_at": "2026-05-11T20:30:00Z",
+      "lines": [
+        "Transcripts now run automatically the moment an episode finishes downloading — no manual step. Apple's on-device transcription actually fires now (it used to fail before the file was on disk)."
+      ]
+    },
+    {
+      "id": "apple-native-stt",
+      "shipped_at": "2026-05-11T20:00:00Z",
+      "lines": [
+        "Apple on-device transcription is now available — uses iOS 26 SpeechTranscriber on Apple Silicon with no API key required. Switch to it under Settings → Intelligence → Models → Speech."
+      ]
+    },
+    {
       "id": "whisper-openrouter",
       "shipped_at": "2026-05-11T19:00:00Z",
       "lines": [
