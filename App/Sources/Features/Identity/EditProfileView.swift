@@ -250,7 +250,7 @@ struct EditProfileView: View {
     }
 
     private func restoreUsernameIfBlank() {
-        if username.trimmed.isEmpty, let prior = initialSnapshot?.username, !prior.isEmpty {
+        if username.isBlank, let prior = initialSnapshot?.username, !prior.isEmpty {
             username = prior
             Haptics.light()
         }

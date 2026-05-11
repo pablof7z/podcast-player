@@ -140,7 +140,7 @@ final class RationaleNarrator {
 
         // Character Marcus Webb's voice from the system brief — but the user
         // pre-configures their preferred voice in Settings, so we honour that.
-        let effectiveModel = ttsModel.trimmed.isEmpty ? "eleven_turbo_v2_5" : ttsModel.trimmed
+        let effectiveModel = ttsModel.isBlank ? "eleven_turbo_v2_5" : ttsModel.trimmed
         let body: [String: Any] = [
             "text": text,
             "model_id": effectiveModel,
