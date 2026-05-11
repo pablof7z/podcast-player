@@ -274,6 +274,14 @@ extension AppStateStore {
             state.episodes.append(episode)
             invalidateEpisodeProjections()
         }
+        // Trigger the same downstream pipeline that fires for RSS-sourced
+        // episodes: transcript ingest (gated by user settings) → chapters
+        // → AI compilation → RAG indexing. Auto-download is skipped since
+        // the episode is already streaming; the subscription's .off policy
+        // would no-op anyway.
+        TranscriptIngestService.shared.evaluateAutoIngest(
+            newEpisodeIDs: [episode.id]
+        )
         return episode
     }
 
