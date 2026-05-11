@@ -149,6 +149,11 @@ struct PlayerView: View {
         return chapters.active(at: state.currentTime)?.imageURL
     }
 
+    private var activeChapterSourceEpisodeID: String? {
+        guard let chapters = navigableChapters, !chapters.isEmpty else { return nil }
+        return chapters.active(at: state.currentTime)?.sourceEpisodeID
+    }
+
     private var episodeHeader: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             compactArtwork
@@ -278,6 +283,10 @@ struct PlayerView: View {
     private var floatingChrome: some View {
         GlassEffectContainer(spacing: AppTheme.Spacing.md) {
             VStack(spacing: AppTheme.Spacing.md) {
+                if let sourceID = activeChapterSourceEpisodeID {
+                    PlayerClipSourceChip(sourceEpisodeID: sourceID)
+                        .animation(.easeInOut(duration: 0.25), value: sourceID)
+                }
                 PlayerPrerollSkipButton(state: state, episode: liveEpisode)
                     .animation(AppTheme.Animation.spring, value: state.currentTime)
                 PlayerScrubberView(

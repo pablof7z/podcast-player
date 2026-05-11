@@ -201,6 +201,11 @@ extension Episode {
         /// alongside the chapter boundaries (or attached to publisher chapters in
         /// a follow-up enrichment pass). `nil` until enrichment runs.
         var summary: String?
+        /// UUID string of the source episode when this chapter corresponds to a
+        /// clip from another episode (e.g. an agent-generated TTS episode with
+        /// snippet turns). Drives the clip-source chip in `PlayerView` and the
+        /// mid-play artwork swap.
+        var sourceEpisodeID: String?
 
         init(
             id: UUID = UUID(),
@@ -211,7 +216,8 @@ extension Episode {
             linkURL: URL? = nil,
             includeInTableOfContents: Bool = true,
             isAIGenerated: Bool = false,
-            summary: String? = nil
+            summary: String? = nil,
+            sourceEpisodeID: String? = nil
         ) {
             self.id = id
             self.startTime = startTime
@@ -222,11 +228,12 @@ extension Episode {
             self.includeInTableOfContents = includeInTableOfContents
             self.isAIGenerated = isAIGenerated
             self.summary = summary
+            self.sourceEpisodeID = sourceEpisodeID
         }
 
         private enum CodingKeys: String, CodingKey {
             case id, startTime, endTime, title, imageURL, linkURL
-            case includeInTableOfContents, isAIGenerated, summary
+            case includeInTableOfContents, isAIGenerated, summary, sourceEpisodeID
         }
 
         init(from decoder: Decoder) throws {
@@ -240,6 +247,7 @@ extension Episode {
             includeInTableOfContents = try c.decodeIfPresent(Bool.self, forKey: .includeInTableOfContents) ?? true
             isAIGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAIGenerated) ?? false
             summary = try c.decodeIfPresent(String.self, forKey: .summary)
+            sourceEpisodeID = try c.decodeIfPresent(String.self, forKey: .sourceEpisodeID)
         }
     }
 

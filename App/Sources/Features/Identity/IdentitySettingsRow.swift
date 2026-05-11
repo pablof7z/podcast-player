@@ -46,7 +46,7 @@ struct IdentitySettingsRow: View {
     // MARK: - Composition
 
     private var profile: UserProfileDisplay? {
-        UserProfileDisplay.from(publicKeyHex: identity.publicKeyHex)
+        UserProfileDisplay.from(identity: identity)
     }
 
     /// `display_name` → `name` slug → npub short fragment (per §4.1).

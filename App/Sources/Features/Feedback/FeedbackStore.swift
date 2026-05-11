@@ -159,6 +159,14 @@ actor FeedbackRelayClient {
         ])
     }
 
+    func fetchKind0(pubkeyHex: String) async throws -> [SignedNostrEvent] {
+        try await fetch(filter: [
+            "kinds": [0],
+            "authors": [pubkeyHex],
+            "limit": 1,
+        ])
+    }
+
     func publish(_ event: SignedNostrEvent, authSigner: (any NostrSigner)?) async throws {
         let task = URLSession.shared.webSocketTask(with: relayURL)
         task.resume()

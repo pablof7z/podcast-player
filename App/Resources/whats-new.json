@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "101a845",
+      "shipped_at": "2026-05-12T12:00:00Z",
+      "lines": [
+        "Your profile now shows your real Nostr display name and picture after signing in with your nsec — no more auto-generated placeholders."
+      ]
+    },
+    {
       "id": "agent-model-upgrade",
       "shipped_at": "2026-05-12T02:00:00Z",
       "lines": [

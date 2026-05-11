@@ -11,13 +11,11 @@ import os.log
 //   .speech   — text → ElevenLabs TTS → temp mp3 → stitched in
 //   .snippet  — existing episode clip → time-trimmed via BriefingAudioStitcher
 //
-// Multi-speaker is handled at the turn level: each `.speech` turn specifies its
-// own `voiceID`.  A nil `voiceID` falls back to the agent's configured default,
-// which is persisted in UserDefaults under `agentDefaultVoiceIDKey`.
-//
-// The stitcher (BriefingAudioStitcher) takes a flat array of BriefingTrack
-// values; only `audioURL`, `startInTrackSeconds`, and `endInTrackSeconds` are
-// consumed during the stitch — the remaining metadata fields are inert.
+// After stitching, a `Transcript` is built from the turn text and saved to
+// `TranscriptStore`. Chapters are synthesised directly from the turn structure
+// (consecutive speech turns collapse into a single chapter; each snippet turn
+// gets its own chapter with the source episode's artwork and `sourceEpisodeID`).
+// `adSegments` is set to `[]` so `AIChapterCompiler` skips re-processing.
 
 final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
@@ -64,14 +62,21 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         }
 
         // 1. Build BriefingTrack list (one per turn).
-        let tracks = try await buildTracks(for: turns)
+        let (tracks, trackDurations) = try await buildTracks(for: turns)
 
         // 2. Stitch tracks into a single m4a.
         let episodeID = UUID()
         let outputURL = try AgentGeneratedPodcastService.audioFileURL(episodeID: episodeID)
         let durationSeconds = try await BriefingAudioStitcher.stitch(tracks: tracks, outputURL: outputURL)
 
-        // 3. Register the episode and optionally start playback.
+        // 3. Build chapters and transcript from turns + resolved durations.
+        let (chapters, transcript) = await buildChaptersAndTranscript(
+            turns: turns,
+            trackDurations: trackDurations,
+            episodeID: episodeID
+        )
+
+        // 4. Register the episode and optionally start playback.
         let episode = await MainActor.run {
             guard let store else { return Optional<Episode>.none }
             return AgentGeneratedPodcastService.publishEpisode(
@@ -87,7 +92,17 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             throw AgentTTSError.storeUnavailable
         }
 
-        // 4. Optionally start playback.
+        // 5. Persist transcript, chapters, and set adSegments = [] so
+        //    AIChapterCompiler skips this already-structured episode.
+        await MainActor.run {
+            guard let store else { return }
+            try? TranscriptStore.shared.save(transcript)
+            store.setEpisodeTranscriptState(episode.id, state: .ready(source: .other))
+            store.setEpisodeChapters(episode.id, chapters: chapters)
+            store.setEpisodeAdSegments(episode.id, segments: [])
+        }
+
+        // 6. Optionally start playback.
         if playNow {
             await MainActor.run {
                 guard let playback else { return }
@@ -112,8 +127,11 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
     // MARK: - Track building
 
-    private func buildTracks(for turns: [TTSTurn]) async throws -> [BriefingTrack] {
+    /// Builds `BriefingTrack` values and returns the per-turn audio duration
+    /// so the chapter builder can compute cumulative start times.
+    private func buildTracks(for turns: [TTSTurn]) async throws -> ([BriefingTrack], [Double]) {
         var tracks: [BriefingTrack] = []
+        var durations: [Double] = []
         let dummySegmentID = UUID()
 
         for (index, turn) in turns.enumerated() {
@@ -131,12 +149,15 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     endInTrackSeconds: duration,
                     transcriptText: text
                 ))
+                durations.append(duration)
 
             case .snippet(let episodeID, let start, let end, let label):
                 guard let enclosureURL = await resolveEpisodeAudio(episodeID: episodeID) else {
                     Self.logger.warning("AgentTTSComposer: snippet episode \(episodeID, privacy: .public) not found, skipping")
+                    durations.append(0)
                     continue
                 }
+                let duration = end - start
                 tracks.append(BriefingTrack(
                     segmentID: dummySegmentID,
                     indexInSegment: index,
@@ -146,10 +167,114 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     endInTrackSeconds: end,
                     transcriptText: label ?? ""
                 ))
+                durations.append(duration)
             }
         }
 
-        return tracks
+        return (tracks, durations)
+    }
+
+    // MARK: - Chapter + transcript building
+
+    /// Converts the turn sequence into `Episode.Chapter` values and a
+    /// `Transcript`. Consecutive speech turns collapse into a single chapter;
+    /// each snippet turn gets its own chapter with the source episode's
+    /// artwork URL and `sourceEpisodeID` set for the player chip.
+    private func buildChaptersAndTranscript(
+        turns: [TTSTurn],
+        trackDurations: [Double],
+        episodeID: UUID
+    ) async -> ([Episode.Chapter], Transcript) {
+        var chapters: [Episode.Chapter] = []
+        var transcriptSegments: [Segment] = []
+        var cursor: TimeInterval = 0
+
+        // Accumulator for consecutive speech turns.
+        var speechStart: TimeInterval?
+        var speechTexts: [String] = []
+
+        func flushSpeechChapter() {
+            guard !speechTexts.isEmpty, let start = speechStart else { return }
+            let combinedText = speechTexts.joined(separator: " ")
+            let preview = String(combinedText.prefix(60))
+            let chapterTitle = combinedText.count <= 60 ? combinedText : preview + "…"
+            chapters.append(Episode.Chapter(
+                startTime: start,
+                title: chapterTitle,
+                isAIGenerated: true
+            ))
+            speechStart = nil
+            speechTexts = []
+        }
+
+        for (index, turn) in turns.enumerated() {
+            let duration = index < trackDurations.count ? trackDurations[index] : 0
+            guard duration > 0 else {
+                cursor += duration
+                continue
+            }
+
+            switch turn.kind {
+            case .speech(let text, _):
+                if speechStart == nil { speechStart = cursor }
+                speechTexts.append(text)
+
+                // Each speech turn is a transcript segment.
+                transcriptSegments.append(Segment(
+                    start: cursor,
+                    end: cursor + duration,
+                    text: text
+                ))
+
+            case .snippet(let sourceID, _, _, let label):
+                // Close any open speech chapter first.
+                flushSpeechChapter()
+                speechCursor = cursor
+
+                // Resolve the source episode's artwork for the mid-play swap.
+                let artworkURL = await MainActor.run { [weak self] () -> URL? in
+                    guard let self, let store = self.store else { return nil }
+                    guard let uuid = UUID(uuidString: sourceID),
+                          let ep = store.episode(id: uuid) else { return nil }
+                    return ep.imageURL ?? store.subscription(id: ep.subscriptionID)?.imageURL
+                }
+
+                let chapterTitle = label?.isEmpty == false
+                    ? label!
+                    : await resolveEpisodeTitle(episodeID: sourceID)
+
+                chapters.append(Episode.Chapter(
+                    startTime: cursor,
+                    title: chapterTitle,
+                    imageURL: artworkURL,
+                    isAIGenerated: true,
+                    sourceEpisodeID: sourceID
+                ))
+
+                // Snippet text becomes a transcript segment too.
+                if let labelText = label, !labelText.isEmpty {
+                    transcriptSegments.append(Segment(
+                        start: cursor,
+                        end: cursor + duration,
+                        text: labelText
+                    ))
+                }
+            }
+
+            cursor += duration
+        }
+
+        // Flush any trailing speech turns.
+        flushSpeechChapter()
+
+        let transcript = Transcript(
+            episodeID: episodeID,
+            language: "en",
+            source: .onDevice,
+            segments: transcriptSegments
+        )
+
+        return (chapters, transcript)
     }
 
     // MARK: - Speech synthesis → temp file
@@ -179,7 +304,6 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         guard let uuid = UUID(uuidString: episodeID) else { return nil }
         return await MainActor.run {
             guard let episode = store?.episode(id: uuid) else { return nil }
-            // Prefer a local download when available; fall back to the remote enclosure.
             if case .downloaded = episode.downloadState {
                 let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
                 if FileManager.default.fileExists(atPath: localURL.path) {
@@ -187,6 +311,16 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                 }
             }
             return episode.enclosureURL
+        }
+    }
+
+    private func resolveEpisodeTitle(episodeID: String) async -> String {
+        await MainActor.run {
+            guard let uuid = UUID(uuidString: episodeID),
+                  let episode = store?.episode(id: uuid) else {
+                return "Clip"
+            }
+            return episode.title
         }
     }
 

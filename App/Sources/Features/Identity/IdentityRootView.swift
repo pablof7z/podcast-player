@@ -108,7 +108,7 @@ struct IdentityRootView: View {
     // MARK: - Derived
 
     private var profile: UserProfileDisplay? {
-        UserProfileDisplay.from(publicKeyHex: identity.publicKeyHex)
+        UserProfileDisplay.from(identity: identity)
     }
 }
 

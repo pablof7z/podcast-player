@@ -2,18 +2,10 @@ import Foundation
 
 // MARK: - UserProfileDisplay
 //
-// Slice A reads only the read-only `UserIdentityStore` API. Until Slice B adds
-// stored kind-0 fields (`name` / `display_name` / `about` / `picture`) on
-// `UserIdentityStore`, this helper deterministically reproduces the same slug
-// and dicebear URL the store emits via `publishGeneratedProfileIfNeeded`.
-//
-// Once Slice B merges, all call sites should switch to reading the live
-// kind-0 fields directly off the identity store. Marker: `TODO Slice B`.
+// Represents the user's kind-0 profile for display purposes.
+// `from(identity:)` prefers stored kind-0 fields fetched from relays and
+// falls back to the deterministic generated profile when none are available.
 
-/// Stub for the user's kind-0 profile derived from `publicKeyHex`.
-///
-/// Mirrors `UserIdentityStore.generatedProfile(pubkey:)` exactly so the UI
-/// never disagrees with what the store auto-published on first launch.
 struct UserProfileDisplay {
 
     let displayName: String
@@ -21,6 +13,7 @@ struct UserProfileDisplay {
     let about: String
     let pictureURLString: String
 
+    /// Derive a generated profile purely from the pubkey.
     init(publicKeyHex: String) {
         let seed = String(publicKeyHex.prefix(16))
         let index = Self.stableIndex(seed)
@@ -32,6 +25,32 @@ struct UserProfileDisplay {
         self.slug = "\(adjective.lowercased())-\(noun.lowercased())-\(publicKeyHex.prefix(4))"
         self.about = ""
         self.pictureURLString = "https://api.dicebear.com/9.x/personas/svg?seed=\(seed)"
+    }
+
+    init(displayName: String, slug: String, about: String, pictureURLString: String) {
+        self.displayName = displayName
+        self.slug = slug
+        self.about = about
+        self.pictureURLString = pictureURLString
+    }
+
+    /// Prefers real kind-0 fields from the identity store; falls back to
+    /// the deterministic generated profile when the fetch hasn't completed.
+    @MainActor
+    static func from(identity: UserIdentityStore) -> UserProfileDisplay? {
+        guard let hex = identity.publicKeyHex, !hex.isEmpty else { return nil }
+        let generated = UserProfileDisplay(publicKeyHex: hex)
+        guard identity.profileDisplayName != nil
+           || identity.profileName != nil
+           || identity.profileAbout != nil
+           || identity.profilePicture != nil
+        else { return generated }
+        return UserProfileDisplay(
+            displayName:     identity.profileDisplayName ?? generated.displayName,
+            slug:            identity.profileName        ?? generated.slug,
+            about:           identity.profileAbout       ?? generated.about,
+            pictureURLString: identity.profilePicture    ?? generated.pictureURLString
+        )
     }
 
     /// Convenience: returns `nil` when no identity exists yet.

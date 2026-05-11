@@ -111,6 +111,7 @@ struct EditProfileView: View {
             ChangePhotoSheet(pictureURL: $pictureURL)
         }
         .onAppear { hydrateFromIdentity() }
+        .onChange(of: identity.profileDisplayName) { _, _ in hydrateFromIdentity() }
     }
 
     // MARK: - Hero
@@ -222,7 +223,7 @@ struct EditProfileView: View {
     }
 
     private var identityProfile: UserProfileDisplay? {
-        UserProfileDisplay.from(publicKeyHex: identity.publicKeyHex)
+        UserProfileDisplay.from(identity: identity)
     }
 
     /// Username field's placeholder. Falls back to a generic slug shape
@@ -233,14 +234,13 @@ struct EditProfileView: View {
         identityProfile?.slug ?? "bright-signal-a3f2"
     }
 
-    /// Seed the form from the identity's auto-generated kind-0 fields.
-    /// `UserIdentityStore` doesn't yet cache the last-published kind-0
-    /// payload locally, so we rebuild the deterministic name + slug +
-    /// avatar from the pubkey using the same algorithm
-    /// `publishGeneratedProfileIfNeeded` uses. Once that cache lands the
-    /// hydrate path can prefer it over the deterministic rebuild.
+    /// Seed the form from the identity's kind-0 profile fields. Prefers
+    /// fetched relay data via `identityProfile`; falls back to the generated
+    /// stub while the fetch is in flight. Re-runs when relay data arrives as
+    /// long as the user hasn't started editing (dirty guard).
     private func hydrateFromIdentity() {
-        guard initialSnapshot == nil else { return }
+        let needsInit = (initialSnapshot == nil)
+        guard needsInit || !isDirty else { return }
         let p = identityProfile
         displayName = p?.displayName ?? ""
         username    = p?.slug ?? ""

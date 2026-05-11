@@ -38,6 +38,10 @@ extension Notification.Name {
     /// Posted when episode playback is initiated from a list row's play button.
     /// `RootView` observes and expands the full player sheet.
     static let openPlayerRequested = Notification.Name("io.f7z.podcast.openPlayerRequested")
+    /// Posted by the player's clip-source chip when the user taps to view the
+    /// source episode. `userInfo["episodeID"]` carries the UUID string.
+    /// `RootView` dismisses the player and presents `EpisodeDetailView`.
+    static let openEpisodeDetailRequested = Notification.Name("io.f7z.podcast.openEpisodeDetailRequested")
 }
 
 enum AskAgentDispatcher {

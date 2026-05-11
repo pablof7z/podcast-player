@@ -38,6 +38,14 @@ final class UserIdentityStore {
     /// Live state of the NIP-46 connection (UI surfaces this).
     private(set) var remoteSignerState: RemoteSignerState = .idle
 
+    /// Cached kind:0 profile fields fetched from relays. `nil` until the
+    /// first fetch completes; populated immediately on launch from the
+    /// UserDefaults cache so the UI never flashes generated → real.
+    var profileDisplayName: String?
+    var profileName: String?
+    var profileAbout: String?
+    var profilePicture: String?
+
     var hasIdentity: Bool { publicKeyHex != nil }
     var isRemoteSigner: Bool { mode == .remoteSigner }
 
@@ -137,6 +145,10 @@ final class UserIdentityStore {
         signer = nil
         mode = .none
         remoteSignerState = .idle
+        profileDisplayName = nil
+        profileName = nil
+        profileAbout = nil
+        profilePicture = nil
     }
 
     // MARK: - NIP-46 connect / disconnect
@@ -178,6 +190,9 @@ final class UserIdentityStore {
             self.keyPair = nil
             self.mode = .remoteSigner
             self.remoteSignerState = .connected(userPub)
+            self.loadCachedProfile(for: userPub)
+            let pub = userPub
+            Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }
         } catch {
             let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
             loginError = msg
@@ -223,6 +238,10 @@ final class UserIdentityStore {
         signer = LocalKeySigner(keyPair: pair)
         mode = .localKey
         remoteSignerState = .idle
+        loadCachedProfile(for: pair.publicKeyHex)
+        guard !isGeneratedLocalKey else { return }
+        let pubkey = pair.publicKeyHex
+        Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
     }
 
     private var isGeneratedLocalKey: Bool {
