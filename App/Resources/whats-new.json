@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "95ca122",
+      "shipped_at": "2026-05-11T15:00:00Z",
+      "lines": [
+        "Home screen is cleaner — removed unplayed count badges on artwork, the date header, and filter chips."
+      ]
+    },
+    {
       "id": "697b990",
       "shipped_at": "2026-05-11T15:00:00Z",
       "lines": [
