@@ -53,6 +53,12 @@ public actor PerplexityClient: PerplexityClientProtocol {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Perplexity searches do a web crawl + LLM synthesis pass and can
+        // legitimately take 30–60 seconds on busy queries. The default
+        // `URLRequest.timeoutInterval` is 60s, which leaves no headroom —
+        // long-tail queries time out before the response lands. Bumping
+        // to 90s gives the slowest legitimate responses room to return.
+        request.timeoutInterval = 90
 
         let body: [String: Any] = [
             "model": model,
