@@ -79,16 +79,6 @@ struct HomeView: View {
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $showCategoryPicker) {
-                HomeCategoryPickerSheet(
-                    selectedCategoryID: selectedCategoryID,
-                    onSelect: { id in
-                        categoryFilterID = id?.uuidString ?? ""
-                    }
-                )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            }
             .alert(
                 "Unsubscribe from \(unsubscribeTarget?.title ?? "")?",
                 isPresented: Binding(
@@ -249,52 +239,11 @@ struct HomeView: View {
         activeCategory?.name ?? "Home"
     }
 
-    private var datelineComponents: HomeDatelineComponents {
-        // Topic list narrows to the category before being passed in: a
-        // contradiction in a topic whose mentions live outside the
-        // active category shouldn't bump the section's contradiction
-        // count, otherwise switching to "Learning" reads
-        // "1 CONTRADICTION" for a thread that doesn't live there.
-        HomeDateline.components(
-            episodes: store.state.episodes,
-            topics: scopedThreadingTopics,
-            now: renderedAt,
-            categoryName: activeCategory?.name,
-            allowedSubscriptionIDs: allowedSubscriptionIDs
-        )
-    }
-
-    /// Threading topics whose mentions land in the active category. When
-    /// no category is active this returns the global topic list.
-    private var scopedThreadingTopics: [ThreadingTopic] {
-        HomeCategoryScope.topicsInCategory(
-            topics: store.state.threadingTopics,
-            mentions: store.state.threadingMentions,
-            episodes: store.state.episodes,
-            allowedSubscriptionIDs: allowedSubscriptionIDs
-        )
-    }
-
-    private var activeChips: [HomeActiveFilterChip] {
-        HomeActiveFilters.chips(
-            filter: filter,
-            categoryID: selectedCategoryID,
-            categoryName: { store.category(id: $0)?.name }
-        )
-    }
-
     private var shouldShowFeaturedSection: Bool {
         let bundle = picksService.bundle(for: selectedCategoryID)
         return !scopedResumeEpisodes.isEmpty
             || !bundle.picks.isEmpty
             || picksService.isRefreshing(for: selectedCategoryID)
-    }
-
-    private func dismissChip(_ chip: HomeActiveFilterChip) {
-        switch chip.kind {
-        case .libraryFilter: filter = .all
-        case .category:      categoryFilterID = ""
-        }
     }
 
     // MARK: - Toolbar
