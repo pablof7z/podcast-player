@@ -16,6 +16,13 @@ import Foundation
 /// claims; regeneration honours those contests.
 struct WikiPage: Codable, Hashable, Identifiable, Sendable {
 
+    /// Current on-disk schema version. Bump when adding required fields or
+    /// changing the meaning of an existing one — `WikiStorage.read` will
+    /// refuse to load pages whose `schemaVersion` is *higher* than this
+    /// constant (i.e. a downgrade), and `init(from:)` upgrades older
+    /// versions in-place by defaulting missing fields.
+    static let currentSchemaVersion: Int = 1
+
     var id: UUID
     var slug: String
     var title: String
@@ -28,6 +35,11 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
     var generatedAt: Date
     var model: String
     var compileRevision: Int
+    /// Schema version this page was written under. Stored on disk so a
+    /// future field addition can default cleanly on old pages and a
+    /// downgrade can be detected and skipped rather than silently parsed
+    /// against an incompatible shape.
+    var schemaVersion: Int
 
     init(
         id: UUID = UUID(),
@@ -41,7 +53,8 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         confidence: Double = 0.5,
         generatedAt: Date = Date(),
         model: String = "openai/gpt-4o",
-        compileRevision: Int = 1
+        compileRevision: Int = 1,
+        schemaVersion: Int = WikiPage.currentSchemaVersion
     ) {
         self.id = id
         self.slug = WikiPage.normalize(slug: slug)
@@ -55,6 +68,52 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         self.generatedAt = generatedAt
         self.model = model
         self.compileRevision = compileRevision
+        self.schemaVersion = schemaVersion
+    }
+
+    // MARK: - Codable (back-compat)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, slug, title, kind, scope, summary
+        case sections, citations, confidence
+        case generatedAt, model, compileRevision, schemaVersion
+    }
+
+    /// Custom decode using `decodeIfPresent` on every field so older
+    /// on-disk pages — written before `schemaVersion`, before a new
+    /// optional field, etc. — round-trip cleanly instead of throwing on
+    /// the first missing key. Anything truly required (id, slug, title,
+    /// kind, scope) still throws if absent.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let id = try c.decode(UUID.self, forKey: .id)
+        let slug = try c.decode(String.self, forKey: .slug)
+        let title = try c.decode(String.self, forKey: .title)
+        let kind = try c.decode(WikiPageKind.self, forKey: .kind)
+        let scope = try c.decode(WikiScope.self, forKey: .scope)
+        let summary = try c.decodeIfPresent(String.self, forKey: .summary) ?? ""
+        let sections = try c.decodeIfPresent([WikiSection].self, forKey: .sections) ?? []
+        let citations = try c.decodeIfPresent([WikiCitation].self, forKey: .citations) ?? []
+        let confidence = try c.decodeIfPresent(Double.self, forKey: .confidence) ?? 0.5
+        let generatedAt = try c.decodeIfPresent(Date.self, forKey: .generatedAt) ?? Date()
+        let model = try c.decodeIfPresent(String.self, forKey: .model) ?? "openai/gpt-4o"
+        let compileRevision = try c.decodeIfPresent(Int.self, forKey: .compileRevision) ?? 1
+        let schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        self.init(
+            id: id,
+            slug: slug,
+            title: title,
+            kind: kind,
+            scope: scope,
+            summary: summary,
+            sections: sections,
+            citations: citations,
+            confidence: confidence,
+            generatedAt: generatedAt,
+            model: model,
+            compileRevision: compileRevision,
+            schemaVersion: schemaVersion
+        )
     }
 
     /// The flattened list of claims across all sections, ordered by

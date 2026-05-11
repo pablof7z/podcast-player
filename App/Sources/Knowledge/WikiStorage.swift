@@ -66,13 +66,23 @@ struct WikiStorage: Sendable {
 
     /// Reads the page at `(scope, slug)`. Returns `nil` if the file does
     /// not exist; throws on I/O or decode errors.
+    ///
+    /// Pages whose `schemaVersion` is *greater* than
+    /// `WikiPage.currentSchemaVersion` (i.e. a build from a newer release
+    /// wrote them) return `nil` rather than risk decoding against the
+    /// wrong shape. Older versions decode in place via the page's
+    /// back-compat `init(from:)`.
     func read(slug: String, scope: WikiScope) throws -> WikiPage? {
         let url = pageURL(slug: slug, scope: scope)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         let data = try Data(contentsOf: url)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(WikiPage.self, from: data)
+        let page = try decoder.decode(WikiPage.self, from: data)
+        guard page.schemaVersion <= WikiPage.currentSchemaVersion else {
+            return nil
+        }
+        return page
     }
 
     /// Removes the page at `(scope, slug)` and updates the inventory.
@@ -110,9 +120,10 @@ struct WikiStorage: Sendable {
 
     /// Loads every persisted page across all scopes. Walks the inventory
     /// and decodes each referenced JSON file. Pages whose backing file is
-    /// missing or unreadable are skipped silently — the inventory will be
-    /// reconciled on the next write. Returned in inventory order; callers
-    /// sort as needed.
+    /// missing, unreadable, or written under a *newer* schema version
+    /// than this build supports are skipped silently — the inventory will
+    /// be reconciled on the next write. Returned in inventory order;
+    /// callers sort as needed.
     func allPages() throws -> [WikiPage] {
         let inventory = try loadInventory()
         let decoder = JSONDecoder()
@@ -124,7 +135,8 @@ struct WikiStorage: Sendable {
             guard
                 FileManager.default.fileExists(atPath: url.path),
                 let data = try? Data(contentsOf: url),
-                let page = try? decoder.decode(WikiPage.self, from: data)
+                let page = try? decoder.decode(WikiPage.self, from: data),
+                page.schemaVersion <= WikiPage.currentSchemaVersion
             else { continue }
             pages.append(page)
         }
@@ -273,6 +285,29 @@ struct WikiInventory: Codable, Sendable {
                 model: page.model,
                 citationCount: page.allClaims.reduce(0) { $0 + $1.citations.count },
                 fileURL: fileURL
+            )
+        }
+
+        // MARK: - Codable (back-compat)
+
+        private enum CodingKeys: String, CodingKey {
+            case slug, title, kind, scope, summary, confidence
+            case generatedAt, model, citationCount, fileURL
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.init(
+                slug: try c.decode(String.self, forKey: .slug),
+                title: try c.decodeIfPresent(String.self, forKey: .title) ?? "",
+                kind: try c.decodeIfPresent(WikiPageKind.self, forKey: .kind) ?? .topic,
+                scope: try c.decode(WikiScope.self, forKey: .scope),
+                summary: try c.decodeIfPresent(String.self, forKey: .summary) ?? "",
+                confidence: try c.decodeIfPresent(Double.self, forKey: .confidence) ?? 0.5,
+                generatedAt: try c.decodeIfPresent(Date.self, forKey: .generatedAt) ?? Date(),
+                model: try c.decodeIfPresent(String.self, forKey: .model) ?? "openai/gpt-4o",
+                citationCount: try c.decodeIfPresent(Int.self, forKey: .citationCount) ?? 0,
+                fileURL: try c.decode(URL.self, forKey: .fileURL)
             )
         }
     }

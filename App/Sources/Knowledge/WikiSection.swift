@@ -43,6 +43,24 @@ struct WikiSection: Codable, Hashable, Identifiable, Sendable {
     var hasContent: Bool {
         !claims.contains(where: \.text.isEmpty) && !claims.isEmpty
     }
+
+    // MARK: - Codable (back-compat)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, heading, kind, ordinal, claims, editorialNote
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            heading: try c.decodeIfPresent(String.self, forKey: .heading) ?? "",
+            kind: try c.decodeIfPresent(WikiSectionKind.self, forKey: .kind) ?? .freeform,
+            ordinal: try c.decodeIfPresent(Int.self, forKey: .ordinal) ?? 0,
+            claims: try c.decodeIfPresent([WikiClaim].self, forKey: .claims) ?? [],
+            editorialNote: try c.decodeIfPresent(String.self, forKey: .editorialNote)
+        )
+    }
 }
 
 // MARK: - Section kind
@@ -98,5 +116,24 @@ struct WikiClaim: Codable, Hashable, Identifiable, Sendable {
     /// general knowledge — these are dropped by the verifier.
     var isUnsourced: Bool {
         citations.isEmpty && !isGeneralKnowledge
+    }
+
+    // MARK: - Codable (back-compat)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, citations, confidence
+        case isContestedByUser, isGeneralKnowledge
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            text: try c.decodeIfPresent(String.self, forKey: .text) ?? "",
+            citations: try c.decodeIfPresent([WikiCitation].self, forKey: .citations) ?? [],
+            confidence: try c.decodeIfPresent(WikiConfidenceBand.self, forKey: .confidence) ?? .medium,
+            isContestedByUser: try c.decodeIfPresent(Bool.self, forKey: .isContestedByUser) ?? false,
+            isGeneralKnowledge: try c.decodeIfPresent(Bool.self, forKey: .isGeneralKnowledge) ?? false
+        )
     }
 }

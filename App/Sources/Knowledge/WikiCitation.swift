@@ -86,6 +86,26 @@ struct WikiCitation: Codable, Hashable, Identifiable, Sendable {
 
     // MARK: - Helpers
 
+    // MARK: - Codable (back-compat)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, episodeID, startMS, endMS
+        case quoteSnippet, speaker, verificationConfidence
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+            episodeID: try c.decode(UUID.self, forKey: .episodeID),
+            startMS: try c.decodeIfPresent(Int.self, forKey: .startMS) ?? 0,
+            endMS: try c.decodeIfPresent(Int.self, forKey: .endMS) ?? 0,
+            quoteSnippet: try c.decodeIfPresent(String.self, forKey: .quoteSnippet) ?? "",
+            speaker: try c.decodeIfPresent(String.self, forKey: .speaker),
+            verificationConfidence: try c.decodeIfPresent(WikiConfidenceBand.self, forKey: .verificationConfidence) ?? .medium
+        )
+    }
+
     /// Truncates `value` to fit `maxSnippetLength`. Trims whitespace at the
     /// boundary and appends an ellipsis when shortened.
     static func clamp(_ value: String) -> String {
