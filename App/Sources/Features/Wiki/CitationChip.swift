@@ -64,7 +64,12 @@ struct CitationChip: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(.regularMaterial)
         }
-        .accessibilityLabel("Citation at \(citation.formattedTimestamp), tap to play, hold to peek")
+        .accessibilityLabel("Citation at \(citation.formattedTimestamp)")
+        // Hints describe gesture effects; VoiceOver already announces
+        // "double-tap to activate" via the button trait, so the label
+        // shouldn't repeat that. The long-press peek is the only
+        // non-obvious gesture and lives in the hint accordingly.
+        .accessibilityHint("Plays the cited moment. Long-press to peek at the clip without leaving this page.")
     }
 
     // MARK: - Actions
