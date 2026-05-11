@@ -40,6 +40,7 @@ struct HomeResumeCard: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Resumes this episode")
         .accessibilityAddTraits(.isButton)
     }
 
@@ -140,7 +141,6 @@ struct HomeResumeCard: View {
         let percent = Int((progressFraction * 100).rounded())
         if percent > 0 { parts.append("\(percent) percent listened") }
         parts.append(remainingLabel)
-        parts.append("Tap to resume")
         return parts.joined(separator: ", ")
     }
 }

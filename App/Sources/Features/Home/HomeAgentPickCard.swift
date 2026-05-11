@@ -41,6 +41,7 @@ struct HomeAgentPickCard: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Plays this episode")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text("Play")) {
             onPlay()
@@ -206,7 +207,6 @@ struct HomeAgentPickCard: View {
         parts.append(episode.title)
         if !pick.rationale.isEmpty { parts.append(pick.rationale) }
         parts.append(isHero ? "Hero pick" : "Pick")
-        parts.append("Tap to play")
         return parts.joined(separator: ", ")
     }
 }
