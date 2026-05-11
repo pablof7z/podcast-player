@@ -156,6 +156,16 @@ final class PlaybackState {
     /// artwork isn't known.
     var resolveShowImage: (Episode) -> URL? = { _ in nil }
 
+    /// Headphone-gesture wiring. `resolveNavigableChapters` is set by
+    /// `RootView` so chapter-aware actions see chapters as they hydrate.
+    /// The two action fields mirror the matching `Settings` values via
+    /// `applyPreferences`. `onClipRequested` fires when the configured
+    /// action is `.clipNow`; `RootView` wires it to `AutoSnipController`.
+    var resolveNavigableChapters: (Episode) -> [Episode.Chapter] = { _ in [] }
+    var headphoneDoubleTapAction: HeadphoneGestureAction = .skipForward
+    var headphoneTripleTapAction: HeadphoneGestureAction = .clipNow
+    var onClipRequested: () -> Void = { }
+
     // MARK: - Internal
 
     /// Drives the 1-second persistence + end-detection loop.
@@ -364,6 +374,8 @@ final class PlaybackState {
         // persistence loop reads `autoSkipAdsEnabled` directly so a Settings
         // edit takes effect on the next tick — no need to re-open the player.
         autoSkipAdsEnabled = settings.autoSkipAds
+        headphoneDoubleTapAction = settings.headphoneDoubleTapAction
+        headphoneTripleTapAction = settings.headphoneTripleTapAction
     }
 
     func setSleepTimer(_ timer: PlaybackSleepTimer) {

@@ -26,6 +26,13 @@ final class NowPlayingCenter {
         var skipBackward: () -> Void = {}
         var seek: (TimeInterval) -> Void = { _ in }
         var changeRate: (Double) -> Void = { _ in }
+        /// Fired when iOS delivers `nextTrackCommand` — typically an AirPods
+        /// double-tap / double-squeeze. The action is decided upstream
+        /// (`PlaybackState`) based on the user's headphone-gesture setting.
+        var nextTrack: () -> Void = {}
+        /// Fired when iOS delivers `previousTrackCommand` — typically an
+        /// AirPods triple-tap / triple-squeeze.
+        var previousTrack: () -> Void = {}
     }
 
     enum RemoteCommand: Equatable {
@@ -36,6 +43,8 @@ final class NowPlayingCenter {
         case skipBackward
         case seek(TimeInterval)
         case changeRate(Double)
+        case nextTrack
+        case previousTrack
     }
 
     // MARK: - State
@@ -79,6 +88,10 @@ final class NowPlayingCenter {
             callbacks.seek(time)
         case .changeRate(let rate):
             callbacks.changeRate(rate)
+        case .nextTrack:
+            callbacks.nextTrack()
+        case .previousTrack:
+            callbacks.previousTrack()
         }
         return .success
     }
@@ -181,8 +194,17 @@ final class NowPlayingCenter {
             return self?.performRemoteCommand(.changeRate(Double(event.playbackRate))) ?? .commandFailed
         }
 
-        // Disable redundant next/previous track — we ship explicit asymmetric skip.
-        commandCenter.nextTrackCommand.isEnabled = false
-        commandCenter.previousTrackCommand.isEnabled = false
+        // Enable next/previous track so iOS delivers AirPods double/triple-tap
+        // (and CarPlay / lock-screen next-prev presses) as `MPRemoteCommand`
+        // events. `PlaybackState` decides what each maps to per the user's
+        // headphone-gesture setting — see `HeadphoneGestureAction`.
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            self?.performRemoteCommand(.nextTrack) ?? .commandFailed
+        }
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            self?.performRemoteCommand(.previousTrack) ?? .commandFailed
+        }
     }
 }

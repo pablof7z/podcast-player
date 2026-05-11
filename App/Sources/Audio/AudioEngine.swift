@@ -302,6 +302,12 @@ final class AudioEngine {
         cb.skipBackward = { [weak self] in self?.skip(back: nil) }
         cb.seek         = { [weak self] t in self?.seek(to: t) }
         cb.changeRate   = { [weak self] r in self?.setRate(r) }
+        // Engine-default mappings for headphone double/triple-tap. Until
+        // `PlaybackState` overrides them with the user's configured action
+        // (`HeadphoneGestureAction`), fall back to plain skip so a bare engine
+        // still reacts to AirPods.
+        cb.nextTrack     = { [weak self] in self?.skip(forward: nil) }
+        cb.previousTrack = { [weak self] in self?.skip(back: nil) }
         nowPlaying.setCallbacks(cb)
     }
 

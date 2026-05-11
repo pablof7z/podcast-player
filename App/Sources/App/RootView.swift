@@ -10,14 +10,12 @@ enum RootTab: String, CaseIterable {
     case home = "Home"
     case search = "Search"
     case wiki = "Wiki"
-    case ask = "Ask"
 
     var icon: String {
         switch self {
         case .home:    "house.fill"
         case .search:  "magnifyingglass"
         case .wiki:    "book.closed.fill"
-        case .ask:     "bubble.left.and.bubble.right.fill"
         }
     }
 }
@@ -30,8 +28,6 @@ struct RootView: View {
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
     @State private var showSettings = false
-    /// Sparkles toolbar shortcut presents the agent chat as a dismissible
-    /// sheet — distinct from the dedicated Ask tab.
     @State private var showAgentChat = false
     /// Drives the Voice surface presentation. Toggled by the
     /// `voiceModeRequested` notification fired by `StartVoiceModeIntent`
@@ -123,6 +119,25 @@ struct RootView: View {
                     return live.imageURL
                         ?? store.subscription(id: live.subscriptionID)?.imageURL
                 }
+                // Chapter resolver for headphone-gesture mappings
+                // (next/previous chapter on AirPods double/triple-tap). Reads
+                // from the live store so chapters hydrated post-playback are
+                // picked up without re-wiring.
+                playbackState.resolveNavigableChapters = { [store] episode in
+                    let live = store.episode(id: episode.id) ?? episode
+                    return live.chapters?.filter(\.includeInTableOfContents) ?? []
+                }
+                // Clip handler — fires when the user's headphone gesture is
+                // mapped to "clip now". The AutoSnip controller is wired
+                // below so the singleton's `playback`/`store` refs are set
+                // before any AirPods event arrives.
+                playbackState.onClipRequested = {
+                    AutoSnipController.shared.captureSnip(source: .headphone)
+                }
+                // Attach AutoSnip early so a headphone-gesture clip works
+                // even when the user has never opened the full player.
+                // Idempotent — `PlayerView.onAppear` calls this too.
+                AutoSnipController.shared.attach(playback: playbackState, store: store)
             }
             // Re-push preferences whenever the user edits Settings so the
             // skip intervals update on the lock screen and the auto-mark
@@ -193,7 +208,7 @@ struct RootView: View {
             .fullScreenCover(isPresented: $showVoiceMode) {
                 VoiceView(onSwitchToText: {
                     showVoiceMode = false
-                    selectedTab = .ask
+                    showAgentChat = true
                 })
             }
             .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
@@ -228,8 +243,8 @@ struct RootView: View {
         // iOS 26: tab bar collapses to a compact pill on scroll-down. The
         // bottom accessory below adapts to `.inline` placement and slots
         // between the active-tab capsule and the trailing controls — same
-        // pattern Apple Music uses for its mini-player. Search and Ask
-        // override this to `.never` so the keyboard doesn't steal focus.
+        // pattern Apple Music uses for its mini-player. Search overrides
+        // this to `.never` so the keyboard doesn't steal focus.
         .tabBarMinimizeBehavior(.onScrollDown)
 
         // The accessory modifier itself reserves vertical space when applied,
@@ -254,38 +269,32 @@ struct RootView: View {
         case .home:
             NavigationStack {
                 HomeView()
-                    .toolbar { sharedToolbar(showAgent: true) }
+                    .toolbar { sharedToolbar() }
             }
         case .search:
-            NavigationStack { PodcastSearchView().toolbar { sharedToolbar(showAgent: true) } }
+            NavigationStack { PodcastSearchView().toolbar { sharedToolbar() } }
                 .tabBarMinimizeBehavior(.never)
         case .wiki:
-            NavigationStack { WikiView().toolbar { sharedToolbar(showAgent: true) } }
-        case .ask:
-            // Ask tab IS the agent — no need for a redundant agent shortcut here.
-            NavigationStack { AskAgentView().toolbar { sharedToolbar(showAgent: false) } }
-                .tabBarMinimizeBehavior(.never)
+            NavigationStack { WikiView().toolbar { sharedToolbar() } }
         }
     }
 
     /// Top-right toolbar shared across tabs:
-    ///   • Sparkles — selects the Ask tab (the agent surface). Hidden on Ask itself.
+    ///   • Sparkles — presents the agent chat sheet.
     ///   • Gear — presents the Settings sheet.
     @ToolbarContentBuilder
-    private func sharedToolbar(showAgent: Bool) -> some ToolbarContent {
-        if showAgent {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    Haptics.selection()
-                    showAgentChat = true
-                } label: {
-                    Image(systemName: "sparkles")
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .accessibilityLabel("Open Agent")
-                .keyboardShortcut("a", modifiers: [.command, .shift])
+    private func sharedToolbar() -> some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                Haptics.selection()
+                showAgentChat = true
+            } label: {
+                Image(systemName: "sparkles")
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel("Open Agent")
+            .keyboardShortcut("a", modifiers: [.command, .shift])
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
@@ -309,7 +318,7 @@ struct RootView: View {
         case .feedback:
             showFeedback = true
         case .agent:
-            selectedTab = .ask
+            showAgentChat = true
         case .addFriend(let npub, let name):
             showSettings = true
             Task { @MainActor in

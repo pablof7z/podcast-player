@@ -24,6 +24,7 @@ struct PlaybackSettingsView: View {
         Form {
             speedSection
             skipSection
+            headphoneGestureSection
             autoMarkSection
             autoPlayNextSection
             autoSkipAdsSection
@@ -94,6 +95,32 @@ struct PlaybackSettingsView: View {
             }
         } footer: {
             Text("When on, the next episode in your Up Next queue starts automatically when one finishes. The sleep timer's end-of-episode mode still stops playback as configured.")
+        }
+    }
+
+    private var headphoneGestureSection: some View {
+        Section {
+            Picker(selection: doubleTapBinding) {
+                ForEach(HeadphoneGestureAction.allCases, id: \.self) { action in
+                    Text(gestureLabel(for: action)).tag(action)
+                }
+            } label: {
+                Label("Double-Tap", systemImage: "airpods")
+            }
+            .pickerStyle(.menu)
+
+            Picker(selection: tripleTapBinding) {
+                ForEach(HeadphoneGestureAction.allCases, id: \.self) { action in
+                    Text(gestureLabel(for: action)).tag(action)
+                }
+            } label: {
+                Label("Triple-Tap", systemImage: "airpods")
+            }
+            .pickerStyle(.menu)
+        } header: {
+            Text("AirPods Gestures")
+        } footer: {
+            Text("Double-tap and triple-tap on AirPods (or stem squeeze on AirPods Pro / 3) trigger these actions. iOS also shows next/previous-track buttons on the lock screen, Control Center, and CarPlay — those buttons fire the same actions.")
         }
     }
 
@@ -169,6 +196,30 @@ struct PlaybackSettingsView: View {
         )
     }
 
+    private var doubleTapBinding: Binding<HeadphoneGestureAction> {
+        Binding(
+            get: { store.state.settings.headphoneDoubleTapAction },
+            set: { v in
+                var s = store.state.settings
+                s.headphoneDoubleTapAction = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
+        )
+    }
+
+    private var tripleTapBinding: Binding<HeadphoneGestureAction> {
+        Binding(
+            get: { store.state.settings.headphoneTripleTapAction },
+            set: { v in
+                var s = store.state.settings
+                s.headphoneTripleTapAction = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
+        )
+    }
+
     private var autoSkipAdsBinding: Binding<Bool> {
         Binding(
             get: { store.state.settings.autoSkipAds },
@@ -187,5 +238,19 @@ struct PlaybackSettingsView: View {
     private func formatRate(_ rate: Double) -> String {
         if abs(rate - 1.0) < 0.001 { return "1×" }
         return String(format: "%.1f×", rate)
+    }
+
+    /// Gesture-action label that bakes in the live skip-second values so the
+    /// menu reads e.g. "Skip Forward (30s)" — otherwise the picker rows lie
+    /// when the user customizes the skip interval.
+    private func gestureLabel(for action: HeadphoneGestureAction) -> String {
+        switch action {
+        case .skipForward:
+            return "Skip Forward (\(store.state.settings.skipForwardSeconds)s)"
+        case .skipBackward:
+            return "Skip Back (\(store.state.settings.skipBackwardSeconds)s)"
+        default:
+            return action.displayName
+        }
     }
 }

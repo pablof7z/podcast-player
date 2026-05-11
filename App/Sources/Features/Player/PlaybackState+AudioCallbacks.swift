@@ -15,6 +15,16 @@ extension PlaybackState {
         callbacks.skipBackward = { [weak self] in self?.skipBackward() }
         callbacks.seek = { [weak self] time in self?.seek(to: time) }
         callbacks.changeRate = { [weak self] rate in self?.setRate(rate) }
+        // AirPods double/triple-tap (or any source emitting next/previous
+        // track) routes through the user-configured action.
+        callbacks.nextTrack = { [weak self] in
+            guard let self else { return }
+            self.performHeadphoneGesture(self.headphoneDoubleTapAction)
+        }
+        callbacks.previousTrack = { [weak self] in
+            guard let self else { return }
+            self.performHeadphoneGesture(self.headphoneTripleTapAction)
+        }
         engine.setNowPlayingCallbacks(callbacks)
 
         engine.onSleepTimerFire = { [weak self] in

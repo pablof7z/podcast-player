@@ -128,6 +128,8 @@ final class iCloudSettingsSync {
         if let v = string(.wikiModelName)                     { settings.wikiModelName = v }
         if let v = string(.categorizationModel),   !v.isEmpty { settings.categorizationModel = v }
         if let v = string(.categorizationModelName)           { settings.categorizationModelName = v }
+        if let v = string(.chapterCompilationModel), !v.isEmpty { settings.chapterCompilationModel = v }
+        if let v = string(.chapterCompilationModelName)       { settings.chapterCompilationModelName = v }
         if let v = string(.embeddingsModel),       !v.isEmpty { settings.embeddingsModel = v }
         if let v = string(.embeddingsModelName)               { settings.embeddingsModelName = v }
         if let v = bool(.rerankerEnabled)                     { settings.rerankerEnabled = v }
@@ -141,6 +143,10 @@ final class iCloudSettingsSync {
         if let v = bool(.autoMarkPlayedAtEnd)                 { settings.autoMarkPlayedAtEnd = v }
         if let v = bool(.autoPlayNext)                        { settings.autoPlayNext = v }
         if let v = bool(.autoDeleteDownloadsAfterPlayed)      { settings.autoDeleteDownloadsAfterPlayed = v }
+        if let raw = string(.headphoneDoubleTapAction),
+           let v = HeadphoneGestureAction(rawValue: raw)      { settings.headphoneDoubleTapAction = v }
+        if let raw = string(.headphoneTripleTapAction),
+           let v = HeadphoneGestureAction(rawValue: raw)      { settings.headphoneTripleTapAction = v }
         if let v = bool(.wikiAutoGenerateOnTranscriptIngest)  { settings.wikiAutoGenerateOnTranscriptIngest = v }
         if let v = bool(.autoIngestPublisherTranscripts)      { settings.autoIngestPublisherTranscripts = v }
         if let v = bool(.autoFallbackToScribe)                { settings.autoFallbackToScribe = v }
@@ -163,6 +169,8 @@ final class iCloudSettingsSync {
         kvs.set(settings.wikiModelName,                           forKey: Key.wikiModelName.rawValue)
         kvs.set(settings.categorizationModel,                     forKey: Key.categorizationModel.rawValue)
         kvs.set(settings.categorizationModelName,                 forKey: Key.categorizationModelName.rawValue)
+        kvs.set(settings.chapterCompilationModel,                 forKey: Key.chapterCompilationModel.rawValue)
+        kvs.set(settings.chapterCompilationModelName,             forKey: Key.chapterCompilationModelName.rawValue)
         kvs.set(settings.embeddingsModel,                         forKey: Key.embeddingsModel.rawValue)
         kvs.set(settings.embeddingsModelName,                     forKey: Key.embeddingsModelName.rawValue)
         kvs.set(settings.rerankerEnabled,                         forKey: Key.rerankerEnabled.rawValue)
@@ -176,6 +184,8 @@ final class iCloudSettingsSync {
         kvs.set(settings.autoMarkPlayedAtEnd,                     forKey: Key.autoMarkPlayedAtEnd.rawValue)
         kvs.set(settings.autoPlayNext,                            forKey: Key.autoPlayNext.rawValue)
         kvs.set(settings.autoDeleteDownloadsAfterPlayed,          forKey: Key.autoDeleteDownloadsAfterPlayed.rawValue)
+        kvs.set(settings.headphoneDoubleTapAction.rawValue,       forKey: Key.headphoneDoubleTapAction.rawValue)
+        kvs.set(settings.headphoneTripleTapAction.rawValue,       forKey: Key.headphoneTripleTapAction.rawValue)
         kvs.set(settings.wikiAutoGenerateOnTranscriptIngest,      forKey: Key.wikiAutoGenerateOnTranscriptIngest.rawValue)
         kvs.set(settings.autoIngestPublisherTranscripts,          forKey: Key.autoIngestPublisherTranscripts.rawValue)
         kvs.set(settings.autoFallbackToScribe,                    forKey: Key.autoFallbackToScribe.rawValue)
@@ -200,6 +210,8 @@ final class iCloudSettingsSync {
         case wikiModelName                       = "sync.settings.wikiModelName"
         case categorizationModel                 = "sync.settings.categorizationModel"
         case categorizationModelName             = "sync.settings.categorizationModelName"
+        case chapterCompilationModel             = "sync.settings.chapterCompilationModel"
+        case chapterCompilationModelName         = "sync.settings.chapterCompilationModelName"
         case embeddingsModel                     = "sync.settings.embeddingsModel"
         case embeddingsModelName                 = "sync.settings.embeddingsModelName"
         case rerankerEnabled                     = "sync.settings.rerankerEnabled"
@@ -213,6 +225,8 @@ final class iCloudSettingsSync {
         case autoMarkPlayedAtEnd                 = "sync.settings.autoMarkPlayedAtEnd"
         case autoPlayNext                        = "sync.settings.autoPlayNext"
         case autoDeleteDownloadsAfterPlayed      = "sync.settings.autoDeleteDownloadsAfterPlayed"
+        case headphoneDoubleTapAction            = "sync.settings.headphoneDoubleTapAction"
+        case headphoneTripleTapAction            = "sync.settings.headphoneTripleTapAction"
         case wikiAutoGenerateOnTranscriptIngest  = "sync.settings.wikiAutoGenerateOnTranscriptIngest"
         case autoIngestPublisherTranscripts      = "sync.settings.autoIngestPublisherTranscripts"
         case autoFallbackToScribe                = "sync.settings.autoFallbackToScribe"

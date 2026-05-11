@@ -14,6 +14,34 @@ enum OllamaCredentialSource: String, Codable, Hashable, Sendable {
     case none, manual, byok
 }
 
+/// Action mapped to a headphone-remote multi-tap gesture (AirPods double/triple
+/// tap or stem squeeze, wired earbud inline button). iOS converts these into
+/// standard `MPRemoteCommandCenter.nextTrackCommand` / `.previousTrackCommand`
+/// events — this enum decides what each one does inside the podcast player.
+///
+/// Enabling the underlying remote commands also makes a next/previous-track
+/// button visible on the lock screen, Control Center, and CarPlay — whatever
+/// the gesture is mapped to fires from those surfaces too.
+enum HeadphoneGestureAction: String, Codable, Hashable, Sendable, CaseIterable {
+    case skipForward
+    case skipBackward
+    case nextChapter
+    case previousChapter
+    case clipNow
+    case none
+
+    var displayName: String {
+        switch self {
+        case .skipForward:     return "Skip Forward"
+        case .skipBackward:    return "Skip Back"
+        case .nextChapter:     return "Next Chapter"
+        case .previousChapter: return "Previous Chapter"
+        case .clipNow:         return "Clip Current Position"
+        case .none:            return "Do Nothing"
+        }
+    }
+}
+
 enum STTProvider: String, Codable, Hashable, Sendable, CaseIterable {
     case elevenLabsScribe = "elevenlabs_scribe"
     case openRouterWhisper = "openrouter_whisper"
@@ -57,6 +85,11 @@ struct Settings: Codable, Hashable, Sendable {
     /// cheaper model for one-shot categorization without affecting live agent chat.
     var categorizationModel: String = Defaults.llmModel
     var categorizationModelName: String = ""
+    /// Model used by `AIChapterCompiler` to synthesise chapter boundaries from
+    /// a ready transcript. Kept distinct from `wikiModel` so users can pick a
+    /// cheaper / faster model for chapter compile without affecting wiki quality.
+    var chapterCompilationModel: String = Defaults.llmModel
+    var chapterCompilationModelName: String = ""
     var embeddingsModel: String = Self.defaultEmbeddingsModel
     var embeddingsModelName: String = ""
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
@@ -114,10 +147,20 @@ struct Settings: Codable, Hashable, Sendable {
     /// sleep timer has armed an end-of-episode stop.
     var autoPlayNext: Bool = true
     /// When `true`, the player auto-seeks past detected ad segments
-    /// (`AdSegmentDetector` output, stored on `Episode.adSegments`).
+    /// (`AIChapterCompiler` output, stored on `Episode.adSegments`).
     /// Defaults off for v1 — opt-in until detection quality is proven. The
     /// chapter rail still flags ad-overlapping chapters visually regardless.
     var autoSkipAds: Bool = false
+    /// Action fired by an AirPods double-tap / double-squeeze (or any headphone
+    /// remote that emits `MPRemoteCommandCenter.nextTrackCommand`). Default
+    /// matches the common podcast-player muscle memory: jump forward by the
+    /// configured skip-forward interval.
+    var headphoneDoubleTapAction: HeadphoneGestureAction = .skipForward
+    /// Action fired by an AirPods triple-tap / triple-squeeze (or any headphone
+    /// remote that emits `MPRemoteCommandCenter.previousTrackCommand`). Default
+    /// captures a clip — quickly bookmarking what you just heard is the most
+    /// valuable thing a third tap can do that single/double don't already cover.
+    var headphoneTripleTapAction: HeadphoneGestureAction = .clipNow
 
     // Wiki
     /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as
@@ -163,6 +206,7 @@ struct Settings: Codable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case llmModel, llmModelName, memoryCompilationModel, memoryCompilationModelName
         case wikiModel, wikiModelName, categorizationModel, categorizationModelName
+        case chapterCompilationModel, chapterCompilationModelName
         case embeddingsModel, embeddingsModelName, rerankerEnabled
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
@@ -174,6 +218,7 @@ struct Settings: Codable, Hashable, Sendable {
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
         case autoDeleteDownloadsAfterPlayed, autoPlayNext, autoSkipAds
+        case headphoneDoubleTapAction, headphoneTripleTapAction
         case wikiAutoGenerateOnTranscriptIngest
         case autoIngestPublisherTranscripts, autoFallbackToScribe
         case notifyOnNewEpisodes, notifyOnBriefingReady
@@ -193,6 +238,8 @@ struct Settings: Codable, Hashable, Sendable {
         wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? ""
         categorizationModel = try c.decodeIfPresent(String.self, forKey: .categorizationModel) ?? Defaults.llmModel
         categorizationModelName = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) ?? ""
+        chapterCompilationModel = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModel) ?? Defaults.llmModel
+        chapterCompilationModelName = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) ?? ""
         embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
         embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
@@ -222,6 +269,8 @@ struct Settings: Codable, Hashable, Sendable {
         autoDeleteDownloadsAfterPlayed = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) ?? false
         autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
         autoSkipAds = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAds) ?? false
+        headphoneDoubleTapAction = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneDoubleTapAction) ?? .skipForward
+        headphoneTripleTapAction = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneTripleTapAction) ?? .clipNow
         wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
         autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? true
         autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
@@ -252,6 +301,8 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(wikiModelName, forKey: .wikiModelName)
         try c.encode(categorizationModel, forKey: .categorizationModel)
         try c.encode(categorizationModelName, forKey: .categorizationModelName)
+        try c.encode(chapterCompilationModel, forKey: .chapterCompilationModel)
+        try c.encode(chapterCompilationModelName, forKey: .chapterCompilationModelName)
         try c.encode(embeddingsModel, forKey: .embeddingsModel)
         try c.encode(embeddingsModelName, forKey: .embeddingsModelName)
         try c.encode(rerankerEnabled, forKey: .rerankerEnabled)
@@ -280,6 +331,8 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(autoDeleteDownloadsAfterPlayed, forKey: .autoDeleteDownloadsAfterPlayed)
         try c.encode(autoPlayNext, forKey: .autoPlayNext)
         try c.encode(autoSkipAds, forKey: .autoSkipAds)
+        try c.encode(headphoneDoubleTapAction, forKey: .headphoneDoubleTapAction)
+        try c.encode(headphoneTripleTapAction, forKey: .headphoneTripleTapAction)
         try c.encode(wikiAutoGenerateOnTranscriptIngest, forKey: .wikiAutoGenerateOnTranscriptIngest)
         try c.encode(autoIngestPublisherTranscripts, forKey: .autoIngestPublisherTranscripts)
         try c.encode(autoFallbackToScribe, forKey: .autoFallbackToScribe)
