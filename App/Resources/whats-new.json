@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "c6d9d71",
+      "shipped_at": "2026-05-11T22:30:00Z",
+      "lines": [
+        "What's New now stays out of the way — once you've seen an entry, you won't see it again, even after reinstalling. Fresh installs start silent; only entries shipped from now on will pop the sheet."
+      ]
+    },
+    {
       "id": "19c962c",
       "shipped_at": "2026-05-11T22:00:00Z",
       "lines": [
