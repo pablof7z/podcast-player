@@ -46,6 +46,13 @@ struct ChaptersClient: Sendable {
         return try Self.decode(data)
     }
 
+    /// Shared decoder. `decode` runs once per `chaptersURL` per session
+    /// (deduped by `ChaptersHydrationService`), so the per-call allocator
+    /// pressure is modest — but every `static let`-decoder elsewhere in
+    /// the codebase has followed the same pattern, so mirror it here for
+    /// consistency.
+    nonisolated(unsafe) private static let decoder = JSONDecoder()
+
     /// Decode a Podcasting 2.0 chapters JSON payload into `Episode.Chapter`
     /// values. Permissive: accepts integer or floating-point timestamps,
     /// missing optional fields, and skips entries with no title (the spec
@@ -54,7 +61,7 @@ struct ChaptersClient: Sendable {
     static func decode(_ data: Data) throws -> [Episode.Chapter] {
         let envelope: ChaptersEnvelope
         do {
-            envelope = try JSONDecoder().decode(ChaptersEnvelope.self, from: data)
+            envelope = try decoder.decode(ChaptersEnvelope.self, from: data)
         } catch {
             throw FetchError.decode(error.localizedDescription)
         }
