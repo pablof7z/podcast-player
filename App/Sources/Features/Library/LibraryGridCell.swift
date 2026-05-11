@@ -58,28 +58,21 @@ struct LibraryGridCell: View {
     // MARK: - Pieces
 
     private var artworkTile: some View {
-        ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            subscription.accentColor.opacity(0.95),
-                            subscription.accentColor.opacity(0.55)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+        RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        subscription.accentColor.opacity(0.95),
+                        subscription.accentColor.opacity(0.55)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .aspectRatio(1, contentMode: .fit)
-                .overlay(artworkOverlay)
-                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
-                .appShadow(AppTheme.Shadow.subtle)
-
-            if unplayedCount > 0 {
-                unplayedDot
-                    .padding(AppTheme.Spacing.sm)
-            }
-        }
+            )
+            .aspectRatio(1, contentMode: .fit)
+            .overlay(artworkOverlay)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
+            .appShadow(AppTheme.Shadow.subtle)
     }
 
     @ViewBuilder
@@ -105,52 +98,6 @@ struct LibraryGridCell: View {
             .font(.system(size: 44, weight: .light))
             .foregroundStyle(.white.opacity(0.92))
             .accessibilityHidden(true)
-    }
-
-    private var unplayedDot: some View {
-        // iOS-standard cap: show 1–9 verbatim, 10–99 verbatim with a
-        // smaller font, "99+" past the threshold. Previously the badge
-        // capped at "9" so a show with 9 unplayed and one with 90
-        // looked identical to the user.
-        ZStack {
-            Circle()
-                .fill(.red)
-                .frame(width: badgeWidth, height: 14)
-                .appShadow(AppTheme.Shadow.subtle)
-            if unplayedCount > 1 {
-                Text(unplayedCountLabel)
-                    .font(.system(size: badgeFontSize, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    /// 14pt circle for single-digit counts; pill stretches horizontally
-    /// for two-digit and the "99+" string so the digits don't get
-    /// clipped against the show artwork's corner.
-    private var badgeWidth: CGFloat {
-        switch unplayedCount {
-        case ..<10:  return 14
-        case ..<100: return 18
-        default:     return 24
-        }
-    }
-
-    /// Font size shrinks from 9pt → 8pt → 7pt as the digits widen so
-    /// the text always sits cleanly inside the badge without going
-    /// monospaced (which would clash with the rounded counts elsewhere
-    /// in the grid).
-    private var badgeFontSize: CGFloat {
-        switch unplayedCount {
-        case ..<10:  return 9
-        case ..<100: return 8
-        default:     return 7
-        }
-    }
-
-    private var unplayedCountLabel: String {
-        unplayedCount > 99 ? "99+" : "\(unplayedCount)"
     }
 
     private func categoryBadge(_ category: PodcastCategory) -> some View {

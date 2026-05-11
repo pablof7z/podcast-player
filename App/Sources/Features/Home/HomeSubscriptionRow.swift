@@ -42,79 +42,37 @@ struct HomeSubscriptionRow: View {
 
     @ViewBuilder
     private var artwork: some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                subscription.accentColor.opacity(0.95),
-                                subscription.accentColor.opacity(0.55)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                if let url = subscription.imageURL {
-                    CachedAsyncImage(url: url, targetSize: CGSize(width: 80, height: 80)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable().scaledToFill()
-                        default:
-                            Image(systemName: subscription.artworkSymbol)
-                                .font(.system(size: 18, weight: .light))
-                                .foregroundStyle(.white.opacity(0.92))
-                        }
-                    }
-                } else {
-                    Image(systemName: subscription.artworkSymbol)
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(.white.opacity(0.92))
-                }
-            }
-            .frame(width: 40, height: 40)
-            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
-
-            if unplayedCount > 0 {
-                unplayedBadge
-                    .offset(x: 6, y: -6)
-            }
-        }
-    }
-
-    private var unplayedBadge: some View {
-        // Mirrors the LibraryGridCell badge (1-9 / 10-99 / 99+). Slightly
-        // smaller font tier here because the row artwork is half the grid
-        // tile size.
         ZStack {
-            Capsule(style: .continuous)
-                .fill(.red)
-                .frame(width: badgeWidth, height: 14)
-                .appShadow(AppTheme.Shadow.subtle)
-            Text(badgeLabel)
-                .font(.system(size: badgeFontSize, weight: .bold))
-                .foregroundStyle(.white)
+            RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            subscription.accentColor.opacity(0.95),
+                            subscription.accentColor.opacity(0.55)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            if let url = subscription.imageURL {
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 80, height: 80)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        Image(systemName: subscription.artworkSymbol)
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundStyle(.white.opacity(0.92))
+                    }
+                }
+            } else {
+                Image(systemName: subscription.artworkSymbol)
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundStyle(.white.opacity(0.92))
+            }
         }
-    }
-
-    private var badgeWidth: CGFloat {
-        switch unplayedCount {
-        case ..<10:  return 14
-        case ..<100: return 18
-        default:     return 24
-        }
-    }
-
-    private var badgeFontSize: CGFloat {
-        switch unplayedCount {
-        case ..<10:  return 9
-        case ..<100: return 8
-        default:     return 7
-        }
-    }
-
-    private var badgeLabel: String {
-        unplayedCount > 99 ? "99+" : "\(unplayedCount)"
+        .frame(width: 40, height: 40)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 
     private var meta: some View {

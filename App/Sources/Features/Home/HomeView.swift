@@ -157,17 +157,6 @@ struct HomeView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                HomeDatelineView(components: datelineComponents)
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.top, AppTheme.Spacing.sm)
-
-                if !activeChips.isEmpty {
-                    HomeActiveFilterChipStrip(
-                        chips: activeChips,
-                        onDismiss: dismissChip
-                    )
-                }
-
                 if shouldShowFeaturedSection {
                     HomeFeaturedSection(
                         resumeEpisodes: scopedResumeEpisodes,
