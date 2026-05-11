@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 import SwiftUI
-import WidgetKit
 
 // MARK: - PlaybackState
 
@@ -62,14 +61,19 @@ final class PlaybackState {
             : String(format: "%d:%02d", m, s)
     }
 
-    /// Up Next queue. Stores `Episode.id`s in playback order — the first entry
-    /// is the next episode to play. Kept as `UUID` (not `Episode`) so the
-    /// queue stays in sync with mutations against the store (rename, refresh,
-    /// download lifecycle) without manual reconciliation.
+    /// Up Next queue — ordered list of `QueueItem` values. Each item may carry
+    /// optional `startSeconds`/`endSeconds` bounds for agent-curated segment
+    /// playback. Full-episode items use `nil` for both fields.
     ///
     /// `NowPlayingTimelineProvider` reads only the current `episode` snapshot,
     /// not the queue, so widget metadata is unaffected by queue mutations.
-    var queue: [UUID] = []
+    var queue: [QueueItem] = []
+
+    /// When the currently-playing item is a bounded segment, this holds the
+    /// episode-relative end boundary in seconds. `tickPersistence` watches this
+    /// and calls `onSegmentFinished` when the playhead crosses it, then clears
+    /// it. `nil` for full-episode items (natural-end detection applies instead).
+    var currentSegmentEndTime: Double? = nil
 
     /// Back-navigation stack populated by `navigationalSeek(to:)`.
     /// In-memory only (session-scoped, like browser history).
@@ -116,6 +120,12 @@ final class PlaybackState {
     /// should mark the episode as fully played. Gated by `autoMarkPlayedOnFinish`
     /// (mirrors `Settings.autoMarkPlayedAtEnd`) so the user can opt out of auto-mark.
     var onEpisodeFinished: (UUID) -> Void = { _ in }
+
+    /// Called when the playhead reaches `currentSegmentEndTime` for a bounded
+    /// segment item. `RootView` wires this to `playNext` (with `pause()` as
+    /// fallback when the queue is empty) so the transition logic lives in one
+    /// place. Not fired for full-episode items — those go through `onEpisodeFinished`.
+    var onSegmentFinished: () -> Void = { }
 
     /// Called when the player wants any queued position writes drained to
     /// disk synchronously: on pause, on natural end-of-episode (so the
@@ -180,12 +190,12 @@ final class PlaybackState {
     /// Most recent App-Group snapshot write. Used to throttle position-only
     /// updates to once every 5 seconds — the widget's timeline refresh
     /// granularity makes finer writes wasted I/O.
-    private var lastSnapshotWrite: Date?
+    var lastSnapshotWrite: Date?
     /// Ad segments already auto-skipped in this playback session, keyed by
     /// `AdSegment.id`. Cleared on episode change so a user replaying the
     /// same episode sees ads skipped again. Not persisted — purely
     /// throttling state for the 1-second tick loop.
-    private var skippedAdSegmentIDs: Set<UUID> = []
+    var skippedAdSegmentIDs: Set<UUID> = []
 
     // MARK: - Init
 
@@ -417,86 +427,26 @@ final class PlaybackState {
             onPersistPosition(episode.id, time)
         }
 
-        // Auto-skip ad segments. Gated on the user's opt-in setting; the
-        // throttling set guarantees one skip per segment per session even
-        // if the user manually scrubs back into the same segment (a second
-        // scrub-back is treated as deliberate — the user wants the ad).
-        applyAutoSkipAdsIfNeeded(at: time)
+        // Segment end detection — checked before natural-end so a bounded
+        // agent segment transitions cleanly without marking the episode played.
+        // `currentSegmentEndTime` is cleared first to prevent re-firing on the
+        // next tick if `onSegmentFinished` is slow to advance the queue.
+        if let segEnd = currentSegmentEndTime, time >= segEnd {
+            currentSegmentEndTime = nil
+            onSegmentFinished()
+            return
+        }
 
-        // Throttled snapshot write — at most once every 5 seconds. The widget
-        // re-reads on a 60s timeline, so finer writes are pure waste.
+        applyAutoSkipAdsIfNeeded(at: time)
         writeNowPlayingSnapshot(force: false)
 
-        // Trust the engine's natural-end signal instead of inferring "near
-        // the end + paused" — that inference fired for a manual pause inside
-        // the last 100 ms, auto-marking episodes the user didn't actually
-        // finish. The flag is only ever set by the AVPlayer
-        // `AVPlayerItemDidPlayToEndTime` notification and cleared on user
-        // seek + episode change.
         if engine.didReachNaturalEnd {
             didFireFinishedFor = episode.id
             if autoMarkPlayedOnFinish {
-                // markEpisodePlayed flushes the cache itself, so the
-                // explicit flush below would be redundant on this path.
                 onEpisodeFinished(episode.id)
             } else {
-                // Auto-mark is off: we just persisted the final position
-                // through `onPersistPosition` above, which goes through
-                // the debounced cache. Force it to disk now so the user's
-                // exact end-position survives a kill before the next
-                // debounce tick.
                 onFlushPositions()
             }
         }
-    }
-
-    /// Seeks past any ad segment the playhead currently sits inside, when
-    /// `autoSkipAdsEnabled` is on. Throttled to one skip per `AdSegment.id`
-    /// per playback session via `skippedAdSegmentIDs` — a user who scrubs
-    /// back into a previously-skipped ad doesn't get auto-yanked forward a
-    /// second time, treating that as a deliberate "let it play" intent.
-    ///
-    /// No-op when the engine is paused (`time == 0` && `!isPlaying`) — we
-    /// shouldn't fight a user who paused inside an ad to copy a URL.
-    private func applyAutoSkipAdsIfNeeded(at time: TimeInterval) {
-        guard autoSkipAdsEnabled, !adSegments.isEmpty else { return }
-        // Find the first ad whose `[start, end)` contains the playhead and
-        // hasn't been auto-skipped yet this session. Strict half-open
-        // intervals so the player can land on `ad.end` after a skip
-        // without immediately re-triggering itself.
-        guard let segment = adSegments.first(where: { ad in
-            time >= ad.start && time < ad.end && !skippedAdSegmentIDs.contains(ad.id)
-        }) else { return }
-        skippedAdSegmentIDs.insert(segment.id)
-        engine.seek(to: segment.end)
-    }
-
-    /// Writes the current episode metadata into the App Group `UserDefaults`
-    /// the widget reads from, then nudges WidgetKit to refresh. Throttled to
-    /// once per 5s unless `force` is set (e.g. on episode change), where the
-    /// snapshot must update immediately.
-    private func writeNowPlayingSnapshot(force: Bool) {
-        guard let episode else { return }
-        let now = Date()
-        if !force, let last = lastSnapshotWrite,
-           now.timeIntervalSince(last) < 5 {
-            return
-        }
-        let snapshot = NowPlayingSnapshot(
-            episodeTitle: episode.title,
-            showName: resolveShowName(episode),
-            imageURLString: episode.imageURL?.absoluteString,
-            position: engine.currentTime,
-            duration: duration,
-            updatedAt: now,
-            // Reuse the engine's chapter resolver — same closure that drives
-            // the lock-screen album line. `nil` for chapter-less episodes
-            // so the widget falls back cleanly to show name only.
-            chapterTitle: engine.resolveActiveChapterTitle(episode, engine.currentTime),
-            isPlaying: isPlaying
-        )
-        NowPlayingSnapshotStore.write(snapshot)
-        lastSnapshotWrite = now
-        WidgetCenter.shared.reloadAllTimelines()
     }
 }

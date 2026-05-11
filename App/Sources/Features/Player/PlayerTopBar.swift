@@ -99,7 +99,7 @@ struct PlayerTopBar: View {
                 Label("Jump back", systemImage: "chevron.left")
                     .labelStyle(.titleAndIcon)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, AppTheme.Spacing.sm)
                     .padding(.vertical, AppTheme.Spacing.xs)
                     .glassEffect(.regular.interactive(), in: Capsule())

@@ -77,7 +77,7 @@ struct EpisodeDetailView: View {
                     playback.play()
                 }
             },
-            isInQueue: playback.queue.contains(episode.id),
+            isInQueue: playback.isQueued(episode.id),
             onAddToQueue: {
                 Haptics.success()
                 playback.enqueue(episode.id)

@@ -254,6 +254,39 @@ extension AgentTools {
                 ],
                 required: ["episode_id", "start_seconds", "end_seconds"]
             ),
+            podcastTool(
+                name: PodcastNames.queueEpisodeSegments,
+                description: """
+                Load one or more time-bounded segments from an episode (or multiple episodes) into the Up Next queue, \
+                then optionally start playing the first segment immediately. \
+                Use when the user says 'play section X then Y from episode Z', 'play the intro and the interview part', \
+                or asks to queue specific chapters. \
+                Before calling this tool, use query_transcripts or the episode's chapter list to resolve the \
+                timestamps for each section the user named. \
+                Each segment plays from start_seconds to end_seconds; when it ends, a subtle sound cue fires and \
+                the next segment starts automatically. \
+                Distinct from play_episode_at (which jumps to a single timestamp with no end boundary) — \
+                use this tool any time two or more bounded segments need to play in sequence.
+                """,
+                properties: [
+                    "segments": [
+                        "type": "array",
+                        "description": "Ordered list of segments to enqueue. Must contain at least one entry.",
+                        "items": [
+                            "type": "object",
+                            "properties": [
+                                "episode_id": ["type": "string", "description": "UUID of the episode containing this segment."],
+                                "start_seconds": ["type": "number", "description": "Seconds from the episode origin where this segment begins."],
+                                "end_seconds": ["type": "number", "description": "Seconds from the episode origin where this segment ends."],
+                                "label": ["type": "string", "description": "Optional human-readable label (e.g. chapter title) shown in the queue sheet."],
+                            ] as [String: Any],
+                            "required": ["episode_id", "start_seconds", "end_seconds"],
+                        ] as [String: Any],
+                    ] as [String: Any],
+                    "play_now": ["type": "boolean", "description": "If true, start playing the first segment immediately and push the rest into the queue. If false, append all segments to the queue without starting playback. Defaults to true."],
+                ],
+                required: ["segments"]
+            ),
         ]
     }
 

@@ -9,6 +9,46 @@ import Foundation
 // Kept in a separate file from the protocol surface (`PodcastAgentToolDeps.swift`)
 // purely for file-size hygiene — both files import the same types from here.
 
+// MARK: - Segment queuing
+
+/// One time-bounded segment supplied by the `queue_episode_segments` tool.
+/// The agent resolves chapter/transcript boundaries and populates these fields;
+/// the playback adapter converts them to `QueueItem` values in the queue.
+public struct EpisodeSegment: Sendable, Equatable {
+    public let episodeID: EpisodeID
+    /// Seconds from the episode origin to begin playback.
+    public let startSeconds: Double
+    /// Seconds from the episode origin to stop playback and advance.
+    public let endSeconds: Double
+    /// Optional label shown in the queue sheet (e.g. chapter title).
+    public let label: String?
+
+    public init(
+        episodeID: EpisodeID,
+        startSeconds: Double,
+        endSeconds: Double,
+        label: String? = nil
+    ) {
+        self.episodeID = episodeID
+        self.startSeconds = startSeconds
+        self.endSeconds = endSeconds
+        self.label = label
+    }
+}
+
+/// Result returned by the `queue_episode_segments` tool.
+public struct QueueSegmentsResult: Sendable, Equatable {
+    public let segmentsQueued: Int
+    public let playingNow: Bool
+    public let firstEpisodeTitle: String?
+
+    public init(segmentsQueued: Int, playingNow: Bool, firstEpisodeTitle: String? = nil) {
+        self.segmentsQueued = segmentsQueued
+        self.playingNow = playingNow
+        self.firstEpisodeTitle = firstEpisodeTitle
+    }
+}
+
 // MARK: - Identifiers
 
 /// Identifier for an episode. Stringly-typed at the tool boundary so we don't

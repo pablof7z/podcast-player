@@ -1,30 +1,37 @@
 import SwiftUI
 
-/// Primary transport row — skip-back / play-pause / skip-forward.
+/// Primary transport row — speed / skip-back / play-pause / skip-forward / mic / snip.
 ///
-/// Designed to be reusable inside the full-screen `PlayerView` and
-/// (eventually) inside a CarPlay reflection. Buttons share `glassEffectID`s so
-/// callers can wrap them in a `GlassEffectContainer` to get the morph-on-press
-/// behaviour described in UX-01 §5.
+/// All controls sit in a single `HStack` so the row stays at one vertical
+/// height while the play/pause circle dominates the center. Speed chip flanks
+/// the transport on the left; voice-note mic and auto-snip bookmark flank on
+/// the right.
 ///
-/// **Chapter shortcuts.** Long-press on either skip button jumps to the
-/// next/previous chapter when the episode exposes navigable ones — same
-/// gesture iOS Music uses for previous/next track. Tap remains the
-/// configured-seconds skip. `chapters` is supplied by the parent so the live
-/// store is the source of truth (chapters can hydrate after playback starts).
+/// Long-press on either skip button jumps to the next/previous chapter when
+/// the episode exposes navigable ones — same gesture iOS Music uses for
+/// previous/next track. Tap remains the configured-seconds skip.
 struct PlayerControlsView: View {
 
     @Bindable var state: PlaybackState
     let glassNamespace: Namespace.ID
-    /// Navigable chapters for the currently-loaded episode. Pass `[]` when
-    /// the episode has none — the long-press hooks become no-ops.
     var chapters: [Episode.Chapter] = []
+    @Binding var showSpeedSheet: Bool
+    @Binding var showVoiceNoteSheet: Bool
 
     var body: some View {
-        HStack(spacing: AppTheme.Spacing.lg) {
-            // Honour the user-configured skip intervals from Settings →
-            // Playback. Falls back to 15/30 if the engine reports an invalid
-            // value so the SF Symbol still resolves.
+        HStack(alignment: .center, spacing: AppTheme.Spacing.sm) {
+            // Left action: playback speed
+            actionChip(
+                glyph: "speedometer",
+                accessibilityName: "Playback speed",
+                accessibilityValue: state.rate.label
+            ) {
+                showSpeedSheet = true
+            }
+
+            Spacer(minLength: 0)
+
+            // Transport: skip-back / play-pause / skip-forward
             let back = state.skipBackwardSeconds
             let forward = state.skipForwardSeconds
             SkipButton(
@@ -42,6 +49,15 @@ struct PlayerControlsView: View {
                 tapAction: { state.skipForward() },
                 chapterAction: chapters.isEmpty ? nil : { state.seekToNextChapter(in: chapters) }
             )
+
+            Spacer(minLength: 0)
+
+            // Right actions: voice note + auto-snip
+            actionChip(glyph: "mic", accessibilityName: "Voice note") {
+                Haptics.selection()
+                showVoiceNoteSheet = true
+            }
+            AutoSnipButton()
         }
         .frame(maxWidth: .infinity)
     }
@@ -61,6 +77,26 @@ struct PlayerControlsView: View {
                 .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
         .buttonStyle(.pressable(scale: 0.94, opacity: 0.9))
+    }
+
+    private func actionChip(
+        glyph: String,
+        accessibilityName: String,
+        accessibilityValue: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: glyph)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .buttonStyle(.pressable)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityName)
+        .accessibilityValue(accessibilityValue ?? "")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -159,55 +195,5 @@ private struct ChapterAccessibilityActionModifier: ViewModifier {
         } else {
             content
         }
-    }
-}
-
-// MARK: - Action cluster (speed / sleep / AirPlay / queue / share)
-
-/// The bottom-row "glass action cluster" — speed control, voice note, and auto-snip.
-struct PlayerActionClusterView: View {
-
-    @Bindable var state: PlaybackState
-    @Binding var showSpeedSheet: Bool
-    @Binding var showVoiceNoteSheet: Bool
-
-    var body: some View {
-        HStack {
-            actionChip(
-                glyph: "speedometer",
-                accessibilityName: "Playback speed",
-                accessibilityValue: state.rate.label
-            ) {
-                showSpeedSheet = true
-            }
-            Spacer(minLength: 0)
-            actionChip(glyph: "mic", accessibilityName: "Voice note") {
-                Haptics.selection()
-                showVoiceNoteSheet = true
-            }
-            Spacer(minLength: 0)
-            AutoSnipButton()
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func actionChip(
-        glyph: String,
-        accessibilityName: String,
-        accessibilityValue: String? = nil,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: glyph)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
-        }
-        .buttonStyle(.pressable)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityName)
-        .accessibilityValue(accessibilityValue ?? "")
-        .accessibilityAddTraits(.isButton)
     }
 }

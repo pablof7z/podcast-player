@@ -96,6 +96,14 @@ public protocol PlaybackHostProtocol: Sendable {
     /// Navigate the UI to a named route. Routes are app-defined strings, e.g.
     /// `"library"`, `"now_playing"`, `"briefings"`, `"wiki/zone-2"`.
     func openScreen(route: String) async
+
+    /// Enqueue one or more time-bounded episode segments and optionally start
+    /// playing the first one immediately. Used by the `queue_episode_segments`
+    /// agent tool. Returns a summary of what was queued.
+    func queueEpisodeSegments(
+        segments: [EpisodeSegment],
+        playNow: Bool
+    ) async -> QueueSegmentsResult
 }
 
 /// Library, transcript, feed, and local episode-state mutations.

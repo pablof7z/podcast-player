@@ -113,7 +113,7 @@ struct EpisodeDetailActionsMenu: View {
     /// the detail; surfacing the inert affordance would be confusing.
     @ViewBuilder
     private var queueButton: some View {
-        if playback.queue.contains(episode.id) {
+        if playback.isQueued(episode.id) {
             Button {
                 Haptics.light()
                 playback.removeFromQueue(episode.id)

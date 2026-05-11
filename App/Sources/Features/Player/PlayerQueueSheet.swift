@@ -4,9 +4,10 @@ import SwiftUI
 
 /// "Up Next" sheet presented from the player's Queue chip.
 ///
-/// Renders a SwiftUI `List` over `state.queue` (UUIDs), resolves each entry to
-/// a live `Episode` via the store, and supports tap-to-play, drag-to-reorder,
-/// and swipe-to-delete. Footer summarises total runtime and exposes a
+/// Renders a SwiftUI `List` over `state.queue` (`[QueueItem]`), resolves each
+/// entry to a live `Episode` via the store, and supports tap-to-play,
+/// drag-to-reorder, and swipe-to-delete. Bounded segment items show their
+/// time range in the row. Footer summarises total runtime and exposes a
 /// destructive "Clear queue" action.
 ///
 /// The queue model lives on `PlaybackState`; this view is purely
@@ -26,7 +27,7 @@ struct PlayerQueueSheet: View {
     var body: some View {
         NavigationStack {
             Group {
-                if resolvedEpisodes.isEmpty {
+                if isEmpty {
                     emptyState
                 } else {
                     queueList
@@ -57,8 +58,8 @@ struct PlayerQueueSheet: View {
                     state.clearQueue()
                 }
             } message: {
-                let n = resolvedEpisodes.count
-                Text("All \(n) queued episode\(n == 1 ? "" : "s") will be removed. This cannot be undone.")
+                let n = resolvedItems.count
+                Text("All \(n) queued item\(n == 1 ? "" : "s") will be removed. This cannot be undone.")
             }
         }
         .presentationDetents([.medium, .large])
@@ -67,17 +68,21 @@ struct PlayerQueueSheet: View {
 
     // MARK: - Live resolution
 
-    /// Resolve every queue UUID to a live `Episode`. Drops any entry whose
-    /// episode no longer exists in the store (e.g. user unsubscribed mid-play)
-    /// rather than rendering a "missing" row — the UI surface for a stale
-    /// queue entry would just be confusing.
-    private var resolvedEpisodes: [Episode] {
-        state.queue.compactMap { store.episode(id: $0) }
+    /// Pairs each `QueueItem` with its resolved `Episode`. Drops entries whose
+    /// episode no longer exists in the store (e.g. user unsubscribed mid-play).
+    private var resolvedItems: [(item: QueueItem, episode: Episode)] {
+        state.queue.compactMap { item in
+            guard let ep = store.episode(id: item.episodeID) else { return nil }
+            return (item, ep)
+        }
     }
 
     private var totalRuntime: TimeInterval {
-        resolvedEpisodes.reduce(0) { acc, ep in
-            acc + (ep.duration ?? 0)
+        resolvedItems.reduce(0) { acc, pair in
+            if let start = pair.item.startSeconds, let end = pair.item.endSeconds {
+                return acc + max(0, end - start)
+            }
+            return acc + (pair.episode.duration ?? 0)
         }
     }
 
@@ -91,51 +96,39 @@ struct PlayerQueueSheet: View {
         )
     }
 
+    private var isEmpty: Bool { resolvedItems.isEmpty }
+
     // MARK: - List
 
     private var queueList: some View {
         List {
             Section {
-                ForEach(resolvedEpisodes) { episode in
+                ForEach(resolvedItems, id: \.item.id) { pair in
                     // Wrapped in a `Button` (not `.onTapGesture`) because
                     // SwiftUI's always-active edit mode can swallow tap
                     // gestures on the trailing edge where the move handle
                     // sits. `Button` reliably hits the whole row.
                     Button {
-                        play(episode)
+                        play(item: pair.item, episode: pair.episode)
                     } label: {
                         PlayerQueueRow(
-                            episode: episode,
-                            showName: store.subscription(id: episode.subscriptionID)?.title ?? "",
-                            showImageURL: store.subscription(id: episode.subscriptionID)?.imageURL
+                            episode: pair.episode,
+                            showName: store.subscription(id: pair.episode.subscriptionID)?.title ?? "",
+                            showImageURL: store.subscription(id: pair.episode.subscriptionID)?.imageURL,
+                            segmentLabel: pair.item.label,
+                            segmentRange: segmentRange(for: pair.item)
                         )
-                            .contentShape(Rectangle())
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    // Subtle row tint so the standard reorder chevrons
-                    // (rendered by always-active edit mode) read against the
-                    // sheet's grouped background. Without this the trailing
-                    // handles are nearly invisible against the row fill in
-                    // dark mode.
                     .listRowBackground(
                         RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
                             .fill(Color.primary.opacity(0.04))
                     )
-                    // Custom destructive label — `.onDelete` would render
-                    // "Delete", which suggests irreversibility. "Remove" matches
-                    // queue semantics: the episode stays in the library, it's
-                    // only being pulled from Up Next. This `.swipeActions`
-                    // label is also what edit-mode's inline red-minus confirm
-                    // surfaces, so the affordance is consistent.
-                    // `allowsFullSwipe: false` so a near-edge flick can
-                    // never accidentally remove the row — with the
-                    // permanent edit-mode also exposing a reorder grip
-                    // on the same trailing edge, two destructive
-                    // affordances within millimetres of each other was
-                    // a real misclick risk.
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
-                            removeFromQueue(episode.id)
+                            state.removeFromQueue(itemID: pair.item.id)
+                            Haptics.light()
                         } label: {
                             Label("Remove", systemImage: "minus.circle")
                         }
@@ -151,6 +144,11 @@ struct PlayerQueueSheet: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, .constant(.active))
+    }
+
+    private func segmentRange(for item: QueueItem) -> String? {
+        guard let start = item.startSeconds, let end = item.endSeconds else { return nil }
+        return "\(PlayerTimeFormat.clock(start)) – \(PlayerTimeFormat.clock(end))"
     }
 
     // MARK: - Footer
@@ -182,25 +180,24 @@ struct PlayerQueueSheet: View {
     }
 
     private var runtimeSummary: String {
-        let count = resolvedEpisodes.count
+        let count = resolvedItems.count
         let runtime = PlayerTimeFormat.clock(totalRuntime)
-        let plural = count == 1 ? "episode" : "episodes"
+        let plural = count == 1 ? "item" : "items"
         return "\(count) \(plural) • \(runtime)"
     }
 
     // MARK: - Actions
 
-    private func play(_ episode: Episode) {
+    private func play(item: QueueItem, episode: Episode) {
         Haptics.medium()
-        state.removeFromQueue(episode.id)
+        state.removeFromQueue(itemID: item.id)
+        state.currentSegmentEndTime = item.endSeconds
         state.setEpisode(episode)
+        if let start = item.startSeconds {
+            state.engine.seek(to: start)
+        }
         state.play()
         dismiss()
-    }
-
-    private func removeFromQueue(_ id: UUID) {
-        state.removeFromQueue(id)
-        Haptics.light()
     }
 
     private func pruneStaleQueue() {
@@ -222,6 +219,10 @@ struct PlayerQueueRow: View {
     /// artwork; without this fallback the row would render a generic
     /// waveform glyph for those episodes.
     var showImageURL: URL? = nil
+    /// Optional label for agent-curated segment items (e.g. chapter title).
+    var segmentLabel: String? = nil
+    /// Formatted time range string for bounded segments, e.g. "2:30 – 5:45".
+    var segmentRange: String? = nil
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
@@ -238,7 +239,18 @@ struct PlayerQueueRow: View {
                     .font(AppTheme.Typography.subheadline)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                if let runtime = formattedRuntime {
+                if let label = segmentLabel {
+                    Text(label)
+                        .font(.caption2.italic())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                if let range = segmentRange {
+                    Text(range)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                } else if let runtime = formattedRuntime {
                     Text(runtime)
                         .font(.caption2)
                         .foregroundStyle(.secondary)

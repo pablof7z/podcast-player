@@ -270,9 +270,10 @@ struct PlayerView: View {
 
     /// Pulled out of the scroll body and attached via
     /// `safeAreaInset(edge: .bottom)` so the chapter list scrolls under it.
-    /// Wrapped in a `GlassEffectContainer` so the morph-on-press animations
-    /// across all the round controls read as one floating island rather
-    /// than five disconnected glass coins.
+    /// The outer `RoundedRectangle` glass surface gives the chrome a solid
+    /// liquid-glass backdrop so chapters scrolling behind it don't bleed
+    /// through. The inner `GlassEffectContainer` connects the individual glass
+    /// buttons so they morph together on press.
     private var floatingChrome: some View {
         GlassEffectContainer(spacing: AppTheme.Spacing.md) {
             VStack(spacing: AppTheme.Spacing.md) {
@@ -288,14 +289,14 @@ struct PlayerView: View {
                 PlayerControlsView(
                     state: state,
                     glassNamespace: glassNamespace,
-                    chapters: navigableChapters ?? []
-                )
-                PlayerActionClusterView(
-                    state: state,
+                    chapters: navigableChapters ?? [],
                     showSpeedSheet: $showSpeedSheet,
                     showVoiceNoteSheet: $showVoiceNoteSheet
                 )
             }
+            .padding(.horizontal, AppTheme.Spacing.md)
+            .padding(.vertical, AppTheme.Spacing.md)
+            .glassSurface(cornerRadius: AppTheme.Corner.xl)
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.bottom, AppTheme.Spacing.md)

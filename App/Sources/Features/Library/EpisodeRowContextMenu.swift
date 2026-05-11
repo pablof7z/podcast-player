@@ -92,7 +92,7 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
     @ViewBuilder
     private var queueButton: some View {
         if let playback {
-            let isQueued = playback.queue.contains(episode.id)
+            let isQueued = playback.isQueued(episode.id)
             let isCurrent = playback.episode?.id == episode.id
             // The currently-playing episode is intentionally omitted from the
             // queue (`PlaybackState.enqueue` rejects it) so neither affordance

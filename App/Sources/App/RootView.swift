@@ -78,6 +78,13 @@ struct RootView: View {
                 playbackState.onFlushPositions = { [store] in
                     store.flushPendingPositions()
                 }
+                // Segment end: advance queue or pause if empty.
+                playbackState.onSegmentFinished = { [store, playbackState] in
+                    let advanced = playbackState.playNext { store.episode(id: $0) }
+                    if !advanced {
+                        playbackState.pause()
+                    }
+                }
                 // Cold-launch quick-action routing: AppDelegate stashed the
                 // shortcut URL during didFinishLaunchingWithOptions; consume
                 // it now and clear so subsequent re-appears don't re-route.

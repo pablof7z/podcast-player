@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "PLACEHOLDER",
+      "shipped_at": "2026-05-11T21:00:00Z",
+      "lines": [
+        "Ask the agent to play specific sections of an episode — it queues them in order with a subtle sound cue between each, so you can hear just the parts you care about."
+      ]
+    },
+    {
       "id": "571210e",
       "shipped_at": "2026-05-11T20:00:00Z",
       "lines": [

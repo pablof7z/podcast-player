@@ -1,5 +1,47 @@
 import Foundation
 
+// MARK: - QueueItem
+
+/// One entry in the Up Next queue. Can represent a full episode or a
+/// bounded segment within an episode (e.g. "chapters 2–4 of episode X").
+///
+/// Segment items drive automatic end detection: `PlaybackState.tickPersistence`
+/// watches `endSeconds` and calls `onSegmentFinished` when the playhead crosses
+/// the boundary, then dequeues the next item.
+struct QueueItem: Identifiable, Equatable, Sendable {
+    /// Stable identity for this queue slot — separate from `episodeID` so
+    /// the same episode can appear more than once (e.g. two non-adjacent
+    /// chapters from the same episode).
+    let id: UUID
+    let episodeID: UUID
+    /// Seconds from the episode origin to begin playback.
+    /// `nil` → start from the episode's persisted playback position (full-episode semantics).
+    let startSeconds: Double?
+    /// Seconds from the episode origin to stop playback and advance to the next item.
+    /// `nil` → play to the natural end of the episode.
+    let endSeconds: Double?
+    /// Optional human-readable label (e.g. chapter title) shown in the queue sheet.
+    let label: String?
+
+    init(
+        episodeID: UUID,
+        startSeconds: Double? = nil,
+        endSeconds: Double? = nil,
+        label: String? = nil
+    ) {
+        self.id = UUID()
+        self.episodeID = episodeID
+        self.startSeconds = startSeconds
+        self.endSeconds = endSeconds
+        self.label = label
+    }
+
+    /// Convenience for whole-episode items — the common case from library row swipes.
+    static func episode(_ episodeID: UUID) -> QueueItem {
+        QueueItem(episodeID: episodeID)
+    }
+}
+
 // MARK: - PlaybackRate
 
 /// Playback rates surfaced in the speed sheet. Stored as `Double` so the value

@@ -194,6 +194,56 @@ extension AgentTools {
         }
     }
 
+    static func queueEpisodeSegmentsTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let rawSegments = args["segments"] as? [[String: Any]], !rawSegments.isEmpty else {
+            return toolError("Missing or empty 'segments' array")
+        }
+        var segments: [EpisodeSegment] = []
+        for (i, raw) in rawSegments.enumerated() {
+            guard let episodeID = (raw["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
+                return toolError("segments[\(i)]: missing or empty 'episode_id'")
+            }
+            guard let startSeconds = podcastActionNumericArg(raw["start_seconds"]) else {
+                return toolError("segments[\(i)]: missing or invalid 'start_seconds'")
+            }
+            guard let endSeconds = podcastActionNumericArg(raw["end_seconds"]) else {
+                return toolError("segments[\(i)]: missing or invalid 'end_seconds'")
+            }
+            guard startSeconds >= 0 else {
+                return toolError("segments[\(i)]: 'start_seconds' must be >= 0")
+            }
+            guard endSeconds > startSeconds else {
+                return toolError("segments[\(i)]: 'end_seconds' must be greater than 'start_seconds'")
+            }
+            let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
+            guard exists else {
+                return toolError("segments[\(i)]: episode not found: \(episodeID)")
+            }
+            let label = (raw["label"] as? String)?.trimmed.nilIfEmpty
+            segments.append(EpisodeSegment(
+                episodeID: episodeID,
+                startSeconds: startSeconds,
+                endSeconds: endSeconds,
+                label: label
+            ))
+        }
+        let playNow = args["play_now"] as? Bool ?? true
+        let result = await deps.playback.queueEpisodeSegments(segments: segments, playNow: playNow)
+        var payload: [String: Any] = [
+            "segments_queued": result.segmentsQueued,
+            "play_now": result.playingNow,
+        ]
+        if let title = result.firstEpisodeTitle { payload["first_episode_title"] = title }
+        if result.playingNow {
+            payload["status"] = "playing"
+            payload["message"] = "Playing segment 1 of \(result.segmentsQueued). A sound cue marks each transition."
+        } else {
+            payload["status"] = "queued"
+            payload["message"] = "\(result.segmentsQueued) segment\(result.segmentsQueued == 1 ? "" : "s") added to Up Next."
+        }
+        return toolSuccess(payload)
+    }
+
     static func delegateTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
         guard let recipient = (args["recipient"] as? String)?.trimmed, !recipient.isEmpty else {
             return toolError("Missing or empty 'recipient'")
