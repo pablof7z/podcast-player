@@ -103,10 +103,7 @@ enum DownloadManagerStatus {
     }
 
     private static func formatSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        formatter.allowedUnits = [.useAll]
-        return formatter.string(fromByteCount: bytes)
+        bytes.formattedFileSize
     }
 }
 

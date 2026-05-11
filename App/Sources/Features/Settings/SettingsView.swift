@@ -212,14 +212,11 @@ struct SettingsView: View {
         }
     }
 
-    /// Shared helper so the Settings row's value matches the byte format used
-    /// inside `StorageSettingsView`. `.file` style with `.useAll` units lets
-    /// iOS pick the right unit per device locale (KB / MB / GB).
+    /// Settings row's storage size. Delegates to the shared
+    /// `Int64.formattedFileSize` helper so every byte-count surface in
+    /// the app reads identically.
     static func formatSize(_ bytes: Int64) -> String {
-        let f = ByteCountFormatter()
-        f.countStyle = .file
-        f.allowedUnits = [.useAll]
-        return f.string(fromByteCount: bytes)
+        bytes.formattedFileSize
     }
 
     private var destructiveSection: some View {
