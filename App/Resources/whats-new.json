@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "4e7db58",
+      "shipped_at": "2026-05-11T23:00:00Z",
+      "lines": [
+        "Search is now snappier — results only update after you pause typing, so fast keystrokes no longer cause lag."
+      ]
+    },
+    {
       "id": "c6d9d71",
       "shipped_at": "2026-05-11T22:30:00Z",
       "lines": [
