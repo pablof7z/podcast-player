@@ -91,6 +91,11 @@ actor ElevenLabsScribeClient {
 
     private static let logger = Logger.app("ElevenLabsScribeClient")
 
+    /// Shared decoder for the synchronous `/v1/speech-to-text`
+    /// response. Reentrant for `decode` after construction; one per
+    /// transcribed episode is plenty.
+    nonisolated(unsafe) private static let decoder = JSONDecoder()
+
     /// 10 minutes — Scribe is synchronous and a 60-minute episode can take
     /// several minutes to transcribe server-side. The default URLRequest
     /// timeout of 60s would (and did, for every long episode) fire first
@@ -171,7 +176,7 @@ actor ElevenLabsScribeClient {
 
         let raw: ScribeRawResult
         do {
-            raw = try JSONDecoder().decode(ScribeRawResult.self, from: data)
+            raw = try Self.decoder.decode(ScribeRawResult.self, from: data)
         } catch {
             let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<binary>"
             Self.logger.error("Scribe decode failed: \(String(describing: error), privacy: .public) body=\(preview, privacy: .public)")
