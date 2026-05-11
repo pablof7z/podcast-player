@@ -205,7 +205,7 @@ struct Settings: Codable, Hashable, Sendable {
 
         if openRouterCredentialSource == .none,
            let legacy = legacyOpenRouterAPIKey,
-           !legacy.trimmed.isEmpty {
+           !legacy.isBlank {
             openRouterCredentialSource = .manual
         }
     }

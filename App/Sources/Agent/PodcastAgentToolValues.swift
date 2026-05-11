@@ -348,7 +348,7 @@ public struct PodcastCategoryReference: Sendable, Equatable {
     }
 
     public var isEmpty: Bool {
-        [id, slug, name].allSatisfy { ($0 ?? "").trimmed.isEmpty }
+        [id, slug, name].allSatisfy { ($0 ?? "").isBlank }
     }
 }
 

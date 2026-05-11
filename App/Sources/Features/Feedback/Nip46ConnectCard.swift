@@ -111,7 +111,7 @@ struct Nip46ConnectCard: View {
                     .padding(.vertical, AppTheme.Spacing.sm)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(bunkerInput.trimmed.isEmpty || isConnectingRemote)
+            .disabled(bunkerInput.isBlank || isConnectingRemote)
         }
     }
 
@@ -219,7 +219,7 @@ struct Nip46ConnectCard: View {
     /// If the clipboard already holds a `bunker://` URI and the input is empty, prefill it.
     /// Common paste-and-go flow when the user just copied the URI from another app.
     private func autoPasteBunkerIfPresent() {
-        guard bunkerInput.trimmed.isEmpty,
+        guard bunkerInput.isBlank,
               UIPasteboard.general.hasStrings,
               let s = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
               s.hasPrefix("bunker://") else { return }

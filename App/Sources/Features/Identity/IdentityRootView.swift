@@ -140,12 +140,12 @@ private struct IdentityRootAboutBlock: View {
     }
 
     private var aboutIsEmpty: Bool {
-        (profile?.about ?? "").trimmed.isEmpty
+        (profile?.about ?? "").isBlank
     }
 
     private var aboutText: String {
         let raw = profile?.about ?? ""
-        if raw.trimmed.isEmpty {
+        if raw.isBlank {
             return "A new account, freshly minted.\nTell people who you are."
         }
         return raw

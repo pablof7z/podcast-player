@@ -165,7 +165,7 @@ struct UseMyOwnKeyView: View {
     // MARK: - Logic
 
     private var canSubmit: Bool {
-        !nsec.trimmed.isEmpty && hasBackup && !importing
+        !nsec.isBlank && hasBackup && !importing
     }
 
     private func refreshClipboardCheck() {
