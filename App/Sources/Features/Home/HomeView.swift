@@ -331,14 +331,6 @@ struct HomeView: View {
             .accessibilityHint("Opens category picker")
         }
         ToolbarItem(placement: .topBarTrailing) {
-            HomeFilterToolbarMenu(
-                filter: $filter,
-                categoryID: $categoryFilterID,
-                layout: $layout,
-                categories: store.state.categories
-            )
-        }
-        ToolbarItem(placement: .topBarTrailing) {
             Button {
                 Haptics.light()
                 showAddShowSheet = true
