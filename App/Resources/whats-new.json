@@ -2,7 +2,7 @@
   "schema_version": 1,
   "entries": [
     {
-      "id": "PLACEHOLDER",
+      "id": "d576f2d",
       "shipped_at": "2026-05-11T14:00:00Z",
       "lines": [
         "Removed the filter and layout menu from the home toolbar for a cleaner look."
