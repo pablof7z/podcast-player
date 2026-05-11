@@ -25,6 +25,7 @@ actor AppleNativeSTTClient {
 
     enum STTError: Error, LocalizedError, Sendable {
         case unavailable
+        case notAuthorized
         case requiresLocalFile
         case audioFileUnreadable(String)
         case modelUnavailableForLocale(String)
@@ -34,6 +35,8 @@ actor AppleNativeSTTClient {
             switch self {
             case .unavailable:
                 return "On-device speech recognition is not available on this device."
+            case .notAuthorized:
+                return "Speech recognition permission is required for on-device transcription. Allow access in Settings → Privacy & Security → Speech Recognition."
             case .requiresLocalFile:
                 return "On-device transcription requires a downloaded episode. Download the episode first, then try again."
             case .audioFileUnreadable(let detail):
@@ -66,6 +69,7 @@ actor AppleNativeSTTClient {
         guard audioFileURL.isFileURL else {
             throw STTError.requiresLocalFile
         }
+        try await requestSpeechAuthorizationIfNeeded()
 
         let locale = resolveLocale(hint: languageHint)
         let transcriber = SpeechTranscriber(locale: locale, preset: .timeIndexedProgressiveTranscription)
@@ -79,11 +83,13 @@ actor AppleNativeSTTClient {
             throw STTError.audioFileUnreadable(error.localizedDescription)
         }
 
-        let analyzer = try await SpeechAnalyzer(
-            inputAudioFile: audioFile,
-            modules: [transcriber],
-            finishAfterFile: true
-        )
+        // Initialize the analyzer with the transcriber module only — do NOT
+        // also pass `inputAudioFile:` here. The convenience init that takes a
+        // file starts driving the analyzer internally; calling
+        // `analyzeSequence(from:)` afterward then trips a precondition inside
+        // `Speech.framework` and crashes with `EXC_BREAKPOINT` (observed on
+        // iPhone18,2 / iOS 26.5). One drive path, not two.
+        let analyzer = SpeechAnalyzer(modules: [transcriber])
 
         Self.logger.info(
             "on-device transcription starting — episode=\(episodeID, privacy: .public) locale=\(locale.identifier, privacy: .public)"
@@ -112,6 +118,22 @@ actor AppleNativeSTTClient {
 
     // MARK: Helpers
 
+    private func requestSpeechAuthorizationIfNeeded() async throws {
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized:
+            return
+        case .denied, .restricted:
+            throw STTError.notAuthorized
+        case .notDetermined:
+            let status = await withCheckedContinuation { cont in
+                SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0) }
+            }
+            if status != .authorized { throw STTError.notAuthorized }
+        @unknown default:
+            throw STTError.notAuthorized
+        }
+    }
+
     private func resolveLocale(hint: String?) -> Locale {
         guard let hint, !hint.isEmpty else { return Locale(identifier: "en-US") }
         return Locale(identifier: hint)
@@ -134,6 +156,8 @@ actor AppleNativeSTTClient {
             }
             try await request.downloadAndInstall()
             Self.logger.info("on-device speech model installed for \(locale.identifier, privacy: .public)")
+        @unknown default:
+            throw STTError.modelUnavailableForLocale(locale.identifier)
         }
     }
 }
