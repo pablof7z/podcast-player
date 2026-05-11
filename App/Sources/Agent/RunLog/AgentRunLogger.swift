@@ -10,6 +10,15 @@ final class AgentRunLogger: ObservableObject {
     private let directoryURL: URL
     private let fileURL: URL
 
+    /// Cap on how many run records we keep on disk. A power user who
+    /// drives the agent dozens of times a day across months would
+    /// otherwise grow `runs` (and the on-disk JSON) unboundedly — each
+    /// record holds the full system prompt + per-turn message history
+    /// + tool-call payloads (often several KB). 500 is plenty of
+    /// diagnostic history without making `save()` a multi-MB write
+    /// on every new run.
+    static let maxRetainedRuns: Int = 500
+
     /// Configured once and reused — every `log(run:)` triggered a save
     /// that allocated a fresh encoder, configured it (`.iso8601` +
     /// `.sortedKeys`), then discarded it. Per-run agent transcripts can
@@ -33,6 +42,9 @@ final class AgentRunLogger: ObservableObject {
 
     func log(run: AgentRun) {
         runs.insert(run, at: 0)
+        if runs.count > Self.maxRetainedRuns {
+            runs.removeLast(runs.count - Self.maxRetainedRuns)
+        }
         save()
     }
 
