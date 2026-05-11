@@ -344,9 +344,14 @@ struct SettingsView: View {
         return on.first
     }
 
-    private var appVersionFooter: String {
+    private var appVersionFooter: String { Self.cachedVersionFooter }
+
+    /// `Bundle.main`'s short version + build are invariant for the
+    /// process, but `appVersionFooter` runs on every Settings render.
+    /// Resolve once at type-load and reuse.
+    private static let cachedVersionFooter: String = {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "Podcastr  \(version)  (build \(build))"
-    }
+    }()
 }
