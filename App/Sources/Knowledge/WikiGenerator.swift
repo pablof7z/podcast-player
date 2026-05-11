@@ -38,6 +38,11 @@ struct WikiGenerator: Sendable {
     /// Compiles a topic page about `topic` in the given `scope` and
     /// returns the verified result. Does **not** persist — callers
     /// invoke `persist` once they decide to keep it.
+    ///
+    /// Throws `WikiGeneratorError.insufficientEvidence` when the RAG
+    /// search returns no chunks — the alternative is to round-trip the
+    /// LLM with an empty source pack and persist a hollow, citation-free
+    /// page, which the verifier strips down to nothing anyway.
     func compileTopic(
         topic: String,
         scope: WikiScope,
@@ -48,6 +53,9 @@ struct WikiGenerator: Sendable {
             scope: scope,
             limit: sourceLimit
         )
+        guard !chunks.isEmpty else {
+            throw WikiGeneratorError.insufficientEvidence(query: topic)
+        }
         let prompt = WikiPrompts.topic(topic: topic, scope: scope, chunks: chunks)
         return try await compile(
             slug: WikiPage.normalize(slug: topic),
@@ -68,6 +76,9 @@ struct WikiGenerator: Sendable {
             scope: scope,
             limit: sourceLimit
         )
+        guard !chunks.isEmpty else {
+            throw WikiGeneratorError.insufficientEvidence(query: name)
+        }
         let prompt = WikiPrompts.person(name: name, scope: scope, chunks: chunks)
         return try await compile(
             slug: WikiPage.normalize(slug: name),
@@ -88,6 +99,9 @@ struct WikiGenerator: Sendable {
             scope: scope,
             limit: sourceLimit
         )
+        guard !chunks.isEmpty else {
+            throw WikiGeneratorError.insufficientEvidence(query: showName)
+        }
         let prompt = WikiPrompts.show(showName: showName, scope: scope, chunks: chunks)
         return try await compile(
             slug: WikiPage.normalize(slug: showName),
@@ -100,12 +114,21 @@ struct WikiGenerator: Sendable {
     /// Audits an existing page against fresh evidence and returns a
     /// re-verified replacement. The caller is responsible for the
     /// atomic swap on disk.
+    ///
+    /// Throws `WikiGeneratorError.insufficientEvidence` when RAG returns
+    /// no chunks — refusing the audit prevents the auto-refresh path
+    /// (the only caller, via `WikiRefreshExecutor`) from overwriting a
+    /// usable prior page with a verifier-stripped, near-empty
+    /// regeneration after an unrelated transcript ingest.
     func audit(prior: WikiPage, sourceLimit: Int = 16) async throws -> WikiVerifyResult {
         let chunks = try await rag.search(
             query: prior.title,
             scope: prior.scope,
             limit: sourceLimit
         )
+        guard !chunks.isEmpty else {
+            throw WikiGeneratorError.insufficientEvidence(query: prior.title)
+        }
         let prompt = WikiPrompts.audit(prior: prior, chunks: chunks)
         return try await compile(
             slug: prior.slug,
@@ -146,5 +169,24 @@ struct WikiGenerator: Sendable {
 
         let verifier = WikiVerifier(rag: rag)
         return try await verifier.verify(draft)
+    }
+}
+
+// MARK: - Errors
+
+/// Compile-time failures `WikiGenerator` raises before it would otherwise
+/// have called the LLM with an empty source pack.
+enum WikiGeneratorError: LocalizedError {
+    /// RAG returned zero chunks for the requested topic in the requested
+    /// scope. There is nothing for the synthesiser to anchor against, so
+    /// we abort rather than spend an LLM round-trip producing a page the
+    /// verifier will strip to nothing.
+    case insufficientEvidence(query: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .insufficientEvidence(let query):
+            return "No transcripts mention \u{201C}\(query)\u{201D} yet. Subscribe to a show that covers it, wait for episodes to transcribe, then try again."
+        }
     }
 }

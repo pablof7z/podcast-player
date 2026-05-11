@@ -92,6 +92,14 @@ extension AppStateStore {
 
     /// Removes the subscription and every episode that referenced it.
     func removeSubscription(_ id: UUID) {
+        // Snapshot the episode ids being removed *before* mutating state so
+        // we can fan out wiki `episodeRemoved` triggers below. Citations on
+        // wiki pages that pointed at these episodes are now stale — the
+        // refresh executor will pick them up at low priority and re-verify.
+        let removedEpisodeIDs = state.episodes
+            .filter { $0.subscriptionID == id }
+            .map(\.id)
+
         var next = state
         next.subscriptions.removeAll { $0.id == id }
         next.episodes.removeAll { $0.subscriptionID == id }
@@ -99,6 +107,21 @@ extension AppStateStore {
             state = next
             // Drop the show from every projection immediately.
             invalidateEpisodeProjections()
+        }
+
+        // Best-effort wiki refresh fan-out. No-ops when the inventory is
+        // empty (no compiled pages → nothing to invalidate).
+        Task { @MainActor in
+            let inventory = (try? WikiStorage.shared.loadInventory()) ?? WikiInventory()
+            var jobs: [WikiTriggers.WikiRefreshJob] = []
+            for episodeID in removedEpisodeIDs {
+                jobs.append(contentsOf: WikiTriggers.jobs(
+                    for: .episodeRemoved(episodeID: episodeID, podcastID: id),
+                    inventory: inventory
+                ))
+            }
+            guard !jobs.isEmpty else { return }
+            WikiRefreshExecutor.shared.run(jobs: jobs)
         }
     }
 
