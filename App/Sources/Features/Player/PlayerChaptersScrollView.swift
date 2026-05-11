@@ -194,7 +194,7 @@ struct PlayerChaptersScrollView: View {
         // their pause every time they explored the list.
         let isFreshSession = state.currentTime <= 0.5
         Haptics.selection()
-        state.seek(to: chapter.startTime)
+        state.navigationalSeek(to: chapter.startTime)
         if !state.isPlaying && isFreshSession {
             state.play()
         }

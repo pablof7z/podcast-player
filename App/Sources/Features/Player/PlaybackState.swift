@@ -71,6 +71,11 @@ final class PlaybackState {
     /// not the queue, so widget metadata is unaffected by queue mutations.
     var queue: [UUID] = []
 
+    /// Back-navigation stack populated by `navigationalSeek(to:)`.
+    /// In-memory only (session-scoped, like browser history).
+    var seekHistory: [SeekHistoryEntry] = []
+    var canJumpBack: Bool { !seekHistory.isEmpty }
+
     /// Mirrors `AudioEngine.state` semantics through the lens the UI cares
     /// about: `playing` and `buffering` both render as "playing" so the
     /// play/pause glyph doesn't flicker through transient stalls.

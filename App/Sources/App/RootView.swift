@@ -346,7 +346,7 @@ struct RootView: View {
             if let episode = store.state.episodes.first(where: { $0.id.uuidString == guid || $0.guid == guid }) {
                 if let startTime {
                     playbackState.setEpisode(episode)
-                    playbackState.seek(to: startTime)
+                    playbackState.navigationalSeek(to: startTime)
                     playbackState.play()
                 }
                 spotlightSheet = .episode(episode.id)
@@ -364,7 +364,7 @@ struct RootView: View {
             if let clip = store.clip(id: clipID),
                let episode = store.episode(id: clip.episodeID) {
                 playbackState.setEpisode(episode)
-                playbackState.seek(to: clip.startSeconds)
+                playbackState.navigationalSeek(to: clip.startSeconds)
                 playbackState.play()
                 spotlightSheet = .episode(episode.id)
             }

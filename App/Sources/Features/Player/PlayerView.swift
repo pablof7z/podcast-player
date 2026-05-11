@@ -263,6 +263,11 @@ struct PlayerView: View {
 
     // MARK: - Floating playback chrome (scrubber + transport + actions)
 
+    private var episodeClips: [Clip] {
+        guard let id = state.episode?.id else { return [] }
+        return store.clips(forEpisode: id)
+    }
+
     /// Pulled out of the scroll body and attached via
     /// `safeAreaInset(edge: .bottom)` so the chapter list scrolls under it.
     /// Wrapped in a `GlassEffectContainer` so the morph-on-press animations
@@ -273,7 +278,13 @@ struct PlayerView: View {
             VStack(spacing: AppTheme.Spacing.md) {
                 PlayerPrerollSkipButton(state: state, episode: liveEpisode)
                     .animation(AppTheme.Animation.spring, value: state.currentTime)
-                PlayerScrubberView(state: state, isScrubbing: $isScrubbing)
+                PlayerScrubberView(
+                    state: state,
+                    isScrubbing: $isScrubbing,
+                    chapters: navigableChapters ?? [],
+                    clips: episodeClips,
+                    onClipTap: { clip in state.navigationalSeek(to: clip.startSeconds) }
+                )
                 PlayerControlsView(
                     state: state,
                     glassNamespace: glassNamespace,

@@ -25,7 +25,8 @@ struct PlayerTopBar: View {
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.xs) {
-            dismissButton
+            jumpBackButton
+                .animation(AppTheme.Animation.spring, value: state.canJumpBack)
 
             Spacer(minLength: AppTheme.Spacing.sm)
 
@@ -85,19 +86,32 @@ struct PlayerTopBar: View {
         .padding(.bottom, AppTheme.Spacing.xs)
     }
 
-    private var dismissButton: some View {
-        Button(action: onDismiss) {
-            Image(systemName: "chevron.down")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
+    /// Shows a "< Jump back" text button when there is navigation history,
+    /// otherwise renders an empty fixed-size slot so the centre title stays
+    /// centred. The drag indicator on the sheet already handles dismiss.
+    @ViewBuilder
+    private var jumpBackButton: some View {
+        if state.canJumpBack {
+            Button {
+                state.jumpBack()
+                Haptics.selection()
+            } label: {
+                Label("Jump back", systemImage: "chevron.left")
+                    .labelStyle(.titleAndIcon)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, AppTheme.Spacing.sm)
+                    .padding(.vertical, AppTheme.Spacing.xs)
+                    .glassEffect(.regular.interactive(), in: Capsule())
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Jump back")
+            .accessibilityHint("Returns to the previous playback position")
+            .transition(.opacity.combined(with: .scale(scale: 0.85, anchor: .leading)))
+        } else {
+            Color.clear
                 .frame(width: 44, height: 44)
-                .contentShape(Circle())
-                .glassEffect(.regular.interactive(), in: .circle)
         }
-        .buttonStyle(.pressable)
-        .accessibilityLabel("Minimize player")
-        .accessibilityHint("Returns to the previous screen")
     }
 
     /// Audio-output route picker styled to match the top-bar glass buttons.
