@@ -229,6 +229,10 @@ struct AgentChatBubble: View {
             allUndone: allUndone,
             someUndone: someUndone
         ))
+        // Hint describes the effect — VoiceOver's button trait already
+        // narrates "double-tap to activate" so the previous "Tap to
+        // review." suffix on the label was redundant gesture-narration.
+        .accessibilityHint("Reviews the actions in this batch")
     }
 
     private func accessibilityLabelForBatch(count: Int, allUndone: Bool, someUndone: Bool) -> String {
@@ -247,7 +251,7 @@ struct AgentChatBubble: View {
         } else {
             undoneLabel = ""
         }
-        return [baseLabel + ".", undoneLabel, "Tap to review."]
+        return [baseLabel + ".", undoneLabel]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
