@@ -10,9 +10,6 @@ struct ElevenLabsSettingsView: View {
     @State private var credentialMessage: String?
     @State private var credentialError: String?
     @State private var byokConnect = BYOKConnectService()
-    @State private var ttsPreview = ElevenLabsTTSPreviewService()
-    @State private var isTestingVoice = false
-    @State private var testVoiceError: String?
     @State private var isValidatingKey = false
     @State private var keyInfo: ElevenLabsKeyInfo?
     private let validationService = ElevenLabsKeyValidationService()
@@ -21,8 +18,6 @@ struct ElevenLabsSettingsView: View {
         Form {
             heroSection
             connectionSection
-            modelsSection
-            voiceSection
         }
         .navigationTitle("ElevenLabs")
         .navigationBarTitleDisplayMode(.inline)
@@ -66,79 +61,7 @@ struct ElevenLabsSettingsView: View {
         )
     }
 
-    private var modelsSection: some View {
-        Section {
-            LabeledContent("STT Model") {
-                TextField("scribe_v1", text: $settings.elevenLabsSTTModel)
-                    .multilineTextAlignment(.trailing)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .font(AppTheme.Typography.monoCallout)
-            }
-            LabeledContent("TTS Model") {
-                TextField("eleven_turbo_v2_5", text: $settings.elevenLabsTTSModel)
-                    .multilineTextAlignment(.trailing)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .font(AppTheme.Typography.monoCallout)
-            }
-        } header: {
-            Text("Models")
-        } footer: {
-            Text("Model IDs are passed verbatim to the ElevenLabs API.")
-        }
-    }
-
-    private var voiceSection: some View {
-        Section {
-            NavigationLink {
-                ElevenLabsVoiceBrowserView()
-            } label: {
-                SettingsRow(
-                    icon: "waveform.and.mic",
-                    tint: AppTheme.Brand.elevenLabsTint,
-                    title: "Voice",
-                    value: voiceDisplayName
-                )
-            }
-
-            Button {
-                Task { await testVoice() }
-            } label: {
-                HStack {
-                    if isTestingVoice {
-                        Label("Speaking…", systemImage: "waveform")
-                            .symbolEffect(.variableColor.iterative, isActive: isTestingVoice)
-                    } else {
-                        Label("Test Voice", systemImage: "speaker.wave.2")
-                    }
-                    Spacer()
-                }
-            }
-            .disabled(isTestingVoice || store.state.settings.elevenLabsVoiceID.isEmpty || !hasStoredKey)
-            .tint(AppTheme.Brand.elevenLabsTint)
-
-            if let testVoiceError {
-                Text(testVoiceError)
-                    .inlineErrorText()
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        } header: {
-            Text("Voice")
-        } footer: {
-            Text("Browse the ElevenLabs voice library and preview samples. Use \"Test Voice\" to hear the current voice and TTS model.")
-        }
-        .animation(AppTheme.Animation.spring, value: testVoiceError)
-    }
-
     // MARK: - Derived state
-
-    private var voiceDisplayName: String {
-        let id = store.state.settings.elevenLabsVoiceID
-        guard !id.isEmpty else { return "Not set" }
-        let name = store.state.settings.elevenLabsVoiceName
-        return name.isEmpty ? "Selected" : name
-    }
 
     private var connectionState: ElevenLabsConnectionState {
         ElevenLabsConnectionState.derive(
@@ -246,20 +169,6 @@ struct ElevenLabsSettingsView: View {
         } catch {
             credentialError = error.localizedDescription
             Haptics.warning()
-        }
-    }
-
-    private func testVoice() async {
-        testVoiceError = nil
-        isTestingVoice = true
-        defer { isTestingVoice = false }
-        do {
-            try await ttsPreview.speak(
-                voiceID: settings.elevenLabsVoiceID,
-                model: settings.elevenLabsTTSModel
-            )
-        } catch {
-            testVoiceError = error.localizedDescription
         }
     }
 }

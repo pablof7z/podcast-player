@@ -29,7 +29,6 @@ struct DataExportView: View {
     @State private var fileSize: Int?
     @State private var errorMessage: String?
     @State private var generatedAt: Date?
-    @State private var showClearConfirmation = false
 
     var body: some View {
         ZStack {
@@ -39,7 +38,6 @@ struct DataExportView: View {
             List {
                 summarySection
                 actionSection
-                dangerSection
                 aboutSection
             }
             .listStyle(.insetGrouped)
@@ -47,25 +45,6 @@ struct DataExportView: View {
         }
         .navigationTitle("Export Data")
         .navigationBarTitleDisplayMode(.inline)
-        // `.alert` rather than `.confirmationDialog` — iOS 26 elides the
-        // Cancel button when the dialog gets popover-promoted, leaving
-        // the user staring at a single red destructive button. The
-        // catastrophic nature of "Clear All Data" makes this especially
-        // bad — a missing Cancel here could wipe a user's entire library
-        // by accident. See same fix in ShowDetailView, StorageSettingsView,
-        // EpisodeDetailActionsMenu, PlayerQueueSheet.
-        .alert(
-            "Clear All Data",
-            isPresented: $showClearConfirmation
-        ) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear All Data", role: .destructive) {
-                store.clearAllData()
-                Haptics.success()
-            }
-        } message: {
-            Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. This action cannot be undone.")
-        }
     }
 
     // MARK: - Sections
@@ -113,22 +92,6 @@ struct DataExportView: View {
             .foregroundStyle(.primary)
         } footer: {
             Text(actionFooterText)
-        }
-    }
-
-    private var dangerSection: some View {
-        Section {
-            Button(role: .destructive) {
-                showClearConfirmation = true
-            } label: {
-                SettingsRow(
-                    icon: "trash.fill",
-                    tint: .red,
-                    title: "Clear All Data"
-                )
-            }
-        } footer: {
-            Text("Permanently deletes every subscription, episode, note, friend, memory, and agent activity entry.")
         }
     }
 

@@ -132,7 +132,7 @@ enum RerankerError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "OpenRouter API key not configured. Add it in Settings → AI."
+            return "OpenRouter API key not configured. Add it in Settings → Intelligence → Providers."
         case .unauthorized:
             return "OpenRouter rejected the API key."
         case .rateLimited:

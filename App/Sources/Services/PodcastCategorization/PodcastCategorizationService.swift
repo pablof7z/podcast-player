@@ -13,7 +13,7 @@ enum CategorizationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noAPIKey:
-            return "OpenRouter is not connected. Add a key in Settings → AI."
+            return "OpenRouter is not connected. Add a key in Settings → Intelligence → Providers."
         case .noSubscriptions:
             return "Add at least one podcast subscription before generating categories."
         case .invalidResponse:

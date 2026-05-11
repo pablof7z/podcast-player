@@ -90,7 +90,7 @@ Architecture mirrors win-the-day-app's `AgentSession`:
 
 Add new tools in `AgentTools.schema` and `AgentTools.dispatch`.
 
-Configure via **Settings → AI Agent**: connect OpenRouter with BYOK, optionally save a manual key, choose the model ID (default `openai/gpt-4o-mini`), and set max turns. Provider keys are stored in Keychain; app state stores only non-secret connection metadata.
+Configure provider keys via **Settings → Intelligence → Providers**, then assign role-specific models via **Settings → Intelligence → Models**. Provider keys are stored in Keychain; app state stores only non-secret connection metadata.
 
 ### Friends & Collaborators
 A `Friend` model representing trusted contacts whose agents can create/modify items in your app. When a friend's agent acts, items are tagged with `requestedByFriendID` and `requestedByDisplayName` for provenance display.

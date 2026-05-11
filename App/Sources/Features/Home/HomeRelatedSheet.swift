@@ -111,12 +111,11 @@ struct HomeRelatedSheet: View {
     }
 
     private var lensPicker: some View {
-        Picker("Lens", selection: $lens) {
-            ForEach(Lens.allCases) { lens in
-                Text(lens.label).tag(lens)
-            }
-        }
-        .pickerStyle(.segmented)
+        LiquidGlassSegmentedPicker(
+            "Related lens",
+            selection: $lens,
+            segments: Lens.allCases.map { ($0, $0.label) }
+        )
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.vertical, AppTheme.Spacing.sm)
     }

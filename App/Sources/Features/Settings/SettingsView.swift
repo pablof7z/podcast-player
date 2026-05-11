@@ -2,58 +2,38 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppStateStore.self) private var store
-    @State private var showClearConfirm = false
     @State private var storageSummary: String?
-    @State private var categoriesSheetPresented = false
 
     var body: some View {
         List {
-            identitySection
+            accountSection
             librarySection
-            playbackSection
-            knowledgeSection
-            agentSection
+            listeningSection
+            intelligenceSection
             systemSection
-            destructiveSection
             versionFooterSection
         }
         .settingsListStyle()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $categoriesSheetPresented) {
-            CategoriesRecomputeSheet()
-        }
         .task {
             // Cheap directory walk; runs once when Settings opens so the
-            // Storage row can show the total without a navigation push.
+            // Data & Storage row can show the total without a navigation push.
             let snap = await StorageSettingsView.compute(store: store)
             await MainActor.run {
                 storageSummary = snap.totalBytes > 0 ? Self.formatSize(snap.totalBytes) : nil
             }
         }
-        .alert("Clear All Data?", isPresented: $showClearConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear All Data", role: .destructive) {
-                store.clearAllData()
-                Haptics.success()
-            }
-        } message: {
-            Text("This will permanently delete every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved.")
-        }
     }
 
     // MARK: - Sections
 
-    /// "Identity" sits at the top of Settings, above Library. The single row
-    /// pushes `IdentityRootView`. Per identity-05-synthesis §3 + §4.1 — Identity
-    /// is a top-level surface, not a Feedback concern.
-    private var identitySection: some View {
-        Section {
+    private var accountSection: some View {
+        Section("Account") {
             IdentitySettingsRow()
         }
     }
 
-    /// "Library" groups everything tied to the user's catalogue of shows.
     private var librarySection: some View {
         Section("Library") {
             NavigationLink {
@@ -76,6 +56,22 @@ struct SettingsView: View {
                     value: categoryCountLabel
                 )
             }
+        }
+    }
+
+    private var listeningSection: some View {
+        Section("Listening") {
+            NavigationLink {
+                PlaybackSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "play.rectangle.fill",
+                    tint: .blue,
+                    title: "Player",
+                    subtitle: playbackSummary
+                )
+            }
+
             NavigationLink {
                 DownloadsManagerView()
             } label: {
@@ -89,46 +85,38 @@ struct SettingsView: View {
         }
     }
 
-    /// "Playback" wires the basic transport / player preferences.
-    private var playbackSection: some View {
-        Section("Playback") {
+    private var intelligenceSection: some View {
+        Section("Intelligence") {
             NavigationLink {
-                PlaybackSettingsView()
+                AgentSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "play.rectangle.fill",
-                    tint: .blue,
-                    title: "Player",
-                    subtitle: playbackSummary
-                )
-            }
-        }
-    }
-
-    /// "Knowledge" pulls together the AI surfaces (chat models, embeddings,
-    /// wiki, transcripts) so the user has one logical group for everything
-    /// generative.
-    private var knowledgeSection: some View {
-        Section("Knowledge") {
-            NavigationLink {
-                AISettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "sparkles",
-                    tint: .purple,
-                    title: "AI",
-                    value: currentModelShortName
+                    icon: "brain.head.profile",
+                    tint: .orange,
+                    title: "Agent",
+                    badge: store.pendingNostrApprovals.count
                 )
             }
 
             NavigationLink {
-                WikiSettingsView()
+                AIProvidersSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "book.closed.fill",
+                    icon: "key.viewfinder",
                     tint: .indigo,
-                    title: "Wiki",
-                    subtitle: wikiModelShortName
+                    title: "Providers",
+                    value: providersRowValue
+                )
+            }
+
+            NavigationLink {
+                AIModelsSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "slider.horizontal.3",
+                    tint: .purple,
+                    title: "Models",
+                    value: currentModelShortName
                 )
             }
 
@@ -143,38 +131,19 @@ struct SettingsView: View {
                 )
             }
 
-            Button {
-                categoriesSheetPresented = true
-            } label: {
-                SettingsRow(
-                    icon: "square.grid.2x2.fill",
-                    tint: .green,
-                    title: "Recompute Categories",
-                    value: categoriesRowValue
-                )
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-        }
-    }
-
-    /// "Agent" hosts the identity / friends / Nostr surface.
-    private var agentSection: some View {
-        Section("Agent") {
             NavigationLink {
-                AgentSettingsView()
+                WikiSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "brain.head.profile",
-                    tint: .orange,
-                    title: "Agent",
-                    badge: store.pendingNostrApprovals.count
+                    icon: "book.closed.fill",
+                    tint: .indigo,
+                    title: "Wiki",
+                    value: wikiRowValue
                 )
             }
         }
     }
 
-    /// "System" rounds out the rows that don't fit anywhere else.
     private var systemSection: some View {
         Section("System") {
             NavigationLink {
@@ -189,44 +158,20 @@ struct SettingsView: View {
             }
 
             NavigationLink {
-                DataExportView()
+                DataStorageSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "square.and.arrow.up",
+                    icon: "externaldrive.fill",
                     tint: .teal,
-                    title: "Data & Export",
-                    value: dataRecordCount > 0 ? "\(dataRecordCount) records" : nil
-                )
-            }
-
-            NavigationLink {
-                StorageSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "internaldrive.fill",
-                    tint: .gray,
-                    title: "Storage",
-                    value: storageSummary
+                    title: "Data & Storage",
+                    value: dataStorageSummary
                 )
             }
         }
     }
 
-    /// Settings row's storage size. Delegates to the shared
-    /// `Int64.formattedFileSize` helper so every byte-count surface in
-    /// the app reads identically.
     static func formatSize(_ bytes: Int64) -> String {
         bytes.formattedFileSize
-    }
-
-    private var destructiveSection: some View {
-        Section {
-            Button("Clear All Data", role: .destructive) {
-                showClearConfirm = true
-            }
-        } footer: {
-            Text("Permanently deletes every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved.")
-        }
     }
 
     private var versionFooterSection: some View {
@@ -241,9 +186,6 @@ struct SettingsView: View {
 
     // MARK: - Derived values
 
-    /// Total number of records that would be wiped by "Clear All Data" (and
-    /// included in a data export). Matches the field set in
-    /// `DataExport.Stats` plus subscriptions + episodes for completeness.
     private var dataRecordCount: Int {
         store.state.subscriptions.count
             + store.state.episodes.count
@@ -258,14 +200,6 @@ struct SettingsView: View {
             modelID: store.state.settings.llmModel,
             modelName: store.state.settings.llmModelName
         )
-    }
-
-    private var wikiModelShortName: String? {
-        let name = Settings.modelDisplayName(
-            modelID: store.state.settings.wikiModel,
-            modelName: store.state.settings.wikiModelName
-        )
-        return name == "Not set" ? nil : name
     }
 
     private var subscriptionCountLabel: String? {
@@ -323,14 +257,6 @@ struct SettingsView: View {
         }
     }
 
-    /// Trailing label for the Categories row — surfaces the cached count so
-    /// the user knows the feature has been run before opening the sheet.
-    private var categoriesRowValue: String? {
-        let count = store.state.categories.count
-        guard count > 0 else { return nil }
-        return "\(count)"
-    }
-
     private var notificationsRowValue: String? {
         let s = store.state.settings
         var on: [String] = []
@@ -341,11 +267,28 @@ struct SettingsView: View {
         return on.first
     }
 
+    private var providersRowValue: String {
+        let s = store.state.settings
+        let connected = [
+            s.openRouterCredentialSource != .none,
+            s.elevenLabsCredentialSource != .none,
+            s.ollamaCredentialSource != .none,
+        ].filter { $0 }.count
+        return connected == 0 ? "Not set up" : "\(connected) connected"
+    }
+
+    private var wikiRowValue: String {
+        store.state.settings.wikiAutoGenerateOnTranscriptIngest ? "Auto" : "Manual"
+    }
+
+    private var dataStorageSummary: String? {
+        if let storageSummary { return storageSummary }
+        guard dataRecordCount > 0 else { return nil }
+        return "\(dataRecordCount) records"
+    }
+
     private var appVersionFooter: String { Self.cachedVersionFooter }
 
-    /// `Bundle.main`'s short version + build are invariant for the
-    /// process, but `appVersionFooter` runs on every Settings render.
-    /// Resolve once at type-load and reuse.
     private static let cachedVersionFooter: String = {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"

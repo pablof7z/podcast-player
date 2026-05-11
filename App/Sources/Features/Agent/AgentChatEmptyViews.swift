@@ -201,9 +201,9 @@ struct AgentChatDisconnectedView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, AppTheme.Spacing.lg)
             NavigationLink {
-                LLMSettingsView()
+                AIProvidersSettingsView()
             } label: {
-                Label("Open AI Settings", systemImage: "slider.horizontal.3")
+                Label("Open Providers", systemImage: "key.viewfinder")
             }
             .buttonStyle(.glassProminent)
             .controlSize(.large)

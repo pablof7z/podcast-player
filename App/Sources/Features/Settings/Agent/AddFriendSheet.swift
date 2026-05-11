@@ -21,7 +21,17 @@ struct AddFriendSheet: View {
     @State private var scanned = false
     @FocusState private var nameFocused: Bool
 
-    private enum Mode { case camera, paste }
+    private enum Mode: CaseIterable, Hashable {
+        case camera
+        case paste
+
+        var label: String {
+            switch self {
+            case .camera: return "Camera"
+            case .paste:  return "Paste"
+            }
+        }
+    }
 
     private enum Layout {
         static let viewfinderSize: CGFloat = 200
@@ -48,6 +58,7 @@ struct AddFriendSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                modePicker
                 if mode == .camera {
                     cameraPanel
                 } else {
@@ -59,11 +70,6 @@ struct AddFriendSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(mode == .camera ? "Paste" : "Camera") {
-                        withAnimation(AppTheme.Animation.spring) { mode = mode == .camera ? .paste : .camera }
-                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if mode == .paste {
@@ -80,6 +86,16 @@ struct AddFriendSheet: View {
     }
 
     // MARK: - Prefill
+
+    private var modePicker: some View {
+        LiquidGlassSegmentedPicker(
+            "Add friend method",
+            selection: $mode,
+            segments: Mode.allCases.map { ($0, $0.label) }
+        )
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.vertical, AppTheme.Spacing.sm)
+    }
 
     private func applyPrefillIfNeeded() {
         guard let npub = prefillNpub, !npub.isEmpty else { return }

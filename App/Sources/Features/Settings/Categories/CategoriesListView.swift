@@ -10,9 +10,11 @@ import SwiftUI
 
 struct CategoriesListView: View {
     @Environment(AppStateStore.self) private var store
+    @State private var recomputeSheetPresented = false
 
     var body: some View {
         List {
+            actionsSection
             if sortedCategories.isEmpty {
                 emptyStateSection
             } else {
@@ -22,9 +24,31 @@ struct CategoriesListView: View {
         .settingsListStyle()
         .navigationTitle("Categories")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $recomputeSheetPresented) {
+            CategoriesRecomputeSheet()
+        }
     }
 
     // MARK: - Sections
+
+    private var actionsSection: some View {
+        Section {
+            Button {
+                recomputeSheetPresented = true
+            } label: {
+                SettingsRow(
+                    icon: "wand.and.sparkles",
+                    tint: .green,
+                    title: "Recompute Categories",
+                    value: categoryCountLabel
+                )
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+        } footer: {
+            Text("Asks the configured model to regroup every podcast you follow. Existing categories are replaced.")
+        }
+    }
 
     private var emptyStateSection: some View {
         Section {
@@ -92,5 +116,11 @@ struct CategoriesListView: View {
     private func subscriptionCountLabel(for category: PodcastCategory) -> String {
         let n = category.subscriptionIDs.count
         return n == 1 ? "1 show" : "\(n) shows"
+    }
+
+    private var categoryCountLabel: String? {
+        let count = store.state.categories.count
+        guard count > 0 else { return nil }
+        return "\(count)"
     }
 }

@@ -1,7 +1,8 @@
 import SwiftUI
 
-struct AISettingsView: View {
+struct AIProvidersSettingsView: View {
     @Environment(AppStateStore.self) private var store
+    @ObservedObject private var ledger = CostLedger.shared
 
     var body: some View {
         ZStack {
@@ -9,123 +10,81 @@ struct AISettingsView: View {
                 .ignoresSafeArea()
 
             List {
-                llmSection
-                audioSection
-                ragSection
+                providersSection
+                usageSection
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle("AI")
+        .navigationTitle("Providers")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var llmSection: some View {
-        Section("LLM") {
+    private var providersSection: some View {
+        Section {
             NavigationLink {
-                LLMSettingsView()
+                OpenRouterSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "cpu",
-                    tint: .purple,
-                    title: "Language Models",
-                    subtitle: agentModelShortName,
-                    value: providerStatus
-                )
-            }
-
-            NavigationLink {
-                WikiSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "book.closed.fill",
+                    icon: "key.viewfinder",
                     tint: .indigo,
-                    title: "Wiki",
-                    subtitle: wikiModelShortName
+                    title: "OpenRouter",
+                    value: openRouterStatus
                 )
             }
-        }
-    }
 
-    private var audioSection: some View {
-        Section("Audio") {
             NavigationLink {
                 ElevenLabsSettingsView()
             } label: {
                 SettingsRow(
                     icon: "waveform",
-                    tint: .teal,
+                    tint: AppTheme.Brand.elevenLabsTint,
                     title: "ElevenLabs",
                     value: elevenLabsStatus
                 )
             }
-        }
-    }
 
-    /// "Knowledge" surfaces the retrieval-augmented generation configuration.
-    /// Embedding model changes should be treated as an index-level choice:
-    /// the live client enforces the current 1024-d vector contract.
-    private var ragSection: some View {
-        Section {
             NavigationLink {
-                LLMSettingsView()
+                OllamaSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "rectangle.stack.fill.badge.person.crop",
-                    tint: .blue,
-                    title: "Embeddings",
-                    value: Settings.embeddingsModelDisplay(
-                        modelID: settings.embeddingsModel,
-                        modelName: settings.embeddingsModelName
-                    )
+                    icon: "cloud.fill",
+                    tint: .green,
+                    title: "Ollama Cloud",
+                    value: ollamaStatus
                 )
             }
-            Toggle(isOn: rerankerBinding) {
-                Label("Reranker", systemImage: "list.number")
-            }
         } header: {
-            Text("Knowledge")
+            Text("Connections")
         } footer: {
-            Text("Embeddings power on-device search and the agent's evidence retrieval. The reranker reorders top results with a cross-encoder for higher quality at extra token cost.")
+            Text("Connect provider keys here. Choose which provider and model each role uses in Models.")
         }
     }
 
-    // MARK: - Bindings
-
-    private var rerankerBinding: Binding<Bool> {
-        Binding(
-            get: { store.state.settings.rerankerEnabled },
-            set: { v in
-                var s = store.state.settings
-                s.rerankerEnabled = v
-                store.updateSettings(s)
-                Haptics.selection()
+    private var usageSection: some View {
+        Section("Usage") {
+            NavigationLink {
+                UsageCostSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "dollarsign.circle.fill",
+                    tint: .green,
+                    title: "Usage & Cost",
+                    value: usageSummary
+                )
             }
-        )
+        }
     }
 
     // MARK: - Derived
 
     private var settings: Settings { store.state.settings }
 
-    private var agentModelShortName: String? {
-        let name = Settings.modelDisplayName(modelID: settings.llmModel, modelName: settings.llmModelName)
-        return name == "Not set" ? nil : name
-    }
-
-    private var wikiModelShortName: String? {
-        let name = Settings.modelDisplayName(modelID: settings.wikiModel, modelName: settings.wikiModelName)
-        return name == "Not set" ? nil : name
-    }
-
-    private var providerStatus: String {
-        let openRouterReady = settings.openRouterCredentialSource != .none
-        let ollamaReady = settings.ollamaCredentialSource != .none
-        switch (openRouterReady, ollamaReady) {
-        case (true, true):   return "2 providers"
-        case (true, false):  return "OpenRouter"
-        case (false, true):  return "Ollama"
-        case (false, false): return "Not set up"
+    private var openRouterStatus: String {
+        switch settings.openRouterCredentialSource {
+        case .byok:   return "BYOK"
+        case .manual: return "Manual"
+        case .none:   return "Not set up"
         }
     }
 
@@ -135,5 +94,25 @@ struct AISettingsView: View {
         case .manual: return "Manual"
         case .none:   return "Not set up"
         }
+    }
+
+    private var ollamaStatus: String {
+        switch settings.ollamaCredentialSource {
+        case .byok:   return "BYOK"
+        case .manual: return "Manual"
+        case .none:   return "Not set up"
+        }
+    }
+
+    private var usageSummary: String? {
+        guard !ledger.records.isEmpty else { return nil }
+        let total = ledger.records.reduce(0) { $0 + $1.costUSD }
+        return "\(ledger.records.count) calls · \(CostFormatter.usd(total))"
+    }
+}
+
+struct AISettingsView: View {
+    var body: some View {
+        AIProvidersSettingsView()
     }
 }

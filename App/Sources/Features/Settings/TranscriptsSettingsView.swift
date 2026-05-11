@@ -2,30 +2,17 @@ import SwiftUI
 
 // MARK: - TranscriptsSettingsView
 //
-// Settings → Transcripts. Three controls:
-//   1. ElevenLabs Scribe model picker (the STT model identifier).
-//   2. Toggle: auto-ingest publisher transcripts as they appear in feeds.
-//   3. Toggle: when no publisher transcript exists, fall back to Scribe.
+// Settings → Transcripts. Controls transcript automation:
+//   1. Toggle: auto-ingest publisher transcripts as they appear in feeds.
+//   2. Toggle: when no publisher transcript exists, fall back to Scribe.
 //
-// All three persist into `Settings`. The pipeline (`TranscriptIngestService`)
-// reads the toggles before kicking off any background work.
+// Speech model selection lives under Settings → Intelligence → Models → Speech.
 
 struct TranscriptsSettingsView: View {
     @Environment(AppStateStore.self) private var store
 
-    /// Known ElevenLabs Scribe model IDs. If the persisted
-    /// `settings.elevenLabsSTTModel` doesn't match any of these (e.g. the
-    /// user updated to a future variant by hand), the picker surfaces the
-    /// stored value as a synthesized "(custom)" entry so the active
-    /// selection stays visible.
-    private static let scribeModels: [(id: String, label: String)] = [
-        ("scribe_v1", "Scribe v1 (default)"),
-        ("scribe_v1_experimental", "Scribe v1 — experimental"),
-    ]
-
     var body: some View {
         Form {
-            modelSection
             automationSection
         }
         .navigationTitle("Transcripts")
@@ -33,27 +20,6 @@ struct TranscriptsSettingsView: View {
     }
 
     // MARK: - Sections
-
-    private var modelSection: some View {
-        Section {
-            Picker(selection: modelBinding) {
-                ForEach(Self.scribeModels, id: \.id) { entry in
-                    Text(entry.label).tag(entry.id)
-                }
-                if !Self.scribeModels.contains(where: { $0.id == store.state.settings.elevenLabsSTTModel }) {
-                    Text(store.state.settings.elevenLabsSTTModel + " (custom)")
-                        .tag(store.state.settings.elevenLabsSTTModel)
-                }
-            } label: {
-                Label("Scribe Model", systemImage: "waveform.badge.mic")
-            }
-            .pickerStyle(.menu)
-        } header: {
-            Text("Speech-to-Text")
-        } footer: {
-            Text("ElevenLabs Scribe model used when transcribing episodes that don't ship a publisher transcript.")
-        }
-    }
 
     private var automationSection: some View {
         Section {
@@ -67,7 +33,7 @@ struct TranscriptsSettingsView: View {
                 // The toggle is on but the dependency isn't set up — surface
                 // the gap inline rather than letting the fallback silently
                 // no-op when an episode actually needs transcription.
-                Label("Requires an ElevenLabs API key — connect in AI → ElevenLabs.", systemImage: "key.slash")
+                Label("Requires an ElevenLabs API key — connect in Providers.", systemImage: "key.slash")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.orange)
                     .padding(.vertical, 2)
@@ -75,7 +41,7 @@ struct TranscriptsSettingsView: View {
         } header: {
             Text("Automation")
         } footer: {
-            Text("Auto-ingest pre-fetches transcripts in the background as new episodes appear. Scribe fallback transcribes audio when the publisher hasn't supplied a transcript — requires an ElevenLabs key.")
+            Text("Auto-ingest pre-fetches transcripts in the background as new episodes appear. Scribe fallback transcribes audio when the publisher hasn't supplied a transcript. Choose the Scribe model in Models → Speech.")
         }
     }
 
@@ -84,18 +50,6 @@ struct TranscriptsSettingsView: View {
     }
 
     // MARK: - Bindings
-
-    private var modelBinding: Binding<String> {
-        Binding(
-            get: { store.state.settings.elevenLabsSTTModel },
-            set: { v in
-                var s = store.state.settings
-                s.elevenLabsSTTModel = v
-                store.updateSettings(s)
-                Haptics.selection()
-            }
-        )
-    }
 
     private var autoIngestBinding: Binding<Bool> {
         Binding(

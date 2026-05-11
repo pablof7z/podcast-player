@@ -64,13 +64,13 @@ actor ElevenLabsScribeClient {
         var errorDescription: String? {
             switch self {
             case .missingAPIKey:
-                return "Add an ElevenLabs API key in Settings → AI to transcribe episodes."
+                return "Add an ElevenLabs API key in Settings → Intelligence → Providers to transcribe episodes."
             case .invalidResponse:
                 return "ElevenLabs returned an unexpected response. Try again in a moment."
             case .invalidAudioURL:
                 return "Couldn't find the episode audio to transcribe."
             case .http(let status, _) where status == 401 || status == 403:
-                return "ElevenLabs rejected your API key. Update it in Settings → AI."
+                return "ElevenLabs rejected your API key. Update it in Settings → Intelligence → Providers."
             case .http(let status, _) where status == 422:
                 return "ElevenLabs couldn't process the audio (file format or URL not accepted)."
             case .http(let status, _) where status == 429:

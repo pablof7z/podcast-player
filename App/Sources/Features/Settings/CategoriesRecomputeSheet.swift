@@ -3,9 +3,8 @@ import SwiftUI
 // MARK: - CategoriesRecomputeSheet
 //
 // Modal flow that triggers `PodcastCategorizationService.recompute(store:)`
-// and surfaces progress + the resulting categories. Lives next to
-// `SettingsView` so the parent can keep its row wiring tiny — see
-// the "Knowledge" section in `SettingsView.swift`.
+// and surfaces progress + the resulting categories. Presented from
+// `CategoriesListView` so category management stays inside Library.
 
 struct CategoriesRecomputeSheet: View {
     @Environment(AppStateStore.self) private var store

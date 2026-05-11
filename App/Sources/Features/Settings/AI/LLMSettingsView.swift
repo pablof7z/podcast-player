@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct LLMSettingsView: View {
+struct AIModelsSettingsView: View {
     @Environment(AppStateStore.self) private var store
-    @ObservedObject private var ledger = CostLedger.shared
     @State private var agentSelectorPresented = false
     @State private var memorySelectorPresented = false
+    @State private var wikiSelectorPresented = false
     @State private var embeddingsSelectorPresented = false
     @State private var catalog = OpenRouterModelSelectorViewModel()
 
@@ -15,13 +15,13 @@ struct LLMSettingsView: View {
 
             List {
                 modelsSection
-                usageSection
-                connectionSection
+                speechSection
+                retrievalSection
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Language Models")
+        .navigationTitle("Models")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await catalog.loadIfNeeded()
@@ -36,6 +36,12 @@ struct LLMSettingsView: View {
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
                 OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $wikiSelectorPresented) {
+            NavigationStack {
+                OpenRouterModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki")
             }
             .presentationDragIndicator(.visible)
         }
@@ -74,6 +80,17 @@ struct LLMSettingsView: View {
             ModelPreviewCard(model: catalogModel(for: store.state.settings.memoryCompilationModel))
 
             modelRow(
+                icon: "book.closed.fill",
+                tint: .indigo,
+                role: "Wiki",
+                modelID: store.state.settings.wikiModel,
+                modelName: store.state.settings.wikiModelName
+            ) {
+                wikiSelectorPresented = true
+            }
+            ModelPreviewCard(model: catalogModel(for: store.state.settings.wikiModel))
+
+            modelRow(
                 icon: "rectangle.stack.fill.badge.person.crop",
                 tint: .blue,
                 role: "Embeddings",
@@ -84,50 +101,36 @@ struct LLMSettingsView: View {
             }
             ModelPreviewCard(model: catalogModel(for: store.state.settings.embeddingsModel))
         } header: {
-            Text("Model Roles")
+            Text("Language Roles")
         } footer: {
-            Text("Each role can use a different provider and model. Agent runs during conversations; Memory Compilation and Embeddings support the knowledge pipeline.")
+            Text("Each role can use a different connected provider and model. Connect provider keys in Providers first.")
         }
     }
 
-    private var usageSection: some View {
-        Section("Usage") {
+    private var speechSection: some View {
+        Section("Speech") {
             NavigationLink {
-                UsageCostSettingsView()
+                SpeechModelsSettingsView()
             } label: {
                 SettingsRow(
-                    icon: "dollarsign.circle.fill",
-                    tint: .green,
-                    title: "Usage & Cost",
-                    value: usageSummary
+                    icon: "waveform.and.mic",
+                    tint: AppTheme.Brand.elevenLabsTint,
+                    title: "Speech",
+                    subtitle: speechSummary
                 )
             }
         }
     }
 
-    private var connectionSection: some View {
-        Section("Providers") {
-            NavigationLink {
-                OpenRouterSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "key.viewfinder",
-                    tint: .indigo,
-                    title: "OpenRouter",
-                    value: openRouterStatus
-                )
+    private var retrievalSection: some View {
+        Section {
+            Toggle(isOn: rerankerBinding) {
+                Label("Reranker", systemImage: "list.number")
             }
-
-            NavigationLink {
-                OllamaSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "cloud.fill",
-                    tint: .green,
-                    title: "Ollama Cloud",
-                    value: ollamaStatus
-                )
-            }
+        } header: {
+            Text("Retrieval")
+        } footer: {
+            Text("Embeddings power on-device search and the agent's evidence retrieval. The reranker reorders top results with a cross-encoder for higher quality at extra token cost.")
         }
     }
 
@@ -178,6 +181,20 @@ struct LLMSettingsView: View {
         )
     }
 
+    private var wikiModelBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.wikiModel },
+            set: { v in var s = store.state.settings; s.wikiModel = v; store.updateSettings(s) }
+        )
+    }
+
+    private var wikiModelNameBinding: Binding<String> {
+        Binding(
+            get: { store.state.settings.wikiModelName },
+            set: { v in var s = store.state.settings; s.wikiModelName = v; store.updateSettings(s) }
+        )
+    }
+
     private var embeddingsModelBinding: Binding<String> {
         Binding(
             get: { store.state.settings.embeddingsModel },
@@ -189,6 +206,18 @@ struct LLMSettingsView: View {
         Binding(
             get: { store.state.settings.embeddingsModelName },
             set: { v in var s = store.state.settings; s.embeddingsModelName = v; store.updateSettings(s) }
+        )
+    }
+
+    private var rerankerBinding: Binding<Bool> {
+        Binding(
+            get: { store.state.settings.rerankerEnabled },
+            set: { v in
+                var s = store.state.settings
+                s.rerankerEnabled = v
+                store.updateSettings(s)
+                Haptics.selection()
+            }
         )
     }
 
@@ -213,6 +242,10 @@ struct LLMSettingsView: View {
             s.memoryCompilationModelName = match.name
             changed = true
         }
+        if s.wikiModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.wikiModel }) {
+            s.wikiModelName = match.name
+            changed = true
+        }
         if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.embeddingsModel }) {
             s.embeddingsModelName = match.name
             changed = true
@@ -220,26 +253,11 @@ struct LLMSettingsView: View {
         if changed { store.updateSettings(s) }
     }
 
-    private var usageSummary: String? {
-        guard !ledger.records.isEmpty else { return nil }
-        let total = ledger.records.reduce(0) { $0 + $1.costUSD }
-        return "\(ledger.records.count) calls · \(CostFormatter.usd(total))"
-    }
-
-    private var openRouterStatus: String {
-        switch store.state.settings.openRouterCredentialSource {
-        case .byok:   return "BYOK"
-        case .manual: return "Manual"
-        case .none:   return "Not set up"
-        }
-    }
-
-    private var ollamaStatus: String {
-        switch store.state.settings.ollamaCredentialSource {
-        case .byok:   return "BYOK"
-        case .manual: return "Manual"
-        case .none:   return "Not set up"
-        }
+    private var speechSummary: String {
+        let s = store.state.settings
+        let stt = s.elevenLabsSTTModel.isBlank ? "STT not set" : s.elevenLabsSTTModel
+        let tts = s.elevenLabsTTSModel.isBlank ? "TTS not set" : s.elevenLabsTTSModel
+        return "\(stt) · \(tts)"
     }
 
     private func catalogModel(for modelID: String) -> OpenRouterModelOption? {
@@ -322,5 +340,11 @@ struct LLMSettingsView: View {
             if model.supportsReasoning { parts.append("supports reasoning") }
             return parts.joined(separator: ", ")
         }
+    }
+}
+
+struct LLMSettingsView: View {
+    var body: some View {
+        AIModelsSettingsView()
     }
 }
