@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "agent-model-upgrade",
+      "shipped_at": "2026-05-12T02:00:00Z",
+      "lines": [
+        "The agent now starts on a fast, cheap model and self-escalates to a stronger one when a task needs serious reasoning. Pick both the Initial and Thinking models in Settings → Models. Once the agent upgrades, the conversation stays on the stronger model until you start a new chat."
+      ]
+    },
+    {
       "id": "external-episode-tools",
       "shipped_at": "2026-05-11T04:00:00Z",
       "lines": [
