@@ -5,20 +5,25 @@ import SwiftUI
 /// Episode list row for the show-detail screen.
 ///
 /// **State surfaces:**
-///   - Unplayed:     leading red `circle.fill` dot, bold title.
-///   - In progress:  leading `circle.lefthalf.filled` "crescent".
-///   - Played:       leading `checkmark.circle.fill`, dimmed title.
+///   - Unplayed:     red `circle.fill` dot badge on artwork, bold title.
+///   - In progress:  `circle.lefthalf.filled` "crescent" badge.
+///   - Played:       `checkmark.circle.fill` badge, dimmed title.
 ///   - Downloading:  2 px progress bar (primary color) pinned to bottom edge.
 ///   - Transcribing: 2 px progress bar (accent color) pinned to bottom edge.
 ///   - Downloaded:   title at full opacity; not-yet-downloaded titles are muted.
 struct EpisodeRow: View {
     let episode: Episode
     let showAccent: Color
+    /// Fallback artwork URL when the episode has no per-item `<itunes:image>`.
+    /// Typically the parent subscription's image.
+    var fallbackImageURL: URL? = nil
     /// Tap action for the leading state indicator. `nil` means the indicator
     /// is decorative (the historical default); supplying it converts the
     /// indicator into a Play affordance that loads the episode into the
     /// mini-player without leaving the list.
     var onPlay: (() -> Void)? = nil
+
+    private static let thumbnailSize: CGFloat = 56
 
     /// Live progress map — drives the bottom progress bar without hitting
     /// `AppStateStore` on every 5%/200 ms tick.
@@ -26,9 +31,8 @@ struct EpisodeRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-            playOrIndicator
-                .frame(width: 22, alignment: .center)
-                .padding(.top, 4)
+            thumbnail
+                .overlay(alignment: .topLeading) { stateBadge }
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text(episode.title)
@@ -53,45 +57,100 @@ struct EpisodeRow: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
+    // MARK: - Thumbnail
+
+    private var artworkURL: URL? { episode.imageURL ?? fallbackImageURL }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        let shape = RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous)
+        Group {
+            if let url = artworkURL {
+                CachedAsyncImage(
+                    url: url,
+                    targetSize: CGSize(width: Self.thumbnailSize, height: Self.thumbnailSize)
+                ) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        thumbnailPlaceholder
+                    }
+                }
+            } else {
+                thumbnailPlaceholder
+            }
+        }
+        .frame(width: Self.thumbnailSize, height: Self.thumbnailSize)
+        .clipShape(shape)
+        .accessibilityHidden(true)
+    }
+
+    private var thumbnailPlaceholder: some View {
+        LinearGradient(
+            colors: [showAccent.opacity(0.9), showAccent.opacity(0.55)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .overlay(
+            Image(systemName: "waveform")
+                .font(.system(size: 20, weight: .light))
+                .foregroundStyle(.white.opacity(0.85))
+        )
+    }
+
     // MARK: - Subviews
 
-    /// Wraps the state indicator in a tap target when `onPlay` is supplied.
-    /// Decorative when not — preserves call sites that don't need play.
+    /// State badge in the top-leading corner of the thumbnail. Tappable when
+    /// `onPlay` is supplied; decorative otherwise.
     @ViewBuilder
-    private var playOrIndicator: some View {
+    private var stateBadge: some View {
         if let onPlay {
             Button {
                 Haptics.medium()
                 onPlay()
             } label: {
                 stateIndicator
+                    .padding(6)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Play \(episode.title)")
         } else {
             stateIndicator
+                .padding(6)
         }
     }
 
     @ViewBuilder
     private var stateIndicator: some View {
         if episode.played {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+            badgeChip {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white)
+            }
         } else if episode.isInProgress {
-            Image(systemName: "circle.lefthalf.filled")
-                .font(.body)
-                .foregroundStyle(showAccent)
-                .accessibilityHidden(true)
+            badgeChip {
+                Image(systemName: "circle.lefthalf.filled")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(showAccent)
+            }
         } else {
-            Image(systemName: "circle.fill")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(.red)
-                .accessibilityHidden(true)
+            Circle()
+                .fill(Color.red)
+                .frame(width: 10, height: 10)
+                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
         }
+    }
+
+    private func badgeChip<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack {
+            Circle().fill(.ultraThinMaterial)
+            Circle().fill(Color.black.opacity(0.35))
+            content()
+        }
+        .frame(width: 16, height: 16)
     }
 
     private var metaRow: some View {

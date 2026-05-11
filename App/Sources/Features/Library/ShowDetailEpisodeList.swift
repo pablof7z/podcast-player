@@ -29,8 +29,12 @@ struct ShowDetailEpisodeList: View {
                 playback.setEpisode(ep)
                 playback.play()
             } label: {
-                EpisodeRow(episode: ep, showAccent: subscription.accentColor)
-                    .contentShape(Rectangle())
+                EpisodeRow(
+                    episode: ep,
+                    showAccent: subscription.accentColor,
+                    fallbackImageURL: subscription.imageURL
+                )
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .listRowSeparator(.hidden)

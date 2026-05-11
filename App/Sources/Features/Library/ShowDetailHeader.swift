@@ -2,65 +2,58 @@ import SwiftUI
 
 // MARK: - ShowDetailHeader
 
-/// Hero header for `ShowDetailView` — large square artwork (real image when
-/// `imageURL` is present; SF symbol stand-in otherwise), title, author, and
-/// episode count.
+/// Hero header for `ShowDetailView` — square artwork on the leading edge with
+/// title, author, description (3-line cap), and meta row stacked to the right.
 ///
-/// **Tint:** the background is a vertical gradient sourced from the
-/// subscription's `accentColor`, fading to `Color(.systemBackground)` roughly
-/// 30% down the header's height — this matches ux-02 §4 ("Show-detail header
-/// inherits a dominant tint extracted from artwork, fading to background by
-/// 30% height").
+/// **Tint:** the screen-level gradient lives in `ShowDetailView` so it can
+/// bleed past the safe area / nav bar; the header itself is matte and sits
+/// on top of that gradient.
 ///
 /// **Glass:** none. The header is a matte editorial surface.
 struct ShowDetailHeader: View {
     let subscription: PodcastSubscription
     let episodeCount: Int
 
+    private static let artworkSize: CGFloat = 116
+
     var body: some View {
-        ZStack(alignment: .top) {
-            tintGradient
-            VStack(spacing: AppTheme.Spacing.md) {
-                artwork
-                    .padding(.top, AppTheme.Spacing.lg)
+        HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
+            artwork
 
-                VStack(spacing: AppTheme.Spacing.xs) {
-                    Text(subscription.title)
-                        .font(AppTheme.Typography.largeTitle)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text(subscription.title)
+                    .font(AppTheme.Typography.title)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    if !subscription.author.isEmpty {
-                        Text(subscription.author)
-                            .font(AppTheme.Typography.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                if !subscription.author.isEmpty {
+                    Text(subscription.author)
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                .padding(.horizontal, AppTheme.Spacing.lg)
+
+                let body = EpisodeShowNotesFormatter.plainText(from: subscription.description)
+                if !body.isEmpty {
+                    Text(body)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, AppTheme.Spacing.xs)
+                }
 
                 metaRow
+                    .padding(.top, AppTheme.Spacing.xs)
             }
-            .padding(.bottom, AppTheme.Spacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.top, AppTheme.Spacing.lg)
+        .padding(.bottom, AppTheme.Spacing.md)
     }
 
     // MARK: - Pieces
-
-    private var tintGradient: some View {
-        LinearGradient(
-            colors: [
-                subscription.accentColor.opacity(0.55),
-                subscription.accentColor.opacity(0.18),
-                Color(.systemBackground).opacity(0.0)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .frame(height: 360)
-        .frame(maxWidth: .infinity)
-        .ignoresSafeArea(edges: .top)
-        .accessibilityHidden(true)
-    }
 
     private var artwork: some View {
         RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
@@ -75,7 +68,7 @@ struct ShowDetailHeader: View {
                 )
             )
             .overlay(artworkOverlay)
-            .frame(width: 220, height: 220)
+            .frame(width: Self.artworkSize, height: Self.artworkSize)
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous))
             .appShadow(AppTheme.Shadow.lifted)
     }
@@ -100,7 +93,7 @@ struct ShowDetailHeader: View {
 
     private var artworkSymbol: some View {
         Image(systemName: subscription.artworkSymbol)
-            .font(.system(size: 88, weight: .light))
+            .font(.system(size: 44, weight: .light))
             .foregroundStyle(.white.opacity(0.92))
             .accessibilityHidden(true)
     }
@@ -117,9 +110,9 @@ struct ShowDetailHeader: View {
                 Text("Updated \(relative(refreshed))")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
-        .padding(.top, AppTheme.Spacing.xs)
     }
 
     private func relative(_ date: Date) -> String {

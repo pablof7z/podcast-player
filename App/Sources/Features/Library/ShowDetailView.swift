@@ -5,9 +5,9 @@ import SwiftUI
 /// Show-level detail screen pushed from `LibraryView`'s grid.
 ///
 /// **Composition:**
-///   - `ShowDetailHeader` — artwork-tinted hero (matte).
-///   - Description block — feed `<description>` body text.
-///   - Filter rail (chips) — same `LibraryFilter` enum as the tab.
+///   - Bleed-edge tint gradient that extends past the safe area / nav bar.
+///   - `ShowDetailHeader` — artwork-on-left + title/description on right.
+///   - "Episodes" section header.
 ///   - Episode list — `EpisodeRow` × N, tapping pushes
 ///     `LibraryEpisodeRoute` onto the enclosing `NavigationStack`.
 ///
@@ -20,17 +20,12 @@ struct ShowDetailView: View {
 
     let subscription: PodcastSubscription
 
-    @State private var filter: LibraryFilter = .all
     @State private var showSettings: Bool = false
     @State private var showUnsubscribeConfirm: Bool = false
     /// Drives the VoiceOver "Open episode details" custom action — bound into
     /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
     /// so the same `EpisodeDetailView` opens regardless of how the user got there.
     @State private var voiceOverDetailRoute: LibraryEpisodeRoute?
-    /// Controls whether the show description is shown collapsed (≤ 5 lines)
-    /// or fully expanded. Many feeds publish multi-paragraph "About this
-    /// show" blurbs; folding them by default keeps the surface scannable.
-    @State private var descriptionExpanded: Bool = false
 
     var body: some View {
         List {
@@ -43,22 +38,12 @@ struct ShowDetailView: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
 
-                description
+                episodesHeader
                     .listRowInsets(EdgeInsets(
-                        top: 0,
+                        top: AppTheme.Spacing.lg,
                         leading: AppTheme.Spacing.lg,
-                        bottom: 0,
-                        trailing: AppTheme.Spacing.lg
-                    ))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-
-                filterSection
-                    .listRowInsets(EdgeInsets(
-                        top: AppTheme.Spacing.md,
-                        leading: 0,
                         bottom: AppTheme.Spacing.sm,
-                        trailing: 0
+                        trailing: AppTheme.Spacing.lg
                     ))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
@@ -68,7 +53,22 @@ struct ShowDetailView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background {
+            VStack(spacing: 0) {
+                LinearGradient(
+                    colors: [
+                        liveSubscription.accentColor.opacity(0.55),
+                        liveSubscription.accentColor.opacity(0.18),
+                        Color(.systemBackground)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 320)
+                Color(.systemBackground)
+            }
+            .ignoresSafeArea()
+        }
         .navigationTitle(liveSubscription.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -122,79 +122,20 @@ struct ShowDetailView: View {
 
     // MARK: - Pieces
 
-    @ViewBuilder
-    private var description: some View {
-        // Use the shared formatter so HTML entities (&rsquo;, &mdash;, …)
-        // decode to the right glyph instead of bleeding through as
-        // literals. The previous regex strip only removed tags.
-        let body = EpisodeShowNotesFormatter.plainText(from: liveSubscription.description)
-        if !body.isEmpty {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text(body)
-                    .font(AppTheme.Typography.body)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(descriptionExpanded ? nil : 5)
-                    .animation(.easeInOut(duration: 0.2), value: descriptionExpanded)
-                if Self.descriptionNeedsToggle(body) {
-                    Button {
-                        Haptics.selection()
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            descriptionExpanded.toggle()
-                        }
-                    } label: {
-                        Text(descriptionExpanded ? "Show less" : "Show more")
-                            .font(AppTheme.Typography.caption.weight(.semibold))
-                            .foregroundStyle(.tint)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.top, AppTheme.Spacing.lg)
+    private var episodesHeader: some View {
+        Text("Episodes")
+            .font(AppTheme.Typography.title)
             .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    /// Approximate "is this longer than the 5-line cap" check. Counts the
-    /// blocks an `EpisodeShowNotesFormatter`-collapsed string produces.
-    /// Imperfect — wide characters or narrow widths still vary — but the
-    /// false-positive cost is just an inert "Show more" button on a body
-    /// that already fits, which is preferable to silently truncating with
-    /// no escape hatch.
-    static func descriptionNeedsToggle(_ body: String) -> Bool {
-        // Hand-tuned thresholds: very long single-line blurbs OR multiple
-        // paragraphs both warrant the toggle.
-        if body.count > 240 { return true }
-        let blocks = body.split(separator: "\n\n").count
-        return blocks > 1
-    }
-
-    private var filterSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Episodes")
-                .font(AppTheme.Typography.title)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-
-            LibraryFilterRail(selection: $filter)
-                .glassEffect(.regular, in: .capsule)
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.top, AppTheme.Spacing.sm)
-        }
     }
 
     @ViewBuilder
     private var episodeListSection: some View {
-        let visible = filteredEpisodes()
-        if visible.isEmpty {
+        if episodes.isEmpty {
             Section {
                 ContentUnavailableView(
-                    episodes.isEmpty ? "No episodes yet" : "No episodes match",
+                    "No episodes yet",
                     systemImage: "tray",
-                    description: Text(
-                        episodes.isEmpty
-                        ? "Pull down to refresh this feed."
-                        : "Try a different filter."
-                    )
+                    description: Text("Pull down to refresh this feed.")
                 )
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -204,7 +145,7 @@ struct ShowDetailView: View {
             Section {
                 ShowDetailEpisodeList(
                     subscription: liveSubscription,
-                    episodes: visible,
+                    episodes: episodes,
                     voiceOverDetailRoute: $voiceOverDetailRoute
                 )
             }
@@ -259,27 +200,6 @@ struct ShowDetailView: View {
         return liveSubscription.author.isEmpty
             ? title
             : "\(title) by \(liveSubscription.author)"
-    }
-
-    // MARK: - Filtering
-
-    private func filteredEpisodes() -> [Episode] {
-        switch filter {
-        case .all:
-            return episodes
-        case .unplayed:
-            return episodes.filter { $0.isUnplayed || $0.isInProgress }
-        case .downloaded:
-            return episodes.filter {
-                if case .downloaded = $0.downloadState { return true }
-                return false
-            }
-        case .transcribed:
-            return episodes.filter {
-                if case .ready = $0.transcriptState { return true }
-                return false
-            }
-        }
     }
 
     // MARK: - Actions
