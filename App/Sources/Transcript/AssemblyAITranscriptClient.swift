@@ -193,7 +193,8 @@ actor AssemblyAITranscriptClient {
             transcriptID: id,
             episodeID: episodeID,
             createdAt: Date(),
-            languageHint: languageHint
+            languageHint: languageHint,
+            speechModels: speechModels
         )
     }
 
@@ -252,6 +253,23 @@ actor AssemblyAITranscriptClient {
             switch payload.status {
             case "completed":
                 Self.logger.info("poll attempt \(attempt, privacy: .public): completed")
+                let latencyMs = Int(Date().timeIntervalSince(job.createdAt) * 1000)
+                let modelLabel = job.speechModels.joined(separator: ",")
+                let cost = payload.usage?.cost ?? 0
+                let seconds = payload.usage?.seconds ?? payload.audio_duration
+                let promptTokens = payload.usage?.input_tokens ?? 0
+                let completionTokens = payload.usage?.output_tokens ?? 0
+                Task { @MainActor in
+                    CostLedger.shared.logSTT(
+                        feature: CostFeature.sttAssemblyAI,
+                        model: modelLabel.isEmpty ? "universal-3-pro" : modelLabel,
+                        costUSD: cost,
+                        audioDurationSeconds: seconds,
+                        latencyMs: latencyMs,
+                        promptTokens: promptTokens,
+                        completionTokens: completionTokens
+                    )
+                }
                 return Transcript.fromAssemblyAI(payload, episodeID: job.episodeID, languageHint: job.languageHint)
             case "error":
                 let message = payload.error ?? "AssemblyAI returned status=error without a message."
@@ -285,6 +303,10 @@ struct AssemblyAIJob: Sendable, Hashable {
     let episodeID: UUID
     let createdAt: Date
     let languageHint: String?
+    /// Verbatim `speech_models` list submitted. Surfaced on the cost-ledger
+    /// record so the Usage view shows which model the user picked even though
+    /// AssemblyAI's response doesn't echo it.
+    let speechModels: [String]
 }
 
 /// Single response shape that covers both the submit reply and the poll reply
@@ -299,6 +321,18 @@ struct AssemblyAITranscriptPayload: Codable, Sendable, Hashable {
     let error: String?
     let words: [AssemblyAIWord]?
     let utterances: [AssemblyAIUtterance]?
+    /// Billing / usage telemetry populated on the completed poll. Per
+    /// AssemblyAI's OpenAPI: `cost` is USD, `seconds` is the audio duration
+    /// processed, `input_tokens` / `output_tokens` are model-side counts.
+    let usage: AssemblyAIUsage?
+}
+
+struct AssemblyAIUsage: Codable, Sendable, Hashable {
+    let cost: Double?
+    let seconds: Double?
+    let input_tokens: Int?
+    let output_tokens: Int?
+    let total_tokens: Int?
 }
 
 /// Utterance = diarized turn. Mapped 1:1 onto our `Transcript.Segment` when

@@ -100,6 +100,7 @@ actor OpenRouterWhisperClient {
             "submitting Whisper request — model=\(self.model, privacy: .public) bytes=\(body.count, privacy: .public)"
         )
 
+        let submitStart = Date()
         let data: Data
         let response: URLResponse
         do {
@@ -127,6 +128,23 @@ actor OpenRouterWhisperClient {
             let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<binary>"
             Self.logger.error("Whisper decode failed: \(String(describing: error), privacy: .public) body=\(preview, privacy: .public)")
             throw WhisperError.decoding("Could not decode transcription response: \(error)")
+        }
+
+        // OpenRouter Whisper response has no `cost` field; the gateway strips
+        // upstream billing detail. Log activity + duration so the Usage view
+        // shows the call; user's OpenRouter dashboard is the source of truth
+        // for $$ cost.
+        let latencyMs = Int(Date().timeIntervalSince(submitStart) * 1000)
+        let modelLabel = self.model
+        let durationSeconds = raw.duration
+        Task { @MainActor in
+            CostLedger.shared.logSTT(
+                feature: CostFeature.sttOpenRouterWhisper,
+                model: modelLabel,
+                costUSD: 0,
+                audioDurationSeconds: durationSeconds,
+                latencyMs: latencyMs
+            )
         }
 
         return Transcript.fromWhisperResponse(raw, episodeID: episodeID)

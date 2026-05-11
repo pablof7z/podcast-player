@@ -159,6 +159,7 @@ actor ElevenLabsScribeClient {
             "submitting Scribe request — model=\(self.modelID, privacy: .public) source=\(audioField.kind, privacy: .public) bytes=\(body.count, privacy: .public)"
         )
 
+        let submitStart = Date()
         let data: Data
         let response: URLResponse
         do {
@@ -181,6 +182,23 @@ actor ElevenLabsScribeClient {
             let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<binary>"
             Self.logger.error("Scribe decode failed: \(String(describing: error), privacy: .public) body=\(preview, privacy: .public)")
             throw ScribeError.decoding("Could not decode /speech-to-text response: \(error)")
+        }
+
+        // Scribe's response has no cost or `audio_duration` field. Approximate
+        // duration from the last word's end timestamp (seconds). The user's
+        // billing dashboard is the source of truth for cost; this record is
+        // for activity tracking + duration visibility.
+        let audioDuration = raw.words?.last?.end
+        let latencyMs = Int(Date().timeIntervalSince(submitStart) * 1000)
+        let modelLabel = self.modelID
+        Task { @MainActor in
+            CostLedger.shared.logSTT(
+                feature: CostFeature.sttScribe,
+                model: modelLabel,
+                costUSD: 0,
+                audioDurationSeconds: audioDuration,
+                latencyMs: latencyMs
+            )
         }
 
         return ScribeJob(

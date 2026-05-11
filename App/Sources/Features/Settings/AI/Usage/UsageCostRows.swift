@@ -69,7 +69,14 @@ struct UsageRecentRow: View {
                 HStack(spacing: 6) {
                     Text(record.at.formatted(date: .abbreviated, time: .shortened))
                     Text("·")
-                    Text("\(record.promptTokens.formatted())→\(record.completionTokens.formatted()) tok")
+                    if let seconds = record.audioDurationSeconds, seconds > 0 {
+                        // STT-shaped record — show audio duration instead of
+                        // tokens (which are usually zero on STT and would just
+                        // read "0→0 tok").
+                        Text(formatAudioDuration(seconds))
+                    } else {
+                        Text("\(record.promptTokens.formatted())→\(record.completionTokens.formatted()) tok")
+                    }
                     if record.cachedTokens > 0 {
                         Text("·")
                         Text("\(record.cachedTokens.formatted()) cached")
@@ -97,5 +104,20 @@ struct UsageRecentRow: View {
             }
         }
         .padding(.vertical, 10)
+    }
+
+    /// `9.2s` / `1m 23s` / `1h 4m`.
+    private func formatAudioDuration(_ seconds: Double) -> String {
+        let total = Int(seconds.rounded())
+        if total < 60 {
+            return seconds < 10
+                ? String(format: "%.1fs audio", seconds)
+                : "\(total)s audio"
+        }
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        if h > 0 { return "\(h)h \(m)m audio" }
+        return "\(m)m \(s)s audio"
     }
 }
