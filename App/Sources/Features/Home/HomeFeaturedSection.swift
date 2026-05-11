@@ -97,7 +97,9 @@ struct HomeFeaturedSection: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isExpanded ? "\(headerTitle), expanded" : "\(headerTitle), collapsed")
-        .accessibilityHint("Double tap to toggle")
+        // Hints describe the effect — VoiceOver already announces the
+        // "double-tap to activate" gesture via the button trait.
+        .accessibilityHint(isExpanded ? "Collapses the featured section" : "Expands the featured section")
     }
 
     private var headerTitle: String {

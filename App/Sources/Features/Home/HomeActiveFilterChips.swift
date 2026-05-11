@@ -107,6 +107,9 @@ private struct HomeActiveFilterChipView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(chip.label) filter active")
-        .accessibilityHint("Double tap to clear")
+        // Hints describe the effect, not the gesture — VoiceOver
+        // narrates "double-tap to activate" via the button trait
+        // automatically, so the hint shouldn't repeat that.
+        .accessibilityHint("Clears this filter")
     }
 }
