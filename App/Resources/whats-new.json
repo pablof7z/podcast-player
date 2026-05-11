@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "8175671",
+      "shipped_at": "2026-05-11T23:00:00Z",
+      "lines": [
+        "The agent can now download and transcribe an episode in one step — ask it to transcribe something and it will wait until the transcript is ready before answering."
+      ]
+    },
+    {
       "id": "aa21a8c",
       "shipped_at": "2026-05-11T22:30:00Z",
       "lines": [
