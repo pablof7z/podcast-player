@@ -2,14 +2,14 @@
   "schema_version": 1,
   "entries": [
     {
-      "id": "4dae799",
+      "id": "ab642c0",
       "shipped_at": "2026-05-11T18:30:00Z",
       "lines": [
         "Tap the mic button in the player to record a voice note — the agent gets the timestamp, chapter, and what you said, then decides what to do with it (take a note, clip the moment, find a reference, whatever you need)."
       ]
     },
     {
-      "id": "PENDING-create-clip-tool",
+      "id": "ab642c0-clips",
       "shipped_at": "2026-05-11T15:00:00Z",
       "lines": [
         "The in-app assistant can now save clips for you — just ask it to clip a moment and it'll appear in your Clippings tab."
