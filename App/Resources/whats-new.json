@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "d09a4f2",
+      "shipped_at": "2026-05-11T21:30:00Z",
+      "lines": [
+        "Categorization now has its own model setting under AI → Models, so you can use a cheap model for one-shot category sorting without affecting the live agent chat."
+      ]
+    },
+    {
       "id": "1d40884",
       "shipped_at": "2026-05-11T21:00:00Z",
       "lines": [
