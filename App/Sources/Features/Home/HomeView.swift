@@ -31,6 +31,7 @@ struct HomeView: View {
     @State private var threadedTodaySheet: ThreadingInferenceService.ActiveTopic?
     @State private var voiceOverDetailRoute: HomeEpisodeRoute?
     @State private var showAddShowSheet: Bool = false
+    @State private var showCategoryPicker: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
@@ -38,8 +39,8 @@ struct HomeView: View {
 
     var body: some View {
         scrollContent
-            .navigationTitle("Home")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle(navBarTitle)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .refreshable { await refreshAllFeeds() }
@@ -67,6 +68,16 @@ struct HomeView: View {
                 HomeThreadedTodayView(active: active)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showCategoryPicker) {
+                HomeCategoryPickerSheet(
+                    selectedCategoryID: selectedCategoryID,
+                    onSelect: { id in
+                        categoryFilterID = id?.uuidString ?? ""
+                    }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
             .alert(
                 "Unsubscribe from \(unsubscribeTarget?.title ?? "")?",
@@ -235,6 +246,10 @@ struct HomeView: View {
         return id
     }
 
+    private var navBarTitle: String {
+        activeCategory?.name ?? "Home"
+    }
+
     private var datelineComponents: HomeDatelineComponents {
         // Topic list narrows to the category before being passed in: a
         // contradiction in a topic whose mentions live outside the
@@ -287,6 +302,24 @@ struct HomeView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Button {
+                Haptics.light()
+                showCategoryPicker = true
+            } label: {
+                HStack(spacing: 3) {
+                    Text(navBarTitle)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Browse categories")
+            .accessibilityHint("Opens category picker")
+        }
         ToolbarItem(placement: .topBarTrailing) {
             HomeFilterToolbarMenu(
                 filter: $filter,
