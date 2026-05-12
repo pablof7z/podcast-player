@@ -15,7 +15,6 @@ import SwiftUI
 /// The content swap is animated via a `.id(categoryID)` on the rail so
 /// the new section's shows fade in over the old.
 struct HomeFeaturedSection: View {
-    let resumeEpisodes: [Episode]
     let picksBundle: HomeAgentPicksBundle
     /// `true` while the agent service is streaming new picks. Drives the
     /// shimmer placeholder for the *next* pick the model is still emitting
@@ -113,27 +112,6 @@ struct HomeFeaturedSection: View {
     private var rail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
-                // Resume rail. Hidden entirely when empty in the active
-                // category — the brief calls this out: "if empty, hide
-                // the rail (don't show 'Pick up where you left off' with
-                // nothing under it)".
-                ForEach(resumeEpisodes) { ep in
-                    HomeResumeCard(
-                        episode: ep,
-                        subscription: store.subscription(id: ep.subscriptionID),
-                        onPlay: { onPlayEpisode(ep) }
-                    )
-                    // Long-press → "find related" sheet. We can't add a
-                    // `.contextMenu(menuItems:preview:)` and a long-press
-                    // handler in parallel without one swallowing the other,
-                    // so the related-search affordance lives on a
-                    // simultaneous gesture instead — onLongPressGesture
-                    // fires once the menu would have been about to open.
-                    .onLongPressGesture(minimumDuration: 0.6) {
-                        Haptics.medium()
-                        onLongPressEpisode(ep)
-                    }
-                }
                 if let hero = picksBundle.hero,
                    let episode = store.episode(id: hero.episodeID) {
                     HomeAgentPickCard(

@@ -55,23 +55,23 @@ struct HomeSubscriptionRow: View {
                     )
                 )
             if let url = subscription.imageURL {
-                CachedAsyncImage(url: url, targetSize: CGSize(width: 80, height: 80)) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 92, height: 92)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
                     default:
                         Image(systemName: subscription.artworkSymbol)
-                            .font(.system(size: 18, weight: .light))
+                            .font(.system(size: 21, weight: .light))
                             .foregroundStyle(.white.opacity(0.92))
                     }
                 }
             } else {
                 Image(systemName: subscription.artworkSymbol)
-                    .font(.system(size: 18, weight: .light))
+                    .font(.system(size: 21, weight: .light))
                     .foregroundStyle(.white.opacity(0.92))
             }
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 46, height: 46)
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 

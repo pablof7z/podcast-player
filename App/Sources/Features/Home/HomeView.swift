@@ -31,6 +31,7 @@ struct HomeView: View {
     @State private var voiceOverDetailRoute: HomeEpisodeRoute?
     @State private var showAddShowSheet: Bool = false
     @State private var showCategoryPicker: Bool = false
+    @State private var showAllContinueListening: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
@@ -52,6 +53,9 @@ struct HomeView: View {
             }
             .navigationDestination(for: PodcastSubscription.self) { sub in
                 ShowDetailView(subscription: sub)
+            }
+            .navigationDestination(isPresented: $showAllContinueListening) {
+                ContinueListeningView(episodes: continueListeningEpisodes)
             }
             .sheet(isPresented: $showAddShowSheet) {
                 AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
@@ -159,9 +163,16 @@ struct HomeView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+                if !continueListeningEpisodes.isEmpty {
+                    HomeContinueListeningSection(
+                        episodes: continueListeningEpisodes,
+                        onPlay: playEpisode,
+                        onSeeAll: { showAllContinueListening = true }
+                    )
+                }
+
                 if shouldShowFeaturedSection {
                     HomeFeaturedSection(
-                        resumeEpisodes: scopedResumeEpisodes,
                         picksBundle: picksService.bundle(for: selectedCategoryID),
                         isStreaming: picksService.isStreaming(for: selectedCategoryID),
                         activeThread: topActiveThread,
@@ -180,14 +191,15 @@ struct HomeView: View {
         }
     }
 
-    /// Resume rail filtered to the active category when one is set, or
-    /// the global rail otherwise. Empty list collapses the rail entirely
-    /// in `HomeFeaturedSection`.
-    private var scopedResumeEpisodes: [Episode] {
-        HomeCategoryScope.episodesInCategory(
+    /// In-progress episodes from the last 2 weeks, scoped to the active
+    /// category. Used by the Continue Listening section.
+    private var continueListeningEpisodes: [Episode] {
+        let twoWeeksAgo = Date().addingTimeInterval(-14 * 24 * 3600)
+        let scoped = HomeCategoryScope.episodesInCategory(
             store.inProgressEpisodes,
             allowedSubscriptionIDs: allowedSubscriptionIDs
         )
+        return scoped.filter { $0.pubDate >= twoWeeksAgo }
     }
 
     // MARK: - Subscription surface
@@ -252,9 +264,9 @@ struct HomeView: View {
 
     private var shouldShowFeaturedSection: Bool {
         let bundle = picksService.bundle(for: selectedCategoryID)
-        return !scopedResumeEpisodes.isEmpty
-            || !bundle.picks.isEmpty
+        return !bundle.picks.isEmpty
             || picksService.isRefreshing(for: selectedCategoryID)
+            || picksService.isStreaming(for: selectedCategoryID)
     }
 
     // MARK: - Toolbar

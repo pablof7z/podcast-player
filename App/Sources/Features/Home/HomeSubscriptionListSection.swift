@@ -26,7 +26,7 @@ struct HomeSubscriptionListSection: View {
                 .padding(.vertical, AppTheme.Spacing.sm)
                 Divider()
                     .background(AppTheme.Tint.hairline)
-                    .padding(.leading, AppTheme.Spacing.md + 40 + AppTheme.Spacing.md)
+                    .padding(.leading, AppTheme.Spacing.md + 46 + AppTheme.Spacing.md)
             }
         }
     }
