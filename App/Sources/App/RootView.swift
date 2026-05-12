@@ -26,6 +26,7 @@ enum RootTab: String, CaseIterable {
 /// onboarding gate, and deep-link routing.
 struct RootView: View {
     @Environment(AppStateStore.self) private var store
+    @Environment(AgentAskCoordinator.self) private var askCoordinator
     @State private var selectedTab: RootTab = .home
     @State private var feedbackWorkflow = FeedbackWorkflow()
     @State private var showFeedback = false
@@ -266,6 +267,7 @@ struct RootView: View {
                 }
             }
             .nostrApprovalPresenter()
+            .agentAskPresenter(coordinator: askCoordinator)
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
                 NotificationCenter.default.publisher(for: AppDelegate.shortcutURLNotification)
@@ -334,7 +336,11 @@ struct RootView: View {
     /// Ensures the persistent agent session exists, then presents the chat sheet.
     private func openAgentChat() {
         if agentSession == nil {
-            agentSession = AgentChatSession(store: store, playback: playbackState)
+            agentSession = AgentChatSession(
+                store: store,
+                playback: playbackState,
+                askCoordinator: askCoordinator
+            )
         }
         showAgentChat = true
     }

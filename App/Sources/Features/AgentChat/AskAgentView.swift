@@ -6,6 +6,7 @@ import SwiftUI
 struct AskAgentView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(PlaybackState.self) private var playback
+    @Environment(AgentAskCoordinator.self) private var askCoordinator
     @State private var session: AgentChatSession?
 
     var body: some View {
@@ -14,7 +15,11 @@ struct AskAgentView: View {
         } else {
             Color.clear
                 .onAppear {
-                    session = AgentChatSession(store: store, playback: playback)
+                    session = AgentChatSession(
+                        store: store,
+                        playback: playback,
+                        askCoordinator: askCoordinator
+                    )
                 }
         }
     }
