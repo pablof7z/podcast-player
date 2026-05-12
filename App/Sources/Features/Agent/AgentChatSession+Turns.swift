@@ -212,6 +212,14 @@ extension AgentChatSession {
                 lastFailedMessage = nil
                 phase = .idle
                 persistCurrentConversation()
+                // Fire-and-forget memory compile. The compiler short-circuits
+                // when active-memory ids match the previous compile's
+                // `sourceMemoryIDs`, so this is a cheap no-op when the run
+                // didn't touch `record_memory`. Never blocks the UI.
+                let storeRef = store
+                Task { @MainActor in
+                    await AgentMemoryCompiler(store: storeRef).compileIfNeeded()
+                }
                 return
             }
 

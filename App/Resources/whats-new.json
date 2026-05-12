@@ -16,6 +16,13 @@
       ]
     },
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-13T00:07:00Z",
+      "lines": [
+        "Agent consolidates accumulated memories into a tight summary it carries forward."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [

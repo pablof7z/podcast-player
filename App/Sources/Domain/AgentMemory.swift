@@ -15,3 +15,18 @@ struct AgentMemory: Codable, Identifiable, Hashable, Sendable {
         self.deleted = false
     }
 }
+
+// MARK: - Compiled Agent Memory
+
+/// LLM-consolidated summary of the active `AgentMemory` set. Regenerated
+/// by `AgentMemoryCompiler` after agent turns that recorded a memory.
+/// Idempotency guard: `sourceMemoryIDs` is the exact ordered set of active
+/// memory ids folded into this compile — if the current `agentMemories`
+/// id sequence (filtered to active, sorted by `createdAt`) matches, no
+/// recompile is needed.
+struct CompiledAgentMemory: Codable, Hashable, Sendable {
+    var text: String
+    var compiledAt: Date
+    var sourceMemoryCount: Int
+    var sourceMemoryIDs: [UUID]
+}
