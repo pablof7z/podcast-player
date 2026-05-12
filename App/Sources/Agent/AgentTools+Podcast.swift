@@ -58,6 +58,9 @@ extension AgentTools {
         static let downloadAndTranscribe  = "download_and_transcribe"
         static let generateTTSEpisode     = "generate_tts_episode"
         static let configureAgentVoice    = "configure_agent_voice"
+        /// Skill-gated: only callable when the `podcast_generation` skill
+        /// is enabled. See `PodcastGenerationSkill`.
+        static let listAvailableVoices    = "list_available_voices"
 
         // External-podcast tools
         static let searchPodcastDirectory = "search_podcast_directory"
@@ -65,7 +68,10 @@ extension AgentTools {
         static let playExternalEpisode    = "play_external_episode"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
-        /// the main `AgentTools.dispatch` switch.
+        /// the main `AgentTools.dispatch` switch. Skill-gated names are
+        /// included here so `dispatch` can route them; whether they are
+        /// callable from a given session is gated separately by the
+        /// `enabledSkills` check in `dispatchPodcast`.
         static var all: [String] {
             [
                 playEpisodeAt, pausePlayback, setPlaybackRate, setSleepTimer,
@@ -78,7 +84,7 @@ extension AgentTools {
                 listSubscriptions, listCategories, changePodcastCategory,
                 listEpisodes, listInProgress, listRecentUnplayed,
                 createClip, queueEpisodeSegments, downloadAndTranscribe,
-                generateTTSEpisode, configureAgentVoice,
+                generateTTSEpisode, configureAgentVoice, listAvailableVoices,
                 searchPodcastDirectory, subscribePodcast, playExternalEpisode,
             ]
         }
@@ -111,7 +117,8 @@ extension AgentTools {
     static func dispatchPodcast(
         name: String,
         argsJSON: String,
-        deps: PodcastAgentToolDeps
+        deps: PodcastAgentToolDeps,
+        enabledSkills: Set<String> = []
     ) async -> String {
         let args: [String: Any]
         do {
@@ -120,7 +127,7 @@ extension AgentTools {
             logger.error("AgentTools+Podcast: failed to parse argsJSON for tool '\(name, privacy: .public)': \(error.localizedDescription, privacy: .public)")
             return toolError("Invalid JSON arguments")
         }
-        return await dispatchPodcast(name: name, args: args, deps: deps)
+        return await dispatchPodcast(name: name, args: args, deps: deps, enabledSkills: enabledSkills)
     }
 
     /// Args-already-parsed variant. Exposed `internal` so tests can call it
@@ -128,8 +135,17 @@ extension AgentTools {
     static func dispatchPodcast(
         name: String,
         args: [String: Any],
-        deps: PodcastAgentToolDeps
+        deps: PodcastAgentToolDeps,
+        enabledSkills: Set<String> = []
     ) async -> String {
+        // Defensive skill gate. The LLM should never see the schema for a
+        // gated tool unless its owning skill is enabled, but if it somehow
+        // calls one anyway we surface a clear error instead of running the
+        // handler unauthenticated.
+        if let owningSkill = AgentSkillRegistry.owningSkillID(forTool: name),
+           !enabledSkills.contains(owningSkill) {
+            return toolError("Tool '\(name)' requires the '\(owningSkill)' skill — call use_skill(skill_id: \"\(owningSkill)\") first.")
+        }
         switch name {
         case PodcastNames.playEpisodeAt:
             return await playEpisodeAtTool(args: args, deps: deps)
@@ -197,6 +213,8 @@ extension AgentTools {
             return await generateTTSEpisodeTool(args: args, deps: deps)
         case PodcastNames.configureAgentVoice:
             return await configureAgentVoiceTool(args: args, deps: deps)
+        case PodcastNames.listAvailableVoices:
+            return await listAvailableVoicesTool(args: args)
         case PodcastNames.searchPodcastDirectory:
             return await searchPodcastDirectoryTool(args: args, deps: deps)
         case PodcastNames.subscribePodcast:

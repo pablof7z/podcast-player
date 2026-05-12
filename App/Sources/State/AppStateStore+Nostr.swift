@@ -39,4 +39,44 @@ extension AppStateStore {
     var pendingNostrApprovals: [NostrPendingApproval] {
         state.nostrPendingApprovals
     }
+
+    // MARK: - Nostr Conversations
+
+    /// Appends `turn` to the conversation with `rootEventID`, creating the
+    /// record on first sight. `counterparty` is required for the create
+    /// path when the turn is outgoing (the agent's own pubkey is not the
+    /// counterparty); for incoming turns `turn.pubkey` is used.
+    func recordNostrTurn(
+        rootEventID: String,
+        turn: NostrConversationTurn,
+        counterpartyPubkey: String? = nil
+    ) {
+        if let idx = state.nostrConversations.firstIndex(where: { $0.rootEventID == rootEventID }) {
+            if !state.nostrConversations[idx].turns.contains(where: { $0.eventID == turn.eventID }) {
+                state.nostrConversations[idx].turns.append(turn)
+            }
+            state.nostrConversations[idx].lastTouched = Date()
+        } else {
+            let resolved = counterpartyPubkey ?? turn.pubkey
+            state.nostrConversations.append(
+                NostrConversationRecord(
+                    rootEventID: rootEventID,
+                    counterpartyPubkey: resolved,
+                    firstSeen: Date(),
+                    lastTouched: Date(),
+                    turns: [turn]
+                )
+            )
+        }
+    }
+
+    /// Inserts or upgrades a cached profile. Older `kind:0` events are
+    /// ignored so a relay re-delivery never downgrades a fresher profile.
+    func setNostrProfile(_ profile: NostrProfileMetadata) {
+        if let existing = state.nostrProfileCache[profile.pubkey],
+           existing.fetchedFromCreatedAt >= profile.fetchedFromCreatedAt {
+            return
+        }
+        state.nostrProfileCache[profile.pubkey] = profile
+    }
 }

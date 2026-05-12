@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import UIKit
 
 /// Connects to a configured Nostr relay and gates incoming kind:1 messages
 /// through the access-control layer, queuing unknown senders for user approval.
@@ -68,6 +69,43 @@ final class NostrRelayService {
         task.resume()
         sendSubscription(agentPubkey: agentPubkey)
         startReceiveLoop(agentPubkey: agentPubkey)
+        publishAgentProfileIfPossible(relayURL: url)
+    }
+
+    // MARK: - Kind:0 profile publish
+
+    /// Publishes the agent's kind:0 metadata event to the configured relay.
+    /// Can be called directly when the user edits profile settings without
+    /// restarting the relay connection.
+    func republishProfile() {
+        let settings = store.state.settings
+        guard settings.nostrEnabled,
+              settings.nostrPublicKeyHex?.isEmpty == false,
+              !settings.nostrRelayURL.isEmpty,
+              let relayURL = URL(string: settings.nostrRelayURL) else { return }
+        publishAgentProfileIfPossible(relayURL: relayURL)
+    }
+
+    private func publishAgentProfileIfPossible(relayURL: URL) {
+        let settings = store.state.settings
+        let name = settings.nostrProfileName.trimmed
+        let about = settings.nostrProfileAbout.trimmed
+        let picture = settings.nostrProfilePicture.trimmed
+        let effectiveName = name.isEmpty ? "Podcastr Agent" : name
+        let deviceName = UIDevice.current.name
+
+        Task {
+            guard let privKey = try? NostrCredentialStore.privateKey() else { return }
+            guard let pair = try? NostrKeyPair(privateKeyHex: privKey) else { return }
+            var metadata: [String: String] = ["name": effectiveName, "about": about]
+            if !picture.isEmpty { metadata["picture"] = picture }
+            guard let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]),
+                  let content = String(data: data, encoding: .utf8) else { return }
+            let draft = NostrEventDraft(kind: 0, content: content, tags: [["backend", "Podcastr App in \(deviceName)"]])
+            guard let event = try? await LocalKeySigner(keyPair: pair).sign(draft) else { return }
+            let publisher = NostrWebSocketEventPublisher()
+            try? await publisher.publish(event: event, relayURL: relayURL)
+        }
     }
 
     private func sendSubscription(agentPubkey: String) {

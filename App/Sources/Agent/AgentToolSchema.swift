@@ -33,6 +33,17 @@ extension AgentTools {
                 ],
                 required: []
             ),
+            tool(
+                name: Names.useSkill,
+                description: "Opt this conversation into a skill listed under '## Skills' in the system prompt. The tool result returns the skill's manual (focused instructions you should follow for the remainder of the conversation) and unlocks the skill's tools. Idempotent — re-calling is harmless. Call this BEFORE the first call to any skill-gated tool.",
+                properties: [
+                    "skill_id": [
+                        "type": "string",
+                        "description": "The skill's canonical id (e.g. 'podcast_generation'). See the '## Skills' section of the system prompt for available ids.",
+                    ],
+                ],
+                required: ["skill_id"]
+            ),
         ]
     }
 

@@ -26,6 +26,11 @@ enum AgentTools {
         /// through `AgentTools.dispatch`, because the "side effect" is a
         /// session-local flag, not anything in `AppStateStore`.
         static let upgradeThinking   = "upgrade_thinking"
+        /// Sentinel name for the in-band skill activation. Like
+        /// `upgradeThinking`, handled directly by the turn loop — the
+        /// "side effect" is a session-local `enabledSkills` insert, not a
+        /// store mutation. See `AgentSkillRegistry`.
+        static let useSkill          = "use_skill"
     }
 
     // MARK: - Cached formatters
@@ -52,7 +57,8 @@ enum AgentTools {
         argsJSON: String,
         store: AppStateStore,
         batchID: UUID,
-        podcastDeps: PodcastAgentToolDeps? = nil
+        podcastDeps: PodcastAgentToolDeps? = nil,
+        enabledSkills: Set<String> = []
     ) async -> String {
         let args: [String: Any]
         do {
@@ -77,7 +83,12 @@ enum AgentTools {
                 // `[String: Any]` payload (non-Sendable) never crosses the
                 // dispatch boundary — `dispatchPodcast(argsJSON:)` reparses on
                 // the destination side.
-                return await dispatchPodcast(name: name, argsJSON: argsJSON, deps: podcastDeps)
+                return await dispatchPodcast(
+                    name: name,
+                    argsJSON: argsJSON,
+                    deps: podcastDeps,
+                    enabledSkills: enabledSkills
+                )
             }
             return toolError("Unknown tool: \(name)")
         }

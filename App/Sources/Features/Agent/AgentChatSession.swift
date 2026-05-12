@@ -52,6 +52,11 @@ final class AgentChatSession {
     /// Flipped by the in-band `upgrade_thinking` tool call. Resets to `false`
     /// on every new conversation so cheap-model defaults always apply first.
     var isUpgraded: Bool = false
+    /// Skill ids the agent has opted into for this conversation via the
+    /// in-band `use_skill` tool. Each enabled skill contributes its tool
+    /// schemas to the per-turn tool list. Resets to `[]` on every new
+    /// conversation so the prompt stays lean by default.
+    var enabledSkills: Set<String> = []
     /// Partial assistant content received so far during a streaming turn.
     /// Non-nil (including empty string) while a turn is actively streaming text.
     var streamingContent: String?
@@ -96,6 +101,7 @@ final class AgentChatSession {
             self.currentConversationID = recent.id
             self.messages = recent.messages
             self.isUpgraded = recent.isUpgraded
+            self.enabledSkills = recent.enabledSkills
             self.loadedFromHistory = true
         } else {
             self.currentConversationID = UUID()

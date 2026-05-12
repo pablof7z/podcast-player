@@ -56,6 +56,9 @@ struct PodcastrApp: App {
                 .onChange(of: store.state.settings.nostrEnabled) { _, _ in relayService?.start() }
                 .onChange(of: store.state.settings.nostrRelayURL) { _, _ in relayService?.start() }
                 .onChange(of: store.state.settings.nostrPublicKeyHex) { _, _ in relayService?.start() }
+                .onChange(of: store.state.settings.nostrProfileName) { _, _ in relayService?.republishProfile() }
+                .onChange(of: store.state.settings.nostrProfileAbout) { _, _ in relayService?.republishProfile() }
+                .onChange(of: store.state.settings.nostrProfilePicture) { _, _ in relayService?.republishProfile() }
         }
     }
 }

@@ -77,41 +77,13 @@ extension AgentTools {
                 ],
                 required: ["topic"]
             ),
-            podcastTool(
-                name: PodcastNames.createWikiPage,
-                description: """
-                Compile and save a wiki page about a topic, person, or show. Searches the user's \
-                transcripts, drafts a citation-grounded article, verifies every claim, and persists it \
-                so the system auto-refreshes it as new episodes land. \
-                Use when the user says 'build a wiki page on X', 'research X from my podcasts', \
-                or 'what do my podcasts say about X — save it'. \
-                Requires an AI provider key (OpenRouter or compatible). Returns the compiled page.
-                """,
-                properties: [
-                    "title": ["type": "string", "description": "Topic, person name, or show name to compile a page about."],
-                    "kind": ["type": "string", "enum": ["topic", "person", "show"], "description": "Page type. Defaults to 'topic'."],
-                    "scope": ["type": "string", "description": "Optional podcast ID to constrain compilation to one show's transcripts. Omit for a library-wide page."],
-                ],
-                required: ["title"]
-            ),
-            podcastTool(
-                name: PodcastNames.listWikiPages,
-                description: "List existing wiki pages in the user's library. Use before creating a page (to check if it already exists) or before deleting one.",
-                properties: [
-                    "scope": ["type": "string", "description": "Optional podcast ID to list only pages for one show. Omit for all pages."],
-                    "limit": ["type": "integer", "description": "Maximum pages to return (1–100). Defaults to 25."],
-                ],
-                required: []
-            ),
-            podcastTool(
-                name: PodcastNames.deleteWikiPage,
-                description: "Delete a wiki page by slug. Use only when the user explicitly asks to remove a page. Call list_wiki_pages first to confirm the slug.",
-                properties: [
-                    "slug": ["type": "string", "description": "URL slug of the page to delete (e.g. 'zone-2-training')."],
-                    "scope": ["type": "string", "description": "Optional podcast ID for pages scoped to one show. Omit for global pages."],
-                ],
-                required: ["slug"]
-            ),
+            // NOTE: `create_wiki_page`, `list_wiki_pages`, and
+            // `delete_wiki_page` live under the `wiki_research` skill
+            // (see `App/Sources/Agent/Skills/WikiResearchSkill.swift`).
+            // Their tool name constants stay in `PodcastNames.all` so
+            // `dispatchPodcast` can route them; the LLM only sees their
+            // schemas when the skill is enabled.
+            // `query_wiki` stays always-on as a cheap lookup.
             podcastTool(
                 name: PodcastNames.queryTranscripts,
                 description: "RAG search over transcript chunks. Returns timestamped excerpts with speaker labels. Use this when the user asks 'what did they say about X?' and you need direct quotes to ground the answer.",
@@ -342,57 +314,12 @@ extension AgentTools {
                 ],
                 required: ["segments"]
             ),
-            podcastTool(
-                name: PodcastNames.generateTTSEpisode,
-                description: """
-                Synthesise a custom audio episode using ElevenLabs TTS and/or original episode snippets, \
-                then publish it to the 'Agent Generated' podcast so the user can play it like any other episode. \
-                Use for requests like 'make me a TLDR of the ADHD stuff', 'create a fake podcast interview', \
-                or 'summarise X with snippets from Y and Z'. \
-                Turns are ordered: each turn is either a 'speech' turn (text → TTS with a specific voice) \
-                or a 'snippet' turn (an original audio clip from an existing episode). \
-                For multi-speaker dialogue, alternate speech turns with different voice_id values. \
-                You can use ElevenLabs emotion cues in text like '[cheerfully]', '[excitedly]', '[laughs]'. \
-                For snippet turns, resolve episode IDs and timestamps via query_transcripts first.
-                """,
-                properties: [
-                    "title": ["type": "string", "description": "Episode title shown in the library."],
-                    "description": ["type": "string", "description": "Short episode description (plain text)."],
-                    "turns": [
-                        "type": "array",
-                        "description": "Ordered sequence of turns that make up the episode. Must contain at least one entry.",
-                        "items": [
-                            "type": "object",
-                            "properties": [
-                                "kind": ["type": "string", "enum": ["speech", "snippet"], "description": "'speech' for TTS narration, 'snippet' for an original-audio excerpt from an existing episode."],
-                                "text": ["type": "string", "description": "Text to synthesise. Required when kind='speech'. Supports ElevenLabs emotion markers like [cheerfully]."],
-                                "voice_id": ["type": "string", "description": "ElevenLabs voice ID for this speech turn. Omit to use the agent's configured default voice."],
-                                "episode_id": ["type": "string", "description": "UUID of the source episode. Required when kind='snippet'."],
-                                "start_seconds": ["type": "number", "description": "Start of the audio excerpt in seconds. Required when kind='snippet'."],
-                                "end_seconds": ["type": "number", "description": "End of the audio excerpt in seconds. Required when kind='snippet'."],
-                                "label": ["type": "string", "description": "Optional label for a snippet turn (e.g. speaker name or topic)."],
-                            ] as [String: Any],
-                            "required": ["kind"],
-                        ] as [String: Any],
-                    ] as [String: Any],
-                    "play_now": ["type": "boolean", "description": "If true, immediately start playing the finished episode. Defaults to false."],
-                ],
-                required: ["title", "turns"]
-            ),
-            podcastTool(
-                name: PodcastNames.configureAgentVoice,
-                description: """
-                Set the agent's default ElevenLabs voice ID. Future 'generate_tts_episode' speech turns \
-                that omit 'voice_id' will use this voice. \
-                Use when the user says 'use a different voice', 'sound like X', or explicitly picks a voice \
-                from the ElevenLabs voice list. Always confirm the voice_id exists in the user's ElevenLabs \
-                account before setting.
-                """,
-                properties: [
-                    "voice_id": ["type": "string", "description": "ElevenLabs voice ID to set as the agent's default."],
-                ],
-                required: ["voice_id"]
-            ),
+            // NOTE: `generate_tts_episode`, `configure_agent_voice`, and
+            // `list_available_voices` live under the `podcast_generation`
+            // skill (see `App/Sources/Agent/Skills/PodcastGenerationSkill.swift`).
+            // Their tool name constants stay in `PodcastNames.all` so
+            // `dispatchPodcast` can route them; the LLM only sees their
+            // schemas when the skill is enabled.
             podcastTool(
                 name: PodcastNames.searchPodcastDirectory,
                 description: """

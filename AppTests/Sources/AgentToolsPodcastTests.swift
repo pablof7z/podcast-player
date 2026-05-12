@@ -9,12 +9,16 @@ final class AgentToolsPodcastTests: XCTestCase {
 
     // MARK: - Schema sanity
 
-    func testPodcastSchemaListsEveryToolName() {
+    func testPodcastSchemaListsEveryNonSkillToolName() {
         let names = Set(AgentTools.podcastSchema.compactMap { tool -> String? in
             (tool["function"] as? [String: Any])?["name"] as? String
         })
+        // Skill-gated tool names live in `PodcastNames.all` (so `dispatch` can
+        // route them) but their schemas are owned by the skill, not by
+        // `podcastSchema`. Subtract them before comparing.
         let expected = Set(AgentTools.PodcastNames.all)
-        XCTAssertEqual(names, expected, "Schema entries must match canonical PodcastNames.all")
+            .subtracting(AgentSkillRegistry.allToolNames)
+        XCTAssertEqual(names, expected, "podcastSchema must cover every non-skill-gated podcast tool")
     }
 
     func testPodcastSchemaEntriesHaveRequiredOpenAIShape() {

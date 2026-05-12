@@ -17,6 +17,7 @@ extension AgentChatSession {
             title: existing?.title ?? "",
             messages: messages,
             isUpgraded: isUpgraded,
+            enabledSkills: enabledSkills,
             createdAt: existing?.createdAt ?? Date(),
             updatedAt: Date()
         )
@@ -52,6 +53,7 @@ extension AgentChatSession {
         messages = convo.messages
         rawMessages = []
         isUpgraded = convo.isUpgraded
+        enabledSkills = convo.enabledSkills
         phase = .idle
         lastFailedMessage = nil
         streamingContent = nil
@@ -81,6 +83,7 @@ extension AgentChatSession {
         messages = []
         rawMessages = []
         isUpgraded = false
+        enabledSkills = []
         phase = .idle
         lastFailedMessage = nil
         streamingContent = nil

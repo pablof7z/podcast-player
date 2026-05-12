@@ -21,6 +21,7 @@ enum AgentPrompt {
         static let titleChars = 80
     }
 
+    @MainActor
     static func build(for state: AppState) -> String {
         var sections: [String] = []
 
@@ -30,15 +31,6 @@ enum AgentPrompt {
         Help the user surface, recall, and reason about what they've been listening to.
         Be concise and action-oriented. For specifics that aren't in this prompt
         (transcripts, episode contents, semantic search), call your tools.
-
-        You can create custom audio episodes with `generate_tts_episode`. Use it when
-        the user asks for a TLDR, summary, or compilation episode. You can mix speech
-        turns (TTS narration, any ElevenLabs voice, emotion cues like [cheerfully]) with
-        snippet turns (original audio clips from existing episodes). Multi-speaker
-        dialogue works by alternating speech turns with different voice_id values.
-        The finished episode appears in the 'Agent Generated' podcast in the user's
-        library. Use `configure_agent_voice` to set the default voice ID. Always call
-        `upgrade_thinking` before planning a complex episode — it needs careful scripting.
 
         You can play episodes the user is NOT subscribed to. When asked to play
         a guest appearance, a one-off episode, or anything not in the library:
@@ -57,6 +49,8 @@ enum AgentPrompt {
         upgrading — only upgrade when you're genuinely unsure or the task is
         clearly complex.
         """)
+
+        sections.append(Self.skillsCatalog())
 
         if !state.subscriptions.isEmpty {
             let titles = state.subscriptions
@@ -120,6 +114,22 @@ enum AgentPrompt {
         }
 
         return sections.joined(separator: "\n\n")
+    }
+
+    /// Renders the `## Skills` section enumerating every registered skill.
+    /// The agent reads this list and calls `use_skill(skill_id:)` to opt in
+    /// to a skill's instructions and tools.
+    @MainActor
+    private static func skillsCatalog() -> String {
+        let lines = AgentSkillRegistry.all
+            .map { "- `\($0.id)` — \($0.summary)" }
+            .joined(separator: "\n")
+        return """
+        ## Skills
+        \(lines)
+
+        Call `use_skill(skill_id: "<id>")` to load any of these — you'll get its full instructions back and unlock its tools for the rest of the conversation. Default to NOT loading a skill unless the user's request matches one. Skill manuals are large; loading a skill you don't need wastes context.
+        """
     }
 
     private static func subscriptionTitlesByID(_ state: AppState) -> [UUID: String] {

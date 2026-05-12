@@ -41,11 +41,40 @@ actor MockRAG: PodcastAgentRAGSearchProtocol {
 
 actor MockWiki: WikiStorageProtocol {
     private let result: [WikiHit]
-    init(result: [WikiHit] = []) { self.result = result }
+    private let createResult: WikiCreateResult?
+    private let listResult: [WikiPageListing]
+    init(
+        result: [WikiHit] = [],
+        createResult: WikiCreateResult? = nil,
+        listResult: [WikiPageListing] = []
+    ) {
+        self.result = result
+        self.createResult = createResult
+        self.listResult = listResult
+    }
 
     func queryWiki(topic: String, scope: PodcastID?, limit: Int) async throws -> [WikiHit] {
         return result
     }
+
+    func createWikiPage(title: String, kind: String, scope: PodcastID?) async throws -> WikiCreateResult {
+        return createResult ?? WikiCreateResult(
+            pageID: "mock-page",
+            slug: title.lowercased().replacingOccurrences(of: " ", with: "-"),
+            title: title,
+            kind: kind,
+            summary: "",
+            claimCount: 0,
+            citationCount: 0,
+            confidence: 0
+        )
+    }
+
+    func listWikiPages(scope: PodcastID?, limit: Int) async throws -> [WikiPageListing] {
+        return listResult
+    }
+
+    func deleteWikiPage(slug: String, scope: PodcastID?) async throws {}
 }
 
 actor MockBriefing: BriefingComposerProtocol {

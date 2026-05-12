@@ -23,6 +23,12 @@ struct AppState: Codable, Sendable {
     var nostrAllowedPubkeys: Set<String> = []
     var nostrBlockedPubkeys: Set<String> = []
     var nostrPendingApprovals: [NostrPendingApproval] = []
+    /// One record per Nostr conversation root (NIP-10) the agent has
+    /// participated in. Surfaces in Settings > Agent > Conversations.
+    var nostrConversations: [NostrConversationRecord] = []
+    /// Cached kind:0 profile metadata keyed by hex pubkey. Hydrated lazily
+    /// when new pubkeys land in pending approvals or conversations.
+    var nostrProfileCache: [String: NostrProfileMetadata] = [:]
     var agentActivity: [AgentActivityEntry] = []
     /// User-authored transcript excerpts. See `Clip` and the composer in
     /// `App/Sources/Features/EpisodeDetail/Clip/`.
@@ -43,6 +49,7 @@ struct AppState: Codable, Sendable {
         case notes, friends, agentMemories, settings
         case categories, categorySettings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
+        case nostrConversations, nostrProfileCache
         case agentActivity
         case clips
         case threadingTopics, threadingMentions
@@ -64,6 +71,8 @@ struct AppState: Codable, Sendable {
         nostrAllowedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrAllowedPubkeys) ?? []
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
+        nostrConversations = try c.decodeIfPresent([NostrConversationRecord].self, forKey: .nostrConversations) ?? []
+        nostrProfileCache = try c.decodeIfPresent([String: NostrProfileMetadata].self, forKey: .nostrProfileCache) ?? [:]
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
         clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
         threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []

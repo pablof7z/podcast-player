@@ -153,7 +153,9 @@ extension AgentChatSession {
             do {
                 result = try await AgentLLMClient.streamCompletion(
                     messages: rawMessages,
-                    tools: AgentTools.schema + AgentTools.podcastSchema,
+                    tools: AgentTools.schema
+                         + AgentTools.podcastSchema
+                         + AgentSkillRegistry.schemas(for: enabledSkills),
                     model: modelForTurn
                 ) { [weak self] partial in
                     self?.streamingContent = partial
@@ -238,13 +240,16 @@ extension AgentChatSession {
                         "upgraded": true,
                         "model": store.state.settings.agentThinkingModel,
                     ])
+                } else if toolCall.name == AgentTools.Names.useSkill {
+                    resultJSON = handleUseSkill(argsJSON: toolCall.arguments)
                 } else {
                     resultJSON = await AgentTools.dispatch(
                         name: toolCall.name,
                         argsJSON: toolCall.arguments,
                         store: store,
                         batchID: batchID,
-                        podcastDeps: podcastDeps
+                        podcastDeps: podcastDeps,
+                        enabledSkills: enabledSkills
                     )
                 }
                 rawMessages.append([
@@ -326,6 +331,20 @@ extension AgentChatSession {
     func resetStreamingState() {
         streamingContent = nil
         currentToolName = nil
+    }
+
+    /// In-band handler for the `use_skill` tool call. Mirrors the
+    /// `upgrade_thinking` pattern — the "side effect" is a session-local
+    /// `enabledSkills` insert, so we intercept rather than route through
+    /// `AgentTools.dispatch`. The shared activation contract lives in
+    /// `AgentSkillRegistry.activate(argsJSON:currentEnabledSkills:)`.
+    func handleUseSkill(argsJSON: String) -> String {
+        let result = AgentSkillRegistry.activate(
+            argsJSON: argsJSON,
+            currentEnabledSkills: enabledSkills
+        )
+        enabledSkills = result.updatedEnabledSkills
+        return result.resultJSON
     }
 
     func selectedProviderHasCredential() -> Bool {

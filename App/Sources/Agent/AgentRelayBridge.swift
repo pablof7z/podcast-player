@@ -29,6 +29,9 @@ final class AgentRelayBridge {
         // the agent calls `upgrade_thinking`. Scoped to a single inbound reply
         // (each Nostr message gets a fresh bridge run).
         var isUpgraded = false
+        // Per-reply skill state, same scoping as `isUpgraded` — each inbound
+        // Nostr message starts with no skills enabled.
+        var enabledSkills: Set<String> = []
 
         let senderName = displayName(for: senderPubkey)
         let systemPrompt = AgentPrompt.build(for: store.state)
@@ -55,7 +58,9 @@ final class AgentRelayBridge {
             do {
                 result = try await AgentLLMClient.streamCompletion(
                     messages: messages,
-                    tools: AgentTools.schema + AgentTools.podcastSchema,
+                    tools: AgentTools.schema
+                         + AgentTools.podcastSchema
+                         + AgentSkillRegistry.schemas(for: enabledSkills),
                     model: modelForTurn,
                     feature: CostFeature.agentNostr,
                     onPartialContent: { _ in }
@@ -96,13 +101,21 @@ final class AgentRelayBridge {
                         "upgraded": true,
                         "model": store.state.settings.agentThinkingModel,
                     ])
+                } else if toolCall.name == AgentTools.Names.useSkill {
+                    let activation = AgentSkillRegistry.activate(
+                        argsJSON: toolCall.arguments,
+                        currentEnabledSkills: enabledSkills
+                    )
+                    resultJSON = activation.resultJSON
+                    enabledSkills = activation.updatedEnabledSkills
                 } else {
                     resultJSON = await AgentTools.dispatch(
                         name: toolCall.name,
                         argsJSON: toolCall.arguments,
                         store: store,
                         batchID: batchID,
-                        podcastDeps: podcastDeps
+                        podcastDeps: podcastDeps,
+                        enabledSkills: enabledSkills
                     )
                 }
                 messages.append([
