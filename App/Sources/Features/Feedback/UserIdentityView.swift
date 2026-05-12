@@ -18,9 +18,11 @@ struct UserIdentityView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var nsecInput = ""
+    @State private var bunkerInput = ""
     @State private var showClearConfirm = false
     @State private var showCopied = false
     @State private var isSaving = false
+    @State private var isConnectingRemote = false
     @FocusState private var nsecFocused: Bool
 
     var body: some View {
@@ -38,7 +40,7 @@ struct UserIdentityView: View {
                         generateCard
                     }
 
-                    nip46PlaceholderCard
+                    nip46Card
 
                     footerNote
                 }
@@ -186,28 +188,31 @@ struct UserIdentityView: View {
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
     }
 
-    // MARK: - NIP-46 placeholder
+    // MARK: - NIP-46 (real)
 
-    private var nip46PlaceholderCard: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            HStack {
-                Label("NIP-46 Remote Signer", systemImage: "link.icloud.fill")
-                    .font(AppTheme.Typography.headline)
-                Spacer()
-                Text("Coming soon")
-                    .font(AppTheme.Typography.caption)
-                    .padding(.horizontal, Layout.chipHorizontalPadding)
-                    .padding(.vertical, Layout.chipVerticalPadding)
-                    .background(Color(.tertiarySystemBackground), in: Capsule())
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("Coming soon")
-            }
-            Text("Connect with nsecBunker, Amber, or any NIP-46 compatible signer. Sign in with nsec for now.")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var nip46Card: some View {
+        Nip46ConnectCard(
+            bunkerInput: $bunkerInput,
+            isConnectingRemote: $isConnectingRemote,
+            connect: { await connectRemoteSigner() },
+            disconnect: { await identity.disconnectRemoteSigner() }
+        )
+        .environment(identity)
+    }
+
+    private func connectRemoteSigner() async {
+        let trimmed = bunkerInput.trimmed
+        guard !trimmed.isEmpty else { return }
+        isConnectingRemote = true
+        await identity.connectRemoteSigner(uri: trimmed)
+        isConnectingRemote = false
+        if identity.isRemoteSigner {
+            bunkerInput = ""
+            Haptics.success()
+        } else {
+            Haptics.error()
         }
-        .padding(AppTheme.Spacing.md)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
     }
 
     // MARK: - Sign out
