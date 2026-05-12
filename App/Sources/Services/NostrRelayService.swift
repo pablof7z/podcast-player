@@ -139,10 +139,20 @@ final class NostrRelayService {
     }
 
     private func sendSubscription(agentPubkey: String) {
-        let filter: [String: Any] = [
+        // NIP-10 parity with win-the-day: carry `since:` from the
+        // persisted cursor so a reconnecting agent doesn't have to chew
+        // through every kind:1 the relay has ever seen tagged to it.
+        // The dedup set (`nostrRespondedEventIDs`) protects against the
+        // tiny overlap when an event with `created_at == cursor` is
+        // re-delivered. Omit the field on cold first launch so the
+        // initial inbox sync still pulls historic mentions.
+        var filter: [String: Any] = [
             "kinds": [NostrProtocol.kindTextNote],
             "#p": [agentPubkey],
         ]
+        if let since = store.state.nostrSinceCursor {
+            filter["since"] = since
+        }
         let message: [Any] = [NostrProtocol.requestCommand, NostrProtocol.subscriptionID, filter]
         do {
             let data = try JSONSerialization.data(withJSONObject: message)
