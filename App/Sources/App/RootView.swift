@@ -63,22 +63,39 @@ struct RootView: View {
     /// Shared namespace for matched-geometry between mini-bar and full player.
     @Namespace private var playerNamespace
 
+    /// Hashable identity for the (optional) relay service so `.task(id:)`
+    /// can re-fire when the parent's `@State` transitions from nil to a
+    /// real service instance.
+    private var relayServiceIdentity: ObjectIdentifier? {
+        relayService.map(ObjectIdentifier.init)
+    }
+
     var body: some View {
         tabBar
             .environment(playbackState)
-            .onAppear {
-                // Late-bind the Nostr agent's podcast tool deps. The
-                // responder is constructed in AppMain.task before this
-                // view's PlaybackState exists; here we inject a closure
-                // that resolves the deps on demand each time a tool
-                // call needs them (so a future PlaybackState swap is
-                // picked up automatically).
-                if let relayService {
-                    relayService.agentResponder.podcastDepsProvider = { [store, playbackState] in
-                        LivePodcastAgentToolDeps.make(store: store, playback: playbackState)
-                    }
-                    relayService.agentResponder.askCoordinator = askCoordinator
+            .task(id: relayServiceIdentity) {
+                // Late-bind the Nostr agent's podcast tool deps. Driven
+                // by `.task(id:)` rather than `.onAppear` because the
+                // relay service is created in `AppMain.task` and the
+                // race is real: on cold launch RootView often appears
+                // before the parent task fires, so `relayService` is
+                // still nil at first appearance. A plain `if let
+                // relayService` inside `onAppear` would silently skip,
+                // peer tool calls would then hit the "Podcast tools
+                // are not wired up" error envelope, and nothing would
+                // ever re-run to fix it.
+                //
+                // `.task(id:)` re-fires whenever the keyed identity
+                // changes — including the nil→non-nil transition we
+                // care about — so the provider lands before any peer
+                // inbound can reach a tool dispatch.
+                guard let relayService else { return }
+                relayService.agentResponder.podcastDepsProvider = { [store, playbackState] in
+                    LivePodcastAgentToolDeps.make(store: store, playback: playbackState)
                 }
+                relayService.agentResponder.askCoordinator = askCoordinator
+            }
+            .onAppear {
                 playbackState.onPersistPosition = { [store] id, position in
                     store.setEpisodePlaybackPosition(id, position: position)
                 }
