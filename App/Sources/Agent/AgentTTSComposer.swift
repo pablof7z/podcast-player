@@ -153,9 +153,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
             case .snippet(let episodeID, let start, let end, let label):
                 guard let enclosureURL = await resolveEpisodeAudio(episodeID: episodeID) else {
-                    Self.logger.warning("AgentTTSComposer: snippet episode \(episodeID, privacy: .public) not found, skipping")
-                    durations.append(0)
-                    continue
+                    throw AgentTTSError.snippetNotDownloaded(episodeID: episodeID)
                 }
                 let duration = end - start
                 tracks.append(BriefingTrack(
@@ -303,13 +301,9 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         guard let uuid = UUID(uuidString: episodeID) else { return nil }
         return await MainActor.run {
             guard let episode = store?.episode(id: uuid) else { return nil }
-            if case .downloaded = episode.downloadState {
-                let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
-                if FileManager.default.fileExists(atPath: localURL.path) {
-                    return localURL
-                }
-            }
-            return episode.enclosureURL
+            guard case .downloaded = episode.downloadState else { return nil }
+            let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
+            return FileManager.default.fileExists(atPath: localURL.path) ? localURL : nil
         }
     }
 
@@ -345,6 +339,7 @@ enum AgentTTSError: LocalizedError {
     case notConfigured
     case emptyAudioData(index: Int)
     case storeUnavailable
+    case snippetNotDownloaded(episodeID: String)
 
     var errorDescription: String? {
         switch self {
@@ -356,6 +351,8 @@ enum AgentTTSError: LocalizedError {
             return "TTS synthesis returned no audio for turn \(index)."
         case .storeUnavailable:
             return "AppStateStore is unavailable; cannot publish episode."
+        case .snippetNotDownloaded(let episodeID):
+            return "Snippet episode \(episodeID) is not downloaded. Download the episode first, then retry generate_tts_episode."
         }
     }
 }
