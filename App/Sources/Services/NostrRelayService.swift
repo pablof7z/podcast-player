@@ -246,12 +246,14 @@ final class NostrRelayService {
 
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
             NostrRelayService.logger.notice("handle: routing inbound from allowed pubkey to agent responder")
-            // Profile fetch is kicked off here (rather than inside the
-            // responder) so the kind:0 cache is warm by the time the
-            // responder's bounded 2s race for the same pubkey starts.
-            // The responder's race is still kept as defence-in-depth
-            // for the case where this best-effort fetch loses to its
-            // own internal timeout.
+            // Kick off a kind:0 fetch in parallel with the responder so
+            // the conversations UI and approval views see the peer's
+            // display name + avatar even when this inbound is a follow-
+            // up turn the responder doesn't need to fetch profile for
+            // again. The responder runs its own bounded 2s profile
+            // race for cold-cache cases; the two fetches are independent
+            // (different in-flight guards) and slightly wasteful in the
+            // worst case — preferable to leaving the UI cache cold.
             ensureProfileFetch(for: senderPubkey)
             agentResponder.handle(inbound: NostrAgentResponder.Inbound(
                 eventID: eventID,

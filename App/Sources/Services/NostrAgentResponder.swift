@@ -241,12 +241,20 @@ final class NostrAgentResponder {
         }
 
         // Build NIP-10 reply tags. Root resolution: when we couldn't
-        // fetch the actual root event, fall back to the inbound — this
-        // happens for fresh threads where the inbound IS the root.
-        let rootEvent = priorEvents.first { $0.id == rootID }
+        // fetch the actual root event (the inbound IS the root, the
+        // common case for the first reply in a fresh thread), fall back
+        // to the inbound's tag set so any `a`-tags on the root are
+        // still copied through. Matches win-the-day's
+        // `priorEvents.first { $0.id == rootID } ?? event`.
+        let rootTags: [[String]]
+        if let root = priorEvents.first(where: { $0.id == rootID }) {
+            rootTags = root.tags
+        } else {
+            rootTags = inbound.tags
+        }
         let replyTags = buildReplyTags(
             rootID: rootID,
-            rootEvent: rootEvent,
+            rootTags: rootTags,
             inbound: inbound
         )
 
@@ -331,18 +339,16 @@ final class NostrAgentResponder {
 
     private func buildReplyTags(
         rootID: String,
-        rootEvent: NostrThreadFetcher.Event?,
+        rootTags: [[String]],
         inbound: Inbound
     ) -> [[String]] {
         // Copy any `a` tags from the root event so addressable-event
-        // anchored threads keep their channel identifier. The inbound's
-        // own a-tags are NOT copied — they may not exist on a thread the
-        // root never had.
+        // anchored threads keep their channel identifier. Callers pass
+        // either the fetched root's tags or the inbound's tags when the
+        // inbound IS the root.
         var tags: [[String]] = []
-        if let root = rootEvent {
-            for tag in root.tags where tag.first == "a" {
-                tags.append(tag)
-            }
+        for tag in rootTags where tag.first == "a" {
+            tags.append(tag)
         }
         tags.append(["e", rootID, "", "root"])
         if inbound.eventID != rootID {
