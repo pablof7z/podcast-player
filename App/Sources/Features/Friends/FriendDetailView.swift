@@ -56,6 +56,8 @@ struct FriendDetailView: View {
                 NotesSectionHeader(title: "Notes", count: friendNotes.count, onAdd: { showAddNote = true })
             }
 
+            FriendConversationTranscriptView(friendPubkey: currentFriend.identifier)
+
             Section {
                 Button("Rename") {
                     newName = currentFriend.displayName
