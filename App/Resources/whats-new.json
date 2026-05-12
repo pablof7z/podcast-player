@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "nostr-relay-nip42-auth",
+      "shipped_at": "2026-05-12T23:55:00Z",
+      "lines": [
+        "Your agent's Nostr inbox now speaks NIP-42: when a relay challenges the connection with AUTH, the app signs a kind:22242 event with your key and re-issues the subscription once accepted — so auth-gated relays will actually deliver events to you instead of silently dropping them."
+      ]
+    },
+    {
       "id": "efee9b5",
       "shipped_at": "2026-05-12T23:45:00Z",
       "lines": [

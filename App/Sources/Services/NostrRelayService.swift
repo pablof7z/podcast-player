@@ -16,13 +16,22 @@ final class NostrRelayService {
     /// session so a burst of inbound events from the same peer doesn't
     /// spam the relay with kind:0 requests. Cleared on `stop()`.
     private var profileFetchInflight: Set<String> = []
+    /// NIP-42: ids of kind:22242 AUTH events we sent and are waiting on. When
+    /// the relay returns an accepted OK for one of these, we re-issue the REQ
+    /// since auth-gated relays drop pre-auth subscriptions.
+    private var pendingAuthEventIDs: Set<String> = []
+    /// Agent pubkey of the live connection; kept so we can re-send the REQ
+    /// after NIP-42 AUTH is accepted without plumbing it back through.
+    private var currentAgentPubkey: String?
 
     // MARK: - Protocol constants
 
     private enum NostrProtocol {
         static let requestCommand = "REQ"
+        static let authMessage = "AUTH"
         static let eventMessage = "EVENT"
         static let kindTextNote = 1
+        static let kindAuth = 22242
         static let minEventArrayCount = 3
         static let eventIndex = 2
         static let subscriptionID = "agent-inbox"
@@ -67,6 +76,8 @@ final class NostrRelayService {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
         connectedRelayURL = nil
+        currentAgentPubkey = nil
+        pendingAuthEventIDs.removeAll()
         profileFetchInflight.removeAll()
     }
 
@@ -78,6 +89,7 @@ final class NostrRelayService {
             return
         }
         connectedRelayURL = urlString
+        currentAgentPubkey = agentPubkey
         NostrRelayService.logger.info("NostrRelayService: connecting to \(urlString, privacy: .public)")
         let task = URLSession.shared.webSocketTask(with: url)
         webSocketTask = task
@@ -192,9 +204,13 @@ final class NostrRelayService {
             return
         case "OK":
             NostrRelayService.logger.notice("relay OK: \(text, privacy: .public)")
+            handleOK(array: array)
             return
         case "EOSE":
             NostrRelayService.logger.notice("relay EOSE: \(text, privacy: .public)")
+            return
+        case NostrProtocol.authMessage:
+            handleAuthChallenge(array: array)
             return
         case NostrProtocol.eventMessage:
             break
@@ -278,6 +294,84 @@ final class NostrRelayService {
             rawEventJSON: rawJSON
         )
         store.recordNostrTurn(rootEventID: rootID, turn: turn)
+    }
+
+    // MARK: - NIP-42 AUTH
+
+    /// Handles `["AUTH", <challenge>]` from the relay: signs a kind:22242
+    /// event tagged with the relay URL and challenge, sends it as
+    /// `["AUTH", <event>]`, and tracks the event id so an accepted OK can
+    /// re-issue the REQ (auth-gated relays silently drop pre-auth subs).
+    private func handleAuthChallenge(array: [Any]) {
+        guard array.count >= 2, let challenge = array[1] as? String else {
+            NostrRelayService.logger.notice("AUTH: dropped malformed challenge frame")
+            return
+        }
+        guard let relayURL = connectedRelayURL else {
+            NostrRelayService.logger.notice("AUTH: no relay URL on record; skipping")
+            return
+        }
+        NostrRelayService.logger.notice("AUTH: challenge=\(challenge.prefix(12), privacy: .public)")
+        Task { [weak self] in
+            // Local-only signer for now; mirrors the convention already used by
+            // `publishAgentProfileIfPossible`. A remote (NIP-46) signer would
+            // require plumbing through `UserIdentityStore.signer`.
+            guard let privKey = try? NostrCredentialStore.privateKey() else {
+                NostrRelayService.logger.notice("AUTH: no local private key; cannot respond")
+                return
+            }
+            guard let pair = try? NostrKeyPair(privateKeyHex: privKey) else { return }
+            let draft = NostrEventDraft(
+                kind: NostrProtocol.kindAuth,
+                content: "",
+                tags: [["relay", relayURL], ["challenge", challenge]]
+            )
+            guard let event = try? await LocalKeySigner(keyPair: pair).sign(draft) else { return }
+            self?.sendAuthEvent(event)
+        }
+    }
+
+    /// Handles relay `OK` frames so we can re-issue the REQ after a kind:22242
+    /// AUTH event we sent gets accepted.
+    private func handleOK(array: [Any]) {
+        guard array.count >= 3,
+              let eventID = array[1] as? String,
+              let accepted = array[2] as? Bool,
+              pendingAuthEventIDs.remove(eventID) != nil else { return }
+        guard accepted else {
+            NostrRelayService.logger.error("AUTH rejected by relay for event \(eventID.prefix(12), privacy: .public)")
+            return
+        }
+        guard let pubkey = currentAgentPubkey else { return }
+        NostrRelayService.logger.notice("AUTH accepted; re-issuing REQ for \(pubkey.prefix(12), privacy: .public)")
+        sendSubscription(agentPubkey: pubkey)
+    }
+
+    private func sendAuthEvent(_ event: SignedNostrEvent) {
+        let eventDict: [String: Any] = [
+            "id": event.id,
+            "pubkey": event.pubkey,
+            "created_at": event.created_at,
+            "kind": event.kind,
+            "tags": event.tags,
+            "content": event.content,
+            "sig": event.sig,
+        ]
+        let frame: [Any] = [NostrProtocol.authMessage, eventDict]
+        do {
+            let data = try JSONSerialization.data(withJSONObject: frame)
+            guard let text = String(data: data, encoding: .utf8) else { return }
+            pendingAuthEventIDs.insert(event.id)
+            webSocketTask?.send(.string(text)) { error in
+                if let error {
+                    NostrRelayService.logger.error("AUTH send failed: \(error, privacy: .public)")
+                } else {
+                    NostrRelayService.logger.notice("AUTH sent (event \(event.id.prefix(12), privacy: .public))")
+                }
+            }
+        } catch {
+            NostrRelayService.logger.error("AUTH serialization failed: \(error, privacy: .public)")
+        }
     }
 
     // MARK: - Profile fetching
