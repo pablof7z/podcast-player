@@ -8,6 +8,12 @@ import UIKit
 final class NostrRelayService {
     nonisolated private static let logger = Logger.app("NostrRelayService")
     private let store: AppStateStore
+    /// Owner-consultation surface from AppMain. Injected at init so the
+    /// responder has it before `RootView.onAppear` fires — closes the
+    /// cold-launch race where an inbound landing in the first few
+    /// seconds would otherwise see `askCoordinator == nil` and have the
+    /// `ask` tool short-circuit to an error envelope.
+    private weak var askCoordinator: AgentAskCoordinator?
     private var webSocketTask: URLSessionWebSocketTask?
     private var receiveLoop: Task<Void, Never>?
     private var connectedRelayURL: String?
@@ -15,8 +21,13 @@ final class NostrRelayService {
     /// Owns the inbound → LLM → outbound pipeline for allowed pubkeys.
     /// Kept lazy so apps with Nostr disabled never instantiate it.
     /// Exposed (read-only) so `RootView` can late-bind the podcast tool
-    /// deps + ask coordinator once the UI mounts.
-    lazy var agentResponder = NostrAgentResponder(store: store)
+    /// deps once the UI mounts. `askCoordinator` is plumbed here at
+    /// init time and applied below.
+    lazy var agentResponder: NostrAgentResponder = {
+        let responder = NostrAgentResponder(store: store)
+        responder.askCoordinator = askCoordinator
+        return responder
+    }()
     /// Tracks pubkeys we've already queued a profile fetch for during this
     /// session so a burst of inbound events from the same peer doesn't
     /// spam the relay with kind:0 requests. Cleared on `stop()`.
@@ -44,8 +55,12 @@ final class NostrRelayService {
     }
 
     /// Creates a new service backed by the given state store.
-    init(store: AppStateStore) {
+    /// `askCoordinator` is wired through to the lazy `agentResponder` on
+    /// first access so peer-initiated `ask` tool calls can pop the
+    /// owner-consent sheet from cold-launch onward.
+    init(store: AppStateStore, askCoordinator: AgentAskCoordinator? = nil) {
         self.store = store
+        self.askCoordinator = askCoordinator
     }
 
     // MARK: - Lifecycle

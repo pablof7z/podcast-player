@@ -41,15 +41,14 @@ struct PodcastrApp: App {
                 .environment(askCoordinator)
                 .task { userIdentity.start() }
                 .task {
-                    let service = NostrRelayService(store: store)
+                    let service = NostrRelayService(store: store, askCoordinator: askCoordinator)
                     relayService = service
                     service.start()
                 }
                 .task {
-                    // Migrate any legacy ID-based marker and seed a fresh
-                    // install silently so the first launch doesn't dump
-                    // the entire changelog as "new."
-                    WhatsNewService.migrateAndSeedIfNeeded()
+                    // Seed a fresh install silently so the first launch
+                    // doesn't dump the entire changelog as "new."
+                    WhatsNewService.seedIfNeeded()
                     let unseen = WhatsNewService.unseenEntries(
                         lastSeenAt: WhatsNewService.lastSeenAt
                     )
