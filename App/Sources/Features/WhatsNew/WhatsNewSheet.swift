@@ -30,6 +30,14 @@ struct WhatsNewSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .onDisappear {
+            // Persist the marker on any dismissal path (swipe-down or "Got it"
+            // tap). "Got it" writes the same value before calling dismiss(), so
+            // this is idempotent in that case.
+            if let newest = entries.first {
+                lastSeenAtString = Self.iso8601.string(from: newest.shippedAt)
+            }
+        }
     }
 
     // MARK: - Content

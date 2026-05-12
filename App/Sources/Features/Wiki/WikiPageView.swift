@@ -2,11 +2,10 @@ import SwiftUI
 
 // MARK: - Wiki page view
 
-/// Single-page renderer with the editorial paper feel from UX-04 §4.
+/// Single-page renderer with an editorial layout.
 ///
-/// The page itself is **paper, not glass** — solid warm canvas, hairline
-/// dividers, single column at ~62 ch on phones. Glass is reserved for
-/// floating elements (the citation peek lives in `CitationPeekView`).
+/// Features hairline dividers, single column at ~62 ch on phones.
+/// Uses the standard app theme for visual consistency.
 ///
 /// Toolbar actions: regenerate (re-runs `WikiGenerator` with the same
 /// topic + scope and atomically swaps the on-disk page) and delete
@@ -57,7 +56,7 @@ struct WikiPageView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.hidden)
-        .background(paperBackground)
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(page.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
@@ -291,15 +290,6 @@ struct WikiPageView: View {
     private var metadataLine: String {
         let count = page.allClaims.flatMap(\.citations).count
         return "\(page.kind.displayName) \u{00B7} \(count) citations \u{00B7} confidence \(Int(page.confidence * 100))%"
-    }
-
-    private var paperBackground: some View {
-        Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.055, green: 0.059, blue: 0.071, alpha: 1)
-                : UIColor(red: 0.965, green: 0.949, blue: 0.914, alpha: 1)
-        })
-        .ignoresSafeArea()
     }
 }
 

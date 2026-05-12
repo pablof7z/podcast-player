@@ -2,6 +2,27 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "wiki-standard-theme",
+      "shipped_at": "2026-05-12T18:00:00Z",
+      "lines": [
+        "The Wiki tab now uses the same background and visual style as the rest of the app."
+      ]
+    },
+    {
+      "id": "whats-new-swipe-fix",
+      "shipped_at": "2026-05-12T17:00:00Z",
+      "lines": [
+        "What's New now remembers what you've already read even if you swipe the sheet away instead of tapping Got it."
+      ]
+    },
+    {
+      "id": "agent-persistent-session",
+      "shipped_at": "2026-05-12T16:00:00Z",
+      "lines": [
+        "Closing the agent chat no longer stops the agent mid-task — it keeps working in the background. A red dot on the sparkles button appears when the agent has replied while the sheet was closed."
+      ]
+    },
+    {
       "id": "external-episode-tracking",
       "shipped_at": "2026-05-12T14:00:00Z",
       "lines": [

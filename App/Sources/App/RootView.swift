@@ -31,6 +31,12 @@ struct RootView: View {
     @State private var showFeedback = false
     @State private var showSettings = false
     @State private var showAgentChat = false
+    /// Persistent agent session. Kept at this level so in-flight LLM tasks
+    /// survive sheet dismissal. Nil until the user first opens the chat.
+    @State private var agentSession: AgentChatSession?
+    /// Message count when the agent chat sheet was last visible. Used to
+    /// detect new agent replies while the sheet is closed.
+    @State private var agentUnseenMessageCount: Int = 0
     /// Drives the Voice surface presentation. Toggled by the
     /// `voiceModeRequested` notification fired by `StartVoiceModeIntent`
     /// (Action Button, Siri, Spotlight, AirPods squeeze).
@@ -175,18 +181,26 @@ struct RootView: View {
                 NavigationStack { SettingsView() }
             }
             .sheet(isPresented: $showAgentChat) {
-                NavigationStack {
-                    AgentChatView()
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button("Done") {
-                                    Haptics.selection()
-                                    showAgentChat = false
+                if let session = agentSession {
+                    NavigationStack {
+                        AgentChatView(session: session)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Done") {
+                                        Haptics.selection()
+                                        showAgentChat = false
+                                    }
                                 }
                             }
-                        }
+                    }
+                    .environment(playbackState)
                 }
-                .environment(playbackState)
+            }
+            .onChange(of: showAgentChat) { _, _ in
+                // Snapshot message count on every open/close so that:
+                // • opening the chat clears the badge (sheet is now visible)
+                // • closing records the baseline so new replies show the badge
+                agentUnseenMessageCount = agentSession?.messages.count ?? 0
             }
             .sheet(item: Binding(
                 get: { spotlightSheet.map(IdentifiedSpotlightLink.init) },
@@ -220,7 +234,7 @@ struct RootView: View {
             .fullScreenCover(isPresented: $showVoiceMode) {
                 VoiceView(onSwitchToText: {
                     showVoiceMode = false
-                    showAgentChat = true
+                    openAgentChat()
                 })
             }
             .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
@@ -232,7 +246,7 @@ struct RootView: View {
             // open and prefills the composer.
             .onReceive(NotificationCenter.default.publisher(for: .askAgentRequested)) { _ in
                 showFullPlayer = false
-                showAgentChat = true
+                openAgentChat()
             }
             .onReceive(NotificationCenter.default.publisher(for: .openPlayerRequested)) { _ in
                 showFullPlayer = true
@@ -310,6 +324,20 @@ struct RootView: View {
         }
     }
 
+    /// True when the agent has sent new messages since the sheet was last open.
+    private var hasUnreadAgentMessages: Bool {
+        guard !showAgentChat, let session = agentSession else { return false }
+        return session.messages.count > agentUnseenMessageCount
+    }
+
+    /// Ensures the persistent agent session exists, then presents the chat sheet.
+    private func openAgentChat() {
+        if agentSession == nil {
+            agentSession = AgentChatSession(store: store, playback: playbackState)
+        }
+        showAgentChat = true
+    }
+
     /// Top-right toolbar shared across tabs:
     ///   • Sparkles — presents the agent chat sheet.
     ///   • Gear — presents the Settings sheet.
@@ -318,13 +346,23 @@ struct RootView: View {
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 Haptics.selection()
-                showAgentChat = true
+                openAgentChat()
             } label: {
                 Image(systemName: "sparkles")
+                    .overlay(alignment: .topTrailing) {
+                        if hasUnreadAgentMessages {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 7, height: 7)
+                                .offset(x: 4, y: -4)
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(AppTheme.Animation.springFast, value: hasUnreadAgentMessages)
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
-            .accessibilityLabel("Open Agent")
+            .accessibilityLabel(hasUnreadAgentMessages ? "Open Agent — new reply" : "Open Agent")
             .keyboardShortcut("a", modifiers: [.command, .shift])
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -349,7 +387,7 @@ struct RootView: View {
         case .feedback:
             showFeedback = true
         case .agent:
-            showAgentChat = true
+            openAgentChat()
         case .addFriend(let npub, let name):
             showSettings = true
             Task { @MainActor in

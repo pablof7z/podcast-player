@@ -37,9 +37,12 @@ struct AgentChatView: View {
     // MARK: - State
 
     @Environment(AppStateStore.self) private var store
-    @Environment(PlaybackState.self) private var playback
 
-    @State private var session: AgentChatSession?
+    /// The session is owned by `RootView` (or another persistent owner) and
+    /// passed in. This keeps the session — and any in-flight LLM task — alive
+    /// across sheet dismissals.
+    let session: AgentChatSession
+
     @State private var draft: String = ""
     @State private var presentedBatch: UUID?
     @State private var showSettingsHint = false
@@ -60,16 +63,19 @@ struct AgentChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
         .onAppear {
-            if session == nil { session = AgentChatSession(store: store, playback: playback) }
             let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
             let hasKey = LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
             showSettingsHint = !hasKey
-            // Long-press → ask-agent prefill. Drained once per session so a
-            // re-open without a new long-press starts blank. Focus the input
+            // Drain any pending ask-agent context that was set since the
+            // session was last opened (e.g. long-press → Ask Agent while
+            // the session was already alive but the sheet was closed).
+            session.checkAndDrainPendingContext()
+            // Long-press → ask-agent prefill. Drained once per sheet open so
+            // a re-open without new context starts blank. Focus the input
             // so the user can append a question and Send without a tap.
-            if let seeded = session?.consumeSeededDraftWithAutoSend(), !seeded.draft.isEmpty {
+            if let seeded = session.consumeSeededDraftWithAutoSend(), !seeded.draft.isEmpty {
                 if seeded.autoSend {
-                    session?.startSend(seeded.draft, source: .typedChat)
+                    session.startSend(seeded.draft, source: .typedChat)
                 } else {
                     draft = seeded.draft
                     inputFocused = true
@@ -78,8 +84,7 @@ struct AgentChatView: View {
                 inputFocused = hasKey
             }
         }
-        .onChange(of: session?.phase) { _, newPhase in
-            guard let newPhase else { return }
+        .onChange(of: session.phase) { _, newPhase in
             switch newPhase {
             case .idle:
                 if didSendInSession { Haptics.success() }
@@ -96,31 +101,29 @@ struct AgentChatView: View {
             AgentActivitySheet(batchID: batch.id)
         }
         .sheet(isPresented: $showHistory) {
-            if let session {
-                AgentChatHistoryView(
-                    history: session.history,
-                    currentID: session.currentConversationID,
-                    onSelect: { convo in
-                        Task {
-                            await session.switchToConversation(convo.id)
-                            // A fresh switch is a fresh sheet — reset transient
-                            // banners and bookkeeping so the loaded thread acts
-                            // like the chat the user picked.
-                            bannerDismissed = false
-                            didSendInSession = false
-                            draft = ""
-                        }
-                    },
-                    onNew: {
-                        Task {
-                            await session.startNewConversation()
-                            bannerDismissed = false
-                            didSendInSession = false
-                            draft = ""
-                        }
+            AgentChatHistoryView(
+                history: session.history,
+                currentID: session.currentConversationID,
+                onSelect: { convo in
+                    Task {
+                        await session.switchToConversation(convo.id)
+                        // A fresh switch is a fresh sheet — reset transient
+                        // banners and bookkeeping so the loaded thread acts
+                        // like the chat the user picked.
+                        bannerDismissed = false
+                        didSendInSession = false
+                        draft = ""
                     }
-                )
-            }
+                },
+                onNew: {
+                    Task {
+                        await session.startNewConversation()
+                        bannerDismissed = false
+                        didSendInSession = false
+                        draft = ""
+                    }
+                }
+            )
         }
     }
 
@@ -141,7 +144,7 @@ struct AgentChatView: View {
             Button {
                 Haptics.selection()
                 Task {
-                    await session?.startNewConversation()
+                    await session.startNewConversation()
                     bannerDismissed = false
                     didSendInSession = false
                     draft = ""
@@ -153,7 +156,7 @@ struct AgentChatView: View {
             .buttonBorderShape(.circle)
             .accessibilityLabel("New conversation")
         }
-        if let session, !session.messages.isEmpty {
+        if !session.messages.isEmpty {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     exportTranscript(messages: session.messages)
@@ -185,23 +188,19 @@ struct AgentChatView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let session {
-            VStack(spacing: 0) {
-                if shouldShowResumeBanner(session: session) {
-                    resumeBanner
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                if session.messages.isEmpty {
-                    emptyState
-                } else {
-                    transcript(session: session)
-                }
-                composer(session: session)
+        VStack(spacing: 0) {
+            if shouldShowResumeBanner(session: session) {
+                resumeBanner
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
-            .animation(AppTheme.Animation.spring, value: shouldShowResumeBanner(session: session))
-        } else {
-            ProgressView()
+            if session.messages.isEmpty {
+                emptyState
+            } else {
+                transcript(session: session)
+            }
+            composer(session: session)
         }
+        .animation(AppTheme.Animation.spring, value: shouldShowResumeBanner(session: session))
     }
 
     private func shouldShowResumeBanner(session: AgentChatSession) -> Bool {
@@ -339,7 +338,7 @@ struct AgentChatView: View {
     }
 
     private func sendCurrentDraft() {
-        guard let session, canSend(session: session) else { return }
+        guard canSend(session: session) else { return }
         let text = draft
         draft = ""
         didSendInSession = true

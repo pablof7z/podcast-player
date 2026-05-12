@@ -101,20 +101,27 @@ final class AgentChatSession {
             self.currentConversationID = UUID()
         }
 
-        // Drain the ask-agent context. Read-and-clear so a later sheet re-open
-        // starts blank. Priority: voice note > chapter > transcript.
+        checkAndDrainPendingContext()
+    }
+
+    /// Checks the store for pending ask-agent context (voice note, chapter,
+    /// transcript) and drains it into `seededDraft`. Safe to call multiple
+    /// times — the store fields are cleared on first drain, so later calls
+    /// are no-ops. Called from `init` and from `AgentChatView.onAppear` so
+    /// that a persistent session picks up new context on each sheet open.
+    func checkAndDrainPendingContext() {
         if let voiceNote = store.pendingVoiceNoteAgentContext {
-            self.seededDraft = voiceNote.prefilledDraft
-            self.seededDraftShouldAutoSend = true
+            seededDraft = voiceNote.prefilledDraft
+            seededDraftShouldAutoSend = true
             store.pendingVoiceNoteAgentContext = nil
             store.pendingChapterAgentContext = nil
             store.pendingTranscriptAgentContext = nil
         } else if let chapter = store.pendingChapterAgentContext {
-            self.seededDraft = chapter.prefilledDraft
+            seededDraft = chapter.prefilledDraft
             store.pendingChapterAgentContext = nil
             store.pendingTranscriptAgentContext = nil
         } else if let pending = store.pendingTranscriptAgentContext {
-            self.seededDraft = pending.prefilledDraft
+            seededDraft = pending.prefilledDraft
             store.pendingTranscriptAgentContext = nil
         }
     }

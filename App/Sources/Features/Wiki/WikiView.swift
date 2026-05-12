@@ -99,7 +99,7 @@ struct WikiView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .background(paperBackground)
+        .background(Color(.systemGroupedBackground))
     }
 
     private var loadingView: some View {
@@ -110,7 +110,7 @@ struct WikiView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(paperBackground)
+        .background(Color(.systemGroupedBackground))
     }
 
     private var emptyView: some View {
@@ -136,7 +136,7 @@ struct WikiView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(paperBackground)
+        .background(Color(.systemGroupedBackground))
     }
 
     private var noResultsView: some View {
@@ -153,7 +153,7 @@ struct WikiView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(paperBackground)
+        .background(Color(.systemGroupedBackground))
     }
 
     @ToolbarContentBuilder
@@ -174,17 +174,6 @@ struct WikiView: View {
             }
             .accessibilityLabel("Open threads")
         }
-    }
-
-    private var paperBackground: some View {
-        // UX-04 §4 — paper, not glass. Warm off-white in light, warm
-        // near-black in dark.
-        Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.055, green: 0.059, blue: 0.071, alpha: 1)
-                : UIColor(red: 0.965, green: 0.949, blue: 0.914, alpha: 1)
-        })
-        .ignoresSafeArea()
     }
 }
 

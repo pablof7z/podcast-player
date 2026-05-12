@@ -22,7 +22,7 @@ final class PlaybackQueueTests: XCTestCase {
         state.enqueue(b)
         state.enqueue(c)
 
-        XCTAssertEqual(state.queue, [a, b, c])
+        XCTAssertEqual(state.queue.map(\.episodeID), [a, b, c])
     }
 
     func testEnqueueIgnoresDuplicate() {
@@ -32,7 +32,7 @@ final class PlaybackQueueTests: XCTestCase {
         state.enqueue(a)
         state.enqueue(a)
 
-        XCTAssertEqual(state.queue, [a])
+        XCTAssertEqual(state.queue.map(\.episodeID), [a])
     }
 
     func testEnqueueIgnoresCurrentEpisode() {
@@ -55,7 +55,7 @@ final class PlaybackQueueTests: XCTestCase {
 
         state.removeFromQueue(a)
 
-        XCTAssertEqual(state.queue, [b])
+        XCTAssertEqual(state.queue.map(\.episodeID), [b])
     }
 
     func testRemoveFromQueueIsIdempotent() {
@@ -83,7 +83,7 @@ final class PlaybackQueueTests: XCTestCase {
         // index is in the post-removal array, so end-of-list is `count`.
         state.moveQueue(from: IndexSet(integer: 0), to: 3)
 
-        XCTAssertEqual(state.queue, [b, c, a])
+        XCTAssertEqual(state.queue.map(\.episodeID), [b, c, a])
     }
 
     // MARK: - clearQueue
@@ -122,7 +122,7 @@ final class PlaybackQueueTests: XCTestCase {
 
         XCTAssertTrue(played)
         XCTAssertEqual(resolverCalls, [head.id])
-        XCTAssertEqual(state.queue, [tail.id])
+        XCTAssertEqual(state.queue.map(\.episodeID), [tail.id])
         XCTAssertEqual(state.episode?.id, head.id)
     }
 
@@ -141,18 +141,18 @@ final class PlaybackQueueTests: XCTestCase {
         let state = PlaybackState()
         let stale = UUID()
         let a = UUID(), b = UUID(), c = UUID()
-        state.queue = [stale, a, b, c]
+        state.queue = [stale, a, b, c].map { .episode($0) }
 
         state.moveQueue(from: IndexSet(integer: 0), to: 3) { id in
             id == stale ? nil : makeEpisode(id: id)
         }
 
-        XCTAssertEqual(state.queue, [b, c, a])
+        XCTAssertEqual(state.queue.map(\.episodeID), [b, c, a])
     }
 
     func testPruneQueueDropsAllStaleEntries() {
         let state = PlaybackState()
-        state.queue = [UUID(), UUID(), UUID()]
+        state.queue = [UUID(), UUID(), UUID()].map { .episode($0) }
 
         let pruned = state.pruneQueue { _ in nil }
 
