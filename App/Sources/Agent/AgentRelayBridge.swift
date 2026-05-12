@@ -14,7 +14,11 @@ final class AgentRelayBridge {
     /// nil (cold launches before the UI is up, headless tests), the `ask` tool
     /// returns a typed error envelope and the peer-agent loop continues.
     private weak var askCoordinator: AgentAskCoordinator?
-    private let maxTurns = 8
+    /// Matches `AgentChatSession.maxTurns`. Multi-step tool chains (e.g. a
+    /// peer asking the agent to compile a wiki page or generate a podcast
+    /// episode) routinely use 6–12 turns; the previous 8-turn cap tripped
+    /// mid-chain. 20 is the same ceiling the in-app chat uses.
+    private let maxTurns = 20
 
     init(
         store: AppStateStore,
@@ -26,6 +30,69 @@ final class AgentRelayBridge {
         self.askCoordinator = askCoordinator
     }
 
+    /// Variant init that takes a pre-built `PodcastAgentToolDeps` directly.
+    /// Used by `NostrAgentResponder`, which gets its `PlaybackState` via a
+    /// late-bound closure provider (RootView wires it post-construction).
+    init(
+        store: AppStateStore,
+        podcastDeps: PodcastAgentToolDeps?,
+        askCoordinator: AgentAskCoordinator?
+    ) {
+        self.store = store
+        self.podcastDeps = podcastDeps
+        self.askCoordinator = askCoordinator
+    }
+
+    /// Thread-aware entrypoint used by the Nostr responder. Accepts a
+    /// pre-built conversation history (with the `[from <label> (npub1…)]:`
+    /// identity prefixes the responder already applies) and the peer's
+    /// pubkey so we can compose a peer-context preamble in front of the
+    /// owner-voice `AgentPrompt.build` payload.
+    ///
+    /// Why two prompt sections rather than one: the owner inventory in
+    /// `AgentPrompt.build` is owner-flavoured ("Subscriptions", "In
+    /// Progress"). Without a preamble explaining that `role:user` is a
+    /// peer-not-owner, the model anchors on owner-voice and reads the
+    /// preamble as override-mid-stream. The peer-identity block has to
+    /// come first.
+    ///
+    /// Tools fire on the owner's behalf at the peer's request — this is
+    /// intentional. Owner consent is granted via the `Allow` flow in
+    /// `NostrApprovalSheet`; peers that haven't been Allowed never reach
+    /// this code path.
+    func reply(
+        messages history: [[String: Any]],
+        peerPubkey: String
+    ) async -> String? {
+        guard !history.isEmpty else { return nil }
+        let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
+        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+            logger.warning("No \(reference.provider.displayName, privacy: .public) key for Nostr peer reply")
+            return nil
+        }
+        var isUpgraded = false
+        var enabledSkills: Set<String> = []
+
+        let preamble = NostrPeerAgentPrompt.peerContextPreamble(
+            for: store,
+            peerPubkey: peerPubkey
+        )
+        let ownerPrompt = AgentPrompt.build(for: store.state)
+        let systemPrompt = preamble + "\n\n" + ownerPrompt
+
+        var messages: [[String: Any]] = [["role": "system", "content": systemPrompt]]
+        messages.append(contentsOf: history)
+
+        return await runTurnLoop(
+            messages: &messages,
+            isUpgraded: &isUpgraded,
+            enabledSkills: &enabledSkills,
+            source: .nostrInbound,
+            initialInput: (history.last?["content"] as? String) ?? "",
+            systemPrompt: systemPrompt
+        )
+    }
+
     func reply(to content: String, from senderPubkey: String) async -> String? {
         let trimmed = content.trimmed
         guard !trimmed.isEmpty else { return nil }
@@ -35,12 +102,7 @@ final class AgentRelayBridge {
             logger.warning("No \(reference.provider.displayName, privacy: .public) key available for Nostr agent reply")
             return nil
         }
-        // Local upgrade flag mirrors AgentChatSession.isUpgraded — flipped when
-        // the agent calls `upgrade_thinking`. Scoped to a single inbound reply
-        // (each Nostr message gets a fresh bridge run).
         var isUpgraded = false
-        // Per-reply skill state, same scoping as `isUpgraded` — each inbound
-        // Nostr message starts with no skills enabled.
         var enabledSkills: Set<String> = []
 
         let senderName = displayName(for: senderPubkey)
@@ -50,11 +112,34 @@ final class AgentRelayBridge {
             ["role": "system", "content": systemPrompt],
             ["role": "user", "content": userText],
         ]
+        return await runTurnLoop(
+            messages: &messages,
+            isUpgraded: &isUpgraded,
+            enabledSkills: &enabledSkills,
+            source: .nostrInbound,
+            initialInput: userText,
+            systemPrompt: systemPrompt
+        )
+    }
+
+    /// Shared per-call turn loop. Both `reply(to:from:)` (single-message
+    /// legacy path) and `reply(messages:peerPubkey:)` (thread-aware path
+    /// used by `NostrAgentResponder`) feed into this loop. Mutates the
+    /// passed `messages`/`isUpgraded`/`enabledSkills` so a caller could
+    /// peek at them after the loop if it ever needed to.
+    private func runTurnLoop(
+        messages: inout [[String: Any]],
+        isUpgraded: inout Bool,
+        enabledSkills: inout Set<String>,
+        source: AgentRunSource,
+        initialInput: String,
+        systemPrompt: String
+    ) async -> String? {
         let batchID = UUID()
         let collector = AgentRunCollector(
             id: batchID,
-            source: .nostrInbound,
-            initialInput: userText,
+            source: source,
+            initialInput: initialInput,
             systemPrompt: systemPrompt
         )
         var turnNumber = 0

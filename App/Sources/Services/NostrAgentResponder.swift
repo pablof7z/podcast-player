@@ -70,6 +70,24 @@ final class NostrAgentResponder {
 
     private weak var store: AppStateStore?
     private let profileFetcher: NostrProfileFetcher
+    /// Late-bound supplier for `PodcastAgentToolDeps`. Wired by
+    /// `RootView.onAppear` once the `PlaybackState` is available so the
+    /// agent's podcast tools (queue, play_external_episode, generate
+    /// audio, …) can fire over Nostr. Nil before the UI mounts; tools
+    /// that need it will return a typed error envelope and the loop
+    /// continues without crashing.
+    var podcastDepsProvider: (@MainActor () -> PodcastAgentToolDeps?)?
+    /// Owner-consultation surface. The `ask` tool routes prompts here so
+    /// the owner can authorize peer-initiated actions. Weak: the
+    /// coordinator lives at AppMain scope.
+    weak var askCoordinator: AgentAskCoordinator?
+    /// Conversation roots currently being replied to. Acts as a
+    /// per-thread mutex — a second inbound on the same root that lands
+    /// while the first is still being processed is dropped (relay
+    /// redelivery + persistent dedup means we won't lose a real new
+    /// event, but it prevents two parallel tool-dispatch loops mutating
+    /// the store concurrently).
+    private var inFlightRootIDs: Set<String> = []
 
     init(store: AppStateStore) {
         self.store = store
@@ -155,6 +173,19 @@ final class NostrAgentResponder {
             }
         }
 
+        // Per-root in-flight serialization. Two inbounds on the same
+        // thread arriving back-to-back would otherwise spawn two
+        // parallel tool-dispatch loops, both mutating `store.state` and
+        // `agentActivity`. Drop the duplicate; if it's a genuinely new
+        // event, persistent dedup (`nostrRespondedEventIDs`) will let
+        // it through on relay redelivery once the first loop finishes.
+        guard !inFlightRootIDs.contains(rootID) else {
+            Self.logger.notice("process: root \(rootID.prefix(12), privacy: .public) already in flight; dropping inbound")
+            return
+        }
+        inFlightRootIDs.insert(rootID)
+        defer { inFlightRootIDs.remove(rootID) }
+
         // Resolve relay URL once. If it disappeared between the inbound
         // landing and us getting here, we have nothing to publish to —
         // record the incoming turn and bail.
@@ -183,10 +214,6 @@ final class NostrAgentResponder {
             priorEvents: priorEvents,
             store: store
         )
-        let systemPrompt = NostrPeerAgentPrompt.systemPrompt(
-            for: store,
-            peerPubkey: inbound.pubkey
-        )
 
         // Local-only signer for now; mirrors the convention used by
         // `publishAgentProfileIfPossible` in NostrRelayService. A
@@ -208,35 +235,27 @@ final class NostrAgentResponder {
             return
         }
 
-        // Build the full chat-completions message array: system prompt
-        // up front, followed by the conversation history.
-        var fullMessages: [[String: Any]] = [["role": "system", "content": systemPrompt]]
-        fullMessages.append(contentsOf: messages)
-
-        let model = store.state.settings.agentInitialModel
-        let replyText: String
-        do {
-            let result = try await AgentLLMClient.streamCompletion(
-                messages: fullMessages,
-                tools: [],
-                model: model,
-                feature: CostFeature.agentNostr,
-                onPartialContent: { _ in /* one-shot — no UI to feed */ }
-            )
-            replyText = (result.assistantMessage["content"] as? String ?? "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        } catch {
-            Self.logger.error("process: LLM call failed — \(error, privacy: .public)")
-            // Don't mark responded — a transient OpenRouter blip should
-            // be re-tryable on the next relay redelivery.
-            recordTurn(inbound: inbound, rootID: rootID)
-            return
-        }
+        // Run the full agent loop — same tools, same upgrade_thinking
+        // escalation, same skill activation as the in-app chat. Tools
+        // fire on the owner's behalf at the peer's request; owner
+        // consent was granted earlier via the Allow flow.
+        let bridge = AgentRelayBridge(
+            store: store,
+            podcastDeps: podcastDepsProvider?(),
+            askCoordinator: askCoordinator
+        )
+        let replyText = await bridge.reply(messages: messages, peerPubkey: inbound.pubkey) ?? ""
 
         guard !replyText.isEmpty else {
-            Self.logger.notice("process: model returned empty reply; recording inbound and skipping publish")
+            // The agent may have completed via tool calls only with no
+            // chatty assistant text. Record the inbound + dedup so we
+            // don't retry, but skip the publish.
+            Self.logger.notice("process: model returned no chat reply (tool-only run?); skipping publish")
             recordTurn(inbound: inbound, rootID: rootID)
             store.state.nostrRespondedEventIDs.insert(inbound.eventID)
+            Task { @MainActor [store] in
+                await AgentMemoryCompiler(store: store).compileIfNeeded()
+            }
             return
         }
 
@@ -291,6 +310,13 @@ final class NostrAgentResponder {
         Self.logger.notice(
             "process: replied to \(inbound.eventID.prefix(12), privacy: .public) on root \(rootID.prefix(12), privacy: .public) with event \(signed.id.prefix(12), privacy: .public)"
         )
+
+        // Fire-and-forget memory compile. No-op when no `record_memory`
+        // tool was called during this run; matches the in-app chat's
+        // post-turn behaviour.
+        Task { @MainActor [store] in
+            await AgentMemoryCompiler(store: store).compileIfNeeded()
+        }
     }
 
     // MARK: - Message + tag construction

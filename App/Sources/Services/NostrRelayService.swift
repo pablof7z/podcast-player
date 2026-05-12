@@ -14,7 +14,9 @@ final class NostrRelayService {
     private lazy var profileFetcher = NostrProfileFetcher(store: store)
     /// Owns the inbound → LLM → outbound pipeline for allowed pubkeys.
     /// Kept lazy so apps with Nostr disabled never instantiate it.
-    private lazy var agentResponder = NostrAgentResponder(store: store)
+    /// Exposed (read-only) so `RootView` can late-bind the podcast tool
+    /// deps + ask coordinator once the UI mounts.
+    lazy var agentResponder = NostrAgentResponder(store: store)
     /// Tracks pubkeys we've already queued a profile fetch for during this
     /// session so a burst of inbound events from the same peer doesn't
     /// spam the relay with kind:0 requests. Cleared on `stop()`.

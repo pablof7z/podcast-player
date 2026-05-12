@@ -35,7 +35,7 @@ struct PodcastrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(relayService: relayService)
                 .environment(store)
                 .environment(userIdentity)
                 .environment(askCoordinator)

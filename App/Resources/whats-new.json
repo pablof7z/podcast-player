@@ -37,6 +37,20 @@
       ]
     },
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-13T00:10:00Z",
+      "lines": [
+        "Removed the legacy `delegate` agent tool — the TENEX async-delegation surface has been replaced by lighter-weight peer-conversation primitives."
+      ]
+    },
+    {
+      "id": "PENDING",
+      "shipped_at": "2026-05-13T00:11:00Z",
+      "lines": [
+        "Your agent can now end a Nostr conversation cleanly with `end_conversation` and send a kind:1 note to a friend with `send_friend_message` — both are peer-only and surface inside the active conversation thread."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [

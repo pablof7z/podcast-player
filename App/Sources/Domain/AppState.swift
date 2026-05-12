@@ -44,11 +44,12 @@ struct AppState: Codable, Sendable {
     /// mid-reply still advances the cursor (dedup via
     /// `nostrRespondedEventIDs` covers the small overlap window).
     var nostrSinceCursor: Int?
-    /// Roots that have been wrapped — either we acknowledged a peer's
-    /// end signal or the per-root turn cap was hit. In-memory only:
-    /// `nostrRespondedEventIDs` is the persistent half of the gate, so
-    /// stragglers replayed across a restart are still dropped before they
-    /// ever get to the ended-root check.
+    /// Conversation roots the agent has explicitly ended (via the
+    /// `end_conversation` tool, an inbound `wtd-end` ack, or hitting the
+    /// per-root turn cap). In-memory only — `nostrRespondedEventIDs` is
+    /// the persistent half of the gate, so stragglers replayed across a
+    /// restart are still dropped before they ever get to the ended-root
+    /// check.
     var nostrEndedRootIDs: Set<String> = []
     var agentActivity: [AgentActivityEntry] = []
     /// User-authored transcript excerpts. See `Clip` and the composer in

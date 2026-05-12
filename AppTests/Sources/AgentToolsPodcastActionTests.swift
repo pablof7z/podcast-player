@@ -205,20 +205,135 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         XCTAssertNotNil(decoded["error"])
     }
 
-    func testDelegateUsesTenexContractAndStopsTurn() async throws {
+    // MARK: - end_conversation
+
+    func testEndConversationRequiresPeerContext() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.delegate,
-            args: ["recipient": "research", "prompt": "Review keto claims with citations."],
+            name: AgentTools.PodcastNames.endConversation,
+            args: ["reason": "Nothing left to say"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
-        XCTAssertEqual(decoded["delegation_event_id"] as? String, "delegation-1")
-        XCTAssertEqual(decoded["recipient"] as? String, "research")
-        XCTAssertEqual(decoded["nostr_kind"] as? Int, 1)
-        XCTAssertEqual(decoded["stop_for_turn"] as? Bool, true)
-        let lastRecipient = await deps.delegation.lastRecipient
-        XCTAssertEqual(lastRecipient, "research")
+        XCTAssertEqual(
+            decoded["error"] as? String,
+            "end_conversation requires a peer conversation context"
+        )
+        let endedRoots = await deps.endSink.endedRoots
+        XCTAssertEqual(endedRoots, [])
+    }
+
+    func testEndConversationMarksRootEndedSilently() async throws {
+        let peerContext = PeerConversationContext(
+            rootEventID: "root-event-1",
+            inboundEventID: "inbound-event-1",
+            peerPubkeyHex: "deadbeef"
+        )
+        let deps = makeDeps(peerContext: peerContext)
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.endConversation,
+            args: ["reason": "Peer signed off"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["ended"] as? Bool, true)
+        XCTAssertEqual(decoded["root_event_id"] as? String, "root-event-1")
+        XCTAssertNil(decoded["final_event_id"])
+        let endedRoots = await deps.endSink.endedRoots
+        XCTAssertEqual(endedRoots, ["root-event-1"])
+        let replies = await deps.peerPublisher.conversationReplies
+        XCTAssertTrue(replies.isEmpty, "Silent end should publish nothing")
+    }
+
+    func testEndConversationPublishesFinalMessageWithWtdEndTag() async throws {
+        let peerContext = PeerConversationContext(
+            rootEventID: "root-event-2",
+            inboundEventID: "inbound-event-2",
+            peerPubkeyHex: "cafef00d"
+        )
+        let deps = makeDeps(peerContext: peerContext)
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.endConversation,
+            args: [
+                "reason": "Wrapping up politely",
+                "final_message": "Talk soon!"
+            ],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["ended"] as? Bool, true)
+        XCTAssertEqual(decoded["final_event_id"] as? String, "peer-reply-1")
+        let replies = await deps.peerPublisher.conversationReplies
+        XCTAssertEqual(replies.count, 1)
+        XCTAssertEqual(replies.first?.body, "Talk soon!")
+        XCTAssertEqual(replies.first?.extraTags, [["wtd-end", "1"]])
+    }
+
+    // MARK: - send_friend_message
+
+    func testSendFriendMessageRequiresPeerContext() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.sendFriendMessage,
+            args: ["friend_pubkey": "abc", "message": "hi"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(
+            decoded["error"] as? String,
+            "send_friend_message requires a peer conversation context"
+        )
+        let calls = await deps.peerPublisher.friendMessages
+        XCTAssertEqual(calls.count, 0)
+    }
+
+    func testSendFriendMessageRejectsUnknownPubkey() async throws {
+        let peerContext = PeerConversationContext(
+            rootEventID: "root-x",
+            inboundEventID: "root-x",
+            peerPubkeyHex: "peer-key"
+        )
+        let deps = makeDeps(peerContext: peerContext, knownFriends: ["alice-pubkey-hex"])
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.sendFriendMessage,
+            args: [
+                "friend_pubkey": "stranger-pubkey-hex",
+                "message": "Hi there"
+            ],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(
+            decoded["error"] as? String,
+            "Pubkey 'stranger-pubkey-hex' is not in your Friends list. Add them first."
+        )
+        let calls = await deps.peerPublisher.friendMessages
+        XCTAssertEqual(calls.count, 0)
+    }
+
+    func testSendFriendMessagePublishesWithPeerContext() async throws {
+        let peerContext = PeerConversationContext(
+            rootEventID: "root-3",
+            inboundEventID: "root-3",
+            peerPubkeyHex: "peer-key"
+        )
+        let deps = makeDeps(peerContext: peerContext, knownFriends: ["friend-pubkey-hex"])
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.sendFriendMessage,
+            args: [
+                "friend_pubkey": "friend-pubkey-hex",
+                "message": "Heads up — Alice wants you in the loop."
+            ],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["event_id"] as? String, "friend-msg-1")
+        XCTAssertEqual(decoded["friend_pubkey"] as? String, "friend-pubkey-hex")
+        XCTAssertEqual(decoded["root_event_id"] as? String, "root-3")
+        let calls = await deps.peerPublisher.friendMessages
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(calls.first?.friendPubkeyHex, "friend-pubkey-hex")
+        XCTAssertEqual(calls.first?.peerContext?.rootEventID, "root-3")
     }
 
     // MARK: - Helpers
@@ -227,15 +342,19 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         let bundle: PodcastAgentToolDeps
         let playback: MockPlayback
         let library: MockLibrary
-        let delegation: MockDelegation
+        let peerPublisher: MockPeerEventPublisher
+        let endSink: MockPeerConversationEndSink
     }
 
     private func makeDeps(
-        fetcher: EpisodeFetcherProtocol = MockFetcher()
+        fetcher: EpisodeFetcherProtocol = MockFetcher(),
+        peerContext: PeerConversationContext? = nil,
+        knownFriends: [String] = []
     ) -> DepsBundle {
         let playback = MockPlayback()
         let library = MockLibrary()
-        let delegation = MockDelegation()
+        let peerPublisher = MockPeerEventPublisher()
+        let endSink = MockPeerConversationEndSink()
         return DepsBundle(
             bundle: PodcastAgentToolDeps(
                 rag: MockRAG(),
@@ -247,15 +366,19 @@ final class AgentToolsPodcastActionTests: XCTestCase {
                 library: library,
                 inventory: MockInventory(),
                 categories: MockInventory(),
-                delegation: delegation,
+                peerPublisher: peerPublisher,
+                friendDirectory: MockFriendDirectory(knownPubkeys: knownFriends),
                 perplexity: MockPerplexity(),
                 ttsPublisher: MockTTSPublisher(),
                 directory: MockDirectory(),
-                subscribe: MockSubscribe()
+                subscribe: MockSubscribe(),
+                peerContext: peerContext,
+                endConversationSink: endSink
             ),
             playback: playback,
             library: library,
-            delegation: delegation
+            peerPublisher: peerPublisher,
+            endSink: endSink
         )
     }
 

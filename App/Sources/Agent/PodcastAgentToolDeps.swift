@@ -91,7 +91,7 @@ public protocol EpisodeFetcherProtocol: Sendable {
     func episodeIDForAudioURL(_ audioURLString: String, podcastID: PodcastID) async -> EpisodeID?
 }
 
-// MARK: - Player / library / delegation
+// MARK: - Player / library / peer publishing
 
 /// Player + UI host (lane 1/2/9). The agent uses this to mutate what the user
 /// sees and hears.
@@ -162,9 +162,36 @@ public protocol PodcastLibraryProtocol: Sendable {
     ) async throws -> ClipResult
 }
 
-/// TENEX-compatible async delegation.
-public protocol PodcastDelegationProtocol: Sendable {
-    func delegate(recipient: String, prompt: String) async throws -> DelegationResult
+/// Resolves the user's trusted-friends list for the `send_friend_message`
+/// tool. Gates outbound notes so the agent cannot fire kind:1 events at
+/// arbitrary pubkeys on the user's identity.
+public protocol FriendDirectoryProtocol: Sendable {
+    /// `true` iff `pubkeyHex` matches a friend stored in the user's local
+    /// Friends list. Comparison is case-insensitive on the hex string.
+    func isKnownFriend(pubkeyHex: String) async -> Bool
+}
+
+/// Publishes peer-conversation events on the user's Nostr identity. Used by
+/// the `end_conversation` and `send_friend_message` agent tools. Implementations
+/// are responsible for signing with the user's agent key, attaching NIP-10
+/// reply tags when a peer context is present, and pushing the event to the
+/// configured relay.
+public protocol PeerEventPublisherProtocol: Sendable {
+    /// Publish a kind:1 reply inside an existing peer conversation. Attaches
+    /// NIP-10 `e`/`p` tags from `peerContext` plus any `extraTags`.
+    func publishConversationReply(
+        peerContext: PeerConversationContext,
+        body: String,
+        extraTags: [[String]]
+    ) async throws -> String
+
+    /// Publish a kind:1 note p-tagged at the friend, optionally threaded
+    /// under an existing peer-conversation root.
+    func publishFriendMessage(
+        friendPubkeyHex: String,
+        body: String,
+        peerContext: PeerConversationContext?
+    ) async throws -> String
 }
 
 // MARK: - Inventory queries
@@ -247,6 +274,11 @@ public protocol PodcastSubscribeProtocol: Sendable {
 
 /// Bundle of every protocol the podcast tool surface needs. Construct once at
 /// app startup; pass to `AgentTools.dispatchPodcast(...)` for every tool call.
+///
+/// `peerContext` is the only per-call-mutable field — the orchestrator should
+/// build a fresh `PodcastAgentToolDeps` (or use `withPeerContext(_:)`) for each
+/// Nostr peer-conversation turn so peer-only tools (`end_conversation`,
+/// `send_friend_message`) can resolve the active root + inbound event.
 public struct PodcastAgentToolDeps: Sendable {
     public let rag: PodcastAgentRAGSearchProtocol
     public let wiki: WikiStorageProtocol
@@ -257,11 +289,20 @@ public struct PodcastAgentToolDeps: Sendable {
     public let library: PodcastLibraryProtocol
     public let inventory: PodcastInventoryProtocol
     public let categories: PodcastCategoryProtocol
-    public let delegation: PodcastDelegationProtocol
+    public let peerPublisher: PeerEventPublisherProtocol
+    public let friendDirectory: FriendDirectoryProtocol
     public let perplexity: PerplexityClientProtocol
     public let ttsPublisher: TTSPublisherProtocol
     public let directory: PodcastDirectoryProtocol
     public let subscribe: PodcastSubscribeProtocol
+    /// Set by the Nostr peer-agent entrypoint per inbound turn. Nil for owner
+    /// chat / voice / other entrypoints — peer-only tools early-return a clean
+    /// tool error in that case.
+    public let peerContext: PeerConversationContext?
+    /// Hook for marking a peer-conversation root as ended (drives the
+    /// "agent has signed off" UI affordance). Implemented by the live wiring;
+    /// no-op in tests by default.
+    public let endConversationSink: PeerConversationEndSink
 
     public init(
         rag: PodcastAgentRAGSearchProtocol,
@@ -273,11 +314,14 @@ public struct PodcastAgentToolDeps: Sendable {
         library: PodcastLibraryProtocol,
         inventory: PodcastInventoryProtocol,
         categories: PodcastCategoryProtocol,
-        delegation: PodcastDelegationProtocol,
+        peerPublisher: PeerEventPublisherProtocol,
+        friendDirectory: FriendDirectoryProtocol,
         perplexity: PerplexityClientProtocol,
         ttsPublisher: TTSPublisherProtocol,
         directory: PodcastDirectoryProtocol,
-        subscribe: PodcastSubscribeProtocol
+        subscribe: PodcastSubscribeProtocol,
+        peerContext: PeerConversationContext? = nil,
+        endConversationSink: PeerConversationEndSink = NoopPeerConversationEndSink()
     ) {
         self.rag = rag
         self.wiki = wiki
@@ -288,10 +332,49 @@ public struct PodcastAgentToolDeps: Sendable {
         self.library = library
         self.inventory = inventory
         self.categories = categories
-        self.delegation = delegation
+        self.peerPublisher = peerPublisher
+        self.friendDirectory = friendDirectory
         self.perplexity = perplexity
         self.ttsPublisher = ttsPublisher
         self.directory = directory
         self.subscribe = subscribe
+        self.peerContext = peerContext
+        self.endConversationSink = endConversationSink
     }
+
+    /// Returns a copy of this bundle with the supplied peer context. Used by
+    /// the Nostr inbound entrypoint to thread per-turn context through the
+    /// dispatcher without rebuilding every adapter.
+    public func withPeerContext(_ ctx: PeerConversationContext?) -> PodcastAgentToolDeps {
+        PodcastAgentToolDeps(
+            rag: rag,
+            wiki: wiki,
+            briefing: briefing,
+            summarizer: summarizer,
+            fetcher: fetcher,
+            playback: playback,
+            library: library,
+            inventory: inventory,
+            categories: categories,
+            peerPublisher: peerPublisher,
+            friendDirectory: friendDirectory,
+            perplexity: perplexity,
+            ttsPublisher: ttsPublisher,
+            directory: directory,
+            subscribe: subscribe,
+            peerContext: ctx,
+            endConversationSink: endConversationSink
+        )
+    }
+}
+
+/// Records that a peer-conversation root has been ended by the agent.
+/// Lives on `PodcastAgentToolDeps` so the test surface can supply a no-op.
+public protocol PeerConversationEndSink: Sendable {
+    func markEnded(rootEventID: String) async
+}
+
+public struct NoopPeerConversationEndSink: PeerConversationEndSink {
+    public init() {}
+    public func markEnded(rootEventID: String) async {}
 }

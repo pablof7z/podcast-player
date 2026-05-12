@@ -2,20 +2,11 @@ import Foundation
 
 // MARK: - Podcast tool surface (lane 10)
 //
-// `dispatchPodcast` mirrors the dispatch-by-name pattern used by
-// `dispatchItems` / `dispatchSearch` in the existing template, but with two
-// deliberate differences:
-//
-//   1. It takes an explicit `deps: PodcastAgentToolDeps` parameter rather than
-//      reaching into a singleton. The orchestrator wires deps in at merge time.
-//   2. It does NOT take an `AppStateStore` or a `batchID`. The protocols in
-//      `PodcastAgentToolDeps` own all storage. Mutating tools therefore do not
-//      currently record `AgentActivityEntry` rows — the orchestrator can layer
-//      that in at wire-up time if undo is wanted (see lane-10 work report).
-//
-// Every handler returns a JSON-serialisable string built via `toolSuccess` /
-// `toolError` from the base `AgentTools` enum, so the agent loop's `role:tool`
-// message round-trip is unchanged.
+// `dispatchPodcast` takes an explicit `deps: PodcastAgentToolDeps` parameter
+// rather than reaching into a singleton. The orchestrator wires deps in at
+// merge time. Every handler returns a JSON-serialisable string built via
+// `toolSuccess` / `toolError` from the base `AgentTools` enum, so the agent
+// loop's `role:tool` message round-trip is unchanged.
 
 extension AgentTools {
 
@@ -46,7 +37,8 @@ extension AgentTools {
         static let refreshFeed          = "refresh_feed"
         static let openScreen           = "open_screen"
         static let setNowPlaying        = "set_now_playing"
-        static let delegate             = "delegate"
+        static let endConversation      = "end_conversation"
+        static let sendFriendMessage    = "send_friend_message"
         static let listSubscriptions    = "list_subscriptions"
         static let listCategories       = "list_categories"
         static let changePodcastCategory = "change_podcast_category"
@@ -80,7 +72,8 @@ extension AgentTools {
                 generateBriefing, perplexitySearch, summarizeEpisode,
                 findSimilarEpisodes, markEpisodePlayed, markEpisodeUnplayed,
                 downloadEpisode, requestTranscription, refreshFeed,
-                openScreen, setNowPlaying, delegate,
+                openScreen, setNowPlaying,
+                endConversation, sendFriendMessage,
                 listSubscriptions, listCategories, changePodcastCategory,
                 listEpisodes, listInProgress, listRecentUnplayed,
                 createClip, queueEpisodeSegments, downloadAndTranscribe,
@@ -189,8 +182,10 @@ extension AgentTools {
             return await openScreenTool(args: args, deps: deps)
         case PodcastNames.setNowPlaying:
             return await setNowPlayingTool(args: args, deps: deps)
-        case PodcastNames.delegate:
-            return await delegateTool(args: args, deps: deps)
+        case PodcastNames.endConversation:
+            return await endConversationTool(args: args, deps: deps)
+        case PodcastNames.sendFriendMessage:
+            return await sendFriendMessageTool(args: args, deps: deps)
         case PodcastNames.listSubscriptions:
             return await listSubscriptionsTool(args: args, deps: deps)
         case PodcastNames.listCategories:
@@ -226,10 +221,7 @@ extension AgentTools {
         }
     }
 
-    // Inventory tools (`list_subscriptions`, `list_episodes`,
-    // `list_in_progress`, `list_recent_unplayed`) live in
-    // `AgentTools+PodcastInventory.swift` to keep this file under the
-    // 500-line hard limit.
+    // Inventory tools live in `AgentTools+PodcastInventory.swift`.
 
     // MARK: - play_episode_at
 
@@ -500,9 +492,6 @@ extension AgentTools {
 // MARK: - String helpers
 
 extension String {
-    /// Module-internal so sibling `AgentTools+*.swift` files (Actions,
-    /// Inventory) can share the helper without redeclaring it. The
-    /// duplicate `private` copy in `+PodcastActions.swift` is harmless
-    /// today but breaks compilation if Swift later flags ambiguity.
+    /// Module-internal so sibling `AgentTools+*.swift` files share one definition.
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }

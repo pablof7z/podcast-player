@@ -188,13 +188,22 @@ extension AgentTools {
                 required: ["episode_id"]
             ),
             podcastTool(
-                name: PodcastNames.delegate,
-                description: "TENEX-compatible async delegation. Send a task with full context to another agent or team, then stop for the turn until delegated work completes.",
+                name: PodcastNames.endConversation,
+                description: "Gracefully end the current peer (Nostr) conversation. Call this INSTEAD OF replying when the latest peer message is mere acknowledgment or social closure (thanks, ok, sounds good, see you) and there is nothing substantive left to say. Calling this tool publishes NO outbound event by default — the peer's agent will simply not hear back, which is the correct behavior. Optionally pass final_message for one last courtesy line. Do not call this if the peer asked a question, made a request, or raised an ambiguity. Only valid inside a peer conversation — fails cleanly otherwise.",
                 properties: [
-                    "recipient": ["type": "string", "description": "Recipient agent slug, team name, or Nostr pubkey."],
-                    "prompt": ["type": "string", "description": "The delegated task plus all context the recipient needs."],
+                    "reason": ["type": "string", "description": "Why you are ending the conversation. Logged locally for diagnostics; never transmitted to the peer."],
+                    "final_message": ["type": "string", "description": "Optional one-line courtesy reply to publish before ending. Omit to end silently."],
                 ],
-                required: ["recipient", "prompt"]
+                required: ["reason"]
+            ),
+            podcastTool(
+                name: PodcastNames.sendFriendMessage,
+                description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this only when the user explicitly tells you to message, tell, ask, or hand off something to a named friend. The friend_pubkey MUST match a friend stored in the user's Friends list — the tool refuses unknown pubkeys. Inside a peer conversation, the note is published as a NIP-10 reply to the conversation root; outside a peer conversation, the tool is unavailable.",
+                properties: [
+                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
+                    "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise — this lands in the friend's agent without the user's voice attached."],
+                ],
+                required: ["friend_pubkey", "message"]
             ),
             podcastTool(
                 name: PodcastNames.listSubscriptions,
