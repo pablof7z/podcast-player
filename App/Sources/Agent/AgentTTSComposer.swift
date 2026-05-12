@@ -152,9 +152,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                 durations.append(duration)
 
             case .snippet(let episodeID, let start, let end, let label):
-                guard let enclosureURL = await resolveEpisodeAudio(episodeID: episodeID) else {
-                    throw AgentTTSError.snippetNotDownloaded(episodeID: episodeID)
-                }
+                let enclosureURL = try await resolveEpisodeAudio(episodeID: episodeID)
                 let duration = end - start
                 tracks.append(BriefingTrack(
                     segmentID: dummySegmentID,
@@ -297,14 +295,60 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
     // MARK: - Episode audio resolution
 
-    private func resolveEpisodeAudio(episodeID: EpisodeID) async -> URL? {
-        guard let uuid = UUID(uuidString: episodeID) else { return nil }
-        return await MainActor.run {
-            guard let episode = store?.episode(id: uuid) else { return nil }
-            guard case .downloaded = episode.downloadState else { return nil }
-            let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
-            return FileManager.default.fileExists(atPath: localURL.path) ? localURL : nil
+    /// Returns a local URL for the episode's audio, downloading it first if needed.
+    /// Polls up to `timeout` seconds for the download to complete.
+    private func resolveEpisodeAudio(episodeID: EpisodeID, timeout: TimeInterval = 300) async throws -> URL {
+        guard let uuid = UUID(uuidString: episodeID) else {
+            throw AgentTTSError.snippetEpisodeNotFound(episodeID: episodeID)
         }
+
+        // Check current state and trigger download if needed.
+        let alreadyReady: URL? = await MainActor.run {
+            guard let episode = store?.episode(id: uuid) else { return nil }
+            if case .downloaded = episode.downloadState {
+                let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
+                if FileManager.default.fileExists(atPath: localURL.path) {
+                    return localURL
+                }
+            }
+            EpisodeDownloadService.shared.download(episodeID: uuid)
+            return nil
+        }
+        if let url = alreadyReady { return url }
+
+        // Episode not in store at all.
+        let episodeExists = await MainActor.run { store?.episode(id: uuid) != nil }
+        guard episodeExists else {
+            throw AgentTTSError.snippetEpisodeNotFound(episodeID: episodeID)
+        }
+
+        Self.logger.info("AgentTTSComposer: waiting for download of snippet episode \(episodeID, privacy: .public)")
+
+        // Poll until downloaded, failed, or timed out.
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            try await Task.sleep(for: .seconds(1))
+
+            let result: Result<URL, Error>? = await MainActor.run {
+                guard let episode = store?.episode(id: uuid) else { return nil }
+                switch episode.downloadState {
+                case .downloaded:
+                    let localURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
+                    return .success(localURL)
+                case .failed(let message):
+                    return .failure(AgentTTSError.snippetDownloadFailed(episodeID: episodeID, message: message))
+                default:
+                    return nil
+                }
+            }
+            switch result {
+            case .success(let url): return url
+            case .failure(let error): throw error
+            case nil: continue
+            }
+        }
+
+        throw AgentTTSError.snippetDownloadTimeout(episodeID: episodeID)
     }
 
     private func resolveEpisodeTitle(episodeID: String) async -> String {
@@ -339,7 +383,9 @@ enum AgentTTSError: LocalizedError {
     case notConfigured
     case emptyAudioData(index: Int)
     case storeUnavailable
-    case snippetNotDownloaded(episodeID: String)
+    case snippetEpisodeNotFound(episodeID: String)
+    case snippetDownloadFailed(episodeID: String, message: String)
+    case snippetDownloadTimeout(episodeID: String)
 
     var errorDescription: String? {
         switch self {
@@ -351,8 +397,12 @@ enum AgentTTSError: LocalizedError {
             return "TTS synthesis returned no audio for turn \(index)."
         case .storeUnavailable:
             return "AppStateStore is unavailable; cannot publish episode."
-        case .snippetNotDownloaded(let episodeID):
-            return "Snippet episode \(episodeID) is not downloaded. Download the episode first, then retry generate_tts_episode."
+        case .snippetEpisodeNotFound(let episodeID):
+            return "Snippet episode \(episodeID) was not found in the library."
+        case .snippetDownloadFailed(let episodeID, let message):
+            return "Download failed for snippet episode \(episodeID): \(message)"
+        case .snippetDownloadTimeout(let episodeID):
+            return "Timed out waiting for snippet episode \(episodeID) to download (5 min limit)."
         }
     }
 }
