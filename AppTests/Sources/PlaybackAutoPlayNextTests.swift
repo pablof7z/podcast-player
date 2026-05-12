@@ -45,7 +45,7 @@ final class PlaybackAutoPlayNextTests: XCTestCase {
         let played = state.playNext(resolve: resolver)
 
         XCTAssertTrue(played)
-        XCTAssertEqual(state.queue, [b.id, c.id])
+        XCTAssertEqual(state.queue.map(\.episodeID), [b.id, c.id])
         XCTAssertEqual(state.episode?.id, a.id)
     }
 
@@ -61,7 +61,7 @@ final class PlaybackAutoPlayNextTests: XCTestCase {
         let played = state.playNext { $0 == tail.id ? tail : nil }
         XCTAssertTrue(played)
         XCTAssertEqual(state.episode?.id, tail.id)
-        XCTAssertEqual(state.queue, [], "Stale id and played tail should both be dequeued")
+        XCTAssertTrue(state.queue.isEmpty, "Stale id and played tail should both be dequeued")
     }
 
     func testPlayNextRespectsQueueOrder() {

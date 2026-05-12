@@ -88,6 +88,10 @@ actor MockFetcher: EpisodeFetcherProtocol {
         guard known.contains(episodeID) else { return nil }
         return ("Mock Show", "Episode \(episodeID)", 1800)
     }
+
+    func episodeIDForAudioURL(_ audioURLString: String, podcastID: PodcastID) async -> EpisodeID? {
+        return nil
+    }
 }
 
 actor MockPlayback: PlaybackHostProtocol {
@@ -128,6 +132,15 @@ actor MockPlayback: PlaybackHostProtocol {
     func openScreen(route: String) async {
         recordedRoutes.append(route)
     }
+
+    func playExternalEpisode(
+        audioURL: URL,
+        title: String,
+        podcastTitle: String?,
+        imageURL: URL?,
+        durationSeconds: TimeInterval?,
+        timestampSeconds: Double
+    ) async {}
 
     func queueEpisodeSegments(segments: [EpisodeSegment], playNow: Bool) async -> QueueSegmentsResult {
         return QueueSegmentsResult(segmentsQueued: segments.count, playingNow: playNow)
@@ -259,6 +272,28 @@ actor MockTTSPublisher: TTSPublisherProtocol {
             title: title,
             durationSeconds: nil,
             publishedToLibrary: true
+        )
+    }
+}
+
+actor MockDirectory: PodcastDirectoryProtocol {
+    func searchDirectory(
+        query: String,
+        type: PodcastDirectorySearchType,
+        limit: Int
+    ) async throws -> [PodcastDirectoryHit] {
+        return []
+    }
+}
+
+actor MockSubscribe: PodcastSubscribeProtocol {
+    func subscribe(feedURLString: String) async throws -> PodcastSubscribeResult {
+        return PodcastSubscribeResult(
+            podcastID: "mock-pod",
+            title: "Mock Show",
+            feedURL: feedURLString,
+            episodeCount: 0,
+            alreadySubscribed: false
         )
     }
 }

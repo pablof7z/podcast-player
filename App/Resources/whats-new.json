@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "home-list-only",
+      "shipped_at": "2026-05-12T18:00:00Z",
+      "lines": [
+        "Home now always shows your podcasts as a list — the grid option has been removed."
+      ]
+    },
+    {
       "id": "wiki-standard-theme",
       "shipped_at": "2026-05-12T18:00:00Z",
       "lines": [

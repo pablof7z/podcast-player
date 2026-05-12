@@ -6,7 +6,7 @@ import SwiftUI
 // editorial surface:
 //   • Dateline + active-filter chip strip
 //   • Featured (resume cards + agent picks), collapsible
-//   • Subscription list (default) or grid, recency-sorted, filterable
+//   • Subscription list, recency-sorted, filterable
 //
 // Persistence keys mirror what `LibraryView` used so the user's chosen
 // filter / category carries over without a one-time reset.
@@ -21,7 +21,6 @@ struct HomeView: View {
 
     @AppStorage("library.filter") private var filter: LibraryFilter = .all
     @AppStorage("library.categoryFilterID") private var categoryFilterID: String = ""
-    @AppStorage("home.subscriptionLayout") private var layout: HomeSubscriptionLayout = .list
     @AppStorage("home.featuredExpanded") private var featuredExpanded: Bool = true
 
     @State private var picksService = AgentPicksService.shared
@@ -211,7 +210,6 @@ struct HomeView: View {
         } else {
             HomeSubscriptionListSection(
                 subscriptions: filteredSubs,
-                layout: layout,
                 now: renderedAt,
                 onRequestUnsubscribe: { unsubscribeTarget = $0 }
             )

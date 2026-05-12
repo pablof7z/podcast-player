@@ -249,7 +249,9 @@ final class AgentToolsPodcastActionTests: XCTestCase {
                 categories: MockInventory(),
                 delegation: delegation,
                 perplexity: MockPerplexity(),
-                ttsPublisher: MockTTSPublisher()
+                ttsPublisher: MockTTSPublisher(),
+                directory: MockDirectory(),
+                subscribe: MockSubscribe()
             ),
             playback: playback,
             library: library,
