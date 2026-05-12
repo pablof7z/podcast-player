@@ -10,7 +10,7 @@ import os.log
 /// then close. Each call owns its own socket and subscription id so
 /// concurrent fetches don't collide.
 @MainActor
-enum NostrThreadFetcher {
+final class NostrThreadFetcher {
 
     nonisolated private static let logger = Logger.app("NostrThreadFetcher")
 
@@ -34,12 +34,22 @@ enum NostrThreadFetcher {
         let tags: [[String]]
     }
 
+    /// Per-instance accumulator. Each `fetch` builds a fresh fetcher so
+    /// concurrent fetches don't share state.
+    private var collected: [String: Event] = [:]
+
     /// Fetch the root (by id) and all kind:1 replies that e-tag it from
     /// the configured relay. Results are de-duplicated by event id and
     /// sorted ascending by `created_at`. Returns an empty array on any
     /// hard failure — the caller is expected to proceed with whatever
     /// the inbound event itself carries.
     static func fetch(rootID: String, relayURL: URL) async -> [Event] {
+        await NostrThreadFetcher().run(rootID: rootID, relayURL: relayURL)
+    }
+
+    private init() {}
+
+    private func run(rootID: String, relayURL: URL) async -> [Event] {
         let task = URLSession.shared.webSocketTask(with: relayURL)
         task.resume()
         defer { task.cancel(with: .normalClosure, reason: nil) }
@@ -64,10 +74,9 @@ enum NostrThreadFetcher {
             return []
         }
 
-        let collector = Collector()
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { @MainActor in
-                await Self.readUntilEose(task: task, subID: subID, collector: collector)
+            group.addTask { [weak self] in
+                await self?.readUntilEose(task: task, subID: subID)
             }
             group.addTask {
                 try? await Task.sleep(for: Wire.timeout)
@@ -82,30 +91,15 @@ enum NostrThreadFetcher {
             try? await task.send(.string(str))
         }
 
-        return collector.snapshot().sorted { $0.createdAt < $1.createdAt }
+        return collected.values.sorted { $0.createdAt < $1.createdAt }
     }
 
-    /// Reference type so concurrent task-group children can append into
-    /// the same set without tripping Swift 6 inout-capture rules. The
-    /// fetcher itself is `@MainActor`, so all appends serialise on the
-    /// main actor and no internal locking is needed.
-    @MainActor
-    final class Collector {
-        private(set) var events: [String: Event] = [:]
-        func insert(_ event: Event) { events[event.id] = event }
-        func snapshot() -> [Event] { Array(events.values) }
-    }
-
-    private static func readUntilEose(
-        task: URLSessionWebSocketTask,
-        subID: String,
-        collector: Collector
-    ) async {
+    private func readUntilEose(task: URLSessionWebSocketTask, subID: String) async {
         while !Task.isCancelled {
             do {
                 let msg = try await task.receive()
                 guard case .string(let text) = msg else { continue }
-                if Self.handleMessage(text: text, expectedSubID: subID, collector: collector) == .eose {
+                if handleMessage(text: text, expectedSubID: subID) == .eose {
                     return
                 }
             } catch {
@@ -116,11 +110,8 @@ enum NostrThreadFetcher {
 
     private enum HandleOutcome { case event, eose, other }
 
-    private static func handleMessage(
-        text: String,
-        expectedSubID: String,
-        collector: Collector
-    ) -> HandleOutcome {
+    @discardableResult
+    private func handleMessage(text: String, expectedSubID: String) -> HandleOutcome {
         guard let data = text.data(using: .utf8),
               let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
               array.count >= 2,
@@ -137,13 +128,13 @@ enum NostrThreadFetcher {
                   let createdAt = dict["created_at"] as? Int,
                   let content = dict["content"] as? String else { return .other }
             let tags = (dict["tags"] as? [[String]]) ?? []
-            collector.insert(Event(
+            collected[id] = Event(
                 id: id,
                 pubkey: pubkey,
                 createdAt: createdAt,
                 content: content,
                 tags: tags
-            ))
+            )
             return .event
         default:
             return .other

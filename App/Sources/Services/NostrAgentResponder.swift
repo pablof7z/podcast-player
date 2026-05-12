@@ -401,7 +401,7 @@ final class NostrAgentResponder {
     /// whatever (possibly nil) cache state exists after the race.
     private func fetchProfileWithTimeout(pubkey: String, seconds: TimeInterval) async {
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { @MainActor [weak self] in
+            group.addTask { [weak self] in
                 await self?.profileFetcher.fetchProfiles(for: [pubkey])
             }
             group.addTask {

@@ -12,6 +12,9 @@ final class NostrRelayService {
     private var receiveLoop: Task<Void, Never>?
     private var connectedRelayURL: String?
     private lazy var profileFetcher = NostrProfileFetcher(store: store)
+    /// Owns the inbound → LLM → outbound pipeline for allowed pubkeys.
+    /// Kept lazy so apps with Nostr disabled never instantiate it.
+    private lazy var agentResponder = NostrAgentResponder(store: store)
     /// Tracks pubkeys we've already queued a profile fetch for during this
     /// session so a burst of inbound events from the same peer doesn't
     /// spam the relay with kind:0 requests. Cleared on `stop()`.
@@ -242,13 +245,22 @@ final class NostrRelayService {
         }
 
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
-            NostrRelayService.logger.notice("handle: recording incoming turn from allowed pubkey")
-            recordIncomingTurn(event: event, senderPubkey: senderPubkey, rawText: text)
-            // TODO: route to the agent pipeline (LLM reply + outgoing publish).
-            // When that lands it should call
-            // `store.recordNostrTurn(rootEventID:turn:counterpartyPubkey:)`
-            // with the outgoing event so the transcript stays complete.
+            NostrRelayService.logger.notice("handle: routing inbound from allowed pubkey to agent responder")
+            // Profile fetch is kicked off here (rather than inside the
+            // responder) so the kind:0 cache is warm by the time the
+            // responder's bounded 2s race for the same pubkey starts.
+            // The responder's race is still kept as defence-in-depth
+            // for the case where this best-effort fetch loses to its
+            // own internal timeout.
             ensureProfileFetch(for: senderPubkey)
+            agentResponder.handle(inbound: NostrAgentResponder.Inbound(
+                eventID: eventID,
+                pubkey: senderPubkey,
+                createdAt: (event["created_at"] as? Int) ?? Int(Date().timeIntervalSince1970),
+                content: (event["content"] as? String) ?? "",
+                tags: (event["tags"] as? [[String]]) ?? [],
+                rawEventJSON: rawEventJSON(from: event)
+            ))
             return
         }
 
@@ -269,31 +281,14 @@ final class NostrRelayService {
         }
     }
 
-    // MARK: - Conversation recording
+    // MARK: - Event JSON helper
 
-    private func recordIncomingTurn(
-        event: [String: Any],
-        senderPubkey: String,
-        rawText: String
-    ) {
-        guard let eventID = event["id"] as? String,
-              let createdAtSeconds = event["created_at"] as? Int else { return }
-        let content = (event["content"] as? String) ?? ""
-        let tags = (event["tags"] as? [[String]]) ?? []
-        let rootID = NostrConversationRoot.rootEventID(eventID: eventID, tags: tags)
-
-        let rawJSON = (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys]))
+    /// Re-serialise an inbound event dictionary back to canonical JSON
+    /// for transcript export. Returns nil on failure — the conversation
+    /// store accepts a nil `rawEventJSON` so this is best-effort.
+    private func rawEventJSON(from event: [String: Any]) -> String? {
+        (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys]))
             .flatMap { String(data: $0, encoding: .utf8) }
-
-        let turn = NostrConversationTurn(
-            eventID: eventID,
-            direction: .incoming,
-            pubkey: senderPubkey,
-            createdAt: Date(timeIntervalSince1970: TimeInterval(createdAtSeconds)),
-            content: content,
-            rawEventJSON: rawJSON
-        )
-        store.recordNostrTurn(rootEventID: rootID, turn: turn)
     }
 
     // MARK: - NIP-42 AUTH

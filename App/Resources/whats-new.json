@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "nostr-agent-reply-pipeline",
+      "shipped_at": "2026-05-13T00:05:00Z",
+      "lines": [
+        "Your Nostr agent now actually replies. When an approved pubkey messages your agent, it reads the thread, asks your configured LLM for a response, signs and publishes a NIP-10 kind:1 reply, and stamps both turns into the Conversations transcript — with a hard 10-outgoing-turn cap per thread and built-in dedup so a flaky relay can't trigger duplicate replies."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [
