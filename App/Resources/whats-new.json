@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-12T12:00:00Z",
+      "lines": [
+        "Home now shows a Continue Listening strip at the top — up to 3 in-progress episodes from the last 2 weeks, with a See All screen where you can swipe to dismiss any you're done with. The Featured section now shows only agent picks, and the podcast list is slightly larger."
+      ]
+    },
+    {
       "id": "nostr-agent-full-tools",
       "shipped_at": "2026-05-13T00:20:00Z",
       "lines": [
@@ -16,42 +22,36 @@
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:06:00Z",
       "lines": [
         "Friend detail now shows your full Nostr conversation history with that friend."
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:07:00Z",
       "lines": [
         "Agent consolidates accumulated memories into a tight summary it carries forward."
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:08:00Z",
       "lines": [
         "Agent run history is now saved across launches, with filters by source, outcome, and tool."
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:09:00Z",
       "lines": [
         "Your agent can now pause to ask you a question mid-task: a modal sheet pops over whatever tab you're on with the question (and optional context), you type or decline, and the agent resumes with your answer — important for safe peer-agent flows where an inbound Nostr request needs your consent before anything sensitive runs."
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:10:00Z",
       "lines": [
         "Removed the legacy `delegate` agent tool — the TENEX async-delegation surface has been replaced by lighter-weight peer-conversation primitives."
       ]
     },
     {
-      "id": "PENDING",
       "shipped_at": "2026-05-13T00:11:00Z",
       "lines": [
         "Your agent can now end a Nostr conversation cleanly with `end_conversation` and send a kind:1 note to a friend with `send_friend_message` — both are peer-only and surface inside the active conversation thread."

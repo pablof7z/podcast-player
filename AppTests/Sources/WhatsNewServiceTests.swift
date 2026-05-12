@@ -11,25 +11,21 @@ final class WhatsNewServiceTests: XCTestCase {
 
     // MARK: - Fixture
 
-    /// Three entries, newest first. IDs are short SHAs to mirror the real
-    /// format. Dates are spaced one day apart so sort-by-shippedAt is
-    /// unambiguous.
+    /// Three entries, newest first. Dates are spaced one day apart so
+    /// sort-by-shippedAt is unambiguous.
     private let fixtureJSON = #"""
     {
       "schema_version": 1,
       "entries": [
         {
-          "id": "ccc3333",
           "shipped_at": "2026-05-10T22:00:00Z",
           "lines": ["Newest line"]
         },
         {
-          "id": "bbb2222",
           "shipped_at": "2026-05-09T12:00:00Z",
           "lines": ["Middle line A", "Middle line B"]
         },
         {
-          "id": "aaa1111",
           "shipped_at": "2026-05-08T08:00:00Z",
           "lines": ["Oldest line"]
         }
@@ -53,7 +49,6 @@ final class WhatsNewServiceTests: XCTestCase {
     func testFixtureJSONDecodes() throws {
         let entries = try fixtureEntries()
         XCTAssertEqual(entries.count, 3)
-        XCTAssertEqual(entries[0].id, "ccc3333")
         XCTAssertEqual(entries[0].lines, ["Newest line"])
         XCTAssertEqual(entries[1].lines.count, 2)
     }
@@ -64,8 +59,9 @@ final class WhatsNewServiceTests: XCTestCase {
     func testBundledChangelogParses() {
         let entries = WhatsNewService.loadEntries()
         XCTAssertFalse(entries.isEmpty, "Bundled whats-new.json should ship with at least one entry.")
-        XCTAssertFalse(entries.contains { $0.id.isEmpty }, "Every bundled entry needs a non-empty short SHA.")
         XCTAssertFalse(entries.contains { $0.lines.isEmpty }, "Every bundled entry needs at least one line.")
+        let timestamps = entries.map(\.shippedAt)
+        XCTAssertEqual(Set(timestamps).count, timestamps.count, "Every entry needs a unique shipped_at timestamp.")
     }
 
     // MARK: - unseenEntries
@@ -90,14 +86,14 @@ final class WhatsNewServiceTests: XCTestCase {
         let entries = try fixtureEntries()
         let marker = date("2026-05-09T12:00:00Z")
         let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
-        XCTAssertEqual(unseen.map(\.id), ["ccc3333"])
+        XCTAssertEqual(unseen.map(\.lines), [["Newest line"]])
     }
 
     func testUnseenEntriesReturnsAllNewerWhenMarkerIsOldest() throws {
         let entries = try fixtureEntries()
         let marker = date("2026-05-08T08:00:00Z")
         let unseen = WhatsNewService.unseenEntries(lastSeenAt: marker, entries: entries)
-        XCTAssertEqual(unseen.map(\.id), ["ccc3333", "bbb2222"])
+        XCTAssertEqual(unseen.map(\.lines), [["Newest line"], ["Middle line A", "Middle line B"]])
     }
 
     func testUnseenEntriesEmptyWhenMarkerIsAfterEverything() throws {

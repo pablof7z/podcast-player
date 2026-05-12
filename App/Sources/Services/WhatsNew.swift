@@ -2,20 +2,19 @@ import Foundation
 
 // MARK: - WhatsNewEntry
 //
-// One entry == one commit that shipped a user-facing change. The `id` is
-// the short commit SHA (or a slug for changes that span multiple commits),
-// kept around for human reference and changelog rendering. The
-// authoritative "did the user see this" comparison uses `shippedAt` — a
-// timestamp is robust to entries getting renamed, deleted, or trimmed in
-// future builds in a way SHA matching never was.
+// One entry == one user-facing change. Identity and ordering are both
+// driven by `shippedAt` — entries are surfaced when their timestamp is
+// strictly newer than the user's `lastSeenAt` marker. Timestamps must
+// be unique across entries (use the next minute if you need to
+// disambiguate).
 
 struct WhatsNewEntry: Decodable, Sendable, Identifiable, Equatable {
-    let id: String           // short commit SHA / slug
     let shippedAt: Date
     let lines: [String]
 
+    var id: Date { shippedAt }
+
     private enum CodingKeys: String, CodingKey {
-        case id
         case shippedAt = "shipped_at"
         case lines
     }
@@ -36,14 +35,12 @@ private struct WhatsNewPayload: Decodable {
 // MARK: - WhatsNewService
 //
 // Loads the bundled `whats-new.json` and answers two questions:
-//   1) Which entries have been shipped since the user's last-seen marker?
+//   1) Which entries have shipped since the user's last-seen marker?
 //   2) Persists the "I've seen up to timestamp X" marker so the same
 //      content doesn't re-surface on every cold launch.
 //
 // The marker is a timestamp (ISO-8601, stored in `UserDefaults.standard`
-// under `whatsNew.lastSeenAt`). Earlier builds used an entry-ID marker
-// under `whatsNew.lastSeenID`; that key is migrated automatically if it
-// shows up.
+// under `whatsNew.lastSeenAt`).
 //
 // First-launch semantics: when no marker exists at all, the marker is
 // silently seeded to the newest entry's `shippedAt`. The user sees an
@@ -56,12 +53,8 @@ enum WhatsNewService {
 
     // MARK: Constants
 
-    /// Timestamp marker — the current source of truth.
     static let lastSeenAtKey = "whatsNew.lastSeenAt"
-    /// Legacy ID-based marker. Migrated on first launch then removed.
-    static let legacyLastSeenIDKey = "whatsNew.lastSeenID"
 
-    /// Resource filename in the app bundle.
     private static let resourceName = "whats-new"
     private static let resourceExtension = "json"
 
@@ -83,8 +76,7 @@ enum WhatsNewService {
     }
 
     /// Internal decode helper — exposed so tests can feed a JSON literal
-    /// through it without depending on the bundled file (which evolves
-    /// every release and would make tests flake).
+    /// through it without depending on the bundled file.
     static func decode(_ data: Data) throws -> [WhatsNewEntry] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -96,7 +88,7 @@ enum WhatsNewService {
 
     /// The "I've seen everything up through this timestamp" marker, read
     /// from `UserDefaults.standard`. `nil` on a brand-new install (before
-    /// `migrateAndSeedIfNeeded` has run).
+    /// `seedIfNeeded` has run).
     static var lastSeenAt: Date? {
         guard let s = UserDefaults.standard.string(forKey: lastSeenAtKey),
               !s.isEmpty else {
@@ -111,36 +103,19 @@ enum WhatsNewService {
         UserDefaults.standard.set(Self.iso8601.string(from: date), forKey: lastSeenAtKey)
     }
 
-    /// Bring the marker up to date on cold launch.
+    /// On a fresh install (no marker yet), silently seed the marker to the
+    /// newest entry's `shippedAt` so the user doesn't see "the entire
+    /// changelog ever" as their first impression of the app. Future
+    /// entries appended after this build will still surface.
     ///
-    /// Two cases handled:
-    ///   1. Legacy `whatsNew.lastSeenID` exists from an older build — look
-    ///      up that entry's `shippedAt` and write it as the new timestamp
-    ///      marker, then delete the legacy key.
-    ///   2. No marker at all (fresh install) — silently seed the marker to
-    ///      the newest entry's `shippedAt` so the user doesn't see "the
-    ///      entire changelog ever" as their first impression of the app.
-    ///      Future entries appended after this build will still surface.
-    ///
-    /// Idempotent: a no-op once a current-format marker is present.
-    static func migrateAndSeedIfNeeded(entries: [WhatsNewEntry]? = nil) {
+    /// Idempotent: a no-op once any marker is present.
+    static func seedIfNeeded(entries: [WhatsNewEntry]? = nil) {
         let defaults = UserDefaults.standard
         if defaults.string(forKey: lastSeenAtKey) != nil { return }
-
         let sorted = (entries ?? loadEntries()).sorted { $0.shippedAt > $1.shippedAt }
-
-        if let legacyID = defaults.string(forKey: legacyLastSeenIDKey),
-           !legacyID.isEmpty,
-           let entry = sorted.first(where: { $0.id == legacyID }) {
-            markSeen(at: entry.shippedAt)
-            defaults.removeObject(forKey: legacyLastSeenIDKey)
-            return
-        }
-        // No usable legacy marker — seed silently.
         if let newest = sorted.first {
             markSeen(at: newest.shippedAt)
         }
-        defaults.removeObject(forKey: legacyLastSeenIDKey)
     }
 
     // MARK: Diff
@@ -148,8 +123,8 @@ enum WhatsNewService {
     /// Entries strictly newer than `lastSeenAt`, in newest-first order.
     ///
     /// `lastSeenAt == nil` returns `[]` rather than the full changelog —
-    /// `migrateAndSeedIfNeeded` is responsible for seeding the marker on
-    /// fresh installs; if it hasn't run yet, the caller should not surface
+    /// `seedIfNeeded` is responsible for seeding the marker on fresh
+    /// installs; if it hasn't run yet, the caller should not surface
     /// anything.
     static func unseenEntries(
         lastSeenAt: Date?,

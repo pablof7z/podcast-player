@@ -2,7 +2,7 @@
 
 ## Whats-new changelog
 
-Every commit that ships a user-facing change to the iPhone MUST add an entry to `App/Resources/whats-new.json` with a one-liner the user will read. The entry's `id` is the short SHA of the commit. Multi-commit features get one entry per commit unless the changes are too small individually — in that case roll them into one entry under the most representative commit. Skip entries for purely-internal commits (encoder caches, log line tweaks, formatting). When in doubt: would the user notice? If yes, add a line.
+Every commit that ships a user-facing change to the iPhone MUST add an entry to `App/Resources/whats-new.json` with a one-liner the user will read. An entry needs only `shipped_at` (current UTC, ISO-8601) and `lines`. The app surfaces entries whose `shipped_at` is newer than the user's last-seen marker — no commit SHA needed. Timestamps must be unique across entries; if two land in the same minute, bump one by a minute. Skip entries for purely-internal commits (encoder caches, log line tweaks, formatting). When in doubt: would the user notice? If yes, add a line.
 
 ## Typography
 
