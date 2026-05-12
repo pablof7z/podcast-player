@@ -2,6 +2,27 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "fc2c91b",
+      "shipped_at": "2026-05-12T23:00:00Z",
+      "lines": [
+        "Fixed: generating an episode with clips from a non-downloaded episode now surfaces a clear error instead of silently producing narration where the clip should be."
+      ]
+    },
+    {
+      "id": "agent-skills-podcast-generation",
+      "shipped_at": "2026-05-12T22:00:00Z",
+      "lines": [
+        "The assistant now has opt-in skills. The first is podcast generation — ask it to make a TLDR or mock interview and it loads instructions, lists your ElevenLabs voices, and stitches a custom episode into your 'Agent Generated' podcast with auto-chapters."
+      ]
+    },
+    {
+      "id": "agent-kind0-profile",
+      "shipped_at": "2026-05-12T21:00:00Z",
+      "lines": [
+        "The assistant now publishes its Nostr profile (name, bio, picture) so contacts can discover it by public key."
+      ]
+    },
+    {
       "id": "agent-wiki-tools",
       "shipped_at": "2026-05-12T20:00:00Z",
       "lines": [
