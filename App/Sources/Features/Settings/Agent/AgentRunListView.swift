@@ -2,7 +2,14 @@ import SwiftUI
 
 struct AgentRunListView: View {
     @ObservedObject private var logger = AgentRunLogger.shared
+    @State private var filterStore = AgentRunFilterStore()
     @State private var confirmClear = false
+
+    private var filteredRuns: [AgentRun] {
+        let f = filterStore.filter
+        if f.isEmpty { return logger.runs }
+        return logger.runs.filter { f.matches($0) }
+    }
 
     var body: some View {
         Group {
@@ -49,28 +56,52 @@ struct AgentRunListView: View {
         }
     }
 
-    private var scroll: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("\(logger.runs.count) run\(logger.runs.count == 1 ? "" : "s")")
-                    .font(.caption.weight(.semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
+    private var noMatchesEmpty: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.title)
+                .foregroundStyle(.secondary)
+            Text("No runs match your filters")
+                .font(.subheadline.weight(.medium))
+            Button("Clear filters") { filterStore.filter = .empty }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .foregroundStyle(.secondary)
+    }
 
-                VStack(spacing: 0) {
-                    ForEach(Array(logger.runs.enumerated()), id: \.element.id) { index, run in
-                        NavigationLink(destination: AgentRunDetailView(run: run)) {
-                            runRow(run)
-                        }
-                        if index != logger.runs.count - 1 {
-                            Divider()
+    private var scroll: some View {
+        let runs = filteredRuns
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                AgentRunFilterBar(
+                    filter: Binding(
+                        get: { filterStore.filter },
+                        set: { filterStore.filter = $0 }
+                    ),
+                    totalRuns: logger.runs.count,
+                    filteredRuns: runs.count
+                )
+
+                if runs.isEmpty {
+                    noMatchesEmpty
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(runs.enumerated()), id: \.element.id) { index, run in
+                            NavigationLink(destination: AgentRunDetailView(run: run)) {
+                                runRow(run)
+                            }
+                            if index != runs.count - 1 {
+                                Divider()
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
                 }
-                .padding(.horizontal, 20)
 
                 Color.clear.frame(height: 24)
             }

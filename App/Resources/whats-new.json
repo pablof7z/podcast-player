@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-12T23:59:00Z",
+      "lines": [
+        "Agent run history is now saved across launches, with filters by source, outcome, and tool."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [
