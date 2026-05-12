@@ -9,6 +9,13 @@
       ]
     },
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-13T00:06:00Z",
+      "lines": [
+        "Friend detail now shows your full Nostr conversation history with that friend."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [
