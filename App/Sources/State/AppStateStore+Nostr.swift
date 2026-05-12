@@ -32,6 +32,19 @@ extension AppStateStore {
         state.nostrPendingApprovals.append(approval)
     }
 
+    /// Fills in display name / about / picture for an existing pending
+    /// approval when a kind:0 profile arrives after the inbound has been
+    /// queued. No-op when the pubkey is not pending.
+    func enrichNostrPendingApproval(pubkeyHex: String, from profile: NostrProfileMetadata) {
+        guard let idx = state.nostrPendingApprovals.firstIndex(where: { $0.pubkeyHex == pubkeyHex })
+        else { return }
+        var approval = state.nostrPendingApprovals[idx]
+        approval.displayName = profile.bestLabel ?? approval.displayName
+        approval.about = profile.about ?? approval.about
+        approval.pictureURL = profile.picture ?? approval.pictureURL
+        state.nostrPendingApprovals[idx] = approval
+    }
+
     func dismissNostrPendingApproval(_ id: UUID) {
         state.nostrPendingApprovals.removeAll { $0.id == id }
     }

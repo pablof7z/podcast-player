@@ -265,6 +265,7 @@ struct RootView: View {
                     EpisodeDetailView(episodeID: identified.id)
                 }
             }
+            .nostrApprovalPresenter()
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
                 NotificationCenter.default.publisher(for: AppDelegate.shortcutURLNotification)

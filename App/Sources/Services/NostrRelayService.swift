@@ -11,6 +11,11 @@ final class NostrRelayService {
     private var webSocketTask: URLSessionWebSocketTask?
     private var receiveLoop: Task<Void, Never>?
     private var connectedRelayURL: String?
+    private lazy var profileFetcher = NostrProfileFetcher(store: store)
+    /// Tracks pubkeys we've already queued a profile fetch for during this
+    /// session so a burst of inbound events from the same peer doesn't
+    /// spam the relay with kind:0 requests. Cleared on `stop()`.
+    private var profileFetchInflight: Set<String> = []
 
     // MARK: - Protocol constants
 
@@ -53,6 +58,7 @@ final class NostrRelayService {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
         connectedRelayURL = nil
+        profileFetchInflight.removeAll()
     }
 
     // MARK: - Connection
@@ -166,14 +172,71 @@ final class NostrRelayService {
         guard !store.state.nostrBlockedPubkeys.contains(senderPubkey) else { return }
 
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
-            // TODO: route to the agent pipeline.
+            recordIncomingTurn(event: event, senderPubkey: senderPubkey, rawText: text)
+            // TODO: route to the agent pipeline (LLM reply + outgoing publish).
+            // When that lands it should call
+            // `store.recordNostrTurn(rootEventID:turn:counterpartyPubkey:)`
+            // with the outgoing event so the transcript stays complete.
+            ensureProfileFetch(for: senderPubkey)
             return
         }
 
         let isNew = !store.state.nostrPendingApprovals.contains { $0.pubkeyHex == senderPubkey }
-        store.addNostrPendingApproval(NostrPendingApproval(pubkeyHex: senderPubkey))
+        let cached = store.state.nostrProfileCache[senderPubkey]
+        let approval = NostrPendingApproval(
+            pubkeyHex: senderPubkey,
+            displayName: cached?.bestLabel,
+            about: cached?.about,
+            pictureURL: cached?.picture,
+            content: event["content"] as? String
+        )
+        store.addNostrPendingApproval(approval)
         if isNew {
             Task { await NotificationService.notifyPendingApproval(pubkeyHex: senderPubkey) }
+            ensureProfileFetch(for: senderPubkey, enrichApproval: true)
+        }
+    }
+
+    // MARK: - Conversation recording
+
+    private func recordIncomingTurn(
+        event: [String: Any],
+        senderPubkey: String,
+        rawText: String
+    ) {
+        guard let eventID = event["id"] as? String,
+              let createdAtSeconds = event["created_at"] as? Int else { return }
+        let content = (event["content"] as? String) ?? ""
+        let tags = (event["tags"] as? [[String]]) ?? []
+        let rootID = NostrConversationRoot.rootEventID(eventID: eventID, tags: tags)
+
+        let rawJSON = (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys]))
+            .flatMap { String(data: $0, encoding: .utf8) }
+
+        let turn = NostrConversationTurn(
+            eventID: eventID,
+            direction: .incoming,
+            pubkey: senderPubkey,
+            createdAt: Date(timeIntervalSince1970: TimeInterval(createdAtSeconds)),
+            content: content,
+            rawEventJSON: rawJSON
+        )
+        store.recordNostrTurn(rootEventID: rootID, turn: turn)
+    }
+
+    // MARK: - Profile fetching
+
+    private func ensureProfileFetch(for pubkey: String, enrichApproval: Bool = false) {
+        if store.state.nostrProfileCache[pubkey] != nil, !enrichApproval { return }
+        guard !profileFetchInflight.contains(pubkey) else { return }
+        profileFetchInflight.insert(pubkey)
+        Task { [weak self] in
+            guard let self else { return }
+            await self.profileFetcher.fetchProfiles(for: [pubkey])
+            self.profileFetchInflight.remove(pubkey)
+            if enrichApproval, let profile = self.store.state.nostrProfileCache[pubkey] {
+                self.store.enrichNostrPendingApproval(pubkeyHex: pubkey, from: profile)
+            }
         }
     }
 }

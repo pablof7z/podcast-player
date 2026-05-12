@@ -61,6 +61,17 @@ struct AgentSettingsView: View {
             }
 
             NavigationLink {
+                NostrConversationsView()
+            } label: {
+                SettingsRow(
+                    icon: "bubble.left.and.bubble.right.fill",
+                    tint: .cyan,
+                    title: "Conversations",
+                    badge: store.state.nostrConversations.count
+                )
+            }
+
+            NavigationLink {
                 AgentMemoriesView()
             } label: {
                 SettingsRow(
