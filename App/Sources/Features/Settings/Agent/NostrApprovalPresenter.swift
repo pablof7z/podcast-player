@@ -53,7 +53,6 @@ private struct NostrApprovalSheet: View {
             header
             senderRow
             messageRow
-            otherPendingFooter
             Spacer(minLength: AppTheme.Spacing.sm)
             actionButtons
         }
@@ -120,16 +119,6 @@ private struct NostrApprovalSheet: View {
         }
     }
 
-    @ViewBuilder
-    private var otherPendingFooter: some View {
-        if otherPendingCount > 0 {
-            let suffix = otherPendingCount == 1 ? "" : "s"
-            Text("Allowing this pubkey will also clear \(otherPendingCount) other queued message\(suffix) from them.")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
     private var actionButtons: some View {
         HStack(spacing: AppTheme.Spacing.md) {
             Button {
@@ -149,7 +138,7 @@ private struct NostrApprovalSheet: View {
                 Label("Allow", systemImage: "checkmark.circle.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             .tint(AppTheme.Tint.success)
         }
     }
@@ -159,11 +148,5 @@ private struct NostrApprovalSheet: View {
     private var displayContent: String {
         let trimmed = (approval.content ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "(no message content)" : trimmed
-    }
-
-    private var otherPendingCount: Int {
-        store.pendingNostrApprovals.filter {
-            $0.pubkeyHex == approval.pubkeyHex && $0.id != approval.id
-        }.count
     }
 }
