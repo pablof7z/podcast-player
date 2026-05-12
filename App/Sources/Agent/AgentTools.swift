@@ -31,6 +31,13 @@ enum AgentTools {
         /// "side effect" is a session-local `enabledSkills` insert, not a
         /// store mutation. See `AgentSkillRegistry`.
         static let useSkill          = "use_skill"
+        /// Pauses the agent loop to consult the owner via a modal sheet.
+        /// Routed through the normal `dispatch` switch (it's a regular
+        /// tool that returns content to the LLM), but requires an
+        /// `AgentAskCoordinator` to be wired — when absent, the
+        /// dispatcher returns a typed error envelope rather than
+        /// crashing.
+        static let ask               = "ask"
     }
 
     // MARK: - Cached formatters
@@ -58,7 +65,8 @@ enum AgentTools {
         store: AppStateStore,
         batchID: UUID,
         podcastDeps: PodcastAgentToolDeps? = nil,
-        enabledSkills: Set<String> = []
+        enabledSkills: Set<String> = [],
+        askCoordinator: AgentAskCoordinator? = nil
     ) async -> String {
         let args: [String: Any]
         do {
@@ -71,6 +79,18 @@ enum AgentTools {
         switch name {
         case Names.createNote, Names.recordMemory:
             return dispatchNotesMemory(name: name, args: args, store: store, batchID: batchID)
+
+        case Names.ask:
+            // Pull the primitives off the non-Sendable `[String: Any]`
+            // synchronously so nothing crosses the upcoming `await` —
+            // same pattern `dispatchPodcast` uses for its routing call.
+            let askQuestion = (args["question"] as? String) ?? ""
+            let askContext = args["context"] as? String
+            return await askOwnerTool(
+                question: askQuestion,
+                context: askContext,
+                coordinator: askCoordinator
+            )
 
         default:
             if PodcastNames.all.contains(name) {

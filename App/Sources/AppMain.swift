@@ -8,6 +8,12 @@ struct PodcastrApp: App {
     @State private var store = AppStateStore()
     @State private var userIdentity = UserIdentityStore.shared
     @State private var relayService: NostrRelayService?
+    /// Single global owner-consultation coordinator. Lives here (not on
+    /// `AgentChatSession`) so an inbound peer-agent reply flowing through
+    /// `AgentRelayBridge` can pop the same sheet even when the user is on
+    /// Home / Library / Wiki — i.e. while no chat session exists. Mounted
+    /// on `RootView` via `agentAskPresenter(coordinator:)`.
+    @State private var askCoordinator = AgentAskCoordinator()
 
     // MARK: - What's-new sheet wiring
     //
@@ -32,6 +38,7 @@ struct PodcastrApp: App {
             RootView()
                 .environment(store)
                 .environment(userIdentity)
+                .environment(askCoordinator)
                 .task { userIdentity.start() }
                 .task {
                     let service = NostrRelayService(store: store)

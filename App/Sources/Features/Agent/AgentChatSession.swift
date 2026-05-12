@@ -74,6 +74,14 @@ final class AgentChatSession {
     let store: AppStateStore
     let history: ChatHistoryStore
     let podcastDeps: PodcastAgentToolDeps?
+    /// Owner-consultation coordinator. Optional — when nil (tests,
+    /// headless launches) the `ask` tool returns a typed error envelope
+    /// rather than crashing. Held weakly because the coordinator's
+    /// lifecycle is owned higher up (AppMain) and outlives any single
+    /// chat session. Marked `@ObservationIgnored` because UI does not
+    /// re-render on coordinator identity changes — only on the
+    /// coordinator's own observable state (its `current` ask).
+    @ObservationIgnored weak var askCoordinator: AgentAskCoordinator?
     var rawMessages: [[String: Any]] = []
     var rawMessageCountAtLastSendStart: Int = 0
     var messageCountAtLastSendStart: Int = 0
@@ -88,11 +96,13 @@ final class AgentChatSession {
         store: AppStateStore,
         playback: PlaybackState? = nil,
         history: ChatHistoryStore = .shared,
-        resumeWindow: TimeInterval? = nil
+        resumeWindow: TimeInterval? = nil,
+        askCoordinator: AgentAskCoordinator? = nil
     ) {
         self.store = store
         self.history = history
         self.podcastDeps = playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
+        self.askCoordinator = askCoordinator
 
         let window = resumeWindow ?? Self.autoResumeWindow
         if let recent = history.mostRecent,

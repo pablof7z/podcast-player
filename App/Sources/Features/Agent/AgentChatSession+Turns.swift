@@ -249,7 +249,8 @@ extension AgentChatSession {
                         store: store,
                         batchID: batchID,
                         podcastDeps: podcastDeps,
-                        enabledSkills: enabledSkills
+                        enabledSkills: enabledSkills,
+                        askCoordinator: askCoordinator
                     )
                 }
                 rawMessages.append([

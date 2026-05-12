@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-12T23:59:00Z",
+      "lines": [
+        "Your agent can now pause to ask you a question mid-task: a modal sheet pops over whatever tab you're on with the question (and optional context), you type or decline, and the agent resumes with your answer — important for safe peer-agent flows where an inbound Nostr request needs your consent before anything sensitive runs."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [

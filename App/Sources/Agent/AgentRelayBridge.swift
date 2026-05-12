@@ -9,11 +9,21 @@ final class AgentRelayBridge {
     /// `PlaybackState` handy (Nostr-only headless flows); podcast tool calls
     /// then return a typed error envelope rather than crashing.
     private let podcastDeps: PodcastAgentToolDeps?
+    /// Owner-consultation coordinator. Weakly held — the coordinator lives at
+    /// `AppMain` scope and outlives any single inbound peer-agent reply. When
+    /// nil (cold launches before the UI is up, headless tests), the `ask` tool
+    /// returns a typed error envelope and the peer-agent loop continues.
+    private weak var askCoordinator: AgentAskCoordinator?
     private let maxTurns = 8
 
-    init(store: AppStateStore, playback: PlaybackState? = nil) {
+    init(
+        store: AppStateStore,
+        playback: PlaybackState? = nil,
+        askCoordinator: AgentAskCoordinator? = nil
+    ) {
         self.store = store
         self.podcastDeps = playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
+        self.askCoordinator = askCoordinator
     }
 
     func reply(to content: String, from senderPubkey: String) async -> String? {
@@ -115,7 +125,8 @@ final class AgentRelayBridge {
                         store: store,
                         batchID: batchID,
                         podcastDeps: podcastDeps,
-                        enabledSkills: enabledSkills
+                        enabledSkills: enabledSkills,
+                        askCoordinator: askCoordinator
                     )
                 }
                 messages.append([
