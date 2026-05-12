@@ -255,7 +255,7 @@ final class ClipBoundaryResolver {
     /// LLM omits `quotedText` or returns an empty value.
     private func fallbackText(transcript: Transcript, start: TimeInterval, end: TimeInterval) -> String {
         transcript.segments
-            .filter { $0.end >= start && $0.start <= end }
+            .filter { $0.end > start && $0.start < end }
             .map(\.text)
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
