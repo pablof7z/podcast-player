@@ -230,14 +230,16 @@ extension AppStateStore {
         }
     }
 
-    /// Upserts an external-playback episode that was not fetched from a
-    /// subscribed RSS feed. Creates a synthetic `isExternalPlayback`
-    /// subscription for `podcastTitle` if one doesn't exist yet, then
-    /// finds-or-creates the episode by `guid = audioURL.absoluteString`.
+    /// Upserts an external episode played without a subscription.
+    ///
+    /// Uses `Episode.externalSubscriptionID` as the sentinel — no
+    /// `PodcastSubscription` record is created. `store.subscription(id:)`
+    /// returns `nil` for this sentinel, which is the correct signal everywhere
+    /// in the app that no subscription exists.
     ///
     /// Re-entrant: if the same audio URL is played again the existing episode
-    /// is returned with its persisted `playbackPosition` intact so the user
-    /// can resume. `imageURL` / `duration` are refreshed if changed.
+    /// is returned with its persisted `playbackPosition` intact. `imageURL`
+    /// and `duration` are refreshed when they change.
     @discardableResult
     func upsertExternalEpisode(
         audioURL: URL,
@@ -246,10 +248,7 @@ extension AppStateStore {
         imageURL: URL?,
         duration: TimeInterval?
     ) -> Episode {
-        let subscriptionID = upsertExternalPlaybackSubscription(
-            podcastTitle: podcastTitle ?? "External Episode",
-            imageURL: imageURL
-        )
+        let subscriptionID = Episode.externalSubscriptionID
         let guid = audioURL.absoluteString
         if let idx = state.episodes.firstIndex(where: {
             $0.subscriptionID == subscriptionID && $0.guid == guid

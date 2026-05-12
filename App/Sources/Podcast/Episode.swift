@@ -11,6 +11,12 @@ import Foundation
 /// `RSSParser.synthesizedGUID(...)`). Lane 6 keys embedding rows off this
 /// `guid`, so it must be deterministic across re-fetches.
 struct Episode: Codable, Sendable, Identifiable, Hashable {
+    /// Stable sentinel used as `subscriptionID` for episodes the agent plays
+    /// without the user subscribing. No `PodcastSubscription` record exists for
+    /// this ID; `store.subscription(id: externalSubscriptionID)` returns `nil`,
+    /// which is the correct signal throughout the app that the episode has no
+    /// owning subscription.
+    static let externalSubscriptionID = UUID(uuidString: "00000000-EEEE-EEEE-EEEE-000000000000")!
     /// Stable local identifier. Distinct from `guid`.
     var id: UUID
     /// Foreign key to the parent `PodcastSubscription.id`.

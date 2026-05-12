@@ -56,10 +56,6 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
     /// to publish locally-synthesised episodes. These entries are excluded from
     /// OPML export, feed refresh, and download heuristics.
     var isAgentGenerated: Bool
-    /// `true` for per-podcast-title synthetic subscriptions created when the
-    /// agent plays an external episode the user hasn't subscribed to. Excluded
-    /// from OPML export, feed refresh, subscription list, and agent inventory.
-    var isExternalPlayback: Bool
 
     init(
         id: UUID = UUID(),
@@ -77,8 +73,7 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         autoDownload: AutoDownloadPolicy = .default,
         notificationsEnabled: Bool = true,
         defaultPlaybackRate: Double? = nil,
-        isAgentGenerated: Bool = false,
-        isExternalPlayback: Bool = false
+        isAgentGenerated: Bool = false
     ) {
         self.id = id
         self.feedURL = feedURL
@@ -96,7 +91,6 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         self.notificationsEnabled = notificationsEnabled
         self.defaultPlaybackRate = defaultPlaybackRate
         self.isAgentGenerated = isAgentGenerated
-        self.isExternalPlayback = isExternalPlayback
     }
 
     // MARK: - Codable (forward-compat decoding)
@@ -106,7 +100,7 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         case language, categories, subscribedAt, lastRefreshedAt
         case etag, lastModified
         case autoDownload, notificationsEnabled, defaultPlaybackRate
-        case isAgentGenerated, isExternalPlayback
+        case isAgentGenerated
     }
 
     init(from decoder: Decoder) throws {
@@ -127,6 +121,5 @@ struct PodcastSubscription: Codable, Sendable, Identifiable, Hashable {
         notificationsEnabled = try c.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         defaultPlaybackRate = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate)
         isAgentGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAgentGenerated) ?? false
-        isExternalPlayback = try c.decodeIfPresent(Bool.self, forKey: .isExternalPlayback) ?? false
     }
 }

@@ -115,7 +115,7 @@ struct EpisodeDetailView: View {
     /// the user re-arms ingestion via Settings → Transcripts.
     private func warmTranscriptIfNeeded(episode: Episode) async {
         guard case .none = episode.transcriptState else { return }
-        let isExternal = store.subscription(id: episode.subscriptionID)?.isExternalPlayback ?? false
+        let isExternal = episode.subscriptionID == Episode.externalSubscriptionID
         guard episode.publisherTranscriptURL != nil || isExternal else { return }
         await TranscriptIngestService.shared.ingest(episodeID: episode.id)
     }
