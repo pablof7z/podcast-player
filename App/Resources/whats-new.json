@@ -2,10 +2,17 @@
   "schema_version": 1,
   "entries": [
     {
-      "id": "fc2c91b",
+      "id": "agent-skill-wiki-research",
+      "shipped_at": "2026-05-12T23:30:00Z",
+      "lines": [
+        "Wiki page compilation is now an opt-in agent skill — the agent loads focused instructions on citation grounding, scopes, and page kinds before building or removing a page. Read queries still work without it."
+      ]
+    },
+    {
+      "id": "1551f36",
       "shipped_at": "2026-05-12T23:00:00Z",
       "lines": [
-        "Fixed: generating an episode with clips from a non-downloaded episode now surfaces a clear error instead of silently producing narration where the clip should be."
+        "Fixed: when you ask the agent to generate an episode with clips from a podcast you haven't downloaded yet, it now downloads the audio automatically before stitching — no more silent fallback to narration."
       ]
     },
     {
