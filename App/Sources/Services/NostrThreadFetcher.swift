@@ -66,7 +66,10 @@ enum NostrThreadFetcher {
 
         let collector = Collector()
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { @MainActor in
+            // Closure inherits `@MainActor` from the enclosing enum —
+            // explicit `@MainActor in` here trips Swift 6's region-based
+            // isolation checker on the `collector` capture.
+            group.addTask {
                 await Self.readUntilEose(task: task, subID: subID, collector: collector)
             }
             group.addTask {

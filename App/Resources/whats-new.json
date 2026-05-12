@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "PENDING",
+      "shipped_at": "2026-05-13T00:00:00Z",
+      "lines": [
+        "Your agent now reconstructs the full Nostr conversation thread before replying: it pulls the conversation root and every reply tagged to it, hands the LLM the ordered transcript, and publishes its answer with proper NIP-10 root/reply tags — so a back-and-forth with a peer reads as one coherent thread instead of stranded one-shot replies."
+      ]
+    },
+    {
       "id": "nostr-relay-nip42-auth",
       "shipped_at": "2026-05-12T23:55:00Z",
       "lines": [

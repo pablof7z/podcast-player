@@ -401,7 +401,11 @@ final class NostrAgentResponder {
     /// whatever (possibly nil) cache state exists after the race.
     private func fetchProfileWithTimeout(pubkey: String, seconds: TimeInterval) async {
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { @MainActor [weak self] in
+            // Closure inherits `@MainActor` from the enclosing class —
+            // an explicit annotation here trips Swift 6's region-based
+            // isolation checker (rdar pending). The implicit isolation
+            // is what `NostrProfileFetcher` uses and compiles cleanly.
+            group.addTask { [weak self] in
                 await self?.profileFetcher.fetchProfiles(for: [pubkey])
             }
             group.addTask {

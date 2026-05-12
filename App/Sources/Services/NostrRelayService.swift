@@ -12,6 +12,11 @@ final class NostrRelayService {
     private var receiveLoop: Task<Void, Never>?
     private var connectedRelayURL: String?
     private lazy var profileFetcher = NostrProfileFetcher(store: store)
+    /// Routes inbound kind:1 events from allowed pubkeys through the
+    /// thread reconstruction + LLM + publish pipeline. Constructed lazily
+    /// so unit tests that instantiate the relay without a live store path
+    /// don't pull the OpenRouter credential chain just to exist.
+    private lazy var responder = NostrAgentResponder(store: store)
     /// Tracks pubkeys we've already queued a profile fetch for during this
     /// session so a burst of inbound events from the same peer doesn't
     /// spam the relay with kind:0 requests. Cleared on `stop()`.
@@ -136,10 +141,20 @@ final class NostrRelayService {
     }
 
     private func sendSubscription(agentPubkey: String) {
-        let filter: [String: Any] = [
+        // NIP-10 parity with win-the-day: carry `since:` from the
+        // persisted cursor so a reconnecting agent doesn't have to chew
+        // through every kind:1 the relay has ever seen tagged to it.
+        // The dedup set (`nostrRespondedEventIDs`) protects against the
+        // tiny overlap when an event with `created_at == cursor` is
+        // re-delivered. Omit the field on cold first launch so the
+        // initial inbox sync still pulls historic mentions.
+        var filter: [String: Any] = [
             "kinds": [NostrProtocol.kindTextNote],
             "#p": [agentPubkey],
         ]
+        if let since = store.state.nostrSinceCursor {
+            filter["since"] = since
+        }
         let message: [Any] = [NostrProtocol.requestCommand, NostrProtocol.subscriptionID, filter]
         do {
             let data = try JSONSerialization.data(withJSONObject: message)
@@ -244,11 +259,31 @@ final class NostrRelayService {
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
             NostrRelayService.logger.notice("handle: recording incoming turn from allowed pubkey")
             recordIncomingTurn(event: event, senderPubkey: senderPubkey, rawText: text)
-            // TODO: route to the agent pipeline (LLM reply + outgoing publish).
-            // When that lands it should call
-            // `store.recordNostrTurn(rootEventID:turn:counterpartyPubkey:)`
-            // with the outgoing event so the transcript stays complete.
             ensureProfileFetch(for: senderPubkey)
+            // Route through the NIP-10 thread reconstruction pipeline:
+            // fetch the conversation root + replies, build a chat-style
+            // message history with identity prefixes, hand it to the
+            // LLM, then sign + publish the reply with proper NIP-10
+            // reply tags. The responder also bumps the since-cursor,
+            // honours the ended-root + per-root turn-cap gates, and
+            // dedupes against `nostrRespondedEventIDs`.
+            guard let createdAt = event["created_at"] as? Int else {
+                NostrRelayService.logger.notice("handle: dropping allowed-pubkey event missing created_at")
+                return
+            }
+            let content = (event["content"] as? String) ?? ""
+            let tags = (event["tags"] as? [[String]]) ?? []
+            let rawJSON = (try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys]))
+                .flatMap { String(data: $0, encoding: .utf8) }
+            let inbound = NostrAgentResponder.Inbound(
+                eventID: eventID,
+                pubkey: senderPubkey,
+                createdAt: createdAt,
+                content: content,
+                tags: tags,
+                rawEventJSON: rawJSON
+            )
+            responder.handle(inbound: inbound)
             return
         }
 
