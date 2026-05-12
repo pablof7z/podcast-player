@@ -108,7 +108,13 @@ enum AgentPrompt {
         }
 
         let memories = state.agentMemories.filter { !$0.deleted }
-        if !memories.isEmpty {
+        if let compiled = state.compiledMemory,
+           !compiled.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           !memories.isEmpty {
+            // Prefer the compiled paragraph when available — it's the
+            // consolidated voice the `AgentMemoryCompiler` carries forward.
+            sections.append("## What You Know About the User\n\(compiled.text)")
+        } else if !memories.isEmpty {
             let list = memories.map { "- \($0.content)" }.joined(separator: "\n")
             sections.append("## What You Know About the User\n\(list)")
         }

@@ -12,6 +12,11 @@ struct AppState: Codable, Sendable {
     var notes: [Note] = []
     var friends: [Friend] = []
     var agentMemories: [AgentMemory] = []
+    /// LLM-consolidated paragraph summarizing the active `agentMemories`.
+    /// Produced by `AgentMemoryCompiler` after agent turns. When non-nil,
+    /// `AgentPrompt` injects this single paragraph in place of the raw
+    /// memory bullets so the prompt stays compact as memories accumulate.
+    var compiledMemory: CompiledAgentMemory?
     /// Categories produced by `PodcastCategorizationService`. The other
     /// agent owns generation; we store them here so settings + UI surfaces
     /// share one source of truth. Defaults to empty so an uncategorized
@@ -46,7 +51,7 @@ struct AppState: Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case subscriptions, episodes
-        case notes, friends, agentMemories, settings
+        case notes, friends, agentMemories, compiledMemory, settings
         case categories, categorySettings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case nostrConversations, nostrProfileCache
@@ -65,6 +70,7 @@ struct AppState: Codable, Sendable {
         notes = try c.decodeIfPresent([Note].self, forKey: .notes) ?? []
         friends = try c.decodeIfPresent([Friend].self, forKey: .friends) ?? []
         agentMemories = try c.decodeIfPresent([AgentMemory].self, forKey: .agentMemories) ?? []
+        compiledMemory = try c.decodeIfPresent(CompiledAgentMemory.self, forKey: .compiledMemory)
         categories = try c.decodeIfPresent([PodcastCategory].self, forKey: .categories) ?? []
         categorySettings = try c.decodeIfPresent([UUID: CategorySettings].self, forKey: .categorySettings) ?? [:]
         settings = try c.decodeIfPresent(Settings.self, forKey: .settings) ?? Settings()

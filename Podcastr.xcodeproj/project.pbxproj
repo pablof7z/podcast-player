@@ -270,6 +270,7 @@
 		764ADF2C93BFBE93D165BE5E /* AgentPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE27605784D2C6B087874B4 /* AgentPrompt.swift */; };
 		7656348515C6BF88DC11C6FB /* BriefingFakes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A35AFDFA0548CB4A22DBC77F /* BriefingFakes.swift */; };
 		76C98F57A8103DEAAB674929 /* WidgetTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 795A4D1B4090FA664CC600A1 /* WidgetTheme.swift */; };
+		773752A9C8461195BC448FC0 /* AgentMemoryCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5F8AA7EB507730A554BF4E /* AgentMemoryCompiler.swift */; };
 		777699F53CD662E9537BFF4B /* AgentToolsPodcastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FD5DA0784A938182923E88 /* AgentToolsPodcastTests.swift */; };
 		77B0A55AFAECFFD755AA55AA /* TranscriptState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C3D4234C6287F0A4D43154 /* TranscriptState.swift */; };
 		77CFD3CC9A1B3834E83C1302 /* AudioConversationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA14D090E457B5A5FD98E6B /* AudioConversationManager.swift */; };
@@ -942,6 +943,7 @@
 		7CF4F09180B230E7BC6E4754 /* ClipShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipShareSheet.swift; sourceTree = "<group>"; };
 		7D4CA937F4641D17F6533B34 /* AgentPicksService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPicksService.swift; sourceTree = "<group>"; };
 		7E35686C466B240112280616 /* DownloadsManagerRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsManagerRows.swift; sourceTree = "<group>"; };
+		7E5F8AA7EB507730A554BF4E /* AgentMemoryCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentMemoryCompiler.swift; sourceTree = "<group>"; };
 		7F319A8B26D1ABEED3F65F36 /* PlaybackStateAudioCallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackStateAudioCallbackTests.swift; sourceTree = "<group>"; };
 		7F4FE358C4B5A0D71E62CD8E /* ElevenLabsKeyInfoCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsKeyInfoCard.swift; sourceTree = "<group>"; };
 		7FBC06AD93772F6314E1F5AA /* WikiTriggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiTriggers.swift; sourceTree = "<group>"; };
@@ -2179,6 +2181,7 @@
 				D76AC4668B59361A7A920759 /* RunLog */,
 				C2BC0887CF92DDD3F064CA9C /* Skills */,
 				E596094BED4B040AFDFB89DD /* AgentGeneratedPodcastService.swift */,
+				7E5F8AA7EB507730A554BF4E /* AgentMemoryCompiler.swift */,
 				3BE27605784D2C6B087874B4 /* AgentPrompt.swift */,
 				07CB473ED49FC1290F3F8519 /* AgentRelayBridge.swift */,
 				60565544517EB803A5147F02 /* AgentTools.swift */,
@@ -2455,6 +2458,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27C62FDD4D6D7AC3142A8DD0 /* AgentGeneratedPodcastService.swift in Sources */,
+				773752A9C8461195BC448FC0 /* AgentMemoryCompiler.swift in Sources */,
 				764ADF2C93BFBE93D165BE5E /* AgentPrompt.swift in Sources */,
 				7859B6D29E7B191E8B9168A5 /* AgentRelayBridge.swift in Sources */,
 				3897825D6040A8BD248F702F /* AgentTTSComposer.swift in Sources */,
