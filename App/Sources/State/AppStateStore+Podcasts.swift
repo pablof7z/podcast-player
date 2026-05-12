@@ -14,11 +14,14 @@ struct SubscriptionImportResult: Sendable, Equatable {
 
 extension AppStateStore {
 
-    /// All subscribed podcasts, sorted alphabetically by title.
+    /// Real user subscriptions sorted alphabetically by title.
+    /// Synthetic entries (`isAgentGenerated`, `isExternalPlayback`) are excluded
+    /// so every UI surface that calls this gets a clean list without needing its
+    /// own filter. Internal operations that need all records read `state.subscriptions`.
     var sortedSubscriptions: [PodcastSubscription] {
-        state.subscriptions.sorted {
-            $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-        }
+        state.subscriptions
+            .filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
     /// Returns the live subscription record matching `id`, or `nil` when not found.

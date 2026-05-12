@@ -19,7 +19,7 @@ extension AppStateStore {
     /// O(1) per show. We do NOT walk `state.episodes` here; the projection
     /// is the source of truth that keeps `LibraryGridCell`'s body O(1) too.
     var sortedSubscriptionsByRecency: [PodcastSubscription] {
-        let subs = state.subscriptions
+        let subs = state.subscriptions.filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
         let episodes = state.episodes
         // Memoize the recency-date lookup so the comparator is O(1) per
         // comparison instead of re-resolving the projection inside the sort.

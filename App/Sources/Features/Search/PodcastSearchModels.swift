@@ -48,11 +48,12 @@ enum PodcastSearchEngine {
         let trimmed = query.trimmed
         guard !trimmed.isEmpty else { return PodcastLocalSearchResults() }
         let tokens = tokenize(trimmed)
+        let realSubscriptions = state.subscriptions.filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
         let subscriptionsByID = Dictionary(
-            uniqueKeysWithValues: state.subscriptions.map { ($0.id, $0) }
+            uniqueKeysWithValues: realSubscriptions.map { ($0.id, $0) }
         )
 
-        let shows = state.subscriptions.compactMap { subscription -> PodcastShowSearchHit? in
+        let shows = realSubscriptions.compactMap { subscription -> PodcastShowSearchHit? in
             let score = score(
                 fields: [
                     (subscription.title, 8),

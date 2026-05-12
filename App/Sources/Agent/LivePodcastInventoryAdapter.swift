@@ -58,7 +58,7 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
 
     private func listSubscriptionsSync(limit: Int) -> [SubscriptionSummary] {
         guard let store else { return [] }
-        let sorted = store.sortedSubscriptions.filter { !$0.isAgentGenerated && !$0.isExternalPlayback }
+        let sorted = store.sortedSubscriptions
         let bounded = Array(sorted.prefix(limit))
         return bounded.map { sub in
             let eps = store.episodes(forSubscription: sub.id)
