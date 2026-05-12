@@ -265,21 +265,66 @@ actor MockLibrary: PodcastLibraryProtocol {
     }
 }
 
-actor MockDelegation: PodcastDelegationProtocol {
-    private(set) var lastRecipient: String?
-    private(set) var lastPrompt: String?
+actor MockPeerEventPublisher: PeerEventPublisherProtocol {
+    struct ConversationReplyCall: Equatable {
+        let peerContext: PeerConversationContext
+        let body: String
+        let extraTags: [[String]]
+    }
+    struct FriendMessageCall: Equatable {
+        let friendPubkeyHex: String
+        let body: String
+        let peerContext: PeerConversationContext?
+    }
+    private(set) var conversationReplies: [ConversationReplyCall] = []
+    private(set) var friendMessages: [FriendMessageCall] = []
+    private var nextEventID = 1
+    private let shouldThrow: Bool
 
-    func delegate(recipient: String, prompt: String) async throws -> DelegationResult {
-        lastRecipient = recipient
-        lastPrompt = prompt
-        return DelegationResult(
-            eventID: "delegation-1",
-            recipient: recipient,
-            prompt: prompt,
-            status: "queued_local",
-            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-            tags: [["p", recipient], ["tool", "delegate"]]
-        )
+    init(shouldThrow: Bool = false) {
+        self.shouldThrow = shouldThrow
+    }
+
+    func publishConversationReply(
+        peerContext: PeerConversationContext,
+        body: String,
+        extraTags: [[String]]
+    ) async throws -> String {
+        if shouldThrow { throw NostrEventPublisherError.noRelayConfigured }
+        conversationReplies.append(.init(peerContext: peerContext, body: body, extraTags: extraTags))
+        defer { nextEventID += 1 }
+        return "peer-reply-\(nextEventID)"
+    }
+
+    func publishFriendMessage(
+        friendPubkeyHex: String,
+        body: String,
+        peerContext: PeerConversationContext?
+    ) async throws -> String {
+        if shouldThrow { throw NostrEventPublisherError.noRelayConfigured }
+        friendMessages.append(.init(friendPubkeyHex: friendPubkeyHex, body: body, peerContext: peerContext))
+        defer { nextEventID += 1 }
+        return "friend-msg-\(nextEventID)"
+    }
+}
+
+actor MockPeerConversationEndSink: PeerConversationEndSink {
+    private(set) var endedRoots: [String] = []
+
+    func markEnded(rootEventID: String) async {
+        endedRoots.append(rootEventID)
+    }
+}
+
+actor MockFriendDirectory: FriendDirectoryProtocol {
+    private let knownPubkeys: Set<String>
+
+    init(knownPubkeys: [String] = []) {
+        self.knownPubkeys = Set(knownPubkeys.map { $0.lowercased() })
+    }
+
+    func isKnownFriend(pubkeyHex: String) async -> Bool {
+        knownPubkeys.contains(pubkeyHex.lowercased())
     }
 }
 

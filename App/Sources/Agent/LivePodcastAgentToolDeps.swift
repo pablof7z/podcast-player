@@ -12,6 +12,7 @@ import os.log
 //   • `EpisodeSummarizerProtocol`      → `LiveEpisodeSummarizerAdapter`
 //   • `EpisodeFetcherProtocol`         → `LiveEpisodeFetcherAdapter`
 //   • `PlaybackHostProtocol`           → `LivePlaybackHostAdapter`
+//   • `PeerEventPublisherProtocol`     → `LivePeerEventPublisher`
 //   • `PerplexityClientProtocol`       → `PerplexityClient`
 //   • `TTSPublisherProtocol`           → `AgentTTSComposer`
 //
@@ -48,11 +49,14 @@ enum LivePodcastAgentToolDeps {
             ),
             inventory: inventory,
             categories: inventory,
-            delegation: LiveTENEXDelegationBridge(store: store),
+            peerPublisher: LivePeerEventPublisher(store: store),
+            friendDirectory: LiveFriendDirectoryAdapter(store: store),
             perplexity: PerplexityClient(),
             ttsPublisher: AgentTTSComposer(store: store, playback: playback),
             directory: LivePodcastDirectoryAdapter(),
-            subscribe: LivePodcastSubscribeAdapter(store: store)
+            subscribe: LivePodcastSubscribeAdapter(store: store),
+            peerContext: nil,
+            endConversationSink: LivePeerConversationEndSink(store: store)
         )
     }
 }

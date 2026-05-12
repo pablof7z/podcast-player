@@ -26,6 +26,10 @@ struct AppState: Codable, Sendable {
     /// One record per Nostr conversation root (NIP-10) the agent has
     /// participated in. Surfaces in Settings > Agent > Conversations.
     var nostrConversations: [NostrConversationRecord] = []
+    /// Conversation roots the agent has explicitly ended via the
+    /// `end_conversation` tool. Membership signals to UI and downstream
+    /// turn-handlers that no further outbound replies should be drafted.
+    var nostrEndedRootIDs: Set<String> = []
     /// Cached kind:0 profile metadata keyed by hex pubkey. Hydrated lazily
     /// when new pubkeys land in pending approvals or conversations.
     var nostrProfileCache: [String: NostrProfileMetadata] = [:]
@@ -49,7 +53,7 @@ struct AppState: Codable, Sendable {
         case notes, friends, agentMemories, settings
         case categories, categorySettings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
-        case nostrConversations, nostrProfileCache
+        case nostrConversations, nostrEndedRootIDs, nostrProfileCache
         case agentActivity
         case clips
         case threadingTopics, threadingMentions
@@ -72,6 +76,7 @@ struct AppState: Codable, Sendable {
         nostrBlockedPubkeys = try c.decodeIfPresent(Set<String>.self, forKey: .nostrBlockedPubkeys) ?? []
         nostrPendingApprovals = try c.decodeIfPresent([NostrPendingApproval].self, forKey: .nostrPendingApprovals) ?? []
         nostrConversations = try c.decodeIfPresent([NostrConversationRecord].self, forKey: .nostrConversations) ?? []
+        nostrEndedRootIDs = try c.decodeIfPresent(Set<String>.self, forKey: .nostrEndedRootIDs) ?? []
         nostrProfileCache = try c.decodeIfPresent([String: NostrProfileMetadata].self, forKey: .nostrProfileCache) ?? [:]
         agentActivity = try c.decodeIfPresent([AgentActivityEntry].self, forKey: .agentActivity) ?? []
         clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []

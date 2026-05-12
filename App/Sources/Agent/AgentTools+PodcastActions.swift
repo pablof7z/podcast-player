@@ -185,7 +185,7 @@ extension AgentTools {
         }
     }
 
-    // MARK: - Delegation
+    // MARK: - Clipping
 
     static func createClipTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
         guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
@@ -284,31 +284,6 @@ extension AgentTools {
         return toolSuccess(payload)
     }
 
-    static func delegateTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let recipient = (args["recipient"] as? String)?.trimmed, !recipient.isEmpty else {
-            return toolError("Missing or empty 'recipient'")
-        }
-        guard let prompt = (args["prompt"] as? String)?.trimmed, !prompt.isEmpty else {
-            return toolError("Missing or empty 'prompt'")
-        }
-        do {
-            let result = try await deps.delegation.delegate(recipient: recipient, prompt: prompt)
-            var payload: [String: Any] = [
-                "delegation_event_id": result.eventID,
-                "recipient": result.recipient,
-                "status": result.status,
-                "created_at": iso8601Basic.string(from: result.createdAt),
-                "nostr_kind": result.nostrKind,
-                "tags": result.tags,
-                "stop_for_turn": true,
-            ]
-            if let warning = result.warning { payload["warning"] = warning }
-            return toolSuccess(payload)
-        } catch {
-            return toolError("delegate failed: \(error.localizedDescription)")
-        }
-    }
-
     // MARK: - Helpers
 
     private static func serializeEpisodeMutation(_ result: EpisodeMutationResult) -> [String: Any] {
@@ -322,14 +297,14 @@ extension AgentTools {
         return payload
     }
 
-    private static func podcastActionNumericArg(_ raw: Any?) -> Double? {
+    static func podcastActionNumericArg(_ raw: Any?) -> Double? {
         if let d = raw as? Double { return d }
         if let i = raw as? Int { return Double(i) }
         if let n = raw as? NSNumber { return n.doubleValue }
         return nil
     }
 
-    private static func podcastActionIntArg(_ raw: Any?) -> Int? {
+    static func podcastActionIntArg(_ raw: Any?) -> Int? {
         if let i = raw as? Int { return i }
         if let d = raw as? Double { return Int(d) }
         if let n = raw as? NSNumber { return n.intValue }
