@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "nostr-agent-full-tools",
+      "shipped_at": "2026-05-13T00:20:00Z",
+      "lines": [
+        "Your Nostr agent now uses the exact same toolset as your in-app chat — peers you've approved can ask it to generate a podcast for you, search your library, compile a wiki page, save a note, or anything else the agent can do, and it acts on your behalf. Its prompt now starts with a peer-context preamble (who it's talking to, that they're NOT you) before the usual owner-voice inventory, so it addresses the peer by their kind:0 display name while still doing the work for you."
+      ]
+    },
+    {
       "id": "nostr-agent-reply-pipeline",
       "shipped_at": "2026-05-13T00:05:00Z",
       "lines": [

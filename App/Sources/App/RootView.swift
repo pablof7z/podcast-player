@@ -25,6 +25,13 @@ enum RootTab: String, CaseIterable {
 /// The root view of the app. Hosts the main tab bar, the feedback shake gesture,
 /// onboarding gate, and deep-link routing.
 struct RootView: View {
+    /// Optional Nostr relay service — owned by `AppMain` so its
+    /// lifecycle outlives any presented sheet. Nil before the cold-launch
+    /// `.task` in AppMain runs. We late-bind the responder's
+    /// `PodcastAgentToolDeps` provider + ask coordinator once both this
+    /// view's `playbackState` and the relay service exist.
+    let relayService: NostrRelayService?
+
     @Environment(AppStateStore.self) private var store
     @Environment(AgentAskCoordinator.self) private var askCoordinator
     @State private var selectedTab: RootTab = .home
@@ -60,6 +67,18 @@ struct RootView: View {
         tabBar
             .environment(playbackState)
             .onAppear {
+                // Late-bind the Nostr agent's podcast tool deps. The
+                // responder is constructed in AppMain.task before this
+                // view's PlaybackState exists; here we inject a closure
+                // that resolves the deps on demand each time a tool
+                // call needs them (so a future PlaybackState swap is
+                // picked up automatically).
+                if let relayService {
+                    relayService.agentResponder.podcastDepsProvider = { [store, playbackState] in
+                        LivePodcastAgentToolDeps.make(store: store, playback: playbackState)
+                    }
+                    relayService.agentResponder.askCoordinator = askCoordinator
+                }
                 playbackState.onPersistPosition = { [store] id, position in
                     store.setEpisodePlaybackPosition(id, position: position)
                 }
