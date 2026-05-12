@@ -43,10 +43,19 @@ final class NostrRelayService {
         guard settings.nostrEnabled,
               let pubkeyHex = settings.nostrPublicKeyHex, !pubkeyHex.isEmpty,
               !settings.nostrRelayURL.isEmpty else {
+            NostrRelayService.logger.notice(
+                "start: skipping — enabled=\(settings.nostrEnabled, privacy: .public), hasPubkey=\(settings.nostrPublicKeyHex?.isEmpty == false, privacy: .public), relayURL='\(settings.nostrRelayURL, privacy: .public)'"
+            )
             stop()
             return
         }
-        guard connectedRelayURL != settings.nostrRelayURL || webSocketTask == nil else { return }
+        guard connectedRelayURL != settings.nostrRelayURL || webSocketTask == nil else {
+            NostrRelayService.logger.debug("start: already connected to \(settings.nostrRelayURL, privacy: .public); no-op")
+            return
+        }
+        NostrRelayService.logger.notice(
+            "start: connecting agent \(pubkeyHex.prefix(12), privacy: .public)… on \(settings.nostrRelayURL, privacy: .public)"
+        )
         stop()
         connect(urlString: settings.nostrRelayURL, agentPubkey: pubkeyHex)
     }
@@ -126,9 +135,12 @@ final class NostrRelayService {
                 NostrRelayService.logger.error("sendSubscription: failed to encode REQ as UTF-8 string")
                 return
             }
+            NostrRelayService.logger.notice("sendSubscription: REQ \(text, privacy: .public)")
             webSocketTask?.send(.string(text)) { error in
                 if let error {
                     NostrRelayService.logger.error("sendSubscription: WebSocket send failed — \(error, privacy: .public)")
+                } else {
+                    NostrRelayService.logger.notice("sendSubscription: REQ sent OK")
                 }
             }
         } catch {
@@ -160,18 +172,61 @@ final class NostrRelayService {
     // MARK: - Event handling
 
     private func handle(text: String) {
+        NostrRelayService.logger.debug("relay frame: \(text, privacy: .public)")
         guard let data = text.data(using: .utf8),
               let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= NostrProtocol.minEventArrayCount,
-              let msgType = array[0] as? String, msgType == NostrProtocol.eventMessage,
-              let event = array[NostrProtocol.eventIndex] as? [String: Any],
-              let kind = event["kind"] as? Int, kind == NostrProtocol.kindTextNote,
-              let senderPubkey = event["pubkey"] as? String else { return }
+              array.count >= 2,
+              let msgType = array[0] as? String else {
+            NostrRelayService.logger.notice("handle: dropped unparseable frame")
+            return
+        }
 
-        guard senderPubkey != store.state.settings.nostrPublicKeyHex else { return }
-        guard !store.state.nostrBlockedPubkeys.contains(senderPubkey) else { return }
+        // Surface relay-side acks/errors so we can tell the difference between
+        // "no events delivered" and "the subscription was rejected".
+        switch msgType {
+        case "NOTICE":
+            NostrRelayService.logger.notice("relay NOTICE: \(text, privacy: .public)")
+            return
+        case "CLOSED":
+            NostrRelayService.logger.notice("relay CLOSED: \(text, privacy: .public)")
+            return
+        case "OK":
+            NostrRelayService.logger.notice("relay OK: \(text, privacy: .public)")
+            return
+        case "EOSE":
+            NostrRelayService.logger.notice("relay EOSE: \(text, privacy: .public)")
+            return
+        case NostrProtocol.eventMessage:
+            break
+        default:
+            return
+        }
+
+        guard array.count >= NostrProtocol.minEventArrayCount,
+              let event = array[NostrProtocol.eventIndex] as? [String: Any],
+              let kind = event["kind"] as? Int,
+              let senderPubkey = event["pubkey"] as? String,
+              let eventID = event["id"] as? String else {
+            NostrRelayService.logger.notice("handle: dropped EVENT with missing fields")
+            return
+        }
+
+        NostrRelayService.logger.notice(
+            "inbound kind=\(kind, privacy: .public) id=\(eventID.prefix(12), privacy: .public) from=\(senderPubkey.prefix(12), privacy: .public)"
+        )
+
+        guard kind == NostrProtocol.kindTextNote else { return }
+        guard senderPubkey != store.state.settings.nostrPublicKeyHex else {
+            NostrRelayService.logger.debug("handle: dropping self-authored event")
+            return
+        }
+        guard !store.state.nostrBlockedPubkeys.contains(senderPubkey) else {
+            NostrRelayService.logger.notice("handle: dropping event from blocked pubkey")
+            return
+        }
 
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
+            NostrRelayService.logger.notice("handle: recording incoming turn from allowed pubkey")
             recordIncomingTurn(event: event, senderPubkey: senderPubkey, rawText: text)
             // TODO: route to the agent pipeline (LLM reply + outgoing publish).
             // When that lands it should call
@@ -182,6 +237,7 @@ final class NostrRelayService {
         }
 
         let isNew = !store.state.nostrPendingApprovals.contains { $0.pubkeyHex == senderPubkey }
+        NostrRelayService.logger.notice("handle: queueing approval (new=\(isNew, privacy: .public)) for \(senderPubkey.prefix(12), privacy: .public)")
         let cached = store.state.nostrProfileCache[senderPubkey]
         let approval = NostrPendingApproval(
             pubkeyHex: senderPubkey,
