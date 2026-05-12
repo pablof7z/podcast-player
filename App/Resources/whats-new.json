@@ -2,6 +2,14 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "efee9b5",
+      "shipped_at": "2026-05-12T23:45:00Z",
+      "lines": [
+        "Settings > Agent now has a Conversations screen listing every Nostr thread your agent has participated in, with names + avatars pulled from kind:0 metadata and a one-tap JSONL export of the raw events.",
+        "When a Nostr message lands from a pubkey you haven't approved, a trust-this-user sheet now pops over whatever tab you're on with the message preview and one-tap Allow / Block — no more digging into Settings to react."
+      ]
+    },
+    {
       "id": "agent-skill-wiki-research",
       "shipped_at": "2026-05-12T23:30:00Z",
       "lines": [
