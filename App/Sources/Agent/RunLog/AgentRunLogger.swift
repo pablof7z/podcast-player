@@ -7,8 +7,8 @@ final class AgentRunLogger: ObservableObject {
 
     @Published private(set) var runs: [AgentRun] = []
 
-    private let directoryURL: URL
-    private let fileURL: URL
+    let directoryURL: URL
+    let fileURL: URL
 
     /// Cap on how many run records we keep on disk. A power user who
     /// drives the agent dozens of times a day across months would
@@ -24,12 +24,23 @@ final class AgentRunLogger: ObservableObject {
     /// `.sortedKeys`), then discarded it. Per-run agent transcripts can
     /// grow to several KB once turns + tool calls + system prompts add
     /// up, so the per-call configuration was a real (if small) tax.
-    private static let encoder: JSONEncoder = {
+    /// `nonisolated` because the actual `JSONEncoder` is `Sendable` and
+    /// we never mutate it after the closure runs — the persistence
+    /// extension reads it from a background queue.
+    nonisolated static let encoder: JSONEncoder = {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
         e.outputFormatting = [.sortedKeys]
         return e
     }()
+
+    /// Serial queue that owns every encode + write to `runs.json`.
+    /// `log(run:)` is called on the main actor from agent run
+    /// finalisation; serialising the disk side-effect keeps the
+    /// MainActor responsive while guaranteeing writes don't interleave
+    /// and corrupt the file (which an `.atomic` write only protects
+    /// against per-call, not across racing tasks).
+    let ioQueue = DispatchQueue(label: "AgentRunLogger.io", qos: .utility)
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
@@ -45,23 +56,11 @@ final class AgentRunLogger: ObservableObject {
         if runs.count > Self.maxRetainedRuns {
             runs.removeLast(runs.count - Self.maxRetainedRuns)
         }
-        save()
+        scheduleSave()
     }
 
     func clear() {
         runs = []
-        save()
-    }
-
-    private func save() {
-        guard let data = try? Self.encoder.encode(runs) else { return }
-        try? data.write(to: fileURL, options: [.atomic])
-    }
-
-    private static func load(from url: URL) -> [AgentRun] {
-        guard let data = try? Data(contentsOf: url) else { return [] }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return (try? decoder.decode([AgentRun].self, from: data)) ?? []
+        scheduleSave()
     }
 }
