@@ -35,7 +35,7 @@ enum LivePodcastAgentToolDeps {
         let inventory = LivePodcastInventoryAdapter(store: store)
         return PodcastAgentToolDeps(
             rag: LivePodcastRAGAdapter(store: store),
-            wiki: LiveWikiStorageAdapter(),
+            wiki: LiveWikiStorageAdapter(store: store),
             briefing: LiveBriefingComposerAdapter(store: store),
             summarizer: LiveEpisodeSummarizerAdapter(store: store),
             fetcher: LiveEpisodeFetcherAdapter(store: store),

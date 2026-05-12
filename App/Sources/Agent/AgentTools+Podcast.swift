@@ -31,6 +31,9 @@ extension AgentTools {
         static let setSleepTimer        = "set_sleep_timer"
         static let searchEpisodes       = "search_episodes"
         static let queryWiki            = "query_wiki"
+        static let createWikiPage       = "create_wiki_page"
+        static let listWikiPages        = "list_wiki_pages"
+        static let deleteWikiPage       = "delete_wiki_page"
         static let queryTranscripts     = "query_transcripts"
         static let generateBriefing     = "generate_briefing"
         static let perplexitySearch     = "perplexity_search"
@@ -66,7 +69,8 @@ extension AgentTools {
         static var all: [String] {
             [
                 playEpisodeAt, pausePlayback, setPlaybackRate, setSleepTimer,
-                searchEpisodes, queryWiki, queryTranscripts,
+                searchEpisodes, queryWiki, createWikiPage, listWikiPages, deleteWikiPage,
+            queryTranscripts,
                 generateBriefing, perplexitySearch, summarizeEpisode,
                 findSimilarEpisodes, markEpisodePlayed, markEpisodeUnplayed,
                 downloadEpisode, requestTranscription, refreshFeed,
@@ -139,6 +143,12 @@ extension AgentTools {
             return await searchEpisodesTool(args: args, deps: deps)
         case PodcastNames.queryWiki:
             return await queryWikiTool(args: args, deps: deps)
+        case PodcastNames.createWikiPage:
+            return await createWikiPageTool(args: args, deps: deps)
+        case PodcastNames.listWikiPages:
+            return await listWikiPagesTool(args: args, deps: deps)
+        case PodcastNames.deleteWikiPage:
+            return await deleteWikiPageTool(args: args, deps: deps)
         case PodcastNames.queryTranscripts:
             return await queryTranscriptsTool(args: args, deps: deps)
         case PodcastNames.generateBriefing:
@@ -250,35 +260,6 @@ extension AgentTools {
             ])
         } catch {
             return toolError("search_episodes failed: \(error.localizedDescription)")
-        }
-    }
-
-    // MARK: - query_wiki
-
-    private static func queryWikiTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let topic = (args["topic"] as? String)?.trimmed, !topic.isEmpty else {
-            return toolError("Missing or empty 'topic'")
-        }
-        let scope = (args["scope"] as? String)?.trimmed.nilIfEmpty
-        let limit = clampedLimit(args["limit"], default: podcastWikiDefaultLimit, max: 10)
-        do {
-            let hits = try await deps.wiki.queryWiki(topic: topic, scope: scope, limit: limit)
-            let rows = hits.map { hit -> [String: Any] in
-                var row: [String: Any] = [
-                    "page_id": hit.pageID,
-                    "title": hit.title,
-                    "excerpt": hit.excerpt,
-                ]
-                if let s = hit.score { row["score"] = s }
-                return row
-            }
-            return toolSuccess([
-                "topic": topic,
-                "total_found": rows.count,
-                "results": rows,
-            ])
-        } catch {
-            return toolError("query_wiki failed: \(error.localizedDescription)")
         }
     }
 
@@ -464,7 +445,7 @@ extension AgentTools {
 
     /// Clamp a `limit`/`k` argument to `[1, max]`. Falls back to `default` when
     /// the argument is missing or non-integer.
-    private static func clampedLimit(_ raw: Any?, default defaultValue: Int, max: Int) -> Int {
+    static func clampedLimit(_ raw: Any?, default defaultValue: Int, max: Int) -> Int {
         let asInt: Int
         if let i = raw as? Int { asInt = i }
         else if let d = raw as? Double { asInt = Int(d) }

@@ -78,6 +78,41 @@ extension AgentTools {
                 required: ["topic"]
             ),
             podcastTool(
+                name: PodcastNames.createWikiPage,
+                description: """
+                Compile and save a wiki page about a topic, person, or show. Searches the user's \
+                transcripts, drafts a citation-grounded article, verifies every claim, and persists it \
+                so the system auto-refreshes it as new episodes land. \
+                Use when the user says 'build a wiki page on X', 'research X from my podcasts', \
+                or 'what do my podcasts say about X — save it'. \
+                Requires an AI provider key (OpenRouter or compatible). Returns the compiled page.
+                """,
+                properties: [
+                    "title": ["type": "string", "description": "Topic, person name, or show name to compile a page about."],
+                    "kind": ["type": "string", "enum": ["topic", "person", "show"], "description": "Page type. Defaults to 'topic'."],
+                    "scope": ["type": "string", "description": "Optional podcast ID to constrain compilation to one show's transcripts. Omit for a library-wide page."],
+                ],
+                required: ["title"]
+            ),
+            podcastTool(
+                name: PodcastNames.listWikiPages,
+                description: "List existing wiki pages in the user's library. Use before creating a page (to check if it already exists) or before deleting one.",
+                properties: [
+                    "scope": ["type": "string", "description": "Optional podcast ID to list only pages for one show. Omit for all pages."],
+                    "limit": ["type": "integer", "description": "Maximum pages to return (1–100). Defaults to 25."],
+                ],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.deleteWikiPage,
+                description: "Delete a wiki page by slug. Use only when the user explicitly asks to remove a page. Call list_wiki_pages first to confirm the slug.",
+                properties: [
+                    "slug": ["type": "string", "description": "URL slug of the page to delete (e.g. 'zone-2-training')."],
+                    "scope": ["type": "string", "description": "Optional podcast ID for pages scoped to one show. Omit for global pages."],
+                ],
+                required: ["slug"]
+            ),
+            podcastTool(
                 name: PodcastNames.queryTranscripts,
                 description: "RAG search over transcript chunks. Returns timestamped excerpts with speaker labels. Use this when the user asks 'what did they say about X?' and you need direct quotes to ground the answer.",
                 properties: [

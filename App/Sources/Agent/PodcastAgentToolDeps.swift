@@ -39,6 +39,21 @@ public protocol PodcastAgentRAGSearchProtocol: Sendable {
 public protocol WikiStorageProtocol: Sendable {
     /// Look up a wiki page by topic. `scope` is an optional podcast ID.
     func queryWiki(topic: String, scope: PodcastID?, limit: Int) async throws -> [WikiHit]
+
+    /// Compile and persist a new wiki page. Throws when the AI provider key is
+    /// missing or when the RAG index has no evidence for the requested topic.
+    /// `kind` is "topic", "person", or "show" (defaults to "topic" for unknown values).
+    /// `scope` is an optional podcast UUID string; nil produces a global page.
+    func createWikiPage(title: String, kind: String, scope: PodcastID?) async throws -> WikiCreateResult
+
+    /// List existing wiki pages from the inventory. Fast — does not decode page bodies.
+    /// `scope` is an optional podcast UUID string; nil returns all pages.
+    func listWikiPages(scope: PodcastID?, limit: Int) async throws -> [WikiPageListing]
+
+    /// Delete the wiki page at `slug` in the given scope.
+    /// `scope` is an optional podcast UUID string; nil targets global pages.
+    /// No-ops when the page does not exist.
+    func deleteWikiPage(slug: String, scope: PodcastID?) async throws
 }
 
 // MARK: - Composer / summarizer / fetcher

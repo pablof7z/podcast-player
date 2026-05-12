@@ -12,6 +12,8 @@
 		02E8BC01AB1737A2495F0578 /* PlaybackState+Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641B7B6727D57CA53D90E43D /* PlaybackState+Queue.swift */; };
 		02F9988B7922002BB6DB0BEB /* AgentIdentityQRView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE3FED42AA395BDE3B95D518 /* AgentIdentityQRView.swift */; };
 		0325F749D534FD1806CE60D7 /* AgentTools+PodcastInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB897B9154A9E3DA3DA3D83 /* AgentTools+PodcastInventory.swift */; };
+		2CB74561E5CC45D3903F59AB /* AgentTools+PodcastWiki.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60DFDC82E2648AABF37ECD5 /* AgentTools+PodcastWiki.swift */; };
+		9831EA095D0444EFB8391539 /* PodcastAgentToolValues+Wiki.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA4D12234CE43BDA5213107 /* PodcastAgentToolValues+Wiki.swift */; };
 		03E38E986CE45F800014E50D /* ThreadingTopicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D6A8E325C2C4786D5CCC81 /* ThreadingTopicView.swift */; };
 		04495CC569ED1DFDD14E35C1 /* PlaybackStateAudioCallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F319A8B26D1ABEED3F65F36 /* PlaybackStateAudioCallbackTests.swift */; };
 		047CFD98FF458857C7B6C8D8 /* AppleNativeSTTClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC250C2436FBB5E35A6D63A /* AppleNativeSTTClient.swift */; };
@@ -786,6 +788,8 @@
 		3A5D61A2A2E76A46CCB65B50 /* ClipComposerHandlesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipComposerHandlesView.swift; sourceTree = "<group>"; };
 		3A6C1274B3B348EF9D1A50B5 /* HomeFeaturedSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFeaturedSection.swift; sourceTree = "<group>"; };
 		3AB897B9154A9E3DA3DA3D83 /* AgentTools+PodcastInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+PodcastInventory.swift"; sourceTree = "<group>"; };
+		C60DFDC82E2648AABF37ECD5 /* AgentTools+PodcastWiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+PodcastWiki.swift"; sourceTree = "<group>"; };
+		5AA4D12234CE43BDA5213107 /* PodcastAgentToolValues+Wiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PodcastAgentToolValues+Wiki.swift"; sourceTree = "<group>"; };
 		3ABC2DEEFBE58AA45D6E33C8 /* BYOKCredentialImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BYOKCredentialImporter.swift; sourceTree = "<group>"; };
 		3BE27605784D2C6B087874B4 /* AgentPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPrompt.swift; sourceTree = "<group>"; };
 		3C0F6CC93B8FEAEE7818D2A9 /* ChapterRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterRailView.swift; sourceTree = "<group>"; };
@@ -2146,6 +2150,8 @@
 				D41965CC3F4A90D6B2C95AC3 /* AgentTools+PodcastActions.swift */,
 				68330F2571B90C7BBD19CA19 /* AgentTools+PodcastExternal.swift */,
 				3AB897B9154A9E3DA3DA3D83 /* AgentTools+PodcastInventory.swift */,
+				C60DFDC82E2648AABF37ECD5 /* AgentTools+PodcastWiki.swift */,
+				5AA4D12234CE43BDA5213107 /* PodcastAgentToolValues+Wiki.swift */,
 				CD667C02040DA7D00975CE99 /* AgentTools+TTS.swift */,
 				D5F13F2BBC4FECC8B7B3D4BF /* AgentToolSchema.swift */,
 				84304F44DD666F60EA9A03B7 /* AgentToolSchema+Podcast.swift */,
@@ -2418,6 +2424,8 @@
 				1E0FB5E141FFC2FA21A4C679 /* AgentTools+PodcastActions.swift in Sources */,
 				72F34230C81FFCE3D89454A5 /* AgentTools+PodcastExternal.swift in Sources */,
 				0325F749D534FD1806CE60D7 /* AgentTools+PodcastInventory.swift in Sources */,
+				2CB74561E5CC45D3903F59AB /* AgentTools+PodcastWiki.swift in Sources */,
+				9831EA095D0444EFB8391539 /* PodcastAgentToolValues+Wiki.swift in Sources */,
 				13AD59BF667D8CC6565F9AC5 /* AgentTools+TTS.swift in Sources */,
 				1326718139DD1A8F3CF4B6D8 /* AgentTools.swift in Sources */,
 				4AD5BA0515D2F248FA730B99 /* LiveBriefingComposerAdapter.swift in Sources */,

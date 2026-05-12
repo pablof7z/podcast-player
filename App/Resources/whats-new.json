@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "id": "agent-wiki-tools",
+      "shipped_at": "2026-05-12T20:00:00Z",
+      "lines": [
+        "The assistant can now build, list, and delete wiki pages on demand — just ask it to 'compile a wiki page on Zone 2' or 'build a page about Peter Attia' and it searches your transcripts, verifies every claim, and saves it so the system keeps it fresh as new episodes arrive."
+      ]
+    },
+    {
       "id": "home-list-only",
       "shipped_at": "2026-05-12T18:00:00Z",
       "lines": [
