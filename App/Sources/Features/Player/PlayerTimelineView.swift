@@ -19,6 +19,9 @@ struct PlayerTimelineView: View {
     var chapters: [Episode.Chapter] = []
     var clips: [Clip] = []
     var onClipTap: ((Clip) -> Void)?
+    /// Fraction (0–1) of the episode that has been downloaded. When non-nil,
+    /// a medium-opacity shade is drawn between the background and playhead fill.
+    var downloadFraction: Double? = nil
 
     // Track geometry constants
     private let trackH: CGFloat = 4
@@ -65,6 +68,13 @@ struct PlayerTimelineView: View {
             with: .color(Color.primary.opacity(0.14))
         )
         guard duration > 0 else { return }
+        if let dl = downloadFraction, dl > 0 {
+            let dlRect = CGRect(x: 0, y: y, width: size.width * min(1, dl), height: trackH)
+            ctx.fill(
+                Path(roundedRect: dlRect, cornerRadius: trackH / 2),
+                with: .color(Color.primary.opacity(0.30))
+            )
+        }
         let progress = min(1, currentTime / duration)
         let filled = CGRect(x: 0, y: y, width: size.width * progress, height: trackH)
         ctx.fill(

@@ -15,6 +15,7 @@ struct PlayerScrubberView: View {
     var chapters: [Episode.Chapter] = []
     var clips: [Clip] = []
     var onClipTap: ((Clip) -> Void)?
+    var downloadFraction: Double? = nil
 
     @State private var scrubTime: TimeInterval = 0
     @State private var timelineWidth: CGFloat = 0
@@ -27,7 +28,8 @@ struct PlayerScrubberView: View {
                 isScrubbing: isScrubbing,
                 chapters: chapters,
                 clips: clips,
-                onClipTap: onClipTap
+                onClipTap: onClipTap,
+                downloadFraction: downloadFraction
             )
             .frame(height: 28)
             .background(

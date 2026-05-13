@@ -160,10 +160,19 @@ struct PlayerView: View {
             compactArtwork
             if let episode = state.episode {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(episode.title)
-                        .font(AppTheme.Typography.title)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        Haptics.selection()
+                        openEpisodeDetail(episode)
+                    } label: {
+                        Text(episode.title)
+                            .font(AppTheme.Typography.title)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens episode details")
                     if !showName.isEmpty {
                         Text(showName)
                             .font(.system(.subheadline, design: .rounded).weight(.medium))
@@ -174,7 +183,6 @@ struct PlayerView: View {
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
-                    downloadBadge
                     generationSourceChip
                 }
             }
@@ -256,17 +264,32 @@ struct PlayerView: View {
         return liveEpisode?.chapters?.filter(\.includeInTableOfContents)
     }
 
-    // MARK: - Download badge
+    // MARK: - Download fraction (for scrubber shade)
 
-    @ViewBuilder
-    private var downloadBadge: some View {
-        if let id = state.episode?.id,
-           let resolved = store.episode(id: id) ?? state.episode {
-            DownloadProgressBadge(
-                episode: resolved,
-                liveProgress: downloadService.progress[id]
-            )
+    private var downloadFraction: Double? {
+        guard let id = state.episode?.id,
+              let episode = store.episode(id: id) ?? state.episode else { return nil }
+        switch episode.downloadState {
+        case .downloading(let persisted, _):
+            return (downloadService.progress[id] ?? persisted).clamped01
+        case .downloaded:
+            return 1.0
+        default:
+            return nil
         }
+    }
+
+    // MARK: - Navigation
+
+    /// Swap the player sheet for the episode-detail sheet via the same
+    /// notification the More-menu's "Go to episode" uses — atomic flip on
+    /// `RootView`'s side avoids the sheet-dismiss race that previously crashed.
+    private func openEpisodeDetail(_ episode: Episode) {
+        NotificationCenter.default.post(
+            name: .openEpisodeDetailRequested,
+            object: nil,
+            userInfo: ["episodeID": episode.id.uuidString]
+        )
     }
 
     // MARK: - Generation source chip
@@ -329,7 +352,8 @@ struct PlayerView: View {
                         isScrubbing: $isScrubbing,
                         chapters: navigableChapters ?? [],
                         clips: episodeClips,
-                        onClipTap: { clip in state.navigationalSeek(to: clip.startSeconds) }
+                        onClipTap: { clip in state.navigationalSeek(to: clip.startSeconds) },
+                        downloadFraction: downloadFraction
                     )
                     routePicker
                 }
