@@ -53,18 +53,15 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
             throw NostrEventPublisherError.encodingFailed
         }
         var tags: [[String]] = []
+        // Copy a-tags from the peer context (channel anchors) or fall back to
+        // the project coordinate. No e-tags: friend messages are always root
+        // events so the friend's response can be detected via NIP-10 root lookup.
         if let peerContext {
             for a in peerContext.rootATags { tags.append(a) }
         } else {
             tags.append(["a", FeedbackRelayClient.projectCoordinate])
         }
         tags.append(["p", friendPubkeyHex])
-        if let peerContext {
-            tags.append(["e", peerContext.rootEventID, "", "root"])
-            if peerContext.inboundEventID != peerContext.rootEventID {
-                tags.append(["e", peerContext.inboundEventID, "", "reply"])
-            }
-        }
         return try await signAndPublish(content: trimmed, tags: tags)
     }
 
@@ -106,5 +103,24 @@ struct LiveFriendDirectoryAdapter: FriendDirectoryProtocol {
         let needle = prefixOrFull.lowercased()
         let friends: [Friend] = await MainActor.run { store?.state.friends ?? [] }
         return friends.first { $0.identifier.lowercased().hasPrefix(needle) }?.identifier
+    }
+}
+
+// MARK: - LivePendingFriendMessageRegistrar
+
+/// Routes a `PendingFriendMessage` into `AppStateStore` from the `async`
+/// tool dispatch context. Uses `@unchecked Sendable` because the `store`
+/// reference is only ever touched through `MainActor.run`.
+final class LivePendingFriendMessageRegistrar: PendingFriendMessageRegistrarProtocol, @unchecked Sendable {
+    weak var store: AppStateStore?
+
+    init(store: AppStateStore) {
+        self.store = store
+    }
+
+    func register(_ message: PendingFriendMessage) async {
+        await MainActor.run { [weak self] in
+            self?.store?.registerPendingFriendMessage(message)
+        }
     }
 }

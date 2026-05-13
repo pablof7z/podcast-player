@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T23:32:00Z",
+      "lines": [
+        "When your agent messages another agent, it now automatically resumes the conversation once the other agent replies — no manual follow-up needed."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T23:31:00Z",
       "lines": [
         "The agent now shows each friend's 6-character pubkey prefix in the Friends list and can message them using just that prefix."

@@ -67,6 +67,10 @@ struct AppState: Codable, Sendable {
     /// `AgentScheduledTaskRunner` on foreground / app-appear. Persisted so
     /// tasks survive restarts.
     var agentScheduledTasks: [AgentScheduledTask] = []
+    /// Outbound `send_friend_message` events awaiting a reply. When the
+    /// friend's kind:1 response arrives, `NostrAgentResponder` claims the
+    /// matching entry and re-invokes the originating conversation.
+    var pendingFriendMessages: [PendingFriendMessage] = []
 
     init() {}
 
@@ -81,6 +85,7 @@ struct AppState: Codable, Sendable {
         case clips
         case threadingTopics, threadingMentions
         case agentScheduledTasks
+        case pendingFriendMessages
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -124,6 +129,7 @@ struct AppState: Codable, Sendable {
         threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []
         threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
         agentScheduledTasks = try c.decodeIfPresent([AgentScheduledTask].self, forKey: .agentScheduledTasks) ?? []
+        pendingFriendMessages = try c.decodeIfPresent([PendingFriendMessage].self, forKey: .pendingFriendMessages) ?? []
     }
 
     /// Decodes the `subscriptions` array, handling both the new slim shape

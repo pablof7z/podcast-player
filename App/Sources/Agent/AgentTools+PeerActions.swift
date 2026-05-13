@@ -50,9 +50,30 @@ extension AgentTools {
                 body: message,
                 peerContext: deps.peerContext
             )
+            // Determine where to resume once the friend replies. The two
+            // origins are mutually exclusive: an in-app chat has a
+            // chatConversationID; a Nostr peer turn has a peerContext.
+            let origin: PendingFriendMessageOrigin?
+            if let convID = deps.chatConversationID {
+                origin = .inAppChat(conversationID: convID)
+            } else if let ctx = deps.peerContext {
+                origin = .nostrPeer(rootEventID: ctx.rootEventID, peerPubkey: ctx.peerPubkeyHex)
+            } else {
+                origin = nil
+            }
+            if let origin {
+                let pending = PendingFriendMessage(
+                    sentEventID: eventID,
+                    friendPubkey: friendPubkey,
+                    sentAt: Date(),
+                    origin: origin
+                )
+                await deps.pendingRegistrar?.register(pending)
+            }
             var result: [String: Any] = [
                 "event_id": eventID,
                 "friend_pubkey": friendPubkey,
+                "re_invocation": "Message sent. Once the other agent responds you will be automatically re-invoked in this conversation with their reply.",
             ]
             if let rootID = deps.peerContext?.rootEventID {
                 result["root_event_id"] = rootID

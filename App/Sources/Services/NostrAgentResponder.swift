@@ -30,7 +30,7 @@ import os.log
 @MainActor
 final class NostrAgentResponder {
 
-    nonisolated private static let logger = Logger.app("NostrAgentResponder")
+    nonisolated static let logger = Logger.app("NostrAgentResponder")
 
     /// Inbound payload, decoded from the relay frame by the caller.
     struct Inbound: Sendable, Equatable {
@@ -67,7 +67,15 @@ final class NostrAgentResponder {
         return enc
     }()
 
-    private weak var store: AppStateStore?
+    /// Shared encoder exposed to the +Delegation extension for outgoing
+    /// turn recording (private access can't cross extension files).
+    nonisolated static let delegationEventEncoder: JSONEncoder = {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.sortedKeys]
+        return enc
+    }()
+
+    weak var store: AppStateStore?
     private let profileFetcher: NostrProfileFetcher
     /// Late-bound supplier for `PodcastAgentToolDeps`. Wired by
     /// `RootView.onAppear` once the `PlaybackState` is available so the
@@ -160,6 +168,18 @@ final class NostrAgentResponder {
                 store.state.nostrRespondedEventIDs.insert(inbound.eventID)
                 return
             }
+        }
+
+        // Delegation response: the inbound is a reply to a `send_friend_message`
+        // root event we published. Re-invoke the originating conversation
+        // instead of running the standard peer-reply pipeline.
+        if let pending = store.claimPendingFriendMessage(forRootEventID: rootID) {
+            Self.logger.notice(
+                "process: delegation response from \(inbound.pubkey.prefix(12), privacy: .public) on root \(rootID.prefix(12), privacy: .public)"
+            )
+            store.state.nostrRespondedEventIDs.insert(inbound.eventID)
+            await handleDelegationResponse(inbound: inbound, pending: pending)
+            return
         }
 
         // Per-root in-flight serialization. Two inbounds on the same

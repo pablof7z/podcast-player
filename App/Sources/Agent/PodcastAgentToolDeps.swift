@@ -162,6 +162,14 @@ public protocol PodcastLibraryProtocol: Sendable {
     ) async throws -> ClipResult
 }
 
+/// Registers outbound friend messages so `NostrAgentResponder` can route
+/// incoming replies back to the originating conversation (in-app chat or
+/// Nostr peer thread). Used by `send_friend_message` immediately after
+/// the root event is published.
+protocol PendingFriendMessageRegistrarProtocol: Sendable {
+    func register(_ message: PendingFriendMessage) async
+}
+
 /// Resolves the user's trusted-friends list for the `send_friend_message`
 /// tool. Gates outbound notes so the agent cannot fire kind:1 events at
 /// arbitrary pubkeys on the user's identity.
@@ -319,6 +327,7 @@ struct PodcastAgentToolDeps: Sendable {
     let categories: PodcastCategoryProtocol
     let peerPublisher: PeerEventPublisherProtocol
     let friendDirectory: FriendDirectoryProtocol
+    let pendingRegistrar: (any PendingFriendMessageRegistrarProtocol)?
     let perplexity: PerplexityClientProtocol
     let ttsPublisher: TTSPublisherProtocol
     let directory: PodcastDirectoryProtocol
@@ -343,6 +352,7 @@ struct PodcastAgentToolDeps: Sendable {
         categories: PodcastCategoryProtocol,
         peerPublisher: PeerEventPublisherProtocol,
         friendDirectory: FriendDirectoryProtocol,
+        pendingRegistrar: (any PendingFriendMessageRegistrarProtocol)? = nil,
         perplexity: PerplexityClientProtocol,
         ttsPublisher: TTSPublisherProtocol,
         directory: PodcastDirectoryProtocol,
@@ -361,6 +371,7 @@ struct PodcastAgentToolDeps: Sendable {
         self.categories = categories
         self.peerPublisher = peerPublisher
         self.friendDirectory = friendDirectory
+        self.pendingRegistrar = pendingRegistrar
         self.perplexity = perplexity
         self.ttsPublisher = ttsPublisher
         self.directory = directory
@@ -384,6 +395,7 @@ struct PodcastAgentToolDeps: Sendable {
             categories: categories,
             peerPublisher: peerPublisher,
             friendDirectory: friendDirectory,
+            pendingRegistrar: pendingRegistrar,
             perplexity: perplexity,
             ttsPublisher: ttsPublisher,
             directory: directory,
@@ -409,6 +421,7 @@ struct PodcastAgentToolDeps: Sendable {
             categories: categories,
             peerPublisher: peerPublisher,
             friendDirectory: friendDirectory,
+            pendingRegistrar: pendingRegistrar,
             perplexity: perplexity,
             ttsPublisher: ttsPublisher,
             directory: directory,

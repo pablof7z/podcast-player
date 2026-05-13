@@ -51,6 +51,7 @@ enum LivePodcastAgentToolDeps {
             categories: inventory,
             peerPublisher: LivePeerEventPublisher(store: store),
             friendDirectory: LiveFriendDirectoryAdapter(store: store),
+            pendingRegistrar: LivePendingFriendMessageRegistrar(store: store),
             perplexity: PerplexityClient(),
             ttsPublisher: AgentTTSComposer(store: store, playback: playback),
             directory: LivePodcastDirectoryAdapter(),

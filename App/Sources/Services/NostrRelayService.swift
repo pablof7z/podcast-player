@@ -271,6 +271,31 @@ final class NostrRelayService {
             return
         }
 
+        // Delegation responses: a reply to one of our `send_friend_message`
+        // root events. Route directly to the responder without requiring the
+        // sender to be in the allowlist — the pending-message registry acts
+        // as the authorization gate.
+        let inboundTags = (event["tags"] as? [[String]]) ?? []
+        let inboundRootID = NostrConversationRoot.rootEventID(
+            eventID: eventID,
+            tags: inboundTags
+        )
+        if store.hasPendingFriendMessage(forRootEventID: inboundRootID) {
+            NostrRelayService.logger.notice(
+                "handle: routing delegation response from \(senderPubkey.prefix(12), privacy: .public) to agent responder"
+            )
+            ensureProfileFetch(for: senderPubkey)
+            agentResponder.handle(inbound: NostrAgentResponder.Inbound(
+                eventID: eventID,
+                pubkey: senderPubkey,
+                createdAt: (event["created_at"] as? Int) ?? Int(Date().timeIntervalSince1970),
+                content: (event["content"] as? String) ?? "",
+                tags: inboundTags,
+                rawEventJSON: rawEventJSON(from: event)
+            ))
+            return
+        }
+
         if store.state.nostrAllowedPubkeys.contains(senderPubkey) {
             NostrRelayService.logger.notice("handle: routing inbound from allowed pubkey to agent responder")
             // Kick off a kind:0 fetch in parallel with the responder so
