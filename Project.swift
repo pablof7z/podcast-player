@@ -47,6 +47,7 @@ let project = Project(
             url: "https://github.com/onevcat/Kingfisher",
             requirement: .upToNextMajor(from: "8.0.0")
         ),
+        .local(path: "../ios-shake-feedback"),
     ],
     settings: .settings(
         base: [
@@ -75,6 +76,7 @@ let project = Project(
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
                 .package(product: "Kingfisher"),
+                .package(product: "ShakeFeedbackKit"),
                 .target(name: "\(appName)Widget"),
             ],
             settings: .settings(

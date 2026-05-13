@@ -5,7 +5,7 @@ import Foundation
 /// One occurrence of a `ThreadingTopic` inside a single episode.
 ///
 /// Mentions are the rows the timeline view renders. Each carries the
-/// transcript span (start/end ms) for a `play_episode_at` deep-link, a
+/// transcript span (start/end ms) for a `play_episode` deep-link, a
 /// short snippet for the row preview, a confidence in the topic
 /// classification, and a flag for whether the agent flagged the mention as
 /// contradicting another mention of the same topic.

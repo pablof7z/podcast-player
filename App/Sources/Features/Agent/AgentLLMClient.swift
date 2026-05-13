@@ -7,6 +7,7 @@ enum AgentLLMClient {
         tools: [[String: Any]],
         model: String,
         feature: String = CostFeature.agentChat,
+        ollamaChatURL: URL? = nil,
         onPartialContent: (String) -> Void
     ) async throws -> AgentResult {
         let reference = LLMModelReference(storedID: model)
@@ -37,6 +38,7 @@ enum AgentLLMClient {
                 apiKey: apiKey,
                 model: reference.modelID,
                 feature: feature,
+                chatURL: ollamaChatURL,
                 onPartialContent: onPartialContent
             )
         }

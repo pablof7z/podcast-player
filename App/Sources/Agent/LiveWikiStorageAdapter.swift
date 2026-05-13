@@ -62,8 +62,10 @@ final class LiveWikiStorageAdapter: WikiStorageProtocol, @unchecked Sendable {
         }
 
         // Read model setting and check API key on MainActor (AppStateStore is @MainActor-isolated).
+        // Fall back to Settings() default initializer so the canonical default lives in one place
+        // and a nil store never silently overrides a user-configured model with a hardcoded literal.
         let model: String = await MainActor.run { [weak self] in
-            self?.store?.state.settings.wikiModel ?? "openai/gpt-4o-mini"
+            (self?.store?.state.settings ?? Settings()).wikiModel
         }
         let reference = LLMModelReference(storedID: model)
         guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {

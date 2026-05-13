@@ -8,7 +8,7 @@ import SwiftUI
 /// before commitment):
 ///   - **Tap** presents a `CitationPeekSheet` so the user can audition the
 ///     cited ~12 seconds without losing their place.
-///   - **Long-press** dispatches `play_episode_at` via `PlaybackState` (set
+///   - **Long-press** dispatches `play_episode` via `PlaybackState` (set
 ///     the episode, seek to `startMS`, play) for the user who already
 ///     knows they want to commit to the full clip.
 ///

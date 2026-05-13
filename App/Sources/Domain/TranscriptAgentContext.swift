@@ -30,7 +30,7 @@ struct TranscriptAgentContext: Equatable, Identifiable {
 
     /// Composer prefill. Markdown blockquote keeps the original line visually
     /// distinct from whatever the user appends. Show name + timestamp give the
-    /// agent the grounding it needs to call `query_transcripts` / `play_episode_at`
+    /// agent the grounding it needs to call `query_transcripts` / `play_episode`
     /// without a follow-up clarification.
     var prefilledDraft: String {
         let mins = Int(timestamp) / 60

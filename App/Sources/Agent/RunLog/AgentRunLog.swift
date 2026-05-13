@@ -5,6 +5,7 @@ enum AgentRunSource: String, Codable, Sendable {
     case voiceMessage
     case nostrInbound
     case manual
+    case scheduledTask
 }
 
 enum AgentRunOutcome: String, Codable, Sendable {

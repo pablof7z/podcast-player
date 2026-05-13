@@ -59,6 +59,31 @@ extension AgentTools {
                 ],
                 required: ["question"]
             ),
+            tool(
+                name: Names.scheduleTask,
+                description: "Schedule a recurring background task — the agent will automatically run the given prompt at the specified interval as a new headless conversation. Use this when the user asks for recurring background work (e.g. 'check Hacker News daily for interesting podcasts'). If the app is offline for multiple periods only one catch-up run fires on the next launch.",
+                properties: [
+                    "prompt": ["type": "string", "description": "The full task prompt to run on each scheduled execution."],
+                    "label": ["type": "string", "description": "Short human-readable name shown in the scheduled tasks list (e.g. 'Daily HN check'). Defaults to the first 40 characters of the prompt."],
+                    "interval_seconds": ["type": "integer", "description": "How often to run the task, in seconds. Omit if using 'cadence'."],
+                    "cadence": ["type": "string", "enum": ["hourly", "daily", "weekly"], "description": "Convenience shorthand for common intervals. Omit if using 'interval_seconds'."],
+                ],
+                required: ["prompt"]
+            ),
+            tool(
+                name: Names.cancelScheduledTask,
+                description: "Cancel a previously scheduled recurring task by its ID. Use list_scheduled_tasks to find the task_id.",
+                properties: [
+                    "task_id": ["type": "string", "description": "The UUID of the scheduled task to cancel."],
+                ],
+                required: ["task_id"]
+            ),
+            tool(
+                name: Names.listScheduledTasks,
+                description: "List all currently active recurring scheduled tasks, including next run time and whether each is currently due.",
+                properties: [:],
+                required: []
+            ),
         ]
     }
 

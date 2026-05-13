@@ -12,18 +12,21 @@ struct OllamaSettingsView: View {
     @State private var credentialError: String?
     @State private var modelCount: Int?
     @State private var byokConnect = BYOKConnectService()
+    @State private var chatURLInput = ""
 
     private let catalog = OllamaModelCatalogService()
 
     var body: some View {
         Form {
             connectionSection
+            endpointSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Ollama Cloud")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             settings = store.state.settings
+            chatURLInput = settings.ollamaChatURL
             refreshCredentialState()
         }
         .onChange(of: settings) { _, new in store.updateSettings(new) }
@@ -31,6 +34,50 @@ struct OllamaSettingsView: View {
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: modelCount)
         .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
+    }
+
+    private var endpointSection: some View {
+        Section {
+            TextField(Settings.defaultOllamaChatURL, text: $chatURLInput)
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .onSubmit { commitChatURL() }
+
+            if !chatURLInput.isBlank, URL(string: chatURLInput.trimmed) == nil {
+                Text("Enter a valid URL (e.g. http://localhost:11434/api/chat)")
+                    .inlineErrorText()
+            }
+
+            Button {
+                commitChatURL()
+            } label: {
+                Label("Save Endpoint", systemImage: "square.and.arrow.down")
+            }
+            .disabled(chatURLInput.isBlank || chatURLInput == settings.ollamaChatURL)
+
+            if settings.ollamaChatURL != Settings.defaultOllamaChatURL {
+                Button(role: .destructive) {
+                    chatURLInput = Settings.defaultOllamaChatURL
+                    settings.ollamaChatURL = Settings.defaultOllamaChatURL
+                } label: {
+                    Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                }
+            }
+        } header: {
+            Text("Endpoint")
+        } footer: {
+            Text("Default: \(Settings.defaultOllamaChatURL). Point to a local instance with http://localhost:11434/api/chat or any self-hosted URL. Invalid URLs fall back to the default.")
+        }
+    }
+
+    private func commitChatURL() {
+        let trimmed = chatURLInput.trimmed
+        guard !trimmed.isBlank else { return }
+        // Validate — fall back to default if not a valid URL
+        let validated = URL(string: trimmed) != nil ? trimmed : Settings.defaultOllamaChatURL
+        chatURLInput = validated
+        settings.ollamaChatURL = validated
     }
 
     private var connectionSection: some View {

@@ -5,7 +5,7 @@ import SwiftUI
 /// One row in `ThreadingTopicView`'s vertical timeline. Editorial typography,
 /// an amber seam when the agent flagged the mention as contradictory, a
 /// confidence dot in the top-right corner, and a leading-aligned timestamp
-/// chip that fires the `play_episode_at` deep-link.
+/// chip that fires the `play_episode` deep-link.
 struct ThreadingMentionRow: View {
 
     let mention: ThreadingMention

@@ -42,6 +42,29 @@ extension AgentTools {
         }
     }
 
+    // MARK: - delete_podcast
+
+    static func deletePodcastTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let podcastID = (args["podcast_id"] as? String)?.trimmed, !podcastID.isEmpty else {
+            return toolError("Missing or empty 'podcast_id'")
+        }
+        do {
+            let result = try await deps.subscribe.deletePodcast(podcastID: podcastID)
+            var payload: [String: Any] = [
+                "podcast_id": result.podcastID,
+                "was_subscribed": result.wasSubscribed,
+                "episodes_deleted": result.episodesDeleted,
+            ]
+            if let title = result.title { payload["title"] = title }
+            payload["message"] = result.wasSubscribed
+                ? "Unsubscribed and deleted \(result.episodesDeleted) episode\(result.episodesDeleted == 1 ? "" : "s")."
+                : "Deleted \(result.episodesDeleted) episode\(result.episodesDeleted == 1 ? "" : "s") from a non-subscribed podcast."
+            return toolSuccess(payload)
+        } catch {
+            return toolError("delete_podcast failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - subscribe_podcast
 
     static func subscribePodcastTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
@@ -82,21 +105,26 @@ extension AgentTools {
         guard timestamp >= 0 else {
             return toolError("'timestamp' must be >= 0")
         }
-        await deps.playback.playExternalEpisode(
+        // queue_position defaults to "now" — the historical behavior. The LLM
+        // can opt into queued behavior explicitly.
+        let positionRaw = (args["queue_position"] as? String)?.trimmed.lowercased() ?? QueuePosition.now.rawValue
+        guard let position = QueuePosition(rawValue: positionRaw) else {
+            return toolError("'queue_position' must be one of: now, next, end")
+        }
+        guard let result = await deps.playback.playExternalEpisode(
             audioURL: audioURL,
             title: title,
             feedURLString: feedURLString,
             durationSeconds: durationSeconds,
-            timestampSeconds: timestamp
-        )
-        var payload: [String: Any] = [
-            "audio_url": audioURLString,
-            "title": title,
-            "timestamp": timestamp,
-            "note": "Playback started. Episode appears in Continue Listening on the Home tab.",
-        ]
+            timestampSeconds: timestamp,
+            queuePosition: position
+        ) else {
+            return toolError("play_external_episode failed: playback host unavailable")
+        }
+        var payload = serializePlayEpisodeResult(result, startSeconds: timestamp > 0 ? timestamp : nil, endSeconds: nil)
+        payload["audio_url"] = audioURLString
+        payload["title"] = title
         if let feedURLString { payload["feed_url"] = feedURLString }
-        if let dur = durationSeconds { payload["duration_seconds"] = dur }
         return toolSuccess(payload)
     }
 
@@ -110,19 +138,24 @@ extension AgentTools {
         audioURLString: String,
         deps: PodcastAgentToolDeps
     ) async -> String {
-        // Step 1: subscribe (idempotent).
-        let subResult: PodcastSubscribeResult
+        // Step 1: capture the feed (metadata + episodes) WITHOUT flipping the
+        // user's subscription bit. The external download path used to call
+        // `subscribe` here, which silently followed shows as a side effect of
+        // a transcript request — that contradicted the Podcast/PodcastSubscription
+        // split. Use `ensurePodcast` so the show lands in the library but the
+        // user has to opt in to subscribing separately.
+        let ensured: PodcastEnsureResult
         do {
-            subResult = try await deps.subscribe.subscribe(feedURLString: feedURLString)
+            ensured = try await deps.subscribe.ensurePodcast(feedURLString: feedURLString)
         } catch {
-            return toolError("Could not subscribe to feed '\(feedURLString)': \(error.localizedDescription)")
+            return toolError("Could not load feed '\(feedURLString)': \(error.localizedDescription)")
         }
 
         // Step 2: locate the episode by matching audio URL.
-        guard let matchedID = await deps.fetcher.episodeIDForAudioURL(audioURLString, podcastID: subResult.podcastID) else {
+        guard let matchedID = await deps.fetcher.episodeIDForAudioURL(audioURLString, podcastID: ensured.podcastID) else {
             return toolError("""
-            Episode with audio_url '\(audioURLString)' not found in the feed after subscribing. \
-            Try refresh_feed(podcast_id: '\(subResult.podcastID)') then list_episodes to locate the episode manually.
+            Episode with audio_url '\(audioURLString)' not found in the feed after loading it. \
+            Try refresh_feed(podcast_id: '\(ensured.podcastID)') then list_episodes to locate the episode manually.
             """)
         }
 
@@ -131,8 +164,8 @@ extension AgentTools {
             let result = try await deps.library.downloadAndTranscribe(episodeID: matchedID)
             var payload: [String: Any] = [
                 "episode_id": result.episodeID,
-                "podcast_id": subResult.podcastID,
-                "podcast_title": subResult.title,
+                "podcast_id": ensured.podcastID,
+                "podcast_title": ensured.title,
                 "status": result.status,
             ]
             if let source = result.source { payload["source"] = source }

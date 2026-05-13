@@ -115,53 +115,83 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         self.playback = playback
     }
 
-    func playEpisodeAt(episodeID: EpisodeID, timestampSeconds: Double) async {
+    func playEpisode(
+        episodeID: EpisodeID,
+        startSeconds: Double?,
+        endSeconds: Double?,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult? {
         await MainActor.run {
             guard let store, let playback,
                   let uuid = UUID(uuidString: episodeID),
                   let episode = store.episode(id: uuid) else {
-                logger.error("playEpisodeAt: unknown episode \(episodeID, privacy: .public)")
-                return
+                logger.error("playEpisode: unknown episode \(episodeID, privacy: .public)")
+                return nil
             }
-            playback.setEpisode(episode)
-            playback.seek(to: timestampSeconds)
-            playback.play()
-            logger.info("playEpisodeAt: started \(episode.title, privacy: .public) at \(timestampSeconds)")
+            let item = QueueItem(
+                episodeID: uuid,
+                startSeconds: startSeconds,
+                endSeconds: endSeconds,
+                label: nil
+            )
+            let podcastTitle = store.podcast(id: episode.podcastID)?.title
+            switch queuePosition {
+            case .now:
+                // Replace current playback with this item; existing queue is
+                // preserved and resumes after this finishes.
+                playback.enqueueSegments([item], playNow: true) { store.episode(id: $0) }
+                logger.info("playEpisode(now): \(episode.title, privacy: .public)")
+                return PlayEpisodeResult(
+                    episodeID: episodeID,
+                    queuePosition: .now,
+                    startedPlaying: true,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            case .next:
+                playback.insertNext(item)
+                logger.info("playEpisode(next): \(episode.title, privacy: .public)")
+                return PlayEpisodeResult(
+                    episodeID: episodeID,
+                    queuePosition: .next,
+                    startedPlaying: false,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            case .end:
+                playback.enqueueItem(item)
+                logger.info("playEpisode(end): \(episode.title, privacy: .public)")
+                return PlayEpisodeResult(
+                    episodeID: episodeID,
+                    queuePosition: .end,
+                    startedPlaying: false,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            }
         }
     }
 
-    func pausePlayback() async {
+    func pausePlayback() async -> Bool {
         await MainActor.run {
             guard let playback else {
                 logger.error("pausePlayback: playback host missing")
-                return
+                return false
             }
             playback.pause()
             logger.info("pausePlayback: paused")
+            return true
         }
     }
 
-    func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async {
-        await MainActor.run {
-            guard let store, let playback,
-                  let uuid = UUID(uuidString: episodeID),
-                  let episode = store.episode(id: uuid) else {
-                logger.error("setNowPlaying: unknown episode \(episodeID, privacy: .public)")
-                return
-            }
-            playback.setEpisode(episode)
-            if let ts = timestampSeconds {
-                playback.seek(to: ts)
-            }
-            logger.info("setNowPlaying: \(episode.title, privacy: .public)")
-        }
-    }
-
-    func setPlaybackRate(_ rate: Double) async -> Double {
+    func setPlaybackRate(_ rate: Double) async -> Double? {
         await MainActor.run {
             guard let playback else {
                 logger.error("setPlaybackRate: playback host missing")
-                return 1.0
+                return nil
             }
             let clamped = min(max(rate, 0.5), 3.0)
             playback.engine.setRate(clamped)
@@ -170,11 +200,11 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         }
     }
 
-    func setSleepTimer(mode: String, minutes: Int?) async -> String {
+    func setSleepTimer(mode: String, minutes: Int?) async -> String? {
         await MainActor.run {
             guard let playback else {
                 logger.error("setSleepTimer: playback host missing")
-                return "Unavailable"
+                return nil
             }
             let timer: PlaybackSleepTimer
             switch mode {
@@ -193,21 +223,14 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         }
     }
 
-    func openScreen(route: String) async {
-        // Routing surface lives in `RootView`'s local `@State`; until a
-        // dedicated navigator exists the best we can do is log so the agent's
-        // intent is visible in Console.app and so tests can assert the call
-        // shape unchanged.
-        logger.info("openScreen: route='\(route, privacy: .public)' (no-op until nav router lands)")
-    }
-
     func playExternalEpisode(
         audioURL: URL,
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double
-    ) async {
+        timestampSeconds: Double,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult? {
         // Resolve which podcast to attach this episode to WITHOUT blocking
         // playback on a network fetch. Three cases:
         //   1. We already know about this feed (existing Podcast row) → use it.
@@ -221,16 +244,16 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         // We deliberately never call `ensurePodcast` here: that helper also
         // upserts every parsed episode in the feed, which would dump the
         // show's whole backlog into the user's library without them having
-        // followed it. Backlog ingestion is reserved for `subscribe_podcast`.
+        // subscribed. Backlog ingestion is reserved for `subscribe_podcast`.
         let parentResolution = await resolveExternalParent(feedURLString: feedURLString)
         guard let parentResolution else {
             logger.error("playExternalEpisode: store unavailable")
-            return
+            return nil
         }
-        await MainActor.run {
+        let result: PlayEpisodeResult? = await MainActor.run {
             guard let store, let playback else {
                 logger.error("playExternalEpisode: playback host missing")
-                return
+                return nil
             }
             let episode = store.upsertEpisode(
                 podcastID: parentResolution.podcastID,
@@ -239,10 +262,49 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
                 imageURL: nil,
                 duration: durationSeconds
             )
-            playback.setEpisode(episode)
-            if timestampSeconds > 0 { playback.seek(to: timestampSeconds) }
-            playback.play()
-            logger.info("playExternalEpisode: '\(title, privacy: .public)' at \(timestampSeconds)")
+            let podcastTitle = store.podcast(id: parentResolution.podcastID)?.title
+            let startSeconds: Double? = timestampSeconds > 0 ? timestampSeconds : nil
+            let item = QueueItem(
+                episodeID: episode.id,
+                startSeconds: startSeconds,
+                endSeconds: nil,
+                label: nil
+            )
+            switch queuePosition {
+            case .now:
+                playback.enqueueSegments([item], playNow: true) { store.episode(id: $0) }
+                logger.info("playExternalEpisode(now): '\(title, privacy: .public)' at \(timestampSeconds)")
+                return PlayEpisodeResult(
+                    episodeID: episode.id.uuidString,
+                    queuePosition: .now,
+                    startedPlaying: true,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            case .next:
+                playback.insertNext(item)
+                logger.info("playExternalEpisode(next): '\(title, privacy: .public)'")
+                return PlayEpisodeResult(
+                    episodeID: episode.id.uuidString,
+                    queuePosition: .next,
+                    startedPlaying: false,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            case .end:
+                playback.enqueueItem(item)
+                logger.info("playExternalEpisode(end): '\(title, privacy: .public)'")
+                return PlayEpisodeResult(
+                    episodeID: episode.id.uuidString,
+                    queuePosition: .end,
+                    startedPlaying: false,
+                    episodeTitle: episode.title,
+                    podcastTitle: podcastTitle,
+                    durationSeconds: episode.duration.map { Int($0) }
+                )
+            }
         }
         // Asynchronously hydrate podcast metadata in the background so the
         // first render shows whatever we have, and later renders pick up
@@ -255,6 +317,7 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
                 await self?.hydratePlaceholderPodcastMetadata(podcastID: parentResolution.podcastID, feedURL: url)
             }
         }
+        return result
     }
 
     /// Decision wrapper: which podcast ID to parent the episode to RIGHT
@@ -314,40 +377,6 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         }
     }
 
-    func queueEpisodeSegments(
-        segments: [EpisodeSegment],
-        playNow: Bool
-    ) async -> QueueSegmentsResult {
-        await MainActor.run {
-            guard let store, let playback else {
-                logger.error("queueEpisodeSegments: playback host missing")
-                return QueueSegmentsResult(segmentsQueued: 0, playingNow: false)
-            }
-            let items: [QueueItem] = segments.compactMap { seg in
-                guard let uuid = UUID(uuidString: seg.episodeID) else { return nil }
-                return QueueItem(
-                    episodeID: uuid,
-                    startSeconds: seg.startSeconds,
-                    endSeconds: seg.endSeconds,
-                    label: seg.label
-                )
-            }
-            guard !items.isEmpty else {
-                return QueueSegmentsResult(segmentsQueued: 0, playingNow: false)
-            }
-            let firstEpisodeTitle: String? = {
-                guard let firstUUID = UUID(uuidString: segments[0].episodeID) else { return nil }
-                return store.episode(id: firstUUID)?.title
-            }()
-            playback.enqueueSegments(items, playNow: playNow) { store.episode(id: $0) }
-            logger.info("queueEpisodeSegments: queued \(items.count, privacy: .public) segments, playNow=\(playNow, privacy: .public)")
-            return QueueSegmentsResult(
-                segmentsQueued: items.count,
-                playingNow: playNow,
-                firstEpisodeTitle: firstEpisodeTitle
-            )
-        }
-    }
 }
 
 // MARK: - Library adapter

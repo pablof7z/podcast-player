@@ -25,7 +25,7 @@ struct Chunk: Sendable, Hashable, Codable, Identifiable {
     /// embedding model input.
     var text: String
     /// Start timestamp in milliseconds, relative to episode start.
-    /// Integer-precise so `play_episode_at(ms)` is unambiguous.
+    /// Integer-precise so `play_episode(start_seconds)` is unambiguous.
     var startMS: Int
     /// End timestamp in milliseconds, relative to episode start.
     var endMS: Int

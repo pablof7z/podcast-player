@@ -10,9 +10,9 @@ struct AgentRunDetailView: View {
     @State private var shareItem: AgentRunShareItem?
 
     /// Resolves common podcast-domain argument keys to human-readable
-    /// strings so the run detail row reads "play_episode_at — episode_id:
-    /// 'How to Think About Keto', timestamp: 7:00" instead of
-    /// "episode_id: '0123…', timestamp: 420". Falls through to the
+    /// strings so the run detail row reads "play_episode — episode_id:
+    /// 'How to Think About Keto', start_seconds: 7:00" instead of
+    /// "episode_id: '0123…', start_seconds: 420". Falls through to the
     /// formatter's generic scalar render for unrecognized keys / values.
     private var podcastValueResolver: AgentRunToolFormatter.ValueResolver {
         { [store] key, value in

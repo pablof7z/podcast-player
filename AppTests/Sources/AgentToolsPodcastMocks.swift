@@ -124,31 +124,59 @@ actor MockFetcher: EpisodeFetcherProtocol {
 }
 
 actor MockPlayback: PlaybackHostProtocol {
-    private(set) var recordedPlays: [(EpisodeID, Double)] = []
+    struct RecordedPlay: Equatable {
+        let episodeID: EpisodeID
+        let startSeconds: Double?
+        let endSeconds: Double?
+        let queuePosition: QueuePosition
+    }
+    struct RecordedExternalPlay: Equatable {
+        let audioURL: URL
+        let title: String
+        let feedURLString: String?
+        let timestampSeconds: Double
+        let queuePosition: QueuePosition
+    }
+
+    private(set) var recordedPlays: [RecordedPlay] = []
+    private(set) var recordedExternalPlays: [RecordedExternalPlay] = []
     private(set) var pauseCount = 0
-    private(set) var recordedNowPlaying: [(EpisodeID, Double?)] = []
     private(set) var recordedRates: [Double] = []
     private(set) var recordedSleepTimers: [(String, Int?)] = []
-    private(set) var recordedRoutes: [String] = []
 
-    func playEpisodeAt(episodeID: EpisodeID, timestampSeconds: Double) async {
-        recordedPlays.append((episodeID, timestampSeconds))
+    func playEpisode(
+        episodeID: EpisodeID,
+        startSeconds: Double?,
+        endSeconds: Double?,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult? {
+        recordedPlays.append(RecordedPlay(
+            episodeID: episodeID,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            queuePosition: queuePosition
+        ))
+        return PlayEpisodeResult(
+            episodeID: episodeID,
+            queuePosition: queuePosition,
+            startedPlaying: queuePosition == .now,
+            episodeTitle: "Mock Episode",
+            podcastTitle: "Mock Show",
+            durationSeconds: 1800
+        )
     }
 
-    func pausePlayback() async {
+    func pausePlayback() async -> Bool {
         pauseCount += 1
+        return true
     }
 
-    func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async {
-        recordedNowPlaying.append((episodeID, timestampSeconds))
-    }
-
-    func setPlaybackRate(_ rate: Double) async -> Double {
+    func setPlaybackRate(_ rate: Double) async -> Double? {
         recordedRates.append(rate)
         return min(max(rate, 0.5), 3.0)
     }
 
-    func setSleepTimer(mode: String, minutes: Int?) async -> String {
+    func setSleepTimer(mode: String, minutes: Int?) async -> String? {
         recordedSleepTimers.append((mode, minutes))
         switch mode {
         case "off": return "Off"
@@ -158,20 +186,29 @@ actor MockPlayback: PlaybackHostProtocol {
         }
     }
 
-    func openScreen(route: String) async {
-        recordedRoutes.append(route)
-    }
-
     func playExternalEpisode(
         audioURL: URL,
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double
-    ) async {}
-
-    func queueEpisodeSegments(segments: [EpisodeSegment], playNow: Bool) async -> QueueSegmentsResult {
-        return QueueSegmentsResult(segmentsQueued: segments.count, playingNow: playNow)
+        timestampSeconds: Double,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult? {
+        recordedExternalPlays.append(RecordedExternalPlay(
+            audioURL: audioURL,
+            title: title,
+            feedURLString: feedURLString,
+            timestampSeconds: timestampSeconds,
+            queuePosition: queuePosition
+        ))
+        return PlayEpisodeResult(
+            episodeID: UUID().uuidString,
+            queuePosition: queuePosition,
+            startedPlaying: queuePosition == .now,
+            episodeTitle: title,
+            podcastTitle: nil,
+            durationSeconds: durationSeconds.map { Int($0) }
+        )
     }
 }
 
@@ -397,9 +434,18 @@ actor MockInventory: PodcastInventoryProtocol, PodcastCategoryProtocol {
         categoryChangeResult = result
     }
 
+    var podcasts: [PodcastInventoryRow] = []
+    private(set) var lastListPodcastsLimit: Int = -1
+    func setPodcasts(_ rows: [PodcastInventoryRow]) { podcasts = rows }
+
     func listSubscriptions(limit: Int) async -> [SubscriptionSummary] {
         lastListSubscriptionsLimit = limit
         return Array(subscriptions.prefix(limit))
+    }
+
+    func listPodcasts(limit: Int) async -> [PodcastInventoryRow] {
+        lastListPodcastsLimit = limit
+        return Array(podcasts.prefix(limit))
     }
 
     func listEpisodes(podcastID: PodcastID, limit: Int) async -> [EpisodeInventoryRow]? {

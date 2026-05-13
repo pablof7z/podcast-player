@@ -23,18 +23,26 @@ struct LiveEpisodeSummarizerAdapter: EpisodeSummarizerProtocol {
     func summarizeEpisode(episodeID: EpisodeID, length: String?) async throws -> EpisodeSummary {
         guard let uuid = UUID(uuidString: episodeID),
               let episode = await store?.episode(id: uuid) else {
-            return EpisodeSummary(episodeID: episodeID, summary: "")
+            return EpisodeSummary(episodeID: episodeID, summary: "", source: .unavailable)
         }
         let body = await Self.episodeBodyText(uuid: uuid, fallback: episode.description)
         guard !body.isEmpty else {
-            return EpisodeSummary(episodeID: episodeID, summary: episode.description)
+            return EpisodeSummary(
+                episodeID: episodeID,
+                summary: episode.description,
+                source: .publisherDescription
+            )
         }
         let model = await MainActor.run {
             store?.state.settings.memoryCompilationModel ?? Settings().memoryCompilationModel
         }
         let reference = LLMModelReference(storedID: model)
         guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            return EpisodeSummary(episodeID: episodeID, summary: episode.description)
+            return EpisodeSummary(
+                episodeID: episodeID,
+                summary: episode.description,
+                source: .publisherDescription
+            )
         }
         let client = WikiOpenRouterClient.live(model: model)
         let lengthHint = (length ?? "medium").lowercased()
@@ -44,7 +52,11 @@ struct LiveEpisodeSummarizerAdapter: EpisodeSummarizerProtocol {
             feature: CostFeature.episodeSummary
         )
         return Self.parseSummary(episodeID: episodeID, json: json) ??
-            EpisodeSummary(episodeID: episodeID, summary: episode.description)
+            EpisodeSummary(
+                episodeID: episodeID,
+                summary: episode.description,
+                source: .publisherDescription
+            )
     }
 
     // MARK: Helpers
@@ -84,6 +96,6 @@ struct LiveEpisodeSummarizerAdapter: EpisodeSummarizerProtocol {
         else { return nil }
         let summary = (root["summary"] as? String) ?? ""
         let bullets = (root["bullets"] as? [String]) ?? []
-        return EpisodeSummary(episodeID: episodeID, summary: summary, bulletPoints: bullets)
+        return EpisodeSummary(episodeID: episodeID, summary: summary, bulletPoints: bullets, source: .llm)
     }
 }

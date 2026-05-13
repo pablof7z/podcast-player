@@ -7,7 +7,9 @@ extension AgentTools {
     // MARK: - Playback controls
 
     static func pausePlaybackTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        await deps.playback.pausePlayback()
+        guard await deps.playback.pausePlayback() else {
+            return toolError("Playback is unavailable.")
+        }
         return toolSuccess(["state": "paused"])
     }
 
@@ -18,7 +20,9 @@ extension AgentTools {
         guard requested > 0 else {
             return toolError("'rate' must be greater than 0")
         }
-        let applied = await deps.playback.setPlaybackRate(requested)
+        guard let applied = await deps.playback.setPlaybackRate(requested) else {
+            return toolError("Playback is unavailable.")
+        }
         return toolSuccess([
             "requested_rate": requested,
             "rate": applied,
@@ -42,7 +46,9 @@ extension AgentTools {
         } else {
             minutes = nil
         }
-        let label = await deps.playback.setSleepTimer(mode: normalized, minutes: minutes)
+        guard let label = await deps.playback.setSleepTimer(mode: normalized, minutes: minutes) else {
+            return toolError("Playback is unavailable.")
+        }
         var payload: [String: Any] = [
             "mode": normalized,
             "label": label,
@@ -234,54 +240,76 @@ extension AgentTools {
         }
     }
 
-    static func queueEpisodeSegmentsTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let rawSegments = args["segments"] as? [[String: Any]], !rawSegments.isEmpty else {
-            return toolError("Missing or empty 'segments' array")
+    // MARK: - play_episode
+
+    /// Unified playback verb. Plays a single episode at an optional `start_seconds` /
+    /// `end_seconds` window, routed by `queue_position` so the same tool covers
+    /// play-now, play-next, and append-to-end. Replaces the pre-split
+    /// `play_episode_at` + `queue_episode_segments` pair.
+    static func playEpisodeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
+            return toolError("Missing or empty 'episode_id'")
         }
-        var segments: [EpisodeSegment] = []
-        for (i, raw) in rawSegments.enumerated() {
-            guard let episodeID = (raw["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
-                return toolError("segments[\(i)]: missing or empty 'episode_id'")
-            }
-            guard let startSeconds = podcastActionNumericArg(raw["start_seconds"]) else {
-                return toolError("segments[\(i)]: missing or invalid 'start_seconds'")
-            }
-            guard let endSeconds = podcastActionNumericArg(raw["end_seconds"]) else {
-                return toolError("segments[\(i)]: missing or invalid 'end_seconds'")
-            }
-            guard startSeconds >= 0 else {
-                return toolError("segments[\(i)]: 'start_seconds' must be >= 0")
-            }
-            guard endSeconds > startSeconds else {
-                return toolError("segments[\(i)]: 'end_seconds' must be greater than 'start_seconds'")
-            }
-            let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
-            guard exists else {
-                return toolError("segments[\(i)]: episode not found: \(episodeID)")
-            }
-            let label = (raw["label"] as? String)?.trimmed.nilIfEmpty
-            segments.append(EpisodeSegment(
-                episodeID: episodeID,
-                startSeconds: startSeconds,
-                endSeconds: endSeconds,
-                label: label
-            ))
+        let startSeconds = podcastActionNumericArg(args["start_seconds"])
+        if let s = startSeconds, s < 0 {
+            return toolError("'start_seconds' must be >= 0")
         }
-        let playNow = args["play_now"] as? Bool ?? true
-        let result = await deps.playback.queueEpisodeSegments(segments: segments, playNow: playNow)
+        let endSeconds = podcastActionNumericArg(args["end_seconds"])
+        if let e = endSeconds, let s = startSeconds, e <= s {
+            return toolError("'end_seconds' must be greater than 'start_seconds'")
+        }
+        if let e = endSeconds, startSeconds == nil, e <= 0 {
+            return toolError("'end_seconds' must be > 0 when 'start_seconds' is omitted")
+        }
+        let positionRaw = (args["queue_position"] as? String)?.trimmed.lowercased() ?? ""
+        guard let position = QueuePosition(rawValue: positionRaw) else {
+            return toolError("'queue_position' must be one of: now, next, end")
+        }
+        let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
+        guard exists else {
+            return toolError("Episode not found: \(episodeID)")
+        }
+        guard let result = await deps.playback.playEpisode(
+            episodeID: episodeID,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            queuePosition: position
+        ) else {
+            return toolError("play_episode failed: playback host unavailable")
+        }
+        return toolSuccess(serializePlayEpisodeResult(result, startSeconds: startSeconds, endSeconds: endSeconds))
+    }
+
+    /// Shared payload shape for `play_episode` and `play_external_episode`
+    /// success envelopes so the LLM sees a consistent surface across the two
+    /// playback verbs.
+    static func serializePlayEpisodeResult(
+        _ result: PlayEpisodeResult,
+        startSeconds: Double?,
+        endSeconds: Double?
+    ) -> [String: Any] {
         var payload: [String: Any] = [
-            "segments_queued": result.segmentsQueued,
-            "play_now": result.playingNow,
+            "episode_id": result.episodeID,
+            "queue_position": result.queuePosition.rawValue,
+            "started_playing": result.startedPlaying,
         ]
-        if let title = result.firstEpisodeTitle { payload["first_episode_title"] = title }
-        if result.playingNow {
+        if let title = result.episodeTitle { payload["episode_title"] = title }
+        if let podcast = result.podcastTitle { payload["podcast_title"] = podcast }
+        if let dur = result.durationSeconds { payload["duration_seconds"] = dur }
+        if let s = startSeconds { payload["start_seconds"] = s }
+        if let e = endSeconds { payload["end_seconds"] = e }
+        switch result.queuePosition {
+        case .now:
             payload["status"] = "playing"
-            payload["message"] = "Playing segment 1 of \(result.segmentsQueued). A sound cue marks each transition."
-        } else {
+            payload["message"] = "Playing now."
+        case .next:
             payload["status"] = "queued"
-            payload["message"] = "\(result.segmentsQueued) segment\(result.segmentsQueued == 1 ? "" : "s") added to Up Next."
+            payload["message"] = "Added to the front of Up Next."
+        case .end:
+            payload["status"] = "queued"
+            payload["message"] = "Added to the end of Up Next."
         }
-        return toolSuccess(payload)
+        return payload
     }
 
     // MARK: - Helpers

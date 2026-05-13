@@ -22,10 +22,12 @@ struct ThreadingTopicListView: View {
             .toolbar { toolbar }
             .task {
                 service.attach(store: store)
+#if DEBUG
                 if !hasSeeded {
                     hasSeeded = true
                     service.seedMockIfEmpty(store: store)
                 }
+#endif
             }
     }
 

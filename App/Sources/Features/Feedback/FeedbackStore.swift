@@ -19,7 +19,7 @@ final class FeedbackStore {
         isLoading = true
         loadError = nil
         do {
-            let events = try await client.fetchProjectEvents()
+            let events = try await client.fetchProjectEvents(signer: identity.signer)
             threads = buildThreads(from: events, localPubkey: identity.publicKeyHex)
         } catch {
             logger.error("Failed to load feedback threads: \(error, privacy: .public)")
@@ -66,7 +66,7 @@ final class FeedbackStore {
 
     func loadReplies(for thread: FeedbackThread, identity: UserIdentityStore) async {
         do {
-            let events = try await client.fetchReplies(rootEventID: thread.eventID)
+            let events = try await client.fetchReplies(rootEventID: thread.eventID, signer: identity.signer)
             guard let idx = threads.firstIndex(where: { $0.id == thread.id }) else { return }
             let existing = Set(threads[idx].replies.map(\.eventID))
             let replies = events
@@ -145,18 +145,18 @@ actor FeedbackRelayClient {
         self.relayURL = relayURL
     }
 
-    func fetchProjectEvents() async throws -> [SignedNostrEvent] {
+    func fetchProjectEvents(signer: (any NostrSigner)? = nil) async throws -> [SignedNostrEvent] {
         try await fetch(filter: [
             "kinds": [Self.textNoteKind, Self.metadataKind],
             "#a": [Self.projectCoordinate],
-        ])
+        ], signer: signer)
     }
 
-    func fetchReplies(rootEventID: String) async throws -> [SignedNostrEvent] {
+    func fetchReplies(rootEventID: String, signer: (any NostrSigner)? = nil) async throws -> [SignedNostrEvent] {
         try await fetch(filter: [
             "kinds": [Self.textNoteKind, Self.metadataKind],
             "#e": [rootEventID],
-        ])
+        ], signer: signer)
     }
 
     func fetchKind0(pubkeyHex: String) async throws -> [SignedNostrEvent] {
@@ -209,7 +209,7 @@ actor FeedbackRelayClient {
         throw FeedbackRelayError.timeout
     }
 
-    private func fetch(filter: [String: Any]) async throws -> [SignedNostrEvent] {
+    private func fetch(filter: [String: Any], signer: (any NostrSigner)? = nil) async throws -> [SignedNostrEvent] {
         let task = URLSession.shared.webSocketTask(with: relayURL)
         task.resume()
         defer { task.cancel(with: .normalClosure, reason: nil) }
@@ -218,18 +218,37 @@ actor FeedbackRelayClient {
         try await send(["REQ", subscriptionID, filter], task: task)
 
         var events: [SignedNostrEvent] = []
-        while let text = try await receiveText(task: task, timeoutSeconds: 5) {
+        var authenticated = false
+        var reqResentAfterAuth = false
+        while let text = try await receiveText(task: task, timeoutSeconds: 8) {
             guard let message = Self.parseMessage(text) else { continue }
             switch message {
             case .event(let subID, let event):
                 guard subID == subscriptionID else { continue }
                 events.append(event)
-            case .eose(let subID), .closed(let subID, _):
+            case .eose(let subID):
                 guard subID == subscriptionID else { continue }
                 return events
+            case .closed(let subID, let reason):
+                guard subID == subscriptionID else { continue }
+                if reason?.hasPrefix("auth-required:") == true, authenticated, !reqResentAfterAuth {
+                    reqResentAfterAuth = true
+                    try await send(["REQ", subscriptionID, filter], task: task)
+                } else {
+                    return events
+                }
+            case .auth(let challenge):
+                guard let signer else { continue }
+                let authEvent = try await signer.sign(NostrEventDraft(
+                    kind: 22242,
+                    content: "",
+                    tags: [["relay", relayURL.absoluteString], ["challenge", challenge]]
+                ))
+                try await send(["AUTH", eventDictionary(authEvent)], task: task)
+                authenticated = true
             case .notice(let message):
                 throw FeedbackRelayError.rejected(message)
-            case .auth, .ok:
+            case .ok:
                 continue
             }
         }

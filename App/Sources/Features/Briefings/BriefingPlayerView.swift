@@ -6,8 +6,8 @@ import SwiftUI
 
 /// W2 — the briefing player surface. Distinctive chrome per UX-08 §4: warm
 /// brass-amber glass, editorial serif title, segment rail with glassEffectID
-/// morphing pills, *deeper into this* / *skip* / *share* per-segment actions,
-/// and a live transcript pane.
+/// morphing pills, *deeper into this* / *skip* per-segment actions, and a
+/// live transcript pane.
 ///
 /// The view binds to a `BriefingPlayerEngine` instance for transport state.
 /// In dev / preview builds the engine is backed by `FakeBriefingPlayerHost`;
@@ -21,8 +21,9 @@ struct BriefingPlayerView: View {
     /// immediately after `engine.load(...)` so the surface starts speaking
     /// without a user tap. Default `false` preserves the existing
     /// tap-one-to-play library entry behaviour. The lean-back river
-    /// (`BriefingRiverView`) passes `true`. Guarded inside `prepareEngine` so
-    /// a nil / `/dev/null` asset URL never auto-plays silence.
+    /// (`BriefingRiverView`) passes `true`. A missing asset URL surfaces an
+    /// inline error and returns before reaching the engine, so no silent
+    /// playback of a placeholder can occur.
     var autoplay: Bool = false
 
     // MARK: State
@@ -35,12 +36,28 @@ struct BriefingPlayerView: View {
     /// (the *listening* glow on the transcript pane — UX-08 §4) and the
     /// `engine.beginBranch` / `endBranch` lifecycle.
     @State private var isHoldingMic = false
+    @State private var assetMissingMessage: String?
 
     // MARK: Body
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+                if let msg = assetMissingMessage {
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(msg)
+                            .font(AppTheme.Typography.body)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                    .padding(AppTheme.Spacing.md)
+                    .glassSurface(
+                        cornerRadius: AppTheme.Corner.md,
+                        tint: Color.orange.opacity(0.15)
+                    )
+                }
                 editorialHeader
                 transcriptPane
                 transportControls
@@ -165,9 +182,6 @@ struct BriefingPlayerView: View {
             }
             Spacer()
             micButton
-            actionButton(label: "share", icon: "square.and.arrow.up") {
-                /* share-card composition handled by ShareSheet */
-            }
         }
     }
 
@@ -381,17 +395,19 @@ struct BriefingPlayerView: View {
         // the lane spec persists at `<id>.m4a`), we synthesise a single
         // track-per-segment placeholder pointing at the stitched audio.
         let storage = (try? BriefingStorage())
-        let assetURL = storage?.audioURL(id: context.script.id)
+        guard let assetURL = storage?.audioURL(id: context.script.id) else {
+            assetMissingMessage = "Briefing audio is missing. Try recomposing this briefing."
+            return
+        }
         var tracks: [BriefingTrack] = []
         var cursor: TimeInterval = 0
         for segment in context.script.segments {
             let duration = segment.targetSeconds
-            let url = assetURL ?? URL(fileURLWithPath: "/dev/null")
             tracks.append(BriefingTrack(
                 segmentID: segment.id,
                 indexInSegment: 0,
                 kind: .tts,
-                audioURL: url,
+                audioURL: assetURL,
                 startInTrackSeconds: cursor,
                 endInTrackSeconds: cursor + duration,
                 transcriptText: segment.bodyText,
@@ -401,12 +417,9 @@ struct BriefingPlayerView: View {
         }
         engine.load(context.script, tracks: tracks, host: FakeBriefingPlayerHost())
 
-        // Lean-back river opt-in: auto-play once tracks are loaded. Skip when
-        // the on-disk stitched audio resolved to the `/dev/null` placeholder
-        // — that path is the "no audio file" fallback and auto-playing it
-        // would swallow the missing-asset bug behind silent playback.
-        if autoplay, let url = assetURL, url.path != "/dev/null" {
-            await engine.play(stitchedURL: url)
+        // Lean-back river opt-in: auto-play once tracks are loaded.
+        if autoplay {
+            await engine.play(stitchedURL: assetURL)
         }
     }
 }

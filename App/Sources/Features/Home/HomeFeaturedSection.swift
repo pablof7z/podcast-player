@@ -102,10 +102,14 @@ struct HomeFeaturedSection: View {
     }
 
     private var headerTitle: String {
+        // The section previously labelled "Featured" is now the AI Inbox
+        // — the same hero+secondaries layout, but the items are persisted
+        // autonomous triage decisions ("the agent decided these are
+        // worth your time") rather than ephemeral editorial picks.
         if let name = activeCategoryName, !name.isEmpty {
-            return "Featured in \(name)"
+            return "Inbox · \(name)"
         }
-        return "Featured"
+        return "Inbox"
     }
 
     @ViewBuilder

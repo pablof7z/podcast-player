@@ -76,8 +76,8 @@ public protocol EpisodeSummarizerProtocol: Sendable {
 /// Episode metadata + existence check (lane 2/3).
 public protocol EpisodeFetcherProtocol: Sendable {
     /// Returns `true` iff an episode with the given ID exists in the local
-    /// subscription graph. Used by `play_episode_at` and `set_now_playing` to
-    /// validate before touching the player.
+    /// library (any Podcast row, subscribed or not). Used by `play_episode`
+    /// to validate before touching the player.
     func episodeExists(episodeID: EpisodeID) async -> Bool
 
     /// Returns `(podcastTitle, episodeTitle, durationSeconds?)` for an episode,
@@ -96,49 +96,45 @@ public protocol EpisodeFetcherProtocol: Sendable {
 /// Player + UI host (lane 1/2/9). The agent uses this to mutate what the user
 /// sees and hears.
 public protocol PlaybackHostProtocol: Sendable {
-    /// Open the player at a specific episode/timestamp. Implementation owns
-    /// AVPlayer state and Now Playing center.
-    func playEpisodeAt(episodeID: EpisodeID, timestampSeconds: Double) async
+    /// Play an episode already in the store. `startSeconds` defaults to 0;
+    /// `endSeconds` bounds the segment when set. `queuePosition` controls
+    /// whether playback starts immediately (`.now`) or the item is queued
+    /// without interrupting current playback (`.next`, `.end`).
+    func playEpisode(
+        episodeID: EpisodeID,
+        startSeconds: Double?,
+        endSeconds: Double?,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult?
 
     /// Pause active playback and flush persisted position state.
-    func pausePlayback() async
+    /// Returns `true` when the command was applied; `false` when no active
+    /// playback host was available to receive it.
+    func pausePlayback() async -> Bool
 
-    /// Update the now-playing context without immediately starting playback —
-    /// e.g. preload artwork, seed Now Playing center.
-    func setNowPlaying(episodeID: EpisodeID, timestampSeconds: Double?) async
+    /// Set playback rate. Returns the clamped rate that was applied, or `nil`
+    /// when no active playback host was available.
+    func setPlaybackRate(_ rate: Double) async -> Double?
 
-    /// Set playback rate. Implementations may clamp to their supported range.
-    func setPlaybackRate(_ rate: Double) async -> Double
-
-    /// Arm or clear the sleep timer. `mode` is `off`, `minutes`, or
-    /// `end_of_episode`.
-    func setSleepTimer(mode: String, minutes: Int?) async -> String
-
-    /// Navigate the UI to a named route. Routes are app-defined strings, e.g.
-    /// `"library"`, `"now_playing"`, `"briefings"`, `"wiki/zone-2"`.
-    func openScreen(route: String) async
+    /// Arm or clear the sleep timer. Returns a human-readable label for the
+    /// active timer mode, or `nil` when no active playback host was available.
+    func setSleepTimer(mode: String, minutes: Int?) async -> String?
 
     /// Play a publicly-accessible episode by URL without requiring a prior
-    /// follow. When `feedURLString` is supplied, the system fetches the
+    /// subscription. When `feedURLString` is supplied, the system fetches the
     /// source podcast's metadata (artwork, title, author) and parents the
     /// episode to a real `Podcast` row — the user remains unsubscribed.
     /// When `feedURLString` is nil, the episode parents to the built-in
     /// "Unknown" podcast row.
+    /// `queuePosition` mirrors `playEpisode` semantics.
     func playExternalEpisode(
         audioURL: URL,
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double
-    ) async
-
-    /// Enqueue one or more time-bounded episode segments and optionally start
-    /// playing the first one immediately. Used by the `queue_episode_segments`
-    /// agent tool. Returns a summary of what was queued.
-    func queueEpisodeSegments(
-        segments: [EpisodeSegment],
-        playNow: Bool
-    ) async -> QueueSegmentsResult
+        timestampSeconds: Double,
+        queuePosition: QueuePosition
+    ) async -> PlayEpisodeResult?
 }
 
 /// Library, transcript, feed, and local episode-state mutations.
@@ -203,12 +199,17 @@ public protocol PeerEventPublisherProtocol: Sendable {
 /// listening to?" without spending a search budget. Detail / discovery /
 /// content lookups still go through the search and wiki protocols.
 public protocol PodcastInventoryProtocol: Sendable {
-    /// Every show the user is subscribed to, sorted by title. Caps at
-    /// `limit` if the library is huge; the agent can ask for more in a
-    /// follow-up call.
+    /// Every show the user is currently subscribed to, sorted by title. Caps
+    /// at `limit` if the library is huge.
     func listSubscriptions(limit: Int) async -> [SubscriptionSummary]
 
-    /// Episodes belonging to a specific subscription, newest publish-date
+    /// Every podcast known to the store, sorted by title — subscribed AND
+    /// unsubscribed (e.g. one-off external plays, captured-via-browse feeds,
+    /// the AI-generated show). Each row carries a `subscribed` flag so the
+    /// agent can distinguish follow state. Mirrors the All Podcasts UI.
+    func listPodcasts(limit: Int) async -> [PodcastInventoryRow]
+
+    /// Episodes belonging to a specific podcast, newest publish-date
     /// first. Returns `nil` if the podcast isn't in the user's library.
     func listEpisodes(podcastID: PodcastID, limit: Int) async -> [EpisodeInventoryRow]?
 
@@ -272,18 +273,26 @@ public protocol PodcastDirectoryProtocol: Sendable {
     func lookupFeedURL(forCollectionID collectionID: String) async throws -> String?
 }
 
-/// Subscribing to a new podcast feed by URL.
+/// Subscribing to a new podcast feed by URL, plus the destructive inverse
+/// (delete a podcast and everything tied to it).
 public protocol PodcastSubscribeProtocol: Sendable {
-    /// Fetch and persist a podcast feed. Idempotent — if the URL is already
-    /// in the user's library the result carries `alreadySubscribed: true`.
+    /// Fetch and persist a podcast feed and add a `PodcastSubscription` row
+    /// for it. Idempotent — if the user is already subscribed the result
+    /// carries `alreadySubscribed: true`.
     func subscribe(feedURLString: String) async throws -> PodcastSubscribeResult
 
     /// Capture a podcast's metadata + episodes into the store WITHOUT
-    /// creating a `PodcastSubscription` (no follow flip). Wraps
+    /// creating a `PodcastSubscription` (no subscribe). Wraps
     /// `SubscriptionService.ensurePodcast(feedURLString:)`. Used by the
     /// `list_episodes` external-input paths so the agent can offer episode
-    /// lists for shows the user has not (yet) subscribed to.
+    /// lists for shows the user has not subscribed to.
     func ensurePodcast(feedURLString: String) async throws -> PodcastEnsureResult
+
+    /// Fully delete a podcast: removes the `Podcast` row, any
+    /// `PodcastSubscription` for it, and every episode tied to it. Used by
+    /// the `delete_podcast` agent tool. Idempotent — succeeds with a zero
+    /// episode count when the podcast is already gone.
+    func deletePodcast(podcastID: PodcastID) async throws -> PodcastDeleteResult
 }
 
 // MARK: - Aggregate

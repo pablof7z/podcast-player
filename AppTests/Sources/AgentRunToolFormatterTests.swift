@@ -4,7 +4,7 @@ import XCTest
 /// Coverage for `AgentRunToolFormatter` — the per-tool render of the
 /// agent Run Logs detail surface. The formatter previously rendered raw
 /// UUIDs and unformatted seconds, making the trace barely readable for
-/// podcast-domain calls (`play_episode_at`, `search_episodes`, …).
+/// podcast-domain calls (`play_episode`, `search_episodes`, …).
 /// The new `ValueResolver` lets the view pluck friendly strings from
 /// `AppStateStore` without coupling the formatter to live state.
 final class AgentRunToolFormatterTests: XCTestCase {
@@ -13,11 +13,11 @@ final class AgentRunToolFormatterTests: XCTestCase {
 
     func testGenericRenderForArgs() {
         let f = AgentRunToolFormatter.format(
-            toolName: "play_episode_at",
-            arguments: ["episode_id": .string("abc"), "timestamp": .int(420)]
+            toolName: "play_episode",
+            arguments: ["episode_id": .string("abc"), "start_seconds": .int(420)]
         )
-        XCTAssertEqual(f.title, "Play Episode At")
-        XCTAssertEqual(f.detail, "episode_id: \u{201C}abc\u{201D}, timestamp: 420")
+        XCTAssertEqual(f.title, "Play Episode")
+        XCTAssertEqual(f.detail, "episode_id: \u{201C}abc\u{201D}, start_seconds: 420")
     }
 
     func testHumanizesUnderscoredToolName() {
@@ -33,14 +33,14 @@ final class AgentRunToolFormatterTests: XCTestCase {
             key == "episode_id" ? "\u{201C}How to Think About Keto\u{201D}" : nil
         }
         let f = AgentRunToolFormatter.format(
-            toolName: "play_episode_at",
-            arguments: ["episode_id": .string("0123-uuid"), "timestamp": .int(420)],
+            toolName: "play_episode",
+            arguments: ["episode_id": .string("0123-uuid"), "start_seconds": .int(420)],
             resolveValue: resolver
         )
-        // episode_id replaced; timestamp falls through to scalar render.
+        // episode_id replaced; start_seconds falls through to scalar render.
         XCTAssertEqual(
             f.detail,
-            "episode_id: \u{201C}How to Think About Keto\u{201D}, timestamp: 420"
+            "episode_id: \u{201C}How to Think About Keto\u{201D}, start_seconds: 420"
         )
     }
 

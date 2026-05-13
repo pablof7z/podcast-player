@@ -14,9 +14,11 @@ enum AgentOllamaClient {
         apiKey: String,
         model: String,
         feature: String = CostFeature.agentChat,
+        chatURL: URL? = nil,
         onPartialContent: (String) -> Void
     ) async throws -> AgentResult {
-        var request = URLRequest(url: NetworkConstants.chatURL)
+        let resolvedURL = chatURL ?? NetworkConstants.chatURL
+        var request = URLRequest(url: resolvedURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

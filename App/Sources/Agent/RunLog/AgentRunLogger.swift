@@ -1,9 +1,11 @@
 import Foundation
 import Observation
+import OSLog
 
 @MainActor
 final class AgentRunLogger: ObservableObject {
     static let shared = AgentRunLogger()
+    nonisolated static let logger = Logger.app("AgentRunLogger")
 
     @Published private(set) var runs: [AgentRun] = []
 
@@ -47,7 +49,12 @@ final class AgentRunLogger: ObservableObject {
             ?? FileManager.default.temporaryDirectory
         directoryURL = base.appendingPathComponent("AgentRunLog", isDirectory: true)
         fileURL = directoryURL.appendingPathComponent("runs.json")
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        } catch {
+            let path = directoryURL.path
+            Self.logger.error("AgentRunLogger: failed to create directory at \(path, privacy: .public) — \(error.localizedDescription, privacy: .public)")
+        }
         runs = Self.load(from: fileURL)
     }
 

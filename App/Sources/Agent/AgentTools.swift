@@ -37,7 +37,10 @@ enum AgentTools {
         /// `AgentAskCoordinator` to be wired — when absent, the
         /// dispatcher returns a typed error envelope rather than
         /// crashing.
-        static let ask               = "ask"
+        static let ask                  = "ask"
+        static let scheduleTask         = "schedule_task"
+        static let cancelScheduledTask  = "cancel_scheduled_task"
+        static let listScheduledTasks   = "list_scheduled_tasks"
     }
 
     // MARK: - Cached formatters
@@ -79,6 +82,9 @@ enum AgentTools {
         switch name {
         case Names.createNote, Names.recordMemory:
             return dispatchNotesMemory(name: name, args: args, store: store, batchID: batchID)
+
+        case Names.scheduleTask, Names.cancelScheduledTask, Names.listScheduledTasks:
+            return dispatchSchedule(name: name, args: args, store: store)
 
         case Names.ask:
             // Pull the primitives off the non-Sendable `[String: Any]`

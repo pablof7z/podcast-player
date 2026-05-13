@@ -23,7 +23,7 @@ struct HomeView: View {
     @AppStorage("library.categoryFilterID") private var categoryFilterID: String = ""
     @AppStorage("home.featuredExpanded") private var featuredExpanded: Bool = true
 
-    @State private var picksService = AgentPicksService.shared
+    @State private var triageService = InboxTriageService.shared
     @State private var threadingService = ThreadingInferenceService.shared
     @State private var unsubscribeTarget: Podcast?
     @State private var relatedSheetEpisode: Episode?
@@ -104,20 +104,15 @@ struct HomeView: View {
                 Text("This removes the show and all its episodes from your library.")
             }
             .task {
-                picksService.ensureFreshPicks(store: store, category: activeCategory)
+                // Kick AI Inbox triage so freshly-arrived episodes get a
+                // decision. Coalesced — concurrent calls all wait on a
+                // single in-flight pass. Category changes don't need to
+                // re-trigger this since triage decisions are persisted
+                // on episodes and the Inbox bundle just filters them.
+                triageService.triageNewEpisodes(store: store)
                 // Bind the threading service to the store so the
                 // "Threaded Today" derivation has somewhere to look.
                 threadingService.attach(store: store)
-            }
-            // Re-curate the featured section whenever the user flips
-            // categories. The picks service treats each category as its
-            // own cache slot, so this either reads a cached bundle or
-            // kicks off a fresh stream. The cross-fade itself is handled
-            // by the `.id`-keyed transition on `HomeFeaturedSection`'s
-            // rail; this `onChange` only owns the data side.
-            .onChange(of: categoryFilterID) { _, _ in
-                picksService.setActiveCategory(selectedCategoryID)
-                picksService.ensureFreshPicks(store: store, category: activeCategory)
             }
             .onAppear { renderedAt = Date() }
             .task(id: topActiveThreadKey) {
@@ -175,10 +170,10 @@ struct HomeView: View {
                     )
                 }
 
-                if shouldShowFeaturedSection {
+                if shouldShowInboxSection {
                     HomeFeaturedSection(
-                        picksBundle: picksService.bundle(for: selectedCategoryID),
-                        isStreaming: picksService.isStreaming(for: selectedCategoryID),
+                        picksBundle: inboxBundle,
+                        isStreaming: triageService.isRunning && inboxBundle.picks.isEmpty,
                         activeThread: topActiveThread,
                         activeCategoryID: selectedCategoryID,
                         activeCategoryName: activeCategory?.name,
@@ -295,11 +290,20 @@ struct HomeView: View {
         activeCategory?.name ?? "Home"
     }
 
-    private var shouldShowFeaturedSection: Bool {
-        let bundle = picksService.bundle(for: selectedCategoryID)
-        return !bundle.picks.isEmpty
-            || picksService.isRefreshing(for: selectedCategoryID)
-            || picksService.isStreaming(for: selectedCategoryID)
+    /// Persisted Inbox bundle for the currently-active category. The
+    /// triage service writes `.inbox` decisions onto episodes; this
+    /// composes the bundle by filtering + sorting them and is therefore
+    /// cheap to recompute on every body pass.
+    private var inboxBundle: HomeAgentPicksBundle {
+        HomeInboxBundleBuilder.make(
+            store: store,
+            allowedSubscriptionIDs: allowedSubscriptionIDs,
+            now: renderedAt
+        )
+    }
+
+    private var shouldShowInboxSection: Bool {
+        !inboxBundle.picks.isEmpty || triageService.isRunning
     }
 
     // MARK: - Toolbar
@@ -324,15 +328,6 @@ struct HomeView: View {
             .accessibilityLabel("Browse categories")
             .accessibilityHint("Opens category picker")
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                Haptics.light()
-                showAddShowSheet = true
-            } label: {
-                Image(systemName: "plus")
-            }
-            .accessibilityLabel("Add show")
-        }
     }
 
     // MARK: - Actions
@@ -345,11 +340,9 @@ struct HomeView: View {
 
     private func refreshAllFeeds() async {
         await SubscriptionRefreshService.shared.refreshAll(store: store)
-        // Library state moved meaningfully — let the agent picks update on
-        // the next turn instead of waiting on the 6h TTL. We blow every
-        // cached category slot away so each section recurates on first
-        // visit; the active section gets its refresh triggered now.
-        picksService.invalidate()
-        picksService.ensureFreshPicks(store: store, category: activeCategory)
+        // `refreshAll` already kicks `InboxTriageService.triageNewEpisodes`
+        // after the upsert sweep, so any new episodes get classified on
+        // this pass. The triage service coalesces, so a second call here
+        // is harmless but unnecessary.
     }
 }

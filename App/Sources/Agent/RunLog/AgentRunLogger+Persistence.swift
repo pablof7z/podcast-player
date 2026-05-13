@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 extension AgentRunLogger {
 
@@ -11,8 +12,18 @@ extension AgentRunLogger {
         let snapshot = runs
         let url = fileURL
         ioQueue.async {
-            guard let data = try? Self.encoder.encode(snapshot) else { return }
-            try? data.write(to: url, options: [.atomic])
+            let data: Data
+            do {
+                data = try Self.encoder.encode(snapshot)
+            } catch {
+                Self.logger.error("AgentRunLogger: failed to encode snapshot — \(error.localizedDescription, privacy: .public)")
+                return
+            }
+            do {
+                try data.write(to: url, options: [.atomic])
+            } catch {
+                Self.logger.error("AgentRunLogger: failed to write snapshot to \(url.lastPathComponent, privacy: .public) — \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 

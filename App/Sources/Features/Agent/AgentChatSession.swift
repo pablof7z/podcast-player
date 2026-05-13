@@ -64,6 +64,11 @@ final class AgentChatSession {
     /// status label.
     var currentToolName: String?
 
+    /// When `true` the conversation is persisted with `isScheduledTask = true`
+    /// so `ChatHistoryStore.mostRecent` skips it and the auto-resume path in
+    /// the chat UI isn't hijacked by a background scheduled run.
+    var isScheduledTask: Bool = false
+
     /// Composer prefill captured from the various pending-context bridges at
     /// init time. The view drains this exactly once via `consumeSeededDraft()`.
     private var seededDraft: String?
@@ -95,13 +100,15 @@ final class AgentChatSession {
     init(
         store: AppStateStore,
         playback: PlaybackState? = nil,
+        podcastDeps: PodcastAgentToolDeps? = nil,
         history: ChatHistoryStore = .shared,
         resumeWindow: TimeInterval? = nil,
-        askCoordinator: AgentAskCoordinator? = nil
+        askCoordinator: AgentAskCoordinator? = nil,
+        drainPendingContext: Bool = true
     ) {
         self.store = store
         self.history = history
-        self.podcastDeps = playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
+        self.podcastDeps = podcastDeps ?? playback.map { LivePodcastAgentToolDeps.make(store: store, playback: $0) }
         self.askCoordinator = askCoordinator
 
         let window = resumeWindow ?? Self.autoResumeWindow
@@ -117,7 +124,9 @@ final class AgentChatSession {
             self.currentConversationID = UUID()
         }
 
-        checkAndDrainPendingContext()
+        if drainPendingContext {
+            checkAndDrainPendingContext()
+        }
     }
 
     /// Checks the store for pending ask-agent context (voice note, chapter,

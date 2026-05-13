@@ -264,10 +264,15 @@ final class AutoSnipController {
     }
 
     private func formatSummary(startSeconds: TimeInterval, endSeconds: TimeInterval) -> String {
-        // Literal copy from `docs/spec/briefs/ux-01-now-playing.md` — the
-        // 30s figure refers to the lookback window the user opted into,
-        // not the captured length (which includes the 5s lead margin).
-        _ = startSeconds; _ = endSeconds
-        return "Snipped · 30s clipped"
+        let total = Int(round(endSeconds - startSeconds))
+        let body: String
+        if total <= 60 {
+            body = "\(total)s"
+        } else if total <= 600 {
+            body = "\(total / 60)m \(total % 60)s"
+        } else {
+            body = "\(total / 60)m"
+        }
+        return "Snipped · \(body) clipped"
     }
 }

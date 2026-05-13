@@ -34,52 +34,130 @@ final class AgentToolsPodcastTests: XCTestCase {
         }
     }
 
-    // MARK: - play_episode_at
+    // MARK: - play_episode
 
-    func testPlayEpisodeAtSuccess() async throws {
+    func testPlayEpisodeNowSuccess() async throws {
         let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.playEpisodeAt,
-            args: ["episode_id": "ep1", "timestamp": 47.5],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "start_seconds": 47.5, "queue_position": "now"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
         XCTAssertEqual(decoded["success"] as? Bool, true)
         XCTAssertEqual(decoded["episode_id"] as? String, "ep1")
-        XCTAssertEqual(decoded["timestamp"] as? Double, 47.5)
+        XCTAssertEqual(decoded["queue_position"] as? String, "now")
+        XCTAssertEqual(decoded["started_playing"] as? Bool, true)
         let calls = await deps.playback.recordedPlays
         XCTAssertEqual(calls.count, 1)
-        XCTAssertEqual(calls.first?.0, "ep1")
-        XCTAssertEqual(calls.first?.1, 47.5)
+        XCTAssertEqual(calls.first?.episodeID, "ep1")
+        XCTAssertEqual(calls.first?.startSeconds, 47.5)
+        XCTAssertNil(calls.first?.endSeconds)
+        XCTAssertEqual(calls.first?.queuePosition, .now)
     }
 
-    func testPlayEpisodeAtRejectsMissingEpisodeID() async throws {
-        let deps = makeDeps()
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.playEpisodeAt,
-            args: ["timestamp": 0],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
-    }
-
-    func testPlayEpisodeAtRejectsUnknownEpisode() async throws {
-        let deps = makeDeps(fetcher: MockFetcher(known: []))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.playEpisodeAt,
-            args: ["episode_id": "does-not-exist", "timestamp": 0],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
-    }
-
-    func testPlayEpisodeAtRejectsNegativeTimestamp() async throws {
+    func testPlayEpisodeBoundedSegmentNow() async throws {
         let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.playEpisodeAt,
-            args: ["episode_id": "ep1", "timestamp": -3],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "start_seconds": 30.0, "end_seconds": 90.0, "queue_position": "now"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["success"] as? Bool, true)
+        let calls = await deps.playback.recordedPlays
+        XCTAssertEqual(calls.first?.startSeconds, 30.0)
+        XCTAssertEqual(calls.first?.endSeconds, 90.0)
+    }
+
+    func testPlayEpisodeQueueEnd() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "queue_position": "end"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["queue_position"] as? String, "end")
+        XCTAssertEqual(decoded["started_playing"] as? Bool, false)
+        let calls = await deps.playback.recordedPlays
+        XCTAssertEqual(calls.first?.queuePosition, .end)
+    }
+
+    func testPlayEpisodeQueueNext() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "queue_position": "next"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["queue_position"] as? String, "next")
+        XCTAssertEqual(decoded["started_playing"] as? Bool, false)
+        let calls = await deps.playback.recordedPlays
+        XCTAssertEqual(calls.first?.queuePosition, .next)
+    }
+
+    func testPlayEpisodeRejectsMissingEpisodeID() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["queue_position": "now"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPlayEpisodeRejectsMissingQueuePosition() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPlayEpisodeRejectsBadQueuePosition() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "queue_position": "later"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPlayEpisodeRejectsUnknownEpisode() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: []))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "does-not-exist", "queue_position": "now"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPlayEpisodeRejectsNegativeStart() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "start_seconds": -3.0, "queue_position": "now"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPlayEpisodeRejectsEndBeforeStart() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "start_seconds": 50.0, "end_seconds": 20.0, "queue_position": "now"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
@@ -320,60 +398,6 @@ final class AgentToolsPodcastTests: XCTestCase {
         XCTAssertNotNil(decoded["error"])
     }
 
-    // MARK: - open_screen
-
-    func testOpenScreenForwardsRoute() async throws {
-        let deps = makeDeps()
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.openScreen,
-            args: ["route": "library"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["route"] as? String, "library")
-        let routes = await deps.playback.recordedRoutes
-        XCTAssertEqual(routes, ["library"])
-    }
-
-    func testOpenScreenRejectsEmptyRoute() async throws {
-        let deps = makeDeps()
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.openScreen,
-            args: ["route": ""],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
-    }
-
-    // MARK: - set_now_playing
-
-    func testSetNowPlayingForwardsTimestamp() async throws {
-        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.setNowPlaying,
-            args: ["episode_id": "ep1", "timestamp": 12.0],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["episode_id"] as? String, "ep1")
-        let calls = await deps.playback.recordedNowPlaying
-        XCTAssertEqual(calls.count, 1)
-        XCTAssertEqual(calls.first?.0, "ep1")
-        XCTAssertEqual(calls.first?.1, 12.0)
-    }
-
-    func testSetNowPlayingPermitsNilTimestamp() async throws {
-        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.setNowPlaying,
-            args: ["episode_id": "ep1"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["success"] as? Bool, true)
-    }
-
     // MARK: - Unknown tool
 
     func testUnknownPodcastToolReturnsError() async throws {
@@ -390,20 +414,23 @@ final class AgentToolsPodcastTests: XCTestCase {
     // MARK: - JSON-from-string entry point
 
     func testDispatchFromArgsJSONStringParsesObject() async throws {
+        // Uses set_playback_rate as a JSON-shape carrier: it requires a numeric
+        // `rate` arg, so parsing must succeed for the success envelope to come
+        // back with `rate` set.
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.openScreen,
-            argsJSON: #"{"route":"briefings"}"#,
+            name: AgentTools.PodcastNames.setPlaybackRate,
+            argsJSON: #"{"rate":1.5}"#,
             deps: deps.bundle
         )
         let decoded = try decode(json)
-        XCTAssertEqual(decoded["route"] as? String, "briefings")
+        XCTAssertEqual(decoded["requested_rate"] as? Double, 1.5)
     }
 
     func testDispatchFromArgsJSONStringRejectsMalformed() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.openScreen,
+            name: AgentTools.PodcastNames.setPlaybackRate,
             argsJSON: "not json",
             deps: deps.bundle
         )

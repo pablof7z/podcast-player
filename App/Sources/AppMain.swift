@@ -8,6 +8,7 @@ struct PodcastrApp: App {
     @State private var store = AppStateStore()
     @State private var userIdentity = UserIdentityStore.shared
     @State private var relayService: NostrRelayService?
+    @State private var scheduledTaskRunner: AgentScheduledTaskRunner?
     /// Single global owner-consultation coordinator. Lives here (not on
     /// `AgentChatSession`) so an inbound peer-agent reply flowing through
     /// `AgentRelayBridge` can pop the same sheet even when the user is on
@@ -35,7 +36,7 @@ struct PodcastrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(relayService: relayService)
+            RootView(relayService: relayService, scheduledTaskRunner: scheduledTaskRunner)
                 .environment(store)
                 .environment(userIdentity)
                 .environment(askCoordinator)
@@ -44,6 +45,7 @@ struct PodcastrApp: App {
                     let service = NostrRelayService(store: store, askCoordinator: askCoordinator)
                     relayService = service
                     service.start()
+                    scheduledTaskRunner = AgentScheduledTaskRunner(store: store)
                 }
                 .task {
                     // Seed a fresh install silently so the first launch

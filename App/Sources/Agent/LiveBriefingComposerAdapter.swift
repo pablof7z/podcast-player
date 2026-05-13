@@ -26,7 +26,7 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
             scope: Self.briefingScope(from: scope),
             length: Self.briefingLength(forMinutes: lengthMinutes),
             style: Self.briefingStyle(from: style),
-            freeformQuery: Self.freeformQuery(scope: scope, style: style)
+            freeformQuery: Self.freeformQuery(scope: scope)
         )
         let composer = try await Self.makeComposer()
         let result = try await composer.compose(request: request, progress: { _ in })
@@ -92,7 +92,7 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
 
     /// Surfaces a freeform query when the scope string isn't a recognised enum
     /// keyword and isn't a UUID — the composer treats it as a topic prompt.
-    static func freeformQuery(scope: String, style: String?) -> String? {
+    static func freeformQuery(scope: String) -> String? {
         let key = scope.lowercased()
         let knownKeywords: Set<String> = [
             "this_week", "thisweek", "week",
@@ -102,7 +102,6 @@ struct LiveBriefingComposerAdapter: BriefingComposerProtocol {
         ]
         if knownKeywords.contains(key) { return nil }
         if UUID(uuidString: scope) != nil { return nil }
-        _ = style
         return scope
     }
 }

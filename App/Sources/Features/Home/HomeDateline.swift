@@ -105,7 +105,7 @@ enum HomeDateline {
             allowedSubscriptionIDs: allowedSubscriptionIDs
         )
         let newCount = scopedEpisodes.reduce(0) { acc, ep in
-            (!ep.played && ep.pubDate >= cutoff && ep.pubDate <= now) ? acc + 1 : acc
+            (!ep.played && !ep.isTriageArchived && ep.pubDate >= cutoff && ep.pubDate <= now) ? acc + 1 : acc
         }
 
         let contradictionCount = topics.reduce(0) { acc, topic in

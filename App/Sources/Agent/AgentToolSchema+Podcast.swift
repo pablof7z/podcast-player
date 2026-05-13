@@ -26,13 +26,29 @@ extension AgentTools {
     static var podcastSchema: [[String: Any]] {
         [
             podcastTool(
-                name: PodcastNames.playEpisodeAt,
-                description: "Open the podcast player at a specific episode and timestamp. Use this when the user says 'play that part where…' or asks to jump to a specific moment they remember.",
+                name: PodcastNames.playEpisode,
+                description: """
+                Play an episode already in the library. Single verb covering jump-to-timestamp, \
+                bounded-segment playback, and queue management — pick `queue_position` to control \
+                whether playback starts now or the episode lands in Up Next. \
+                Use this when the user says 'play that part where…' (start_seconds), \
+                'play the intro' (start_seconds + end_seconds), 'play this next' (queue_position=next), \
+                or 'add this to my queue' (queue_position=end). \
+                For multi-segment playback (e.g. 'play the intro then the interview part'), call this \
+                tool once per segment — first with queue_position=now, the rest with queue_position=end. \
+                A subtle audio cue marks each transition when the queue advances.
+                """,
                 properties: [
-                    "episode_id": ["type": "string", "description": "The episode's stable ID (UUID or canonical string)."],
-                    "timestamp": ["type": "number", "description": "Position to seek to, in seconds from the start of the episode. Use 0 to play from the beginning."],
+                    "episode_id": ["type": "string", "description": "The episode's stable ID (UUID). The episode must already be in the library (from list_episodes, search_episodes, etc.). For episodes not in the library, use play_external_episode."],
+                    "start_seconds": ["type": "number", "description": "Position to start playback from, in seconds. Defaults to 0 (beginning)."],
+                    "end_seconds": ["type": "number", "description": "Optional position to stop playback and advance to the next queue item. Omit for open-ended playback to the end of the episode. Must be greater than start_seconds when both are set."],
+                    "queue_position": [
+                        "type": "string",
+                        "enum": ["now", "next", "end"],
+                        "description": "Where to land this play. 'now' = start playing immediately; existing Up Next items are preserved and resume afterward. 'next' = insert at the head of Up Next so it plays after the current item ends. 'end' = append to the bottom of Up Next.",
+                    ],
                 ],
-                required: ["episode_id", "timestamp"]
+                required: ["episode_id", "queue_position"]
             ),
             podcastTool(
                 name: PodcastNames.pausePlayback,
@@ -59,7 +75,7 @@ extension AgentTools {
             ),
             podcastTool(
                 name: PodcastNames.searchEpisodes,
-                description: "Semantic + keyword search across the user's subscribed podcasts. Use for fuzzy recall like 'the one about stamps last week' or topical queries like 'episodes on Zone 2 training'.",
+                description: "Semantic + keyword search across every episode in the user's library (subscribed shows AND one-off captured episodes). Use for fuzzy recall like 'the one about stamps last week' or topical queries like 'episodes on Zone 2 training'.",
                 properties: [
                     "query": ["type": "string", "description": "Natural-language query."],
                     "scope": ["type": "string", "description": "Optional podcast ID to constrain the search to one show."],
@@ -164,28 +180,11 @@ extension AgentTools {
             ),
             podcastTool(
                 name: PodcastNames.refreshFeed,
-                description: "Refresh a subscribed podcast feed and ingest newly published episodes. Use when the user asks for the latest from one show.",
+                description: "Refresh a known podcast's feed and ingest newly published episodes. Works on any podcast in the library — subscribed or not — as long as it has a feed URL. Use when the user asks for the latest from one show.",
                 properties: [
-                    "podcast_id": ["type": "string", "description": "The subscribed podcast/feed ID to refresh."],
+                    "podcast_id": ["type": "string", "description": "The podcast/feed UUID to refresh. Get it from list_subscriptions, list_podcasts, or list_episodes."],
                 ],
                 required: ["podcast_id"]
-            ),
-            podcastTool(
-                name: PodcastNames.openScreen,
-                description: "Navigate the app UI to a named route (e.g. 'library', 'now_playing', 'briefings', 'wiki/zone-2'). Use sparingly — only when the user explicitly asks to go somewhere.",
-                properties: [
-                    "route": ["type": "string", "description": "App route string."],
-                ],
-                required: ["route"]
-            ),
-            podcastTool(
-                name: PodcastNames.setNowPlaying,
-                description: "Update the player's now-playing context without necessarily starting playback (preload artwork, seed the lock-screen). Use as a setup step before a 'play_episode_at' or to reflect what the agent is currently grounded in.",
-                properties: [
-                    "episode_id": ["type": "string", "description": "Episode to mark as now playing."],
-                    "timestamp": ["type": "number", "description": "Optional timestamp in seconds. Omit to leave position unchanged."],
-                ],
-                required: ["episode_id"]
             ),
             podcastTool(
                 name: PodcastNames.endConversation,
@@ -207,9 +206,34 @@ extension AgentTools {
             ),
             podcastTool(
                 name: PodcastNames.listSubscriptions,
-                description: "List the podcasts the user is currently subscribed to, sorted by title. Use this before offering to unsubscribe or when the user asks 'what am I subscribed to?'. Returns each show's id, title, total + unplayed episode counts, and last-published date.",
+                description: """
+                List the podcasts the user is currently subscribed to, sorted by title. \
+                Use when the user asks 'what am I subscribed to?' or before suggesting they \
+                unsubscribe from a specific show. Returns each show's id, title, author, \
+                total + unplayed episode counts, and last-published date. \
+                Distinct from `list_podcasts`, which returns every known podcast — subscribed \
+                AND unsubscribed (one-off external plays, captured-via-browse feeds, the \
+                AI-generated show). Use `list_podcasts` when the user asks 'what shows do I \
+                have in the app?' or before calling `delete_podcast`.
+                """,
                 properties: [
                     "limit": ["type": "integer", "description": "Maximum subscriptions to return. Defaults to 25, capped at 100."],
+                ],
+                required: []
+            ),
+            podcastTool(
+                name: PodcastNames.listPodcasts,
+                description: """
+                List EVERY podcast known to the store — subscribed AND unsubscribed — sorted \
+                by title. Each row carries a `subscribed: true|false` flag so you can \
+                distinguish followed shows from one-off captures (external-played episodes, \
+                feeds browsed via list_episodes, the AI-generated show). \
+                Use this when the user asks about 'all my podcasts', wants to clean up the \
+                library, or before calling `delete_podcast`. For the subscribed set only, \
+                use `list_subscriptions`.
+                """,
+                properties: [
+                    "limit": ["type": "integer", "description": "Maximum podcasts to return. Defaults to 25, capped at 100."],
                 ],
                 required: []
             ),
@@ -244,9 +268,9 @@ extension AgentTools {
                     search_podcast_directory) → resolves the feed and captures metadata WITHOUT \
                     subscribing the user.
                   - `feed_url` as an RSS URL → captures metadata WITHOUT subscribing.
-                Use the external paths to offer episode lists for shows the user does not follow, \
-                so you never have to subscribe them just to browse. The response always includes \
-                `podcast_id` (resolved internal UUID) for follow-up calls like play_episode_at.
+                Use the external paths to offer episode lists for shows the user does not subscribe \
+                to, so you never have to subscribe them just to browse. The response always includes \
+                `podcast_id` (resolved internal UUID) for follow-up calls like play_episode.
                 """,
                 properties: [
                     "podcast_id": ["type": "string", "description": "Either an internal podcast UUID (from list_subscriptions / search_episodes) or an iTunes collection_id (from search_podcast_directory). Mutually exclusive with feed_url."],
@@ -293,8 +317,9 @@ extension AgentTools {
                 Prefer this over separate download_episode + request_transcription calls when the \
                 goal is to have the transcript ready to query in the same turn. \
                 For episodes not yet in the library, supply feed_url and audio_url instead of \
-                episode_id — the tool will auto-subscribe to the feed, locate the episode, then \
-                download and transcribe it.
+                episode_id — the tool captures the feed's metadata and episodes WITHOUT subscribing \
+                the user, locates the episode, then downloads and transcribes it. If the user then \
+                wants to follow the show, call subscribe_podcast separately.
                 """,
                 properties: [
                     "episode_id": ["type": "string", "description": "The episode to download and transcribe (UUID string). Omit when using feed_url + audio_url for external episodes."],
@@ -302,39 +327,6 @@ extension AgentTools {
                     "audio_url": ["type": "string", "description": "Direct audio URL of the specific episode. Required when episode_id is omitted, used to locate the episode within the feed."],
                 ],
                 required: []
-            ),
-            podcastTool(
-                name: PodcastNames.queueEpisodeSegments,
-                description: """
-                Load one or more time-bounded segments from an episode (or multiple episodes) into the Up Next queue, \
-                then optionally start playing the first segment immediately. \
-                Use when the user says 'play section X then Y from episode Z', 'play the intro and the interview part', \
-                or asks to queue specific chapters. \
-                Before calling this tool, use query_transcripts or the episode's chapter list to resolve the \
-                timestamps for each section the user named. \
-                Each segment plays from start_seconds to end_seconds; when it ends, a subtle sound cue fires and \
-                the next segment starts automatically. \
-                Distinct from play_episode_at (which jumps to a single timestamp with no end boundary) — \
-                use this tool any time two or more bounded segments need to play in sequence.
-                """,
-                properties: [
-                    "segments": [
-                        "type": "array",
-                        "description": "Ordered list of segments to enqueue. Must contain at least one entry.",
-                        "items": [
-                            "type": "object",
-                            "properties": [
-                                "episode_id": ["type": "string", "description": "UUID of the episode containing this segment."],
-                                "start_seconds": ["type": "number", "description": "Seconds from the episode origin where this segment begins."],
-                                "end_seconds": ["type": "number", "description": "Seconds from the episode origin where this segment ends."],
-                                "label": ["type": "string", "description": "Optional human-readable label (e.g. chapter title) shown in the queue sheet."],
-                            ] as [String: Any],
-                            "required": ["episode_id", "start_seconds", "end_seconds"],
-                        ] as [String: Any],
-                    ] as [String: Any],
-                    "play_now": ["type": "boolean", "description": "If true, start playing the first segment immediately and push the rest into the queue. If false, append all segments to the queue without starting playback. Defaults to true."],
-                ],
-                required: ["segments"]
             ),
             // NOTE: `generate_tts_episode`, `configure_agent_voice`, and
             // `list_available_voices` live under the `podcast_generation`
@@ -362,10 +354,13 @@ extension AgentTools {
             podcastTool(
                 name: PodcastNames.subscribePodcast,
                 description: """
-                Subscribe to a podcast feed by RSS URL. Fetches the feed, imports all known episodes, \
-                and returns the new podcast_id for follow-up calls (e.g. list_episodes, download_and_transcribe). \
-                Idempotent — if already subscribed, returns the existing show info with alreadySubscribed=true. \
-                Use after search_podcast_directory resolves a feed_url, or when the user supplies one directly.
+                Subscribe to a podcast feed by RSS URL — creates the `PodcastSubscription` row \
+                and imports the feed's episodes. Use this only when the user explicitly says they \
+                want to subscribe / follow / add the show to their library. \
+                Idempotent at the subscription level: if the user is already subscribed the result \
+                carries `already_subscribed: true`. If the Podcast row already exists from a prior \
+                one-off play (`play_external_episode`) but no subscription row, this promotes it \
+                into a subscription and backfills missing episodes.
                 """,
                 properties: [
                     "feed_url": ["type": "string", "description": "RSS feed URL of the podcast to subscribe to."],
@@ -373,15 +368,33 @@ extension AgentTools {
                 required: ["feed_url"]
             ),
             podcastTool(
+                name: PodcastNames.deletePodcast,
+                description: """
+                Fully remove a podcast from the user's library: deletes the `Podcast` row, any \
+                `PodcastSubscription` for it, and every episode tied to it. This matches the \
+                'Unsubscribe' destructive action in the Subscriptions list AND the swipe-to-delete \
+                on the All Podcasts screen — both of those are the same nuke under the hood. \
+                Use when the user says 'unsubscribe from X', 'remove X from my library', or \
+                'delete X'. The response includes `was_subscribed` so you can tell the user whether \
+                this was a subscribed show or a one-off capture. Cannot delete the Unknown sentinel.
+                """,
+                properties: [
+                    "podcast_id": ["type": "string", "description": "The podcast UUID to delete. Get it from list_subscriptions, list_podcasts, or list_episodes."],
+                ],
+                required: ["podcast_id"]
+            ),
+            podcastTool(
                 name: PodcastNames.playExternalEpisode,
                 description: """
                 Play any publicly accessible podcast episode by audio URL, without requiring a prior subscription. \
-                Use when the user wants to hear a specific episode from a show they don't follow \
+                Use when the user wants to hear a specific episode from a show they don't subscribe to \
                 — e.g. a guest appearance or a one-off recommendation. \
                 When you know the show's RSS feed_url (from search_podcast_directory results) pass it — \
                 the app will then carry the show's real artwork, title, and metadata. \
                 If you only have a raw audio URL (user-pasted link, Nostr-shared URL) and no feed, omit feed_url; \
-                the episode plays parented to an "Unknown" podcast.
+                the episode plays parented to an "Unknown" podcast. \
+                `queue_position` mirrors `play_episode`: 'now' starts immediately, 'next' inserts at the \
+                head of Up Next, 'end' appends. Defaults to 'now' so a one-off play just plays.
                 """,
                 properties: [
                     "audio_url": ["type": "string", "description": "Direct audio URL of the episode (e.g. the enclosure URL from search_podcast_directory)."],
@@ -389,6 +402,11 @@ extension AgentTools {
                     "feed_url": ["type": "string", "description": "Optional RSS feed URL of the source podcast. Pass this whenever you have it (e.g. from search_podcast_directory) so the app captures the show's real metadata and artwork."],
                     "duration_seconds": ["type": "number", "description": "Optional episode duration in seconds."],
                     "timestamp": ["type": "number", "description": "Position to seek to in seconds. Defaults to 0 (beginning)."],
+                    "queue_position": [
+                        "type": "string",
+                        "enum": ["now", "next", "end"],
+                        "description": "Where to land this play. Defaults to 'now'. See `play_episode` for full semantics.",
+                    ],
                 ],
                 required: ["audio_url", "title"]
             ),

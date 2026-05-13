@@ -98,4 +98,28 @@ actor MockSubscribe: PodcastSubscribeProtocol {
             episodeCount: 0
         )
     }
+
+    private(set) var deleteCalls: [PodcastID] = []
+    private var deleteResults: [PodcastID: PodcastDeleteResult] = [:]
+    private var deleteError: Error?
+
+    func setDeleteResult(_ result: PodcastDeleteResult, forPodcastID podcastID: PodcastID) {
+        deleteResults[podcastID] = result
+    }
+
+    func setDeleteError(_ error: Error?) {
+        deleteError = error
+    }
+
+    func deletePodcast(podcastID: PodcastID) async throws -> PodcastDeleteResult {
+        deleteCalls.append(podcastID)
+        if let deleteError { throw deleteError }
+        if let canned = deleteResults[podcastID] { return canned }
+        return PodcastDeleteResult(
+            podcastID: podcastID,
+            title: "Mock Show",
+            wasSubscribed: true,
+            episodesDeleted: 0
+        )
+    }
 }

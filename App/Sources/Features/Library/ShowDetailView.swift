@@ -25,6 +25,7 @@ struct ShowDetailView: View {
     @State private var showDeleteConfirm: Bool = false
     @State private var searchText: String = ""
     @State private var isSearchActive: Bool = false
+    @State private var isFetchingEpisodes: Bool = false
     /// Drives the VoiceOver "Open episode details" custom action — bound into
     /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
     /// so the same `EpisodeDetailView` opens regardless of how the user got there.
@@ -83,6 +84,12 @@ struct ShowDetailView: View {
             prompt: "Search episodes"
         )
         .refreshable { await refresh() }
+        .task(id: podcast.id) {
+            guard !isFollowed, liveSubscription.feedURL != nil else { return }
+            isFetchingEpisodes = true
+            await refresh()
+            isFetchingEpisodes = false
+        }
         .sheet(isPresented: $showSettings) {
             ShowDetailSettingsSheet(
                 podcast: liveSubscription,
@@ -163,7 +170,15 @@ struct ShowDetailView: View {
 
     @ViewBuilder
     private var episodeListSection: some View {
-        if episodes.isEmpty {
+        if isFetchingEpisodes && episodes.isEmpty {
+            Section {
+                ProgressView("Loading episodes…")
+                    .frame(maxWidth: .infinity)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .padding(.top, AppTheme.Spacing.xl)
+            }
+        } else if episodes.isEmpty {
             Section {
                 ContentUnavailableView(
                     "No episodes yet",

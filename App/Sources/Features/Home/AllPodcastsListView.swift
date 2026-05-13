@@ -16,6 +16,7 @@ struct AllPodcastsListView: View {
     @Environment(AppStateStore.self) private var store
     @State private var pendingDelete: Podcast?
     @State private var searchText: String = ""
+    @State private var showAddShowSheet: Bool = false
 
     var body: some View {
         List {
@@ -48,6 +49,20 @@ struct AllPodcastsListView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("All Podcasts")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.light()
+                    showAddShowSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Add show")
+            }
+        }
+        .sheet(isPresented: $showAddShowSheet) {
+            AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
+        }
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),

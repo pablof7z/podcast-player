@@ -18,6 +18,7 @@ extension AgentChatSession {
             messages: messages,
             isUpgraded: isUpgraded,
             enabledSkills: enabledSkills,
+            isScheduledTask: isScheduledTask,
             createdAt: existing?.createdAt ?? Date(),
             updatedAt: Date()
         )

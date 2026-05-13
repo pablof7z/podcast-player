@@ -72,7 +72,7 @@ final class AgentSkillsTests: XCTestCase {
             AgentSkillID.wikiResearch
         )
         // Non-skill-gated podcast tools — no owner.
-        XCTAssertNil(AgentSkillRegistry.owningSkillID(forTool: AgentTools.PodcastNames.playEpisodeAt))
+        XCTAssertNil(AgentSkillRegistry.owningSkillID(forTool: AgentTools.PodcastNames.playEpisode))
         XCTAssertNil(AgentSkillRegistry.owningSkillID(forTool: AgentTools.PodcastNames.queryWiki))
     }
 

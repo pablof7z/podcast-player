@@ -73,6 +73,10 @@ struct Settings: Codable, Hashable, Sendable {
         static let skipBackwardSeconds: Int = 15
     }
 
+    /// Default Ollama chat endpoint (Ollama Cloud). Users can override this to
+    /// point at a local or self-hosted instance from Settings → Providers → Ollama.
+    static let defaultOllamaChatURL = "https://ollama.com/api/chat"
+
     // AI / LLM
     /// Model the agent chat session starts on. Designed to be a cheap/fast model
     /// — the agent decides per-task whether to call `upgrade_thinking`, which
@@ -119,6 +123,11 @@ struct Settings: Codable, Hashable, Sendable {
     var ollamaBYOKKeyID: String?
     var ollamaBYOKKeyLabel: String?
     var ollamaConnectedAt: Date?
+    /// Chat endpoint for Ollama requests. Defaults to the Ollama Cloud API so
+    /// existing users see no change. Set to e.g. `http://localhost:11434/api/chat`
+    /// to point at a local instance. Stored as a String so partial edits during
+    /// typing don't break `Codable`; validated as a URL at the network call site.
+    var ollamaChatURL: String = Settings.defaultOllamaChatURL
 
     // ElevenLabs credentials (secret stored in Keychain; only metadata here)
     var elevenLabsCredentialSource: ElevenLabsCredentialSource = .none
@@ -229,7 +238,7 @@ struct Settings: Codable, Hashable, Sendable {
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
-        case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt
+        case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt, ollamaChatURL
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
         case sttProvider, openRouterWhisperModel, assemblyAISTTModel
@@ -272,6 +281,7 @@ struct Settings: Codable, Hashable, Sendable {
         ollamaBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyID)
         ollamaBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyLabel)
         ollamaConnectedAt = try c.decodeIfPresent(Date.self, forKey: .ollamaConnectedAt)
+        ollamaChatURL = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) ?? Settings.defaultOllamaChatURL
         elevenLabsCredentialSource = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) ?? .none
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
         elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
@@ -337,6 +347,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(ollamaBYOKKeyID, forKey: .ollamaBYOKKeyID)
         try c.encodeIfPresent(ollamaBYOKKeyLabel, forKey: .ollamaBYOKKeyLabel)
         try c.encodeIfPresent(ollamaConnectedAt, forKey: .ollamaConnectedAt)
+        try c.encode(ollamaChatURL, forKey: .ollamaChatURL)
         try c.encode(elevenLabsCredentialSource, forKey: .elevenLabsCredentialSource)
         try c.encodeIfPresent(elevenLabsBYOKKeyID, forKey: .elevenLabsBYOKKeyID)
         try c.encodeIfPresent(elevenLabsBYOKKeyLabel, forKey: .elevenLabsBYOKKeyLabel)

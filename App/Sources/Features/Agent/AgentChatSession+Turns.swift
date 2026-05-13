@@ -151,12 +151,14 @@ extension AgentChatSession {
                 ? store.state.settings.agentThinkingModel
                 : store.state.settings.agentInitialModel
             do {
+                let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
                 result = try await AgentLLMClient.streamCompletion(
                     messages: rawMessages,
                     tools: AgentTools.schema
                          + AgentTools.podcastSchema
                          + AgentSkillRegistry.schemas(for: enabledSkills),
-                    model: modelForTurn
+                    model: modelForTurn,
+                    ollamaChatURL: ollamaChatURL
                 ) { [weak self] partial in
                     self?.streamingContent = partial
                 }

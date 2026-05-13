@@ -27,9 +27,18 @@ extension PlaybackState {
         queue.append(item)
     }
 
+    /// Insert a `QueueItem` at the head of Up Next so it plays after the
+    /// currently-playing segment/episode finishes. No deduplication. Used by
+    /// the agent's `play_episode` tool with `queue_position: "next"`.
+    func insertNext(_ item: QueueItem) {
+        queue.insert(item, at: 0)
+    }
+
     /// Replace the current queue with an ordered list of `QueueItem`s and,
     /// if `playNow` is true, immediately dequeue and play the first one.
-    /// Called by the agent's `queue_episode_segments` tool.
+    /// The `playNow` path is the engine primitive behind the agent's
+    /// `play_episode` tool with `queue_position: "now"` (single item) and
+    /// behind callers that want to start a chain of segments.
     func enqueueSegments(_ items: [QueueItem], playNow: Bool, resolve: (UUID) -> Episode?) {
         guard !items.isEmpty else { return }
         if playNow {

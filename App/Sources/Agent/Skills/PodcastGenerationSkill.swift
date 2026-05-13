@@ -46,8 +46,8 @@ enum PodcastGenerationSkill {
       "play the highlights of episodes A and B back to back".
 
     Skip this skill for tasks that don't end in a published episode — answer
-    inline, summarise in chat, or use `queue_episode_segments` if the user just
-    wants segments queued.
+    inline, summarise in chat, or use `play_episode` (called once per segment
+    with `queue_position: "end"`) if the user just wants segments queued.
 
     ## Tools
 

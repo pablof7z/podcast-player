@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os.log
 
 // MARK: - BriefingsViewModel
 
@@ -28,6 +29,14 @@ final class BriefingsViewModel {
     /// `true` while a compose run is in flight.
     var isComposing: Bool { composeProgress != nil && composeProgress != .finished }
 
+    /// `true` when briefings are stored in `temporaryDirectory` because
+    /// `Application Support` was unavailable. Data will be lost on relaunch.
+    private(set) var isUsingEphemeralStorage: Bool = false
+
+    // MARK: Logger
+
+    private static let logger = Logger.app("BriefingsViewModel")
+
     // MARK: Dependencies
 
     private let storage: BriefingStorage
@@ -40,6 +49,7 @@ final class BriefingsViewModel {
         composer: BriefingComposing? = nil
     ) {
         let resolvedStorage: BriefingStorage
+        var ephemeral = false
         if let s = storage {
             resolvedStorage = s
         } else if let s = try? BriefingStorage() {
@@ -47,13 +57,16 @@ final class BriefingsViewModel {
         } else {
             // Fall back to a temporary directory if Application Support is
             // unavailable (rare; mostly happens in restricted preview hosts).
+            Self.logger.error("Application Support unavailable — BriefingsViewModel falling back to temporaryDirectory. Briefings will NOT survive app relaunch.")
             let tmp = FileManager.default.temporaryDirectory
                 .appendingPathComponent("briefings-\(UUID().uuidString)", isDirectory: true)
             // swiftlint:disable:next force_try
             resolvedStorage = try! BriefingStorage(rootDirectory: tmp)
+            ephemeral = true
         }
         self.storage = resolvedStorage
         self.composer = composer ?? BriefingComposer(storage: resolvedStorage)
+        self.isUsingEphemeralStorage = ephemeral
     }
 
     // MARK: Library

@@ -1,4 +1,5 @@
 import CoreSpotlight
+import ShakeFeedbackKit
 import SwiftUI
 
 /// The tabs available at the root navigation level.
@@ -31,11 +32,17 @@ struct RootView: View {
     /// `PodcastAgentToolDeps` provider + ask coordinator once both this
     /// view's `playbackState` and the relay service exist.
     let relayService: NostrRelayService?
+    /// Fires due recurring agent tasks. Nil before the cold-launch `.task`
+    /// in AppMain runs. `podcastDepsProvider` is wired in `.task(id:)` once
+    /// `playbackState` is available — same pattern as `relayService`.
+    let scheduledTaskRunner: AgentScheduledTaskRunner?
 
     @Environment(AppStateStore.self) private var store
     @Environment(AgentAskCoordinator.self) private var askCoordinator
+    @Environment(UserIdentityStore.self) private var userIdentity
     @State private var selectedTab: RootTab = .home
     @State private var feedbackWorkflow = FeedbackWorkflow()
+    @State private var sharedFeedbackStore = ShakeFeedbackStore(config: .podcastr, namespace: "io.f7z.podcast")
     @State private var showFeedback = false
     @State private var showSettings = false
     @State private var showAgentChat = false
@@ -103,6 +110,10 @@ struct RootView: View {
                     LivePodcastAgentToolDeps.make(store: store, playback: playbackState)
                 }
                 relayService.agentResponder.askCoordinator = askCoordinator
+                scheduledTaskRunner?.podcastDepsProvider = { [store, playbackState] in
+                    LivePodcastAgentToolDeps.make(store: store, playback: playbackState)
+                }
+                scheduledTaskRunner?.runDueTasksIfNeeded()
             }
             .onAppear {
                 playbackState.onPersistPosition = { [store] id, position in
@@ -235,7 +246,12 @@ struct RootView: View {
             }
             .onShake { handleShake() }
             .sheet(isPresented: $showFeedback) {
-                FeedbackView(workflow: feedbackWorkflow)
+                ShakeFeedbackSheet(store: sharedFeedbackStore)
+                    .presentationDetents([.large])
+            }
+            .task(id: userIdentity.publicKeyHex) {
+                guard userIdentity.publicKeyHex != nil else { return }
+                await sharedFeedbackStore.start(hostSigner: PodcastShakeFeedbackSigner(identity: userIdentity))
             }
             .sheet(isPresented: $showSettings) {
                 NavigationStack { SettingsView() }
@@ -296,6 +312,9 @@ struct RootView: View {
                     showVoiceMode = false
                     openAgentChat()
                 })
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                scheduledTaskRunner?.runDueTasksIfNeeded()
             }
             .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
                 showVoiceMode = true

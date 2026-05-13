@@ -7,7 +7,7 @@ import SwiftUI
 /// episode title, transcript snippet, a tappable timestamp chip, a
 /// confidence dot, and an amber seam for contradictions.
 ///
-/// Tap on a timestamp chip dispatches `play_episode_at` via `PlaybackState`
+/// Tap on a timestamp chip dispatches `play_episode` via `PlaybackState`
 /// (set the episode + seek + play) — same contract the wiki citation chip
 /// uses, so the threading and wiki surfaces feel like one fabric.
 ///

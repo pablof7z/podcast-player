@@ -31,6 +31,9 @@ struct BriefingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.Spacing.lg) {
+                if model.isUsingEphemeralStorage {
+                    ephemeralStorageBanner
+                }
                 if let error = model.composeError {
                     errorBanner(message: error)
                 }
@@ -69,6 +72,30 @@ struct BriefingsView: View {
             BriefingRiverView(queue: model.briefings)
         }
         .task { await model.reload() }
+    }
+
+    // MARK: Ephemeral-storage warning banner
+
+    private var ephemeralStorageBanner: some View {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .foregroundStyle(AppTheme.Tint.warning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Briefings stored temporarily")
+                    .font(.subheadline.weight(.semibold))
+                Text("Briefings are stored temporarily and will be lost when the app restarts. Free up storage and reopen the app.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(4)
+            }
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.md)
+        .glassSurface(
+            cornerRadius: AppTheme.Corner.lg,
+            tint: AppTheme.Tint.warning.opacity(0.18)
+        )
+        .padding(.horizontal)
     }
 
     // MARK: Error banner

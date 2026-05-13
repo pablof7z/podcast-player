@@ -22,6 +22,32 @@ extension AgentTools {
 
     // MARK: - Tool dispatch entry points
 
+    static func listPodcastsTool(
+        args: [String: Any],
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        let limit = clampedInventoryLimit(args["limit"])
+        let rows = await deps.inventory.listPodcasts(limit: limit)
+        let payload: [[String: Any]] = rows.map { row in
+            var out: [String: Any] = [
+                "podcast_id": row.podcastID,
+                "title": row.title,
+                "subscribed": row.subscribed,
+                "total_episodes": row.totalEpisodes,
+                "unplayed_episodes": row.unplayedEpisodes,
+            ]
+            if let author = row.author, !author.isEmpty { out["author"] = author }
+            if let date = row.lastPublishedAt {
+                out["last_published_at"] = Self.iso8601.string(from: date)
+            }
+            return out
+        }
+        return toolSuccess([
+            "podcasts": payload,
+            "count": payload.count,
+        ])
+    }
+
     static func listSubscriptionsTool(
         args: [String: Any],
         deps: PodcastAgentToolDeps

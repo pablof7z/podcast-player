@@ -16,7 +16,11 @@ extension AgentTools {
     /// Mirrors `AgentTools.Names`; kept as a separate nested enum so this lane
     /// owns its own surface without modifying the read-only base file.
     enum PodcastNames {
-        static let playEpisodeAt        = "play_episode_at"
+        /// Unified playback verb. Plays a single episode (optionally bounded
+        /// by start/end seconds) and routes via `queue_position` so the same
+        /// tool covers play-now, play-next, and append-to-end. Replaces the
+        /// pre-split `play_episode_at` + `queue_episode_segments` pair.
+        static let playEpisode          = "play_episode"
         static let pausePlayback        = "pause_playback"
         static let setPlaybackRate      = "set_playback_rate"
         static let setSleepTimer        = "set_sleep_timer"
@@ -35,18 +39,16 @@ extension AgentTools {
         static let downloadEpisode      = "download_episode"
         static let requestTranscription = "request_transcription"
         static let refreshFeed          = "refresh_feed"
-        static let openScreen           = "open_screen"
-        static let setNowPlaying        = "set_now_playing"
         static let endConversation      = "end_conversation"
         static let sendFriendMessage    = "send_friend_message"
         static let listSubscriptions    = "list_subscriptions"
+        static let listPodcasts         = "list_podcasts"
         static let listCategories       = "list_categories"
         static let changePodcastCategory = "change_podcast_category"
         static let listEpisodes         = "list_episodes"
         static let listInProgress       = "list_in_progress"
         static let listRecentUnplayed   = "list_recent_unplayed"
         static let createClip             = "create_clip"
-        static let queueEpisodeSegments   = "queue_episode_segments"
         static let downloadAndTranscribe  = "download_and_transcribe"
         static let generateTTSEpisode     = "generate_tts_episode"
         static let configureAgentVoice    = "configure_agent_voice"
@@ -57,6 +59,7 @@ extension AgentTools {
         // External-podcast tools
         static let searchPodcastDirectory = "search_podcast_directory"
         static let subscribePodcast       = "subscribe_podcast"
+        static let deletePodcast          = "delete_podcast"
         static let playExternalEpisode    = "play_external_episode"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
@@ -66,19 +69,18 @@ extension AgentTools {
         /// `enabledSkills` check in `dispatchPodcast`.
         static var all: [String] {
             [
-                playEpisodeAt, pausePlayback, setPlaybackRate, setSleepTimer,
+                playEpisode, pausePlayback, setPlaybackRate, setSleepTimer,
                 searchEpisodes, queryWiki, createWikiPage, listWikiPages, deleteWikiPage,
-            queryTranscripts,
+                queryTranscripts,
                 generateBriefing, perplexitySearch, summarizeEpisode,
                 findSimilarEpisodes, markEpisodePlayed, markEpisodeUnplayed,
                 downloadEpisode, requestTranscription, refreshFeed,
-                openScreen, setNowPlaying,
                 endConversation, sendFriendMessage,
-                listSubscriptions, listCategories, changePodcastCategory,
+                listSubscriptions, listPodcasts, listCategories, changePodcastCategory,
                 listEpisodes, listInProgress, listRecentUnplayed,
-                createClip, queueEpisodeSegments, downloadAndTranscribe,
+                createClip, downloadAndTranscribe,
                 generateTTSEpisode, configureAgentVoice, listAvailableVoices,
-                searchPodcastDirectory, subscribePodcast, playExternalEpisode,
+                searchPodcastDirectory, subscribePodcast, deletePodcast, playExternalEpisode,
             ]
         }
     }
@@ -140,8 +142,8 @@ extension AgentTools {
             return toolError("Tool '\(name)' requires the '\(owningSkill)' skill — call use_skill(skill_id: \"\(owningSkill)\") first.")
         }
         switch name {
-        case PodcastNames.playEpisodeAt:
-            return await playEpisodeAtTool(args: args, deps: deps)
+        case PodcastNames.playEpisode:
+            return await playEpisodeTool(args: args, deps: deps)
         case PodcastNames.pausePlayback:
             return await pausePlaybackTool(args: args, deps: deps)
         case PodcastNames.setPlaybackRate:
@@ -178,16 +180,14 @@ extension AgentTools {
             return await requestTranscriptionTool(args: args, deps: deps)
         case PodcastNames.refreshFeed:
             return await refreshFeedTool(args: args, deps: deps)
-        case PodcastNames.openScreen:
-            return await openScreenTool(args: args, deps: deps)
-        case PodcastNames.setNowPlaying:
-            return await setNowPlayingTool(args: args, deps: deps)
         case PodcastNames.endConversation:
             return await endConversationTool(args: args, deps: deps)
         case PodcastNames.sendFriendMessage:
             return await sendFriendMessageTool(args: args, deps: deps)
         case PodcastNames.listSubscriptions:
             return await listSubscriptionsTool(args: args, deps: deps)
+        case PodcastNames.listPodcasts:
+            return await listPodcastsTool(args: args, deps: deps)
         case PodcastNames.listCategories:
             return await listCategoriesTool(args: args, deps: deps)
         case PodcastNames.changePodcastCategory:
@@ -200,8 +200,6 @@ extension AgentTools {
             return await listRecentUnplayedTool(args: args, deps: deps)
         case PodcastNames.createClip:
             return await createClipTool(args: args, deps: deps)
-        case PodcastNames.queueEpisodeSegments:
-            return await queueEpisodeSegmentsTool(args: args, deps: deps)
         case PodcastNames.downloadAndTranscribe:
             return await downloadAndTranscribeTool(args: args, deps: deps)
         case PodcastNames.generateTTSEpisode:
@@ -214,6 +212,8 @@ extension AgentTools {
             return await searchPodcastDirectoryTool(args: args, deps: deps)
         case PodcastNames.subscribePodcast:
             return await subscribePodcastTool(args: args, deps: deps)
+        case PodcastNames.deletePodcast:
+            return await deletePodcastTool(args: args, deps: deps)
         case PodcastNames.playExternalEpisode:
             return await playExternalEpisodeTool(args: args, deps: deps)
         default:
@@ -222,35 +222,7 @@ extension AgentTools {
     }
 
     // Inventory tools live in `AgentTools+PodcastInventory.swift`.
-
-    // MARK: - play_episode_at
-
-    private static func playEpisodeAtTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
-            return toolError("Missing or empty 'episode_id'")
-        }
-        guard let timestamp = numericArg(args["timestamp"]) else {
-            return toolError("Missing or invalid 'timestamp' (must be a number, in seconds)")
-        }
-        guard timestamp >= 0 else {
-            return toolError("'timestamp' must be >= 0")
-        }
-        let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
-        guard exists else {
-            return toolError("Episode not found: \(episodeID)")
-        }
-        await deps.playback.playEpisodeAt(episodeID: episodeID, timestampSeconds: timestamp)
-        var payload: [String: Any] = [
-            "episode_id": episodeID,
-            "timestamp": timestamp,
-        ]
-        if let meta = await deps.fetcher.episodeMetadata(episodeID: episodeID) {
-            payload["episode_title"] = meta.episodeTitle
-            payload["podcast_title"] = meta.podcastTitle
-            if let dur = meta.durationSeconds { payload["duration_seconds"] = dur }
-        }
-        return toolSuccess(payload)
-    }
+    // `play_episode` handler lives in `AgentTools+PodcastActions.swift`.
 
     // MARK: - search_episodes
 
@@ -377,6 +349,7 @@ extension AgentTools {
             var payload: [String: Any] = [
                 "episode_id": summary.episodeID,
                 "summary": summary.summary,
+                "summary_source": summary.source.rawValue,
             ]
             if !summary.bulletPoints.isEmpty {
                 payload["bullets"] = summary.bulletPoints
@@ -411,36 +384,6 @@ extension AgentTools {
         } catch {
             return toolError("find_similar_episodes failed: \(error.localizedDescription)")
         }
-    }
-
-    // MARK: - open_screen
-
-    private static func openScreenTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let route = (args["route"] as? String)?.trimmed, !route.isEmpty else {
-            return toolError("Missing or empty 'route'")
-        }
-        await deps.playback.openScreen(route: route)
-        return toolSuccess(["route": route])
-    }
-
-    // MARK: - set_now_playing
-
-    private static func setNowPlayingTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
-            return toolError("Missing or empty 'episode_id'")
-        }
-        let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
-        guard exists else {
-            return toolError("Episode not found: \(episodeID)")
-        }
-        let timestamp = numericArg(args["timestamp"])
-        if let ts = timestamp, ts < 0 {
-            return toolError("'timestamp' must be >= 0")
-        }
-        await deps.playback.setNowPlaying(episodeID: episodeID, timestampSeconds: timestamp)
-        var payload: [String: Any] = ["episode_id": episodeID]
-        if let ts = timestamp { payload["timestamp"] = ts }
-        return toolSuccess(payload)
     }
 
     // MARK: - Argument helpers

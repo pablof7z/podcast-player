@@ -46,7 +46,7 @@ final class ChatHistoryStore {
     }
 
     var mostRecent: ChatConversation? {
-        conversations.first
+        conversations.first(where: { !$0.isScheduledTask })
     }
 
     func conversation(id: UUID) -> ChatConversation? {

@@ -27,12 +27,22 @@ final class TranscriptStore: @unchecked Sendable {
         } catch {
             // Fall back to the temporary directory so the app keeps running
             // even if Application Support is unavailable.
+            logger.error("Application Support unavailable — TranscriptStore falling back to temporaryDirectory. Transcripts will NOT survive app relaunch. Underlying error: \(String(describing: error), privacy: .public)")
             let tmp = FileManager.default.temporaryDirectory
                 .appendingPathComponent("podcastr-transcripts", isDirectory: true)
             // swiftlint:disable:next force_try
-            return try! TranscriptStore(rootDirectory: tmp)
+            let store = try! TranscriptStore(rootDirectory: tmp)
+            store.isUsingEphemeralStorage = true
+            return store
         }
     }()
+
+    // MARK: Ephemeral-storage flag
+
+    /// `true` when this instance is writing to `temporaryDirectory` because
+    /// `Application Support` was unavailable at launch. Data will be lost on
+    /// the next app relaunch.
+    private(set) var isUsingEphemeralStorage: Bool = false
 
     // MARK: Logger
 

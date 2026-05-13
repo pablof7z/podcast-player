@@ -25,6 +25,10 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
         await MainActor.run { listSubscriptionsSync(limit: limit) }
     }
 
+    func listPodcasts(limit: Int) async -> [PodcastInventoryRow] {
+        await MainActor.run { listPodcastsSync(limit: limit) }
+    }
+
     func listEpisodes(podcastID: PodcastID, limit: Int) async -> [EpisodeInventoryRow]? {
         await MainActor.run { listEpisodesSync(podcastID: podcastID, limit: limit) }
     }
@@ -55,6 +59,31 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
     }
 
     // MARK: - MainActor reads
+
+    private func listPodcastsSync(limit: Int) -> [PodcastInventoryRow] {
+        guard let store else { return [] }
+        // All known Podcast rows — subscribed and unsubscribed. Filter out the
+        // synthetic Unknown sentinel so the agent doesn't see it as a real show.
+        let podcasts = store.state.podcasts
+            .filter { $0.id != Podcast.unknownID }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+            .prefix(limit)
+        return podcasts.map { podcast in
+            let eps = store.episodes(forPodcast: podcast.id)
+            let unplayed = eps.filter { !$0.played }.count
+            let lastPub = eps.first?.pubDate  // already sorted newest-first
+            let isSubscribed = store.subscription(podcastID: podcast.id) != nil
+            return PodcastInventoryRow(
+                podcastID: podcast.id.uuidString,
+                title: podcast.title,
+                author: podcast.author.isEmpty ? nil : podcast.author,
+                subscribed: isSubscribed,
+                totalEpisodes: eps.count,
+                unplayedEpisodes: unplayed,
+                lastPublishedAt: lastPub
+            )
+        }
+    }
 
     private func listSubscriptionsSync(limit: Int) -> [SubscriptionSummary] {
         guard let store else { return [] }

@@ -114,6 +114,13 @@ final class SubscriptionRefreshService {
 
             index = upper
         }
+
+        // After the upsert sweep completes, kick autonomous AI Inbox triage
+        // so any freshly-arrived untriaged episodes are routed into either
+        // the Inbox surface (with a one-line rationale) or silently
+        // archived. Fire-and-forget — the service coalesces concurrent
+        // calls and writes decisions back through the store on completion.
+        InboxTriageService.shared.triageNewEpisodes(store: store)
     }
 
     /// Starts the periodic refresh loop. Idempotent — the existing in-flight
