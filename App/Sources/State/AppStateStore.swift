@@ -54,6 +54,22 @@ final class AppStateStore {
     /// transcribed utterance; the agent decides what to do with it.
     var pendingVoiceNoteAgentContext: VoiceNoteAgentContext?
 
+    /// Counterparty pubkey of the most-recent Nostr conversation turn —
+    /// drives the floating "Talking to X" capsule on the main screen.
+    /// Cleared `nostrActivityIndicatorDuration` seconds after the last
+    /// turn lands (each new turn resets the timer). Non-persisted UI state.
+    var activeNostrCounterparty: String?
+
+    /// Cancellable timer that clears `activeNostrCounterparty`. Ignored by
+    /// the @Observable macro so swapping it out doesn't force view
+    /// re-evaluations.
+    @ObservationIgnored
+    var nostrActivityDismissTask: Task<Void, Never>?
+
+    /// How long the "Talking to X" capsule stays visible after the latest
+    /// turn — matched to win-the-day's 10s window.
+    static let nostrActivityIndicatorDuration: TimeInterval = 10
+
     var state: AppState {
         didSet {
             handleStateDidSet(previousEpisodes: oldValue.episodes)

@@ -158,6 +158,12 @@ struct RootView: View {
                     EpisodeDownloadService.shared.attach(appStore: store)
                     EpisodeDownloadService.shared.ensureDownloadEnqueued(episodeID: id)
                 }
+                // AI Inbox rescue: when the user plays an episode the
+                // agent had archived, clear the archive so it behaves
+                // normally for Continue Listening + unplayed counts.
+                playbackState.onClearTriageDecision = { [store] id in
+                    store.clearTriageDecision(id)
+                }
                 // Segment end: advance queue or pause if empty.
                 playbackState.onSegmentFinished = { [store, playbackState] in
                     let advanced = playbackState.playNext { store.episode(id: $0) }
@@ -385,6 +391,7 @@ struct RootView: View {
                 }
             }
             .nostrApprovalPresenter()
+            .nostrAgentSurface()
             .agentAskPresenter(coordinator: askCoordinator)
             .onOpenURL { handleDeepLink($0) }
             .onReceive(
@@ -468,6 +475,7 @@ struct RootView: View {
     ///   • Gear — presents the Settings sheet.
     @ToolbarContentBuilder
     private func sharedToolbar() -> some ToolbarContent {
+        NostrConversationsToolbarItem()
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 Haptics.selection()

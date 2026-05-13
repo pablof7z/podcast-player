@@ -9,8 +9,7 @@ import os.log
 ///   • Dedup via `state.nostrRespondedEventIDs` (persisted).
 ///   • Bump `state.nostrSinceCursor` before model invocation so a crash
 ///     mid-reply still moves the cursor forward.
-///   • Honour the per-thread end-conversation gate (`wtd-end` tag + the
-///     in-memory `nostrEndedRootIDs` set).
+///   • Honour the per-thread end-conversation gate (`wtd-end` tag).
 ///   • Enforce a per-root outgoing turn cap.
 ///   • Fetch the thread, fetch the peer's kind:0 (bounded at 2s), build
 ///     the message history with identity prefixes, invoke `AgentLLMClient`
@@ -139,21 +138,12 @@ final class NostrAgentResponder {
             tags: inbound.tags
         )
 
-        // End-conversation gates. `nostrEndedRootIDs` is in-memory; the
-        // persisted half is `nostrRespondedEventIDs`, which we stamp
-        // below so stragglers landing after a restart still don't fire.
-        if store.state.nostrEndedRootIDs.contains(rootID) {
-            store.state.nostrRespondedEventIDs.insert(inbound.eventID)
-            return
-        }
-
         let isPeerEndSignal = inbound.tags.contains { tag in
             tag.first == Self.endConversationTagName
         }
         if isPeerEndSignal {
             Self.logger.notice("process: peer end signal on root \(rootID.prefix(12), privacy: .public); recording + closing")
             recordTurn(inbound: inbound, rootID: rootID)
-            store.state.nostrEndedRootIDs.insert(rootID)
             store.state.nostrRespondedEventIDs.insert(inbound.eventID)
             return
         }
@@ -168,7 +158,6 @@ final class NostrAgentResponder {
                     "process: suppressing inbound on root \(rootID.prefix(12), privacy: .public): outgoing turn cap (\(Self.maxOutgoingTurnsPerRoot)) reached"
                 )
                 store.state.nostrRespondedEventIDs.insert(inbound.eventID)
-                store.state.nostrEndedRootIDs.insert(rootID)
                 return
             }
         }
@@ -402,6 +391,7 @@ final class NostrAgentResponder {
             rawEventJSON: inbound.rawEventJSON
         )
         store.recordNostrTurn(rootEventID: rootID, turn: turn, counterpartyPubkey: inbound.pubkey)
+        store.noteNostrActivity(counterpartyPubkey: inbound.pubkey)
     }
 
     private func recordOutgoing(
@@ -429,6 +419,7 @@ final class NostrAgentResponder {
             turn: turn,
             counterpartyPubkey: counterparty
         )
+        store.noteNostrActivity(counterpartyPubkey: counterparty)
     }
 
     // MARK: - Profile fetch helper

@@ -83,6 +83,21 @@ extension AppStateStore {
         }
     }
 
+    /// Surfaces (or refreshes) the floating "Talking to X" capsule for the
+    /// configured `nostrActivityIndicatorDuration`. Called by
+    /// `NostrAgentResponder` after every incoming or outgoing turn so a
+    /// back-and-forth keeps the capsule continuously on screen instead of
+    /// flickering between turns.
+    func noteNostrActivity(counterpartyPubkey: String) {
+        activeNostrCounterparty = counterpartyPubkey
+        nostrActivityDismissTask?.cancel()
+        nostrActivityDismissTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(AppStateStore.nostrActivityIndicatorDuration))
+            guard !Task.isCancelled else { return }
+            self?.activeNostrCounterparty = nil
+        }
+    }
+
     /// Inserts or upgrades a cached profile. Older `kind:0` events are
     /// ignored so a relay re-delivery never downgrades a fresher profile.
     func setNostrProfile(_ profile: NostrProfileMetadata) {

@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T20:01:00Z",
+      "lines": [
+        "When your agent is talking to a friend over Nostr, a 'Talking to …' capsule now flashes at the top of the screen and a Conversations button appears in the top toolbar so you can jump into the live thread."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T19:00:00Z",
       "lines": [
         "New AI Inbox on Home: the agent autonomously triages new episodes from your subscriptions — surfacing the ones worth your time with a one-line rationale, silently archiving the rest. No review queue, full autonomy."
