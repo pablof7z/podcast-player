@@ -74,7 +74,6 @@ struct ContinueListeningRow: View {
                 artwork
                 meta
                 Spacer(minLength: AppTheme.Spacing.sm)
-                playButton
             }
             .contentShape(Rectangle())
         }
@@ -149,12 +148,6 @@ struct ContinueListeningRow: View {
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private var playButton: some View {
-        Image(systemName: "play.circle.fill")
-            .font(.system(size: 28))
-            .foregroundStyle(.tint)
     }
 
     // MARK: Helpers
