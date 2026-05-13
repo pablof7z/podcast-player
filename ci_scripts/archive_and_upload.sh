@@ -156,7 +156,7 @@ xcodebuild \
   -skipPackagePluginValidation \
   "DEVELOPMENT_TEAM=${APPLE_TEAM_ID}" \
   archive \
-  "${CODE_SIGN_ARGS[@]}"
+  ${CODE_SIGN_ARGS[@]+"${CODE_SIGN_ARGS[@]}"}
 
 ARCHIVED_APP_INFO_PLIST="$ARCHIVE_PATH/Products/Applications/${APP_PRODUCT_NAME}.app/Info.plist"
 ARCHIVED_WIDGET_INFO_PLIST="$ARCHIVE_PATH/Products/Applications/${APP_PRODUCT_NAME}.app/PlugIns/${WIDGET_EXTENSION_NAME}.appex/Info.plist"
