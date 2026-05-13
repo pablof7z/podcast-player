@@ -70,7 +70,7 @@ final class AppTests: XCTestCase {
 
         XCTAssertEqual(store.episodes(forPodcast: sub.id).count, 2)
 
-        store.removeSubscription(podcastID: sub.id)
+        store.deletePodcast(podcastID: sub.id)
 
         XCTAssertFalse(store.state.subscriptions.contains { $0.podcastID == sub.id })
         XCTAssertTrue(store.episodes(forPodcast: sub.id).isEmpty)

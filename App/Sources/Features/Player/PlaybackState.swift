@@ -139,6 +139,24 @@ final class PlaybackState {
     /// store can't observe directly.
     var onFlushPositions: () -> Void = { }
 
+    /// Called when `setEpisode` loads a *new* episode (`!isSameEpisode`)
+    /// whose `downloadState` is `.notDownloaded` or `.failed`. Receivers
+    /// should kick off the background download → transcription → chapters
+    /// pipeline without blocking playback — the audio engine has already
+    /// started streaming by the time this closure fires.
+    ///
+    /// Wired by `RootView` to `EpisodeDownloadService.ensureDownloadEnqueued`.
+    /// The closure injection mirrors `onPersistPosition` / `onFlushPositions`
+    /// so `PlaybackState` stays decoupled from the download service for
+    /// tests, while still funnelling every playback entry point
+    /// (`play_episode_at`, Continue Listening, Home featured, deep links)
+    /// through a single download trigger.
+    ///
+    /// Only fires on *new* episode load, never on same-episode reloads —
+    /// Play/Resume taps and deep-link replays hit `setEpisode` on every
+    /// gesture and would otherwise spam the download queue.
+    var onEnsureDownloadEnqueued: (UUID) -> Void = { _ in }
+
     /// Mirrors `Settings.autoMarkPlayedAtEnd`. When `false`, end-of-item
     /// detection still stops the persistence loop from over-writing the
     /// final position but skips the `onEpisodeFinished` callback.
@@ -268,6 +286,20 @@ final class PlaybackState {
         writeNowPlayingSnapshot(force: true)
         if !isSameEpisode {
             startPersistenceLoop()
+            // Kick off the background download → transcription → chapters
+            // pipeline for any episode the user streams that isn't yet on
+            // disk. Gated on `!isSameEpisode` because same-episode reloads
+            // (Play/Resume taps, deep-link replays, chapter-row taps) fire
+            // on every gesture and would otherwise spam the queue. The
+            // receiver (RootView → EpisodeDownloadService) early-returns
+            // for `.downloading` / `.queued` / `.downloaded` so the
+            // common case after the first play is a cheap no-op.
+            switch newEpisode.downloadState {
+            case .notDownloaded, .failed:
+                onEnsureDownloadEnqueued(newEpisode.id)
+            case .downloading, .queued, .downloaded:
+                break
+            }
         }
     }
 

@@ -235,12 +235,25 @@ extension AgentTools {
             ),
             podcastTool(
                 name: PodcastNames.listEpisodes,
-                description: "List episodes of a specific podcast, newest first. Use after list_subscriptions when the user wants to drill into one show. Returns played/unplayed state and current playback position for each episode.",
+                description: """
+                List episodes of a specific podcast, newest first. \
+                Returns played/unplayed state and current playback position for each episode. \
+                Pass EXACTLY ONE of `podcast_id` or `feed_url`:
+                  - `podcast_id` as an internal UUID → reads the user's already-known library row.
+                  - `podcast_id` as an iTunes numeric collection ID (e.g. "863897795" from \
+                    search_podcast_directory) → resolves the feed and captures metadata WITHOUT \
+                    subscribing the user.
+                  - `feed_url` as an RSS URL → captures metadata WITHOUT subscribing.
+                Use the external paths to offer episode lists for shows the user does not follow, \
+                so you never have to subscribe them just to browse. The response always includes \
+                `podcast_id` (resolved internal UUID) for follow-up calls like play_episode_at.
+                """,
                 properties: [
-                    "podcast_id": ["type": "string", "description": "The subscribed podcast/feed ID to list episodes for."],
+                    "podcast_id": ["type": "string", "description": "Either an internal podcast UUID (from list_subscriptions / search_episodes) or an iTunes collection_id (from search_podcast_directory). Mutually exclusive with feed_url."],
+                    "feed_url": ["type": "string", "description": "RSS feed URL of the podcast. Mutually exclusive with podcast_id."],
                     "limit": ["type": "integer", "description": "Maximum episodes to return. Defaults to 25, capped at 100."],
                 ],
-                required: ["podcast_id"]
+                required: []
             ),
             podcastTool(
                 name: PodcastNames.listInProgress,

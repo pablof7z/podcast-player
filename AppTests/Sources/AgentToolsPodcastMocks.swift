@@ -350,27 +350,9 @@ actor MockTTSPublisher: TTSPublisherProtocol {
     }
 }
 
-actor MockDirectory: PodcastDirectoryProtocol {
-    func searchDirectory(
-        query: String,
-        type: PodcastDirectorySearchType,
-        limit: Int
-    ) async throws -> [PodcastDirectoryHit] {
-        return []
-    }
-}
-
-actor MockSubscribe: PodcastSubscribeProtocol {
-    func subscribe(feedURLString: String) async throws -> PodcastSubscribeResult {
-        return PodcastSubscribeResult(
-            podcastID: "mock-pod",
-            title: "Mock Show",
-            feedURL: feedURLString,
-            episodeCount: 0,
-            alreadySubscribed: false
-        )
-    }
-}
+// `MockDirectory` and `MockSubscribe` live in
+// `AgentToolsPodcastMocks+Directory.swift` to keep this file under the
+// 500-line cap from `AGENTS.md`.
 
 actor MockPerplexity: PerplexityClientProtocol {
     private let result: PerplexityResult?

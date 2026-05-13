@@ -86,3 +86,34 @@ public struct PodcastSubscribeResult: Sendable, Equatable {
         self.alreadySubscribed = alreadySubscribed
     }
 }
+
+// MARK: - Ensure result
+
+/// Result returned by `PodcastSubscribeProtocol.ensurePodcast(feedURLString:)`.
+///
+/// Mirrors `PodcastSubscribeResult` minus `alreadySubscribed` — ensure is
+/// idempotent by design and never creates a `PodcastSubscription` row, so the
+/// caller can't distinguish "we created this just now" from "this was already
+/// known." Used by `list_episodes` (external paths) to capture metadata for a
+/// feed without forcing a follow.
+public struct PodcastEnsureResult: Sendable, Equatable {
+    public let podcastID: PodcastID
+    public let title: String
+    public let author: String?
+    public let feedURL: String
+    public let episodeCount: Int
+
+    public init(
+        podcastID: PodcastID,
+        title: String,
+        author: String? = nil,
+        feedURL: String,
+        episodeCount: Int
+    ) {
+        self.podcastID = podcastID
+        self.title = title
+        self.author = author
+        self.feedURL = feedURL
+        self.episodeCount = episodeCount
+    }
+}

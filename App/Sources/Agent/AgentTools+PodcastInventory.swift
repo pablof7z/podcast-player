@@ -93,15 +93,113 @@ extension AgentTools {
         args: [String: Any],
         deps: PodcastAgentToolDeps
     ) async -> String {
-        guard let podcastID = (args["podcast_id"] as? String)?.trimmed, !podcastID.isEmpty else {
-            return toolError("Missing or empty 'podcast_id'")
+        // `list_episodes` accepts exactly one of:
+        //   • podcast_id (UUID)           — read straight from the store.
+        //   • podcast_id (numeric string) — iTunes collection ID; resolve to
+        //                                   a feed URL via the directory,
+        //                                   then ensurePodcast → store.
+        //   • feed_url    (RSS URL)       — ensurePodcast → store.
+        //
+        // ensurePodcast captures the show's metadata + episodes without
+        // creating a `PodcastSubscription`. That's the whole point: the
+        // agent can list episodes for shows the user has not followed
+        // without flipping the follow bit against the user's intent.
+
+        let rawPodcastID = (args["podcast_id"] as? String)?.trimmed.nilIfEmpty
+        let rawFeedURL = (args["feed_url"] as? String)?.trimmed.nilIfEmpty
+
+        // Exactly-one-of validation.
+        switch (rawPodcastID, rawFeedURL) {
+        case (nil, nil):
+            return toolError("Provide one of 'podcast_id' or 'feed_url'")
+        case (.some, .some):
+            return toolError("Provide only one of 'podcast_id' or 'feed_url', not both")
+        default:
+            break
         }
+
         let limit = clampedInventoryLimit(args["limit"])
-        guard let rows = await deps.inventory.listEpisodes(podcastID: podcastID, limit: limit) else {
-            return toolError("Unknown podcast: \(podcastID)")
+
+        // Branch 1: feed_url direct path.
+        if let feedURL = rawFeedURL {
+            return await listEpisodesFromFeedURL(feedURL, limit: limit, deps: deps)
+        }
+
+        // Branch 2: podcast_id — either UUID or numeric collection ID.
+        guard let podcastID = rawPodcastID else {
+            // unreachable: the switch above guarantees one of the args is set
+            return toolError("Provide one of 'podcast_id' or 'feed_url'")
+        }
+        if UUID(uuidString: podcastID) != nil {
+            // Internal UUID path: existing behavior.
+            guard let rows = await deps.inventory.listEpisodes(podcastID: podcastID, limit: limit) else {
+                return toolError("Unknown podcast: \(podcastID)")
+            }
+            // Envelope keeps the same shape as the external paths so callers
+            // can read `podcast_id`/`podcast_title` uniformly. The title
+            // comes off the first inventory row when the show has any
+            // episodes; we drop the field when the library has none rather
+            // than emitting an empty string.
+            var payload: [String: Any] = [
+                "podcast_id": podcastID,
+                "episodes": rows.map(serializeInventoryRow),
+                "count": rows.count,
+            ]
+            if let title = rows.first?.podcastTitle, !title.isEmpty {
+                payload["podcast_title"] = title
+            }
+            return toolSuccess(payload)
+        }
+        // Anything that isn't a UUID is treated as an iTunes collection ID.
+        return await listEpisodesFromCollectionID(podcastID, limit: limit, deps: deps)
+    }
+
+    /// External path: resolve a directory collection ID → feed URL, then
+    /// hand off to the feed-URL path.
+    private static func listEpisodesFromCollectionID(
+        _ collectionID: String,
+        limit: Int,
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        let feedURL: String?
+        do {
+            feedURL = try await deps.directory.lookupFeedURL(forCollectionID: collectionID)
+        } catch {
+            return toolError("Could not resolve podcast directory ID '\(collectionID)': \(error.localizedDescription)")
+        }
+        guard let feedURL else {
+            return toolError("Could not resolve podcast directory ID '\(collectionID)': no matching show in the Apple Podcasts directory")
+        }
+        return await listEpisodesFromFeedURL(feedURL, limit: limit, deps: deps)
+    }
+
+    /// External path: ensure the feed is captured (metadata + episodes,
+    /// without subscribing), then read episodes back via the inventory
+    /// adapter so the response shape matches the internal path.
+    private static func listEpisodesFromFeedURL(
+        _ feedURL: String,
+        limit: Int,
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        let ensured: PodcastEnsureResult
+        do {
+            ensured = try await deps.subscribe.ensurePodcast(feedURLString: feedURL)
+        } catch {
+            return toolError("Could not load feed '\(feedURL)': \(error.localizedDescription)")
+        }
+        guard let rows = await deps.inventory.listEpisodes(
+            podcastID: ensured.podcastID,
+            limit: limit
+        ) else {
+            // ensurePodcast just landed a Podcast row; if the inventory
+            // adapter can't find it the wiring is broken. Surface a
+            // clear error rather than masking it as "no episodes."
+            return toolError("Feed '\(feedURL)' was loaded but its podcast row could not be located in the inventory.")
         }
         return toolSuccess([
-            "podcast_id": podcastID,
+            "podcast_id": ensured.podcastID,
+            "feed_url": ensured.feedURL,
+            "podcast_title": ensured.title,
             "episodes": rows.map(serializeInventoryRow),
             "count": rows.count,
         ])

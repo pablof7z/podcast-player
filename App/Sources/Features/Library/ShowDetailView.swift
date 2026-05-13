@@ -22,6 +22,7 @@ struct ShowDetailView: View {
 
     @State private var showSettings: Bool = false
     @State private var showUnsubscribeConfirm: Bool = false
+    @State private var showDeleteConfirm: Bool = false
     @State private var searchText: String = ""
     @State private var isSearchActive: Bool = false
     /// Drives the VoiceOver "Open episode details" custom action — bound into
@@ -107,6 +108,15 @@ struct ShowDetailView: View {
             Button("Unsubscribe", role: .destructive) { performUnsubscribe() }
         } message: {
             Text("This removes the show and all of its episodes from your library.")
+        }
+        .alert(
+            "Delete \(liveSubscription.title)?",
+            isPresented: $showDeleteConfirm
+        ) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { performUnsubscribe() }
+        } message: {
+            Text("This removes the podcast and every episode of it from your library. This cannot be undone.")
         }
         .navigationDestination(for: LibraryEpisodeRoute.self) { route in
             LibraryEpisodePlaceholder(route: route)
@@ -198,11 +208,24 @@ struct ShowDetailView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                Button {
-                    Haptics.light()
-                    showSettings = true
-                } label: {
-                    Label("Settings for this show", systemImage: "slider.horizontal.3")
+                if isFollowed {
+                    Button {
+                        Haptics.light()
+                        showSettings = true
+                    } label: {
+                        Label("Settings for this show", systemImage: "slider.horizontal.3")
+                    }
+                } else if liveSubscription.feedURL != nil {
+                    // Unfollowed but has a real RSS feed — offer to follow.
+                    // The "settings" surface is hidden until the user
+                    // actually follows; toggles like notifications and
+                    // auto-download have no subscription row to mutate yet.
+                    Button {
+                        Haptics.light()
+                        Task { await follow() }
+                    } label: {
+                        Label("Follow", systemImage: "plus.circle")
+                    }
                 }
                 // Share-show — recipients with podcast apps will recognize
                 // the RSS URL and subscribe; everyone else gets a clickable
@@ -218,17 +241,43 @@ struct ShowDetailView: View {
                         Label("Share show", systemImage: "square.and.arrow.up")
                     }
                 }
-                Button(role: .destructive) {
-                    Haptics.warning()
-                    showUnsubscribeConfirm = true
-                } label: {
-                    Label("Unsubscribe", systemImage: "minus.circle")
+                if isFollowed {
+                    Button(role: .destructive) {
+                        Haptics.warning()
+                        showUnsubscribeConfirm = true
+                    } label: {
+                        Label("Unsubscribe", systemImage: "minus.circle")
+                    }
+                } else {
+                    // Unfollowed podcast — no "Unsubscribe" verb makes sense.
+                    // The destructive option deletes the podcast row and all
+                    // of its episodes (the All Podcasts swipe behaviour).
+                    Button(role: .destructive) {
+                        Haptics.warning()
+                        showDeleteConfirm = true
+                    } label: {
+                        Label("Delete podcast", systemImage: "trash")
+                    }
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.title3)
             }
             .accessibilityLabel("Show options")
+        }
+    }
+
+    private var isFollowed: Bool {
+        store.subscription(podcastID: podcast.id) != nil
+    }
+
+    private func follow() async {
+        guard let feedURL = liveSubscription.feedURL else { return }
+        do {
+            try await SubscriptionService(store: store).addSubscription(feedURLString: feedURL.absoluteString)
+            Haptics.success()
+        } catch {
+            Haptics.warning()
         }
     }
 

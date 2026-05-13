@@ -41,6 +41,34 @@ struct LivePodcastDirectoryAdapter: PodcastDirectoryProtocol {
         return try Self.parse(data: data, type: type)
     }
 
+    func lookupFeedURL(forCollectionID collectionID: String) async throws -> String? {
+        // Mirrors the step-2 lookup in `ITunesSearchClient.topPodcasts` —
+        // single batched lookup with entity=podcast, parse the `feedUrl` off
+        // the first matching row.
+        let trimmed = collectionID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        var components = URLComponents(string: "https://itunes.apple.com/lookup")!
+        components.queryItems = [
+            URLQueryItem(name: "id", value: trimmed),
+            URLQueryItem(name: "entity", value: "podcast"),
+        ]
+        guard let url = components.url else { throw DirectoryError.badURL }
+        let (data, response) = try await URLSession.shared.data(from: url)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw DirectoryError.http(http.statusCode)
+        }
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let results = root["results"] as? [[String: Any]] else {
+            throw DirectoryError.parseError("Could not parse iTunes Lookup response")
+        }
+        for row in results {
+            if let feedURL = row["feedUrl"] as? String, !feedURL.isEmpty {
+                return feedURL
+            }
+        }
+        return nil
+    }
+
     // MARK: - Parsing
 
     private static func parse(data: Data, type: PodcastDirectorySearchType) throws -> [PodcastDirectoryHit] {
@@ -143,6 +171,23 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             feedURL: feedURLString,
             episodeCount: count,
             alreadySubscribed: false
+        )
+    }
+
+    func ensurePodcast(feedURLString: String) async throws -> PodcastEnsureResult {
+        guard let store else {
+            throw DirectoryError.unavailable("AppStateStore")
+        }
+        let service = await MainActor.run { SubscriptionService(store: store) }
+        let podcast = try await service.ensurePodcast(feedURLString: feedURLString)
+        let count = await store.episodes(forPodcast: podcast.id).count
+        let resolvedFeedURL = podcast.feedURL?.absoluteString ?? feedURLString
+        return PodcastEnsureResult(
+            podcastID: podcast.id.uuidString,
+            title: podcast.title,
+            author: podcast.author.isEmpty ? nil : podcast.author,
+            feedURL: resolvedFeedURL,
+            episodeCount: count
         )
     }
 }

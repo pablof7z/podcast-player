@@ -133,6 +133,20 @@ struct RootView: View {
                 playbackState.onFlushPositions = { [store] in
                     store.flushPendingPositions()
                 }
+                // Background download trigger: every time playback funnels
+                // through `setEpisode` for a *new* episode whose enclosure
+                // isn't on disk, kick off the same download → transcription
+                // → chapters pipeline the manual "Download" tap uses. The
+                // service early-returns for `.downloading` / `.queued` /
+                // `.downloaded` so steady-state plays are a cheap no-op.
+                // The defensive `attach` matches every other
+                // download-service call site (swipe actions, detail menu,
+                // audit log) — keeps the singleton's store reference live
+                // even if cold-launch `attach` hadn't yet landed.
+                playbackState.onEnsureDownloadEnqueued = { [store] id in
+                    EpisodeDownloadService.shared.attach(appStore: store)
+                    EpisodeDownloadService.shared.ensureDownloadEnqueued(episodeID: id)
+                }
                 // Segment end: advance queue or pause if empty.
                 playbackState.onSegmentFinished = { [store, playbackState] in
                     let advanced = playbackState.playNext { store.episode(id: $0) }

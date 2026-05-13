@@ -259,7 +259,7 @@ final class AppStateStorePerformanceTests: XCTestCase {
         XCTAssertTrue(store.hasTranscribedEpisode(forPodcast: sub.id))
         XCTAssertFalse(store.episodes(forPodcast: sub.id).isEmpty)
 
-        store.removeSubscription(podcastID: sub.id)
+        store.deletePodcast(podcastID: sub.id)
 
         XCTAssertEqual(store.unplayedCount(forPodcast: sub.id), 0)
         XCTAssertFalse(store.hasDownloadedEpisode(forPodcast: sub.id))

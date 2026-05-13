@@ -65,6 +65,44 @@ extension EpisodeDownloadService {
         }
     }
 
+    /// Ensure a background download exists for `episodeID`.
+    ///
+    /// Used by the playback boundary: when the user starts streaming an
+    /// episode whose enclosure isn't on disk, this kicks off the same
+    /// download → transcription → chapters pipeline that explicit
+    /// "Download" taps use, without blocking playback.
+    ///
+    /// No-op when the episode is already `.downloading`, `.queued`, or
+    /// `.downloaded` — restarting in-flight work would spam the URLSession
+    /// queue and clobber resume data. `.notDownloaded` and `.failed` are
+    /// the only cases that re-enqueue.
+    ///
+    /// Honours the Wi-Fi guard the same way `evaluateAutoDownload` does:
+    /// off-Wi-Fi, the episode is marked `.queued` so
+    /// `resumeQueuedDownloadsIfPossible` picks it up when Wi-Fi returns.
+    /// On Wi-Fi, the request starts immediately. The Wi-Fi policy comes
+    /// from the per-podcast auto-download policy so the playback path
+    /// respects the same user preference as auto-download.
+    func ensureDownloadEnqueued(episodeID: UUID) {
+        guard let store = appStore,
+              let episode = store.episode(id: episodeID) else { return }
+        switch episode.downloadState {
+        case .downloading, .queued, .downloaded:
+            return
+        case .notDownloaded, .failed:
+            break
+        }
+        let policy = store.effectiveAutoDownload(forPodcast: episode.podcastID)
+        if policy.wifiOnly, !isOnWiFi {
+            queueAutoDownload(episode)
+            logger.notice(
+                "playback-triggered download queued for \(episodeID, privacy: .public) — Wi-Fi unavailable"
+            )
+            return
+        }
+        download(episodeID: episodeID)
+    }
+
     private func queueAutoDownload(_ episode: Episode) {
         guard let store = appStore else { return }
         switch episode.downloadState {

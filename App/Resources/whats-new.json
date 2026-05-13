@@ -2,6 +2,19 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T11:00:00Z",
+      "lines": [
+        "Opening a show you don't follow now adapts to that state: the toolbar offers a Follow action instead of subscription toggles, and the destructive option reads Delete (removes the podcast plus its episodes) rather than Unsubscribe. Settings stays hidden until you actually follow the show — there's no subscription row to mutate yet."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T13:30:00Z",
+      "lines": [
+        "Fixed: when you ask the agent about a podcast you don't follow, it can now list its episodes without secretly subscribing you to it. Previously the only way for the agent to look up episodes was to subscribe to the show first, which left unwanted follows behind.",
+        "Hit play on any episode and the app now downloads the audio in the background while you stream — transcripts and chapters follow automatically, no more waiting for a manual download tap before they show up."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T12:30:00Z",
       "lines": [
         "Fixed: the player's More menu Go to episode and Go to show items no longer crash. The two items used to round-trip through a deep-link while the player was still mid-dismiss; they now hand the request to the root view directly so the player sheet hands off cleanly to the detail surface."

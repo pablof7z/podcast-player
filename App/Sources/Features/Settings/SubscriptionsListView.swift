@@ -194,7 +194,6 @@ struct SubscriptionsListView: View {
         }
     }
 
-    @ViewBuilder
     private func statusRow(for sub: Podcast) -> some View {
         let count = store.episodes(forPodcast: sub.id).count
         let countLabel = count == 1 ? "1 episode" : "\(count) episodes"

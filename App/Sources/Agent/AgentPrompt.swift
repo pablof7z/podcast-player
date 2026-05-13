@@ -43,6 +43,13 @@ enum AgentPrompt {
         For transcripts of external episodes, call `subscribe_podcast` first then
         `download_and_transcribe(feed_url, audio_url)`.
 
+        To browse an unfamiliar show's episodes BEFORE subscribing, call
+        `list_episodes` and pass either the `collection_id` (as `podcast_id`)
+        or the `feed_url` you got from `search_podcast_directory`. The app
+        captures the show's metadata + episodes without flipping the follow
+        bit. Only call `subscribe_podcast` when the user explicitly says they
+        want to follow the show.
+
         You are running on a fast/cheap model by default. Before answering, judge
         the request: simple lookups, one-tool answers, short factual replies →
         just answer. If the task needs multi-step reasoning, planning, writing

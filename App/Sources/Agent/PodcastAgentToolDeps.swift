@@ -264,6 +264,12 @@ public protocol PodcastDirectoryProtocol: Sendable {
         type: PodcastDirectorySearchType,
         limit: Int
     ) async throws -> [PodcastDirectoryHit]
+
+    /// Resolve an iTunes collection ID (the numeric string the directory
+    /// returns alongside each podcast hit) to the canonical RSS feed URL.
+    /// Returns `nil` when the lookup endpoint has no row for the ID.
+    /// Throws on transport / parse failure.
+    func lookupFeedURL(forCollectionID collectionID: String) async throws -> String?
 }
 
 /// Subscribing to a new podcast feed by URL.
@@ -271,6 +277,13 @@ public protocol PodcastSubscribeProtocol: Sendable {
     /// Fetch and persist a podcast feed. Idempotent — if the URL is already
     /// in the user's library the result carries `alreadySubscribed: true`.
     func subscribe(feedURLString: String) async throws -> PodcastSubscribeResult
+
+    /// Capture a podcast's metadata + episodes into the store WITHOUT
+    /// creating a `PodcastSubscription` (no follow flip). Wraps
+    /// `SubscriptionService.ensurePodcast(feedURLString:)`. Used by the
+    /// `list_episodes` external-input paths so the agent can offer episode
+    /// lists for shows the user has not (yet) subscribed to.
+    func ensurePodcast(feedURLString: String) async throws -> PodcastEnsureResult
 }
 
 // MARK: - Aggregate

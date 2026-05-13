@@ -147,40 +147,8 @@ final class AgentToolsInventoryTests: XCTestCase {
         XCTAssertEqual(lastReference?.slug, "news")
     }
 
-    // MARK: - list_episodes
-
-    func testListEpisodesRequiresPodcastID() async throws {
-        let result = await dispatch(name: "list_episodes", args: [:], inventory: MockInventory())
-        let json = try unwrapJSON(result)
-        XCTAssertNotNil(json["error"])
-    }
-
-    func testListEpisodesReturnsErrorForUnknownPodcast() async throws {
-        let result = await dispatch(name: "list_episodes", args: ["podcast_id": "nope"], inventory: MockInventory())
-        let json = try unwrapJSON(result)
-        let err = json["error"] as? String ?? ""
-        XCTAssertTrue(err.contains("Unknown podcast"))
-    }
-
-    func testListEpisodesReturnsEpisodeStateFields() async throws {
-        let inventory = MockInventory()
-        await inventory.setEpisodes([
-            sampleEpisode(id: "e1", podcast: "p1", played: false, position: 0),
-            sampleEpisode(id: "e2", podcast: "p1", played: true, position: 0),
-            sampleEpisode(id: "e3", podcast: "p1", played: false, position: 1234),
-        ], forPodcast: "p1")
-
-        let result = await dispatch(name: "list_episodes", args: ["podcast_id": "p1"], inventory: inventory)
-
-        let json = try unwrapJSON(result)
-        XCTAssertEqual(json["success"] as? Bool, true)
-        let rows = json["episodes"] as? [[String: Any]] ?? []
-        XCTAssertEqual(rows.count, 3)
-        XCTAssertEqual(rows[0]["played"] as? Bool, false)
-        XCTAssertEqual(rows[1]["played"] as? Bool, true)
-        XCTAssertEqual(rows[2]["is_in_progress"] as? Bool, true)
-        XCTAssertEqual(rows[2]["playback_position_seconds"] as? Double, 1234)
-    }
+    // `list_episodes` tests live in `AgentToolsListEpisodesTests.swift` so this
+    // file stays under the 500-line cap from `AGENTS.md`.
 
     // MARK: - list_in_progress
 
@@ -247,7 +215,9 @@ final class AgentToolsInventoryTests: XCTestCase {
     private func dispatch(
         name: String,
         args: [String: Any],
-        inventory: MockInventory
+        inventory: MockInventory,
+        directory: MockDirectory = MockDirectory(),
+        subscribe: MockSubscribe = MockSubscribe()
     ) async -> String {
         let deps = PodcastAgentToolDeps(
             rag: MockRAG(),
@@ -263,8 +233,8 @@ final class AgentToolsInventoryTests: XCTestCase {
             friendDirectory: MockFriendDirectory(),
             perplexity: MockPerplexity(),
             ttsPublisher: MockTTSPublisher(),
-            directory: MockDirectory(),
-            subscribe: MockSubscribe()
+            directory: directory,
+            subscribe: subscribe
         )
         // Round-trip through the JSON-string dispatcher so we don't have to
         // hand a non-Sendable `[String: Any]` across isolation boundaries.
