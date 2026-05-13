@@ -64,59 +64,26 @@ struct PlayerChaptersScrollView: View {
             handleTap(chapter)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.sm) {
-                Text(formatTimestamp(chapter.startTime))
-                    .font(.system(.footnote, design: .monospaced).weight(.medium))
-                    .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
-                    .frame(width: 60, alignment: .leading)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(chapter.title)
-                        .font(.system(.body))
-                        .foregroundStyle(isActive ? Color.accentColor : Color.primary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                    if let summary = chapter.summary?.trimmingCharacters(in: .whitespacesAndNewlines),
-                       !summary.isEmpty {
-                        Text(summary)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(isActive ? 4 : 2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                Text(chapter.title)
+                    .font(.system(.body).weight(isActive ? .bold : .regular))
+                    .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
                 if overlapsAd {
                     Image(systemName: "speaker.slash")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(AppTheme.Tint.warning)
                         .accessibilityLabel("Contains an ad")
                 }
-                if chapter.isAIGenerated {
-                    aiPill
-                }
-                Spacer(minLength: 0)
-                if isActive {
-                    // `speaker.wave.2.fill` reads as audible-from-this-row.
-                    // The previous `waveform` glyph collided with the
-                    // artwork-failure fallback in the hero (also a
-                    // waveform), so chapter-less episodes with missing art
-                    // showed a static waveform up top and an animated one
-                    // mid-list — confusing.
-                    Image(systemName: "speaker.wave.2.fill")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                        .symbolEffect(.variableColor.iterative, options: .repeating, value: state.isPlaying)
-                        .transition(.opacity.combined(with: .scale))
-                        .accessibilityHidden(true)
-                }
+                Text(formatTimestamp(chapter.startTime))
+                    .font(.system(.footnote, design: .monospaced).weight(.medium))
+                    .foregroundStyle(Color.secondary)
             }
             .padding(.horizontal, AppTheme.Spacing.sm)
             .padding(.vertical, AppTheme.Spacing.sm)
-            .background(rowBackground(isActive: isActive))
             .overlay(alignment: .leading) {
                 if overlapsAd {
-                    // Amber leading stripe — informational only. Tapping the
-                    // row still seeks normally; the stripe just tells the
-                    // user this chapter overlaps a detected ad span.
                     RoundedRectangle(cornerRadius: 1.5, style: .continuous)
                         .fill(AppTheme.Tint.warning)
                         .frame(width: 3)
@@ -129,9 +96,6 @@ struct PlayerChaptersScrollView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(chapter.title)
         .accessibilityValue(isActive ? "Active chapter, \(formatTimestamp(chapter.startTime))" : formatTimestamp(chapter.startTime))
-        // Hint describes the *effect* of the action, not the gesture —
-        // VoiceOver already announces "double-tap to activate" via the
-        // button trait, so saying "double-tap to..." is redundant.
         .accessibilityHint("Seeks playback to this chapter")
         .contextMenu {
             Button {
@@ -154,35 +118,6 @@ struct PlayerChaptersScrollView: View {
             episode: state.episode,
             store: store
         )
-    }
-
-    /// Compact "AI" pill rendered next to chapter titles that came from
-    /// `AIChapterCompiler` rather than the publisher feed. Uses the agent
-    /// accent colour so AI-flavoured surfaces stay visually coherent.
-    private var aiPill: some View {
-        Text("AI")
-            .font(.system(size: 9, weight: .bold, design: .rounded))
-            .tracking(0.4)
-            .foregroundStyle(AppTheme.Tint.agentSurface)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule().fill(AppTheme.Tint.agentSurface.opacity(0.12))
-            )
-            .overlay(
-                Capsule().stroke(AppTheme.Tint.agentSurface.opacity(0.35), lineWidth: 0.5)
-            )
-            .accessibilityLabel("AI-generated chapter")
-    }
-
-    @ViewBuilder
-    private func rowBackground(isActive: Bool) -> some View {
-        if isActive {
-            RoundedRectangle(cornerRadius: AppTheme.Corner.md, style: .continuous)
-                .fill(Color.accentColor.opacity(0.10))
-        } else {
-            Color.clear
-        }
     }
 
     // MARK: - Behavior

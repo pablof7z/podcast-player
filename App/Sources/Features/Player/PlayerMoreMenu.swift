@@ -21,9 +21,11 @@ struct PlayerMoreMenu: View {
 
     let episode: Episode
     let podcast: Podcast?
+    let speedLabel: String
     let onMarkPlayed: () -> Void
     let onMarkUnplayed: () -> Void
     let onShowSleepTimer: () -> Void
+    let onShowSpeed: () -> Void
 
     /// Drives the brief "Copied!" label swap on the Copy item. Resets after
     /// `Self.copyAckDuration` so the next pull-down shows the canonical label.
@@ -36,6 +38,13 @@ struct PlayerMoreMenu: View {
 
     var body: some View {
         Menu {
+            Button {
+                Haptics.selection()
+                onShowSpeed()
+            } label: {
+                Label("Speed: \(speedLabel)", systemImage: "speedometer")
+            }
+
             Button {
                 Haptics.selection()
                 onShowSleepTimer()
@@ -102,7 +111,8 @@ struct PlayerMoreMenu: View {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
-                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
                 .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.pressable)

@@ -20,7 +20,7 @@ struct PlayerTopBar: View {
     let onDismiss: () -> Void
     let onShare: () -> Void
     let onShowSleepTimer: () -> Void
-    @Binding var showSpeedSheet: Bool
+    let onShowSpeed: () -> Void
 
     @Environment(AppStateStore.self) private var store
 
@@ -59,7 +59,6 @@ struct PlayerTopBar: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.body.weight(.semibold))
                             .foregroundStyle(.primary)
-                            .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
                             .frame(width: 44, height: 44)
                             .contentShape(Circle())
                             .glassEffect(.regular.interactive(), in: .circle)
@@ -68,17 +67,15 @@ struct PlayerTopBar: View {
                     .accessibilityLabel("Share episode")
                 }
 
-                speedButton
-
-                routePicker
-
                 if let episode = state.episode {
                     PlayerMoreMenu(
                         episode: episode,
                         podcast: podcast,
+                        speedLabel: state.rate.label,
                         onMarkPlayed: { store.markEpisodePlayed(episode.id) },
                         onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
-                        onShowSleepTimer: onShowSleepTimer
+                        onShowSleepTimer: onShowSleepTimer,
+                        onShowSpeed: onShowSpeed
                     )
                 }
             }
@@ -88,23 +85,7 @@ struct PlayerTopBar: View {
         .padding(.bottom, AppTheme.Spacing.xs)
     }
 
-    private var speedButton: some View {
-        Button {
-            showSpeedSheet = true
-        } label: {
-            Text(state.rate.label)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.primary)
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-                .glassEffect(.regular.interactive(), in: .circle)
-        }
-        .buttonStyle(.pressable)
-        .accessibilityLabel("Playback speed")
-        .accessibilityValue(state.rate.label)
-    }
-
-    /// Shows a "< Jump back" text button when there is navigation history,
+    /// Shows a "<" button when there is navigation history,
     /// otherwise renders an empty fixed-size slot so the centre title stays
     /// centred. The drag indicator on the sheet already handles dismiss.
     @ViewBuilder
@@ -114,13 +95,12 @@ struct PlayerTopBar: View {
                 state.jumpBack()
                 Haptics.selection()
             } label: {
-                Label("Jump back", systemImage: "chevron.left")
-                    .labelStyle(.titleAndIcon)
-                    .font(.caption.weight(.semibold))
+                Image(systemName: "chevron.left")
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .padding(.horizontal, AppTheme.Spacing.sm)
-                    .padding(.vertical, AppTheme.Spacing.xs)
-                    .glassEffect(.regular.interactive(), in: Capsule())
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
+                    .glassEffect(.regular.interactive(), in: .circle)
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Jump back")
@@ -132,24 +112,4 @@ struct PlayerTopBar: View {
         }
     }
 
-    /// Audio-output route picker styled to match the top-bar glass buttons.
-    private var routePicker: some View {
-        ZStack {
-            Image(systemName: "airplayaudio")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: AppTheme.Layout.iconSm, height: AppTheme.Layout.iconSm)
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-                .glassEffect(.regular.interactive(), in: .circle)
-                .accessibilityHidden(true)
-            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
-                .allowsHitTesting(true)
-                .accessibilityHidden(true)
-        }
-        .frame(width: 44, height: 44)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Audio output")
-        .accessibilityHint("Opens system output picker")
-    }
 }

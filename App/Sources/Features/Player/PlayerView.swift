@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 
 /// Full-screen Now Playing surface.
@@ -128,7 +129,7 @@ struct PlayerView: View {
             onDismiss: { dismiss() },
             onShare: { showShareSheet = true },
             onShowSleepTimer: { showSleepSheet = true },
-            showSpeedSheet: $showSpeedSheet
+            onShowSpeed: { showSpeedSheet = true }
         )
     }
 
@@ -279,6 +280,27 @@ struct PlayerView: View {
         }
     }
 
+    // MARK: - Route picker
+
+    private var routePicker: some View {
+        ZStack {
+            Image(systemName: "airplayaudio")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+                .glassEffect(.regular.interactive(), in: .circle)
+                .accessibilityHidden(true)
+            RoutePickerView(activeTintColor: .clear, tintColor: .clear)
+                .allowsHitTesting(true)
+                .accessibilityHidden(true)
+        }
+        .frame(width: 44, height: 44)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Audio output")
+        .accessibilityHint("Opens system output picker")
+    }
+
     // MARK: - Floating playback chrome (scrubber + transport + actions)
 
     private var episodeClips: [Clip] {
@@ -301,13 +323,16 @@ struct PlayerView: View {
                 }
                 PlayerPrerollSkipButton(state: state, episode: liveEpisode)
                     .animation(AppTheme.Animation.spring, value: state.currentTime)
-                PlayerScrubberView(
-                    state: state,
-                    isScrubbing: $isScrubbing,
-                    chapters: navigableChapters ?? [],
-                    clips: episodeClips,
-                    onClipTap: { clip in state.navigationalSeek(to: clip.startSeconds) }
-                )
+                HStack(alignment: .center, spacing: AppTheme.Spacing.sm) {
+                    PlayerScrubberView(
+                        state: state,
+                        isScrubbing: $isScrubbing,
+                        chapters: navigableChapters ?? [],
+                        clips: episodeClips,
+                        onClipTap: { clip in state.navigationalSeek(to: clip.startSeconds) }
+                    )
+                    routePicker
+                }
                 PlayerControlsView(
                     state: state,
                     glassNamespace: glassNamespace,
