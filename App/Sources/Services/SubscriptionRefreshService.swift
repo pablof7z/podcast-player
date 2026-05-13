@@ -14,17 +14,14 @@ import os.log
 ///   2. We register for `UIApplication.didEnterBackgroundNotification` to
 ///      cancel the loop when the app suspends, and
 ///      `UIApplication.willEnterForegroundNotification` to restart it.
-///   3. Every refresh round runs `FeedClient.fetch` against each subscription
-///      in parallel, bounded by `maxConcurrent` so a 200-subscription user
+///   3. Every refresh round runs `FeedClient.fetch` against each followed
+///      podcast in parallel, bounded by `maxConcurrent` so a 200-podcast user
 ///      doesn't open 200 simultaneous sockets.
 ///
 /// `FeedClient.fetch` is async + `Sendable` — the network hop happens off the
 /// main actor. The service hops back to the main actor to apply each parsed
 /// result via `AppStateStore`'s mutation methods, which keeps the store's
 /// `didSet` persistence path single-threaded.
-///
-/// A future `BackgroundTasks` (`BGAppRefreshTask`) wiring would call
-/// `refreshAll` as well; that work is intentionally out of scope here.
 @MainActor
 final class SubscriptionRefreshService {
 
@@ -45,8 +42,6 @@ final class SubscriptionRefreshService {
     private var pollingTask: Task<Void, Never>?
     private var foregroundObserver: NSObjectProtocol?
     private var backgroundObserver: NSObjectProtocol?
-    /// Cached so a foreground-restart uses the same configuration the caller
-    /// originally supplied.
     private weak var registeredStore: AppStateStore?
     private var registeredInterval: Duration = SubscriptionRefreshService.defaultInterval
 
@@ -56,66 +51,56 @@ final class SubscriptionRefreshService {
         self.client = client
     }
 
-    // No `deinit` — the singleton lives for the lifetime of the process. The
-    // main-actor isolation of stored properties means a nonisolated `deinit`
-    // can't observe them under Swift 6 strict concurrency anyway, so leaving
-    // it off avoids region-isolation noise in builds.
-
     // MARK: - Public API
 
-    /// Refreshes a single subscription. Idempotent — issues a conditional
-    /// GET via the subscription's stored `etag` / `lastModified`. A `304`
-    /// only bumps `lastRefreshedAt`; an updated feed upserts every parsed
-    /// episode and writes the new cache headers back via `updateSubscription`.
-    func refresh(_ subscriptionID: UUID, store: AppStateStore) async throws {
-        guard let subscription = store.subscription(id: subscriptionID) else {
+    /// Refreshes a single podcast. Idempotent — issues a conditional GET via
+    /// the podcast's stored `etag` / `lastModified`. A `304` only bumps
+    /// `lastRefreshedAt`; an updated feed upserts every parsed episode and
+    /// writes the new cache headers back via `updatePodcast`.
+    func refresh(_ podcastID: UUID, store: AppStateStore) async throws {
+        guard let podcast = store.podcast(id: podcastID),
+              podcast.feedURL != nil else {
             return
         }
-        let result = try await client.fetch(subscription)
+        let result = try await client.fetch(podcast)
         apply(
             outcome: .success(
-                originalID: subscriptionID,
-                original: subscription,
+                originalID: podcastID,
+                original: podcast,
                 result: result
             ),
             store: store
         )
     }
 
-    /// Refreshes every subscription in `store.sortedSubscriptions`, bounded
-    /// to `maxConcurrent` in-flight fetches. Errors are logged and swallowed
-    /// per-subscription so one failing feed doesn't sink the whole sweep.
+    /// Refreshes every followed podcast (joined via `subscriptions`),
+    /// bounded to `maxConcurrent` in-flight fetches. Errors are logged and
+    /// swallowed per-podcast so one failing feed doesn't sink the whole sweep.
     func refreshAll(store: AppStateStore, maxConcurrent: Int = 4) async {
-        let subscriptions = store.sortedSubscriptions
-        guard !subscriptions.isEmpty else { return }
+        let podcasts = store.sortedFollowedPodcastsByRecency.filter { $0.feedURL != nil }
+        guard !podcasts.isEmpty else { return }
         let bounded = max(1, maxConcurrent)
         let client = self.client
 
-        // Walk the subscription list in chunks of `bounded`, fanning each
-        // chunk into a TaskGroup that performs the (off-actor) fetches in
-        // parallel. The group returns a parsed result per subscription; we
-        // then apply each mutation on the main actor sequentially. Keeping
-        // the apply step single-threaded preserves the store's didSet
-        // persistence ordering.
         var index = 0
-        while index < subscriptions.count {
-            let upper = min(index + bounded, subscriptions.count)
-            let slice = Array(subscriptions[index..<upper])
+        while index < podcasts.count {
+            let upper = min(index + bounded, podcasts.count)
+            let slice = Array(podcasts[index..<upper])
             let outcomes = await withTaskGroup(
-                of: SubscriptionRefreshOutcome.self,
-                returning: [SubscriptionRefreshOutcome].self
+                of: PodcastRefreshOutcome.self,
+                returning: [PodcastRefreshOutcome].self
             ) { group in
-                for subscription in slice {
+                for podcast in slice {
                     group.addTask {
                         do {
-                            let result = try await client.fetch(subscription)
-                            return .success(originalID: subscription.id, original: subscription, result: result)
+                            let result = try await client.fetch(podcast)
+                            return .success(originalID: podcast.id, original: podcast, result: result)
                         } catch {
-                            return .failure(originalID: subscription.id, error: error)
+                            return .failure(originalID: podcast.id, error: error)
                         }
                     }
                 }
-                var collected: [SubscriptionRefreshOutcome] = []
+                var collected: [PodcastRefreshOutcome] = []
                 collected.reserveCapacity(slice.count)
                 for await outcome in group {
                     collected.append(outcome)
@@ -155,30 +140,29 @@ final class SubscriptionRefreshService {
 
     // MARK: - Private
 
-    private func apply(outcome: SubscriptionRefreshOutcome, store: AppStateStore) {
+    private func apply(outcome: PodcastRefreshOutcome, store: AppStateStore) {
         switch outcome {
         case .success(_, let original, let result):
             switch result {
             case .notModified(let lastRefreshedAt):
                 var bumped = original
                 bumped.lastRefreshedAt = lastRefreshedAt
-                store.updateSubscription(bumped)
-            case .updated(let updatedSubscription, let episodes, _):
-                // Same delta-before-upsert dance as `refresh(_:)`: snapshot
-                // the old GUID set, then write, then notify on the diff.
+                store.updatePodcast(bumped)
+            case .updated(let updatedPodcast, let episodes, _):
                 let priorGUIDs = Set(
-                    store.episodes(forSubscription: updatedSubscription.id).map(\.guid)
+                    store.episodes(forPodcast: updatedPodcast.id).map(\.guid)
                 )
                 store.upsertEpisodes(
                     episodes,
-                    forSubscription: updatedSubscription.id,
+                    forPodcast: updatedPodcast.id,
                     evaluateAutoDownload: true
                 )
-                store.updateSubscription(updatedSubscription)
+                store.updatePodcast(updatedPodcast)
                 notifyIfNeeded(
                     priorGUIDs: priorGUIDs,
                     incoming: episodes,
-                    subscription: updatedSubscription
+                    podcast: updatedPodcast,
+                    store: store
                 )
             }
         case .failure(let originalID, let error):
@@ -188,25 +172,25 @@ final class SubscriptionRefreshService {
         }
     }
 
-    /// Fires new-episode notifications for the GUIDs that didn't appear in the
-    /// store before this refresh. No-ops when notifications are disabled on
-    /// the subscription, when the prior set is empty (first-ever fetch — the
-    /// user just subscribed and doesn't want a flood), or when nothing's new.
+    /// Fires new-episode notifications for the GUIDs that didn't appear in
+    /// the store before this refresh. No-ops when notifications are disabled
+    /// on the subscription, when the user isn't subscribed, when the prior
+    /// set is empty (first-ever fetch), or when nothing's new.
     private func notifyIfNeeded(
         priorGUIDs: Set<String>,
         incoming: [Episode],
-        subscription: PodcastSubscription
+        podcast: Podcast,
+        store: AppStateStore
     ) {
-        guard subscription.notificationsEnabled else { return }
-        // First fetch: every episode would be "new". That's spammy and not
-        // what the user wants right after subscribing — skip.
+        guard let subscription = store.subscription(podcastID: podcast.id),
+              subscription.notificationsEnabled else { return }
         guard !priorGUIDs.isEmpty else { return }
         let newOnes = incoming
             .filter { !priorGUIDs.contains($0.guid) }
             .sorted { $0.pubDate > $1.pubDate }
         guard !newOnes.isEmpty else { return }
         Task {
-            await NotificationService.notifyNewEpisodes(newOnes, subscription: subscription)
+            await NotificationService.notifyNewEpisodes(newOnes, podcast: podcast)
         }
     }
 
@@ -259,12 +243,7 @@ final class SubscriptionRefreshService {
 
 // MARK: - Outcome
 
-/// Per-subscription result of a single `refreshAll` round. Carrying the
-/// original subscription through lets the apply step bump `lastRefreshedAt`
-/// on the cached value without a second store lookup, which would race with
-/// concurrent mutations the caller might have made between the fetch
-/// dispatch and the result arrival.
-private enum SubscriptionRefreshOutcome: Sendable {
-    case success(originalID: UUID, original: PodcastSubscription, result: FeedClient.FeedFetchResult)
+private enum PodcastRefreshOutcome: Sendable {
+    case success(originalID: UUID, original: Podcast, result: FeedClient.FeedFetchResult)
     case failure(originalID: UUID, error: Error)
 }

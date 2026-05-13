@@ -1,10 +1,10 @@
 import Foundation
 
-/// Fetches a `PodcastSubscription`'s feed and parses it into an updated
-/// subscription + new episodes.
+/// Fetches a `Podcast`'s feed and parses it into an updated podcast +
+/// new episodes.
 ///
 /// Conditional GET: sends `If-None-Match` (ETag) and `If-Modified-Since`
-/// (Last-Modified) when the subscription has them. A `304 Not Modified` is
+/// (Last-Modified) when the podcast has them. A `304 Not Modified` is
 /// reported via `FeedFetchResult.notModified` so callers can short-circuit
 /// without redoing parser / dedupe work — see baseline §2 (manual + scheduled
 /// refresh) and `transcription-stack.md` §5 for the upstream pipeline.
@@ -19,9 +19,9 @@ struct FeedClient: Sendable {
         /// `lastRefreshedAt` so the UI knows we checked.
         case notModified(lastRefreshedAt: Date)
         /// Server returned a fresh feed body; the caller receives a refreshed
-        /// subscription (with new ETag/Last-Modified) plus the parsed episodes.
+        /// podcast (with new ETag/Last-Modified) plus the parsed episodes.
         case updated(
-            subscription: PodcastSubscription,
+            podcast: Podcast,
             episodes: [Episode],
             lastRefreshedAt: Date
         )
@@ -31,6 +31,7 @@ struct FeedClient: Sendable {
         case transport(underlying: String)
         case http(status: Int)
         case parse(RSSParser.ParseError)
+        case missingFeedURL
     }
 
     /// Allows tests to swap in a stub session.
@@ -42,13 +43,16 @@ struct FeedClient: Sendable {
         self.parser = RSSParser()
     }
 
-    /// Fetches the subscription's feed, honoring conditional-GET.
+    /// Fetches the podcast's feed, honoring conditional-GET.
     ///
     /// Returns the *new* episodes from this fetch — the caller is responsible
     /// for diffing against persistent storage by `Episode.guid`. We do not
     /// retain state here.
-    func fetch(_ subscription: PodcastSubscription) async throws -> FeedFetchResult {
-        var request = URLRequest(url: subscription.feedURL)
+    func fetch(_ podcast: Podcast) async throws -> FeedFetchResult {
+        guard let feedURL = podcast.feedURL else {
+            throw FeedFetchError.missingFeedURL
+        }
+        var request = URLRequest(url: feedURL)
         request.httpMethod = "GET"
         // RSS feeds should respond fast — a healthy one returns in
         // 1–5s and slow ones in 15–30s. Cap at 30s instead of the
@@ -63,10 +67,10 @@ struct FeedClient: Sendable {
             forHTTPHeaderField: "Accept"
         )
         request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
-        if let etag = subscription.etag, !etag.isEmpty {
+        if let etag = podcast.etag, !etag.isEmpty {
             request.setValue(etag, forHTTPHeaderField: "If-None-Match")
         }
-        if let lastModified = subscription.lastModified, !lastModified.isEmpty {
+        if let lastModified = podcast.lastModified, !lastModified.isEmpty {
             request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
         }
 
@@ -83,7 +87,7 @@ struct FeedClient: Sendable {
             // Non-HTTP scheme (file://, etc.). Treat as 200 if data parses.
             return try parseAndAttach(
                 data: data,
-                subscription: subscription,
+                podcast: podcast,
                 etag: nil,
                 lastModified: nil,
                 now: now
@@ -97,7 +101,7 @@ struct FeedClient: Sendable {
             let lastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
             return try parseAndAttach(
                 data: data,
-                subscription: subscription,
+                podcast: podcast,
                 etag: etag,
                 lastModified: lastModified,
                 now: now
@@ -113,41 +117,42 @@ struct FeedClient: Sendable {
 
     private func parseAndAttach(
         data: Data,
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         etag: String?,
         lastModified: String?,
         now: Date
     ) throws -> FeedFetchResult {
+        guard let feedURL = podcast.feedURL else {
+            throw FeedFetchError.missingFeedURL
+        }
         let parsed: RSSParser.ParsedFeed
         do {
             parsed = try parser.parse(
                 data: data,
-                feedURL: subscription.feedURL,
-                subscriptionID: subscription.id
+                feedURL: feedURL,
+                podcastID: podcast.id
             )
         } catch let parseError as RSSParser.ParseError {
             throw FeedFetchError.parse(parseError)
         }
 
-        // Merge: keep user-mutable fields from the existing subscription;
-        // overwrite editorial fields from the feed; refresh cache headers.
-        var merged = subscription
-        merged.title = parsed.subscription.title.isEmpty ? merged.title : parsed.subscription.title
-        merged.author = parsed.subscription.author.isEmpty ? merged.author : parsed.subscription.author
-        merged.description = parsed.subscription.description.isEmpty
-            ? merged.description
-            : parsed.subscription.description
-        merged.imageURL = parsed.subscription.imageURL ?? merged.imageURL
-        merged.language = parsed.subscription.language ?? merged.language
-        if !parsed.subscription.categories.isEmpty {
-            merged.categories = parsed.subscription.categories
+        // Merge: keep the existing podcast's identity; overwrite editorial
+        // fields from the feed; refresh cache headers.
+        var merged = podcast
+        if !parsed.podcast.title.isEmpty { merged.title = parsed.podcast.title }
+        if !parsed.podcast.author.isEmpty { merged.author = parsed.podcast.author }
+        if !parsed.podcast.description.isEmpty { merged.description = parsed.podcast.description }
+        if let image = parsed.podcast.imageURL { merged.imageURL = image }
+        if let language = parsed.podcast.language { merged.language = language }
+        if !parsed.podcast.categories.isEmpty {
+            merged.categories = parsed.podcast.categories
         }
         merged.etag = etag ?? merged.etag
         merged.lastModified = lastModified ?? merged.lastModified
         merged.lastRefreshedAt = now
 
         return .updated(
-            subscription: merged,
+            podcast: merged,
             episodes: parsed.episodes,
             lastRefreshedAt: now
         )

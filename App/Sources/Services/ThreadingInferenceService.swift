@@ -123,7 +123,7 @@ final class ThreadingInferenceService {
         var eligibleEpisodeIDs: Set<UUID> = []
         for episode in store.state.episodes where !episode.played {
             if let allowed = subscriptionFilter,
-               !allowed.contains(episode.subscriptionID) { continue }
+               !allowed.contains(episode.podcastID) { continue }
             eligibleEpisodeIDs.insert(episode.id)
         }
         guard !eligibleEpisodeIDs.isEmpty else { return [] }

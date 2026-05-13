@@ -52,7 +52,8 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         title: String,
         description: String?,
         turns: [TTSTurn],
-        playNow: Bool
+        playNow: Bool,
+        generationSource: Episode.GenerationSource? = nil
     ) async throws -> TTSEpisodeResult {
         guard !turns.isEmpty else {
             throw AgentTTSError.emptyTurns
@@ -76,6 +77,13 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             episodeID: episodeID
         )
 
+        // 3b. Inherit artwork from the first snippet chapter that has one —
+        // covers the typical case where the TTS-stitched episode includes
+        // clips from a real show, so the result carries that show's image
+        // even though the synthetic "Agent Generated" podcast itself has
+        // none.
+        let inheritedArtwork = chapters.first(where: { $0.imageURL != nil })?.imageURL
+
         // 4. Register the episode and optionally start playback.
         let episode = await MainActor.run {
             guard let store else { return Optional<Episode>.none }
@@ -84,6 +92,8 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                 description: description ?? "",
                 audioURL: outputURL,
                 durationSeconds: durationSeconds,
+                imageURL: inheritedArtwork,
+                generationSource: generationSource,
                 in: store
             )
         }
@@ -112,13 +122,13 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             }
         }
 
-        let subscriptionID = await MainActor.run {
-            store?.subscription(feedURL: AgentGeneratedPodcastService.sentinelFeedURL)?.id.uuidString ?? ""
+        let podcastID = await MainActor.run {
+            store?.podcast(feedURL: AgentGeneratedPodcastService.sentinelFeedURL)?.id.uuidString ?? ""
         }
 
         return TTSEpisodeResult(
             episodeID: episode.id.uuidString,
-            podcastID: subscriptionID,
+            podcastID: podcastID,
             title: title,
             durationSeconds: durationSeconds,
             publishedToLibrary: true
@@ -231,7 +241,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     guard let self, let store = self.store else { return nil }
                     guard let uuid = UUID(uuidString: sourceID),
                           let ep = store.episode(id: uuid) else { return nil }
-                    return ep.imageURL ?? store.subscription(id: ep.subscriptionID)?.imageURL
+                    return ep.imageURL ?? store.podcast(id: ep.podcastID)?.imageURL
                 }
 
                 let chapterTitle = label?.isEmpty == false

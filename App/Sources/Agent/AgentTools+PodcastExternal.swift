@@ -76,9 +76,7 @@ extension AgentTools {
         guard let title = (args["title"] as? String)?.trimmed, !title.isEmpty else {
             return toolError("Missing or empty 'title'")
         }
-        let podcastTitle = (args["podcast_title"] as? String)?.trimmed.nilIfEmpty
-        let imageURLString = (args["image_url"] as? String)?.trimmed.nilIfEmpty
-        let imageURL = imageURLString.flatMap { URL(string: $0) }
+        let feedURLString = (args["feed_url"] as? String)?.trimmed.nilIfEmpty
         let durationSeconds = numericArg(args["duration_seconds"])
         let timestamp = numericArg(args["timestamp"]) ?? 0
         guard timestamp >= 0 else {
@@ -87,8 +85,7 @@ extension AgentTools {
         await deps.playback.playExternalEpisode(
             audioURL: audioURL,
             title: title,
-            podcastTitle: podcastTitle,
-            imageURL: imageURL,
+            feedURLString: feedURLString,
             durationSeconds: durationSeconds,
             timestampSeconds: timestamp
         )
@@ -96,9 +93,9 @@ extension AgentTools {
             "audio_url": audioURLString,
             "title": title,
             "timestamp": timestamp,
-            "note": "Playback started. Position is saved so the user can resume; episode appears in Current Listens on the Home tab.",
+            "note": "Playback started. Episode appears in Continue Listening on the Home tab.",
         ]
-        if let podcastTitle { payload["podcast_title"] = podcastTitle }
+        if let feedURLString { payload["feed_url"] = feedURLString }
         if let dur = durationSeconds { payload["duration_seconds"] = dur }
         return toolSuccess(payload)
     }

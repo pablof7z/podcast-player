@@ -25,7 +25,7 @@ struct HomeView: View {
 
     @State private var picksService = AgentPicksService.shared
     @State private var threadingService = ThreadingInferenceService.shared
-    @State private var unsubscribeTarget: PodcastSubscription?
+    @State private var unsubscribeTarget: Podcast?
     @State private var relatedSheetEpisode: Episode?
     @State private var threadedTodaySheet: ThreadingInferenceService.ActiveTopic?
     @State private var voiceOverDetailRoute: HomeEpisodeRoute?
@@ -51,8 +51,8 @@ struct HomeView: View {
             .navigationDestination(item: $voiceOverDetailRoute) { route in
                 EpisodeDetailView(episodeID: route.episodeID)
             }
-            .navigationDestination(for: PodcastSubscription.self) { sub in
-                ShowDetailView(subscription: sub)
+            .navigationDestination(for: Podcast.self) { pod in
+                ShowDetailView(podcast: pod)
             }
             .navigationDestination(isPresented: $showAllContinueListening) {
                 ContinueListeningView(episodes: continueListeningEpisodes)
@@ -73,7 +73,7 @@ struct HomeView: View {
             .sheet(item: $relatedSheetEpisode) { episode in
                 HomeRelatedSheet(
                     seedEpisode: episode,
-                    seedSubscription: store.subscription(id: episode.subscriptionID)
+                    seedPodcast: store.podcast(id: episode.podcastID)
                 )
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
@@ -94,7 +94,7 @@ struct HomeView: View {
                 Button("Cancel", role: .cancel) {}
                 Button("Unsubscribe", role: .destructive) {
                     Haptics.warning()
-                    store.removeSubscription(sub.id)
+                    store.removeSubscription(podcastID: sub.id)
                 }
             } message: { _ in
                 Text("This removes the show and all its episodes from your library.")
@@ -221,7 +221,7 @@ struct HomeView: View {
             .padding(.top, AppTheme.Spacing.xl)
         } else {
             HomeSubscriptionListSection(
-                subscriptions: filteredSubs,
+                podcasts: filteredSubs,
                 now: renderedAt,
                 onRequestUnsubscribe: { unsubscribeTarget = $0 }
             )
@@ -234,18 +234,18 @@ struct HomeView: View {
     // Pure derivation kept inline so the `body` getter stays straightforward
     // without an extra service indirection for trivial in-memory work.
 
-    private var filteredSubs: [PodcastSubscription] {
-        let recencySorted = store.sortedSubscriptionsByRecency
+    private var filteredSubs: [Podcast] {
+        let recencySorted = store.sortedFollowedPodcastsByRecency
         let categoryScoped = applyCategoryFilter(recencySorted)
         switch filter {
         case .all:         return categoryScoped
-        case .unplayed:    return categoryScoped.filter { store.unplayedCount(forSubscription: $0.id) > 0 }
-        case .downloaded:  return categoryScoped.filter { store.hasDownloadedEpisode(forSubscription: $0.id) }
-        case .transcribed: return categoryScoped.filter { store.hasTranscribedEpisode(forSubscription: $0.id) }
+        case .unplayed:    return categoryScoped.filter { store.unplayedCount(forPodcast: $0.id) > 0 }
+        case .downloaded:  return categoryScoped.filter { store.hasDownloadedEpisode(forPodcast: $0.id) }
+        case .transcribed: return categoryScoped.filter { store.hasTranscribedEpisode(forPodcast: $0.id) }
         }
     }
 
-    private func applyCategoryFilter(_ subs: [PodcastSubscription]) -> [PodcastSubscription] {
+    private func applyCategoryFilter(_ subs: [Podcast]) -> [Podcast] {
         guard let id = selectedCategoryID,
               let category = store.category(id: id) else { return subs }
         let allowed = Set(category.subscriptionIDs)

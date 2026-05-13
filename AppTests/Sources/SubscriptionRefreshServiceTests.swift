@@ -25,13 +25,12 @@ final class SubscriptionRefreshServiceTests: XCTestCase {
     }
 
     func testSubscriptionServiceRefreshUsesSharedRefreshSemantics() async throws {
-        var subscription = PodcastSubscription(
+        var subscription = Podcast(
             feedURL: URL(string: "https://feeds.example.com/show.xml")!,
-            title: "Old Title",
-            autoDownload: AutoDownloadPolicy(mode: .off, wifiOnly: true),
-            notificationsEnabled: false
+            title: "Old Title"
         )
-        XCTAssertTrue(store.addSubscription(subscription))
+        store.upsertPodcast(subscription)
+        XCTAssertTrue(store.addSubscription(podcastID: subscription.id))
 
         FeedRefreshStubProtocol.responseHeaders = ["ETag": "\"v2\""]
         FeedRefreshStubProtocol.responseBody = Self.feedXML(
@@ -49,22 +48,21 @@ final class SubscriptionRefreshServiceTests: XCTestCase {
 
         await service.refresh(subscription)
 
-        subscription = try XCTUnwrap(store.subscription(id: subscription.id))
+        subscription = try XCTUnwrap(store.podcast(id: subscription.id))
         XCTAssertEqual(subscription.title, "Fresh Title")
         XCTAssertEqual(subscription.etag, "\"v2\"")
-        XCTAssertEqual(store.episodes(forSubscription: subscription.id).map(\.guid), ["episode-1"])
+        XCTAssertEqual(store.episodes(forPodcast: subscription.id).map(\.guid), ["episode-1"])
     }
 
     func testRefreshServiceNotModifiedBumpsLastRefreshedWithoutEpisodes() async throws {
         let originalDate = Date(timeIntervalSince1970: 1_000)
-        let subscription = PodcastSubscription(
+        let subscription = Podcast(
             feedURL: URL(string: "https://feeds.example.com/show.xml")!,
             title: "Show",
-            lastRefreshedAt: originalDate,
-            autoDownload: AutoDownloadPolicy(mode: .off, wifiOnly: true),
-            notificationsEnabled: false
+            lastRefreshedAt: originalDate
         )
-        XCTAssertTrue(store.addSubscription(subscription))
+        store.upsertPodcast(subscription)
+        XCTAssertTrue(store.addSubscription(podcastID: subscription.id))
 
         FeedRefreshStubProtocol.responseStatus = 304
         FeedRefreshStubProtocol.responseBody = Data()
@@ -76,9 +74,9 @@ final class SubscriptionRefreshServiceTests: XCTestCase {
 
         try await refresh.refresh(subscription.id, store: store)
 
-        let updated = try XCTUnwrap(store.subscription(id: subscription.id))
+        let updated = try XCTUnwrap(store.podcast(id: subscription.id))
         XCTAssertGreaterThan(updated.lastRefreshedAt ?? originalDate, originalDate)
-        XCTAssertTrue(store.episodes(forSubscription: subscription.id).isEmpty)
+        XCTAssertTrue(store.episodes(forPodcast: subscription.id).isEmpty)
     }
 
     private static func feedXML(title: String, guid: String) -> String {

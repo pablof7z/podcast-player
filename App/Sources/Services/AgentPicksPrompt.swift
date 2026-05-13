@@ -84,7 +84,7 @@ enum AgentPicksPrompt {
 
         if !inputs.inProgress.isEmpty {
             let lines = inputs.inProgress.prefix(5).map {
-                let show = inputs.subscriptionTitles[$0.subscriptionID] ?? "?"
+                let show = inputs.subscriptionTitles[$0.podcastID] ?? "?"
                 return "- \(show): \($0.title)"
             }.joined(separator: "\n")
             sections.append("## In-progress\n\(lines)")
@@ -103,7 +103,7 @@ enum AgentPicksPrompt {
         // Cap at 30 candidates so the prompt stays under a reasonable token
         // budget — picks are over the freshest few, not the whole back catalog.
         let candidates = inputs.unplayed.prefix(30).map { ep -> String in
-            let show = inputs.subscriptionTitles[ep.subscriptionID] ?? "?"
+            let show = inputs.subscriptionTitles[ep.podcastID] ?? "?"
             let dur = ep.duration.map { " (\(Int($0/60)) min)" } ?? ""
             return "- id=\(ep.id.uuidString) — \(show): \(ep.title)\(dur)"
         }.joined(separator: "\n")

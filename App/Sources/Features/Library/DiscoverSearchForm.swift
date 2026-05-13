@@ -24,7 +24,7 @@ struct DiscoverSearchForm: View {
     nonisolated private static let logger = Logger.app("AddShowSearch")
 
     let store: AppStateStore
-    let onAdded: (PodcastSubscription) -> Void
+    let onAdded: (Podcast) -> Void
 
     /// Wait this long after the user stops typing before firing a search.
     /// Long enough to skip mid-word taps; short enough that results feel live.
@@ -266,8 +266,12 @@ struct DiscoverSearchForm: View {
     }
 
     private func isAlreadySubscribed(_ result: ITunesSearchClient.Result) -> Bool {
-        guard let url = result.feedURL else { return false }
-        return store.subscription(feedURL: url) != nil
+        guard let url = result.feedURL,
+              let podcast = store.podcast(feedURL: url) else { return false }
+        // Just knowing about the feed (e.g. from a prior external play)
+        // shouldn't disable the subscribe row. The check is whether the
+        // user actually follows it.
+        return store.subscription(podcastID: podcast.id) != nil
     }
 
     private func requestSearchFocus(deferred: Bool = false) {
@@ -389,7 +393,7 @@ struct DiscoverSearchForm: View {
         do {
             let added = try await service.addSubscription(feedURLString: feedURL.absoluteString)
             // Sanity check the write actually landed.
-            if store.subscription(feedURL: feedURL) == nil {
+            if store.podcast(feedURL: feedURL) == nil {
                 Self.logger.error(
                     "Subscription \(result.collectionName, privacy: .public) reported success but is missing from store"
                 )

@@ -13,17 +13,17 @@ final class PersistenceDurabilityTests: XCTestCase {
             let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
             let firstStore = made.store
             let sub = makeSubscription(title: "Large State Show")
-            XCTAssertTrue(firstStore.addSubscription(sub))
+            firstStore.upsertPodcast(sub); XCTAssertTrue(firstStore.addSubscription(podcastID: sub.id))
 
             let padding = String(repeating: "x", count: 4_096)
             var episodes: [Episode] = []
             episodes.reserveCapacity(1_500)
             for i in 0..<1_500 {
-                var ep = makeEpisode(subscriptionID: sub.id, guid: "large-\(i)")
+                var ep = makeEpisode(podcastID: sub.id, guid: "large-\(i)")
                 ep.description = padding
                 episodes.append(ep)
             }
-            firstStore.upsertEpisodes(episodes, forSubscription: sub.id)
+            firstStore.upsertEpisodes(episodes, forPodcast: sub.id)
             XCTAssertEqual(
                 firstStore.persistence.lastEpisodeWriteSummary.kind,
                 .replaceAll,
@@ -60,14 +60,14 @@ final class PersistenceDurabilityTests: XCTestCase {
             let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
             let store = made.store
             let sub = makeSubscription(title: "Delta Mutations")
-            XCTAssertTrue(store.addSubscription(sub))
+            store.upsertPodcast(sub); XCTAssertTrue(store.addSubscription(podcastID: sub.id))
             let episodes = [
-                makeEpisode(subscriptionID: sub.id, guid: "delta-1"),
-                makeEpisode(subscriptionID: sub.id, guid: "delta-2"),
-                makeEpisode(subscriptionID: sub.id, guid: "delta-3"),
+                makeEpisode(podcastID: sub.id, guid: "delta-1"),
+                makeEpisode(podcastID: sub.id, guid: "delta-2"),
+                makeEpisode(podcastID: sub.id, guid: "delta-3"),
             ]
             targetID = episodes[1].id
-            store.upsertEpisodes(episodes, forSubscription: sub.id)
+            store.upsertEpisodes(episodes, forPodcast: sub.id)
 
             store.persistence.resetEpisodeWriteSummary()
             store.setEpisodeStarred(targetID, true)
@@ -95,15 +95,15 @@ final class PersistenceDurabilityTests: XCTestCase {
             let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
             let store = made.store
             let sub = makeSubscription(title: "Delta Deletes")
-            XCTAssertTrue(store.addSubscription(sub))
+            store.upsertPodcast(sub); XCTAssertTrue(store.addSubscription(podcastID: sub.id))
             let episodes = [
-                makeEpisode(subscriptionID: sub.id, guid: "delete-1"),
-                makeEpisode(subscriptionID: sub.id, guid: "delete-2"),
-                makeEpisode(subscriptionID: sub.id, guid: "delete-3"),
+                makeEpisode(podcastID: sub.id, guid: "delete-1"),
+                makeEpisode(podcastID: sub.id, guid: "delete-2"),
+                makeEpisode(podcastID: sub.id, guid: "delete-3"),
             ]
             deletedID = episodes[1].id
             survivingIDs = [episodes[0].id, episodes[2].id]
-            store.upsertEpisodes(episodes, forSubscription: sub.id)
+            store.upsertEpisodes(episodes, forPodcast: sub.id)
 
             store.persistence.resetEpisodeWriteSummary()
             store.performMutationBatch {
@@ -144,7 +144,8 @@ final class PersistenceDurabilityTests: XCTestCase {
         do {
             let made = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL)
             let sub = makeSubscription(title: "Metadata Survives")
-            XCTAssertTrue(made.store.addSubscription(sub))
+            made.store.upsertPodcast(sub)
+            XCTAssertTrue(made.store.addSubscription(podcastID: sub.id))
             var settings = made.store.state.settings
             settings.hasCompletedOnboarding = true
             made.store.updateSettings(settings)
@@ -155,19 +156,26 @@ final class PersistenceDurabilityTests: XCTestCase {
 
         let reopened = AppStateTestSupport.makeIsolatedStore(fileURL: sharedFileURL, reset: false)
         XCTAssertTrue(reopened.store.state.settings.hasCompletedOnboarding)
-        XCTAssertEqual(reopened.store.state.subscriptions.map(\.title), ["Metadata Survives"])
+        // `AppState.init(from:)` inserts the built-in `Podcast.unknown`
+        // when missing, so filter it out before the exact-match assertion —
+        // only the user's real podcast metadata is what we care about
+        // surviving a corrupted SQLite sidecar.
+        let userPodcastTitles = reopened.store.state.podcasts
+            .filter { $0.id != Podcast.unknownID }
+            .map(\.title)
+        XCTAssertEqual(userPodcastTitles, ["Metadata Survives"])
     }
 
     private func makeSubscription(
         feedURL: URL = URL(string: "https://example.com/\(UUID().uuidString).xml")!,
         title: String = "Test Show"
-    ) -> PodcastSubscription {
-        PodcastSubscription(feedURL: feedURL, title: title)
+    ) -> Podcast {
+        Podcast(feedURL: feedURL, title: title)
     }
 
-    private func makeEpisode(subscriptionID: UUID, guid: String) -> Episode {
+    private func makeEpisode(podcastID: UUID, guid: String) -> Episode {
         Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: "Episode \(guid)",
             pubDate: Date(),

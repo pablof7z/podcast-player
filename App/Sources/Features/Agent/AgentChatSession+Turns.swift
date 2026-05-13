@@ -256,7 +256,7 @@ extension AgentChatSession {
                         argsJSON: toolCall.arguments,
                         store: store,
                         batchID: batchID,
-                        podcastDeps: podcastDeps,
+                        podcastDeps: podcastDeps?.withChatConversationID(currentConversationID),
                         enabledSkills: enabledSkills,
                         askCoordinator: askCoordinator
                     )

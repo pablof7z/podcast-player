@@ -8,7 +8,7 @@ import Foundation
 /// escapes, and never crosses concurrency domains — `RSSParser` itself is
 /// `Sendable`.
 final class RSSParserDelegate: NSObject, XMLParserDelegate {
-    let subscriptionID: UUID
+    let podcastID: UUID
     private let feedURL: URL
 
     // Channel-level accumulated state
@@ -34,8 +34,8 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
     // Output
     var episodes: [Episode] = []
 
-    init(subscriptionID: UUID, feedURL: URL) {
-        self.subscriptionID = subscriptionID
+    init(podcastID: UUID, feedURL: URL) {
+        self.podcastID = podcastID
         self.feedURL = feedURL
     }
 
@@ -219,7 +219,7 @@ final class RSSParserDelegate: NSObject, XMLParserDelegate {
             item.pendingSoundBiteDuration = nil
 
         case "item":
-            if let episode = item.makeEpisode(subscriptionID: subscriptionID) {
+            if let episode = item.makeEpisode(podcastID: podcastID) {
                 episodes.append(episode)
             }
             inItem = false

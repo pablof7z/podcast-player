@@ -12,7 +12,7 @@ final class OPMLExportTests: XCTestCase {
     // MARK: - Output shape
 
     func testProducesOPML2Envelope() throws {
-        let data = OPMLExport().exportOPML(subscriptions: [], title: "Mine")
+        let data = OPMLExport().exportOPML(podcasts: [], title: "Mine")
         let xml = try XCTUnwrap(String(data: data, encoding: .utf8))
 
         XCTAssertTrue(xml.hasPrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
@@ -23,7 +23,7 @@ final class OPMLExportTests: XCTestCase {
     }
 
     func testEmitsRequiredOutlineAttributesPerSubscription() throws {
-        let sub = PodcastSubscription(
+        let sub = Podcast(
             feedURL: URL(string: "https://example.com/feed.xml")!,
             title: "Example Show"
         )
@@ -39,14 +39,14 @@ final class OPMLExportTests: XCTestCase {
     // MARK: - Round-trip with the importer
 
     func testExportThenImportPreservesSubscriptions() throws {
-        let originals: [PodcastSubscription] = [
-            .init(
+        let originals: [Podcast] = [
+            Podcast(
                 feedURL: URL(string: "https://example.com/tim.xml")!,
                 title: "Tim Ferriss",
                 description: "Long-form interviews",
                 language: "en"
             ),
-            .init(
+            Podcast(
                 feedURL: URL(string: "https://example.com/acq.xml")!,
                 title: "Acquired",
                 description: "Tech company histories",
@@ -54,7 +54,7 @@ final class OPMLExportTests: XCTestCase {
             ),
         ]
 
-        let data = OPMLExport().exportOPML(subscriptions: originals)
+        let data = OPMLExport().exportOPML(podcasts: originals)
         let imported = try OPMLImport().parseOPML(data: data)
 
         XCTAssertEqual(imported.count, 2)
@@ -67,7 +67,7 @@ final class OPMLExportTests: XCTestCase {
     // MARK: - Escaping
 
     func testEscapesXMLPredefinedEntitiesInAttributes() throws {
-        let sub = PodcastSubscription(
+        let sub = Podcast(
             feedURL: URL(string: "https://example.com/feed.xml?a=1&b=2")!,
             title: "AT&T <Tech>",
             description: "Quotes \" and ' apostrophes"
@@ -85,7 +85,7 @@ final class OPMLExportTests: XCTestCase {
     }
 
     func testFoldsNewlinesInsideAttributesToSpaces() throws {
-        let sub = PodcastSubscription(
+        let sub = Podcast(
             feedURL: URL(string: "https://example.com/feed.xml")!,
             title: "Show",
             description: "Line 1\nLine 2\rLine 3"
@@ -102,7 +102,7 @@ final class OPMLExportTests: XCTestCase {
     // MARK: - Conditional fields
 
     func testOmitsEmptyDescriptionAndLanguage() throws {
-        let sub = PodcastSubscription(
+        let sub = Podcast(
             feedURL: URL(string: "https://example.com/feed.xml")!,
             title: "Bare Show"
         )
@@ -118,7 +118,7 @@ final class OPMLExportTests: XCTestCase {
     func testIncludesDateCreatedHeader() throws {
         // RFC 822 format includes a four-letter weekday + full month name.
         let date = Date(timeIntervalSince1970: 1_700_000_000) // 2023-11-14T22:13:20Z
-        let data = OPMLExport().exportOPML(subscriptions: [], dateCreated: date)
+        let data = OPMLExport().exportOPML(podcasts: [], dateCreated: date)
         let xml = try XCTUnwrap(String(data: data, encoding: .utf8))
 
         XCTAssertTrue(xml.contains("<dateCreated>"))
@@ -127,8 +127,8 @@ final class OPMLExportTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func exportXML(_ subs: [PodcastSubscription]) -> String {
-        let data = OPMLExport().exportOPML(subscriptions: subs)
+    private func exportXML(_ subs: [Podcast]) -> String {
+        let data = OPMLExport().exportOPML(podcasts: subs)
         return String(data: data, encoding: .utf8) ?? ""
     }
 }

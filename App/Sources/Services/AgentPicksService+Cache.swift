@@ -40,7 +40,7 @@ extension AgentPicksService {
         let allowed = category.map { Set($0.subscriptionIDs) }
         let unplayed = store.state.episodes.filter { ep in
             guard !ep.played else { return false }
-            if let allowed { return allowed.contains(ep.subscriptionID) }
+            if let allowed { return allowed.contains(ep.podcastID) }
             return true
         }
         let newest = unplayed.map(\.pubDate).max() ?? .distantPast
@@ -74,11 +74,11 @@ extension AgentPicksService {
         let inProgress: [Episode]
         if let allowedSubs {
             unplayed = store.state.episodes
-                .filter { !$0.played && allowedSubs.contains($0.subscriptionID) }
+                .filter { !$0.played && allowedSubs.contains($0.podcastID) }
                 .sorted { $0.pubDate > $1.pubDate }
                 .prefix(Self.promptSubscriptionCap)
                 .map { $0 }
-            inProgress = store.inProgressEpisodes.filter { allowedSubs.contains($0.subscriptionID) }
+            inProgress = store.inProgressEpisodes.filter { allowedSubs.contains($0.podcastID) }
         } else {
             unplayed = store.recentEpisodes(limit: Self.promptSubscriptionCap)
             inProgress = store.inProgressEpisodes
@@ -96,7 +96,7 @@ extension AgentPicksService {
         )
         let topicNames = scopedTopics.prefix(3).map { $0.displayName }
         let lookup = Dictionary(
-            uniqueKeysWithValues: store.state.subscriptions.map { ($0.id, $0.title) }
+            uniqueKeysWithValues: store.state.podcasts.map { ($0.id, $0.title) }
         )
         return AgentPicksInputs(
             unplayed: unplayed,

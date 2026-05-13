@@ -84,12 +84,12 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
         return orderedEpisodeIDs.compactMap { episodeID -> EpisodeHit? in
             guard let entry = bestPerEpisode[episodeID],
                   let episode = store.episode(id: episodeID) else { return nil }
-            let subscription = store.state.subscriptions.first { $0.id == episode.subscriptionID }
+            let podcast = store.podcast(id: episode.podcastID)
             return EpisodeHit(
                 episodeID: episodeID.uuidString,
-                podcastID: episode.subscriptionID.uuidString,
+                podcastID: episode.podcastID.uuidString,
                 title: episode.title,
-                podcastTitle: subscription?.title ?? "",
+                podcastTitle: podcast?.title ?? "",
                 publishedAt: episode.pubDate,
                 durationSeconds: episode.duration.map { Int($0) },
                 snippet: String(entry.snippet.prefix(280)),

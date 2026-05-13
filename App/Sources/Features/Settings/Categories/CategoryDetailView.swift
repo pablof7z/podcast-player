@@ -80,21 +80,21 @@ struct CategoryDetailView: View {
 
     @ViewBuilder
     private func subscriptionsSection(_ category: PodcastCategory) -> some View {
-        let subs = subscriptions(in: category)
+        let pods = podcasts(in: category)
         Section {
-            if subs.isEmpty {
+            if pods.isEmpty {
                 Text("No subscriptions assigned yet.")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(subs) { sub in
+                ForEach(pods) { pod in
                     HStack(spacing: AppTheme.Spacing.sm) {
-                        Text(sub.title.isEmpty ? sub.feedURL.host ?? "Untitled" : sub.title)
+                        Text(pod.title.isEmpty ? (pod.feedURL?.host ?? "Untitled") : pod.title)
                             .font(AppTheme.Typography.body)
                             .lineLimit(1)
                         Spacer(minLength: 0)
-                        if !sub.author.isEmpty {
-                            Text(sub.author)
+                        if !pod.author.isEmpty {
+                            Text(pod.author)
                                 .font(AppTheme.Typography.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -103,7 +103,7 @@ struct CategoryDetailView: View {
                 }
             }
         } header: {
-            Text(subs.count == 1 ? "1 show" : "\(subs.count) shows")
+            Text(pods.count == 1 ? "1 show" : "\(pods.count) shows")
         }
     }
 
@@ -135,12 +135,12 @@ struct CategoryDetailView: View {
         store.state.categories.first(where: { $0.id == categoryID })?.name ?? "Category"
     }
 
-    /// Resolves `subscriptionIDs` to live subscription records, dropping
+    /// Resolves a category's podcast IDs to live `Podcast` rows, dropping
     /// entries the user may have unsubscribed from since the categorizer
     /// last ran. Sorted by title to match every other management surface.
-    private func subscriptions(in category: PodcastCategory) -> [PodcastSubscription] {
+    private func podcasts(in category: PodcastCategory) -> [Podcast] {
         category.subscriptionIDs
-            .compactMap { store.subscription(id: $0) }
+            .compactMap { store.podcast(id: $0) }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 }

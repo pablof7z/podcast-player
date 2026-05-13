@@ -270,7 +270,7 @@ struct StorageSettingsView: View {
 
         // Pre-build lookup tables.
         let episodes = Dictionary(uniqueKeysWithValues: store.state.episodes.map { ($0.id, $0) })
-        let subscriptions = Dictionary(uniqueKeysWithValues: store.state.subscriptions.map { ($0.id, $0) })
+        let podcasts = Dictionary(uniqueKeysWithValues: store.state.podcasts.map { ($0.id, $0) })
 
         var byShow: [UUID: (title: String, bytes: Int64, episodes: Set<UUID>)] = [:]
         var orphanBytes: Int64 = 0
@@ -284,14 +284,14 @@ struct StorageSettingsView: View {
                 orphanFiles.insert(file.url)
                 continue
             }
-            let title = subscriptions[episode.subscriptionID]?.title ?? "Unknown show"
-            var entry = byShow[episode.subscriptionID] ?? (title, 0, [])
+            let title = podcasts[episode.podcastID]?.title ?? "Unknown show"
+            var entry = byShow[episode.podcastID] ?? (title, 0, [])
             entry.bytes += file.bytes
             entry.episodes.insert(episodeID)
             // Title may have arrived stable from the first file; refresh anyway
             // in case the first file we hit was an orphan-titled fallback.
             entry.title = title
-            byShow[episode.subscriptionID] = entry
+            byShow[episode.podcastID] = entry
         }
 
         let shows = byShow

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Parses an OPML 2.0 subscription list into seeded `PodcastSubscription`
-/// records ready for first refresh.
+/// Parses an OPML 2.0 subscription list into seeded `Podcast` records
+/// ready for first refresh.
 ///
 /// The OPML returned by Apple Podcasts, Pocket Casts, Overcast, Castro etc.
 /// shares a common skeleton:
@@ -49,7 +49,7 @@ struct OPMLImport: Sendable {
     /// skipped (they are typically grouping folders). Order is preserved as
     /// emitted by the source app, so the Library import sheet can render the
     /// list as the user already knows it.
-    func parseOPML(data: Data) throws -> [PodcastSubscription] {
+    func parseOPML(data: Data) throws -> [Podcast] {
         let delegate = OPMLImportDelegate()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
@@ -59,12 +59,12 @@ struct OPMLImport: Sendable {
             let underlying = parser.parserError?.localizedDescription ?? "unknown XMLParser error"
             throw OPMLError.malformedXML(underlying: underlying)
         }
-        return delegate.subscriptions
+        return delegate.podcasts
     }
 }
 
 private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
-    var subscriptions: [PodcastSubscription] = []
+    var podcasts: [Podcast] = []
     private var seenFeedURLs: Set<URL> = []
 
     func parser(
@@ -91,17 +91,13 @@ private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
         let description = attributeDict["description"] ?? ""
         let language = attributeDict["language"]
 
-        let subscription = PodcastSubscription(
+        let podcast = Podcast(
+            kind: .rss,
             feedURL: feedURL,
             title: title,
-            author: "",
-            imageURL: nil,
             description: description,
-            language: language,
-            categories: [],
-            subscribedAt: Date(),
-            lastRefreshedAt: nil
+            language: language
         )
-        subscriptions.append(subscription)
+        podcasts.append(podcast)
     }
 }

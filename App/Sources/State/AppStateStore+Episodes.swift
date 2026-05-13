@@ -21,13 +21,13 @@ extension AppStateStore {
         return found
     }
 
-    /// Episodes belonging to the given subscription, newest publish-date first.
+    /// Episodes belonging to the given podcast, newest publish-date first.
     ///
     /// O(1) lookup against `episodeIndexesByShow` plus an O(K) position-cache fold
     /// (K = pending position writes, typically ≤ 1). Was O(N) filter + O(N
     /// log N) sort, called from `ShowDetailView`'s body for every render —
     /// 2,853 episodes for "The Daily" alone.
-    func episodes(forSubscription id: UUID) -> [Episode] {
+    func episodes(forPodcast id: UUID) -> [Episode] {
         episodesForShowView(id)
     }
 
@@ -66,14 +66,14 @@ extension AppStateStore {
     @discardableResult
     func upsertEpisodes(
         _ incoming: [Episode],
-        forSubscription subscriptionID: UUID,
+        forPodcast podcastID: UUID,
         evaluateAutoDownload: Bool = false
     ) -> [UUID] {
         guard !incoming.isEmpty else { return [] }
         var updated = state.episodes
         let existingByGUID = Dictionary(
             updated.enumerated()
-                .filter { $0.element.subscriptionID == subscriptionID }
+                .filter { $0.element.podcastID == podcastID }
                 .map { ($0.element.guid, $0.offset) },
             uniquingKeysWith: { first, _ in first }
         )
@@ -112,7 +112,7 @@ extension AppStateStore {
             // local-file fallback all see the same `appStore`. Idempotent.
             EpisodeDownloadService.shared.attach(appStore: self)
             EpisodeDownloadService.shared.evaluateAutoDownload(
-                forSubscription: subscriptionID,
+                forPodcast: podcastID,
                 newEpisodeIDs: newlyInserted
             )
             // Fire publisher-transcript ingestion for the new IDs so we
@@ -230,28 +230,26 @@ extension AppStateStore {
         }
     }
 
-    /// Upserts an external episode played without a subscription.
+    /// Upserts a single episode attached to a known podcast. Used by the
+    /// agent's `play_external_episode` path. Re-entrant: replaying the
+    /// same audio URL under the same podcast returns the existing record
+    /// with its persisted `playbackPosition` intact. `imageURL` and
+    /// `duration` are refreshed when they change.
     ///
-    /// Uses `Episode.externalSubscriptionID` as the sentinel — no
-    /// `PodcastSubscription` record is created. `store.subscription(id:)`
-    /// returns `nil` for this sentinel, which is the correct signal everywhere
-    /// in the app that no subscription exists.
-    ///
-    /// Re-entrant: if the same audio URL is played again the existing episode
-    /// is returned with its persisted `playbackPosition` intact. `imageURL`
-    /// and `duration` are refreshed when they change.
+    /// The caller is responsible for ensuring `podcastID` references an
+    /// existing `Podcast` row (use `upsertPodcast` or `Podcast.unknownID`
+    /// when no feed metadata is available).
     @discardableResult
-    func upsertExternalEpisode(
+    func upsertEpisode(
+        podcastID: UUID,
         audioURL: URL,
         title: String,
-        podcastTitle: String?,
         imageURL: URL?,
         duration: TimeInterval?
     ) -> Episode {
-        let subscriptionID = Episode.externalSubscriptionID
         let guid = audioURL.absoluteString
         if let idx = state.episodes.firstIndex(where: {
-            $0.subscriptionID == subscriptionID && $0.guid == guid
+            $0.podcastID == podcastID && $0.guid == guid
         }) {
             var updated = state.episodes[idx]
             var changed = false
@@ -261,7 +259,7 @@ extension AppStateStore {
             return state.episodes[idx]
         }
         let episode = Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: title,
             pubDate: Date(),
@@ -273,11 +271,10 @@ extension AppStateStore {
             state.episodes.append(episode)
             invalidateEpisodeProjections()
         }
-        // Trigger the same downstream pipeline that fires for RSS-sourced
-        // episodes: transcript ingest (gated by user settings) → chapters
-        // → AI compilation → RAG indexing. Auto-download is skipped since
-        // the episode is already streaming; the subscription's .off policy
-        // would no-op anyway.
+        // Trigger transcript ingest for the new episode. Auto-download is
+        // skipped since the episode is already streaming; for podcasts the
+        // user follows the next feed refresh will surface it via the normal
+        // pipeline anyway.
         TranscriptIngestService.shared.evaluateAutoIngest(
             newEpisodeIDs: [episode.id]
         )

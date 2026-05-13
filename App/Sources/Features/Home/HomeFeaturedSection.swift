@@ -117,7 +117,7 @@ struct HomeFeaturedSection: View {
                     HomeAgentPickCard(
                         pick: hero,
                         episode: episode,
-                        subscription: store.subscription(id: episode.subscriptionID),
+                        podcast: store.podcast(id: episode.podcastID),
                         isHero: true,
                         onPlay: { onPlayEpisode(episode) }
                     )
@@ -131,7 +131,7 @@ struct HomeFeaturedSection: View {
                         HomeAgentPickCard(
                             pick: pick,
                             episode: episode,
-                            subscription: store.subscription(id: episode.subscriptionID),
+                            podcast: store.podcast(id: episode.podcastID),
                             isHero: false,
                             onPlay: { onPlayEpisode(episode) }
                         )

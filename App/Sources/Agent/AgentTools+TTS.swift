@@ -62,12 +62,27 @@ extension AgentTools {
             }
         }
 
+        // Build the generation source so the player can link back to the
+        // originating conversation (Nostr peer or in-app chat).
+        let generationSource: Episode.GenerationSource?
+        if let ctx = deps.peerContext {
+            generationSource = .nostr(
+                rootEventID: ctx.rootEventID,
+                peerPubkeyHex: ctx.peerPubkeyHex
+            )
+        } else if let convID = deps.chatConversationID {
+            generationSource = .inAppChat(conversationID: convID)
+        } else {
+            generationSource = nil
+        }
+
         do {
             let result = try await deps.ttsPublisher.generateAndPublish(
                 title: title,
                 description: description,
                 turns: turns,
-                playNow: playNow
+                playNow: playNow,
+                generationSource: generationSource
             )
             var payload: [String: Any] = [
                 "episode_id": result.episodeID,

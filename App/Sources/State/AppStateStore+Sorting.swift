@@ -1,37 +1,41 @@
 import Foundation
 
-// MARK: - Subscription sorting (recency)
+// MARK: - Followed-podcast sorting (recency)
 
 extension AppStateStore {
 
-    /// Subscriptions sorted by their most-recent-episode `pubDate`, descending.
+    /// Podcasts the user follows, sorted by their most-recent-episode
+    /// `pubDate`, descending.
     ///
     /// Designed for the merged Home subscription list — the user wants to see
     /// the feed that just published an episode at the top, not the one whose
-    /// title happens to start with "A". Subscriptions with no known episode
-    /// yet (fresh import, before the first feed fetch) sink to the bottom and
-    /// fall back to alphabetical order so the list never collapses to a
-    /// random arrangement.
+    /// title happens to start with "A". Followed podcasts with no known
+    /// episode yet (fresh import, before the first feed fetch) sink to the
+    /// bottom and fall back to alphabetical order so the list never
+    /// collapses to a random arrangement.
     ///
-    /// O(N log N) on the subscription count. Per-show recency is read from
-    /// the precomputed `episodeIndexesByShow` projection — `.first` of that
-    /// array is the newest-pubDate episode index, so the recency lookup is
-    /// O(1) per show. We do NOT walk `state.episodes` here; the projection
-    /// is the source of truth that keeps `LibraryGridCell`'s body O(1) too.
-    var sortedSubscriptionsByRecency: [PodcastSubscription] {
-        let subs = state.subscriptions.filter { !$0.isAgentGenerated }
+    /// O(N log N) on the followed-podcast count. Per-show recency is read
+    /// from the precomputed `episodeIndexesByShow` projection — `.first` of
+    /// that array is the newest-pubDate episode index, so the recency
+    /// lookup is O(1) per podcast.
+    ///
+    /// Synthetic podcasts (Agent Generated, Unknown) are excluded by virtue
+    /// of having no `PodcastSubscription` row in the new model — they're
+    /// `Podcast`-only and never appear in the user's subscription list.
+    var sortedFollowedPodcastsByRecency: [Podcast] {
+        let podcastByID = Dictionary(uniqueKeysWithValues: state.podcasts.map { ($0.id, $0) })
+        let followed = state.subscriptions.compactMap { podcastByID[$0.podcastID] }
+            .filter { $0.kind == .rss }
         let episodes = state.episodes
-        // Memoize the recency-date lookup so the comparator is O(1) per
-        // comparison instead of re-resolving the projection inside the sort.
         var lookup: [UUID: Date] = [:]
-        lookup.reserveCapacity(subs.count)
-        for sub in subs {
-            if let firstIdx = episodeIndexesByShow[sub.id]?.first,
+        lookup.reserveCapacity(followed.count)
+        for podcast in followed {
+            if let firstIdx = episodeIndexesByShow[podcast.id]?.first,
                episodes.indices.contains(firstIdx) {
-                lookup[sub.id] = episodes[firstIdx].pubDate
+                lookup[podcast.id] = episodes[firstIdx].pubDate
             }
         }
-        return subs.sorted { lhs, rhs in
+        return followed.sorted { lhs, rhs in
             switch (lookup[lhs.id], lookup[rhs.id]) {
             case let (l?, r?):
                 if l == r {
@@ -48,12 +52,10 @@ extension AppStateStore {
         }
     }
 
-    /// Most-recent episode for `subscriptionID`, or `nil` when the show has
-    /// no episodes yet. Mirrors the recency lookup used by
-    /// `sortedSubscriptionsByRecency` so the row preview and the row's sort
-    /// key always agree.
-    func mostRecentEpisode(forSubscription subscriptionID: UUID) -> Episode? {
-        guard let firstIdx = episodeIndexesByShow[subscriptionID]?.first,
+    /// Most-recent episode for the given `podcastID`, or `nil` when the
+    /// podcast has no episodes yet.
+    func mostRecentEpisode(forPodcast podcastID: UUID) -> Episode? {
+        guard let firstIdx = episodeIndexesByShow[podcastID]?.first,
               state.episodes.indices.contains(firstIdx) else { return nil }
         return state.episodes[firstIdx]
     }

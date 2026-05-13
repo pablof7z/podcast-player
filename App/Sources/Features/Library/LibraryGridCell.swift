@@ -9,20 +9,20 @@ import SwiftUI
 /// allowed surface, and the brief reserves it for the chrome (filter rail,
 /// search bar).
 ///
-/// Artwork is loaded asynchronously from `subscription.imageURL`; while the
+/// Artwork is loaded asynchronously from `podcast.imageURL`; while the
 /// image is in-flight (or absent) we render a tinted SF Symbol stand-in keyed
-/// to `subscription.accentColor`.
+/// to `podcast.accentColor`.
 struct LibraryGridCell: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let unplayedCount: Int
     let category: PodcastCategory?
 
     init(
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         unplayedCount: Int,
         category: PodcastCategory? = nil
     ) {
-        self.subscription = subscription
+        self.podcast = podcast
         self.unplayedCount = unplayedCount
         self.category = category
     }
@@ -32,14 +32,14 @@ struct LibraryGridCell: View {
             artworkTile
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(subscription.title)
+                Text(podcast.title)
                     .font(AppTheme.Typography.headline)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
-                if !subscription.author.isEmpty {
-                    Text(subscription.author)
+                if !podcast.author.isEmpty {
+                    Text(podcast.author)
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -62,8 +62,8 @@ struct LibraryGridCell: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        subscription.accentColor.opacity(0.95),
-                        subscription.accentColor.opacity(0.55)
+                        podcast.accentColor.opacity(0.95),
+                        podcast.accentColor.opacity(0.55)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -77,7 +77,7 @@ struct LibraryGridCell: View {
 
     @ViewBuilder
     private var artworkOverlay: some View {
-        if let url = subscription.imageURL {
+        if let url = podcast.imageURL {
             CachedAsyncImage(url: url, targetSize: CGSize(width: 150, height: 150)) { phase in
                 switch phase {
                 case .success(let image):
@@ -94,7 +94,7 @@ struct LibraryGridCell: View {
     }
 
     private var symbolPlaceholder: some View {
-        Image(systemName: subscription.artworkSymbol)
+        Image(systemName: podcast.artworkSymbol)
             .font(.system(size: 44, weight: .light))
             .foregroundStyle(.white.opacity(0.92))
             .accessibilityHidden(true)
@@ -112,8 +112,8 @@ struct LibraryGridCell: View {
     }
 
     private var accessibilityLabel: String {
-        var parts = [subscription.title]
-        if !subscription.author.isEmpty { parts.append(subscription.author) }
+        var parts = [podcast.title]
+        if !podcast.author.isEmpty { parts.append(podcast.author) }
         if let category { parts.append(category.name) }
         if unplayedCount > 0 { parts.append("\(unplayedCount) unplayed") }
         return parts.joined(separator: ", ")

@@ -140,7 +140,7 @@ final class AutoSnipController {
 
         let clip = store.addClip(
             episodeID: episode.id,
-            subscriptionID: episode.subscriptionID,
+            subscriptionID: episode.podcastID,
             startMs: startMs,
             endMs: endMs,
             transcriptText: text,

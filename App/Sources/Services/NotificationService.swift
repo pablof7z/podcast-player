@@ -93,11 +93,11 @@ enum NotificationService {
     /// `AppDelegate` tap handler can deep-link straight into the right detail
     /// view.
     ///
-    /// The caller is expected to filter by `subscription.notificationsEnabled`
+    /// The caller is expected to filter by the user's subscription state
     /// and to compute the actual delta — this function trusts both invariants.
     static func notifyNewEpisodes(
         _ newEpisodes: [Episode],
-        subscription: PodcastSubscription
+        podcast: Podcast
     ) async {
         guard !newEpisodes.isEmpty else { return }
         let granted = await requestAuthorization()
@@ -109,13 +109,13 @@ enum NotificationService {
         for episode in capped {
             let id = "\(Content.newEpisodeIDPrefix)\(episode.id.uuidString)"
             let content = UNMutableNotificationContent()
-            content.title = subscription.title
+            content.title = podcast.title
             content.body = "New episode: \(episode.title)"
             content.sound = .default
             content.userInfo = [Self.episodeIDUserInfoKey: episode.id.uuidString]
-            // Threading by subscription so iOS groups multiple new-episode
-            // banners from the same show into one stack on the lock screen.
-            content.threadIdentifier = "subscription:\(subscription.id.uuidString)"
+            // Threading by podcast so iOS groups multiple new-episode banners
+            // from the same show into one stack on the lock screen.
+            content.threadIdentifier = "podcast:\(podcast.id.uuidString)"
 
             let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
             do {

@@ -14,7 +14,7 @@ import SwiftUI
 struct ClipShareSheet: View {
     let clip: Clip
     let episode: Episode
-    let subscription: PodcastSubscription
+    let podcast: Podcast
 
     @State private var style: ClipExporter.SubtitleStyle = .editorial
     @State private var aspect: ClipVideo.Aspect = .square
@@ -55,7 +55,7 @@ struct ClipShareSheet: View {
 
     private var preview: some View {
         ClipImageCardView(
-            showName: subscription.title,
+            showName: podcast.title,
             episodeTitle: episode.title,
             artwork: nil,  // Live preview skips network fetch — exporter loads.
             pullQuote: clip.transcriptText,
@@ -235,7 +235,7 @@ struct ClipShareSheet: View {
             let url = try await ClipExporter.shared.exportImage(
                 clip,
                 episode: episode,
-                subscription: subscription,
+                podcast: podcast,
                 theme: style
             )
             imageURL = url
@@ -252,7 +252,7 @@ struct ClipShareSheet: View {
             let url = try await ClipExporter.shared.exportAudio(
                 clip,
                 episode: episode,
-                subscription: subscription
+                podcast: podcast
             )
             audioURL = url
         } catch ClipExporter.ExportError.audioUnavailable {
@@ -270,22 +270,24 @@ struct ClipShareSheet: View {
 // MARK: - Preview
 
 #Preview {
-    ClipShareSheet(
+    let podcastID = UUID()
+    return ClipShareSheet(
         clip: Clip(
             episodeID: UUID(),
-            subscriptionID: UUID(),
+            subscriptionID: podcastID,
             startMs: 14 * 60_000 + 31_000,
             endMs: 14 * 60_000 + 58_000,
             transcriptText: "Metabolic flexibility isn't a diet — it's a property of the mitochondria."
         ),
         episode: Episode(
-            subscriptionID: UUID(),
+            podcastID: podcastID,
             guid: "preview",
             title: "How to Think About Keto",
             pubDate: Date(),
             enclosureURL: URL(string: "https://example.com/x.mp3")!
         ),
-        subscription: PodcastSubscription(
+        podcast: Podcast(
+            id: podcastID,
             feedURL: URL(string: "https://example.com/feed")!,
             title: "The Tim Ferriss Show"
         )

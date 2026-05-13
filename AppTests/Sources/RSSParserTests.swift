@@ -69,13 +69,13 @@ final class RSSParserTests: XCTestCase {
             feedURL: URL(string: "https://example.com/feed.xml")!
         )
 
-        XCTAssertEqual(result.subscription.title, "Example Show")
-        XCTAssertEqual(result.subscription.author, "Test Author")
-        XCTAssertEqual(result.subscription.language, "en-US")
-        XCTAssertEqual(result.subscription.description, "A test feed.")
-        XCTAssertEqual(result.subscription.imageURL?.absoluteString, "https://example.com/cover.jpg")
-        XCTAssertEqual(result.subscription.categories, ["Technology", "News"])
-        XCTAssertEqual(result.subscription.feedURL.absoluteString, "https://example.com/feed.xml")
+        XCTAssertEqual(result.podcast.title, "Example Show")
+        XCTAssertEqual(result.podcast.author, "Test Author")
+        XCTAssertEqual(result.podcast.language, "en-US")
+        XCTAssertEqual(result.podcast.description, "A test feed.")
+        XCTAssertEqual(result.podcast.imageURL?.absoluteString, "https://example.com/cover.jpg")
+        XCTAssertEqual(result.podcast.categories, ["Technology", "News"])
+        XCTAssertEqual(result.podcast.feedURL?.absoluteString, "https://example.com/feed.xml")
     }
 
     func testParsesEpisodeBaseFields() throws {
@@ -182,7 +182,7 @@ final class RSSParserTests: XCTestCase {
         let result2 = try parser.parse(
             data: data,
             feedURL: URL(string: "https://example.com/feed.xml")!,
-            subscriptionID: result.subscription.id
+            podcastID: result.podcast.id
         )
         XCTAssertEqual(result2.episodes[1].guid, ep2.guid)
     }
@@ -194,11 +194,11 @@ final class RSSParserTests: XCTestCase {
         let result = try parser.parse(
             data: data,
             feedURL: URL(string: "https://example.com/feed.xml")!,
-            subscriptionID: subscriptionID
+            podcastID: subscriptionID
         )
-        XCTAssertEqual(result.subscription.id, subscriptionID)
+        XCTAssertEqual(result.podcast.id, subscriptionID)
         for episode in result.episodes {
-            XCTAssertEqual(episode.subscriptionID, subscriptionID)
+            XCTAssertEqual(episode.podcastID, subscriptionID)
         }
     }
 
@@ -224,9 +224,9 @@ final class RSSParserTests: XCTestCase {
             data: data,
             feedURL: URL(string: "https://example.com/feed.xml")!
         )
-        let original = result.subscription
+        let original = result.podcast
         let encoded = try JSONEncoder().encode(original)
-        let decoded = try JSONDecoder().decode(PodcastSubscription.self, from: encoded)
+        let decoded = try JSONDecoder().decode(Podcast.self, from: encoded)
         XCTAssertEqual(decoded, original)
     }
 
@@ -234,13 +234,13 @@ final class RSSParserTests: XCTestCase {
 
     func testOPMLExportThenImportRoundTrip() throws {
         let original = [
-            PodcastSubscription(
+            Podcast(
                 feedURL: URL(string: "https://feeds.example.com/show1.rss")!,
                 title: "Show One",
                 description: "First show",
                 language: "en-US"
             ),
-            PodcastSubscription(
+            Podcast(
                 feedURL: URL(string: "https://feeds.example.com/show2.rss")!,
                 title: "Show Two & More",  // exercise XML escaping
                 description: "Second show",
@@ -248,7 +248,7 @@ final class RSSParserTests: XCTestCase {
             ),
         ]
 
-        let bytes = OPMLExport().exportOPML(subscriptions: original)
+        let bytes = OPMLExport().exportOPML(podcasts: original)
         let xml = String(data: bytes, encoding: .utf8) ?? ""
         XCTAssertTrue(xml.contains("<opml version=\"2.0\">"))
         XCTAssertTrue(xml.contains("Show One"))

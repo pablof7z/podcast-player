@@ -165,7 +165,7 @@ final class PlaybackQueueTests: XCTestCase {
     private func makeEpisode(id: UUID = UUID(), guid: String = UUID().uuidString) -> Episode {
         Episode(
             id: id,
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: guid,
             title: "Episode \(guid)",
             pubDate: Date(),

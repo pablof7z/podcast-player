@@ -35,7 +35,7 @@ final class RSSParserURLResolutionTests: XCTestCase {
         let episode = try XCTUnwrap(result.episodes.first)
         let person = try XCTUnwrap(episode.persons?.first)
 
-        XCTAssertEqual(result.subscription.imageURL?.absoluteString, "https://feeds.example.com/art/cover.jpg")
+        XCTAssertEqual(result.podcast.imageURL?.absoluteString, "https://feeds.example.com/art/cover.jpg")
         XCTAssertEqual(episode.enclosureURL.absoluteString, "https://media.example.net/audio/episode.mp3")
         XCTAssertEqual(episode.imageURL?.absoluteString, "https://feeds.example.com/podcasts/show/images/episode.jpg")
         XCTAssertEqual(episode.publisherTranscriptURL?.absoluteString, "https://feeds.example.com/podcasts/transcripts/episode.vtt")

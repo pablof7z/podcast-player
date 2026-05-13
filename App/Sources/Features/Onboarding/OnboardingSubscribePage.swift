@@ -20,7 +20,7 @@ struct OnboardingSubscribePage: View {
     /// button). Failures stay inline; the page does NOT auto-navigate on
     /// success — the user needs to see the row flip to a checkmark first,
     /// otherwise the tap reads as a no-op.
-    var onSubscribed: (PodcastSubscription) -> Void
+    var onSubscribed: (Podcast) -> Void
 
     /// Curated, vendor-agnostic starter shows. Every URL points at a public
     /// RSS feed that has reliably hosted episodes for years; the goal is to
@@ -220,7 +220,7 @@ struct OnboardingSubscribePage: View {
             // future regression starts losing writes, we'd rather log than
             // silently flip the checkmark.
             if let url = URL(string: suggestion.feed),
-               store.subscription(feedURL: url) == nil {
+               store.podcast(feedURL: url) == nil {
                 Self.logger.error(
                     "Subscription \(suggestion.title, privacy: .public) reported success but was not found in store after add"
                 )
@@ -269,8 +269,9 @@ struct OnboardingSubscribePage: View {
     }
 
     private func isAlreadySubscribed(to suggestion: Suggestion) -> Bool {
-        guard let url = URL(string: suggestion.feed) else { return false }
-        return store.subscription(feedURL: url) != nil
+        guard let url = URL(string: suggestion.feed),
+              let podcast = store.podcast(feedURL: url) else { return false }
+        return store.subscription(podcastID: podcast.id) != nil
     }
 }
 

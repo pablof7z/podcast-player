@@ -10,7 +10,7 @@ import SwiftUI
 
 struct HomeCategoryCard: View {
     let category: PodcastCategory
-    let subscriptions: [PodcastSubscription]
+    let subscriptions: [Podcast]
     let unplayedTotal: Int
     let isSelected: Bool
     let onTap: () -> Void
@@ -43,7 +43,7 @@ struct HomeCategoryCard: View {
         }
     }
 
-    private func subscriptionThumbnail(_ sub: PodcastSubscription) -> some View {
+    private func subscriptionThumbnail(_ sub: Podcast) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
                 .fill(LinearGradient(
@@ -68,7 +68,7 @@ struct HomeCategoryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 
-    private func placeholderIcon(_ sub: PodcastSubscription) -> some View {
+    private func placeholderIcon(_ sub: Podcast) -> some View {
         Image(systemName: sub.artworkSymbol)
             .font(.system(size: 14, weight: .light))
             .foregroundStyle(.white.opacity(0.9))

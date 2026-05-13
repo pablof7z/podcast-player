@@ -34,13 +34,13 @@ struct PlayerView: View {
     /// `AppStateStore`. Mirrors the pattern used by `EpisodeRow`.
     @State private var downloadService = EpisodeDownloadService.shared
 
-    private var subscription: PodcastSubscription? {
-        guard let subID = state.episode?.subscriptionID else { return nil }
-        return store.subscription(id: subID)
+    private var podcast: Podcast? {
+        guard let podID = state.episode?.podcastID else { return nil }
+        return store.podcast(id: podID)
     }
 
     private var showName: String {
-        subscription?.title ?? ""
+        podcast?.title ?? ""
     }
 
     /// Roughly the height of the hero artwork (110 pt) + a bit of padding —
@@ -121,7 +121,7 @@ struct PlayerView: View {
     private var topBar: some View {
         PlayerTopBar(
             state: state,
-            subscription: subscription,
+            podcast: podcast,
             showName: showName,
             artworkURL: artworkURL,
             titleCollapsed: titleCollapsed,
@@ -174,6 +174,7 @@ struct PlayerView: View {
                             .foregroundStyle(.tertiary)
                     }
                     downloadBadge
+                    generationSourceChip
                 }
             }
         }
@@ -264,6 +265,17 @@ struct PlayerView: View {
                 episode: resolved,
                 liveProgress: downloadService.progress[id]
             )
+        }
+    }
+
+    // MARK: - Generation source chip
+
+    @ViewBuilder
+    private var generationSourceChip: some View {
+        let resolved = state.episode.flatMap { store.episode(id: $0.id) } ?? state.episode
+        if let source = resolved?.generationSource {
+            PlayerGenerationSourceChip(source: source)
+                .animation(.easeInOut(duration: 0.25), value: true)
         }
     }
 

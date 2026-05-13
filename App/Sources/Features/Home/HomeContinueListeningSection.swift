@@ -44,7 +44,7 @@ struct HomeContinueListeningSection: View {
             ForEach(episodes.prefix(3)) { ep in
                 ContinueListeningRow(
                     episode: ep,
-                    subscription: store.subscription(id: ep.subscriptionID),
+                    podcast: store.podcast(id: ep.podcastID),
                     onPlay: { onPlay(ep) }
                 )
                 .padding(.horizontal, AppTheme.Spacing.md)
@@ -65,7 +65,7 @@ struct HomeContinueListeningSection: View {
 
 struct ContinueListeningRow: View {
     let episode: Episode
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let onPlay: () -> Void
 
     var body: some View {
@@ -87,7 +87,7 @@ struct ContinueListeningRow: View {
     // MARK: Subviews
 
     private var artworkURL: URL? {
-        episode.imageURL ?? subscription?.imageURL
+        episode.imageURL ?? podcast?.imageURL
     }
 
     private var artwork: some View {
@@ -134,7 +134,7 @@ struct ContinueListeningRow: View {
 
     private var meta: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if let showName = subscription?.title, !showName.isEmpty {
+            if let showName = podcast?.title, !showName.isEmpty {
                 Text(showName)
                     .font(AppTheme.Typography.caption2)
                     .foregroundStyle(.secondary)
@@ -177,7 +177,7 @@ struct ContinueListeningRow: View {
 
     private var accessibilityLabel: String {
         var parts: [String] = []
-        if let s = subscription?.title, !s.isEmpty { parts.append(s) }
+        if let s = podcast?.title, !s.isEmpty { parts.append(s) }
         parts.append(episode.title)
         parts.append(remainingLabel)
         return parts.joined(separator: ", ")

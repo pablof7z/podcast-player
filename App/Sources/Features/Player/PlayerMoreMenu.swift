@@ -16,7 +16,7 @@ import UIKit
 struct PlayerMoreMenu: View {
 
     let episode: Episode
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let onMarkPlayed: () -> Void
     let onMarkUnplayed: () -> Void
     let onDismissPlayer: () -> Void
@@ -65,10 +65,10 @@ struct PlayerMoreMenu: View {
                 Label("Go to episode", systemImage: "doc.text")
             }
 
-            if let subscription {
+            if let podcast {
                 Button {
                     Haptics.selection()
-                    openShow(subscription)
+                    openShow(podcast)
                 } label: {
                     Label("Go to show", systemImage: "rectangle.stack")
                 }
@@ -87,7 +87,7 @@ struct PlayerMoreMenu: View {
                 )
             }
 
-            if let feedURL = subscription?.feedURL {
+            if let feedURL = podcast?.feedURL {
                 Button {
                     Haptics.light()
                     UIApplication.shared.open(feedURL)
@@ -130,8 +130,8 @@ struct PlayerMoreMenu: View {
         }
     }
 
-    private func openShow(_ subscription: PodcastSubscription) {
-        guard let url = URL(string: "podcastr://subscription/\(subscription.id.uuidString)") else { return }
+    private func openShow(_ podcast: Podcast) {
+        guard let url = URL(string: "podcastr://subscription/\(podcast.id.uuidString)") else { return }
         onDismissPlayer()
         DispatchQueue.main.async {
             UIApplication.shared.open(url)

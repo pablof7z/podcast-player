@@ -6,19 +6,19 @@ import SwiftUI
 /// list, recency-sorted, honouring the active LibraryFilter + category filter
 /// the parent owns.
 struct HomeSubscriptionListSection: View {
-    let subscriptions: [PodcastSubscription]
+    let podcasts: [Podcast]
     let now: Date
-    let onRequestUnsubscribe: (PodcastSubscription) -> Void
+    let onRequestUnsubscribe: (Podcast) -> Void
 
     @Environment(AppStateStore.self) private var store
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(subscriptions) { sub in
+            ForEach(podcasts) { sub in
                 HomeSubscriptionRow(
-                    subscription: sub,
-                    mostRecentEpisode: store.mostRecentEpisode(forSubscription: sub.id),
-                    unplayedCount: store.unplayedCount(forSubscription: sub.id),
+                    podcast: sub,
+                    mostRecentEpisode: store.mostRecentEpisode(forPodcast: sub.id),
+                    unplayedCount: store.unplayedCount(forPodcast: sub.id),
                     now: now,
                     onRequestUnsubscribe: { onRequestUnsubscribe(sub) }
                 )

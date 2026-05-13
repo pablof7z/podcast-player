@@ -32,7 +32,7 @@ struct RSSItemAccumulator {
 
     /// Returns `nil` when the item lacks an `<enclosure>` URL — common in
     /// hybrid blog/podcast feeds and not playable.
-    func makeEpisode(subscriptionID: UUID) -> Episode? {
+    func makeEpisode(podcastID: UUID) -> Episode? {
         guard let enclosureURL else { return nil }
 
         let resolvedGUID: String = {
@@ -47,7 +47,7 @@ struct RSSItemAccumulator {
             ?? Self.fallbackPubDate
 
         return Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: resolvedGUID,
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             description: description,

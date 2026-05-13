@@ -76,8 +76,12 @@ final class PodcastCategorizationService {
         // Settings sheet, which gates its own UI on `isRunning`; future
         // callers must check `isRunning` themselves before calling.
         guard !isRunning else { return }
-        let subscriptions = store.state.subscriptions
-        guard !subscriptions.isEmpty else {
+        // Categorize only podcasts the user actively follows — synthetic
+        // (Agent Generated, Unknown) and orphan single-episode podcasts
+        // should never end up in the user's category taxonomy.
+        let followedPodcastIDs = Set(store.state.subscriptions.map(\.podcastID))
+        let podcasts = store.state.podcasts.filter { followedPodcastIDs.contains($0.id) && $0.kind == .rss }
+        guard !podcasts.isEmpty else {
             throw CategorizationError.noSubscriptions
         }
         let modelReference = LLMModelReference(storedID: store.state.settings.categorizationModel)
@@ -100,7 +104,7 @@ final class PodcastCategorizationService {
         }
 
         let requestedModel = modelReference.storedID
-        Self.logger.info("recompute starting subs=\(subscriptions.count, privacy: .public) model=\(requestedModel, privacy: .public)")
+        Self.logger.info("recompute starting subs=\(podcasts.count, privacy: .public) model=\(requestedModel, privacy: .public)")
 
         isRunning = true
         defer { isRunning = false }
@@ -111,14 +115,14 @@ final class PodcastCategorizationService {
         )
         let rawContent = try await client.compile(
             systemPrompt: PodcastCategorizationPrompt.systemPrompt(),
-            userPrompt: PodcastCategorizationPrompt.userPrompt(subscriptions: subscriptions),
+            userPrompt: PodcastCategorizationPrompt.userPrompt(podcasts: podcasts),
             feature: CostFeature.categorizationRecompute
         )
 
         let generatedAt = Date()
         let categories = try PodcastCategorizationParser.categories(
             from: rawContent,
-            subscriptions: subscriptions,
+            podcasts: podcasts,
             generatedAt: generatedAt,
             model: requestedModel
         )

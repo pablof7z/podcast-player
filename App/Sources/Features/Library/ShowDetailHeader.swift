@@ -11,7 +11,7 @@ import SwiftUI
 ///
 /// **Glass:** none. The header is a matte editorial surface.
 struct ShowDetailHeader: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let episodeCount: Int
 
     private static let artworkSize: CGFloat = 116
@@ -21,19 +21,19 @@ struct ShowDetailHeader: View {
             artwork
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text(subscription.title)
+                Text(podcast.title)
                     .font(AppTheme.Typography.title)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !subscription.author.isEmpty {
-                    Text(subscription.author)
+                if !podcast.author.isEmpty {
+                    Text(podcast.author)
                         .font(AppTheme.Typography.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
-                let body = EpisodeShowNotesFormatter.plainText(from: subscription.description)
+                let body = EpisodeShowNotesFormatter.plainText(from: podcast.description)
                 if !body.isEmpty {
                     Text(body)
                         .font(AppTheme.Typography.caption)
@@ -60,8 +60,8 @@ struct ShowDetailHeader: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        subscription.accentColor.opacity(0.95),
-                        subscription.accentColor.opacity(0.55)
+                        podcast.accentColor.opacity(0.95),
+                        podcast.accentColor.opacity(0.55)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -75,7 +75,7 @@ struct ShowDetailHeader: View {
 
     @ViewBuilder
     private var artworkOverlay: some View {
-        if let url = subscription.imageURL {
+        if let url = podcast.imageURL {
             CachedAsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
@@ -92,7 +92,7 @@ struct ShowDetailHeader: View {
     }
 
     private var artworkSymbol: some View {
-        Image(systemName: subscription.artworkSymbol)
+        Image(systemName: podcast.artworkSymbol)
             .font(.system(size: 44, weight: .light))
             .foregroundStyle(.white.opacity(0.92))
             .accessibilityHidden(true)
@@ -103,7 +103,7 @@ struct ShowDetailHeader: View {
             Text("\(episodeCount) \(episodeCount == 1 ? "episode" : "episodes")")
                 .font(AppTheme.Typography.caption)
                 .foregroundStyle(.secondary)
-            if let refreshed = subscription.lastRefreshedAt {
+            if let refreshed = podcast.lastRefreshedAt {
                 Text("·")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.tertiary)

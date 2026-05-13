@@ -3,11 +3,18 @@ import Foundation
 // MARK: - AppState
 
 struct AppState: Codable, Sendable {
-    /// Podcasts the user follows. Source of truth for Library + Home + Search.
+    /// All podcasts the app knows about. Includes podcasts the user follows
+    /// AND podcasts where the only attachment is an agent-added or
+    /// manually-added episode. `state.subscriptions` is the projection of
+    /// "podcasts the user actively follows".
+    var podcasts: [Podcast] = []
+    /// User's follow state. One row per followed podcast (`podcastID` FK).
+    /// Many `Podcast` rows may exist without a matching subscription — that's
+    /// "known but not followed."
     var subscriptions: [PodcastSubscription] = []
-    /// All known episodes across all subscriptions, hydrated from SQLite at
-    /// launch. Reads filter by `subscriptionID` rather than maintaining
-    /// per-subscription arrays so `upsertEpisodes(_:)` works for any feed.
+    /// All known episodes across all podcasts, hydrated from SQLite at
+    /// launch. Reads filter by `podcastID` rather than maintaining
+    /// per-podcast arrays so `upsertEpisodes(_:)` works for any feed.
     var episodes: [Episode] = []
     var notes: [Note] = []
     var friends: [Friend] = []
@@ -67,7 +74,7 @@ struct AppState: Codable, Sendable {
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case subscriptions, episodes
+        case podcasts, subscriptions, episodes
         case notes, friends, agentMemories, compiledMemory, settings
         case categories, categorySettings
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
@@ -86,7 +93,22 @@ struct AppState: Codable, Sendable {
     // `itemOrder` keys (from the inherited todo template) are silently ignored.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        subscriptions = try c.decodeIfPresent([PodcastSubscription].self, forKey: .subscriptions) ?? []
+
+        // Subscription rows: try slim shape (new format) first. If the file
+        // was written by a pre-split build, the rows carry legacy keys
+        // (feedURL, title, …); split each into a Podcast + slim subscription
+        // (subscribers only — synthetic / agent-generated rows become
+        // Podcast-only, with no auto-follow).
+        let (decodedPodcasts, decodedSubscriptions) = try Self.decodeSubscriptions(from: c)
+        podcasts = try c.decodeIfPresent([Podcast].self, forKey: .podcasts) ?? decodedPodcasts
+        subscriptions = decodedSubscriptions
+        // Ensure the Unknown podcast row always exists so episodes that point
+        // at `Podcast.unknownID` (including pre-split externalSubscriptionID
+        // episodes that share the same UUID) resolve.
+        if !podcasts.contains(where: { $0.id == Podcast.unknownID }) {
+            podcasts.append(Podcast.unknown)
+        }
+
         episodes = try c.decodeIfPresent([Episode].self, forKey: .episodes) ?? []
         notes = try c.decodeIfPresent([Note].self, forKey: .notes) ?? []
         friends = try c.decodeIfPresent([Friend].self, forKey: .friends) ?? []
@@ -106,5 +128,91 @@ struct AppState: Codable, Sendable {
         clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
         threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []
         threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
+    }
+
+    /// Decodes the `subscriptions` array, handling both the new slim shape
+    /// (rows carrying only `podcastID` + user prefs) and the pre-split
+    /// shape (combined Podcast + PodcastSubscription rows). Returns the
+    /// derived podcasts (empty when the new shape is in use — the new shape
+    /// reads podcasts from the top-level `podcasts` key) and the slim
+    /// subscription rows.
+    private static func decodeSubscriptions(
+        from c: KeyedDecodingContainer<CodingKeys>
+    ) throws -> (podcasts: [Podcast], subscriptions: [PodcastSubscription]) {
+        // If the persisted file has a top-level `podcasts` key, it's the new
+        // shape — read subscriptions as-is.
+        if c.contains(.podcasts) {
+            let slim = try c.decodeIfPresent([PodcastSubscription].self, forKey: .subscriptions) ?? []
+            return ([], slim)
+        }
+        // Pre-split file. Decode each row as a legacy shape and split.
+        let legacy = try c.decodeIfPresent([LegacyPodcastSubscriptionRow].self, forKey: .subscriptions) ?? []
+        var derivedPodcasts: [Podcast] = []
+        var derivedSubscriptions: [PodcastSubscription] = []
+        derivedPodcasts.reserveCapacity(legacy.count)
+        derivedSubscriptions.reserveCapacity(legacy.count)
+        for row in legacy {
+            derivedPodcasts.append(row.toPodcast())
+            // Synthetic (Agent Generated) rows were "auto-subscribed" only
+            // because the old data model had no concept of a podcast without
+            // a subscription. In the split model they become Podcast-only —
+            // no notifications / no auto-download / no row in the user's
+            // subscriptions list.
+            if !(row.isAgentGenerated ?? false) {
+                derivedSubscriptions.append(row.toSubscription())
+            }
+        }
+        return (derivedPodcasts, derivedSubscriptions)
+    }
+}
+
+// MARK: - Legacy subscription decode shape
+
+/// Mirror of the pre-split `PodcastSubscription` on-disk shape. Used only
+/// during decode of files written by older builds; never encoded.
+private struct LegacyPodcastSubscriptionRow: Decodable {
+    var id: UUID
+    var feedURL: URL
+    var title: String?
+    var author: String?
+    var imageURL: URL?
+    var description: String?
+    var language: String?
+    var categories: [String]?
+    var subscribedAt: Date?
+    var lastRefreshedAt: Date?
+    var etag: String?
+    var lastModified: String?
+    var autoDownload: AutoDownloadPolicy?
+    var notificationsEnabled: Bool?
+    var defaultPlaybackRate: Double?
+    var isAgentGenerated: Bool?
+
+    func toPodcast() -> Podcast {
+        Podcast(
+            id: id,
+            kind: (isAgentGenerated ?? false) ? .synthetic : .rss,
+            feedURL: feedURL,
+            title: title ?? "",
+            author: author ?? "",
+            imageURL: imageURL,
+            description: description ?? "",
+            language: language,
+            categories: categories ?? [],
+            discoveredAt: subscribedAt ?? Date(),
+            lastRefreshedAt: lastRefreshedAt,
+            etag: etag,
+            lastModified: lastModified
+        )
+    }
+
+    func toSubscription() -> PodcastSubscription {
+        PodcastSubscription(
+            podcastID: id,
+            subscribedAt: subscribedAt ?? Date(),
+            autoDownload: autoDownload ?? .default,
+            notificationsEnabled: notificationsEnabled ?? true,
+            defaultPlaybackRate: defaultPlaybackRate
+        )
     }
 }

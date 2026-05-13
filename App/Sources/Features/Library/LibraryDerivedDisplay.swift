@@ -1,16 +1,18 @@
 import Foundation
 import SwiftUI
 
-// MARK: - PodcastSubscription display helpers
+// MARK: - Podcast display helpers
 
-extension PodcastSubscription {
+extension Podcast {
 
-    /// Stable per-show accent hue derived from the feed URL string. We hash
-    /// the bytes so the same subscription always reads with the same tint
-    /// across launches even before artwork is loaded and a real dominant-color
-    /// pass becomes available.
+    /// Stable per-show accent hue derived from the feed URL string when
+    /// present (synthetic podcasts fall back to the title bytes so the
+    /// "Agent Generated" tile still gets a deterministic hue). We hash the
+    /// bytes so the same podcast always reads with the same tint across
+    /// launches even before artwork is loaded.
     var accentHue: Double {
-        let bytes = feedURL.absoluteString.utf8
+        let source = feedURL?.absoluteString ?? title
+        let bytes = source.utf8
         var hash: UInt64 = 0xcbf29ce484222325
         for byte in bytes {
             hash ^= UInt64(byte)
@@ -92,15 +94,6 @@ extension Episode {
     /// every whitespace run — including the paragraph breaks the formatter
     /// inserts — into a single space so the preview fits the row's
     /// `lineLimit(2)` cleanly.
-    ///
-    /// Uses `components(separatedBy:.whitespacesAndNewlines).joined(separator:)`
-    /// instead of `replacingOccurrences(of: "\\s+", options: .regularExpression)`
-    /// — the previous shape compiled a regex on every row render (and this
-    /// runs for every row in a long episode list), while the new shape is
-    /// pure UTF-16 scanning that's also Unicode-whitespace-aware via
-    /// `CharacterSet`. The filter-empty + join steps also handle leading
-    /// and trailing whitespace, so the explicit `trimmingCharacters` call
-    /// at the tail is no longer needed.
     var plainTextSummary: String {
         EpisodeShowNotesFormatter.plainText(from: description)
             .components(separatedBy: .whitespacesAndNewlines)
@@ -109,32 +102,32 @@ extension Episode {
     }
 }
 
-// MARK: - Subscription stats from a store
+// MARK: - Per-podcast stats from a store
 
 extension AppStateStore {
 
-    /// Episodes the user has not played for the given subscription.
+    /// Episodes the user has not played for the given podcast.
     ///
     /// O(1) dict lookup against `unplayedCountByShow`. The 10k-episode
     /// reduce that used to dominate `LibraryView`'s grid render path is
     /// gone — see `AppStateStore+EpisodeProjections.swift`.
-    func unplayedCount(forSubscription id: UUID) -> Int {
+    func unplayedCount(forPodcast id: UUID) -> Int {
         unplayedCountByShow[id] ?? 0
     }
 
-    /// `true` when at least one episode for the subscription has any
-    /// download in flight or already on disk.
+    /// `true` when at least one episode for the podcast has any download in
+    /// flight or already on disk.
     ///
     /// O(1) Set membership against `hasDownloadedByShow`.
-    func hasDownloadedEpisode(forSubscription id: UUID) -> Bool {
+    func hasDownloadedEpisode(forPodcast id: UUID) -> Bool {
         hasDownloadedByShow.contains(id)
     }
 
-    /// `true` when at least one episode for the subscription has a ready
+    /// `true` when at least one episode for the podcast has a ready
     /// transcript. Drives the Library "Transcribed" filter chip.
     ///
     /// O(1) Set membership against `hasTranscribedByShow`.
-    func hasTranscribedEpisode(forSubscription id: UUID) -> Bool {
+    func hasTranscribedEpisode(forPodcast id: UUID) -> Bool {
         hasTranscribedByShow.contains(id)
     }
 }

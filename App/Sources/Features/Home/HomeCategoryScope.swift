@@ -24,7 +24,7 @@ enum HomeCategoryScope {
         allowedSubscriptionIDs: Set<UUID>?
     ) -> [Episode] {
         guard let allowed = allowedSubscriptionIDs else { return episodes }
-        return episodes.filter { allowed.contains($0.subscriptionID) }
+        return episodes.filter { allowed.contains($0.podcastID) }
     }
 
     /// Filter `topics` to those whose mentions land in episodes from the
@@ -41,7 +41,7 @@ enum HomeCategoryScope {
     ) -> [ThreadingTopic] {
         guard let allowed = allowedSubscriptionIDs else { return topics }
         let allowedEpisodeIDs: Set<UUID> = Set(
-            episodes.filter { allowed.contains($0.subscriptionID) }.map(\.id)
+            episodes.filter { allowed.contains($0.podcastID) }.map(\.id)
         )
         guard !allowedEpisodeIDs.isEmpty else { return [] }
         var topicIDsInScope: Set<UUID> = []

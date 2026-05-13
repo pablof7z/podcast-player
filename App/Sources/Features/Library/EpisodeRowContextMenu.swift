@@ -79,7 +79,7 @@ struct EpisodeRowContextMenu<Route: Hashable>: View {
     }
 
     private var sharePreviewTitle: String {
-        let showName = store.subscription(id: episode.subscriptionID)?.title ?? ""
+        let showName = store.podcast(id: episode.podcastID)?.title ?? ""
         return showName.isEmpty ? episode.title : "\(showName): \(episode.title)"
     }
 

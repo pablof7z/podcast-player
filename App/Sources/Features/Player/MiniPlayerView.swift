@@ -26,8 +26,8 @@ struct MiniPlayerView: View {
     @State private var downloadService = EpisodeDownloadService.shared
 
     private var showName: String {
-        guard let subID = state.episode?.subscriptionID,
-              let sub = store.subscription(id: subID) else { return "" }
+        guard let subID = state.episode?.podcastID,
+              let sub = store.podcast(id: subID) else { return "" }
         return sub.title
     }
 

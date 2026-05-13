@@ -12,7 +12,7 @@ final class EpisodePlainTextSummaryTests: XCTestCase {
 
     private func makeEpisode(description: String) -> Episode {
         Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "test-\(UUID().uuidString)",
             title: "Test",
             description: description,

@@ -23,8 +23,8 @@ final class HomeCategoryScopeTests: XCTestCase {
     func testEpisodesInCategoryNilFilterReturnsInputUntouched() {
         let subA = UUID(); let subB = UUID()
         let episodes = [
-            makeEpisode(subscriptionID: subA),
-            makeEpisode(subscriptionID: subB)
+            makeEpisode(podcastID: subA),
+            makeEpisode(podcastID: subB)
         ]
 
         let scoped = HomeCategoryScope.episodesInCategory(
@@ -32,25 +32,25 @@ final class HomeCategoryScopeTests: XCTestCase {
             allowedSubscriptionIDs: nil
         )
         XCTAssertEqual(scoped.count, episodes.count)
-        XCTAssertEqual(scoped.map(\.subscriptionID), [subA, subB])
+        XCTAssertEqual(scoped.map(\.podcastID), [subA, subB])
     }
 
     func testEpisodesInCategoryFiltersToAllowedSubscriptions() {
         let subA = UUID(); let subB = UUID(); let subC = UUID()
-        let epA = makeEpisode(subscriptionID: subA)
-        let epB = makeEpisode(subscriptionID: subB)
-        let epC = makeEpisode(subscriptionID: subC)
+        let epA = makeEpisode(podcastID: subA)
+        let epB = makeEpisode(podcastID: subB)
+        let epC = makeEpisode(podcastID: subC)
 
         let scoped = HomeCategoryScope.episodesInCategory(
             [epA, epB, epC],
             allowedSubscriptionIDs: [subA, subC]
         )
-        XCTAssertEqual(Set(scoped.map(\.subscriptionID)), [subA, subC])
+        XCTAssertEqual(Set(scoped.map(\.podcastID)), [subA, subC])
     }
 
     func testEpisodesInCategoryEmptyAllowedSetReturnsEmpty() {
         let subA = UUID()
-        let episodes = [makeEpisode(subscriptionID: subA)]
+        let episodes = [makeEpisode(podcastID: subA)]
 
         let scoped = HomeCategoryScope.episodesInCategory(
             episodes,
@@ -95,17 +95,17 @@ final class HomeCategoryScopeTests: XCTestCase {
 
         // Two unplayed episodes inside the category, one outside.
         let inOne = makeEpisode(
-            subscriptionID: inCategory,
+            podcastID: inCategory,
             pubDate: now.addingTimeInterval(-3_600),
             played: false
         )
         let inTwo = makeEpisode(
-            subscriptionID: inCategory,
+            podcastID: inCategory,
             pubDate: now.addingTimeInterval(-7_200),
             played: false
         )
         let out = makeEpisode(
-            subscriptionID: outOfCategory,
+            podcastID: outOfCategory,
             pubDate: now.addingTimeInterval(-3_600),
             played: false
         )
@@ -158,7 +158,7 @@ final class HomeCategoryScopeTests: XCTestCase {
         // still counted contradictions in topics that lived elsewhere.
         let inCategorySub = UUID()
         let outOfCategorySub = UUID()
-        let outOfCategoryEpisode = makeEpisode(subscriptionID: outOfCategorySub)
+        let outOfCategoryEpisode = makeEpisode(podcastID: outOfCategorySub)
         let topic = ThreadingTopic(
             slug: "keto",
             displayName: "Keto",
@@ -186,7 +186,7 @@ final class HomeCategoryScopeTests: XCTestCase {
 
     func testTopicsInCategoryKeepsTopicWithMentionInCategory() {
         let inCategorySub = UUID()
-        let inCategoryEpisode = makeEpisode(subscriptionID: inCategorySub)
+        let inCategoryEpisode = makeEpisode(podcastID: inCategorySub)
         let topic = ThreadingTopic(
             slug: "keto",
             displayName: "Keto",
@@ -216,8 +216,8 @@ final class HomeCategoryScopeTests: XCTestCase {
         let now = make(year: 2026, month: 5, day: 5)
         let inCategorySub = UUID()
         let outOfCategorySub = UUID()
-        let inCategoryEpisode = makeEpisode(subscriptionID: inCategorySub)
-        let outOfCategoryEpisode = makeEpisode(subscriptionID: outOfCategorySub)
+        let inCategoryEpisode = makeEpisode(podcastID: inCategorySub)
+        let outOfCategoryEpisode = makeEpisode(podcastID: outOfCategorySub)
 
         let inCategoryTopic = ThreadingTopic(
             slug: "in",
@@ -285,25 +285,27 @@ final class HomeCategoryScopeTests: XCTestCase {
         defer { AppStateTestSupport.disposeIsolatedStore(at: made.fileURL) }
         let store = made.store
 
-        let subA = PodcastSubscription(
+        let subA = Podcast(
             feedURL: URL(string: "https://a.example.com/feed.xml")!,
             title: "Show A"
         )
-        let subB = PodcastSubscription(
+        let subB = Podcast(
             feedURL: URL(string: "https://b.example.com/feed.xml")!,
             title: "Show B"
         )
-        store.addSubscription(subA)
-        store.addSubscription(subB)
+        store.upsertPodcast(subA)
+        store.upsertPodcast(subB)
+        store.addSubscription(podcastID: subA.id)
+        store.addSubscription(podcastID: subB.id)
 
         let aEpisodes = (0..<3).map { i -> Episode in
-            makeEpisode(subscriptionID: subA.id, guid: "a-\(i)")
+            makeEpisode(podcastID: subA.id, guid: "a-\(i)")
         }
         let bEpisodes = (0..<2).map { i -> Episode in
-            makeEpisode(subscriptionID: subB.id, guid: "b-\(i)")
+            makeEpisode(podcastID: subB.id, guid: "b-\(i)")
         }
-        store.upsertEpisodes(aEpisodes, forSubscription: subA.id)
-        store.upsertEpisodes(bEpisodes, forSubscription: subB.id)
+        store.upsertEpisodes(aEpisodes, forPodcast: subA.id)
+        store.upsertEpisodes(bEpisodes, forPodcast: subB.id)
 
         let topic = ThreadingTopic(
             slug: "category-scope-topic",
@@ -420,13 +422,13 @@ final class HomeCategoryScopeTests: XCTestCase {
     }
 
     private func makeEpisode(
-        subscriptionID: UUID,
+        podcastID: UUID,
         guid: String = UUID().uuidString,
         pubDate: Date = Date(),
         played: Bool = false
     ) -> Episode {
         var ep = Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: "ep \(guid)",
             pubDate: pubDate,

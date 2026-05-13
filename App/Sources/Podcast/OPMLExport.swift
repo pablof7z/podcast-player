@@ -7,15 +7,15 @@ import Foundation
 /// party): SPM dependencies are forbidden in this lane.
 struct OPMLExport: Sendable {
 
-    /// Generates an OPML 2.0 document.
+    /// Generates an OPML 2.0 document from the followed podcasts.
     ///
     /// - Parameters:
-    ///   - subscriptions: The list to export. Order is preserved.
+    ///   - podcasts: The list to export. Order is preserved.
     ///   - title: Title written into `<head><title>`. Defaults to *Podcastr Subscriptions*.
     ///   - dateCreated: Optional override for `<head><dateCreated>`. Defaults to now.
     /// - Returns: UTF-8 OPML bytes suitable for sharing or writing to disk.
     func exportOPML(
-        subscriptions: [PodcastSubscription],
+        podcasts: [Podcast],
         title: String = "Podcastr Subscriptions",
         dateCreated: Date = Date()
     ) -> Data {
@@ -29,8 +29,10 @@ struct OPMLExport: Sendable {
         lines.append("  <body>")
         lines.append("    <outline text=\"feeds\" title=\"feeds\">")
 
-        for subscription in subscriptions {
-            lines.append(makeOutline(for: subscription))
+        for podcast in podcasts {
+            if let line = makeOutline(for: podcast) {
+                lines.append(line)
+            }
         }
 
         lines.append("    </outline>")
@@ -42,17 +44,20 @@ struct OPMLExport: Sendable {
 
     // MARK: Private
 
-    private func makeOutline(for subscription: PodcastSubscription) -> String {
+    /// Returns the outline XML row for a podcast, or `nil` for synthetic
+    /// podcasts (no feed URL — nothing to round-trip into another app).
+    private func makeOutline(for podcast: Podcast) -> String? {
+        guard let feedURL = podcast.feedURL else { return nil }
         var attrs: [(String, String)] = [
             ("type", "rss"),
-            ("text", subscription.title),
-            ("title", subscription.title),
-            ("xmlUrl", subscription.feedURL.absoluteString),
+            ("text", podcast.title),
+            ("title", podcast.title),
+            ("xmlUrl", feedURL.absoluteString),
         ]
-        if !subscription.description.isEmpty {
-            attrs.append(("description", subscription.description))
+        if !podcast.description.isEmpty {
+            attrs.append(("description", podcast.description))
         }
-        if let language = subscription.language, !language.isEmpty {
+        if let language = podcast.language, !language.isEmpty {
             attrs.append(("language", language))
         }
         let rendered = attrs

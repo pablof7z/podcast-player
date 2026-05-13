@@ -84,12 +84,12 @@ extension UserIdentityStore {
     /// - `["context", transcriptText]` — NIP-84 surrounding context.
     /// - `["alt", caption]` — human-readable description when present.
     ///
-    /// `episode` and `subscription` are optional so callers that lack the
+    /// `episode` and `podcast` are optional so callers that lack the
     /// resolved models can still publish a degraded-but-valid event.
     func publishUserClip(
         _ clip: Clip,
         episode: Episode? = nil,
-        subscription: PodcastSubscription? = nil
+        podcast: Podcast? = nil
     ) async throws -> SignedNostrEvent {
         if signer == nil {
             try _ensureGeneratedKey()
@@ -104,7 +104,7 @@ extension UserIdentityStore {
         }
 
         // NIP-73: podcast feed reference (show level).
-        if let feedURL = subscription?.feedURL {
+        if let feedURL = podcast?.feedURL {
             tags.append(["r", feedURL.absoluteString])
         }
 

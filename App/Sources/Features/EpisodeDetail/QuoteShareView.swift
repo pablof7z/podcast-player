@@ -201,7 +201,7 @@ struct QuoteShareView: View {
 #Preview {
     let subID = UUID()
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-1",
         title: "How to Think About Keto",
         pubDate: Date(timeIntervalSince1970: 1_714_780_800),

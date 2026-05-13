@@ -11,7 +11,7 @@ import SwiftUI
 /// them inside a `List` (preferred, so swipe actions activate) or any other
 /// container.
 struct ShowDetailEpisodeList: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let episodes: [Episode]
 
     @Environment(AppStateStore.self) private var store
@@ -26,13 +26,13 @@ struct ShowDetailEpisodeList: View {
         ForEach(episodes) { ep in
             NavigationLink(value: LibraryEpisodeRoute(
                 episodeID: ep.id,
-                subscriptionID: subscription.id,
+                subscriptionID: podcast.id,
                 title: ep.title
             )) {
                 EpisodeRow(
                     episode: ep,
-                    showAccent: subscription.accentColor,
-                    fallbackImageURL: subscription.imageURL,
+                    showAccent: podcast.accentColor,
+                    fallbackImageURL: podcast.imageURL,
                     onPlay: {
                         playback.setEpisode(ep)
                         playback.play()
@@ -63,7 +63,7 @@ struct ShowDetailEpisodeList: View {
                     store: store,
                     openDetailsRoute: LibraryEpisodeRoute(
                         episodeID: ep.id,
-                        subscriptionID: subscription.id,
+                        subscriptionID: podcast.id,
                         title: ep.title
                     ),
                     playback: playback
@@ -76,7 +76,7 @@ struct ShowDetailEpisodeList: View {
                     onOpenDetails: {
                         voiceOverDetailRoute = LibraryEpisodeRoute(
                             episodeID: ep.id,
-                            subscriptionID: subscription.id,
+                            subscriptionID: podcast.id,
                             title: ep.title
                         )
                     }

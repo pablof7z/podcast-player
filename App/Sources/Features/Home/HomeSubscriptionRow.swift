@@ -8,7 +8,7 @@ import SwiftUI
 /// the same context menu (Refresh / Unsubscribe) the old grid used so the
 /// existing muscle memory carries over.
 struct HomeSubscriptionRow: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let mostRecentEpisode: Episode?
     let unplayedCount: Int
     let now: Date
@@ -18,7 +18,7 @@ struct HomeSubscriptionRow: View {
     let onRequestUnsubscribe: () -> Void
 
     var body: some View {
-        NavigationLink(value: subscription) {
+        NavigationLink(value: podcast) {
             HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
                 artwork
                 meta
@@ -30,7 +30,7 @@ struct HomeSubscriptionRow: View {
         .buttonStyle(.plain)
         .contextMenu {
             SubscriptionContextMenu(
-                subscription: subscription,
+                podcast: podcast,
                 onRequestUnsubscribe: onRequestUnsubscribe
             )
         }
@@ -47,26 +47,26 @@ struct HomeSubscriptionRow: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            subscription.accentColor.opacity(0.95),
-                            subscription.accentColor.opacity(0.55)
+                            podcast.accentColor.opacity(0.95),
+                            podcast.accentColor.opacity(0.55)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-            if let url = subscription.imageURL {
+            if let url = podcast.imageURL {
                 CachedAsyncImage(url: url, targetSize: CGSize(width: 92, height: 92)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
                     default:
-                        Image(systemName: subscription.artworkSymbol)
+                        Image(systemName: podcast.artworkSymbol)
                             .font(.system(size: 21, weight: .light))
                             .foregroundStyle(.white.opacity(0.92))
                     }
                 }
             } else {
-                Image(systemName: subscription.artworkSymbol)
+                Image(systemName: podcast.artworkSymbol)
                     .font(.system(size: 21, weight: .light))
                     .foregroundStyle(.white.opacity(0.92))
             }
@@ -77,7 +77,7 @@ struct HomeSubscriptionRow: View {
 
     private var meta: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(subscription.title)
+            Text(podcast.title)
                 .font(AppTheme.Typography.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
@@ -124,7 +124,7 @@ struct HomeSubscriptionRow: View {
     }
 
     private var accessibilityLabel: String {
-        var parts: [String] = [subscription.title]
+        var parts: [String] = [podcast.title]
         if let preview = mostRecentEpisodePreview { parts.append(preview) }
         parts.append("Last episode \(recencyLabel)")
         if unplayedCount > 0 { parts.append("\(unplayedCount) unplayed") }

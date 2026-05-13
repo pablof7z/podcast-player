@@ -113,8 +113,8 @@ struct PlayerQueueSheet: View {
                     } label: {
                         PlayerQueueRow(
                             episode: pair.episode,
-                            showName: store.subscription(id: pair.episode.subscriptionID)?.title ?? "",
-                            showImageURL: store.subscription(id: pair.episode.subscriptionID)?.imageURL,
+                            showName: store.podcast(id: pair.episode.podcastID)?.title ?? "",
+                            showImageURL: store.podcast(id: pair.episode.podcastID)?.imageURL,
                             segmentLabel: pair.item.label,
                             segmentRange: segmentRange(for: pair.item)
                         )

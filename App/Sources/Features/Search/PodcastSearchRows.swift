@@ -20,13 +20,13 @@ struct PodcastShowSearchRow: View {
 
     var body: some View {
         HStack(spacing: AppTheme.Spacing.md) {
-            PodcastSearchArtwork(subscription: hit.subscription)
+            PodcastSearchArtwork(podcast: hit.podcast)
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                HighlightedText(text: hit.subscription.title, query: query)
+                HighlightedText(text: hit.podcast.title, query: query)
                     .font(AppTheme.Typography.headline)
                     .lineLimit(2)
-                if !hit.subscription.author.isEmpty {
-                    HighlightedText(text: hit.subscription.author, query: query)
+                if !hit.podcast.author.isEmpty {
+                    HighlightedText(text: hit.podcast.author, query: query)
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -44,9 +44,9 @@ struct PodcastEpisodeSearchRow: View {
     var body: some View {
         SearchResultRow(
             icon: "play.rectangle",
-            tint: hit.subscription.accentColor,
+            tint: hit.podcast.accentColor,
             title: hit.episode.title,
-            subtitle: hit.subscription.title,
+            subtitle: hit.podcast.title,
             bodyText: hit.snippet,
             footnote: hit.episode.pubDate.formatted(date: .abbreviated, time: .omitted),
             query: query
@@ -57,15 +57,15 @@ struct PodcastEpisodeSearchRow: View {
 struct PodcastTranscriptSearchRow: View {
     let hit: PodcastTranscriptSearchHit
     let episode: Episode?
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let query: String
 
     var body: some View {
         SearchResultRow(
             icon: "text.quote",
-            tint: subscription?.accentColor ?? AppTheme.Tint.agentSurface,
+            tint: podcast?.accentColor ?? AppTheme.Tint.agentSurface,
             title: episode?.title ?? "Episode",
-            subtitle: subscription?.title ?? "Transcript",
+            subtitle: podcast?.title ?? "Transcript",
             bodyText: hit.snippet,
             footnote: "\(formatTime(hit.chunk.startMS)) · \(String(format: "%.2f", hit.score))",
             query: query
@@ -138,13 +138,13 @@ private struct SearchResultRow: View {
 }
 
 private struct PodcastSearchArtwork: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous)
-                .fill(subscription.accentColor.opacity(0.2))
-            if let url = subscription.imageURL {
+                .fill(podcast.accentColor.opacity(0.2))
+            if let url = podcast.imageURL {
                 CachedAsyncImage(url: url, targetSize: CGSize(width: 64, height: 64)) { phase in
                     if case .success(let image) = phase {
                         image.resizable().scaledToFill()
@@ -161,8 +161,8 @@ private struct PodcastSearchArtwork: View {
     }
 
     private var placeholder: some View {
-        Image(systemName: subscription.artworkSymbol)
+        Image(systemName: podcast.artworkSymbol)
             .font(.title3)
-            .foregroundStyle(subscription.accentColor)
+            .foregroundStyle(podcast.accentColor)
     }
 }

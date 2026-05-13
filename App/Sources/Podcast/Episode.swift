@@ -11,16 +11,15 @@ import Foundation
 /// `RSSParser.synthesizedGUID(...)`). Lane 6 keys embedding rows off this
 /// `guid`, so it must be deterministic across re-fetches.
 struct Episode: Codable, Sendable, Identifiable, Hashable {
-    /// Stable sentinel used as `subscriptionID` for episodes the agent plays
-    /// without the user subscribing. No `PodcastSubscription` record exists for
-    /// this ID; `store.subscription(id: externalSubscriptionID)` returns `nil`,
-    /// which is the correct signal throughout the app that the episode has no
-    /// owning subscription.
-    static let externalSubscriptionID = UUID(uuidString: "00000000-EEEE-EEEE-EEEE-000000000000")!
     /// Stable local identifier. Distinct from `guid`.
     var id: UUID
-    /// Foreign key to the parent `PodcastSubscription.id`.
-    var subscriptionID: UUID
+    /// Foreign key to the parent `Podcast.id`. Every episode has a real
+    /// parent podcast — agent-added episodes without a known feed parent
+    /// to `Podcast.unknownID`; TTS-generated episodes parent to the
+    /// "Agent Generated" synthetic podcast row owned by
+    /// `AgentGeneratedPodcastService`. There is no sentinel "no podcast"
+    /// value.
+    var podcastID: UUID
     /// Publisher's `<guid>` (or synthetic fallback). Used to dedupe across feed
     /// re-fetches and to key cross-system records (vector store, Spotlight).
     var guid: String
@@ -80,10 +79,13 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     /// chapter rail. Older saved state decodes via `decodeIfPresent` so the
     /// migration is silent.
     var adSegments: [AdSegment]?
+    /// Non-nil for agent-generated episodes. Records where the generation was
+    /// commissioned from so the player can surface a tappable source link.
+    var generationSource: GenerationSource?
 
     init(
         id: UUID = UUID(),
-        subscriptionID: UUID,
+        podcastID: UUID,
         guid: String,
         title: String,
         description: String = "",
@@ -103,10 +105,11 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         isStarred: Bool = false,
         downloadState: DownloadState = .notDownloaded,
         transcriptState: TranscriptState = .none,
-        adSegments: [AdSegment]? = nil
+        adSegments: [AdSegment]? = nil,
+        generationSource: GenerationSource? = nil
     ) {
         self.id = id
-        self.subscriptionID = subscriptionID
+        self.podcastID = podcastID
         self.guid = guid
         self.title = title
         self.description = description
@@ -127,23 +130,33 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         self.downloadState = downloadState
         self.transcriptState = transcriptState
         self.adSegments = adSegments
+        self.generationSource = generationSource
     }
 
     // MARK: - Codable (forward-compat decoding)
 
     private enum CodingKeys: String, CodingKey {
-        case id, subscriptionID, guid, title, description, pubDate, duration
+        case id, podcastID, guid, title, description, pubDate, duration
         case enclosureURL, enclosureMimeType, imageURL
         case chapters, persons, soundBites
         case publisherTranscriptURL, publisherTranscriptType, chaptersURL
         case playbackPosition, played, isStarred, downloadState, transcriptState
-        case adSegments
+        case adSegments, generationSource
+        // Legacy key from the pre-split shape. Decoded as a fallback when
+        // `podcastID` is absent. Never written.
+        case legacy_subscriptionID = "subscriptionID"
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
-        subscriptionID = try c.decode(UUID.self, forKey: .subscriptionID)
+        if let pid = try c.decodeIfPresent(UUID.self, forKey: .podcastID) {
+            podcastID = pid
+        } else {
+            // Pre-split persisted record: the FK was named `subscriptionID`.
+            // Values remain valid because Podcast.id reuses the legacy UUID.
+            podcastID = try c.decode(UUID.self, forKey: .legacy_subscriptionID)
+        }
         guid = try c.decode(String.self, forKey: .guid)
         title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
         description = try c.decodeIfPresent(String.self, forKey: .description) ?? ""
@@ -164,6 +177,34 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         downloadState = try c.decodeIfPresent(DownloadState.self, forKey: .downloadState) ?? .notDownloaded
         transcriptState = try c.decodeIfPresent(TranscriptState.self, forKey: .transcriptState) ?? .none
         adSegments = try c.decodeIfPresent([AdSegment].self, forKey: .adSegments)
+        generationSource = try c.decodeIfPresent(GenerationSource.self, forKey: .generationSource)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(podcastID, forKey: .podcastID)
+        try c.encode(guid, forKey: .guid)
+        try c.encode(title, forKey: .title)
+        try c.encode(description, forKey: .description)
+        try c.encode(pubDate, forKey: .pubDate)
+        try c.encodeIfPresent(duration, forKey: .duration)
+        try c.encode(enclosureURL, forKey: .enclosureURL)
+        try c.encodeIfPresent(enclosureMimeType, forKey: .enclosureMimeType)
+        try c.encodeIfPresent(imageURL, forKey: .imageURL)
+        try c.encodeIfPresent(chapters, forKey: .chapters)
+        try c.encodeIfPresent(persons, forKey: .persons)
+        try c.encodeIfPresent(soundBites, forKey: .soundBites)
+        try c.encodeIfPresent(publisherTranscriptURL, forKey: .publisherTranscriptURL)
+        try c.encodeIfPresent(publisherTranscriptType, forKey: .publisherTranscriptType)
+        try c.encodeIfPresent(chaptersURL, forKey: .chaptersURL)
+        try c.encode(playbackPosition, forKey: .playbackPosition)
+        try c.encode(played, forKey: .played)
+        try c.encode(isStarred, forKey: .isStarred)
+        try c.encode(downloadState, forKey: .downloadState)
+        try c.encode(transcriptState, forKey: .transcriptState)
+        try c.encodeIfPresent(adSegments, forKey: .adSegments)
+        try c.encodeIfPresent(generationSource, forKey: .generationSource)
     }
 }
 
@@ -359,5 +400,52 @@ extension Episode {
         case preroll
         case midroll
         case postroll
+    }
+
+    /// Records where an agent-generated episode was commissioned from.
+    /// Stored on the episode so the player can surface a tappable source link.
+    enum GenerationSource: Sendable, Equatable, Hashable {
+        case inAppChat(conversationID: UUID)
+        case nostr(rootEventID: String, peerPubkeyHex: String)
+    }
+}
+
+// MARK: - Episode.GenerationSource Codable
+
+extension Episode.GenerationSource: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case type, conversationID, rootEventID, peerPubkeyHex
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try c.decode(String.self, forKey: .type)
+        switch type {
+        case "inAppChat":
+            let id = try c.decode(UUID.self, forKey: .conversationID)
+            self = .inAppChat(conversationID: id)
+        case "nostr":
+            let rootEventID = try c.decode(String.self, forKey: .rootEventID)
+            let peerPubkeyHex = try c.decode(String.self, forKey: .peerPubkeyHex)
+            self = .nostr(rootEventID: rootEventID, peerPubkeyHex: peerPubkeyHex)
+        default:
+            throw DecodingError.dataCorrupted(.init(
+                codingPath: [CodingKeys.type],
+                debugDescription: "Unknown GenerationSource type: \(type)"
+            ))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .inAppChat(let conversationID):
+            try c.encode("inAppChat", forKey: .type)
+            try c.encode(conversationID, forKey: .conversationID)
+        case .nostr(let rootEventID, let peerPubkeyHex):
+            try c.encode("nostr", forKey: .type)
+            try c.encode(rootEventID, forKey: .rootEventID)
+            try c.encode(peerPubkeyHex, forKey: .peerPubkeyHex)
+        }
     }
 }

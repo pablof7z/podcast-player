@@ -43,7 +43,7 @@ enum ClipAudioComposer {
     static func export(
         clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription
+        podcast: Podcast
     ) async throws -> URL {
         let sourceURL = try resolveLocalAudioURL(for: episode)
         let asset = AVURLAsset(url: sourceURL)
@@ -73,7 +73,7 @@ enum ClipAudioComposer {
             start: CMTime(seconds: clip.startSeconds, preferredTimescale: 600),
             duration: CMTime(seconds: clip.durationSeconds, preferredTimescale: 600)
         )
-        session.metadata = buildMetadata(clip: clip, episode: episode, subscription: subscription)
+        session.metadata = buildMetadata(clip: clip, episode: episode, podcast: podcast)
 
         // iOS 18+ async export. Deployment target is iOS 26 so the
         // legacy `exportAsynchronously(completionHandler:)` callback
@@ -103,7 +103,7 @@ enum ClipAudioComposer {
     private static func buildMetadata(
         clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription
+        podcast: Podcast
     ) -> [AVMetadataItem] {
         var items: [AVMetadataItem] = []
 
@@ -117,7 +117,7 @@ enum ClipAudioComposer {
             return String(trimmed.prefix(57)) + "…"
         }()
         items.append(makeMetadataItem(identifier: .commonIdentifierTitle, value: title))
-        items.append(makeMetadataItem(identifier: .commonIdentifierArtist, value: subscription.title))
+        items.append(makeMetadataItem(identifier: .commonIdentifierArtist, value: podcast.title))
         items.append(makeMetadataItem(identifier: .commonIdentifierAlbumName, value: episode.title))
         return items
     }

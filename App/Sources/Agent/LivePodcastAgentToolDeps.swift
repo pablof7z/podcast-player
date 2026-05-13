@@ -84,9 +84,9 @@ struct LiveEpisodeFetcherAdapter: EpisodeFetcherProtocol {
     ) async -> (podcastTitle: String, episodeTitle: String, durationSeconds: Int?)? {
         guard let store, let uuid = UUID(uuidString: episodeID),
               let episode = await store.episode(id: uuid) else { return nil }
-        let subscription = await store.state.subscriptions.first { $0.id == episode.subscriptionID }
+        let podcast = await store.podcast(id: episode.podcastID)
         return (
-            podcastTitle: subscription?.title ?? "",
+            podcastTitle: podcast?.title ?? "",
             episodeTitle: episode.title,
             durationSeconds: episode.duration.map { Int($0) }
         )
@@ -94,7 +94,7 @@ struct LiveEpisodeFetcherAdapter: EpisodeFetcherProtocol {
 
     func episodeIDForAudioURL(_ audioURLString: String, podcastID: PodcastID) async -> EpisodeID? {
         guard let store, let podcastUUID = UUID(uuidString: podcastID) else { return nil }
-        let episodes = await store.episodes(forSubscription: podcastUUID)
+        let episodes = await store.episodes(forPodcast: podcastUUID)
         return episodes.first { $0.enclosureURL.absoluteString == audioURLString }?.id.uuidString
     }
 }
@@ -204,29 +204,113 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
     func playExternalEpisode(
         audioURL: URL,
         title: String,
-        podcastTitle: String?,
-        imageURL: URL?,
+        feedURLString: String?,
         durationSeconds: TimeInterval?,
         timestampSeconds: Double
     ) async {
+        // Resolve which podcast to attach this episode to WITHOUT blocking
+        // playback on a network fetch. Three cases:
+        //   1. We already know about this feed (existing Podcast row) → use it.
+        //   2. We don't know about it yet and a feed_url was supplied → use a
+        //      thin placeholder Podcast(feedURL: …) now, then enrich its
+        //      metadata in the background. The episode lives under that
+        //      placeholder ID across the enrichment hop so its parent is
+        //      stable for the user.
+        //   3. No feed_url at all → parent to Podcast.unknownID.
+        //
+        // We deliberately never call `ensurePodcast` here: that helper also
+        // upserts every parsed episode in the feed, which would dump the
+        // show's whole backlog into the user's library without them having
+        // followed it. Backlog ingestion is reserved for `subscribe_podcast`.
+        let parentResolution = await resolveExternalParent(feedURLString: feedURLString)
+        guard let parentResolution else {
+            logger.error("playExternalEpisode: store unavailable")
+            return
+        }
         await MainActor.run {
             guard let store, let playback else {
                 logger.error("playExternalEpisode: playback host missing")
                 return
             }
-            let episode = store.upsertExternalEpisode(
+            let episode = store.upsertEpisode(
+                podcastID: parentResolution.podcastID,
                 audioURL: audioURL,
                 title: title,
-                podcastTitle: podcastTitle,
-                imageURL: imageURL,
+                imageURL: nil,
                 duration: durationSeconds
             )
             playback.setEpisode(episode)
-            // Only seek when the caller requests a specific position; otherwise
-            // resume from the persisted playbackPosition on the episode record.
             if timestampSeconds > 0 { playback.seek(to: timestampSeconds) }
             playback.play()
             logger.info("playExternalEpisode: '\(title, privacy: .public)' at \(timestampSeconds)")
+        }
+        // Asynchronously hydrate podcast metadata in the background so the
+        // first render shows whatever we have, and later renders pick up
+        // real title / artwork once the feed comes back. Fire-and-forget;
+        // playback doesn't depend on the result.
+        if let feedURLString,
+           parentResolution.shouldHydrateMetadata,
+           let url = URL(string: feedURLString) {
+            Task.detached { [weak self] in
+                await self?.hydratePlaceholderPodcastMetadata(podcastID: parentResolution.podcastID, feedURL: url)
+            }
+        }
+    }
+
+    /// Decision wrapper: which podcast ID to parent the episode to RIGHT
+    /// NOW, plus whether the caller should kick off a background metadata
+    /// fetch to enrich a freshly-created placeholder.
+    private struct ExternalParentResolution {
+        let podcastID: UUID
+        let shouldHydrateMetadata: Bool
+    }
+
+    /// Resolves (or creates a placeholder for) the parent podcast without
+    /// hitting the network. The optional feed URL is normalized
+    /// case-insensitively to match `store.podcast(feedURL:)`.
+    @MainActor
+    private func resolveExternalParent(feedURLString: String?) async -> ExternalParentResolution? {
+        guard let store else { return nil }
+        guard let feedURLString,
+              let feedURL = URL(string: feedURLString),
+              let scheme = feedURL.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return ExternalParentResolution(podcastID: Podcast.unknownID, shouldHydrateMetadata: false)
+        }
+        if let existing = store.podcast(feedURL: feedURL) {
+            return ExternalParentResolution(podcastID: existing.id, shouldHydrateMetadata: false)
+        }
+        // Insert a thin placeholder so the episode has a real parent. Title
+        // defaults to the feed host so the UI shows something sensible
+        // immediately; metadata hydration overwrites it on success.
+        let placeholder = Podcast(
+            kind: .rss,
+            feedURL: feedURL,
+            title: feedURL.host ?? feedURLString
+        )
+        let stored = store.upsertPodcast(placeholder)
+        return ExternalParentResolution(podcastID: stored.id, shouldHydrateMetadata: true)
+    }
+
+    /// Fetches the feed in the background and updates the placeholder
+    /// `Podcast` row's title / author / artwork. Does NOT upsert episodes:
+    /// the user hasn't followed this show, so we keep the library
+    /// untouched (the user's external-played episode already exists).
+    private func hydratePlaceholderPodcastMetadata(podcastID: UUID, feedURL: URL) async {
+        guard let store else { return }
+        let client = FeedClient()
+        let placeholder = Podcast(id: podcastID, kind: .rss, feedURL: feedURL, title: feedURL.host ?? feedURL.absoluteString)
+        do {
+            let result = try await client.fetch(placeholder)
+            if case .updated(let podcast, _, _) = result {
+                await MainActor.run {
+                    store.updatePodcast(podcast)
+                }
+            }
+        } catch {
+            logger.notice(
+                "playExternalEpisode: background metadata fetch failed for \(feedURL.absoluteString, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
         }
     }
 
@@ -421,7 +505,7 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
         let clip = await MainActor.run {
             store.addClip(
                 episodeID: uuid,
-                subscriptionID: episode.subscriptionID,
+                subscriptionID: episode.podcastID,
                 startMs: startMs,
                 endMs: endMs,
                 transcriptText: resolvedText,
@@ -432,7 +516,7 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
         return ClipResult(
             clipID: clip.id.uuidString,
             episodeID: episodeID,
-            podcastID: episode.subscriptionID.uuidString,
+            podcastID: episode.podcastID.uuidString,
             episodeTitle: episode.title,
             startSeconds: startSeconds,
             endSeconds: endSeconds,
@@ -458,13 +542,13 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
         guard let store else {
             throw PodcastAgentToolAdapterError.unavailable("AppStateStore")
         }
-        guard let before = await store.subscription(id: uuid) else {
+        guard let before = await store.podcast(id: uuid) else {
             throw PodcastAgentToolAdapterError.missingPodcast(podcastID)
         }
-        let priorCount = await store.episodes(forSubscription: uuid).count
+        let priorCount = await store.episodes(forPodcast: uuid).count
         try await refreshService.refresh(uuid, store: store)
-        let after = await store.subscription(id: uuid) ?? before
-        let episodeCount = await store.episodes(forSubscription: uuid).count
+        let after = await store.podcast(id: uuid) ?? before
+        let episodeCount = await store.episodes(forPodcast: uuid).count
         return FeedRefreshResult(
             podcastID: podcastID,
             title: after.title,
@@ -492,10 +576,10 @@ final class LivePodcastLibraryAdapter: PodcastLibraryProtocol, @unchecked Sendab
             mutation(store, uuid)
         }
         let after = await store.episode(id: uuid) ?? before
-        let subscription = await store.subscription(id: after.subscriptionID)
+        let subscription = await store.podcast(id: after.podcastID)
         return EpisodeMutationResult(
             episodeID: episodeID,
-            podcastID: after.subscriptionID.uuidString,
+            podcastID: after.podcastID.uuidString,
             episodeTitle: after.title,
             podcastTitle: subscription?.title,
             state: explicitState ?? Self.downloadStateLabel(after.downloadState)

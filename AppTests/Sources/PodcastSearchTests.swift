@@ -3,11 +3,11 @@ import XCTest
 
 final class PodcastSearchTests: XCTestCase {
     func testLocalSearchFindsShowsAndEpisodes() {
-        let subscriptionID = UUID()
+        let podcastID = UUID()
         var state = AppState()
-        state.subscriptions = [
-            PodcastSubscription(
-                id: subscriptionID,
+        state.podcasts = [
+            Podcast(
+                id: podcastID,
                 feedURL: URL(string: "https://example.com/feed.xml")!,
                 title: "Nutrition Lab",
                 author: "Dr. Rivera",
@@ -15,9 +15,10 @@ final class PodcastSearchTests: XCTestCase {
                 categories: ["Health"]
             )
         ]
+        state.subscriptions = [PodcastSubscription(podcastID: podcastID)]
         state.episodes = [
             Episode(
-                subscriptionID: subscriptionID,
+                podcastID: podcastID,
                 guid: "keto-1",
                 title: "Keto and insulin sensitivity",
                 description: "A discussion of appetite and glucose.",
@@ -29,7 +30,7 @@ final class PodcastSearchTests: XCTestCase {
         let results = PodcastSearchEngine.localResults(query: "keto insulin", state: state)
 
         XCTAssertEqual(results.episodes.first?.episode.guid, "keto-1")
-        XCTAssertEqual(results.shows.first?.subscription.title, "Nutrition Lab")
+        XCTAssertEqual(results.shows.first?.podcast.title, "Nutrition Lab")
     }
 
     func testWikiSearchFindsClaimBodies() {

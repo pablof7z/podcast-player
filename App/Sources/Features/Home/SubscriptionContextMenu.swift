@@ -4,14 +4,14 @@ import SwiftUI
 
 /// Shared context menu for subscription rows and grid cells.
 struct SubscriptionContextMenu: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let onRequestUnsubscribe: () -> Void
 
     @Environment(AppStateStore.self) private var store
 
     var body: some View {
         Button {
-            Task { await SubscriptionService(store: store).refresh(subscription) }
+            Task { await SubscriptionService(store: store).refresh(podcast) }
         } label: {
             Label("Refresh", systemImage: "arrow.clockwise")
         }

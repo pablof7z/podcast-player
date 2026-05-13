@@ -337,7 +337,7 @@ struct EpisodeDetailHeroView: View {
 #Preview {
     let subID = UUID()
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-1",
         title: "How to Think About Keto",
         description: "<p>Tim sits down with <b>Peter Attia, MD</b> to revisit a topic the show has circled for years: ketones and metabolic flexibility.</p>",

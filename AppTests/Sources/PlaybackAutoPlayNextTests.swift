@@ -13,7 +13,7 @@ final class PlaybackAutoPlayNextTests: XCTestCase {
 
     private func makeEpisode() -> Episode {
         Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "test-\(UUID().uuidString)",
             title: "Test Episode",
             description: "",

@@ -42,6 +42,16 @@ extension Notification.Name {
     /// source episode. `userInfo["episodeID"]` carries the UUID string.
     /// `RootView` dismisses the player and presents `EpisodeDetailView`.
     static let openEpisodeDetailRequested = Notification.Name("io.f7z.podcast.openEpisodeDetailRequested")
+    /// Posted by `PlayerGenerationSourceChip` when the user taps an in-app
+    /// chat source. `userInfo["conversationID"]` carries the `UUID`. `RootView`
+    /// dismisses the player, switches to the target conversation, and opens
+    /// the agent chat sheet.
+    static let openAgentChatConversation = Notification.Name("io.f7z.podcast.openAgentChatConversation")
+    /// Posted by `PlayerGenerationSourceChip` when the user taps a Nostr
+    /// conversation source. `userInfo["rootEventID"]` carries the root event
+    /// ID string. `RootView` dismisses the player and presents
+    /// `NostrConversationDetailView`.
+    static let openNostrConversationRequested = Notification.Name("io.f7z.podcast.openNostrConversationRequested")
 }
 
 enum AskAgentDispatcher {
@@ -57,7 +67,7 @@ enum AskAgentDispatcher {
         store: AppStateStore
     ) {
         guard let episode else { return }
-        let title = store.subscription(id: episode.subscriptionID)?.title ?? ""
+        let title = store.podcast(id: episode.podcastID)?.title ?? ""
         let context = TranscriptAgentContext(
             episodeID: episode.id,
             subscriptionTitle: title,

@@ -127,13 +127,13 @@ struct BriefingRAGSearchAdapter: BriefingRAGSearchProtocol {
         let store = service.appStore
         return matches.map { m -> RAGCandidate in
             let episode = store?.episode(id: m.chunk.episodeID)
-            let subscription = episode.flatMap { ep in
-                store?.state.subscriptions.first { $0.id == ep.subscriptionID }
+            let podcast = episode.flatMap { ep in
+                store?.state.podcasts.first { $0.id == ep.podcastID }
             }
             let label: String = {
                 let timeMS = m.chunk.startMS
                 let formatted = formatTime(seconds: Double(timeMS) / 1000.0)
-                if let title = subscription?.title, !title.isEmpty {
+                if let title = podcast?.title, !title.isEmpty {
                     return "\(title) · \(formatted)"
                 }
                 if let title = episode?.title, !title.isEmpty {

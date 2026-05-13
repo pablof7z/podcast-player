@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 /// stacking everything at once.
 enum OPMLImportPhase: Equatable {
     case pick
-    case review(parsed: [PodcastSubscription])
+    case review(parsed: [Podcast])
     case progress(completed: Int, total: Int, errors: [OPMLImportRowError])
     case done(imported: Int, skipped: Int, errors: [OPMLImportRowError])
 }
@@ -154,7 +154,7 @@ struct OPMLImportContent: View {
 
     // MARK: - Review phase
 
-    private func reviewPhase(parsed: [PodcastSubscription]) -> some View {
+    private func reviewPhase(parsed: [Podcast]) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text("\(parsed.count) feeds parsed")
@@ -171,12 +171,14 @@ struct OPMLImportContent: View {
                             Text(entry.title)
                                 .font(AppTheme.Typography.headline)
                                 .lineLimit(1)
-                            Text(entry.feedURL.absoluteString)
-                                .font(AppTheme.Typography.monoCaption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .textSelection(.enabled)
-                                .copyableTextMenu(entry.feedURL.absoluteString)
+                            if let feedURL = entry.feedURL {
+                                Text(feedURL.absoluteString)
+                                    .font(AppTheme.Typography.monoCaption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .textSelection(.enabled)
+                                    .copyableTextMenu(feedURL.absoluteString)
+                            }
                         }
                         .padding(AppTheme.Spacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -366,7 +368,7 @@ struct OPMLImportContent: View {
         withAnimation { phase = .review(parsed: entries) }
     }
 
-    private func runImport(entries: [PodcastSubscription]) async {
+    private func runImport(entries: [Podcast]) async {
         let total = entries.count
         var errors: [OPMLImportRowError] = []
         var imported = 0
@@ -375,6 +377,10 @@ struct OPMLImportContent: View {
         let service = SubscriptionService(store: store)
         withAnimation { phase = .progress(completed: 0, total: total, errors: errors) }
         for (index, entry) in entries.enumerated() {
+            guard let feedURL = entry.feedURL else {
+                skipped += 1
+                continue
+            }
             do {
                 if let payload = try await service.fetchForAdoption(opmlEntry: entry) {
                     fetched.append(payload)
@@ -383,13 +389,13 @@ struct OPMLImportContent: View {
                 }
             } catch let addError as SubscriptionService.AddError {
                 errors.append(.init(
-                    feedURL: entry.feedURL,
+                    feedURL: feedURL,
                     title: entry.title,
                     message: addError.localizedDescription
                 ))
             } catch {
                 errors.append(.init(
-                    feedURL: entry.feedURL,
+                    feedURL: feedURL,
                     title: entry.title,
                     message: error.localizedDescription
                 ))

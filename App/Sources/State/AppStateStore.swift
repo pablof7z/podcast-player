@@ -168,11 +168,20 @@ final class AppStateStore {
             loadedState = AppState()
         }
         Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState, persistence: persistence)
-        // Strip synthetic external-playback subscriptions written by an earlier
-        // build. External episodes now use Episode.externalSubscriptionID with no
-        // subscription record; these `external-episode://` entries are artifacts of
-        // a wrong approach and should not appear in the library.
-        loadedState.subscriptions.removeAll { $0.feedURL.scheme == "external-episode" }
+        // Strip synthetic external-playback podcasts written by an earlier
+        // build that used an `external-episode://` sentinel feed URL. The
+        // new model parents external episodes to `Podcast.unknownID` (or a
+        // real podcast row when a feed_url is supplied), so these legacy
+        // artifacts should not appear in the library.
+        let legacyExternalPodcastIDs = Set(
+            loadedState.podcasts
+                .filter { $0.feedURL?.scheme == "external-episode" }
+                .map(\.id)
+        )
+        if !legacyExternalPodcastIDs.isEmpty {
+            loadedState.podcasts.removeAll { legacyExternalPodcastIDs.contains($0.id) }
+            loadedState.subscriptions.removeAll { legacyExternalPodcastIDs.contains($0.podcastID) }
+        }
         // Start iCloud KV sync before assigning state so that the first
         // push (triggered by the `didSet` below) reflects the merged values.
         iCloudSettingsSync.shared.start(mergingInto: &loadedState.settings)

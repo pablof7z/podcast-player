@@ -12,14 +12,14 @@ struct PodcastLocalSearchResults: Sendable {
 }
 
 struct PodcastShowSearchHit: Identifiable, Hashable, Sendable {
-    var subscription: PodcastSubscription
+    var podcast: Podcast
     var score: Int
-    var id: UUID { subscription.id }
+    var id: UUID { podcast.id }
 }
 
 struct PodcastEpisodeSearchHit: Identifiable, Hashable, Sendable {
     var episode: Episode
-    var subscription: PodcastSubscription
+    var podcast: Podcast
     var snippet: String
     var score: Int
     var id: UUID { episode.id }
@@ -48,35 +48,40 @@ enum PodcastSearchEngine {
         let trimmed = query.trimmed
         guard !trimmed.isEmpty else { return PodcastLocalSearchResults() }
         let tokens = tokenize(trimmed)
-        let realSubscriptions = state.subscriptions.filter { !$0.isAgentGenerated }
-        let subscriptionsByID = Dictionary(
-            uniqueKeysWithValues: realSubscriptions.map { ($0.id, $0) }
+        // Local search covers only the user's followed RSS podcasts —
+        // synthetic shows (Agent Generated, Unknown) don't surface here.
+        let followedPodcastIDs = Set(state.subscriptions.map(\.podcastID))
+        let followedPodcasts = state.podcasts.filter {
+            followedPodcastIDs.contains($0.id) && $0.kind == .rss
+        }
+        let podcastsByID = Dictionary(
+            uniqueKeysWithValues: followedPodcasts.map { ($0.id, $0) }
         )
 
-        let shows = realSubscriptions.compactMap { subscription -> PodcastShowSearchHit? in
+        let shows = followedPodcasts.compactMap { podcast -> PodcastShowSearchHit? in
             let score = score(
                 fields: [
-                    (subscription.title, 8),
-                    (subscription.author, 4),
-                    (subscription.description, 2),
-                    (subscription.categories.joined(separator: " "), 2)
+                    (podcast.title, 8),
+                    (podcast.author, 4),
+                    (podcast.description, 2),
+                    (podcast.categories.joined(separator: " "), 2)
                 ],
                 query: trimmed,
                 tokens: tokens
             )
             guard score > 0 else { return nil }
-            return PodcastShowSearchHit(subscription: subscription, score: score)
+            return PodcastShowSearchHit(podcast: podcast, score: score)
         }
         .sorted(by: ranked)
         .prefix(limit)
 
         let episodes = state.episodes.compactMap { episode -> PodcastEpisodeSearchHit? in
-            guard let subscription = subscriptionsByID[episode.subscriptionID] else { return nil }
+            guard let podcast = podcastsByID[episode.podcastID] else { return nil }
             let people = (episode.persons ?? []).map(\.name).joined(separator: " ")
             let soundBites = (episode.soundBites ?? []).compactMap(\.title).joined(separator: " ")
             let fields = [
                 (episode.title, 8),
-                (subscription.title, 4),
+                (podcast.title, 4),
                 (people, 3),
                 (soundBites, 3),
                 (episode.plainTextSummary, 2)
@@ -85,7 +90,7 @@ enum PodcastSearchEngine {
             guard score > 0 else { return nil }
             return PodcastEpisodeSearchHit(
                 episode: episode,
-                subscription: subscription,
+                podcast: podcast,
                 snippet: bestSnippet(fields.map(\.0), query: trimmed, tokens: tokens),
                 score: score
             )
@@ -131,7 +136,7 @@ enum PodcastSearchEngine {
 
     private static func ranked(_ lhs: PodcastShowSearchHit, _ rhs: PodcastShowSearchHit) -> Bool {
         if lhs.score != rhs.score { return lhs.score > rhs.score }
-        return lhs.subscription.title.localizedCaseInsensitiveCompare(rhs.subscription.title) == .orderedAscending
+        return lhs.podcast.title.localizedCaseInsensitiveCompare(rhs.podcast.title) == .orderedAscending
     }
 
     private static func tokenize(_ query: String) -> [String] {

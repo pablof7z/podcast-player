@@ -18,7 +18,9 @@ final class DataExportTests: XCTestCase {
 
     func testDataExportRoundTripsCoreRecords() throws {
         var state = AppState()
-        state.subscriptions.append(makeSubscription(title: "Round Trip Show"))
+        let podcast = makeSubscription(title: "Round Trip Show")
+        state.podcasts.append(podcast)
+        state.subscriptions.append(PodcastSubscription(podcastID: podcast.id))
         state.notes.append(Note(text: "Sample note"))
         state.friends.append(Friend(displayName: "Alice", identifier: "alice_id"))
 
@@ -29,7 +31,7 @@ final class DataExportTests: XCTestCase {
         let decoded = try decoder.decode(DataExport.Payload.self, from: data)
 
         XCTAssertEqual(decoded.schemaVersion, DataExport.currentSchemaVersion)
-        XCTAssertEqual(decoded.state.subscriptions.first?.title, "Round Trip Show")
+        XCTAssertEqual(decoded.state.podcasts.first?.title, "Round Trip Show")
         XCTAssertEqual(decoded.state.notes.first?.text, "Sample note")
         XCTAssertEqual(decoded.state.friends.first?.displayName, "Alice")
     }
@@ -59,7 +61,9 @@ final class DataExportTests: XCTestCase {
 
     func testDataExportWriteCreatesReadableFile() throws {
         var state = AppState()
-        state.subscriptions.append(makeSubscription(title: "Persisted"))
+        let podcast = makeSubscription(title: "Persisted")
+        state.podcasts.append(podcast)
+        state.subscriptions.append(PodcastSubscription(podcastID: podcast.id))
 
         let url = try DataExport.writeExport(of: state)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -69,13 +73,13 @@ final class DataExportTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode(DataExport.Payload.self, from: data)
-        XCTAssertEqual(decoded.state.subscriptions.first?.title, "Persisted")
+        XCTAssertEqual(decoded.state.podcasts.first?.title, "Persisted")
     }
 
     private func makeSubscription(
         feedURL: URL = URL(string: "https://example.com/\(UUID().uuidString).xml")!,
         title: String = "Test Show"
-    ) -> PodcastSubscription {
-        PodcastSubscription(feedURL: feedURL, title: title)
+    ) -> Podcast {
+        Podcast(feedURL: feedURL, title: title)
     }
 }

@@ -216,7 +216,7 @@ struct ClipComposerSheet: View {
     private func buildClip() -> Clip {
         Clip(
             episodeID: episode.id,
-            subscriptionID: episode.subscriptionID,
+            subscriptionID: episode.podcastID,
             startMs: startMs,
             endMs: endMs,
             caption: caption.isEmpty ? nil : caption,
@@ -292,7 +292,7 @@ struct ClipComposerSheet: View {
     let store = AppStateStore()
     let subID = UUID()
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-clip",
         title: "How to Think About Keto",
         pubDate: Date(timeIntervalSince1970: 1_714_780_800),

@@ -73,12 +73,12 @@ actor ClipExporter {
     func exportImage(
         _ clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         theme: SubtitleStyle
     ) async throws -> URL {
         let artwork = await Self.loadArtwork(
             episodeImageURL: episode.imageURL,
-            subscriptionImageURL: subscription.imageURL
+            subscriptionImageURL: podcast.imageURL
         )
         let speakerName = clip.speakerID  // Best-effort; sister agent may resolve to display name.
         let timestamp = Self.formatTimestamp(seconds: clip.startSeconds)
@@ -86,7 +86,7 @@ actor ClipExporter {
 
         let image = try await MainActor.run { () throws -> UIImage in
             let view = ClipImageCardView(
-                showName: subscription.title,
+                showName: podcast.title,
                 episodeTitle: episode.title,
                 artwork: artwork,
                 pullQuote: clip.transcriptText,
@@ -118,12 +118,12 @@ actor ClipExporter {
     func exportAudio(
         _ clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription
+        podcast: Podcast
     ) async throws -> URL {
         try await ClipAudioComposer.export(
             clip: clip,
             episode: episode,
-            subscription: subscription
+            podcast: podcast
         )
     }
 
@@ -134,20 +134,20 @@ actor ClipExporter {
     func exportVideo(
         _ clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         theme: SubtitleStyle,
         aspectRatio: ClipVideo.Aspect
     ) async throws -> URL {
         try await ClipVideoComposer.export(
             clip: clip,
             episode: episode,
-            subscription: subscription,
+            podcast: podcast,
             theme: theme,
             aspectRatio: aspectRatio,
             artworkProvider: { @Sendable in
                 await Self.loadArtwork(
                     episodeImageURL: episode.imageURL,
-                    subscriptionImageURL: subscription.imageURL
+                    subscriptionImageURL: podcast.imageURL
                 )
             }
         )

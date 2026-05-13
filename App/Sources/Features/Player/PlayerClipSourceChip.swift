@@ -56,7 +56,7 @@ struct PlayerClipSourceChip: View {
 
     private var showName: String? {
         guard let episode = resolvedEpisode else { return nil }
-        return store.subscription(id: episode.subscriptionID)?.title
+        return store.podcast(id: episode.podcastID)?.title
     }
 
     private func openSource() {

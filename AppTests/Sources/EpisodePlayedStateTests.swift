@@ -39,7 +39,7 @@ final class EpisodePlayedStateTests: XCTestCase {
 
         let updated = try XCTUnwrap(store.state.episodes.first { $0.id == ep.id })
         XCTAssertTrue(updated.played, "Mark-played must set `played = true`")
-        XCTAssertEqual(updated.subscriptionID, sub.id)
+        XCTAssertEqual(updated.podcastID, sub.id)
     }
 
     func testMarkPlayedResetsPlaybackPosition() throws {
@@ -113,8 +113,8 @@ final class EpisodePlayedStateTests: XCTestCase {
 
     func testSetPlaybackPositionPersistsToTheRightEpisode() throws {
         let (sub, _) = seed()
-        let other = makeEpisode(subscriptionID: sub.id, guid: "other-\(UUID().uuidString)")
-        store.upsertEpisodes([other], forSubscription: sub.id)
+        let other = makeEpisode(podcastID: sub.id, guid: "other-\(UUID().uuidString)")
+        store.upsertEpisodes([other], forPodcast: sub.id)
 
         store.setEpisodePlaybackPosition(other.id, position: 42)
 
@@ -130,20 +130,21 @@ final class EpisodePlayedStateTests: XCTestCase {
     /// Adds one subscription and one episode with `played == false`,
     /// returns both.
     @discardableResult
-    private func seed() -> (PodcastSubscription, Episode) {
-        let sub = PodcastSubscription(
+    private func seed() -> (Podcast, Episode) {
+        let sub = Podcast(
             feedURL: URL(string: "https://example.com/\(UUID().uuidString).xml")!,
             title: "Played-State Test Show"
         )
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "seed-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub)
+        store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "seed-\(UUID().uuidString)")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
         return (sub, ep)
     }
 
-    private func makeEpisode(subscriptionID: UUID, guid: String) -> Episode {
+    private func makeEpisode(podcastID: UUID, guid: String) -> Episode {
         Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: "Episode \(guid)",
             pubDate: Date(),

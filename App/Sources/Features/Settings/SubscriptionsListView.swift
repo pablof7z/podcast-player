@@ -10,14 +10,14 @@ import os.log
 //   • unsubscribe (with a confirmation),
 //   • export the whole list as OPML via the system share sheet.
 //
-// Uses `store.sortedSubscriptions` so order matches the Library grid.
+// Uses `store.sortedFollowedPodcasts` so order matches the Library grid.
 
 struct SubscriptionsListView: View {
     @Environment(AppStateStore.self) private var store
 
     nonisolated private static let logger = Logger.app("SubscriptionsListView")
 
-    @State private var pendingDelete: PodcastSubscription?
+    @State private var pendingDelete: Podcast?
     /// Tmp-file URL of the latest exported OPML. Generated lazily inside
     /// `.task` (and re-generated whenever the subscription list mutates) so
     /// the `ShareLink` below has a real URL ready by the time the user
@@ -29,7 +29,7 @@ struct SubscriptionsListView: View {
 
     var body: some View {
         List {
-            if store.sortedSubscriptions.isEmpty {
+            if store.sortedFollowedPodcasts.isEmpty {
                 emptyStateSection
             } else {
                 subscriptionsSection
@@ -45,7 +45,7 @@ struct SubscriptionsListView: View {
             presenting: pendingDelete
         ) { sub in
             Button("Unsubscribe", role: .destructive) {
-                store.removeSubscription(sub.id)
+                store.removeSubscription(podcastID: sub.id)
                 Haptics.success()
                 pendingDelete = nil
             }
@@ -72,7 +72,7 @@ struct SubscriptionsListView: View {
         // blank on iOS 16+ when wrapping a `UIActivityViewController` in
         // a sheet container — the activity controller wants its own
         // presentation context, not a SwiftUI modal scope.
-        .task(id: store.sortedSubscriptions.count) {
+        .task(id: store.sortedFollowedPodcasts.count) {
             await regenerateOPMLIfNeeded()
         }
     }
@@ -99,11 +99,11 @@ struct SubscriptionsListView: View {
 
     private var subscriptionsSection: some View {
         Section {
-            ForEach(store.sortedSubscriptions) { sub in
+            ForEach(store.sortedFollowedPodcasts) { sub in
                 row(for: sub)
             }
         } header: {
-            Text("\(store.sortedSubscriptions.count) show\(store.sortedSubscriptions.count == 1 ? "" : "s")")
+            Text("\(store.sortedFollowedPodcasts.count) show\(store.sortedFollowedPodcasts.count == 1 ? "" : "s")")
         }
     }
 
@@ -116,12 +116,12 @@ struct SubscriptionsListView: View {
             // `Button + .sheet { ShareSheet(...) }` pattern because the
             // SwiftUI sheet wrapper renders the underlying
             // UIActivityViewController as a blank white sheet on iOS 16+.
-            if let opmlURL, !store.sortedSubscriptions.isEmpty {
+            if let opmlURL, !store.sortedFollowedPodcasts.isEmpty {
                 ShareLink(
                     item: opmlURL,
                     subject: Text("Podcastr Subscriptions"),
                     preview: SharePreview(
-                        "Podcastr Subscriptions (\(store.sortedSubscriptions.count) shows)",
+                        "Podcastr Subscriptions (\(store.sortedFollowedPodcasts.count) shows)",
                         image: Image(systemName: "list.bullet.rectangle")
                     )
                 ) {
@@ -138,7 +138,7 @@ struct SubscriptionsListView: View {
                     icon: "square.and.arrow.up",
                     tint: .teal,
                     title: "Export OPML",
-                    subtitle: store.sortedSubscriptions.isEmpty
+                    subtitle: store.sortedFollowedPodcasts.isEmpty
                         ? "No subscriptions to export"
                         : "Preparing export…"
                 )
@@ -152,12 +152,12 @@ struct SubscriptionsListView: View {
     // MARK: - Row
 
     @ViewBuilder
-    private func row(for sub: PodcastSubscription) -> some View {
+    private func row(for sub: Podcast) -> some View {
         VStack(spacing: AppTheme.Spacing.xs) {
             HStack(spacing: AppTheme.Spacing.sm) {
                 artwork(for: sub)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sub.title.isEmpty ? sub.feedURL.host ?? "Untitled" : sub.title)
+                    Text(sub.title.isEmpty ? (sub.feedURL?.host ?? "Untitled") : sub.title)
                         .font(AppTheme.Typography.body)
                         .lineLimit(1)
                     if !sub.author.isEmpty {
@@ -195,15 +195,16 @@ struct SubscriptionsListView: View {
     }
 
     @ViewBuilder
-    private func statusRow(for sub: PodcastSubscription) -> some View {
-        let count = store.episodes(forSubscription: sub.id).count
+    private func statusRow(for sub: Podcast) -> some View {
+        let count = store.episodes(forPodcast: sub.id).count
         let countLabel = count == 1 ? "1 episode" : "\(count) episodes"
-        HStack(spacing: 6) {
+        let autoDownloadLabel = store.subscription(podcastID: sub.id)?.autoDownload.summaryLabel
+        return HStack(spacing: 6) {
             Text(countLabel)
                 .font(AppTheme.Typography.caption2)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-            if let policy = sub.autoDownload.summaryLabel {
+            if let policy = autoDownloadLabel {
                 Text("·")
                     .font(AppTheme.Typography.caption2)
                     .foregroundStyle(.tertiary)
@@ -215,7 +216,7 @@ struct SubscriptionsListView: View {
         }
     }
 
-    private func artwork(for sub: PodcastSubscription) -> some View {
+    private func artwork(for sub: Podcast) -> some View {
         Group {
             if let url = sub.imageURL {
                 CachedAsyncImage(url: url) { phase in
@@ -252,9 +253,9 @@ struct SubscriptionsListView: View {
         )
     }
 
-    private func notificationsBinding(for sub: PodcastSubscription) -> Binding<Bool> {
+    private func notificationsBinding(for sub: Podcast) -> Binding<Bool> {
         Binding(
-            get: { store.subscription(id: sub.id)?.notificationsEnabled ?? sub.notificationsEnabled },
+            get: { store.subscription(podcastID: sub.id)?.notificationsEnabled ?? true },
             set: { store.setSubscriptionNotificationsEnabled(sub.id, enabled: $0) }
         )
     }
@@ -266,13 +267,13 @@ struct SubscriptionsListView: View {
     /// empty (the export row stays disabled in that case). Errors land in
     /// `exportError` and surface via the `.alert` modifier.
     private func regenerateOPMLIfNeeded() async {
-        guard !store.sortedSubscriptions.isEmpty else {
+        guard !store.sortedFollowedPodcasts.isEmpty else {
             opmlURL = nil
             return
         }
-        let subs = store.sortedSubscriptions
+        let subs = store.sortedFollowedPodcasts
         let exporter = OPMLExport()
-        let data = exporter.exportOPML(subscriptions: subs)
+        let data = exporter.exportOPML(podcasts: subs)
         let filename = "Podcastr-Subscriptions-\(Self.dateStamp()).opml"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {

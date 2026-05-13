@@ -7,6 +7,8 @@ import os.log
 ///   - "Add by URL" — first-time subscribe to an unknown feed.
 ///   - OPML import — enrich each parsed entry then store + episodes.
 ///   - Pull-to-refresh — re-fetch one show, or every show in parallel.
+///   - Agent `play_external_episode` — `ensurePodcast(feedURLString:)` makes
+///     the metadata available without forcing a follow.
 ///
 /// All work is `@MainActor`-isolated because the store is `@MainActor` and we
 /// dispatch the I/O via `URLSession.shared` which already hops off-main
@@ -21,7 +23,8 @@ struct SubscriptionService {
     /// `FeedClient(session:)`.
     let client: FeedClient
 
-    /// The destination store. Subscriptions and episodes both land here.
+    /// The destination store. Podcasts, subscriptions and episodes all land
+    /// here.
     let store: AppStateStore
 
     init(store: AppStateStore, client: FeedClient = FeedClient()) {
@@ -49,19 +52,10 @@ struct SubscriptionService {
             case .http(let status):
                 return Self.humanizeHTTPStatus(status)
             case .parse(let message):
-                // The parse error already speaks in user-facing language
-                // (see `RSSParser.ParseError.errorDescription`). Don't
-                // double-prefix with "Couldn't read this feed:" — the
-                // parse messages already explain the problem in full
-                // sentences.
                 return message
             }
         }
 
-        /// Maps an HTTP status into the kind of plain-English sentence the
-        /// rest of the error surface uses — users don't think in 404/500.
-        /// Keeps the raw code as a parenthetical so support diagnostics
-        /// still have a fingerprint to grep for.
         private static func humanizeHTTPStatus(_ status: Int) -> String {
             switch status {
             case 401, 403:
@@ -82,23 +76,28 @@ struct SubscriptionService {
         }
     }
 
-    // MARK: - Add by URL
+    // MARK: - Ensure a podcast is known (without subscribing)
 
-    /// Subscribes to a brand-new feed URL. Fetches the feed, persists the
-    /// resulting subscription, and upserts the parsed episodes.
+    /// Returns a `Podcast` row for the feed at `feedURLString`, fetching and
+    /// upserting it when the app doesn't already know about it.
     ///
-    /// Returns the live subscription on success. Throws `AddError` for any UI-
-    /// reportable failure (invalid URL, duplicate, transport, parse).
+    /// Does NOT create a `PodcastSubscription` — call `addSubscription` for
+    /// that. The agent's external-play path uses this to capture proper
+    /// metadata for episodes the user hasn't followed.
     @discardableResult
-    func addSubscription(feedURLString: String) async throws -> PodcastSubscription {
+    func ensurePodcast(feedURLString: String) async throws -> Podcast {
         let trimmed = feedURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = normalizedURL(from: trimmed) else {
             throw AddError.invalidURL
         }
-        if let existing = store.subscription(feedURL: url) {
-            throw AddError.alreadySubscribed(title: existing.title.isEmpty ? url.host ?? trimmed : existing.title)
+        if let existing = store.podcast(feedURL: url) {
+            return existing
         }
-        let placeholder = PodcastSubscription(feedURL: url, title: url.host ?? trimmed)
+        let placeholder = Podcast(
+            kind: .rss,
+            feedURL: url,
+            title: url.host ?? trimmed
+        )
         let result: FeedClient.FeedFetchResult
         do {
             result = try await client.fetch(placeholder)
@@ -106,47 +105,119 @@ struct SubscriptionService {
             throw map(feedError)
         }
         switch result {
-        case .updated(let subscription, let episodes, _):
-            guard store.addSubscription(subscription) else {
-                throw AddError.alreadySubscribed(title: subscription.title)
-            }
+        case .updated(let podcast, let episodes, _):
+            let stored = store.upsertPodcast(podcast)
             store.upsertEpisodes(
                 episodes,
-                forSubscription: subscription.id,
+                forPodcast: stored.id,
                 evaluateAutoDownload: false
             )
-            return subscription
+            return stored
         case .notModified:
-            // First fetch can't realistically be 304 (no ETag was sent), but if
-            // a server misbehaves we still want a record on disk.
-            guard store.addSubscription(placeholder) else {
-                throw AddError.alreadySubscribed(title: placeholder.title)
-            }
-            return placeholder
+            // First fetch can't realistically be 304 (no ETag was sent), but
+            // if a server misbehaves we still want a record on disk.
+            return store.upsertPodcast(placeholder)
         }
+    }
+
+    // MARK: - Add by URL (subscribe + fetch episodes)
+
+    /// Subscribes to a feed URL. Resolves the podcast (fetching the feed
+    /// fresh when the row is brand-new or only a thin metadata
+    /// placeholder created by a prior external play), persists the
+    /// resulting podcast + subscription, and upserts the parsed episodes
+    /// — the user is now following the show, so they should see the
+    /// backlog like a normal subscribe.
+    ///
+    /// Returns the live podcast on success. Throws `AddError` for any UI-
+    /// reportable failure (including the duplicate-follow case so callers
+    /// can surface a friendly "you're already subscribed" notice).
+    @discardableResult
+    func addSubscription(feedURLString: String) async throws -> Podcast {
+        let trimmed = feedURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = normalizedURL(from: trimmed) else {
+            throw AddError.invalidURL
+        }
+
+        // Refuse early when the user already follows the matching podcast.
+        // We DON'T early-return for the "podcast known but not followed"
+        // case — that's exactly the path we want to promote to a real
+        // follow, including backlog ingestion.
+        if let existing = store.podcast(feedURL: url),
+           store.subscription(podcastID: existing.id) != nil {
+            throw AddError.alreadySubscribed(title: existing.title.isEmpty ? trimmed : existing.title)
+        }
+
+        // Always do a fresh fetch on the follow path so the user sees the
+        // show's current episode list, even when a placeholder Podcast row
+        // already exists from an earlier external play.
+        //
+        // Critical: strip any cached `etag` / `lastModified` from the input
+        // before fetching. A placeholder created by `play_external_episode`
+        // may carry validators from its metadata-hydration pass, and we
+        // intentionally did NOT upsert episodes during that pass. If we sent
+        // those validators on the follow fetch, the server could 304 and
+        // we'd add the subscription with an empty episode list. Force a 200
+        // to guarantee the backlog backfill the user expects from
+        // subscribing.
+        var podcastForFetch = store.podcast(feedURL: url) ?? Podcast(
+            kind: .rss,
+            feedURL: url,
+            title: url.host ?? trimmed
+        )
+        podcastForFetch.etag = nil
+        podcastForFetch.lastModified = nil
+        let result: FeedClient.FeedFetchResult
+        do {
+            result = try await client.fetch(podcastForFetch)
+        } catch let feedError as FeedClient.FeedFetchError {
+            throw map(feedError)
+        }
+        let stored: Podcast
+        switch result {
+        case .updated(let fetched, let episodes, _):
+            stored = store.upsertPodcast(fetched)
+            store.upsertEpisodes(
+                episodes,
+                forPodcast: stored.id,
+                evaluateAutoDownload: false
+            )
+        case .notModified:
+            stored = store.upsertPodcast(podcastForFetch)
+        }
+        store.addSubscription(podcastID: stored.id)
+        return stored
     }
 
     // MARK: - Adopt a parsed OPML entry
 
-    /// Persists a single OPML-parsed subscription, enriching it with a live
-    /// fetch so the title / author / image / description come from the feed
-    /// itself rather than the OPML attributes (which are usually sparse).
+    /// Persists a single OPML-parsed entry, enriching it with a live fetch so
+    /// the title / author / image / description come from the feed itself
+    /// rather than the OPML attributes (which are usually sparse).
     ///
-    /// Skips silently when an existing subscription already covers the feed
-    /// URL; returns `nil` in that case so the caller can count duplicates
-    /// separately from errors.
+    /// Skips silently when the user already follows the feed; returns `nil`
+    /// in that case so the caller can count duplicates separately from
+    /// errors.
     @discardableResult
-    func adopt(opmlEntry seed: PodcastSubscription) async throws -> PodcastSubscription? {
+    func adopt(opmlEntry seed: Podcast) async throws -> Podcast? {
         guard let payload = try await fetchForAdoption(opmlEntry: seed) else { return nil }
         let result = store.addSubscriptions([payload])
-        return result.imported == 1 ? payload.subscription : nil
+        return result.imported == 1 ? payload.podcast : nil
     }
 
     /// Fetches and enriches an OPML entry without mutating the store. The
     /// import sheet uses this to gather many feeds and then commit them in
-    /// one store batch, instead of forcing a growing full-state save per feed.
-    func fetchForAdoption(opmlEntry seed: PodcastSubscription) async throws -> SubscriptionImportPayload? {
-        if store.subscription(feedURL: seed.feedURL) != nil { return nil }
+    /// one store batch.
+    ///
+    /// Skips ONLY when the user already follows the feed. A `Podcast` row
+    /// that exists from a prior external play (no subscription) is still
+    /// a valid OPML import — the import promotes it to a real follow.
+    func fetchForAdoption(opmlEntry seed: Podcast) async throws -> SubscriptionImportPayload? {
+        guard let feedURL = seed.feedURL else { return nil }
+        if let existing = store.podcast(feedURL: feedURL),
+           store.subscription(podcastID: existing.id) != nil {
+            return nil
+        }
         let result: FeedClient.FeedFetchResult
         do {
             result = try await client.fetch(seed)
@@ -154,31 +225,34 @@ struct SubscriptionService {
             throw map(feedError)
         }
         switch result {
-        case .updated(let subscription, let episodes, _):
-            return SubscriptionImportPayload(subscription: subscription, episodes: episodes)
+        case .updated(let podcast, let episodes, _):
+            return SubscriptionImportPayload(
+                podcast: podcast,
+                subscription: PodcastSubscription(podcastID: podcast.id),
+                episodes: episodes
+            )
         case .notModified:
-            return SubscriptionImportPayload(subscription: seed, episodes: [])
+            return SubscriptionImportPayload(
+                podcast: seed,
+                subscription: PodcastSubscription(podcastID: seed.id),
+                episodes: []
+            )
         }
     }
 
     // MARK: - Refresh
 
-    /// Re-fetches a single subscription and writes back the merged metadata +
-    /// any new episodes. Errors are swallowed (logged in debug) so a single
+    /// Re-fetches a single podcast and writes back the merged metadata + any
+    /// new episodes. Errors are swallowed (logged in debug) so a single
     /// flaky feed doesn't poison a multi-feed refresh.
-    func refresh(_ subscription: PodcastSubscription) async {
-        guard let live = store.subscription(id: subscription.id) else { return }
+    func refresh(_ podcast: Podcast) async {
+        guard let live = store.podcast(id: podcast.id) else { return }
         do {
             try await SubscriptionRefreshService(client: client).refresh(live.id, store: store)
         } catch {
-            Self.logger.error("refresh failed for \(live.feedURL, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Self.logger.error("refresh failed for \(live.feedURL?.absoluteString ?? "(no feed)", privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
-
-    // (The previous `refreshAll()` here was sequential and is now superseded
-    // by `SubscriptionRefreshService.refreshAll(store:)` which fans out with
-    // bounded concurrency. It was removed when the Home/Library merge
-    // replaced the only caller with the service-based path.)
 
     // MARK: - Helpers
 
@@ -200,14 +274,11 @@ struct SubscriptionService {
         case .http(let status):
             return .http(status)
         case .parse(let parseError):
-            // Use `errorDescription` (friendly copy on
-            // `RSSParser.ParseError`) instead of `String(describing:)` —
-            // the latter surfaced raw Swift case names like
-            // `malformedXML(underlying: "NSXMLParserErrorDomain error 111")`
-            // straight to the user.
             let message = parseError.errorDescription
                 ?? (parseError as NSError).localizedDescription
             return .parse(message)
+        case .missingFeedURL:
+            return .invalidURL
         }
     }
 }

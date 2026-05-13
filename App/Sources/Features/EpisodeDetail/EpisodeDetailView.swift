@@ -52,7 +52,7 @@ struct EpisodeDetailView: View {
 
     @ViewBuilder
     private func loaded(episode: Episode) -> some View {
-        let subscription = store.subscription(id: episode.subscriptionID)
+        let subscription = store.podcast(id: episode.podcastID)
         let showName = subscription?.title ?? "Podcast"
         let showImageURL = subscription?.imageURL
 
@@ -115,8 +115,11 @@ struct EpisodeDetailView: View {
     /// the user re-arms ingestion via Settings → Transcripts.
     private func warmTranscriptIfNeeded(episode: Episode) async {
         guard case .none = episode.transcriptState else { return }
-        let isExternal = episode.subscriptionID == Episode.externalSubscriptionID
-        guard episode.publisherTranscriptURL != nil || isExternal else { return }
+        // Force-ingest transcripts for episodes parented to the Unknown
+        // podcast — those are agent-added externals where the user wants
+        // a transcript even though no publisher transcript URL exists.
+        let isUnknownExternal = episode.podcastID == Podcast.unknownID
+        guard episode.publisherTranscriptURL != nil || isUnknownExternal else { return }
         await TranscriptIngestService.shared.ingest(episodeID: episode.id)
     }
 
@@ -210,7 +213,7 @@ struct EpisodeDetailView: View {
     let store = AppStateStore()
     let playback = PlaybackState()
     let subID = UUID()
-    let subscription = PodcastSubscription(
+    let podcast = Podcast(
         id: subID,
         feedURL: URL(string: "https://feeds.megaphone.fm/tim-ferriss")!,
         title: "The Tim Ferriss Show",
@@ -218,7 +221,7 @@ struct EpisodeDetailView: View {
         description: "Deconstructing world-class performers."
     )
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-tim-ferriss-732",
         title: "How to Think About Keto",
         description: "<p>Tim sits down with <b>Peter Attia, MD</b> to revisit a topic the show has circled for years.</p>",
@@ -232,7 +235,8 @@ struct EpisodeDetailView: View {
             .init(startTime: 4810, title: "Practical protocols")
         ]
     )
-    store.state.subscriptions = [subscription]
+    store.state.podcasts = [podcast]
+    store.state.subscriptions = [PodcastSubscription(podcastID: subID)]
     store.state.episodes = [episode]
     return NavigationStack {
         EpisodeDetailView(episodeID: episode.id)

@@ -175,11 +175,11 @@ struct HomeCategoryPickerSheet: View {
         }
     }
 
-    private func subscriptions(in category: PodcastCategory) -> [PodcastSubscription] {
-        category.subscriptionIDs.compactMap { store.subscription(id: $0) }
+    private func subscriptions(in category: PodcastCategory) -> [Podcast] {
+        category.subscriptionIDs.compactMap { store.podcast(id: $0) }
     }
 
     private func unplayedTotal(for category: PodcastCategory) -> Int {
-        category.subscriptionIDs.reduce(0) { $0 + store.unplayedCount(forSubscription: $1) }
+        category.subscriptionIDs.reduce(0) { $0 + store.unplayedCount(forPodcast: $1) }
     }
 }

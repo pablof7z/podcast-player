@@ -26,7 +26,7 @@ import SwiftUI
 
 struct HomeRelatedSheet: View {
     let seedEpisode: Episode
-    let seedSubscription: PodcastSubscription?
+    let seedPodcast: Podcast?
 
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -57,7 +57,7 @@ struct HomeRelatedSheet: View {
     struct Match: Identifiable, Equatable {
         let id: UUID
         let episode: Episode
-        let subscription: PodcastSubscription?
+        let podcast: Podcast?
         let snippet: String
     }
 
@@ -157,17 +157,17 @@ struct HomeRelatedSheet: View {
             // match without a subscription — those would each need their
             // own bucket (and rendering an "Unknown show" group from
             // multiple anonymous matches just feels broken).
-            let attributed = matches.filter { $0.subscription != nil }
-            let groups = Dictionary(grouping: attributed) { $0.subscription!.id }
+            let attributed = matches.filter { $0.podcast != nil }
+            let groups = Dictionary(grouping: attributed) { $0.podcast!.id }
             var seenKeys = Set<UUID>()
             let orderedKeys = attributed.compactMap { match -> UUID? in
-                let id = match.subscription!.id
+                let id = match.podcast!.id
                 return seenKeys.insert(id).inserted ? id : nil
             }
             List {
                 ForEach(orderedKeys, id: \.self) { key in
                     if let bucket = groups[key], let first = bucket.first {
-                        Section(first.subscription?.title ?? "Unknown show") {
+                        Section(first.podcast?.title ?? "Unknown show") {
                             ForEach(bucket) { match in
                                 NavigationLink {
                                     EpisodeDetailView(episodeID: match.episode.id)
@@ -262,17 +262,17 @@ struct HomeRelatedSheet: View {
     /// best-scored chunk per subscription so the sheet doesn't collapse to
     /// "the same show, three times".
     private func collapseByShow(_ chunkMatches: [ChunkMatch]) -> [Match] {
-        var seenSubs: Set<UUID> = [seedEpisode.subscriptionID]
+        var seenSubs: Set<UUID> = [seedEpisode.podcastID]
         var collected: [Match] = []
         for chunk in chunkMatches {
             guard let ep = store.episode(id: chunk.chunk.episodeID),
                   ep.id != seedEpisode.id,
-                  !seenSubs.contains(ep.subscriptionID) else { continue }
-            seenSubs.insert(ep.subscriptionID)
+                  !seenSubs.contains(ep.podcastID) else { continue }
+            seenSubs.insert(ep.podcastID)
             collected.append(Match(
                 id: ep.id,
                 episode: ep,
-                subscription: store.subscription(id: ep.subscriptionID),
+                podcast: store.podcast(id: ep.podcastID),
                 snippet: String(chunk.chunk.text.prefix(220))
             ))
             if collected.count >= 8 { break }
@@ -292,7 +292,7 @@ struct HomeRelatedSheet: View {
             collected.append(Match(
                 id: chunk.chunk.id,
                 episode: ep,
-                subscription: store.subscription(id: ep.subscriptionID),
+                podcast: store.podcast(id: ep.podcastID),
                 snippet: String(chunk.chunk.text.prefix(220))
             ))
             if collected.count >= 24 { break }
@@ -309,18 +309,18 @@ struct HomeRelatedSheet: View {
             .filter { $0.episodeID == seedEpisode.id }
         let topicIDs = Set(mentions.map(\.topicID))
         guard !topicIDs.isEmpty else { return [] }
-        var seenSubs: Set<UUID> = [seedEpisode.subscriptionID]
+        var seenSubs: Set<UUID> = [seedEpisode.podcastID]
         var collected: [Match] = []
         for topicID in topicIDs {
             for mention in store.threadingMentions(forTopic: topicID) {
                 guard mention.episodeID != seedEpisode.id,
                       let ep = store.episode(id: mention.episodeID),
-                      (lens == .sources || !seenSubs.contains(ep.subscriptionID)) else { continue }
-                seenSubs.insert(ep.subscriptionID)
+                      (lens == .sources || !seenSubs.contains(ep.podcastID)) else { continue }
+                seenSubs.insert(ep.podcastID)
                 collected.append(Match(
                     id: mention.id,
                     episode: ep,
-                    subscription: store.subscription(id: ep.subscriptionID),
+                    podcast: store.podcast(id: ep.podcastID),
                     snippet: mention.snippet
                 ))
                 if collected.count >= 8 { break }
@@ -343,7 +343,7 @@ private struct HomeRelatedRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                if !hideShowTitle, let title = match.subscription?.title, !title.isEmpty {
+                if !hideShowTitle, let title = match.podcast?.title, !title.isEmpty {
                     Text(title)
                         .font(AppTheme.Typography.caption)
                         .tracking(0.8)

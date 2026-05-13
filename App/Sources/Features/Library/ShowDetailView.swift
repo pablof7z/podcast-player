@@ -18,7 +18,7 @@ struct ShowDetailView: View {
     @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
-    let subscription: PodcastSubscription
+    let podcast: Podcast
 
     @State private var showSettings: Bool = false
     @State private var showUnsubscribeConfirm: Bool = false
@@ -33,7 +33,7 @@ struct ShowDetailView: View {
         List {
             Section {
                 ShowDetailHeader(
-                    subscription: liveSubscription,
+                    podcast: liveSubscription,
                     episodeCount: episodes.count
                 )
                 .listRowInsets(EdgeInsets())
@@ -84,7 +84,7 @@ struct ShowDetailView: View {
         .refreshable { await refresh() }
         .sheet(isPresented: $showSettings) {
             ShowDetailSettingsSheet(
-                subscription: liveSubscription,
+                podcast: liveSubscription,
                 store: store,
                 onDismiss: { showSettings = false },
                 onUnsubscribe: { confirmUnsubscribe() }
@@ -118,14 +118,14 @@ struct ShowDetailView: View {
 
     // MARK: - Live snapshot
 
-    /// Re-read the subscription from the store on every render so settings
+    /// Re-read the podcast from the store on every render so settings
     /// updates (notifications toggle, refresh metadata) are reflected.
-    private var liveSubscription: PodcastSubscription {
-        store.subscription(id: subscription.id) ?? subscription
+    private var liveSubscription: Podcast {
+        store.podcast(id: podcast.id) ?? podcast
     }
 
     private var episodes: [Episode] {
-        store.episodes(forSubscription: subscription.id)
+        store.episodes(forPodcast: podcast.id)
     }
 
     private var filteredEpisodes: [Episode] {
@@ -174,7 +174,7 @@ struct ShowDetailView: View {
         } else {
             Section {
                 ShowDetailEpisodeList(
-                    subscription: liveSubscription,
+                    podcast: liveSubscription,
                     episodes: filteredEpisodes,
                     voiceOverDetailRoute: $voiceOverDetailRoute
                 )
@@ -207,14 +207,16 @@ struct ShowDetailView: View {
                 // Share-show — recipients with podcast apps will recognize
                 // the RSS URL and subscribe; everyone else gets a clickable
                 // link with the show name above it via SharePreview.
-                ShareLink(
-                    item: liveSubscription.feedURL,
-                    preview: SharePreview(
-                        sharePreviewTitle,
-                        image: Image(systemName: "antenna.radiowaves.left.and.right")
-                    )
-                ) {
-                    Label("Share show", systemImage: "square.and.arrow.up")
+                if let feedURL = liveSubscription.feedURL {
+                    ShareLink(
+                        item: feedURL,
+                        preview: SharePreview(
+                            sharePreviewTitle,
+                            image: Image(systemName: "antenna.radiowaves.left.and.right")
+                        )
+                    ) {
+                        Label("Share show", systemImage: "square.and.arrow.up")
+                    }
                 }
                 Button(role: .destructive) {
                     Haptics.warning()
@@ -235,7 +237,7 @@ struct ShowDetailView: View {
     /// name + attribution rather than the raw RSS URL.
     private var sharePreviewTitle: String {
         let title = liveSubscription.title.isEmpty
-            ? (liveSubscription.feedURL.host ?? "Podcast")
+            ? (liveSubscription.feedURL?.host ?? "Podcast")
             : liveSubscription.title
         return liveSubscription.author.isEmpty
             ? title
@@ -249,12 +251,12 @@ struct ShowDetailView: View {
     }
 
     private func performUnsubscribe() {
-        store.removeSubscription(subscription.id)
+        store.removeSubscription(podcastID: podcast.id)
         dismiss()
     }
 
     private func refresh() async {
-        await SubscriptionService(store: store).refresh(liveSubscription)
+        await SubscriptionService(store: store).refresh(podcast)
     }
 }
 
@@ -263,7 +265,7 @@ struct ShowDetailView: View {
 /// "Settings for this show" sheet. Real toggles for notifications, the
 /// per-show auto-download policy, and a destructive unsubscribe action.
 struct ShowDetailSettingsSheet: View {
-    let subscription: PodcastSubscription
+    let podcast: Podcast
     let store: AppStateStore
     let onDismiss: () -> Void
     let onUnsubscribe: () -> Void
@@ -295,17 +297,21 @@ struct ShowDetailSettingsSheet: View {
     }
 
     init(
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         store: AppStateStore,
         onDismiss: @escaping () -> Void,
         onUnsubscribe: @escaping () -> Void
     ) {
-        self.subscription = subscription
+        self.podcast = podcast
         self.store = store
         self.onDismiss = onDismiss
         self.onUnsubscribe = onUnsubscribe
-        _notificationsEnabled = State(initialValue: subscription.notificationsEnabled)
-        let policy = subscription.autoDownload
+        // Hydrate from the live subscription row when the user follows
+        // this podcast; otherwise fall back to defaults (the sheet still
+        // renders for read-only inspection of the feed metadata).
+        let subscription = store.subscription(podcastID: podcast.id)
+        _notificationsEnabled = State(initialValue: subscription?.notificationsEnabled ?? true)
+        let policy = subscription?.autoDownload ?? .default
         switch policy.mode {
         case .off:
             _autoDownloadChoice = State(initialValue: .off)
@@ -327,7 +333,7 @@ struct ShowDetailSettingsSheet: View {
                     Toggle("Notify me when new episodes drop", isOn: $notificationsEnabled)
                         .onChange(of: notificationsEnabled) { _, newValue in
                             store.setSubscriptionNotificationsEnabled(
-                                subscription.id,
+                                podcast.id,
                                 enabled: newValue
                             )
                         }
@@ -365,16 +371,18 @@ struct ShowDetailSettingsSheet: View {
                     }
                 }
                 Section("Feed") {
-                    LabeledContent("URL") {
-                        Text(subscription.feedURL.absoluteString)
-                            .font(AppTheme.Typography.monoCaption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.trailing)
-                            .textSelection(.enabled)
-                            .copyableTextMenu(subscription.feedURL.absoluteString)
+                    if let feedURL = podcast.feedURL {
+                        LabeledContent("URL") {
+                            Text(feedURL.absoluteString)
+                                .font(AppTheme.Typography.monoCaption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.trailing)
+                                .textSelection(.enabled)
+                                .copyableTextMenu(feedURL.absoluteString)
+                        }
                     }
-                    if let refreshed = subscription.lastRefreshedAt {
+                    if let refreshed = podcast.lastRefreshedAt {
                         LabeledContent("Last refreshed") {
                             Text(refreshed.formatted(date: .abbreviated, time: .shortened))
                                 .foregroundStyle(.secondary)
@@ -391,7 +399,7 @@ struct ShowDetailSettingsSheet: View {
                     }
                 }
             }
-            .navigationTitle(subscription.title)
+            .navigationTitle(podcast.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -416,7 +424,7 @@ struct ShowDetailSettingsSheet: View {
         case .allNew:  mode = .allNew
         }
         store.setSubscriptionAutoDownload(
-            subscription.id,
+            podcast.id,
             policy: AutoDownloadPolicy(mode: mode, wifiOnly: wifiOnly)
         )
     }

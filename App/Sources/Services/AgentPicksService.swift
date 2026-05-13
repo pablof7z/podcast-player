@@ -370,12 +370,12 @@ enum AgentPicksFallback {
         // newest-unplayed per show
         var newestPerShow: [UUID: Episode] = [:]
         for ep in inputs.unplayed {
-            if let existing = newestPerShow[ep.subscriptionID] {
+            if let existing = newestPerShow[ep.podcastID] {
                 if ep.pubDate > existing.pubDate {
-                    newestPerShow[ep.subscriptionID] = ep
+                    newestPerShow[ep.podcastID] = ep
                 }
             } else {
-                newestPerShow[ep.subscriptionID] = ep
+                newestPerShow[ep.podcastID] = ep
             }
         }
 
@@ -385,7 +385,7 @@ enum AgentPicksFallback {
         let top = Array(sorted.prefix(3))
 
         return top.enumerated().map { idx, ep in
-            let showName = inputs.subscriptionTitles[ep.subscriptionID] ?? "this show"
+            let showName = inputs.subscriptionTitles[ep.podcastID] ?? "this show"
             return HomeAgentPick(
                 episodeID: ep.id,
                 rationale: "From \(showName) — you haven't tuned in for a while.",

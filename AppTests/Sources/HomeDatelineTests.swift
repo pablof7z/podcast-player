@@ -100,7 +100,7 @@ final class HomeDatelineTests: XCTestCase {
 
     private func makeEpisode(pubDate: Date, played: Bool) -> Episode {
         var ep = Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: UUID().uuidString,
             title: "ep",
             pubDate: pubDate,

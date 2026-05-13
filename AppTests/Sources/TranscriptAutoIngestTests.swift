@@ -160,7 +160,7 @@ final class TranscriptAutoIngestTests: XCTestCase {
         transcriptState: TranscriptState = .none
     ) -> Episode {
         Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "guid-\(UUID().uuidString)",
             title: "Test",
             pubDate: Date(),

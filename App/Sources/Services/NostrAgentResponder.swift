@@ -244,7 +244,12 @@ final class NostrAgentResponder {
             podcastDeps: podcastDepsProvider?(),
             askCoordinator: askCoordinator
         )
-        let replyText = await bridge.reply(messages: messages, peerPubkey: inbound.pubkey) ?? ""
+        let replyText = await bridge.reply(
+            messages: messages,
+            peerPubkey: inbound.pubkey,
+            rootEventID: rootID,
+            inboundEventID: inbound.eventID
+        ) ?? ""
 
         guard !replyText.isEmpty else {
             // The agent may have completed via tool calls only with no

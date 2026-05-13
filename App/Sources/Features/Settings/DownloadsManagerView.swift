@@ -143,16 +143,16 @@ struct DownloadsManagerView: View {
     // MARK: - Rows
 
     private var downloadRows: [DownloadManagerRowData] {
-        let subscriptions = Dictionary(uniqueKeysWithValues: store.state.subscriptions.map { ($0.id, $0) })
+        let podcasts = Dictionary(uniqueKeysWithValues: store.state.podcasts.map { ($0.id, $0) })
 
         return store.state.episodes.compactMap { episode in
             guard let status = status(for: episode) else { return nil }
-            let subscription = subscriptions[episode.subscriptionID]
+            let podcast = podcasts[episode.podcastID]
             return DownloadManagerRowData(
                 episode: episode,
-                showTitle: subscription?.title ?? "Unknown show",
-                showAccent: subscription?.accentColor ?? .blue,
-                artworkURL: episode.imageURL ?? subscription?.imageURL,
+                showTitle: podcast?.title ?? "Unknown show",
+                showAccent: podcast?.accentColor ?? .blue,
+                artworkURL: episode.imageURL ?? podcast?.imageURL,
                 status: status
             )
         }

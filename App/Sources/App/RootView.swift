@@ -60,6 +60,9 @@ struct RootView: View {
     /// Drives the episode-detail sheet opened when the player's clip-source
     /// chip is tapped (notification `openEpisodeDetailRequested`).
     @State private var clipSourceEpisodeID: UUID?
+    /// Drives the NostrConversationDetailView sheet opened when the player's
+    /// generation-source chip is tapped for a Nostr-originated episode.
+    @State private var generationSourceNostrRootID: String?
     /// Shared namespace for matched-geometry between mini-bar and full player.
     @Namespace private var playerNamespace
 
@@ -142,10 +145,10 @@ struct RootView: View {
                 playbackState.autoMarkPlayedOnFinish = store.state.settings.autoMarkPlayedAtEnd
                 playbackState.applyPreferences(from: store.state.settings)
                 playbackState.resolveShowName = { [store] episode in
-                    store.subscription(id: episode.subscriptionID)?.title ?? ""
+                    store.podcast(id: episode.podcastID)?.title ?? ""
                 }
                 playbackState.resolveShowImage = { [store] episode in
-                    store.subscription(id: episode.subscriptionID)?.imageURL
+                    store.podcast(id: episode.podcastID)?.imageURL
                 }
                 // Lock-screen / Control Center enrichment. The engine reads
                 // these on every Now Playing publish so the lock screen
@@ -154,7 +157,7 @@ struct RootView: View {
                 // isolation; we wire them here so the live store is the
                 // source of truth (chapters can hydrate post-playback).
                 playbackState.engine.resolveShowName = { [store] episode in
-                    store.subscription(id: episode.subscriptionID)?.title
+                    store.podcast(id: episode.podcastID)?.title
                 }
                 playbackState.engine.resolveActiveChapterTitle = { [store] episode, playhead in
                     let live = store.episode(id: episode.id) ?? episode
@@ -172,7 +175,7 @@ struct RootView: View {
                         return chapterURL
                     }
                     return live.imageURL
-                        ?? store.subscription(id: live.subscriptionID)?.imageURL
+                        ?? store.podcast(id: live.podcastID)?.imageURL
                 }
                 // Chapter resolver for headphone-gesture mappings
                 // (next/previous chapter on AirPods double/triple-tap). Reads
@@ -294,12 +297,49 @@ struct RootView: View {
                 showFullPlayer = false
                 clipSourceEpisodeID = uuid
             }
+            .onReceive(NotificationCenter.default.publisher(for: .openAgentChatConversation)) { note in
+                guard let convID = note.userInfo?["conversationID"] as? UUID else { return }
+                showFullPlayer = false
+                if agentSession == nil {
+                    agentSession = AgentChatSession(
+                        store: store,
+                        playback: playbackState,
+                        askCoordinator: askCoordinator
+                    )
+                }
+                Task { @MainActor in
+                    await agentSession?.switchToConversation(convID)
+                    showAgentChat = true
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openNostrConversationRequested)) { note in
+                guard let rootID = note.userInfo?["rootEventID"] as? String else { return }
+                showFullPlayer = false
+                generationSourceNostrRootID = rootID
+            }
             .sheet(item: Binding(
                 get: { clipSourceEpisodeID.map(IdentifiedUUID.init) },
                 set: { clipSourceEpisodeID = $0?.id }
             )) { identified in
                 NavigationStack {
                     EpisodeDetailView(episodeID: identified.id)
+                }
+            }
+            .sheet(item: Binding(
+                get: { generationSourceNostrRootID.map(IdentifiedString.init) },
+                set: { generationSourceNostrRootID = $0?.value }
+            )) { identified in
+                if let convo = store.state.nostrConversations.first(where: { $0.rootEventID == identified.value }) {
+                    NavigationStack {
+                        NostrConversationDetailView(conversation: convo)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Done") {
+                                        generationSourceNostrRootID = nil
+                                    }
+                                }
+                            }
+                    }
                 }
             }
             .nostrApprovalPresenter()
@@ -493,8 +533,8 @@ struct RootView: View {
         case .memory(let id):
             AgentMemoriesView(spotlightTargetID: id)
         case .subscription(let id):
-            if let subscription = store.subscription(id: id) {
-                ShowDetailView(subscription: subscription)
+            if let podcast = store.podcast(id: id) {
+                ShowDetailView(podcast: podcast)
             } else {
                 spotlightMissing("Show not found", "This subscription is no longer in your library.")
             }
@@ -550,6 +590,14 @@ struct RootView: View {
     /// via optional binding (same pattern as `IdentifiedSpotlightLink`).
     private struct IdentifiedUUID: Identifiable {
         let id: UUID
+    }
+
+    // MARK: - IdentifiedString
+
+    /// Thin `Identifiable` wrapper so a plain `String` can drive `.sheet(item:)`.
+    private struct IdentifiedString: Identifiable {
+        let value: String
+        var id: String { value }
     }
 
     // MARK: - IdentifiedSpotlightLink

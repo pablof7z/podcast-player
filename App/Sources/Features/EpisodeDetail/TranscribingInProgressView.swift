@@ -153,7 +153,7 @@ struct TranscribingInProgressView: View {
 #Preview("Idle") {
     let subID = UUID()
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-1",
         title: "How to Think About Keto",
         pubDate: Date(),
@@ -166,7 +166,7 @@ struct TranscribingInProgressView: View {
 #Preview("Transcribing") {
     let subID = UUID()
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: subID,
         guid: "preview-2",
         title: "How to Think About Keto",
         pubDate: Date(),

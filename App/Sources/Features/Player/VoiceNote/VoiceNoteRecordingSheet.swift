@@ -289,7 +289,7 @@ struct VoiceNoteRecordingSheet: View {
                 return
             }
 
-            let subTitle = store.subscription(id: episode.subscriptionID)?.title ?? ""
+            let subTitle = store.podcast(id: episode.podcastID)?.title ?? ""
             let bounds = activeChapterBounds
 
             let context = VoiceNoteAgentContext(

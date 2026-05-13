@@ -112,22 +112,24 @@ enum SpotlightIndexer {
             .filter { !$0.deleted }
             .map(makeSearchable(from:))
 
-        // Subscriptions are hard-deleted via `removeSubscription`, so every
-        // record in `state.subscriptions` is "live" — no soft-delete filter.
-        let subscriptions = state.subscriptions.map(makeSearchable(from:))
+        // Spotlight indexes followed podcasts only — synthetic / orphan
+        // podcasts have no user follow row and don't belong in search.
+        let followedPodcastIDs = Set(state.subscriptions.map(\.podcastID))
+        let podcastsForIndex = state.podcasts.filter { followedPodcastIDs.contains($0.id) }
+        let subscriptions = podcastsForIndex.map(makeSearchable(from:))
 
         // Bound the episode index size: the 200 most-recent unplayed
         // episodes across all subscriptions. An unplayed cap keeps already-
         // listened material from cluttering search; the 200 ceiling caps
         // worst-case index churn for users with very large libraries.
-        let subscriptionTitles = Dictionary(
-            uniqueKeysWithValues: state.subscriptions.map { ($0.id, $0.title) }
+        let podcastTitles = Dictionary(
+            uniqueKeysWithValues: state.podcasts.map { ($0.id, $0.title) }
         )
         let episodes = state.episodes
             .filter { !$0.played }
             .sorted { $0.pubDate > $1.pubDate }
             .prefix(maxIndexedEpisodes)
-            .map { makeSearchable(from: $0, showName: subscriptionTitles[$0.subscriptionID] ?? "") }
+            .map { makeSearchable(from: $0, showName: podcastTitles[$0.podcastID] ?? "") }
 
         let index = CSSearchableIndex.default()
         replace(domain: .notes, with: notes, in: index)
@@ -221,34 +223,34 @@ enum SpotlightIndexer {
         return String(content.prefix(60)) + "…"
     }
 
-    private static func makeSearchable(from subscription: PodcastSubscription) -> CSSearchableItem {
+    private static func makeSearchable(from podcast: Podcast) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
-        attrs.title = subscription.title
-        // Show notes commonly arrive as raw HTML (`<p>`, `<a href>`, …)
-        // plus named or numeric entities. Spotlight renders the snippet
-        // as literal text, so without this projection users were seeing
+        attrs.title = podcast.title
+        // Show notes commonly arrive as raw HTML (`<p>`, `<a href>`, …) plus
+        // named or numeric entities. Spotlight renders the snippet as literal
+        // text, so without this projection users were seeing
         // `<p>Hello &amp; world</p>` in search results.
-        attrs.contentDescription = EpisodeShowNotesFormatter.plainText(from: subscription.description)
-        if !subscription.author.isEmpty {
-            attrs.artist = subscription.author
+        attrs.contentDescription = EpisodeShowNotesFormatter.plainText(from: podcast.description)
+        if !podcast.author.isEmpty {
+            attrs.artist = podcast.author
         }
-        if let imageURL = subscription.imageURL {
+        if let imageURL = podcast.imageURL {
             attrs.thumbnailURL = imageURL
         }
-        attrs.contentCreationDate = subscription.subscribedAt
-        attrs.keywords = subscriptionKeywords(for: subscription)
+        attrs.contentCreationDate = podcast.discoveredAt
+        attrs.keywords = subscriptionKeywords(for: podcast)
 
         return CSSearchableItem(
-            uniqueIdentifier: subscriptionIdentifier(subscription.id),
+            uniqueIdentifier: subscriptionIdentifier(podcast.id),
             domainIdentifier: Domain.subscriptions.rawValue,
             attributeSet: attrs
         )
     }
 
-    private static func subscriptionKeywords(for subscription: PodcastSubscription) -> [String] {
+    private static func subscriptionKeywords(for podcast: Podcast) -> [String] {
         var keywords = ["podcast", "subscription", "show"]
-        if !subscription.author.isEmpty { keywords.append(subscription.author) }
-        keywords.append(contentsOf: subscription.categories)
+        if !podcast.author.isEmpty { keywords.append(podcast.author) }
+        keywords.append(contentsOf: podcast.categories)
         return keywords
     }
 

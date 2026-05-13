@@ -23,8 +23,8 @@ extension AppStateStore {
         // the user's local capture.
         if clip.source != .agent {
             let ep  = episode(id: clip.episodeID)
-            let sub = ep.flatMap { subscription(id: $0.subscriptionID) }
-            Task { try? await UserIdentityStore.shared.publishUserClip(clip, episode: ep, subscription: sub) }
+            let pod = ep.flatMap { podcast(id: $0.podcastID) }
+            Task { try? await UserIdentityStore.shared.publishUserClip(clip, episode: ep, podcast: pod) }
         }
     }
 

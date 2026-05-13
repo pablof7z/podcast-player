@@ -26,22 +26,22 @@ enum PodcastCategorizationPrompt {
         """
     }
 
-    static func userPrompt(subscriptions: [PodcastSubscription]) -> String {
+    static func userPrompt(podcasts: [Podcast]) -> String {
         var lines: [String] = []
-        lines.reserveCapacity(subscriptions.count * 4)
+        lines.reserveCapacity(podcasts.count * 4)
         lines.append("Subscriptions:")
-        for subscription in subscriptions {
-            lines.append("- id: \(subscription.id.uuidString)")
-            lines.append("  title: \(sanitize(subscription.title))")
-            if !subscription.author.isEmpty {
-                lines.append("  author: \(sanitize(subscription.author))")
+        for podcast in podcasts {
+            lines.append("- id: \(podcast.id.uuidString)")
+            lines.append("  title: \(sanitize(podcast.title))")
+            if !podcast.author.isEmpty {
+                lines.append("  author: \(sanitize(podcast.author))")
             }
-            let trimmedDescription = trimDescription(subscription.description)
+            let trimmedDescription = trimDescription(podcast.description)
             if !trimmedDescription.isEmpty {
                 lines.append("  description: \(sanitize(trimmedDescription))")
             }
-            if !subscription.categories.isEmpty {
-                lines.append("  itunes_categories: \(subscription.categories.joined(separator: ", "))")
+            if !podcast.categories.isEmpty {
+                lines.append("  itunes_categories: \(podcast.categories.joined(separator: ", "))")
             }
         }
         lines.append("")

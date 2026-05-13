@@ -12,7 +12,7 @@ import SwiftUI
 
 struct PlayerTopBar: View {
     @Bindable var state: PlaybackState
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let showName: String
     let artworkURL: URL?
     let titleCollapsed: Bool
@@ -75,7 +75,7 @@ struct PlayerTopBar: View {
                 if let episode = state.episode {
                     PlayerMoreMenu(
                         episode: episode,
-                        subscription: subscription,
+                        podcast: podcast,
                         onMarkPlayed: { store.markEpisodePlayed(episode.id) },
                         onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
                         onDismissPlayer: onDismiss,

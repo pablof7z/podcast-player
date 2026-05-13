@@ -62,7 +62,9 @@ final class AgentRelayBridge {
     /// this code path.
     func reply(
         messages history: [[String: Any]],
-        peerPubkey: String
+        peerPubkey: String,
+        rootEventID: String? = nil,
+        inboundEventID: String? = nil
     ) async -> String? {
         guard !history.isEmpty else { return nil }
         let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
@@ -72,6 +74,20 @@ final class AgentRelayBridge {
         }
         var isUpgraded = false
         var enabledSkills: Set<String> = []
+
+        // Build a PeerConversationContext when we have enough identifying
+        // information so that tool dispatches can tag generated episodes
+        // with their source conversation and send reply events correctly.
+        let peerContext: PeerConversationContext?
+        if let root = rootEventID, let inbound = inboundEventID {
+            peerContext = PeerConversationContext(
+                rootEventID: root,
+                inboundEventID: inbound,
+                peerPubkeyHex: peerPubkey
+            )
+        } else {
+            peerContext = nil
+        }
 
         let preamble = NostrPeerAgentPrompt.peerContextPreamble(
             for: store,
@@ -87,6 +103,7 @@ final class AgentRelayBridge {
             messages: &messages,
             isUpgraded: &isUpgraded,
             enabledSkills: &enabledSkills,
+            peerContext: peerContext,
             source: .nostrInbound,
             initialInput: (history.last?["content"] as? String) ?? "",
             systemPrompt: systemPrompt
@@ -131,6 +148,7 @@ final class AgentRelayBridge {
         messages: inout [[String: Any]],
         isUpgraded: inout Bool,
         enabledSkills: inout Set<String>,
+        peerContext: PeerConversationContext? = nil,
         source: AgentRunSource,
         initialInput: String,
         systemPrompt: String
@@ -204,12 +222,13 @@ final class AgentRelayBridge {
                     resultJSON = activation.resultJSON
                     enabledSkills = activation.updatedEnabledSkills
                 } else {
+                    let effectiveDeps = peerContext.map { podcastDeps?.withPeerContext($0) } ?? podcastDeps
                     resultJSON = await AgentTools.dispatch(
                         name: toolCall.name,
                         argsJSON: toolCall.arguments,
                         store: store,
                         batchID: batchID,
-                        podcastDeps: podcastDeps,
+                        podcastDeps: effectiveDeps,
                         enabledSkills: enabledSkills,
                         askCoordinator: askCoordinator
                     )

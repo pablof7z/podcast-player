@@ -24,7 +24,7 @@ struct AgentRunDetailView: View {
                 }
             case "podcast_id", "subscription_id":
                 if case .string(let s) = value, let id = UUID(uuidString: s),
-                   let title = store.subscription(id: id)?.title, !title.isEmpty {
+                   let title = store.podcast(id: id)?.title, !title.isEmpty {
                     return "\u{201C}\(title)\u{201D}"
                 }
             case "timestamp", "start_seconds", "end_seconds", "playhead":

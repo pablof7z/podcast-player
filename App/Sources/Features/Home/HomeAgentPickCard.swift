@@ -9,7 +9,7 @@ import SwiftUI
 struct HomeAgentPickCard: View {
     let pick: HomeAgentPick
     let episode: Episode
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let isHero: Bool
     let onPlay: () -> Void
 
@@ -69,7 +69,7 @@ struct HomeAgentPickCard: View {
             HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
                 artwork
                 VStack(alignment: .leading, spacing: 2) {
-                    if let showName = subscription?.title, !showName.isEmpty {
+                    if let showName = podcast?.title, !showName.isEmpty {
                         Text(showName)
                             .font(AppTheme.Typography.caption)
                             .tracking(0.8)
@@ -90,7 +90,7 @@ struct HomeAgentPickCard: View {
 
     @ViewBuilder
     private var artwork: some View {
-        let url = episode.imageURL ?? subscription?.imageURL
+        let url = episode.imageURL ?? podcast?.imageURL
         let dim: CGFloat = isHero ? 64 : 44
         ZStack {
             Color(.tertiarySystemFill)
@@ -203,7 +203,7 @@ struct HomeAgentPickCard: View {
 
     private var accessibilityLabel: String {
         var parts: [String] = []
-        if let s = subscription?.title, !s.isEmpty { parts.append(s) }
+        if let s = podcast?.title, !s.isEmpty { parts.append(s) }
         parts.append(episode.title)
         if !pick.rationale.isEmpty { parts.append(pick.rationale) }
         parts.append(isHero ? "Hero pick" : "Pick")

@@ -38,60 +38,64 @@ final class AppTests: XCTestCase {
         let initialCount = store.state.subscriptions.count
 
         let sub = makeSubscription(title: "Test Show")
-        let inserted = store.addSubscription(sub)
+        store.upsertPodcast(sub)
+        let inserted = store.addSubscription(podcastID: sub.id)
 
         XCTAssertTrue(inserted)
         XCTAssertEqual(store.state.subscriptions.count, initialCount + 1)
-        XCTAssertEqual(store.state.subscriptions.last?.title, "Test Show")
+        XCTAssertEqual(store.podcast(id: sub.id)?.title, "Test Show")
     }
 
     func testAddSubscriptionRejectsDuplicateFeedURL() throws {
         // Use a UUID-unique URL so prior persisted state can't collide.
         let url = URL(string: "https://example.com/\(UUID().uuidString).xml")!
 
-        XCTAssertTrue(store.addSubscription(makeSubscription(feedURL: url)))
+        let firstPodcast = makeSubscription(feedURL: url)
+        store.upsertPodcast(firstPodcast)
+        XCTAssertTrue(store.addSubscription(podcastID: firstPodcast.id))
         let countAfterFirst = store.state.subscriptions.count
-        XCTAssertFalse(store.addSubscription(makeSubscription(feedURL: url)))
+        // A second call for the same podcast must NOT add another follow row.
+        XCTAssertFalse(store.addSubscription(podcastID: firstPodcast.id))
         XCTAssertEqual(store.state.subscriptions.count, countAfterFirst)
     }
 
     func testRemoveSubscriptionAlsoRemovesItsEpisodes() throws {
         let sub = makeSubscription(title: "Drop Me \(UUID().uuidString)")
-        store.addSubscription(sub)
+        store.upsertPodcast(sub)
+        store.addSubscription(podcastID: sub.id)
 
-        let ep1 = makeEpisode(subscriptionID: sub.id, guid: "drop-\(UUID().uuidString)")
-        let ep2 = makeEpisode(subscriptionID: sub.id, guid: "drop-\(UUID().uuidString)")
-        store.upsertEpisodes([ep1, ep2], forSubscription: sub.id)
+        let ep1 = makeEpisode(podcastID: sub.id, guid: "drop-\(UUID().uuidString)")
+        let ep2 = makeEpisode(podcastID: sub.id, guid: "drop-\(UUID().uuidString)")
+        store.upsertEpisodes([ep1, ep2], forPodcast: sub.id)
 
-        // Assert against this subscription's episodes only — keeping the
-        // narrower scope makes the intent obvious even though the isolated
-        // suite means the global episode count would also be 2.
-        XCTAssertEqual(store.episodes(forSubscription: sub.id).count, 2)
+        XCTAssertEqual(store.episodes(forPodcast: sub.id).count, 2)
 
-        store.removeSubscription(sub.id)
+        store.removeSubscription(podcastID: sub.id)
 
-        XCTAssertFalse(store.state.subscriptions.contains { $0.id == sub.id })
-        XCTAssertTrue(store.episodes(forSubscription: sub.id).isEmpty)
+        XCTAssertFalse(store.state.subscriptions.contains { $0.podcastID == sub.id })
+        XCTAssertTrue(store.episodes(forPodcast: sub.id).isEmpty)
     }
 
     func testSetSubscriptionNotificationsToggle() throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
+        store.upsertPodcast(sub)
+        store.addSubscription(podcastID: sub.id)
 
         store.setSubscriptionNotificationsEnabled(sub.id, enabled: false)
-        XCTAssertEqual(store.subscription(id: sub.id)?.notificationsEnabled, false)
+        XCTAssertEqual(store.subscription(podcastID: sub.id)?.notificationsEnabled, false)
 
         store.setSubscriptionNotificationsEnabled(sub.id, enabled: true)
-        XCTAssertEqual(store.subscription(id: sub.id)?.notificationsEnabled, true)
+        XCTAssertEqual(store.subscription(podcastID: sub.id)?.notificationsEnabled, true)
     }
 
     // MARK: - Episodes
 
     func testSetEpisodePlaybackPosition() throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "e1")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub)
+        store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "e1")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
 
         store.setEpisodePlaybackPosition(ep.id, position: 123.4)
 
@@ -110,9 +114,9 @@ final class AppTests: XCTestCase {
     /// during a real episode — and pinned the main actor.
     func testPositionUpdatesAreDebounced() async throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "tick-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "tick-\(UUID().uuidString)")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
 
         // Only count writes triggered by the test body itself — addSubscription
         // and upsertEpisodes have already saved.
@@ -171,9 +175,9 @@ final class AppTests: XCTestCase {
     /// cap directly by fast-forwarding `lastPositionFlush`.
     func testEagerCapFiresAfterMaxIntervalElapsed() throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "cap-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "cap-\(UUID().uuidString)")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
 
         // Eager-first call lands on disk and stamps `lastPositionFlush`.
         store.setEpisodePlaybackPosition(ep.id, position: 1.0)
@@ -206,9 +210,9 @@ final class AppTests: XCTestCase {
     /// the user can force-quit + relaunch without losing playback progress.
     func testBackgroundFlushPersistsPendingPosition() async throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "bg-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "bg-\(UUID().uuidString)")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
 
         // Eat the eager-first save so the next setEpisodePlaybackPosition
         // call lands in the cache instead of going straight to disk.
@@ -254,9 +258,9 @@ final class AppTests: XCTestCase {
     /// latest cached position en route.
     func testMarkPlayedFlushesBeforeReset() async throws {
         let sub = makeSubscription()
-        store.addSubscription(sub)
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "mark-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "mark-\(UUID().uuidString)")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
 
         // Seed the cache with a non-zero position. First call eagerly
         // saves; second call sits in the cache.
@@ -353,8 +357,13 @@ final class AppTests: XCTestCase {
 
     func testAgentPromptIncludesSubscriptions() {
         var state = AppState()
-        state.subscriptions.append(makeSubscription(title: "The Tim Ferriss Show"))
-        state.subscriptions.append(makeSubscription(title: "Acquired"))
+        let p1 = makeSubscription(title: "The Tim Ferriss Show")
+        let p2 = makeSubscription(title: "Acquired")
+        state.podcasts.append(contentsOf: [p1, p2])
+        state.subscriptions.append(contentsOf: [
+            PodcastSubscription(podcastID: p1.id),
+            PodcastSubscription(podcastID: p2.id),
+        ])
 
         let prompt = AgentPrompt.build(for: state)
 
@@ -366,8 +375,9 @@ final class AppTests: XCTestCase {
     func testAgentPromptIncludesInProgressEpisodes() {
         var state = AppState()
         let sub = makeSubscription(title: "Lex Fridman")
-        state.subscriptions.append(sub)
-        var ep = makeEpisode(subscriptionID: sub.id, guid: "ip-1")
+        state.podcasts.append(sub)
+        state.subscriptions.append(PodcastSubscription(podcastID: sub.id))
+        var ep = makeEpisode(podcastID: sub.id, guid: "ip-1")
         ep.title = "Episode about something"
         ep.playbackPosition = 600
         state.episodes.append(ep)
@@ -382,8 +392,9 @@ final class AppTests: XCTestCase {
     func testAgentPromptIncludesRecentUnplayedEpisodes() {
         var state = AppState()
         let sub = makeSubscription(title: "Recent Show")
-        state.subscriptions.append(sub)
-        var fresh = makeEpisode(subscriptionID: sub.id, guid: "fresh-1")
+        state.podcasts.append(sub)
+        state.subscriptions.append(PodcastSubscription(podcastID: sub.id))
+        var fresh = makeEpisode(podcastID: sub.id, guid: "fresh-1")
         fresh.title = "Brand new episode"
         fresh.pubDate = Date().addingTimeInterval(-3600)
         state.episodes.append(fresh)
@@ -397,8 +408,9 @@ final class AppTests: XCTestCase {
     func testAgentPromptOmitsOldEpisodesFromRecentSection() {
         var state = AppState()
         let sub = makeSubscription(title: "Old Show")
-        state.subscriptions.append(sub)
-        var old = makeEpisode(subscriptionID: sub.id, guid: "old-1")
+        state.podcasts.append(sub)
+        state.subscriptions.append(PodcastSubscription(podcastID: sub.id))
+        var old = makeEpisode(podcastID: sub.id, guid: "old-1")
         old.title = "Old episode title that is unique"
         old.pubDate = Date().addingTimeInterval(-30 * 86_400)
         state.episodes.append(old)
@@ -422,7 +434,8 @@ final class AppTests: XCTestCase {
 
         // Make a noisy mutation through the isolated store.
         let sub = makeSubscription(title: "Leak Canary \(UUID().uuidString)")
-        XCTAssertTrue(store.addSubscription(sub))
+        store.upsertPodcast(sub)
+        XCTAssertTrue(store.addSubscription(podcastID: sub.id))
 
         // The production file must be byte-identical to the snapshot.
         let after = try? Data(contentsOf: productionURL)
@@ -468,16 +481,16 @@ final class AppTests: XCTestCase {
     private func makeSubscription(
         feedURL: URL = URL(string: "https://example.com/\(UUID().uuidString).xml")!,
         title: String = "Test Show"
-    ) -> PodcastSubscription {
-        PodcastSubscription(feedURL: feedURL, title: title)
+    ) -> Podcast {
+        Podcast(feedURL: feedURL, title: title)
     }
 
     private func makeEpisode(
-        subscriptionID: UUID,
+        podcastID: UUID,
         guid: String
     ) -> Episode {
         Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: "Episode \(guid)",
             pubDate: Date(),

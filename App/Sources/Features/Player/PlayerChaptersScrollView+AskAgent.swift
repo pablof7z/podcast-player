@@ -28,7 +28,7 @@ enum ChapterAskAgentDispatcher {
         store: AppStateStore
     ) {
         guard let episode else { return }
-        let title = store.subscription(id: episode.subscriptionID)?.title ?? ""
+        let title = store.podcast(id: episode.podcastID)?.title ?? ""
         let resolvedEnd = chapter.endTime ?? Self.nextChapterStart(after: chapter, in: chapters)
         let context = ChapterAgentContext(
             episodeID: episode.id,

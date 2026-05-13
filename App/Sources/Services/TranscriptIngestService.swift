@@ -118,7 +118,7 @@ final class TranscriptIngestService {
         // Per-category opt-out: if the user has disabled transcription for
         // the category this show belongs to, skip ingestion entirely.
         // Defaults to allow when the show isn't yet categorised.
-        guard appStore.effectiveTranscriptionEnabled(forSubscription: episode.subscriptionID) else {
+        guard appStore.effectiveTranscriptionEnabled(forPodcast: episode.podcastID) else {
             Self.logger.info(
                 "ingest(\(episodeID, privacy: .public)): transcription disabled for category — skipping"
             )
@@ -331,7 +331,7 @@ final class TranscriptIngestService {
         // STEP 2: Best-effort embed. Failures are logged but don't throw.
         let chunkable = ChunkableTranscript(
             transcript: transcript,
-            podcastID: episode.subscriptionID
+            podcastID: episode.podcastID
         )
         let chunks = chunkBuilder.build(from: chunkable)
 
@@ -377,7 +377,7 @@ final class TranscriptIngestService {
         // episodes land.
         guard appStore.state.settings.wikiAutoGenerateOnTranscriptIngest else { return }
         let candidateTopics = wikiCandidateTopics(for: episode)
-        let podcastID = episode.subscriptionID
+        let podcastID = episode.podcastID
         Task { @MainActor in
             let inventory = (try? WikiStorage.shared.loadInventory()) ?? WikiInventory()
             let jobs = WikiTriggers.jobs(

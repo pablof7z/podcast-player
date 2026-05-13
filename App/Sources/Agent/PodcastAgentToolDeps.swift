@@ -119,13 +119,15 @@ public protocol PlaybackHostProtocol: Sendable {
     func openScreen(route: String) async
 
     /// Play a publicly-accessible episode by URL without requiring a prior
-    /// subscription. Constructs a transient episode value (not persisted to the
-    /// store) so playback position is not saved across app launches.
+    /// follow. When `feedURLString` is supplied, the system fetches the
+    /// source podcast's metadata (artwork, title, author) and parents the
+    /// episode to a real `Podcast` row — the user remains unsubscribed.
+    /// When `feedURLString` is nil, the episode parents to the built-in
+    /// "Unknown" podcast row.
     func playExternalEpisode(
         audioURL: URL,
         title: String,
-        podcastTitle: String?,
-        imageURL: URL?,
+        feedURLString: String?,
         durationSeconds: TimeInterval?,
         timestampSeconds: Double
     ) async
@@ -241,14 +243,15 @@ public protocol PerplexityClientProtocol: Sendable {
 }
 
 /// TTS episode generation and voice configuration (lane 10).
-public protocol TTSPublisherProtocol: Sendable {
+protocol TTSPublisherProtocol: Sendable {
     func defaultVoiceID() -> String
     func setDefaultVoiceID(_ voiceID: String)
     func generateAndPublish(
         title: String,
         description: String?,
         turns: [TTSTurn],
-        playNow: Bool
+        playNow: Bool,
+        generationSource: Episode.GenerationSource?
     ) async throws -> TTSEpisodeResult
 }
 
@@ -279,32 +282,36 @@ public protocol PodcastSubscribeProtocol: Sendable {
 /// build a fresh `PodcastAgentToolDeps` (or use `withPeerContext(_:)`) for each
 /// Nostr peer-conversation turn so peer-only tools (`end_conversation`,
 /// `send_friend_message`) can resolve the active root + inbound event.
-public struct PodcastAgentToolDeps: Sendable {
-    public let rag: PodcastAgentRAGSearchProtocol
-    public let wiki: WikiStorageProtocol
-    public let briefing: BriefingComposerProtocol
-    public let summarizer: EpisodeSummarizerProtocol
-    public let fetcher: EpisodeFetcherProtocol
-    public let playback: PlaybackHostProtocol
-    public let library: PodcastLibraryProtocol
-    public let inventory: PodcastInventoryProtocol
-    public let categories: PodcastCategoryProtocol
-    public let peerPublisher: PeerEventPublisherProtocol
-    public let friendDirectory: FriendDirectoryProtocol
-    public let perplexity: PerplexityClientProtocol
-    public let ttsPublisher: TTSPublisherProtocol
-    public let directory: PodcastDirectoryProtocol
-    public let subscribe: PodcastSubscribeProtocol
+struct PodcastAgentToolDeps: Sendable {
+    let rag: PodcastAgentRAGSearchProtocol
+    let wiki: WikiStorageProtocol
+    let briefing: BriefingComposerProtocol
+    let summarizer: EpisodeSummarizerProtocol
+    let fetcher: EpisodeFetcherProtocol
+    let playback: PlaybackHostProtocol
+    let library: PodcastLibraryProtocol
+    let inventory: PodcastInventoryProtocol
+    let categories: PodcastCategoryProtocol
+    let peerPublisher: PeerEventPublisherProtocol
+    let friendDirectory: FriendDirectoryProtocol
+    let perplexity: PerplexityClientProtocol
+    let ttsPublisher: TTSPublisherProtocol
+    let directory: PodcastDirectoryProtocol
+    let subscribe: PodcastSubscribeProtocol
     /// Set by the Nostr peer-agent entrypoint per inbound turn. Nil for owner
     /// chat / voice / other entrypoints — peer-only tools early-return a clean
     /// tool error in that case.
-    public let peerContext: PeerConversationContext?
+    let peerContext: PeerConversationContext?
+    /// Set by `AgentChatSession` per dispatch to the active in-app conversation
+    /// UUID. Used by `generate_tts_episode` to tag the resulting episode with
+    /// its source conversation so the player can surface a tappable link.
+    let chatConversationID: UUID?
     /// Hook for marking a peer-conversation root as ended (drives the
     /// "agent has signed off" UI affordance). Implemented by the live wiring;
     /// no-op in tests by default.
-    public let endConversationSink: PeerConversationEndSink
+    let endConversationSink: PeerConversationEndSink
 
-    public init(
+    init(
         rag: PodcastAgentRAGSearchProtocol,
         wiki: WikiStorageProtocol,
         briefing: BriefingComposerProtocol,
@@ -321,6 +328,7 @@ public struct PodcastAgentToolDeps: Sendable {
         directory: PodcastDirectoryProtocol,
         subscribe: PodcastSubscribeProtocol,
         peerContext: PeerConversationContext? = nil,
+        chatConversationID: UUID? = nil,
         endConversationSink: PeerConversationEndSink = NoopPeerConversationEndSink()
     ) {
         self.rag = rag
@@ -339,13 +347,13 @@ public struct PodcastAgentToolDeps: Sendable {
         self.directory = directory
         self.subscribe = subscribe
         self.peerContext = peerContext
+        self.chatConversationID = chatConversationID
         self.endConversationSink = endConversationSink
     }
 
-    /// Returns a copy of this bundle with the supplied peer context. Used by
-    /// the Nostr inbound entrypoint to thread per-turn context through the
-    /// dispatcher without rebuilding every adapter.
-    public func withPeerContext(_ ctx: PeerConversationContext?) -> PodcastAgentToolDeps {
+    /// Returns a copy with the supplied peer context. Used by the Nostr
+    /// inbound entrypoint to thread per-turn context without rebuilding adapters.
+    func withPeerContext(_ ctx: PeerConversationContext?) -> PodcastAgentToolDeps {
         PodcastAgentToolDeps(
             rag: rag,
             wiki: wiki,
@@ -363,6 +371,33 @@ public struct PodcastAgentToolDeps: Sendable {
             directory: directory,
             subscribe: subscribe,
             peerContext: ctx,
+            chatConversationID: chatConversationID,
+            endConversationSink: endConversationSink
+        )
+    }
+
+    /// Returns a copy with the supplied in-app chat conversation ID. Called
+    /// by `AgentChatSession` per dispatch so `generate_tts_episode` can tag
+    /// the resulting episode with its source conversation.
+    func withChatConversationID(_ id: UUID?) -> PodcastAgentToolDeps {
+        PodcastAgentToolDeps(
+            rag: rag,
+            wiki: wiki,
+            briefing: briefing,
+            summarizer: summarizer,
+            fetcher: fetcher,
+            playback: playback,
+            library: library,
+            inventory: inventory,
+            categories: categories,
+            peerPublisher: peerPublisher,
+            friendDirectory: friendDirectory,
+            perplexity: perplexity,
+            ttsPublisher: ttsPublisher,
+            directory: directory,
+            subscribe: subscribe,
+            peerContext: peerContext,
+            chatConversationID: id,
             endConversationSink: endConversationSink
         )
     }
@@ -375,6 +410,6 @@ public protocol PeerConversationEndSink: Sendable {
 }
 
 public struct NoopPeerConversationEndSink: PeerConversationEndSink {
-    public init() {}
+    init() {}
     public func markEnded(rootEventID: String) async {}
 }

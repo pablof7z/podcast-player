@@ -79,7 +79,7 @@ struct PodcastSearchView: View {
                 ForEach(localResults.shows) { hit in
                     Button {
                         Haptics.selection()
-                        destination = .show(hit.subscription.id)
+                        destination = .show(hit.podcast.id)
                     } label: {
                         PodcastShowSearchRow(hit: hit, query: model.query)
                     }
@@ -133,7 +133,7 @@ struct PodcastSearchView: View {
                         PodcastTranscriptSearchRow(
                             hit: hit,
                             episode: store.episode(id: hit.chunk.episodeID),
-                            subscription: store.subscription(id: hit.chunk.podcastID),
+                            podcast: store.podcast(id: hit.chunk.podcastID),
                             query: model.query
                         )
                     }
@@ -177,8 +177,8 @@ struct PodcastSearchView: View {
     private func destinationView(_ destination: PodcastSearchDestination) -> some View {
         switch destination {
         case .show(let id):
-            if let subscription = store.subscription(id: id) {
-                ShowDetailView(subscription: subscription)
+            if let podcast = store.podcast(id: id) {
+                ShowDetailView(podcast: podcast)
             } else {
                 missingView("Show not found")
             }

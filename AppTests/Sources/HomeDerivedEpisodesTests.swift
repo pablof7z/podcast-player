@@ -32,8 +32,8 @@ final class HomeDerivedEpisodesTests: XCTestCase {
 
     func testInProgressIncludesPartiallyListenedUnplayedEpisodes() {
         let sub = seedSubscription()
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "ip-1")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "ip-1")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
         store.setEpisodePlaybackPosition(ep.id, position: 600)
 
         let inProgress = store.inProgressEpisodes
@@ -44,8 +44,8 @@ final class HomeDerivedEpisodesTests: XCTestCase {
 
     func testInProgressExcludesPlayedEpisodes() {
         let sub = seedSubscription()
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "ip-played")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "ip-played")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
         store.setEpisodePlaybackPosition(ep.id, position: 600)
         store.markEpisodePlayed(ep.id)
         // mark-played zeroes position too — this also exercises the
@@ -56,8 +56,8 @@ final class HomeDerivedEpisodesTests: XCTestCase {
 
     func testInProgressExcludesUnplayedZeroPositionEpisodes() {
         let sub = seedSubscription()
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "ip-zero")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "ip-zero")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
         // No setEpisodePlaybackPosition — position stays at 0.
 
         XCTAssertTrue(store.inProgressEpisodes.isEmpty)
@@ -66,11 +66,11 @@ final class HomeDerivedEpisodesTests: XCTestCase {
     func testInProgressSortedNewestPubDateFirst() {
         let sub = seedSubscription()
         let now = Date()
-        var older = makeEpisode(subscriptionID: sub.id, guid: "ip-older")
+        var older = makeEpisode(podcastID: sub.id, guid: "ip-older")
         older.pubDate = now.addingTimeInterval(-7 * 86_400)
-        var newer = makeEpisode(subscriptionID: sub.id, guid: "ip-newer")
+        var newer = makeEpisode(podcastID: sub.id, guid: "ip-newer")
         newer.pubDate = now
-        store.upsertEpisodes([older, newer], forSubscription: sub.id)
+        store.upsertEpisodes([older, newer], forPodcast: sub.id)
         store.setEpisodePlaybackPosition(older.id, position: 1)
         store.setEpisodePlaybackPosition(newer.id, position: 1)
 
@@ -82,9 +82,9 @@ final class HomeDerivedEpisodesTests: XCTestCase {
 
     func testRecentEpisodesExcludesPlayed() {
         let sub = seedSubscription()
-        let played = makeEpisode(subscriptionID: sub.id, guid: "rec-played")
-        let unplayed = makeEpisode(subscriptionID: sub.id, guid: "rec-unplayed")
-        store.upsertEpisodes([played, unplayed], forSubscription: sub.id)
+        let played = makeEpisode(podcastID: sub.id, guid: "rec-played")
+        let unplayed = makeEpisode(podcastID: sub.id, guid: "rec-unplayed")
+        store.upsertEpisodes([played, unplayed], forPodcast: sub.id)
         store.markEpisodePlayed(played.id)
 
         let recent = store.recentEpisodes(limit: 30)
@@ -96,13 +96,13 @@ final class HomeDerivedEpisodesTests: XCTestCase {
     func testRecentEpisodesSortedNewestFirst() {
         let sub = seedSubscription()
         let now = Date()
-        var first = makeEpisode(subscriptionID: sub.id, guid: "rec-1")
+        var first = makeEpisode(podcastID: sub.id, guid: "rec-1")
         first.pubDate = now.addingTimeInterval(-30 * 86_400)
-        var second = makeEpisode(subscriptionID: sub.id, guid: "rec-2")
+        var second = makeEpisode(podcastID: sub.id, guid: "rec-2")
         second.pubDate = now.addingTimeInterval(-15 * 86_400)
-        var third = makeEpisode(subscriptionID: sub.id, guid: "rec-3")
+        var third = makeEpisode(podcastID: sub.id, guid: "rec-3")
         third.pubDate = now
-        store.upsertEpisodes([first, second, third], forSubscription: sub.id)
+        store.upsertEpisodes([first, second, third], forPodcast: sub.id)
 
         let recent = store.recentEpisodes(limit: 30)
 
@@ -113,11 +113,11 @@ final class HomeDerivedEpisodesTests: XCTestCase {
         let sub = seedSubscription()
         let now = Date()
         let episodes = (0..<10).map { i -> Episode in
-            var ep = makeEpisode(subscriptionID: sub.id, guid: "rec-\(i)")
+            var ep = makeEpisode(podcastID: sub.id, guid: "rec-\(i)")
             ep.pubDate = now.addingTimeInterval(-Double(i) * 86_400)
             return ep
         }
-        store.upsertEpisodes(episodes, forSubscription: sub.id)
+        store.upsertEpisodes(episodes, forPodcast: sub.id)
 
         let limited = store.recentEpisodes(limit: 3)
 
@@ -131,8 +131,8 @@ final class HomeDerivedEpisodesTests: XCTestCase {
         // surface, which matches the Today/New-episodes UX (the user can
         // see something they started but haven't finished).
         let sub = seedSubscription()
-        let ep = makeEpisode(subscriptionID: sub.id, guid: "rec-half")
-        store.upsertEpisodes([ep], forSubscription: sub.id)
+        let ep = makeEpisode(podcastID: sub.id, guid: "rec-half")
+        store.upsertEpisodes([ep], forPodcast: sub.id)
         store.setEpisodePlaybackPosition(ep.id, position: 1234)
 
         let recent = store.recentEpisodes(limit: 30)
@@ -141,18 +141,19 @@ final class HomeDerivedEpisodesTests: XCTestCase {
 
     // MARK: - Fixtures
 
-    private func seedSubscription() -> PodcastSubscription {
-        let sub = PodcastSubscription(
+    private func seedSubscription() -> Podcast {
+        let podcast = Podcast(
             feedURL: URL(string: "https://example.com/\(UUID().uuidString).xml")!,
             title: "Home Derived Test Show"
         )
-        store.addSubscription(sub)
-        return sub
+        let stored = store.upsertPodcast(podcast)
+        store.addSubscription(podcastID: stored.id)
+        return stored
     }
 
-    private func makeEpisode(subscriptionID: UUID, guid: String) -> Episode {
+    private func makeEpisode(podcastID: UUID, guid: String) -> Episode {
         Episode(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             guid: guid,
             title: "Episode \(guid)",
             pubDate: Date(),

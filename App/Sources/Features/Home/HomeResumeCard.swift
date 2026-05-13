@@ -8,7 +8,7 @@ import SwiftUI
 /// blend together in the rail.
 struct HomeResumeCard: View {
     let episode: Episode
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let onPlay: () -> Void
 
     @Environment(AppStateStore.self) private var store
@@ -47,7 +47,7 @@ struct HomeResumeCard: View {
     // MARK: - Subviews
 
     private var artworkURL: URL? {
-        episode.imageURL ?? subscription?.imageURL
+        episode.imageURL ?? podcast?.imageURL
     }
 
     @ViewBuilder
@@ -97,7 +97,7 @@ struct HomeResumeCard: View {
 
     private var meta: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if let showName = subscription?.title, !showName.isEmpty {
+            if let showName = podcast?.title, !showName.isEmpty {
                 Text(showName)
                     .font(AppTheme.Typography.caption)
                     .tracking(1.0)
@@ -136,7 +136,7 @@ struct HomeResumeCard: View {
 
     private var accessibilityLabel: String {
         var parts: [String] = []
-        if let s = subscription?.title, !s.isEmpty { parts.append(s) }
+        if let s = podcast?.title, !s.isEmpty { parts.append(s) }
         parts.append(episode.title)
         let percent = Int((progressFraction * 100).rounded())
         if percent > 0 { parts.append("\(percent) percent listened") }

@@ -9,7 +9,7 @@ struct ClippingsCard: View {
 
     let clip: Clip
     let episode: Episode?
-    let subscription: PodcastSubscription?
+    let podcast: Podcast?
     let onPlay: () -> Void
     let onOpenEpisode: () -> Void
     let onDelete: () -> Void
@@ -23,8 +23,8 @@ struct ClippingsCard: View {
         .buttonStyle(.pressable(scale: 0.98))
         .contextMenu { contextMenuContent }
         .sheet(item: $shareClip) { c in
-            if let ep = episode, let sub = subscription {
-                ClipShareSheet(clip: c, episode: ep, subscription: sub)
+            if let ep = episode, let pod = podcast {
+                ClipShareSheet(clip: c, episode: ep, podcast: pod)
             }
         }
     }
@@ -48,7 +48,7 @@ struct ClippingsCard: View {
         HStack(spacing: AppTheme.Spacing.sm) {
             artwork
             VStack(alignment: .leading, spacing: 2) {
-                if let showName = subscription?.title {
+                if let showName = podcast?.title {
                     Text(showName)
                         .font(AppTheme.Typography.caption)
                         .tracking(0.8)
@@ -71,7 +71,7 @@ struct ClippingsCard: View {
     }
 
     private var artwork: some View {
-        let url = episode?.imageURL ?? subscription?.imageURL
+        let url = episode?.imageURL ?? podcast?.imageURL
         return Group {
             if let url {
                 CachedAsyncImage(url: url) { phase in
@@ -163,7 +163,7 @@ struct ClippingsCard: View {
             Label("Play Clip", systemImage: "play.circle")
         }
 
-        if episode != nil, subscription != nil {
+        if episode != nil, podcast != nil {
             Button { Haptics.selection(); shareClip = clip } label: {
                 Label("Share…", systemImage: "square.and.arrow.up")
             }
@@ -240,31 +240,32 @@ struct ClippingsCard: View {
 // MARK: - Preview
 
 #Preview {
-    let subID = UUID()
+    let podID = UUID()
     let epID = UUID()
     let clip = Clip(
         episodeID: epID,
-        subscriptionID: subID,
+        subscriptionID: podID,
         startMs: 14 * 60_000 + 31_000,
         endMs: 14 * 60_000 + 58_000,
         caption: "On metabolism",
         transcriptText: "Metabolic flexibility isn't a diet — it's a property of the mitochondria and how well it can switch between fat and glucose oxidation."
     )
     let episode = Episode(
-        subscriptionID: subID,
+        podcastID: podID,
         guid: "preview",
         title: "How to Think About Keto",
         pubDate: Date(),
         enclosureURL: URL(string: "https://example.com/x.mp3")!
     )
-    let subscription = PodcastSubscription(
+    let podcast = Podcast(
+        id: podID,
         feedURL: URL(string: "https://example.com/feed")!,
         title: "The Peter Attia Drive"
     )
     return ClippingsCard(
         clip: clip,
         episode: episode,
-        subscription: subscription,
+        podcast: podcast,
         onPlay: {},
         onOpenEpisode: {},
         onDelete: {}

@@ -91,7 +91,7 @@ final class EpisodeDetailTranscriptTests: XCTestCase {
 
     private func makeEpisode(state: TranscriptState) -> Episode {
         Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "tx-test-\(UUID().uuidString)",
             title: "Episode Under Test",
             pubDate: Date(timeIntervalSince1970: 1_700_000_000),

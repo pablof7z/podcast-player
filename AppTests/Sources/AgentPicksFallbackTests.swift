@@ -95,7 +95,7 @@ final class AgentPicksFallbackTests: XCTestCase {
 
     private func makeEpisode(subID: UUID, pubDate: Date) -> Episode {
         Episode(
-            subscriptionID: subID,
+            podcastID: subID,
             guid: UUID().uuidString,
             title: "T",
             pubDate: pubDate,

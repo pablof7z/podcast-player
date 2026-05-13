@@ -116,9 +116,14 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
         guard let store else {
             throw DirectoryError.unavailable("AppStateStore")
         }
-        // Check if already subscribed.
-        if let existing = await store.subscription(feedURL: URL(string: feedURLString) ?? URL(fileURLWithPath: "")) {
-            let count = await store.episodes(forSubscription: existing.id).count
+        // "Already known" ≠ "already followed." If the app has a Podcast
+        // row from a prior external play but no `PodcastSubscription`
+        // row, the agent's subscribe call still needs to create the
+        // follow row (and let the service backfill the show's episodes).
+        if let feedURL = URL(string: feedURLString),
+           let existing = await store.podcast(feedURL: feedURL),
+           await store.subscription(podcastID: existing.id) != nil {
+            let count = await store.episodes(forPodcast: existing.id).count
             return PodcastSubscribeResult(
                 podcastID: existing.id.uuidString,
                 title: existing.title,
@@ -129,12 +134,12 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             )
         }
         let service = await MainActor.run { SubscriptionService(store: store) }
-        let subscription = try await service.addSubscription(feedURLString: feedURLString)
-        let count = await store.episodes(forSubscription: subscription.id).count
+        let podcast = try await service.addSubscription(feedURLString: feedURLString)
+        let count = await store.episodes(forPodcast: podcast.id).count
         return PodcastSubscribeResult(
-            podcastID: subscription.id.uuidString,
-            title: subscription.title,
-            author: subscription.author,
+            podcastID: podcast.id.uuidString,
+            title: podcast.title,
+            author: podcast.author,
             feedURL: feedURLString,
             episodeCount: count,
             alreadySubscribed: false

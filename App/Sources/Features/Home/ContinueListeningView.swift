@@ -15,7 +15,7 @@ struct ContinueListeningView: View {
             ForEach(episodes) { ep in
                 ContinueListeningRow(
                     episode: ep,
-                    subscription: store.subscription(id: ep.subscriptionID),
+                    podcast: store.podcast(id: ep.podcastID),
                     onPlay: { playEpisode(ep) }
                 )
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {

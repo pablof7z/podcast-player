@@ -54,7 +54,7 @@ enum ClipVideoComposer {
     static func export(
         clip: Clip,
         episode: Episode,
-        subscription: PodcastSubscription,
+        podcast: Podcast,
         theme: ClipExporter.SubtitleStyle,
         aspectRatio: ClipVideo.Aspect,
         artworkProvider: @Sendable () async -> UIImage?
@@ -67,7 +67,7 @@ enum ClipVideoComposer {
         _ = aspectRatio
         _ = theme
         _ = clip
-        _ = subscription
+        _ = podcast
         _ = artworkProvider
 
         throw ClipExporter.ExportError.notImplemented(
@@ -94,7 +94,7 @@ enum ClipVideoComposer {
     static func makeBackgroundLayer(
         size: CGSize,
         artwork: UIImage?,
-        subscription: PodcastSubscription
+        podcast: Podcast
     ) -> CALayer {
         let bg = CALayer()
         bg.frame = CGRect(origin: .zero, size: size)
@@ -139,7 +139,7 @@ enum ClipVideoComposer {
         let label = CATextLayer()
         let font = UIFont.systemFont(ofSize: size.height * 0.022, weight: .semibold)
         label.string = NSAttributedString(
-            string: subscription.title.uppercased(),
+            string: podcast.title.uppercased(),
             attributes: [
                 .font: font,
                 .foregroundColor: UIColor.white.withAlphaComponent(0.78),

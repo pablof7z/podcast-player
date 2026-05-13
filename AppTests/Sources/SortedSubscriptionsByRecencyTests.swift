@@ -1,7 +1,7 @@
 import XCTest
 @testable import Podcastr
 
-/// Coverage for `AppStateStore.sortedSubscriptionsByRecency` — the new sort
+/// Coverage for `AppStateStore.sortedFollowedPodcastsByRecency` — the new sort
 /// driving the merged Home subscription list. Drops alphabetical ordering
 /// in favour of "most-recently-active feed first" so a brand-new episode
 /// surfaces at the top of the list, not buried behind 30 alphabetically-
@@ -30,25 +30,25 @@ final class SortedSubscriptionsByRecencyTests: XCTestCase {
         let alpha = makeSubscription(title: "Alpha")
         let bravo = makeSubscription(title: "Bravo")
         let charlie = makeSubscription(title: "Charlie")
-        store.addSubscription(alpha)
-        store.addSubscription(bravo)
-        store.addSubscription(charlie)
+        store.upsertPodcast(alpha); store.addSubscription(podcastID: alpha.id)
+        store.upsertPodcast(bravo); store.addSubscription(podcastID: bravo.id)
+        store.upsertPodcast(charlie); store.addSubscription(podcastID: charlie.id)
 
         let now = Date()
         store.upsertEpisodes(
             [makeEpisode(subID: alpha.id, guid: "a-1", pubDate: now.addingTimeInterval(-3 * 86_400))],
-            forSubscription: alpha.id
+            forPodcast: alpha.id
         )
         store.upsertEpisodes(
             [makeEpisode(subID: bravo.id, guid: "b-1", pubDate: now)],
-            forSubscription: bravo.id
+            forPodcast: bravo.id
         )
         store.upsertEpisodes(
             [makeEpisode(subID: charlie.id, guid: "c-1", pubDate: now.addingTimeInterval(-86_400))],
-            forSubscription: charlie.id
+            forPodcast: charlie.id
         )
 
-        let order = store.sortedSubscriptionsByRecency.map(\.title)
+        let order = store.sortedFollowedPodcastsByRecency.map(\.title)
         XCTAssertEqual(order, ["Bravo", "Charlie", "Alpha"])
     }
 
@@ -56,54 +56,54 @@ final class SortedSubscriptionsByRecencyTests: XCTestCase {
         let withEp = makeSubscription(title: "Zebra Show")
         let blank1 = makeSubscription(title: "Bravo")
         let blank2 = makeSubscription(title: "Alpha")
-        store.addSubscription(withEp)
-        store.addSubscription(blank1)
-        store.addSubscription(blank2)
+        store.upsertPodcast(withEp); store.addSubscription(podcastID: withEp.id)
+        store.upsertPodcast(blank1); store.addSubscription(podcastID: blank1.id)
+        store.upsertPodcast(blank2); store.addSubscription(podcastID: blank2.id)
 
         store.upsertEpisodes(
             [makeEpisode(subID: withEp.id, guid: "z-1", pubDate: Date())],
-            forSubscription: withEp.id
+            forPodcast: withEp.id
         )
 
-        let order = store.sortedSubscriptionsByRecency.map(\.title)
+        let order = store.sortedFollowedPodcastsByRecency.map(\.title)
         XCTAssertEqual(order, ["Zebra Show", "Alpha", "Bravo"])
     }
 
     func testTieOnPubDateBreaksAlphabetically() {
         let alpha = makeSubscription(title: "Alpha")
         let bravo = makeSubscription(title: "Bravo")
-        store.addSubscription(alpha)
-        store.addSubscription(bravo)
+        store.upsertPodcast(alpha); store.addSubscription(podcastID: alpha.id)
+        store.upsertPodcast(bravo); store.addSubscription(podcastID: bravo.id)
 
         let pinned = Date()
         store.upsertEpisodes(
             [makeEpisode(subID: alpha.id, guid: "a-1", pubDate: pinned)],
-            forSubscription: alpha.id
+            forPodcast: alpha.id
         )
         store.upsertEpisodes(
             [makeEpisode(subID: bravo.id, guid: "b-1", pubDate: pinned)],
-            forSubscription: bravo.id
+            forPodcast: bravo.id
         )
 
-        let order = store.sortedSubscriptionsByRecency.map(\.title)
+        let order = store.sortedFollowedPodcastsByRecency.map(\.title)
         XCTAssertEqual(order, ["Alpha", "Bravo"])
     }
 
     func testMostRecentEpisodeMatchesProjection() {
         let sub = makeSubscription(title: "X")
-        store.addSubscription(sub)
+        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
         let older = makeEpisode(subID: sub.id, guid: "older", pubDate: Date().addingTimeInterval(-86_400))
         let newer = makeEpisode(subID: sub.id, guid: "newer", pubDate: Date())
-        store.upsertEpisodes([older, newer], forSubscription: sub.id)
+        store.upsertEpisodes([older, newer], forPodcast: sub.id)
 
-        let recent = store.mostRecentEpisode(forSubscription: sub.id)
+        let recent = store.mostRecentEpisode(forPodcast: sub.id)
         XCTAssertEqual(recent?.guid, "newer")
     }
 
     // MARK: - Fixtures
 
-    private func makeSubscription(title: String) -> PodcastSubscription {
-        PodcastSubscription(
+    private func makeSubscription(title: String) -> Podcast {
+        Podcast(
             feedURL: URL(string: "https://example.com/\(UUID().uuidString).xml")!,
             title: title
         )
@@ -111,7 +111,7 @@ final class SortedSubscriptionsByRecencyTests: XCTestCase {
 
     private func makeEpisode(subID: UUID, guid: String, pubDate: Date) -> Episode {
         Episode(
-            subscriptionID: subID,
+            podcastID: subID,
             guid: guid,
             title: "Episode \(guid)",
             pubDate: pubDate,

@@ -165,8 +165,7 @@ actor MockPlayback: PlaybackHostProtocol {
     func playExternalEpisode(
         audioURL: URL,
         title: String,
-        podcastTitle: String?,
-        imageURL: URL?,
+        feedURLString: String?,
         durationSeconds: TimeInterval?,
         timestampSeconds: Double
     ) async {}
@@ -338,7 +337,8 @@ actor MockTTSPublisher: TTSPublisherProtocol {
         title: String,
         description: String?,
         turns: [TTSTurn],
-        playNow: Bool
+        playNow: Bool,
+        generationSource: Episode.GenerationSource?
     ) async throws -> TTSEpisodeResult {
         return TTSEpisodeResult(
             episodeID: "mock-tts-episode",

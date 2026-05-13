@@ -123,14 +123,14 @@ struct WikiGenerateSheet: View {
             .disabled(phase == .compiling)
 
             if scopeChoice == .podcast {
-                if store.sortedSubscriptions.isEmpty {
+                if store.sortedFollowedPodcasts.isEmpty {
                     Text("Subscribe to at least one podcast to scope a page.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
                     Picker("Podcast", selection: $selectedPodcastID) {
                         Text("Select…").tag(UUID?.none)
-                        ForEach(store.sortedSubscriptions) { sub in
+                        ForEach(store.sortedFollowedPodcasts) { sub in
                             Text(sub.title).tag(UUID?.some(sub.id))
                         }
                     }

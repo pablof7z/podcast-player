@@ -230,7 +230,7 @@ struct ThreadingTopicView: View {
 
     private func subscriptionTitle(for mention: ThreadingMention) -> String? {
         guard let episode = store.episode(id: mention.episodeID) else { return nil }
-        return store.subscription(id: episode.subscriptionID)?.title
+        return store.podcast(id: episode.podcastID)?.title
     }
 
     private var paperBackground: some View {

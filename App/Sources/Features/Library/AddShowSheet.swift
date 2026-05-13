@@ -74,7 +74,7 @@ struct AddShowSheet: View {
         }
     }
 
-    private func handleAdded(_ subscription: PodcastSubscription) {
+    private func handleAdded(_ podcast: Podcast) {
         // Intentionally NOT auto-dismissing here. The Search segment lets
         // users add multiple shows in one sitting (and we want them to
         // *see* the row flip to a green checkmark — auto-dismiss made the
@@ -86,7 +86,7 @@ struct AddShowSheet: View {
     /// Single-shot success path for the From-URL segment. Closes the sheet
     /// because that flow always adds exactly one feed at a time and there
     /// is no list-of-rows to re-render with a checkmark.
-    private func handleAddedFromURL(_ subscription: PodcastSubscription) {
+    private func handleAddedFromURL(_ podcast: Podcast) {
         Haptics.success()
         onDismiss()
     }
@@ -100,7 +100,7 @@ struct AddByURLForm: View {
 
     let store: AppStateStore
     /// Invoked on a successful subscribe so the parent can close the sheet.
-    let onAdded: (PodcastSubscription) -> Void
+    let onAdded: (Podcast) -> Void
 
     @State private var feedURL: String = ""
     @State private var isWorking: Bool = false
@@ -180,7 +180,7 @@ struct AddByURLForm: View {
             // the existing record; no angry red banner.
             if case .alreadySubscribed = addError,
                let url = URL(string: trimmed),
-               let existing = store.subscription(feedURL: url) {
+               let existing = store.podcast(feedURL: url) {
                 Haptics.light()
                 onAdded(existing)
                 return

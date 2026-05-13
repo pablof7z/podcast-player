@@ -66,11 +66,11 @@ struct ClippingsView: View {
     @ViewBuilder
     private func clipRow(_ clip: Clip) -> some View {
         if let episode = store.episode(id: clip.episodeID) {
-            let subscription = store.subscription(id: clip.subscriptionID)
+            let podcast = store.podcast(id: clip.subscriptionID)
             ClippingsCard(
                 clip: clip,
                 episode: episode,
-                subscription: subscription,
+                podcast: podcast,
                 onPlay: { playClip(clip, episode: episode) },
                 onOpenEpisode: {
                     episodeNavTarget = EpisodeNavTarget(id: episode.id)
@@ -123,7 +123,7 @@ struct ClippingsView: View {
             $0.transcriptText.lowercased().contains(q)
             || ($0.caption?.lowercased().contains(q) ?? false)
             || (store.episode(id: $0.episodeID)?.title.lowercased().contains(q) ?? false)
-            || (store.subscription(id: $0.subscriptionID)?.title.lowercased().contains(q) ?? false)
+            || (store.podcast(id: $0.subscriptionID)?.title.lowercased().contains(q) ?? false)
         }
     }
 
@@ -154,22 +154,23 @@ private struct EpisodeNavTarget: Identifiable, Hashable {
 
 #Preview {
     let store = AppStateStore()
-    let sub = PodcastSubscription(
+    let podcast = Podcast(
         feedURL: URL(string: "https://example.com/feed")!,
         title: "The Peter Attia Drive"
     )
     let episode = Episode(
-        subscriptionID: sub.id,
+        podcastID: podcast.id,
         guid: "preview",
         title: "How to Think About Keto",
         pubDate: Date(),
         enclosureURL: URL(string: "https://example.com/x.mp3")!
     )
-    store.state.subscriptions = [sub]
+    store.state.podcasts = [podcast]
+    store.state.subscriptions = [PodcastSubscription(podcastID: podcast.id)]
     store.state.episodes = [episode]
     store.addClip(Clip(
         episodeID: episode.id,
-        subscriptionID: sub.id,
+        subscriptionID: podcast.id,
         startMs: 14 * 60_000 + 31_000,
         endMs: 14 * 60_000 + 58_000,
         caption: "On metabolism",
@@ -178,7 +179,7 @@ private struct EpisodeNavTarget: Identifiable, Hashable {
     ))
     store.addClip(Clip(
         episodeID: episode.id,
-        subscriptionID: sub.id,
+        subscriptionID: podcast.id,
         startMs: 32 * 60_000,
         endMs: 32 * 60_000 + 15_000,
         transcriptText: "Zone 2 training is the bedrock of aerobic capacity.",

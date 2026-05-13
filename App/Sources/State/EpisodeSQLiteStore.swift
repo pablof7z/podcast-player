@@ -324,7 +324,10 @@ struct EpisodeSQLiteStore: Sendable {
         }
 
         try bindText(episode.id.uuidString, at: 1, to: statement, in: db)
-        try bindText(episode.subscriptionID.uuidString, at: 2, to: statement, in: db)
+        // SQLite column is historically named `subscription_id`; it now
+        // semantically holds `episode.podcastID`. Column rename intentionally
+        // skipped to avoid migration risk for zero behavior win.
+        try bindText(episode.podcastID.uuidString, at: 2, to: statement, in: db)
         try bindText(episode.guid, at: 3, to: statement, in: db)
         guard sqlite3_bind_double(statement, 4, episode.pubDate.timeIntervalSince1970) == SQLITE_OK,
               sqlite3_bind_int64(statement, 5, Int64(sortOrder)) == SQLITE_OK else {

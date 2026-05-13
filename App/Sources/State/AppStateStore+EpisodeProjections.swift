@@ -8,7 +8,7 @@ import Foundation
 // (filter / sort / contains). Each fact is read inside a `body` getter that
 // SwiftUI re-runs every scroll tick, every cell. With 20 subscriptions and
 // 10k episodes, scrolling Library used to fire 20 × 10k = 200k filter
-// iterations *per scroll tick*. The `unplayedCount(forSubscription:)` frame
+// iterations *per scroll tick*. The `unplayedCount(forPodcast:)` frame
 // alone showed up at 27 ticks in `sample` — the call graph was dominated by
 // per-cell helpers iterating the entire episode array and copying full
 // `Episode` structs.
@@ -75,30 +75,30 @@ extension AppStateStore {
         recent.reserveCapacity(min(Self.recentEpisodesCacheLimit, episodes.count))
 
         for (index, episode) in episodes.enumerated() {
-            let subID = episode.subscriptionID
+            let podID = episode.podcastID
 
             // Unplayed-count bucket. Default to 0 so the dict has an entry
             // for every show that has any episode at all (cheaper than
             // checking `contains` on read).
             if !episode.played {
-                unplayed[subID, default: 0] += 1
-            } else if unplayed[subID] == nil {
+                unplayed[podID, default: 0] += 1
+            } else if unplayed[podID] == nil {
                 // Ensure the show has *some* entry so reads default to 0
                 // without falling through to a non-existent key.
-                unplayed[subID] = 0
+                unplayed[podID] = 0
             }
 
             // Downloaded / transcribed presence. Cheap to set repeatedly
-            // for the same subID; Set.insert is O(1) amortised.
+            // for the same podID; Set.insert is O(1) amortised.
             if case .downloaded = episode.downloadState {
-                downloaded.insert(subID)
+                downloaded.insert(podID)
             }
             if case .ready = episode.transcriptState {
-                transcribed.insert(subID)
+                transcribed.insert(podID)
             }
 
             // Per-show index cache: append indexes now, sort once per show.
-            byShow[subID, default: []].append(index)
+            byShow[podID, default: []].append(index)
 
             // In-progress: persisted position > 0 AND not played. The
             // position-cache fold at read time also surfaces episodes

@@ -4,20 +4,20 @@ import Foundation
 
 extension EpisodeDownloadService {
 
-    /// Evaluates the per-subscription `AutoDownloadPolicy` against a batch of
+    /// Evaluates the per-podcast `AutoDownloadPolicy` against a batch of
     /// episode IDs that were just inserted by `upsertEpisodes`. Queues the
     /// matching ones via `download(episodeID:)`.
     ///
     /// - Parameter newEpisodeIDs: episodes inserted in publish-date order
     ///   (newest first is fine — we sort defensively).
-    func evaluateAutoDownload(forSubscription subscriptionID: UUID, newEpisodeIDs: [UUID]) {
+    func evaluateAutoDownload(forPodcast podcastID: UUID, newEpisodeIDs: [UUID]) {
         guard !newEpisodeIDs.isEmpty,
               let store = appStore,
-              store.subscription(id: subscriptionID) != nil else { return }
+              store.podcast(id: podcastID) != nil else { return }
         // Honour any per-category auto-download override before falling back
-        // to the per-subscription policy. `effectiveAutoDownload` resolves
-        // to `subscription.autoDownload` when no category settings apply.
-        let policy = store.effectiveAutoDownload(forSubscription: subscriptionID)
+        // to the per-podcast policy. `effectiveAutoDownload` resolves to the
+        // subscription's `autoDownload` when no category settings apply.
+        let policy = store.effectiveAutoDownload(forPodcast: podcastID)
         if case .off = policy.mode { return }
         // Resolve each ID to an Episode and sort by pubDate desc.
         let episodes: [Episode] = newEpisodeIDs
@@ -37,7 +37,7 @@ extension EpisodeDownloadService {
                 queueAutoDownload(episode)
             }
             logger.notice(
-                "auto-download queued for \(subscriptionID, privacy: .public) — Wi-Fi unavailable"
+                "auto-download queued for \(podcastID, privacy: .public) — Wi-Fi unavailable"
             )
             return
         }
@@ -59,7 +59,7 @@ extension EpisodeDownloadService {
             return false
         }
         for episode in queued {
-            let policy = store.effectiveAutoDownload(forSubscription: episode.subscriptionID)
+            let policy = store.effectiveAutoDownload(forPodcast: episode.podcastID)
             if case .off = policy.mode { continue }
             download(episodeID: episode.id)
         }

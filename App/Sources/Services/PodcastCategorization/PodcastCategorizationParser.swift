@@ -52,7 +52,7 @@ enum PodcastCategorizationParser {
     ///     exactly one category" invariant holds in storage.
     static func categories(
         from rawContent: String,
-        subscriptions: [PodcastSubscription],
+        podcasts: [Podcast],
         generatedAt: Date,
         model: String?
     ) throws -> [PodcastCategory] {
@@ -70,7 +70,7 @@ enum PodcastCategorizationParser {
             throw CategorizationError.invalidResponse
         }
 
-        let validIDs = Set(subscriptions.map(\.id))
+        let validIDs = Set(podcasts.map(\.id))
         var seen: [UUID: Int] = [:]
         var built: [PodcastCategory] = []
         built.reserveCapacity(decoded.categories.count)

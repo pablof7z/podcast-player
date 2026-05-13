@@ -72,15 +72,16 @@ final class TranscriptAskAgentDispatchTests: XCTestCase {
         let store = result.store
 
         let subID = UUID()
-        let subscription = PodcastSubscription(
+        let subscription = Podcast(
             id: subID,
             feedURL: URL(string: "https://example.com/feed.xml")!,
             title: "Test Show"
         )
-        store.state.subscriptions = [subscription]
+        store.state.podcasts = [subscription]
+        store.state.subscriptions = [PodcastSubscription(podcastID: subscription.id)]
 
         let episode = Episode(
-            subscriptionID: subID,
+            podcastID: subID,
             guid: "guid-1",
             title: "Test Episode",
             pubDate: Date(),
@@ -122,7 +123,7 @@ final class TranscriptAskAgentDispatchTests: XCTestCase {
         let store = result.store
 
         let episode = Episode(
-            subscriptionID: UUID(),  // not in store.subscriptions
+            podcastID: UUID(),  // not in store.subscriptions
             guid: "guid-1",
             title: "Test Episode",
             pubDate: Date(),

@@ -105,7 +105,7 @@ final class PlaybackStateAudioCallbackTests: XCTestCase {
     ) -> Episode {
         Episode(
             id: id,
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "episode-\(id.uuidString)",
             title: title,
             pubDate: Date(),

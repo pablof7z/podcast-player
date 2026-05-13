@@ -21,11 +21,11 @@ import Foundation
 /// That keeps Swift 6 strict concurrency happy.
 struct RSSParser: Sendable {
 
-    /// Parsed feed result. `subscription` carries channel-level fields with
-    /// `id` set to the caller-provided `subscriptionID` so callers can chain
-    /// straight into persistence.
+    /// Parsed feed result. `podcast` carries channel-level fields with `id`
+    /// set to the caller-provided `podcastID` so callers can chain straight
+    /// into persistence.
     struct ParsedFeed: Sendable {
-        var subscription: PodcastSubscription
+        var podcast: Podcast
         var episodes: [Episode]
     }
 
@@ -57,16 +57,15 @@ struct RSSParser: Sendable {
     }
 
     /// Parses raw feed bytes. The caller supplies the canonical `feedURL`
-    /// (RSS rarely echoes its own URL) and a stable `subscriptionID` (either
-    /// an existing subscription's id or a freshly minted one for a new
-    /// subscribe).
+    /// (RSS rarely echoes its own URL) and a stable `podcastID` (either an
+    /// existing podcast's id or a freshly minted one for a new subscribe).
     func parse(
         data: Data,
         feedURL: URL,
-        subscriptionID: UUID = UUID()
+        podcastID: UUID = UUID()
     ) throws -> ParsedFeed {
         let delegate = RSSParserDelegate(
-            subscriptionID: subscriptionID,
+            podcastID: podcastID,
             feedURL: feedURL
         )
         let parser = XMLParser(data: data)
@@ -80,8 +79,9 @@ struct RSSParser: Sendable {
         }
         guard delegate.sawChannel else { throw ParseError.missingChannel }
 
-        let subscription = PodcastSubscription(
-            id: subscriptionID,
+        let podcast = Podcast(
+            id: podcastID,
+            kind: .rss,
             feedURL: feedURL,
             title: delegate.channelTitle.rss_trimmedOrEmpty,
             author: delegate.channelAuthor.rss_trimmedOrEmpty,
@@ -89,10 +89,10 @@ struct RSSParser: Sendable {
             description: delegate.channelDescription.rss_trimmedOrEmpty,
             language: delegate.channelLanguage.rss_nilIfBlank,
             categories: delegate.channelCategories,
-            subscribedAt: Date(),
+            discoveredAt: Date(),
             lastRefreshedAt: Date()
         )
-        return ParsedFeed(subscription: subscription, episodes: delegate.episodes)
+        return ParsedFeed(podcast: podcast, episodes: delegate.episodes)
     }
 
     /// Synthesizes a deterministic GUID for items missing `<guid>`. Combines

@@ -365,14 +365,15 @@ extension AgentTools {
                 Play any publicly accessible podcast episode by audio URL, without requiring a prior subscription. \
                 Use when the user wants to hear a specific episode from a show they don't follow \
                 — e.g. a guest appearance or a one-off recommendation. \
-                Playback position is NOT saved across app launches for external episodes. \
-                If the user wants to save progress or get a transcript, call subscribe_podcast first.
+                When you know the show's RSS feed_url (from search_podcast_directory results) pass it — \
+                the app will then carry the show's real artwork, title, and metadata. \
+                If you only have a raw audio URL (user-pasted link, Nostr-shared URL) and no feed, omit feed_url; \
+                the episode plays parented to an "Unknown" podcast.
                 """,
                 properties: [
                     "audio_url": ["type": "string", "description": "Direct audio URL of the episode (e.g. the enclosure URL from search_podcast_directory)."],
                     "title": ["type": "string", "description": "Episode title shown in the player."],
-                    "podcast_title": ["type": "string", "description": "Show name shown as the subtitle in the player."],
-                    "image_url": ["type": "string", "description": "Optional artwork URL for the lock-screen Now Playing card."],
+                    "feed_url": ["type": "string", "description": "Optional RSS feed URL of the source podcast. Pass this whenever you have it (e.g. from search_podcast_directory) so the app captures the show's real metadata and artwork."],
                     "duration_seconds": ["type": "number", "description": "Optional episode duration in seconds."],
                     "timestamp": ["type": "number", "description": "Position to seek to in seconds. Defaults to 0 (beginning)."],
                 ],

@@ -35,7 +35,10 @@ enum AgentPrompt {
         You can play episodes the user is NOT subscribed to. When asked to play
         a guest appearance, a one-off episode, or anything not in the library:
         1. Use `search_podcast_directory` to find the feed URL + audio URL.
-        2. Use `play_external_episode(audio_url, title, podcast_title)` to start playing immediately.
+        2. Use `play_external_episode(audio_url, title, feed_url)` to start playing immediately.
+           ALWAYS pass feed_url when you have one — the app fetches the show's
+           real artwork and title from it. Only omit feed_url for raw audio
+           links where you genuinely don't know the source podcast.
         3. Optionally offer `subscribe_podcast(feed_url)` so the user can follow the show.
         For transcripts of external episodes, call `subscribe_podcast` first then
         `download_and_transcribe(feed_url, audio_url)`.
@@ -52,16 +55,21 @@ enum AgentPrompt {
 
         sections.append(Self.skillsCatalog())
 
-        if !state.subscriptions.isEmpty {
-            let titles = state.subscriptions
+        // Prompt the agent with the user's followed podcasts only. Synthetic
+        // shows (Agent Generated, Unknown) don't carry user follow rows, so
+        // they're filtered out by the join.
+        let followedPodcastIDs = Set(state.subscriptions.map(\.podcastID))
+        let followedPodcasts = state.podcasts.filter { followedPodcastIDs.contains($0.id) }
+        if !followedPodcasts.isEmpty {
+            let titles = followedPodcasts
                 .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
                 .prefix(Cap.subscriptions)
                 .map { "- \(truncate($0.title))" }
                 .joined(separator: "\n")
-            let suffix = state.subscriptions.count > Cap.subscriptions
-                ? "\n…and \(state.subscriptions.count - Cap.subscriptions) more"
+            let suffix = followedPodcasts.count > Cap.subscriptions
+                ? "\n…and \(followedPodcasts.count - Cap.subscriptions) more"
                 : ""
-            sections.append("## Subscriptions (\(state.subscriptions.count))\n\(titles)\(suffix)")
+            sections.append("## Subscriptions (\(followedPodcasts.count))\n\(titles)\(suffix)")
         }
 
         let inProgress = state.episodes
@@ -71,7 +79,7 @@ enum AgentPrompt {
         if !inProgress.isEmpty {
             let lookup = subscriptionTitlesByID(state)
             let lines = inProgress.map { ep -> String in
-                let show = lookup[ep.subscriptionID] ?? "Unknown show"
+                let show = lookup[ep.podcastID] ?? "Unknown show"
                 return "- \(truncate(ep.title)) — \(show)"
             }.joined(separator: "\n")
             sections.append("## In Progress\n\(lines)")
@@ -85,7 +93,7 @@ enum AgentPrompt {
         if !recentUnplayed.isEmpty {
             let lookup = subscriptionTitlesByID(state)
             let lines = recentUnplayed.map { ep -> String in
-                let show = lookup[ep.subscriptionID] ?? "Unknown show"
+                let show = lookup[ep.podcastID] ?? "Unknown show"
                 return "- \(truncate(ep.title)) — \(show)"
             }.joined(separator: "\n")
             sections.append("## Recent (last \(Int(Cap.recentWindowDays)) days, unplayed)\n\(lines)")
@@ -139,7 +147,7 @@ enum AgentPrompt {
     }
 
     private static func subscriptionTitlesByID(_ state: AppState) -> [UUID: String] {
-        Dictionary(uniqueKeysWithValues: state.subscriptions.map { ($0.id, $0.title) })
+        Dictionary(uniqueKeysWithValues: state.podcasts.map { ($0.id, $0.title) })
     }
 
     private static func truncate(_ s: String) -> String {

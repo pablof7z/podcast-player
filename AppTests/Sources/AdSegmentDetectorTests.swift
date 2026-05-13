@@ -204,7 +204,7 @@ final class AdSegmentDetectorTests: XCTestCase {
 
     func testEpisodeAdSegmentsCodableRoundTrip() throws {
         let original = Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "rt-1",
             title: "Round-trip",
             pubDate: Date(timeIntervalSince1970: 1_700_000_000),
@@ -223,7 +223,7 @@ final class AdSegmentDetectorTests: XCTestCase {
 
     func testEpisodeAdSegmentsAbsentFieldDecodesAsNil() throws {
         let template = Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "legacy",
             title: "Legacy",
             pubDate: Date(timeIntervalSince1970: 1_700_000_000),
@@ -248,7 +248,7 @@ final class AdSegmentDetectorTests: XCTestCase {
         let store = result.store
 
         let episode = Episode(
-            subscriptionID: UUID(),
+            podcastID: UUID(),
             guid: "store-rt-1",
             title: "Store Round-trip",
             pubDate: Date(timeIntervalSince1970: 1_700_000_000),

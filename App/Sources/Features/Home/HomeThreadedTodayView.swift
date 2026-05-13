@@ -147,7 +147,7 @@ struct HomeThreadedTodayView: View {
                 return Row(
                     mention: mention,
                     episode: ep,
-                    subscription: store.subscription(id: ep.subscriptionID)
+                    podcast: store.podcast(id: ep.podcastID)
                 )
             }
     }
@@ -192,7 +192,7 @@ struct HomeThreadedTodayView: View {
     struct Row: Identifiable {
         let mention: ThreadingMention
         let episode: Episode
-        let subscription: PodcastSubscription?
+        let podcast: Podcast?
         var id: UUID { mention.id }
     }
 }
@@ -205,7 +205,7 @@ private struct HomeThreadedTodayRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                if let title = row.subscription?.title, !title.isEmpty {
+                if let title = row.podcast?.title, !title.isEmpty {
                     Text(title)
                         .font(AppTheme.Typography.caption)
                         .tracking(0.6)
