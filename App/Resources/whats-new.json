@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T12:00:00Z",
+      "lines": [
+        "Episode titles in the player are no longer displayed in all-caps."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T11:00:00Z",
       "lines": [
         "Opening a show you don't follow now adapts to that state: the toolbar offers a Follow action instead of subscription toggles, and the destructive option reads Delete (removes the podcast plus its episodes) rather than Unsubscribe. Settings stays hidden until you actually follow the show — there's no subscription row to mutate yet."

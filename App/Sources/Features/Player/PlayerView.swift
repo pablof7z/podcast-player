@@ -159,7 +159,7 @@ struct PlayerView: View {
             compactArtwork
             if let episode = state.episode {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(episode.title.uppercased())
+                    Text(episode.title)
                         .font(AppTheme.Typography.title)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
