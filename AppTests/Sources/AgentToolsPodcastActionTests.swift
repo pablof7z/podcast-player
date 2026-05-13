@@ -244,20 +244,22 @@ final class AgentToolsPodcastActionTests: XCTestCase {
 
     // MARK: - send_friend_message
 
-    func testSendFriendMessageRequiresPeerContext() async throws {
-        let deps = makeDeps()
+    func testSendFriendMessageWorksFromOwnerChat() async throws {
+        // No peer context — simulates the user asking the agent to message someone
+        // from regular in-app chat. Should publish a standalone kind:1 note.
+        let deps = makeDeps(knownFriends: ["friend-pubkey-hex"])
         let json = await AgentTools.dispatchPodcast(
             name: AgentTools.PodcastNames.sendFriendMessage,
-            args: ["friend_pubkey": "abc", "message": "hi"],
+            args: ["friend_pubkey": "friend-pubkey-hex", "message": "hey"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
-        XCTAssertEqual(
-            decoded["error"] as? String,
-            "send_friend_message requires a peer conversation context"
-        )
+        XCTAssertNil(decoded["error"])
+        XCTAssertEqual(decoded["friend_pubkey"] as? String, "friend-pubkey-hex")
+        XCTAssertNil(decoded["root_event_id"], "no root_event_id when there is no peer context")
         let calls = await deps.peerPublisher.friendMessages
-        XCTAssertEqual(calls.count, 0)
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertNil(calls.first?.peerContext, "standalone message should have no peer context")
     }
 
     func testSendFriendMessageRejectsUnknownPubkey() async throws {

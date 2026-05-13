@@ -173,6 +173,7 @@ final class AgentRelayBridge {
                     messages: messages,
                     tools: AgentTools.schema
                          + AgentTools.podcastSchema
+                         + (peerContext != nil ? AgentTools.peerOnlySchema : [])
                          + AgentSkillRegistry.schemas(for: enabledSkills),
                     model: modelForTurn,
                     feature: CostFeature.agentNostr,

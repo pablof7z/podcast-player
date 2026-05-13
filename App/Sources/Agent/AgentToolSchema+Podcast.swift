@@ -375,14 +375,21 @@ extension AgentTools {
                 ],
                 required: ["podcast_id"]
             ),
+            podcastTool(
+                name: PodcastNames.sendFriendMessage,
+                description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this when the user tells you to message, tell, ask, or hand off something to a named friend — from any context, including owner chat. The friend_pubkey MUST match a friend in the user's Friends list — the tool refuses unknown pubkeys. Inside a peer conversation the note threads as a NIP-10 reply; from owner chat it publishes as a standalone note.",
+                properties: [
+                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
+                    "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise."],
+                ],
+                required: ["friend_pubkey", "message"]
+            ),
         ]
     }
 
     /// Tools that are only valid inside a Nostr peer conversation.
-    /// Include this schema only when a `PeerConversationContext` is present —
-    /// the dispatcher enforces the same gate at runtime, but excluding the
-    /// schemas prevents the LLM from attempting these calls in owner-chat
-    /// sessions where they can never succeed.
+    /// `end_conversation` suppresses a reply to the active peer turn —
+    /// the concept is meaningless in owner-chat.
     @MainActor
     static var peerOnlySchema: [[String: Any]] {
         [
@@ -393,15 +400,6 @@ extension AgentTools {
                     "reason": ["type": "string", "description": "Why you are not replying. Logged locally for diagnostics; never transmitted to the peer."],
                 ],
                 required: ["reason"]
-            ),
-            podcastTool(
-                name: PodcastNames.sendFriendMessage,
-                description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this only when the user explicitly tells you to message, tell, ask, or hand off something to a named friend. The friend_pubkey MUST match a friend stored in the user's Friends list — the tool refuses unknown pubkeys. The note is published as a NIP-10 reply to the conversation root.",
-                properties: [
-                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
-                    "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise — this lands in the friend's agent without the user's voice attached."],
-                ],
-                required: ["friend_pubkey", "message"]
             ),
         ]
     }

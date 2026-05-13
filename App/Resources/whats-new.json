@@ -2,9 +2,21 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T22:30:00Z",
+      "lines": [
+        "play_external_episode is gone — the agent now uses a single play_episode tool for everything. Pass episode_id for library episodes, audio_url + title for one-off URLs; start_seconds / end_seconds / queue_position work the same in both cases."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T22:00:00Z",
+      "lines": [
+        "Tap 'See All' on the Inbox section header to open a dedicated inbox view showing every episode the agent queued for you, with its rationale."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T21:00:00Z",
       "lines": [
-        "The agent no longer tries to send Nostr messages from in-app chat (where it can't) — peer messaging tools are only offered when you're inside a Nostr peer conversation."
+        "The agent can now send a Nostr message to a friend from any context — just ask it to message someone and it will. Previously it would refuse unless you were already inside a peer Nostr conversation."
       ]
     },
     {

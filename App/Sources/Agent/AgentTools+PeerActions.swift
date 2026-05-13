@@ -33,9 +33,6 @@ extension AgentTools {
     /// tool error. Inside a peer turn, the reply is threaded under the
     /// active conversation root via NIP-10 tags.
     static func sendFriendMessageTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let peerContext = deps.peerContext else {
-            return toolError("send_friend_message requires a peer conversation context")
-        }
         guard let friendPubkey = (args["friend_pubkey"] as? String)?.trimmed, !friendPubkey.isEmpty else {
             return toolError("Missing or empty 'friend_pubkey'")
         }
@@ -52,13 +49,16 @@ extension AgentTools {
             let eventID = try await deps.peerPublisher.publishFriendMessage(
                 friendPubkeyHex: friendPubkey,
                 body: message,
-                peerContext: peerContext
+                peerContext: deps.peerContext
             )
-            return toolSuccess([
+            var result: [String: Any] = [
                 "event_id": eventID,
                 "friend_pubkey": friendPubkey,
-                "root_event_id": peerContext.rootEventID,
-            ])
+            ]
+            if let rootID = deps.peerContext?.rootEventID {
+                result["root_event_id"] = rootID
+            }
+            return toolSuccess(result)
         } catch {
             return toolError("send_friend_message failed: \(error.localizedDescription)")
         }
