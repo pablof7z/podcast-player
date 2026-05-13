@@ -52,7 +52,13 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
         guard !trimmed.isEmpty else {
             throw NostrEventPublisherError.encodingFailed
         }
-        var tags: [[String]] = [["p", friendPubkeyHex]]
+        var tags: [[String]] = []
+        if let peerContext {
+            for a in peerContext.rootATags { tags.append(a) }
+        } else {
+            tags.append(["a", FeedbackRelayClient.projectCoordinate])
+        }
+        tags.append(["p", friendPubkeyHex])
         if let peerContext {
             tags.append(["e", peerContext.rootEventID, "", "root"])
             if peerContext.inboundEventID != peerContext.rootEventID {
