@@ -3,7 +3,7 @@ import Foundation
 // MARK: - External / directory tool value types
 //
 // Result envelopes for the four external-podcast tools added in the
-// search_podcast_directory / subscribe_podcast / play_external_episode /
+// search_podcast_directory / subscribe_podcast / play_episode (external path) /
 // download_and_transcribe (external) feature pass.
 
 // MARK: - Directory search

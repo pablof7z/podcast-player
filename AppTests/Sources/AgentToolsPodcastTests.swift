@@ -15,10 +15,16 @@ final class AgentToolsPodcastTests: XCTestCase {
         })
         // Skill-gated tool names live in `PodcastNames.all` (so `dispatch` can
         // route them) but their schemas are owned by the skill, not by
-        // `podcastSchema`. Subtract them before comparing.
+        // `podcastSchema`. Peer-only tools live in `peerOnlySchema` and are
+        // surfaced only inside Nostr peer conversations. Subtract both before
+        // comparing.
+        let peerOnlyNames: Set<String> = [
+            AgentTools.PodcastNames.endConversation,
+        ]
         let expected = Set(AgentTools.PodcastNames.all)
             .subtracting(AgentSkillRegistry.allToolNames)
-        XCTAssertEqual(names, expected, "podcastSchema must cover every non-skill-gated podcast tool")
+            .subtracting(peerOnlyNames)
+        XCTAssertEqual(names, expected, "podcastSchema must cover every non-skill, non-peer-only podcast tool")
     }
 
     func testPodcastSchemaEntriesHaveRequiredOpenAIShape() {
@@ -109,7 +115,7 @@ final class AgentToolsPodcastTests: XCTestCase {
         XCTAssertNotNil(decoded["error"])
     }
 
-    func testPlayEpisodeRejectsMissingQueuePosition() async throws {
+    func testPlayEpisodeDefaultsQueuePositionToNow() async throws {
         let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
         let json = await AgentTools.dispatchPodcast(
             name: AgentTools.PodcastNames.playEpisode,
@@ -117,7 +123,8 @@ final class AgentToolsPodcastTests: XCTestCase {
             deps: deps.bundle
         )
         let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
+        XCTAssertEqual(decoded["success"] as? Bool, true)
+        XCTAssertEqual(decoded["queue_position"] as? String, "now")
     }
 
     func testPlayEpisodeRejectsBadQueuePosition() async throws {
@@ -164,234 +171,87 @@ final class AgentToolsPodcastTests: XCTestCase {
         XCTAssertNotNil(decoded["error"])
     }
 
-    // MARK: - search_episodes
+    // MARK: - play_episode (external / audio_url path)
 
-    func testSearchEpisodesReturnsRows() async throws {
-        let hits = [
-            EpisodeHit(episodeID: "ep1", podcastID: "pod1", title: "Zone 2 Conversation", podcastTitle: "Tim Ferriss", score: 0.91),
-            EpisodeHit(episodeID: "ep2", podcastID: "pod2", title: "VO2 Max", podcastTitle: "Huberman", score: 0.78),
-        ]
-        let deps = makeDeps(rag: MockRAG(searchEpisodesResult: hits))
+    func testPlayEpisodeExternalURLSuccess() async throws {
+        let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.searchEpisodes,
-            args: ["query": "zone 2", "limit": 5],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["audio_url": "https://example.com/ep.mp3", "title": "The Matrix Revisited", "queue_position": "now"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
         XCTAssertEqual(decoded["success"] as? Bool, true)
-        XCTAssertEqual(decoded["total_found"] as? Int, 2)
-        let rows = decoded["results"] as? [[String: Any]]
-        XCTAssertEqual(rows?.count, 2)
-        XCTAssertEqual(rows?.first?["episode_id"] as? String, "ep1")
-        XCTAssertEqual(rows?.first?["score"] as? Double, 0.91)
+        XCTAssertEqual(decoded["queue_position"] as? String, "now")
+        XCTAssertEqual(decoded["started_playing"] as? Bool, true)
+        XCTAssertEqual(decoded["audio_url"] as? String, "https://example.com/ep.mp3")
+        let calls = await deps.playback.recordedExternalPlays
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(calls.first?.audioURL.absoluteString, "https://example.com/ep.mp3")
+        XCTAssertEqual(calls.first?.title, "The Matrix Revisited")
+        XCTAssertNil(calls.first?.feedURLString)
     }
 
-    func testSearchEpisodesClampsLimitAboveMax() async throws {
-        let mockRAG = MockRAG()
-        let deps = makeDeps(rag: mockRAG)
-        _ = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.searchEpisodes,
-            args: ["query": "anything", "limit": 9_999],
-            deps: deps.bundle
-        )
-        let lastLimit = await mockRAG.lastSearchLimit
-        XCTAssertEqual(lastLimit, AgentTools.podcastSearchMaxLimit)
-    }
-
-    func testSearchEpisodesRequiresQuery() async throws {
+    func testPlayEpisodeExternalURLWithFeedURL() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.searchEpisodes,
-            args: ["query": "  "],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
-    }
-
-    // MARK: - query_wiki
-
-    func testQueryWikiReturnsExcerpts() async throws {
-        let deps = makeDeps(wiki: MockWiki(result: [
-            WikiHit(pageID: "zone-2", title: "Zone 2 Training", excerpt: "Sustained effort below..."),
-        ]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.queryWiki,
-            args: ["topic": "Zone 2"],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: [
+                "audio_url": "https://example.com/ep.mp3",
+                "title": "Guest Appearance",
+                "feed_url": "https://feeds.example.com/show.rss",
+                "queue_position": "now",
+            ],
             deps: deps.bundle
         )
         let decoded = try decode(json)
         XCTAssertEqual(decoded["success"] as? Bool, true)
-        XCTAssertEqual(decoded["total_found"] as? Int, 1)
-        let rows = decoded["results"] as? [[String: Any]]
-        XCTAssertEqual(rows?.first?["page_id"] as? String, "zone-2")
+        XCTAssertEqual(decoded["feed_url"] as? String, "https://feeds.example.com/show.rss")
+        let calls = await deps.playback.recordedExternalPlays
+        XCTAssertEqual(calls.first?.feedURLString, "https://feeds.example.com/show.rss")
     }
 
-    func testLiveWikiStorageAdapterSearchesClaimBodies() async throws {
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("wiki-agent-search-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: tmp) }
-
-        let storage = WikiStorage(root: tmp)
-        let page = WikiPage(
-            slug: "metabolic-health",
-            title: "Metabolic Health",
-            kind: .topic,
-            scope: .global,
-            summary: "A broad page about nutrition.",
-            sections: [
-                WikiSection(
-                    heading: "Claims",
-                    kind: .definition,
-                    ordinal: 0,
-                    claims: [
-                        WikiClaim(text: "Keto diet discussion focused on appetite and insulin sensitivity.")
-                    ]
-                )
-            ]
-        )
-        try storage.write(page)
-
-        let hits = try await LiveWikiStorageAdapter(storage: storage)
-            .queryWiki(topic: "keto diet", scope: nil, limit: 5)
-
-        XCTAssertEqual(hits.first?.title, "Metabolic Health")
-        XCTAssertTrue(hits.first?.excerpt.lowercased().contains("keto diet") == true)
-        XCTAssertGreaterThan(hits.first?.score ?? 0, 0)
-    }
-
-    // MARK: - query_transcripts
-
-    func testQueryTranscriptsReturnsChunksWithTimestamps() async throws {
-        let deps = makeDeps(rag: MockRAG(transcriptsResult: [
-            TranscriptHit(episodeID: "ep1", startSeconds: 47.0, endSeconds: 60.0, speaker: "Tim", text: "Zone 2 is sustained..."),
-        ]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.queryTranscripts,
-            args: ["query": "zone 2", "scope": "ep1"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        let rows = decoded["results"] as? [[String: Any]]
-        XCTAssertEqual(rows?.count, 1)
-        XCTAssertEqual(rows?.first?["speaker"] as? String, "Tim")
-        XCTAssertEqual(rows?.first?["start_seconds"] as? Double, 47.0)
-    }
-
-    // MARK: - generate_briefing
-
-    func testGenerateBriefingClampsLengthRange() async throws {
-        let mockBriefing = MockBriefing(result: BriefingResult(
-            briefingID: "b1", title: "This Week", estimatedSeconds: 720, episodeIDs: ["ep1"]
-        ))
-        let deps = makeDeps(briefing: mockBriefing)
-        _ = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.generateBriefing,
-            args: ["scope": "this_week", "length": 9999],
-            deps: deps.bundle
-        )
-        let lastLength = await mockBriefing.lastLength
-        XCTAssertEqual(lastLength, AgentTools.briefingMaxLengthMinutes)
-    }
-
-    func testGenerateBriefingReturnsHandle() async throws {
-        let deps = makeDeps(briefing: MockBriefing(result: BriefingResult(
-            briefingID: "b1", title: "This Week", estimatedSeconds: 720, episodeIDs: ["ep1", "ep2"]
-        )))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.generateBriefing,
-            args: ["scope": "this_week", "length": 12, "style": "news"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["briefing_id"] as? String, "b1")
-        XCTAssertEqual(decoded["estimated_seconds"] as? Int, 720)
-        XCTAssertEqual(decoded["style"] as? String, "news")
-    }
-
-    func testGenerateBriefingRequiresScope() async throws {
+    func testPlayEpisodeExternalURLDefaultsQueuePositionToNow() async throws {
         let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.generateBriefing,
-            args: ["length": 10],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["audio_url": "https://example.com/ep.mp3", "title": "Some Episode"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["success"] as? Bool, true)
+        XCTAssertEqual(decoded["queue_position"] as? String, "now")
+    }
+
+    func testPlayEpisodeExternalURLRejectsMissingTitle() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["audio_url": "https://example.com/ep.mp3", "queue_position": "now"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+        let calls = await deps.playback.recordedExternalPlays
+        XCTAssertEqual(calls.count, 0)
+    }
+
+    func testPlayEpisodeRejectsBothEpisodeIDAndAudioURL() async throws {
+        let deps = makeDeps(fetcher: MockFetcher(known: ["ep1"]))
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["episode_id": "ep1", "audio_url": "https://example.com/ep.mp3", "title": "Conflict", "queue_position": "now"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
         XCTAssertNotNil(decoded["error"])
     }
 
-    // MARK: - perplexity_search
-
-    func testPerplexitySearchPropagatesAnswerAndSources() async throws {
-        let deps = makeDeps(perplexity: MockPerplexity(result: PerplexityResult(
-            answer: "It rained.",
-            sources: [.init(title: "weather.com", url: "https://weather.com/x")]
-        )))
+    func testPlayEpisodeRejectsMissingBothIdentifiers() async throws {
+        let deps = makeDeps()
         let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.perplexitySearch,
-            args: ["query": "did it rain in Tokyo yesterday?"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["answer"] as? String, "It rained.")
-        let sources = decoded["sources"] as? [[String: Any]]
-        XCTAssertEqual(sources?.first?["url"] as? String, "https://weather.com/x")
-    }
-
-    func testPerplexitySearchSurfacesError() async throws {
-        let deps = makeDeps(perplexity: MockPerplexity(error: PerplexityClientError.missingAPIKey))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.perplexitySearch,
-            args: ["query": "anything"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertNotNil(decoded["error"])
-    }
-
-    // MARK: - summarize_episode
-
-    func testSummarizeEpisodeSuccess() async throws {
-        let deps = makeDeps(
-            summarizer: MockSummarizer(result: EpisodeSummary(
-                episodeID: "ep1", summary: "Quick TLDR.", bulletPoints: ["A", "B"]
-            )),
-            fetcher: MockFetcher(known: ["ep1"])
-        )
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.summarizeEpisode,
-            args: ["episode_id": "ep1", "length": "short"],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["summary"] as? String, "Quick TLDR.")
-        XCTAssertEqual(decoded["length"] as? String, "short")
-        XCTAssertEqual((decoded["bullets"] as? [String])?.count, 2)
-    }
-
-    // MARK: - find_similar_episodes
-
-    func testFindSimilarEpisodesUsesK() async throws {
-        let mockRAG = MockRAG(similarResult: [
-            EpisodeHit(episodeID: "ep2", podcastID: "pod1", title: "Sequel", podcastTitle: "Tim Ferriss"),
-        ])
-        let deps = makeDeps(rag: mockRAG, fetcher: MockFetcher(known: ["seed"]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.findSimilarEpisodes,
-            args: ["seed_episode_id": "seed", "k": 7],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["k"] as? Int, 7)
-        let kSeen = await mockRAG.lastSimilarK
-        XCTAssertEqual(kSeen, 7)
-    }
-
-    func testFindSimilarEpisodesRejectsUnknownSeed() async throws {
-        let deps = makeDeps(fetcher: MockFetcher(known: []))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.findSimilarEpisodes,
-            args: ["seed_episode_id": "ghost"],
+            name: AgentTools.PodcastNames.playEpisode,
+            args: ["queue_position": "now"],
             deps: deps.bundle
         )
         let decoded = try decode(json)

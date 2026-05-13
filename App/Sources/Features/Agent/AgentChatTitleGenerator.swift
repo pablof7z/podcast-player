@@ -23,7 +23,7 @@ enum AgentChatTitleGenerator {
                 lines.append("User: \(msg.text)")
             case .assistant:
                 lines.append("Assistant: \(msg.text)")
-            case .toolBatch, .error:
+            case .toolBatch, .error, .skillActivated:
                 continue
             }
         }

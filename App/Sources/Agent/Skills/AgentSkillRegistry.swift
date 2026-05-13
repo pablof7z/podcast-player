@@ -20,6 +20,7 @@ enum AgentSkillRegistry {
         [
             PodcastGenerationSkill.skill,
             WikiResearchSkill.skill,
+            ConversationHistorySkill.skill,
         ]
     }
 

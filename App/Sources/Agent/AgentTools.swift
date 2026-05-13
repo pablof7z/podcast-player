@@ -41,6 +41,10 @@ enum AgentTools {
         static let scheduleTask         = "schedule_task"
         static let cancelScheduledTask  = "cancel_scheduled_task"
         static let listScheduledTasks   = "list_scheduled_tasks"
+
+        // Skill-gated: requires the `conversation_history` skill.
+        static let listConversations    = "list_conversations"
+        static let searchConversations  = "search_conversations"
     }
 
     // MARK: - Cached formatters
@@ -85,6 +89,12 @@ enum AgentTools {
 
         case Names.scheduleTask, Names.cancelScheduledTask, Names.listScheduledTasks:
             return dispatchSchedule(name: name, args: args, store: store)
+
+        case Names.listConversations, Names.searchConversations:
+            guard enabledSkills.contains(AgentSkillID.conversationHistory) else {
+                return toolError("Tool '\(name)' requires the 'conversation_history' skill — call use_skill(skill_id: \"conversation_history\") first.")
+            }
+            return await dispatchConversations(name: name, args: args, store: store)
 
         case Names.ask:
             // Pull the primitives off the non-Sendable `[String: Any]`

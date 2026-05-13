@@ -166,9 +166,10 @@ public protocol PodcastLibraryProtocol: Sendable {
 /// tool. Gates outbound notes so the agent cannot fire kind:1 events at
 /// arbitrary pubkeys on the user's identity.
 public protocol FriendDirectoryProtocol: Sendable {
-    /// `true` iff `pubkeyHex` matches a friend stored in the user's local
-    /// Friends list. Comparison is case-insensitive on the hex string.
-    func isKnownFriend(pubkeyHex: String) async -> Bool
+    /// Resolve a hex pubkey or pubkey prefix (e.g. 6 chars, as shown in the
+    /// Friends list) to the full hex pubkey. Returns `nil` when no matching
+    /// friend is found.
+    func resolvePubkey(prefixOrFull: String) async -> String?
 }
 
 /// Publishes peer-conversation events on the user's Nostr identity. Used by

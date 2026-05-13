@@ -33,17 +33,16 @@ extension AgentTools {
     /// tool error. Inside a peer turn, the reply is threaded under the
     /// active conversation root via NIP-10 tags.
     static func sendFriendMessageTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let friendPubkey = (args["friend_pubkey"] as? String)?.trimmed, !friendPubkey.isEmpty else {
+        guard let input = (args["friend_pubkey"] as? String)?.trimmed, !input.isEmpty else {
             return toolError("Missing or empty 'friend_pubkey'")
         }
         guard let message = (args["message"] as? String)?.trimmed, !message.isEmpty else {
             return toolError("Missing or empty 'message'")
         }
-        // Gate on the user's local Friends list so the agent cannot fire
-        // kind:1 events at arbitrary pubkeys on the user's identity.
-        let known = await deps.friendDirectory.isKnownFriend(pubkeyHex: friendPubkey)
-        guard known else {
-            return toolError("Pubkey '\(friendPubkey)' is not in your Friends list. Add them first.")
+        // Resolve prefix or full pubkey — also gates on the Friends list so
+        // the agent cannot fire kind:1 events at arbitrary pubkeys.
+        guard let friendPubkey = await deps.friendDirectory.resolvePubkey(prefixOrFull: input) else {
+            return toolError("No friend found matching '\(input)'. Add them first.")
         }
         do {
             let eventID = try await deps.peerPublisher.publishFriendMessage(

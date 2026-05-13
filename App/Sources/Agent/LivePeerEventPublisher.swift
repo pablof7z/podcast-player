@@ -96,9 +96,9 @@ struct LiveFriendDirectoryAdapter: FriendDirectoryProtocol {
         self.store = store
     }
 
-    func isKnownFriend(pubkeyHex: String) async -> Bool {
-        let needle = pubkeyHex.lowercased()
+    func resolvePubkey(prefixOrFull: String) async -> String? {
+        let needle = prefixOrFull.lowercased()
         let friends: [Friend] = await MainActor.run { store?.state.friends ?? [] }
-        return friends.contains { $0.identifier.lowercased() == needle }
+        return friends.first { $0.identifier.lowercased().hasPrefix(needle) }?.identifier
     }
 }

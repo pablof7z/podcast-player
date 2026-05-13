@@ -145,9 +145,7 @@ struct FeedbackView: View {
     private var threadList: some View {
         List {
             mineEveryoneSegmentedControl
-                .listRowBackground(Color.clear)
                 .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
-                .listRowSeparator(.hidden)
 
             ForEach(visibleThreads) { thread in
                 NavigationLink {
@@ -171,7 +169,6 @@ struct FeedbackView: View {
             }
         }
         .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .refreshable { await store.load(identity: userIdentity) }
     }
 
@@ -179,11 +176,12 @@ struct FeedbackView: View {
 
     @ViewBuilder
     private var mineEveryoneSegmentedControl: some View {
-        LiquidGlassSegmentedPicker(
-            "Show",
-            selection: $showMine,
-            segments: [(true, "Mine"), (false, "Everyone")]
-        )
+        Picker("Show", selection: $showMine) {
+            Text("Mine").tag(true)
+            Text("Everyone").tag(false)
+        }
+        .pickerStyle(.segmented)
+        .padding(.vertical, 4)
     }
 
     // MARK: - Loading skeleton
@@ -197,7 +195,6 @@ struct FeedbackView: View {
             }
         }
         .listStyle(.plain)
-        .scrollContentBackground(.hidden)
     }
 
     private static var placeholderThread: FeedbackThread {

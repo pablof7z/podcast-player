@@ -242,14 +242,21 @@ extension AgentTools {
 
     // MARK: - play_episode
 
-    /// Unified playback verb. Plays a single episode at an optional `start_seconds` /
-    /// `end_seconds` window, routed by `queue_position` so the same tool covers
-    /// play-now, play-next, and append-to-end. Replaces the pre-split
-    /// `play_episode_at` + `queue_episode_segments` pair.
+    /// Unified playback verb. Plays a single episode — identified either by
+    /// `episode_id` (library) or by `audio_url` + `title` (one-off URL, no
+    /// subscription required) — at an optional `start_seconds` / `end_seconds`
+    /// window, routed by `queue_position` (defaults to `.now`).
     static func playEpisodeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
-            return toolError("Missing or empty 'episode_id'")
+        let episodeID = (args["episode_id"] as? String)?.trimmed.nilIfEmpty
+        let audioURLString = (args["audio_url"] as? String)?.trimmed.nilIfEmpty
+
+        if episodeID != nil, audioURLString != nil {
+            return toolError("Pass either 'episode_id' OR 'audio_url' — not both.")
         }
+        if episodeID == nil, audioURLString == nil {
+            return toolError("Missing identifier: provide 'episode_id' (library) or 'audio_url' + 'title' (external).")
+        }
+
         let startSeconds = podcastActionNumericArg(args["start_seconds"])
         if let s = startSeconds, s < 0 {
             return toolError("'start_seconds' must be >= 0")
@@ -261,10 +268,38 @@ extension AgentTools {
         if let e = endSeconds, startSeconds == nil, e <= 0 {
             return toolError("'end_seconds' must be > 0 when 'start_seconds' is omitted")
         }
-        let positionRaw = (args["queue_position"] as? String)?.trimmed.lowercased() ?? ""
+        let positionRaw = (args["queue_position"] as? String)?.trimmed.lowercased() ?? QueuePosition.now.rawValue
         guard let position = QueuePosition(rawValue: positionRaw) else {
             return toolError("'queue_position' must be one of: now, next, end")
         }
+
+        if let episodeID {
+            return await playLibraryEpisode(
+                episodeID: episodeID,
+                startSeconds: startSeconds,
+                endSeconds: endSeconds,
+                position: position,
+                deps: deps
+            )
+        }
+        // audioURLString is non-nil here (validated above).
+        return await playExternalAudioURL(
+            audioURLString: audioURLString ?? "",
+            args: args,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            position: position,
+            deps: deps
+        )
+    }
+
+    private static func playLibraryEpisode(
+        episodeID: String,
+        startSeconds: Double?,
+        endSeconds: Double?,
+        position: QueuePosition,
+        deps: PodcastAgentToolDeps
+    ) async -> String {
         let exists = await deps.fetcher.episodeExists(episodeID: episodeID)
         guard exists else {
             return toolError("Episode not found: \(episodeID)")
@@ -280,9 +315,42 @@ extension AgentTools {
         return toolSuccess(serializePlayEpisodeResult(result, startSeconds: startSeconds, endSeconds: endSeconds))
     }
 
-    /// Shared payload shape for `play_episode` and `play_external_episode`
-    /// success envelopes so the LLM sees a consistent surface across the two
-    /// playback verbs.
+    private static func playExternalAudioURL(
+        audioURLString: String,
+        args: [String: Any],
+        startSeconds: Double?,
+        endSeconds: Double?,
+        position: QueuePosition,
+        deps: PodcastAgentToolDeps
+    ) async -> String {
+        guard let audioURL = URL(string: audioURLString) else {
+            return toolError("Invalid 'audio_url': \(audioURLString)")
+        }
+        guard let title = (args["title"] as? String)?.trimmed, !title.isEmpty else {
+            return toolError("Missing or empty 'title' (required with 'audio_url').")
+        }
+        let feedURLString = (args["feed_url"] as? String)?.trimmed.nilIfEmpty
+        let durationSeconds = podcastActionNumericArg(args["duration_seconds"])
+        guard let result = await deps.playback.playExternalEpisode(
+            audioURL: audioURL,
+            title: title,
+            feedURLString: feedURLString,
+            durationSeconds: durationSeconds,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
+            queuePosition: position
+        ) else {
+            return toolError("play_episode failed: playback host unavailable")
+        }
+        var payload = serializePlayEpisodeResult(result, startSeconds: startSeconds, endSeconds: endSeconds)
+        payload["audio_url"] = audioURLString
+        payload["title"] = title
+        if let feedURLString { payload["feed_url"] = feedURLString }
+        return toolSuccess(payload)
+    }
+
+    /// Shared payload shape for both `play_episode` branches (library and
+    /// external) so the LLM sees a consistent success envelope.
     static func serializePlayEpisodeResult(
         _ result: PlayEpisodeResult,
         startSeconds: Double?,

@@ -47,7 +47,8 @@ enum InboxTriagePrompt {
           {
             "episode_id": "<UUID>",
             "decision": "inbox" | "archived",
-            "reason": "<one-sentence reason, ~80 chars; only for inbox decisions>"
+            "reason": "<one-sentence reason, ~80 chars; only for inbox decisions>",
+            "is_hero": true
           },
           …
         ]
@@ -62,6 +63,11 @@ enum InboxTriagePrompt {
         finished last week", "Fresh episode from a show you finish weekly").
       • For `archived` decisions, `reason` may be omitted (or empty
         string). The user will not see archive reasons.
+      • Pick at most ONE hero across all your inbox decisions — the
+        single episode the user should listen to first. Set
+        `"is_hero": true` on that one decision; omit the field (or set
+        false) on every other inbox decision. Archived decisions never
+        get `is_hero`.
       • Be selective. A reasonable split is 20–40% Inbox / 60–80% archive
         when the candidate list has more than a handful of items. If
         every candidate looks worth surfacing, that's fine — but err on
@@ -117,6 +123,7 @@ enum InboxTriagePrompt {
         guard let decisions = dict["decisions"] as? [[String: Any]] else { return [:] }
 
         var out: [UUID: ParsedDecision] = [:]
+        var heroClaimed = false
         for entry in decisions {
             guard let idStr = entry["episode_id"] as? String,
                   let id = UUID(uuidString: idStr),
@@ -126,7 +133,13 @@ enum InboxTriagePrompt {
             switch lowered {
             case "inbox":
                 let reason = ((entry["reason"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                out[id] = .inbox(rationale: reason)
+                // First inbox entry claiming `is_hero` wins; later
+                // claims are forced false so callers never have to pick
+                // among competing heroes.
+                let claimedHero = (entry["is_hero"] as? Bool) ?? false
+                let isHero = claimedHero && !heroClaimed
+                if isHero { heroClaimed = true }
+                out[id] = .inbox(rationale: reason, isHero: isHero)
             case "archived", "archive":
                 out[id] = .archived
             default:
@@ -193,9 +206,10 @@ struct InboxTriageInput: Sendable {
 }
 
 /// One parsed decision from the LLM reply. `.inbox` carries the
-/// one-line rationale; `.archived` carries no metadata because the user
-/// never sees archive reasons.
+/// one-line rationale plus an `isHero` flag (at most one hero per pass —
+/// the parser enforces uniqueness); `.archived` carries no metadata
+/// because the user never sees archive reasons.
 enum ParsedDecision: Sendable, Hashable {
-    case inbox(rationale: String)
+    case inbox(rationale: String, isHero: Bool)
     case archived
 }

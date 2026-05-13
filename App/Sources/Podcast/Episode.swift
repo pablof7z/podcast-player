@@ -95,6 +95,19 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     /// product brief, so no rationale is recorded for them).
     var triageRationale: String?
 
+    /// `true` when the agent flagged this inbox pick as the hero card —
+    /// the single episode the user should listen to first this pass.
+    /// At most one episode per triage pass should carry this flag.
+    var triageIsHero: Bool
+
+    /// `true` once `EpisodeMetadataIndexer` has embedded the episode's
+    /// title + description into the RAG index. Lets `search_episodes` /
+    /// `find_similar_episodes` discover episodes that have no transcript.
+    /// Flipped to `true` after a successful metadata upsert OR after a
+    /// transcript ingestion lands real chunks for the episode (transcript
+    /// chunks subsume the synthetic title/description match).
+    var metadataIndexed: Bool
+
     init(
         id: UUID = UUID(),
         podcastID: UUID,
@@ -120,7 +133,9 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         adSegments: [AdSegment]? = nil,
         generationSource: GenerationSource? = nil,
         triageDecision: TriageDecision? = nil,
-        triageRationale: String? = nil
+        triageRationale: String? = nil,
+        triageIsHero: Bool = false,
+        metadataIndexed: Bool = false
     ) {
         self.id = id
         self.podcastID = podcastID
@@ -147,6 +162,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         self.generationSource = generationSource
         self.triageDecision = triageDecision
         self.triageRationale = triageRationale
+        self.triageIsHero = triageIsHero
+        self.metadataIndexed = metadataIndexed
     }
 
     // MARK: - Codable (forward-compat decoding)
@@ -158,7 +175,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         case publisherTranscriptURL, publisherTranscriptType, chaptersURL
         case playbackPosition, played, isStarred, downloadState, transcriptState
         case adSegments, generationSource
-        case triageDecision, triageRationale
+        case triageDecision, triageRationale, triageIsHero
+        case metadataIndexed
         // Legacy key from the pre-split shape. Decoded as a fallback when
         // `podcastID` is absent. Never written.
         case legacy_subscriptionID = "subscriptionID"
@@ -197,6 +215,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         generationSource = try c.decodeIfPresent(GenerationSource.self, forKey: .generationSource)
         triageDecision = try c.decodeIfPresent(TriageDecision.self, forKey: .triageDecision)
         triageRationale = try c.decodeIfPresent(String.self, forKey: .triageRationale)
+        triageIsHero = try c.decodeIfPresent(Bool.self, forKey: .triageIsHero) ?? false
+        metadataIndexed = try c.decodeIfPresent(Bool.self, forKey: .metadataIndexed) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -226,6 +246,8 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
         try c.encodeIfPresent(generationSource, forKey: .generationSource)
         try c.encodeIfPresent(triageDecision, forKey: .triageDecision)
         try c.encodeIfPresent(triageRationale, forKey: .triageRationale)
+        if triageIsHero { try c.encode(triageIsHero, forKey: .triageIsHero) }
+        if metadataIndexed { try c.encode(metadataIndexed, forKey: .metadataIndexed) }
     }
 }
 

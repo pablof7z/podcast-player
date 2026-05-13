@@ -8,10 +8,10 @@ import Foundation
 // — we just swap the data source so the picks are persistent agent
 // decisions (with rationale) instead of an ephemeral curation cache.
 //
-// Hero rank is by recency: the most recently published `.inbox` episode
-// is the hero, the next four become secondaries. That keeps the surface
-// freshness-biased without introducing another scoring axis the agent
-// would have to reason about.
+// Hero rank prefers the agent's explicit `triageIsHero` flag — the
+// LLM is allowed to crown one inbox pick per pass as the editorial
+// lead. When no episode is flagged, fall back to the most recently
+// published `.inbox` episode so the surface still has a hero.
 
 @MainActor
 enum HomeInboxBundleBuilder {
@@ -31,7 +31,6 @@ enum HomeInboxBundleBuilder {
         now: Date = Date()
     ) -> HomeAgentPicksBundle {
         let inbox = store.state.episodes
-            .lazy
             .filter { episode in
                 guard episode.triageDecision == .inbox else { return false }
                 // Triage marks `.inbox` even after the user has started
@@ -48,11 +47,12 @@ enum HomeInboxBundleBuilder {
             }
             .sorted { $0.pubDate > $1.pubDate }
 
+        // Hero precedence: agent-crowned `triageIsHero` wins; fall back
+        // to newest pubDate (already first after the sort above).
+        let heroEpisode = inbox.first(where: { $0.triageIsHero }) ?? inbox.first
         var picks: [HomeAgentPick] = []
         picks.reserveCapacity(1 + secondariesCap)
-
-        var iterator = inbox.makeIterator()
-        if let hero = iterator.next() {
+        if let hero = heroEpisode {
             picks.append(HomeAgentPick(
                 episodeID: hero.id,
                 rationale: hero.triageRationale ?? "",
@@ -60,7 +60,8 @@ enum HomeInboxBundleBuilder {
                 isHero: true
             ))
             var counted = 0
-            while counted < secondariesCap, let next = iterator.next() {
+            for next in inbox where next.id != hero.id {
+                if counted >= secondariesCap { break }
                 picks.append(HomeAgentPick(
                     episodeID: next.id,
                     rationale: next.triageRationale ?? "",

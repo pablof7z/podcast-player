@@ -58,7 +58,7 @@ extension AgentTools {
                         "description": "Where to land this play. 'now' = start playing immediately; existing Up Next items are preserved and resume afterward. 'next' = insert at the head of Up Next so it plays after the current item ends. 'end' = append to the bottom of Up Next.",
                     ],
                 ],
-                required: ["queue_position"]
+                required: []
             ),
             podcastTool(
                 name: PodcastNames.pausePlayback,
@@ -334,7 +334,7 @@ extension AgentTools {
                 — e.g. 'find the Lyn Alden episode on Library of Wealth' or 'is there a show about X?'. \
                 Returns feed URLs, episode audio URLs, and metadata. \
                 For recency-sensitive lookups ('most recent appearance', 'May 2026') combine with perplexity_search. \
-                After finding a feed URL you can call subscribe_podcast or play_external_episode.
+                After finding a feed URL you can call subscribe_podcast or play_episode (with audio_url + feed_url).
                 """,
                 properties: [
                     "query": ["type": "string", "description": "Show name, episode title, guest name, or topic to search for."],
@@ -351,8 +351,8 @@ extension AgentTools {
                 want to subscribe / follow / add the show to their library. \
                 Idempotent at the subscription level: if the user is already subscribed the result \
                 carries `already_subscribed: true`. If the Podcast row already exists from a prior \
-                one-off play (`play_external_episode`) but no subscription row, this promotes it \
-                into a subscription and backfills missing episodes.
+                one-off play (via `play_episode` with `audio_url`) but no subscription row, this \
+                promotes it into a subscription and backfills missing episodes.
                 """,
                 properties: [
                     "feed_url": ["type": "string", "description": "RSS feed URL of the podcast to subscribe to."],
@@ -379,7 +379,7 @@ extension AgentTools {
                 name: PodcastNames.sendFriendMessage,
                 description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this when the user tells you to message, tell, ask, or hand off something to a named friend — from any context, including owner chat. The friend_pubkey MUST match a friend in the user's Friends list — the tool refuses unknown pubkeys. Inside a peer conversation the note threads as a NIP-10 reply; from owner chat it publishes as a standalone note.",
                 properties: [
-                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
+                    "friend_pubkey": ["type": "string", "description": "Hex pubkey or 6-character pubkey prefix of the friend (the prefix is shown in parentheses next to each name in the Friends list). Must match a friend in the user's Friends list."],
                     "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise."],
                 ],
                 required: ["friend_pubkey", "message"]

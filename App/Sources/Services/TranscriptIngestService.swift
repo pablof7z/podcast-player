@@ -339,10 +339,16 @@ final class TranscriptIngestService {
             // Drop any prior chunks for this episode so re-ingestion
             // replaces rather than accumulates. Idempotent on chunk.id,
             // but old chunks from a different segment-boundary run would
-            // otherwise linger.
+            // otherwise linger. This also wipes any synthetic
+            // title/description chunk produced by `EpisodeMetadataIndexer`
+            // — transcript chunks subsume that signal.
             try await rag.index.deleteAll(forEpisodeID: episode.id)
             if !chunks.isEmpty {
                 try await rag.index.upsert(chunks: chunks)
+                // Transcript chunks cover this episode in the RAG index,
+                // so the metadata-indexer backfill should skip it next
+                // launch.
+                appStore.setEpisodesMetadataIndexed([episode.id])
             }
             Self.logger.info(
                 "ingested transcript for \(episode.id, privacy: .public) — \(chunks.count, privacy: .public) chunks indexed, source=\(String(describing: source), privacy: .public)"

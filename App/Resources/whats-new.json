@@ -2,6 +2,24 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T23:31:00Z",
+      "lines": [
+        "The agent now shows each friend's 6-character pubkey prefix in the Friends list and can message them using just that prefix."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T23:30:00Z",
+      "lines": [
+        "When the agent activates a skill (like Wiki Research or Podcast Generation) during a chat, you'll now see a small indicator in the conversation so you know which capabilities are in play."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T23:00:00Z",
+      "lines": [
+        "The agent now has a 'conversation_history' skill — ask it to recall what you discussed in a past session and it can list and search across all your in-app and Nostr conversation threads."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T22:30:00Z",
       "lines": [
         "play_external_episode is gone — the agent now uses a single play_episode tool for everything. Pass episode_id for library episodes, audio_url + title for one-off URLs; start_seconds / end_seconds / queue_position work the same in both cases."

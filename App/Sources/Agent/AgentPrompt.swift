@@ -35,7 +35,7 @@ enum AgentPrompt {
         You can play episodes the user is NOT subscribed to. When asked to play
         a guest appearance, a one-off episode, or anything not in the library:
         1. Use `search_podcast_directory` to find the feed URL + audio URL.
-        2. Use `play_external_episode(audio_url, title, feed_url)` to start playing immediately.
+        2. Use `play_episode(audio_url:, title:, feed_url:)` to start playing immediately.
            ALWAYS pass feed_url when you have one — the app fetches the show's
            real artwork and title from it. Only omit feed_url for raw audio
            links where you genuinely don't know the source podcast.
@@ -79,8 +79,9 @@ enum AgentPrompt {
             sections.append("## Subscriptions (\(followedPodcasts.count))\n\(titles)\(suffix)")
         }
 
+        // AI Inbox: archived episodes are silently soft-hidden from the agent's prompt context.
         let inProgress = state.episodes
-            .filter { !$0.played && $0.playbackPosition > 0 }
+            .filter { !$0.played && !$0.isTriageArchived && $0.playbackPosition > 0 }
             .sorted { $0.pubDate > $1.pubDate }
             .prefix(Cap.inProgress)
         if !inProgress.isEmpty {
@@ -93,8 +94,9 @@ enum AgentPrompt {
         }
 
         let cutoff = Date().addingTimeInterval(-Cap.recentWindowDays * 86_400)
+        // AI Inbox: archived episodes are silently soft-hidden from the agent's prompt context.
         let recentUnplayed = state.episodes
-            .filter { !$0.played && $0.playbackPosition == 0 && $0.pubDate >= cutoff }
+            .filter { !$0.played && !$0.isTriageArchived && $0.playbackPosition == 0 && $0.pubDate >= cutoff }
             .sorted { $0.pubDate > $1.pubDate }
             .prefix(Cap.recentUnplayed)
         if !recentUnplayed.isEmpty {
@@ -108,7 +110,7 @@ enum AgentPrompt {
 
         if !state.friends.isEmpty {
             let list = state.friends
-                .map { "- \($0.displayName)" }
+                .map { "- \($0.displayName) (\(String($0.identifier.prefix(6))))" }
                 .joined(separator: "\n")
             sections.append("## Friends\n\(list)")
         }

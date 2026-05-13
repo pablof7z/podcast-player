@@ -348,14 +348,15 @@ actor MockPeerEventPublisher: PeerEventPublisherProtocol {
 }
 
 actor MockFriendDirectory: FriendDirectoryProtocol {
-    private let knownPubkeys: Set<String>
+    private let knownPubkeys: [String]
 
     init(knownPubkeys: [String] = []) {
-        self.knownPubkeys = Set(knownPubkeys.map { $0.lowercased() })
+        self.knownPubkeys = knownPubkeys.map { $0.lowercased() }
     }
 
-    func isKnownFriend(pubkeyHex: String) async -> Bool {
-        knownPubkeys.contains(pubkeyHex.lowercased())
+    func resolvePubkey(prefixOrFull: String) async -> String? {
+        let needle = prefixOrFull.lowercased()
+        return knownPubkeys.first { $0.hasPrefix(needle) }
     }
 }
 

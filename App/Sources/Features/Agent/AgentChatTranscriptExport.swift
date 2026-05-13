@@ -98,6 +98,8 @@ enum AgentChatTranscriptExport {
             return "Tools (\(count) action\(count == 1 ? "" : "s"))"
         case .error:
             return "Error"
+        case .skillActivated(_, let displayName):
+            return "Skill: \(displayName)"
         }
     }
 

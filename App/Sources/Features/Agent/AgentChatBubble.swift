@@ -98,6 +98,8 @@ struct AgentChatBubble: View {
             toolBatchRow(batchID: batchID, count: count)
         case .error:
             errorBubble
+        case .skillActivated(_, let displayName):
+            skillActivatedIndicator(displayName: displayName)
         }
     }
 
@@ -254,6 +256,23 @@ struct AgentChatBubble: View {
         return [baseLabel + ".", undoneLabel]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+    }
+
+    private func skillActivatedIndicator(displayName: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "bolt.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(AppTheme.Tint.agentSurface)
+                .accessibilityHidden(true)
+            Text("\(displayName) enabled")
+                .font(AppTheme.Typography.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .glassEffect(.regular.tint(AppTheme.Tint.agentSurface.opacity(0.08)), in: .capsule)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .accessibilityLabel("\(displayName) skill enabled")
     }
 
     private var errorBubble: some View {

@@ -22,8 +22,8 @@ import os.log
 //     single mutation batch — SwiftUI re-renders once per pass, not once
 //     per episode.
 //   • Falls back silently when there's no API key configured. The Inbox
-//     section degrades to the recency-newest unplayed feed via the
-//     existing `AgentPicksService` fallback path until credentials arrive.
+//     section degrades to the newest-unplayed-per-show heuristic via
+//     `heuristicPatches` so the rail isn't empty until credentials arrive.
 
 @MainActor
 @Observable
@@ -52,14 +52,17 @@ final class InboxTriageService {
     /// the prompt.
     static let engagementLookback = 20
 
-    /// Minimum episodes (played + unplayed) needed for a show's
-    /// engagement signal to be considered reliable. Below this the show
-    /// is treated as "newly subscribed" — the agent is told NOT to
-    /// archive its episodes because the user has not had a chance to
-    /// demonstrate disengagement yet. Without this guard, a fresh
-    /// install with three daily shows would see most of its inbox
-    /// archived on the first pass.
-    static let minSignalEpisodes = 3
+    /// A subscription is "newly subscribed" when the follow happened
+    /// inside this window — the user has not had a chance to demonstrate
+    /// disengagement yet, so the agent is told NOT to archive its
+    /// episodes. Drives the `isNewlySubscribed` flag passed to the LLM.
+    static let newlySubscribedWindow: TimeInterval = 7 * 86_400
+
+    /// Fallback: a show with zero total signal (no played + no unplayed
+    /// in the lookback window) is also treated as newly subscribed even
+    /// if the follow is older — covers orphan podcasts and edge cases
+    /// where engagement history evaporated.
+    static let minSignalEpisodes = 1
 
     /// `true` while a triage pass is in flight. Surfaced for the UI so
     /// the Home Inbox section can render a shimmer while decisions
@@ -104,7 +107,14 @@ final class InboxTriageService {
             return
         }
 
-        let engagement = buildEngagement(store: store, podcastIDs: Set(candidates.map { $0.podcastID }))
+        let engagement = InboxTriageEngagementBuilder.build(
+            store: store,
+            podcastIDs: Set(candidates.map { $0.podcastID }),
+            showTitles: subscriptionTitles(store: store),
+            engagementLookback: Self.engagementLookback,
+            newlySubscribedWindow: Self.newlySubscribedWindow,
+            minSignalEpisodes: Self.minSignalEpisodes
+        )
 
         // No-key fallback: rather than leave the Home Inbox empty when
         // the user hasn't connected an LLM provider yet, surface the
@@ -220,62 +230,6 @@ final class InboxTriageService {
         return titles
     }
 
-    // MARK: - Engagement snapshots
-
-    private func buildEngagement(
-        store: AppStateStore,
-        podcastIDs: Set<UUID>
-    ) -> [InboxTriageShowEngagement] {
-        let titles = subscriptionTitles(store: store)
-        var snapshots: [InboxTriageShowEngagement] = []
-        snapshots.reserveCapacity(podcastIDs.count)
-
-        for podcastID in podcastIDs {
-            let episodes = store.state.episodes
-                .filter { $0.podcastID == podcastID }
-                .sorted { $0.pubDate > $1.pubDate }
-                .prefix(Self.engagementLookback)
-
-            var played = 0
-            var unplayed = 0
-            var lastPlayedAt: Date?
-            for ep in episodes {
-                if ep.played {
-                    played += 1
-                    if lastPlayedAt == nil || ep.pubDate > (lastPlayedAt ?? .distantPast) {
-                        lastPlayedAt = ep.pubDate
-                    }
-                } else if !ep.isTriageArchived {
-                    // Archived episodes don't count toward "unplayed
-                    // backlog" the agent reasons about — they've already
-                    // been routed and counting them would double-penalise
-                    // a show that the agent itself has cleaned up.
-                    unplayed += 1
-                }
-            }
-
-            let isNewlySubscribed = (played + unplayed) < Self.minSignalEpisodes
-            snapshots.append(InboxTriageShowEngagement(
-                podcastID: podcastID,
-                showTitle: titles[podcastID] ?? "Unknown show",
-                playedCount: played,
-                unplayedCount: unplayed,
-                lastPlayedAt: lastPlayedAt,
-                isNewlySubscribed: isNewlySubscribed
-            ))
-        }
-
-        // Stable ordering so the prompt is reproducible — the LLM's
-        // attention to early lines matters; sort by descending finish
-        // rate so the most-engaged shows surface first.
-        snapshots.sort { lhs, rhs in
-            let lhsRate = lhs.playedCount == 0 ? 0.0 : Double(lhs.playedCount) / Double(max(1, lhs.playedCount + lhs.unplayedCount))
-            let rhsRate = rhs.playedCount == 0 ? 0.0 : Double(rhs.playedCount) / Double(max(1, rhs.playedCount + rhs.unplayedCount))
-            return lhsRate > rhsRate
-        }
-        return snapshots
-    }
-
     // MARK: - LLM call
 
     private func hasAPIKey(model: String) -> Bool {
@@ -310,7 +264,7 @@ final class InboxTriageService {
         patches.reserveCapacity(parsed.count)
         for (id, decision) in parsed {
             switch decision {
-            case .inbox(let rationale):
+            case .inbox(let rationale, let isHero):
                 // Inbox cards MUST have a "Because …" rationale — that
                 // line is what makes the surface feel like an editorial
                 // decision instead of an arbitrary pick. If the model
@@ -326,7 +280,8 @@ final class InboxTriageService {
                 patches.append(AppStateStore.TriagePatch(
                     episodeID: id,
                     decision: .inbox,
-                    rationale: trimmed
+                    rationale: trimmed,
+                    isHero: isHero
                 ))
             case .archived:
                 patches.append(AppStateStore.TriagePatch(

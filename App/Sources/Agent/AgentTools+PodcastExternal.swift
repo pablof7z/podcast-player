@@ -2,15 +2,14 @@ import Foundation
 
 // MARK: - External podcast tool handlers
 //
-// Handlers for the four external-podcast tools:
+// Handlers for the external-podcast tools:
 //   • search_podcast_directory  — iTunes Search API
 //   • subscribe_podcast         — subscribe to a feed by RSS URL
-//   • play_external_episode     — play any public episode without subscribing
 //   • download_and_transcribe (external path) — auto-subscribe then transcribe
 //
-// The last tool reuses the name `download_and_transcribe`; the extended handler
-// lives in AgentTools+PodcastActions.swift (the `audio_url` / `feed_url` path
-// is injected there via `downloadAndTranscribeExternalTool`).
+// External playback (audio_url + title path) is handled by
+// `playExternalAudioURL` inside `AgentTools+PodcastActions.swift`, dispatched
+// by the unified `play_episode` tool.
 
 extension AgentTools {
 
@@ -85,47 +84,6 @@ extension AgentTools {
         } catch {
             return toolError("subscribe_podcast failed: \(error.localizedDescription)")
         }
-    }
-
-    // MARK: - play_external_episode
-
-    static func playExternalEpisodeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
-        guard let audioURLString = (args["audio_url"] as? String)?.trimmed, !audioURLString.isEmpty else {
-            return toolError("Missing or empty 'audio_url'")
-        }
-        guard let audioURL = URL(string: audioURLString) else {
-            return toolError("Invalid 'audio_url': \(audioURLString)")
-        }
-        guard let title = (args["title"] as? String)?.trimmed, !title.isEmpty else {
-            return toolError("Missing or empty 'title'")
-        }
-        let feedURLString = (args["feed_url"] as? String)?.trimmed.nilIfEmpty
-        let durationSeconds = numericArg(args["duration_seconds"])
-        let timestamp = numericArg(args["timestamp"]) ?? 0
-        guard timestamp >= 0 else {
-            return toolError("'timestamp' must be >= 0")
-        }
-        // queue_position defaults to "now" — the historical behavior. The LLM
-        // can opt into queued behavior explicitly.
-        let positionRaw = (args["queue_position"] as? String)?.trimmed.lowercased() ?? QueuePosition.now.rawValue
-        guard let position = QueuePosition(rawValue: positionRaw) else {
-            return toolError("'queue_position' must be one of: now, next, end")
-        }
-        guard let result = await deps.playback.playExternalEpisode(
-            audioURL: audioURL,
-            title: title,
-            feedURLString: feedURLString,
-            durationSeconds: durationSeconds,
-            timestampSeconds: timestamp,
-            queuePosition: position
-        ) else {
-            return toolError("play_external_episode failed: playback host unavailable")
-        }
-        var payload = serializePlayEpisodeResult(result, startSeconds: timestamp > 0 ? timestamp : nil, endSeconds: nil)
-        payload["audio_url"] = audioURLString
-        payload["title"] = title
-        if let feedURLString { payload["feed_url"] = feedURLString }
-        return toolSuccess(payload)
     }
 
     // MARK: - download_and_transcribe (external path)

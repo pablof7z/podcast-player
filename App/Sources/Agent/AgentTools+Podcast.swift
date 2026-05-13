@@ -60,7 +60,6 @@ extension AgentTools {
         static let searchPodcastDirectory = "search_podcast_directory"
         static let subscribePodcast       = "subscribe_podcast"
         static let deletePodcast          = "delete_podcast"
-        static let playExternalEpisode    = "play_external_episode"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch. Skill-gated names are
@@ -80,7 +79,7 @@ extension AgentTools {
                 listEpisodes, listInProgress, listRecentUnplayed,
                 createClip, downloadAndTranscribe,
                 generateTTSEpisode, configureAgentVoice, listAvailableVoices,
-                searchPodcastDirectory, subscribePodcast, deletePodcast, playExternalEpisode,
+                searchPodcastDirectory, subscribePodcast, deletePodcast,
             ]
         }
     }
@@ -214,8 +213,6 @@ extension AgentTools {
             return await subscribePodcastTool(args: args, deps: deps)
         case PodcastNames.deletePodcast:
             return await deletePodcastTool(args: args, deps: deps)
-        case PodcastNames.playExternalEpisode:
-            return await playExternalEpisodeTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

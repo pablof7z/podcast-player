@@ -11,8 +11,7 @@ import Foundation
 
 // MARK: - Playback / queue
 
-/// Where a `play_episode` (or `play_external_episode`) call should land its
-/// item in the playback queue.
+/// Where a `play_episode` call should land its item in the playback queue.
 public enum QueuePosition: String, Sendable, Equatable {
     /// Start playing immediately. Existing Up Next items are preserved and
     /// resume once this item finishes.
@@ -24,7 +23,7 @@ public enum QueuePosition: String, Sendable, Equatable {
     case end
 }
 
-/// Result returned by `play_episode` / `play_external_episode`.
+/// Result returned by `play_episode` (both library and external URL paths).
 public struct PlayEpisodeResult: Sendable, Equatable {
     public let episodeID: EpisodeID
     public let queuePosition: QueuePosition

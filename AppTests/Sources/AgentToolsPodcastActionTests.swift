@@ -280,7 +280,7 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         let decoded = try decode(json)
         XCTAssertEqual(
             decoded["error"] as? String,
-            "Pubkey 'stranger-pubkey-hex' is not in your Friends list. Add them first."
+            "No friend found matching 'stranger-pubkey-hex'. Add them first."
         )
         let calls = await deps.peerPublisher.friendMessages
         XCTAssertEqual(calls.count, 0)

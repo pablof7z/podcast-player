@@ -28,6 +28,7 @@ extension AgentChatSession {
         let visible = messages.filter {
             if case .toolBatch = $0.role { return false }
             if case .error = $0.role { return false }
+            if case .skillActivated = $0.role { return false }
             return true
         }
         guard visible.count >= 2 else { return false }
@@ -354,7 +355,16 @@ extension AgentChatSession {
             argsJSON: argsJSON,
             currentEnabledSkills: enabledSkills
         )
+        let newlyEnabled = result.updatedEnabledSkills.subtracting(enabledSkills)
         enabledSkills = result.updatedEnabledSkills
+        for skillID in newlyEnabled {
+            if let skill = AgentSkillRegistry.skill(id: skillID) {
+                messages.append(ChatMessage(
+                    role: .skillActivated(skillID: skill.id, displayName: skill.displayName),
+                    text: ""
+                ))
+            }
+        }
         return result.resultJSON
     }
 
@@ -383,7 +393,7 @@ extension AgentChatSession {
                 rawMessages.append(["role": "user", "content": msg.text])
             case .assistant:
                 rawMessages.append(["role": "assistant", "content": msg.text])
-            case .toolBatch, .error:
+            case .toolBatch, .error, .skillActivated:
                 continue
             }
         }

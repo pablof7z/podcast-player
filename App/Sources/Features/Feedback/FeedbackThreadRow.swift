@@ -69,8 +69,6 @@ struct FeedbackThreadRow: View {
             }
         }
         .padding(.vertical, Layout.rowVerticalPadding)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
     @ViewBuilder

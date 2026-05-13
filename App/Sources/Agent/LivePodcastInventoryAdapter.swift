@@ -70,7 +70,8 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
             .prefix(limit)
         return podcasts.map { podcast in
             let eps = store.episodes(forPodcast: podcast.id)
-            let unplayed = eps.filter { !$0.played }.count
+            // AI Inbox: archived episodes are silently soft-hidden from agent unplayed counts.
+            let unplayed = eps.filter { !$0.played && !$0.isTriageArchived }.count
             let lastPub = eps.first?.pubDate  // already sorted newest-first
             let isSubscribed = store.subscription(podcastID: podcast.id) != nil
             return PodcastInventoryRow(
@@ -91,7 +92,8 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
         let bounded = Array(sorted.prefix(limit))
         return bounded.map { sub in
             let eps = store.episodes(forPodcast: sub.id)
-            let unplayed = eps.filter { !$0.played }.count
+            // AI Inbox: archived episodes are silently soft-hidden from agent unplayed counts.
+            let unplayed = eps.filter { !$0.played && !$0.isTriageArchived }.count
             let lastPub = eps.first?.pubDate  // already sorted newest-first
             return SubscriptionSummary(
                 podcastID: sub.id.uuidString,

@@ -196,13 +196,13 @@ struct AgentChatTranscriptView: View {
     private func shouldShowSeparator(before msg: ChatMessage, previous prev: ChatMessage?) -> Bool {
         switch msg.role {
         case .user, .assistant: break
-        case .toolBatch, .error: return false
+        case .toolBatch, .error, .skillActivated: return false
         }
         guard let prev else { return true }
         switch prev.role {
         case .user, .assistant:
             return msg.timestamp.timeIntervalSince(prev.timestamp) >= Layout.timeSeparatorThreshold
-        case .toolBatch, .error:
+        case .toolBatch, .error, .skillActivated:
             return false
         }
     }

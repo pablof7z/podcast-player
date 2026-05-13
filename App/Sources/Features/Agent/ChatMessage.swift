@@ -11,6 +11,7 @@ struct ChatMessage: Identifiable, Equatable, Codable {
         case assistant
         case toolBatch(batchID: UUID, count: Int)
         case error
+        case skillActivated(skillID: String, displayName: String)
     }
 
     let id: UUID
@@ -30,6 +31,8 @@ struct ChatMessage: Identifiable, Equatable, Codable {
         case roleType
         case batchID
         case batchCount
+        case skillID
+        case skillDisplayName
         case text
         case timestamp
     }
@@ -39,6 +42,7 @@ struct ChatMessage: Identifiable, Equatable, Codable {
         case assistant
         case toolBatch
         case error
+        case skillActivated
     }
 
     init(from decoder: Decoder) throws {
@@ -58,6 +62,10 @@ struct ChatMessage: Identifiable, Equatable, Codable {
             let batchID = try c.decode(UUID.self, forKey: .batchID)
             let count = try c.decode(Int.self, forKey: .batchCount)
             self.role = .toolBatch(batchID: batchID, count: count)
+        case .skillActivated:
+            let skillID = try c.decode(String.self, forKey: .skillID)
+            let displayName = try c.decode(String.self, forKey: .skillDisplayName)
+            self.role = .skillActivated(skillID: skillID, displayName: displayName)
         }
     }
 
@@ -77,6 +85,10 @@ struct ChatMessage: Identifiable, Equatable, Codable {
             try c.encode(RoleType.toolBatch, forKey: .roleType)
             try c.encode(batchID, forKey: .batchID)
             try c.encode(count, forKey: .batchCount)
+        case .skillActivated(let skillID, let displayName):
+            try c.encode(RoleType.skillActivated, forKey: .roleType)
+            try c.encode(skillID, forKey: .skillID)
+            try c.encode(displayName, forKey: .skillDisplayName)
         }
     }
 }
