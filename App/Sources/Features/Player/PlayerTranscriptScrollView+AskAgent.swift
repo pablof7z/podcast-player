@@ -42,6 +42,14 @@ extension Notification.Name {
     /// source episode. `userInfo["episodeID"]` carries the UUID string.
     /// `RootView` dismisses the player and presents `EpisodeDetailView`.
     static let openEpisodeDetailRequested = Notification.Name("io.f7z.podcast.openEpisodeDetailRequested")
+    /// Posted by the player's More menu when the user taps "Go to show".
+    /// `userInfo["subscriptionID"]` carries the podcast UUID string.
+    /// `RootView` dismisses the player and presents `ShowDetailView` —
+    /// sibling of `openEpisodeDetailRequested`. Both bindings update in the
+    /// same render tick so SwiftUI can swap one sheet for the other without
+    /// the "present-while-dismissing" conflict that the old URL round-trip
+    /// in `PlayerMoreMenu` was tripping.
+    static let openSubscriptionDetailRequested = Notification.Name("io.f7z.podcast.openSubscriptionDetailRequested")
     /// Posted by `PlayerGenerationSourceChip` when the user taps an in-app
     /// chat source. `userInfo["conversationID"]` carries the `UUID`. `RootView`
     /// dismisses the player, switches to the target conversation, and opens

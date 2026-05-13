@@ -60,6 +60,12 @@ struct RootView: View {
     /// Drives the episode-detail sheet opened when the player's clip-source
     /// chip is tapped (notification `openEpisodeDetailRequested`).
     @State private var clipSourceEpisodeID: UUID?
+    /// Drives the show-detail sheet opened from the player's "Go to show"
+    /// menu item (notification `openSubscriptionDetailRequested`). Paired
+    /// with `clipSourceEpisodeID` so the dismiss+present can happen in one
+    /// render tick — the old URL-round-trip path crashed when it tried to
+    /// present `spotlightSheet` while the player was mid-dismissal.
+    @State private var playerNavSubscriptionID: UUID?
     /// Drives the NostrConversationDetailView sheet opened when the player's
     /// generation-source chip is tapped for a Nostr-originated episode.
     @State private var generationSourceNostrRootID: String?
@@ -297,6 +303,12 @@ struct RootView: View {
                 showFullPlayer = false
                 clipSourceEpisodeID = uuid
             }
+            .onReceive(NotificationCenter.default.publisher(for: .openSubscriptionDetailRequested)) { note in
+                guard let idString = note.userInfo?["subscriptionID"] as? String,
+                      let uuid = UUID(uuidString: idString) else { return }
+                showFullPlayer = false
+                playerNavSubscriptionID = uuid
+            }
             .onReceive(NotificationCenter.default.publisher(for: .openAgentChatConversation)) { note in
                 guard let convID = note.userInfo?["conversationID"] as? UUID else { return }
                 showFullPlayer = false
@@ -317,14 +329,11 @@ struct RootView: View {
                 showFullPlayer = false
                 generationSourceNostrRootID = rootID
             }
-            .sheet(item: Binding(
-                get: { clipSourceEpisodeID.map(IdentifiedUUID.init) },
-                set: { clipSourceEpisodeID = $0?.id }
-            )) { identified in
-                NavigationStack {
-                    EpisodeDetailView(episodeID: identified.id)
-                }
-            }
+            .modifier(PlayerNavSheets(
+                episodeID: $clipSourceEpisodeID,
+                subscriptionID: $playerNavSubscriptionID,
+                store: store
+            ))
             .sheet(item: Binding(
                 get: { generationSourceNostrRootID.map(IdentifiedString.init) },
                 set: { generationSourceNostrRootID = $0?.value }
@@ -615,5 +624,60 @@ struct RootView: View {
             case .episode(let id):      return "episode:\(id)"
             }
         }
+    }
+}
+
+// MARK: - PlayerNavSheets
+
+/// Pulls the two "swap the player sheet for a detail sheet" presentations
+/// out of `RootView.body` so the body stays inside the Swift type-checker's
+/// reasonable-time budget. Both bindings are driven by notifications posted
+/// from inside the player (`PlayerClipSourceChip`, `PlayerMoreMenu`); the
+/// onReceive handlers in `RootView` flip `showFullPlayer` and the matching
+/// id in the same render tick so SwiftUI sees a single dismiss→present
+/// transition instead of overlapping sheets.
+private struct PlayerNavSheets: ViewModifier {
+    @Binding var episodeID: UUID?
+    @Binding var subscriptionID: UUID?
+    let store: AppStateStore
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(item: episodeBinding) { identified in
+                NavigationStack {
+                    EpisodeDetailView(episodeID: identified.id)
+                }
+            }
+            .sheet(item: subscriptionBinding) { identified in
+                NavigationStack {
+                    if let podcast = store.podcast(id: identified.id) {
+                        ShowDetailView(podcast: podcast)
+                    } else {
+                        ContentUnavailableView(
+                            "Show not found",
+                            systemImage: "questionmark.folder",
+                            description: Text("This subscription is no longer in your library.")
+                        )
+                    }
+                }
+            }
+    }
+
+    private var episodeBinding: Binding<IdentifiedUUID?> {
+        Binding(
+            get: { episodeID.map(IdentifiedUUID.init) },
+            set: { episodeID = $0?.id }
+        )
+    }
+
+    private var subscriptionBinding: Binding<IdentifiedUUID?> {
+        Binding(
+            get: { subscriptionID.map(IdentifiedUUID.init) },
+            set: { subscriptionID = $0?.id }
+        )
+    }
+
+    private struct IdentifiedUUID: Identifiable {
+        let id: UUID
     }
 }

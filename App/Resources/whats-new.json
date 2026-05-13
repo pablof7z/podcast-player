@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T12:30:00Z",
+      "lines": [
+        "Fixed: the player's More menu Go to episode and Go to show items no longer crash. The two items used to round-trip through a deep-link while the player was still mid-dismiss; they now hand the request to the root view directly so the player sheet hands off cleanly to the detail surface."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T09:15:00Z",
       "lines": [
         "Home's Subscriptions section now has a See All entry that opens an All Podcasts list — every podcast the app knows about, including shows from one-off external plays you never subscribed to. Swipe any row to delete the podcast plus all its episodes; a Following chip marks the ones you actively follow."

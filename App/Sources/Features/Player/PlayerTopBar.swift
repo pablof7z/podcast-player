@@ -78,7 +78,6 @@ struct PlayerTopBar: View {
                         podcast: podcast,
                         onMarkPlayed: { store.markEpisodePlayed(episode.id) },
                         onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
-                        onDismissPlayer: onDismiss,
                         onShowSleepTimer: onShowSleepTimer
                     )
                 }

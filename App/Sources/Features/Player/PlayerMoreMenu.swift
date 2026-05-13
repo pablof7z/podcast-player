@@ -9,17 +9,20 @@ import UIKit
 /// list, one tap to dispatch, no transient state between selections. Render
 /// is wrapped in a glass capsule so it matches the surrounding chrome.
 ///
-/// Navigation items (Go to episode / Go to show) dismiss the player and
-/// dispatch a `podcastr://` deep-link. `RootView.onOpenURL` already routes
-/// these into the correct detail sheet, so no additional plumbing is needed
-/// from this surface.
+/// Navigation items (Go to episode / Go to show) post a notification that
+/// `RootView` observes; the handler flips `showFullPlayer = false` and the
+/// target sheet's binding in the same render tick. We used to dismiss the
+/// player and then async-open a `podcastr://` URL, but that raced the
+/// sheet-dismissal animation — by the time `onOpenURL` resolved and toggled
+/// the destination sheet, the player sheet was still mid-dismiss and SwiftUI
+/// crashed trying to present a sheet over a dismissing one. The atomic
+/// notification path mirrors `PlayerClipSourceChip`'s working pattern.
 struct PlayerMoreMenu: View {
 
     let episode: Episode
     let podcast: Podcast?
     let onMarkPlayed: () -> Void
     let onMarkUnplayed: () -> Void
-    let onDismissPlayer: () -> Void
     let onShowSleepTimer: () -> Void
 
     /// Drives the brief "Copied!" label swap on the Copy item. Resets after
@@ -117,25 +120,23 @@ struct PlayerMoreMenu: View {
             ?? episode.enclosureURL.absoluteString
     }
 
-    /// Dismiss the player, then route via the existing `podcastr://episode/<uuid>`
-    /// deep-link (handled by `RootView.handleDeepLink`). Order matters:
-    /// `UIApplication.open` is queued onto the next runloop so the dismiss
-    /// animation has time to finish before the spotlight sheet presents,
-    /// otherwise the cover swallows the URL.
+    /// Ask `RootView` to swap the player sheet for the episode-detail sheet.
+    /// Both bindings flip in the same render tick on the receiver side, so
+    /// SwiftUI handles the dismiss+present as a single transition.
     private func openEpisode() {
-        guard let url = URL(string: "podcastr://episode/\(episode.id.uuidString)") else { return }
-        onDismissPlayer()
-        DispatchQueue.main.async {
-            UIApplication.shared.open(url)
-        }
+        NotificationCenter.default.post(
+            name: .openEpisodeDetailRequested,
+            object: nil,
+            userInfo: ["episodeID": episode.id.uuidString]
+        )
     }
 
     private func openShow(_ podcast: Podcast) {
-        guard let url = URL(string: "podcastr://subscription/\(podcast.id.uuidString)") else { return }
-        onDismissPlayer()
-        DispatchQueue.main.async {
-            UIApplication.shared.open(url)
-        }
+        NotificationCenter.default.post(
+            name: .openSubscriptionDetailRequested,
+            object: nil,
+            userInfo: ["subscriptionID": podcast.id.uuidString]
+        )
     }
 
     /// Flip the Copy item's label/icon to the success affordance, then auto-reset
