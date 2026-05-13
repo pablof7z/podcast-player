@@ -2,9 +2,33 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T12:00:00Z",
+      "lines": [
+        "Feedback grew up: tap the new mic button to dictate a feedback thread, switch the Mine/Everyone segment and other people's threads now show their display name, and inside a thread you'll see avatars, name headers, and properly rendered markdown — with image URLs in replies showing inline instead of as raw text."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T11:10:00Z",
+      "lines": [
+        "Profile photos are no longer locked to generated styles — Edit Profile → Change photo → Choose from library now actually uploads. Your pick is resized to 800px JPEG, signed, and uploaded to a Blossom host, and the returned URL goes straight into your kind-0 profile."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T10:00:00Z",
+      "lines": [
+        "Podcast identity is now decoupled from your follow list. Episodes the agent added without subscribing to the show — including external plays and AI-generated shows — now carry the source podcast's real artwork and title everywhere on Home, Library, and Player. The library is about episodes; subscribing is a separate user choice."
+      ]
+    },
+    {
       "shipped_at": "2026-05-12T12:00:00Z",
       "lines": [
         "Home now shows a Continue Listening strip at the top — up to 3 in-progress episodes from the last 2 weeks, with a See All screen where you can swipe to dismiss any you're done with. The Featured section now shows only agent picks, and the podcast list is slightly larger."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T01:00:00Z",
+      "lines": [
+        "Agent-generated episodes now show a source chip in the player — tap it to jump to the in-app conversation or Nostr thread that commissioned the podcast."
       ]
     },
     {

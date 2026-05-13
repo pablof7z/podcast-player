@@ -22,12 +22,28 @@ struct FeedbackThreadDetailView: View {
     let thread: FeedbackThread
     let store: FeedbackStore
     @Environment(UserIdentityStore.self) private var userIdentity
+    @Environment(AppStateStore.self) private var appStore
 
     @State private var replyDraft = ""
     @State private var isSending = false
     @State private var errorMessage: String?
     @State private var imageFullscreen = false
     @FocusState private var composerFocused: Bool
+
+    /// Same-author silence after which the next message starts a fresh
+    /// burst (shows avatar + name header again). Matches Highlighter and
+    /// the win-the-day app.
+    private static let burstGapSeconds: TimeInterval = 300
+
+    /// Ordered (pubkey, createdAt) slots used to compute `showHeader`
+    /// for each message. The attached-image bubble is intentionally not
+    /// part of this sequence: it's a presentation detail of the root,
+    /// not a separate utterance, and including it would suppress the
+    /// next reply's header for no good reason.
+    private struct BurstSlot {
+        let pubkey: String
+        let createdAt: Date
+    }
 
     private var currentThread: FeedbackThread {
         store.threads.first(where: { $0.id == thread.id }) ?? thread
@@ -72,6 +88,53 @@ struct FeedbackThreadDetailView: View {
                 imageViewer(image)
             }
         }
+        .task(id: bubblePubkeysKey) {
+            let pubkeys = burstSlots.map(\.pubkey).filter { !$0.isEmpty }
+            guard !pubkeys.isEmpty else { return }
+            await NostrProfileFetcher(store: appStore).fetchProfiles(for: Array(Set(pubkeys)))
+        }
+    }
+
+    // MARK: - Burst grouping
+
+    private var burstSlots: [BurstSlot] {
+        var slots: [BurstSlot] = [
+            BurstSlot(pubkey: currentThread.authorPubkey, createdAt: currentThread.createdAt)
+        ]
+        for reply in currentThread.replies {
+            slots.append(BurstSlot(pubkey: reply.authorPubkey, createdAt: reply.createdAt))
+        }
+        return slots
+    }
+
+    /// Stable key for the profile-fetch task so it only re-runs when the
+    /// set of authors changes (not on every reply append from the same
+    /// people).
+    private var bubblePubkeysKey: String {
+        Set(burstSlots.map(\.pubkey)).sorted().joined(separator: ",")
+    }
+
+    private func showHeader(at index: Int) -> Bool {
+        guard index > 0 else { return true }
+        let prev = burstSlots[index - 1]
+        let curr = burstSlots[index]
+        if prev.pubkey != curr.pubkey { return true }
+        return curr.createdAt.timeIntervalSince(prev.createdAt) > Self.burstGapSeconds
+    }
+
+    private func displayName(for pubkey: String) -> String {
+        if let label = appStore.state.nostrProfileCache[pubkey]?.bestLabel {
+            return label
+        }
+        return String(pubkey.prefix(8))
+    }
+
+    private func avatarInitial(for pubkey: String) -> String {
+        displayName(for: pubkey).first.map { String($0).uppercased() } ?? "?"
+    }
+
+    private func pictureURL(for pubkey: String) -> URL? {
+        appStore.state.nostrProfileCache[pubkey]?.pictureURL
     }
 
     // MARK: - Full-screen image viewer
@@ -111,7 +174,11 @@ struct FeedbackThreadDetailView: View {
                     FeedbackBubble(
                         content: currentThread.content,
                         isFromMe: currentThread.authorPubkey == userIdentity.publicKeyHex,
-                        createdAt: currentThread.createdAt
+                        createdAt: currentThread.createdAt,
+                        displayName: displayName(for: currentThread.authorPubkey),
+                        pictureURL: pictureURL(for: currentThread.authorPubkey),
+                        avatarInitial: avatarInitial(for: currentThread.authorPubkey),
+                        showHeader: showHeader(at: 0)
                     )
                     .id("root")
 
@@ -121,11 +188,15 @@ struct FeedbackThreadDetailView: View {
                     }
 
                     // Reply bubbles
-                    ForEach(currentThread.replies) { reply in
+                    ForEach(Array(currentThread.replies.enumerated()), id: \.element.id) { offset, reply in
                         FeedbackBubble(
                             content: reply.content,
                             isFromMe: reply.isFromMe,
                             createdAt: reply.createdAt,
+                            displayName: displayName(for: reply.authorPubkey),
+                            pictureURL: pictureURL(for: reply.authorPubkey),
+                            avatarInitial: avatarInitial(for: reply.authorPubkey),
+                            showHeader: showHeader(at: offset + 1),
                             onQuoteReply: reply.isFromMe ? nil : {
                                 quoteReply(reply.content)
                             }

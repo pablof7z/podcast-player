@@ -6,9 +6,11 @@ struct FeedbackView: View {
     @Bindable var workflow: FeedbackWorkflow
     @Environment(\.dismiss) private var dismiss
     @Environment(UserIdentityStore.self) private var userIdentity
+    @Environment(AppStateStore.self) private var appStore
 
     @State private var store = FeedbackStore()
     @State private var composerPresented = false
+    @State private var voiceSheetPresented = false
     @State private var showMine = true
     @State private var searchText = ""
 
@@ -47,15 +49,44 @@ struct FeedbackView: View {
                     }
                 }
         }
-        .task { await store.load(identity: userIdentity) }
+        .task {
+            await store.load(identity: userIdentity)
+            // First load: if "Everyone" was selected last time, fetch
+            // profiles so author names land before the row renders.
+            if !showMine { await fetchVisibleProfiles() }
+        }
         .sheet(isPresented: $composerPresented) {
             FeedbackComposeView(store: store, workflow: workflow)
+        }
+        .sheet(isPresented: $voiceSheetPresented) {
+            FeedbackVoiceRecordingSheet(store: store, workflow: workflow)
         }
         .onAppear {
             if workflow.screenshot != nil || workflow.annotatedImage != nil {
                 composerPresented = true
             }
         }
+        .onChange(of: showMine) { _, isMine in
+            guard !isMine else { return }
+            Task { await fetchVisibleProfiles() }
+        }
+    }
+
+    private func fetchVisibleProfiles() async {
+        let others = store.threads
+            .map(\.authorPubkey)
+            .filter { !$0.isEmpty && $0 != userIdentity.publicKeyHex }
+        guard !others.isEmpty else { return }
+        await NostrProfileFetcher(store: appStore).fetchProfiles(for: Array(Set(others)))
+    }
+
+    private func authorName(for thread: FeedbackThread) -> String? {
+        guard !showMine,
+              thread.authorPubkey != userIdentity.publicKeyHex,
+              !thread.authorPubkey.isEmpty
+        else { return nil }
+        return appStore.state.nostrProfileCache[thread.authorPubkey]?.bestLabel
+            ?? String(thread.authorPubkey.prefix(8))
     }
 
     // MARK: - Trailing toolbar
@@ -70,6 +101,16 @@ struct FeedbackView: View {
                     Image(systemName: "person.crop.circle")
                 }
                 .accessibilityLabel("Identity")
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+
+                Button {
+                    Haptics.selection()
+                    voiceSheetPresented = true
+                } label: {
+                    Image(systemName: "mic")
+                }
+                .accessibilityLabel("Record feedback")
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
 
@@ -121,7 +162,11 @@ struct FeedbackView: View {
                     FeedbackThreadDetailView(thread: thread, store: store)
                         .task { await store.loadReplies(for: thread, identity: userIdentity) }
                 } label: {
-                    FeedbackThreadRow(thread: thread, query: searchText)
+                    FeedbackThreadRow(
+                        thread: thread,
+                        query: searchText,
+                        authorName: authorName(for: thread)
+                    )
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {

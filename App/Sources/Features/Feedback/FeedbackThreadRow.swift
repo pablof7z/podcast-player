@@ -16,6 +16,10 @@ struct FeedbackThreadRow: View {
 
     let thread: FeedbackThread
     var query: String = ""
+    /// When non-nil, rendered as "by <name>" in the metadata row. Only
+    /// passed for non-local authors in `Everyone` mode so own threads
+    /// stay anonymous-looking.
+    var authorName: String? = nil
 
     var body: some View {
         HStack(spacing: Layout.rowSpacing) {
@@ -53,6 +57,13 @@ struct FeedbackThreadRow: View {
                         Label("\(thread.replies.count)", systemImage: "bubble.left")
                             .font(AppTheme.Typography.caption2)
                             .foregroundStyle(.secondary)
+                    }
+
+                    if let authorName, !authorName.isEmpty {
+                        Text("by \(authorName)")
+                            .font(AppTheme.Typography.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
             }
