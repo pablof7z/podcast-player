@@ -329,8 +329,7 @@ struct HomeView: View {
                 Haptics.light()
                 showAddShowSheet = true
             } label: {
-                Image(systemName: "plus.circle")
-                    .font(.title3)
+                Image(systemName: "plus")
             }
             .accessibilityLabel("Add show")
         }

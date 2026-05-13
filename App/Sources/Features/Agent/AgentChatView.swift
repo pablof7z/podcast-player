@@ -136,8 +136,6 @@ struct AgentChatView: View {
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
             .accessibilityLabel("Conversation history")
         }
         ToolbarItem(placement: .primaryAction) {
@@ -152,8 +150,6 @@ struct AgentChatView: View {
             } label: {
                 Image(systemName: "plus")
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
             .accessibilityLabel("New conversation")
         }
         if !session.messages.isEmpty {
@@ -163,8 +159,6 @@ struct AgentChatView: View {
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
                 .accessibilityLabel("Export transcript")
             }
         }

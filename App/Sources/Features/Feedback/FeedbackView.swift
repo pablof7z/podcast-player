@@ -93,36 +93,28 @@ struct FeedbackView: View {
 
     @ViewBuilder
     private var trailingToolbarButtons: some View {
-        GlassEffectContainer(spacing: AppTheme.Spacing.sm) {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                NavigationLink {
-                    IdentityRootView()
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                }
-                .accessibilityLabel("Identity")
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-
-                Button {
-                    Haptics.selection()
-                    voiceSheetPresented = true
-                } label: {
-                    Image(systemName: "mic")
-                }
-                .accessibilityLabel("Record feedback")
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-
-                Button {
-                    composerPresented = true
-                } label: {
-                    Image(systemName: "square.and.pencil")
-                }
-                .accessibilityLabel("New feedback")
-                .buttonStyle(.glassProminent)
-                .buttonBorderShape(.circle)
+        HStack(spacing: AppTheme.Spacing.xs) {
+            NavigationLink {
+                IdentityRootView()
+            } label: {
+                Image(systemName: "person.crop.circle")
             }
+            .accessibilityLabel("Identity")
+
+            Button {
+                Haptics.selection()
+                voiceSheetPresented = true
+            } label: {
+                Image(systemName: "mic")
+            }
+            .accessibilityLabel("Record feedback")
+
+            Button {
+                composerPresented = true
+            } label: {
+                Image(systemName: "square.and.pencil")
+            }
+            .accessibilityLabel("New feedback")
         }
     }
 

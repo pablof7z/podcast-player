@@ -466,8 +466,6 @@ struct RootView: View {
                     }
                     .animation(AppTheme.Animation.springFast, value: hasUnreadAgentMessages)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
             .accessibilityLabel(hasUnreadAgentMessages ? "Open Agent — new reply" : "Open Agent")
             .keyboardShortcut("a", modifiers: [.command, .shift])
         }
@@ -478,8 +476,6 @@ struct RootView: View {
             } label: {
                 Image(systemName: "gear")
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
             .accessibilityLabel("Settings")
             .keyboardShortcut(",", modifiers: .command)
         }
