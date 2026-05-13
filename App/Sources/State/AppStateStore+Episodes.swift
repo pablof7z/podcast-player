@@ -88,6 +88,12 @@ extension AppStateStore {
                 merged.isStarred = prior.isStarred
                 merged.downloadState = prior.downloadState
                 merged.transcriptState = prior.transcriptState
+                // Preserve the AI Inbox triage verdict across feed refreshes;
+                // without this, an archived episode reappears on the next
+                // refresh and the LLM redoes the classification.
+                merged.triageDecision = prior.triageDecision
+                merged.triageRationale = prior.triageRationale
+                merged.triageIsHero = prior.triageIsHero
                 // Preserve AI-compiled/hydrated chapters when the incoming RSS episode
                 // doesn't supply new ones; RSS never carries ad segments so always keep.
                 if merged.chapters == nil || merged.chapters!.isEmpty {
@@ -121,6 +127,16 @@ extension AppStateStore {
             // bails fast when the toggle is off.
             TranscriptIngestService.shared.evaluateAutoIngest(
                 newEpisodeIDs: newlyInserted
+            )
+        }
+        // Metadata-index every newly-inserted episode, regardless of the
+        // auto-download gate — initial-subscribe paths pass false but the
+        // back-catalog they introduce is exactly the population that needs
+        // title/description coverage for similarity search.
+        if !newlyInserted.isEmpty {
+            EpisodeMetadataIndexer.shared.indexNewlyInserted(
+                newlyInserted,
+                appStore: self
             )
         }
         return newlyInserted
@@ -171,6 +187,21 @@ extension AppStateStore {
         }
     }
 
+    /// Clears the playback position so the episode drops out of the "Continue
+    /// Listening" list without marking it played. The episode stays in the
+    /// library and can be started fresh from the show detail page.
+    func resetEpisodeProgress(_ id: UUID) {
+        flushPendingPositions()
+        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
+        var episodes = state.episodes
+        episodes[idx].playbackPosition = 0
+        performMutationBatch {
+            state.episodes = episodes
+            positionCache.removeValue(forKey: id)
+            invalidateEpisodeProjections()
+        }
+    }
+
     /// Reverts an accidental "mark played".
     func markEpisodeUnplayed(_ id: UUID) {
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
@@ -215,6 +246,24 @@ extension AppStateStore {
             state.episodes = episodes
             // Cached `hasDownloadedByShow` set may now need to add or drop this subscription.
             invalidateEpisodeProjections()
+        }
+    }
+
+    /// Marks every episode in `ids` as covered by the RAG metadata index.
+    /// Single batched mutation so a backfill pass over the whole library
+    /// only triggers one persisted save, regardless of episode count.
+    func setEpisodesMetadataIndexed(_ ids: [UUID]) {
+        guard !ids.isEmpty else { return }
+        let target = Set(ids)
+        var episodes = state.episodes
+        var changed = false
+        for idx in episodes.indices where target.contains(episodes[idx].id) && !episodes[idx].metadataIndexed {
+            episodes[idx].metadataIndexed = true
+            changed = true
+        }
+        guard changed else { return }
+        performMutationBatch {
+            state.episodes = episodes
         }
     }
 

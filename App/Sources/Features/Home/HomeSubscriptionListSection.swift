@@ -28,7 +28,7 @@ struct HomeSubscriptionListSection: View {
 
     private var header: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
-            Text("Subscriptions")
+            Text("Podcasts")
                 .font(AppTheme.Typography.title3)
                 .foregroundStyle(.primary)
             Spacer(minLength: 0)
@@ -61,7 +61,7 @@ struct HomeSubscriptionListSection: View {
                 .padding(.vertical, AppTheme.Spacing.sm)
                 Divider()
                     .background(AppTheme.Tint.hairline)
-                    .padding(.leading, AppTheme.Spacing.md + 46 + AppTheme.Spacing.md)
+                    .padding(.leading, AppTheme.Spacing.md + 53 + AppTheme.Spacing.md)
             }
         }
     }

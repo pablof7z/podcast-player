@@ -156,6 +156,30 @@ struct HomeView: View {
         return store.category(id: id)
     }
 
+    /// Roll-up of the agent's triage decisions for the subtitle under the
+    /// Inbox section header. Scopes counts to the active category so the
+    /// line reads consistently with the magazine-mode UI. Unplayed-only on
+    /// the inbox side — listened episodes drop off the surface anyway, so
+    /// counting them reads as stale.
+    private var triageCounts: (inbox: Int, archived: Int, shows: Int) {
+        let allowed = allowedSubscriptionIDs
+        var inbox = 0
+        var archived = 0
+        var coveredShows: Set<UUID> = []
+        for episode in store.state.episodes {
+            if let allowed, !allowed.contains(episode.podcastID) { continue }
+            guard let decision = episode.triageDecision else { continue }
+            coveredShows.insert(episode.podcastID)
+            switch decision {
+            case .inbox:
+                if !episode.played { inbox += 1 }
+            case .archived:
+                archived += 1
+            }
+        }
+        return (inbox, archived, coveredShows.count)
+    }
+
     // MARK: - Layout
 
     @ViewBuilder
@@ -166,17 +190,23 @@ struct HomeView: View {
                     HomeContinueListeningSection(
                         episodes: continueListeningEpisodes,
                         onPlay: playEpisode,
+                        onRemove: { store.resetEpisodeProgress($0.id) },
                         onSeeAll: { showAllContinueListening = true }
                     )
                 }
 
                 if shouldShowInboxSection {
+                    let triage = triageCounts
                     HomeFeaturedSection(
                         picksBundle: inboxBundle,
                         isStreaming: triageService.isRunning && inboxBundle.picks.isEmpty,
                         activeThread: topActiveThread,
                         activeCategoryID: selectedCategoryID,
                         activeCategoryName: activeCategory?.name,
+                        inboxCount: triage.inbox,
+                        archivedCount: triage.archived,
+                        showCount: triage.shows,
+                        lastTriagedAt: triageService.lastCompletedAt,
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
                         onLongPressEpisode: { relatedSheetEpisode = $0 },

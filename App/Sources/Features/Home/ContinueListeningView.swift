@@ -21,7 +21,7 @@ struct ContinueListeningView: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
                         Haptics.warning()
-                        store.markEpisodePlayed(ep.id)
+                        store.resetEpisodeProgress(ep.id)
                     } label: {
                         Label("Remove", systemImage: "xmark.circle")
                     }

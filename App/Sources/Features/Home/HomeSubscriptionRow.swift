@@ -55,7 +55,7 @@ struct HomeSubscriptionRow: View {
                     )
                 )
             if let url = podcast.imageURL {
-                CachedAsyncImage(url: url, targetSize: CGSize(width: 92, height: 92)) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 106, height: 106)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
@@ -71,7 +71,7 @@ struct HomeSubscriptionRow: View {
                     .foregroundStyle(.white.opacity(0.92))
             }
         }
-        .frame(width: 46, height: 46)
+        .frame(width: 53, height: 53)
         .clipShape(RoundedRectangle(cornerRadius: AppTheme.Corner.sm, style: .continuous))
     }
 
