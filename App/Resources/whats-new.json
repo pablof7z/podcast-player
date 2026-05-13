@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T09:15:00Z",
+      "lines": [
+        "Home's Subscriptions section now has a See All entry that opens an All Podcasts list — every podcast the app knows about, including shows from one-off external plays you never subscribed to. Swipe any row to delete the podcast plus all its episodes; a Following chip marks the ones you actively follow."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T12:00:00Z",
       "lines": [
         "Feedback grew up: tap the new mic button to dictate a feedback thread, switch the Mine/Everyone segment and other people's threads now show their display name, and inside a thread you'll see avatars, name headers, and properly rendered markdown — with image URLs in replies showing inline instead of as raw text."

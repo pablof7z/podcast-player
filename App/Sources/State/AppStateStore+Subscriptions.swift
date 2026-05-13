@@ -131,11 +131,11 @@ extension AppStateStore {
         return SubscriptionImportResult(imported: imported, skipped: skipped)
     }
 
-    /// Removes the user's follow row AND every episode that belonged to
-    /// that podcast. The `Podcast` metadata row itself is also dropped
-    /// here, matching today's behavior where removing a subscription
-    /// removes everything associated with it.
-    func removeSubscription(podcastID: UUID) {
+    /// Fully removes a podcast — its metadata row, any follow row, and
+    /// every episode that belonged to it. Used both by the "Unsubscribe"
+    /// destructive action on followed podcasts and by the swipe-to-delete
+    /// on the all-podcasts list for podcasts the user never followed.
+    func deletePodcast(podcastID: UUID) {
         let removedEpisodeIDs = state.episodes
             .filter { $0.podcastID == podcastID }
             .map(\.id)

@@ -251,7 +251,7 @@ struct ShowDetailView: View {
     }
 
     private func performUnsubscribe() {
-        store.removeSubscription(podcastID: podcast.id)
+        store.deletePodcast(podcastID: podcast.id)
         dismiss()
     }
 

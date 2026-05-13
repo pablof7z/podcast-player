@@ -45,7 +45,7 @@ struct SubscriptionsListView: View {
             presenting: pendingDelete
         ) { sub in
             Button("Unsubscribe", role: .destructive) {
-                store.removeSubscription(podcastID: sub.id)
+                store.deletePodcast(podcastID: sub.id)
                 Haptics.success()
                 pendingDelete = nil
             }

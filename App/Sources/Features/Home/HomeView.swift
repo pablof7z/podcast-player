@@ -32,6 +32,7 @@ struct HomeView: View {
     @State private var showAddShowSheet: Bool = false
     @State private var showCategoryPicker: Bool = false
     @State private var showAllContinueListening: Bool = false
+    @State private var showAllPodcasts: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
@@ -56,6 +57,9 @@ struct HomeView: View {
             }
             .navigationDestination(isPresented: $showAllContinueListening) {
                 ContinueListeningView(episodes: continueListeningEpisodes)
+            }
+            .navigationDestination(isPresented: $showAllPodcasts) {
+                AllPodcastsListView()
             }
             .sheet(isPresented: $showAddShowSheet) {
                 AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
@@ -94,7 +98,7 @@ struct HomeView: View {
                 Button("Cancel", role: .cancel) {}
                 Button("Unsubscribe", role: .destructive) {
                     Haptics.warning()
-                    store.removeSubscription(podcastID: sub.id)
+                    store.deletePodcast(podcastID: sub.id)
                 }
             } message: { _ in
                 Text("This removes the show and all its episodes from your library.")
@@ -207,8 +211,24 @@ struct HomeView: View {
     @ViewBuilder
     private var subscriptionsSurface: some View {
         if store.state.subscriptions.isEmpty {
-            HomeFirstRunEmptyState(onAddShow: { showAddShowSheet = true })
-                .padding(.top, AppTheme.Spacing.xl)
+            VStack(spacing: AppTheme.Spacing.lg) {
+                HomeFirstRunEmptyState(onAddShow: { showAddShowSheet = true })
+                // Even with zero follows the user can have podcasts in the
+                // library — agent external plays, OPML rows whose subs were
+                // later removed, etc. Surface an "All Podcasts" entry so the
+                // new screen is reachable in that case too.
+                if hasUnfollowedPodcasts {
+                    Button {
+                        Haptics.selection()
+                        showAllPodcasts = true
+                    } label: {
+                        Label("See all podcasts", systemImage: "list.bullet.rectangle")
+                            .font(AppTheme.Typography.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(.top, AppTheme.Spacing.xl)
         } else if filteredSubs.isEmpty {
             HomeFilteredEmptyState(
                 filter: filter,
@@ -223,8 +243,21 @@ struct HomeView: View {
             HomeSubscriptionListSection(
                 podcasts: filteredSubs,
                 now: renderedAt,
-                onRequestUnsubscribe: { unsubscribeTarget = $0 }
+                onRequestUnsubscribe: { unsubscribeTarget = $0 },
+                onSeeAllPodcasts: { showAllPodcasts = true }
             )
+        }
+    }
+
+    /// `true` when the library contains at least one real podcast row the
+    /// user does NOT actively follow. Drives the All-Podcasts affordance in
+    /// the no-subscriptions empty state — without this, the screen would
+    /// be reachable only after the user follows something, which defeats
+    /// the point of surfacing unfollowed shows.
+    private var hasUnfollowedPodcasts: Bool {
+        let followed = Set(store.state.subscriptions.map(\.podcastID))
+        return store.allPodcasts.contains {
+            $0.id != Podcast.unknownID && !followed.contains($0.id)
         }
     }
 
