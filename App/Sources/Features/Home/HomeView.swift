@@ -33,6 +33,7 @@ struct HomeView: View {
     @State private var showCategoryPicker: Bool = false
     @State private var showAllContinueListening: Bool = false
     @State private var showAllPodcasts: Bool = false
+    @State private var showInbox: Bool = false
     /// Cached "now" used by the dateline + recency pills. Pinned at body
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
@@ -60,6 +61,9 @@ struct HomeView: View {
             }
             .navigationDestination(isPresented: $showAllPodcasts) {
                 AllPodcastsListView()
+            }
+            .navigationDestination(isPresented: $showInbox) {
+                InboxView(allowedSubscriptionIDs: allowedSubscriptionIDs)
             }
             .sheet(isPresented: $showAddShowSheet) {
                 AddShowSheet(store: store, onDismiss: { showAddShowSheet = false })
@@ -210,7 +214,8 @@ struct HomeView: View {
                         isExpanded: $featuredExpanded,
                         onPlayEpisode: playEpisode,
                         onLongPressEpisode: { relatedSheetEpisode = $0 },
-                        onOpenThread: { threadedTodaySheet = topActiveThread }
+                        onOpenThread: { threadedTodaySheet = topActiveThread },
+                        onSeeAll: { showInbox = true }
                     )
                 }
 
