@@ -11,12 +11,6 @@ extension AgentTools {
 
     // MARK: - end_conversation
 
-    /// Mark the in-flight peer conversation as ended. Sets
-    /// `appState.nostrEndedRootIDs` (so the UI can show "agent has signed
-    /// off") and, when `finalMessage` is supplied, publishes one last kind:1
-    /// reply tagged `["wtd-end", "1"]` so the peer's agent can silently
-    /// swallow it. With no `finalMessage`, publishes nothing — silence IS
-    /// the end signal.
     static func endConversationTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
         guard let peerContext = deps.peerContext else {
             return toolError("end_conversation requires a peer conversation context")
@@ -24,36 +18,11 @@ extension AgentTools {
         guard let reason = (args["reason"] as? String)?.trimmed, !reason.isEmpty else {
             return toolError("Missing or empty 'reason'")
         }
-        let finalMessage = (args["final_message"] as? String)?.trimmed.nilIfEmpty
-
-        // Mark the root ended BEFORE attempting publish. Silence IS the end
-        // signal — if publishing the optional final-message fails, we still
-        // want the local state to reflect that the agent has signed off, and
-        // we surface the publish failure as a warning rather than a hard error.
-        await deps.endConversationSink.markEnded(rootEventID: peerContext.rootEventID)
-
-        var publishedEventID: String?
-        var publishWarning: String?
-        if let finalMessage {
-            do {
-                publishedEventID = try await deps.peerPublisher.publishConversationReply(
-                    peerContext: peerContext,
-                    body: finalMessage,
-                    extraTags: [["wtd-end", "1"]]
-                )
-            } catch {
-                publishWarning = "Conversation marked ended locally, but final-message publish failed: \(error.localizedDescription)"
-            }
-        }
-
-        var payload: [String: Any] = [
-            "ended": true,
+        return toolSuccess([
+            "no_reply": true,
             "reason": reason,
             "root_event_id": peerContext.rootEventID,
-        ]
-        if let publishedEventID { payload["final_event_id"] = publishedEventID }
-        if let publishWarning { payload["warning"] = publishWarning }
-        return toolSuccess(payload)
+        ])
     }
 
     // MARK: - send_friend_message

@@ -51,13 +51,6 @@ struct AppState: Codable, Sendable {
     /// mid-reply still advances the cursor (dedup via
     /// `nostrRespondedEventIDs` covers the small overlap window).
     var nostrSinceCursor: Int?
-    /// Conversation roots the agent has explicitly ended (via the
-    /// `end_conversation` tool, an inbound `wtd-end` ack, or hitting the
-    /// per-root turn cap). In-memory only — `nostrRespondedEventIDs` is
-    /// the persistent half of the gate, so stragglers replayed across a
-    /// restart are still dropped before they ever get to the ended-root
-    /// check.
-    var nostrEndedRootIDs: Set<String> = []
     var agentActivity: [AgentActivityEntry] = []
     /// User-authored transcript excerpts. See `Clip` and the composer in
     /// `App/Sources/Features/EpisodeDetail/Clip/`.
@@ -84,9 +77,6 @@ struct AppState: Codable, Sendable {
         case nostrAllowedPubkeys, nostrBlockedPubkeys, nostrPendingApprovals
         case nostrConversations, nostrProfileCache
         case nostrRespondedEventIDs, nostrSinceCursor
-        // `nostrEndedRootIDs` is intentionally omitted — persistence is
-        // carried by `nostrRespondedEventIDs`, which gates the same
-        // straggler-after-restart case more cheaply.
         case agentActivity
         case clips
         case threadingTopics, threadingMentions

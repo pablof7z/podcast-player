@@ -2,9 +2,39 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-13T21:00:00Z",
+      "lines": [
+        "The agent no longer tries to send Nostr messages from in-app chat (where it can't) — peer messaging tools are only offered when you're inside a Nostr peer conversation."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T20:03:00Z",
+      "lines": [
+        "Swipe left on any Continue Listening row to remove it from the list without marking it played. The episode stays in your library; your progress is cleared. The section is now 'Subscriptions' → 'Podcasts' with slightly larger artwork."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T20:01:00Z",
       "lines": [
         "When your agent is talking to a friend over Nostr, a 'Talking to …' capsule now flashes at the top of the screen and a Conversations button appears in the top toolbar so you can jump into the live thread."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T20:00:00Z",
+      "lines": [
+        "Similarity search and 'more like this' now find untranscribed episodes too — every episode's title + description is embedded into the search index, so back-catalog episodes from a fresh subscription surface alongside transcribed ones."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T19:02:00Z",
+      "lines": [
+        "AI Inbox: archived episodes now stay archived across feed refreshes, and silently-archived episodes no longer ping you with a notification or kick off an auto-download."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-13T19:01:00Z",
+      "lines": [
+        "Fixed: the agent now correctly responds to all Nostr messages in a conversation, not just the first one."
       ]
     },
     {

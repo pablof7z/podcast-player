@@ -85,24 +85,6 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
     }
 }
 
-// MARK: - LivePeerConversationEndSink
-
-/// Forwards `end_conversation` markers into `AppStateStore` so the UI and
-/// downstream turn handlers can see them.
-struct LivePeerConversationEndSink: PeerConversationEndSink {
-    weak var store: AppStateStore?
-
-    init(store: AppStateStore) {
-        self.store = store
-    }
-
-    func markEnded(rootEventID: String) async {
-        await MainActor.run {
-            store?.markPeerConversationEnded(rootEventID: rootEventID)
-        }
-    }
-}
-
 // MARK: - LiveFriendDirectoryAdapter
 
 /// Resolves the user's friends list from `AppStateStore` for the

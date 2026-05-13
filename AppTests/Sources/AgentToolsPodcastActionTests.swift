@@ -219,11 +219,9 @@ final class AgentToolsPodcastActionTests: XCTestCase {
             decoded["error"] as? String,
             "end_conversation requires a peer conversation context"
         )
-        let endedRoots = await deps.endSink.endedRoots
-        XCTAssertEqual(endedRoots, [])
     }
 
-    func testEndConversationMarksRootEndedSilently() async throws {
+    func testEndConversationSignalsNoReplyWithoutMarkingEnded() async throws {
         let peerContext = PeerConversationContext(
             rootEventID: "root-event-1",
             inboundEventID: "inbound-event-1",
@@ -232,41 +230,16 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         let deps = makeDeps(peerContext: peerContext)
         let json = await AgentTools.dispatchPodcast(
             name: AgentTools.PodcastNames.endConversation,
-            args: ["reason": "Peer signed off"],
+            args: ["reason": "Peer sent a bare acknowledgment"],
             deps: deps.bundle
         )
         let decoded = try decode(json)
-        XCTAssertEqual(decoded["ended"] as? Bool, true)
+        XCTAssertEqual(decoded["no_reply"] as? Bool, true)
         XCTAssertEqual(decoded["root_event_id"] as? String, "root-event-1")
-        XCTAssertNil(decoded["final_event_id"])
-        let endedRoots = await deps.endSink.endedRoots
-        XCTAssertEqual(endedRoots, ["root-event-1"])
+        XCTAssertNil(decoded["error"])
+        // Must NOT publish anything.
         let replies = await deps.peerPublisher.conversationReplies
-        XCTAssertTrue(replies.isEmpty, "Silent end should publish nothing")
-    }
-
-    func testEndConversationPublishesFinalMessageWithWtdEndTag() async throws {
-        let peerContext = PeerConversationContext(
-            rootEventID: "root-event-2",
-            inboundEventID: "inbound-event-2",
-            peerPubkeyHex: "cafef00d"
-        )
-        let deps = makeDeps(peerContext: peerContext)
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.endConversation,
-            args: [
-                "reason": "Wrapping up politely",
-                "final_message": "Talk soon!"
-            ],
-            deps: deps.bundle
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["ended"] as? Bool, true)
-        XCTAssertEqual(decoded["final_event_id"] as? String, "peer-reply-1")
-        let replies = await deps.peerPublisher.conversationReplies
-        XCTAssertEqual(replies.count, 1)
-        XCTAssertEqual(replies.first?.body, "Talk soon!")
-        XCTAssertEqual(replies.first?.extraTags, [["wtd-end", "1"]])
+        XCTAssertTrue(replies.isEmpty, "end_conversation must publish no outbound event")
     }
 
     // MARK: - send_friend_message
@@ -343,7 +316,6 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         let playback: MockPlayback
         let library: MockLibrary
         let peerPublisher: MockPeerEventPublisher
-        let endSink: MockPeerConversationEndSink
     }
 
     private func makeDeps(
@@ -354,7 +326,6 @@ final class AgentToolsPodcastActionTests: XCTestCase {
         let playback = MockPlayback()
         let library = MockLibrary()
         let peerPublisher = MockPeerEventPublisher()
-        let endSink = MockPeerConversationEndSink()
         return DepsBundle(
             bundle: PodcastAgentToolDeps(
                 rag: MockRAG(),
@@ -372,13 +343,11 @@ final class AgentToolsPodcastActionTests: XCTestCase {
                 ttsPublisher: MockTTSPublisher(),
                 directory: MockDirectory(),
                 subscribe: MockSubscribe(),
-                peerContext: peerContext,
-                endConversationSink: endSink
+                peerContext: peerContext
             ),
             playback: playback,
             library: library,
-            peerPublisher: peerPublisher,
-            endSink: endSink
+            peerPublisher: peerPublisher
         )
     }
 

@@ -134,7 +134,8 @@ actor MockPlayback: PlaybackHostProtocol {
         let audioURL: URL
         let title: String
         let feedURLString: String?
-        let timestampSeconds: Double
+        let startSeconds: Double?
+        let endSeconds: Double?
         let queuePosition: QueuePosition
     }
 
@@ -191,14 +192,16 @@ actor MockPlayback: PlaybackHostProtocol {
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double,
+        startSeconds: Double?,
+        endSeconds: Double?,
         queuePosition: QueuePosition
     ) async -> PlayEpisodeResult? {
         recordedExternalPlays.append(RecordedExternalPlay(
             audioURL: audioURL,
             title: title,
             feedURLString: feedURLString,
-            timestampSeconds: timestampSeconds,
+            startSeconds: startSeconds,
+            endSeconds: endSeconds,
             queuePosition: queuePosition
         ))
         return PlayEpisodeResult(
@@ -341,14 +344,6 @@ actor MockPeerEventPublisher: PeerEventPublisherProtocol {
         friendMessages.append(.init(friendPubkeyHex: friendPubkeyHex, body: body, peerContext: peerContext))
         defer { nextEventID += 1 }
         return "friend-msg-\(nextEventID)"
-    }
-}
-
-actor MockPeerConversationEndSink: PeerConversationEndSink {
-    private(set) var endedRoots: [String] = []
-
-    func markEnded(rootEventID: String) async {
-        endedRoots.append(rootEventID)
     }
 }
 

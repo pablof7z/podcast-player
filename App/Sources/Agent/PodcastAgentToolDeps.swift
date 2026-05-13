@@ -121,18 +121,20 @@ public protocol PlaybackHostProtocol: Sendable {
     func setSleepTimer(mode: String, minutes: Int?) async -> String?
 
     /// Play a publicly-accessible episode by URL without requiring a prior
-    /// subscription. When `feedURLString` is supplied, the system fetches the
-    /// source podcast's metadata (artwork, title, author) and parents the
-    /// episode to a real `Podcast` row — the user remains unsubscribed.
-    /// When `feedURLString` is nil, the episode parents to the built-in
-    /// "Unknown" podcast row.
-    /// `queuePosition` mirrors `playEpisode` semantics.
+    /// subscription. Captures the episode (and optional source podcast) into
+    /// the store, then routes through the same queue plumbing as
+    /// `playEpisode`. `startSeconds` / `endSeconds` mirror the library
+    /// variant — pass them to seek to a position or play a bounded segment.
+    /// When `feedURLString` is supplied, the system enriches the parent
+    /// podcast's metadata (artwork, title, author) in the background; when
+    /// nil, the episode parents to the built-in "Unknown" podcast row.
     func playExternalEpisode(
         audioURL: URL,
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double,
+        startSeconds: Double?,
+        endSeconds: Double?,
         queuePosition: QueuePosition
     ) async -> PlayEpisodeResult?
 }
@@ -328,11 +330,6 @@ struct PodcastAgentToolDeps: Sendable {
     /// UUID. Used by `generate_tts_episode` to tag the resulting episode with
     /// its source conversation so the player can surface a tappable link.
     let chatConversationID: UUID?
-    /// Hook for marking a peer-conversation root as ended (drives the
-    /// "agent has signed off" UI affordance). Implemented by the live wiring;
-    /// no-op in tests by default.
-    let endConversationSink: PeerConversationEndSink
-
     init(
         rag: PodcastAgentRAGSearchProtocol,
         wiki: WikiStorageProtocol,
@@ -350,8 +347,7 @@ struct PodcastAgentToolDeps: Sendable {
         directory: PodcastDirectoryProtocol,
         subscribe: PodcastSubscribeProtocol,
         peerContext: PeerConversationContext? = nil,
-        chatConversationID: UUID? = nil,
-        endConversationSink: PeerConversationEndSink = NoopPeerConversationEndSink()
+        chatConversationID: UUID? = nil
     ) {
         self.rag = rag
         self.wiki = wiki
@@ -370,7 +366,6 @@ struct PodcastAgentToolDeps: Sendable {
         self.subscribe = subscribe
         self.peerContext = peerContext
         self.chatConversationID = chatConversationID
-        self.endConversationSink = endConversationSink
     }
 
     /// Returns a copy with the supplied peer context. Used by the Nostr
@@ -393,8 +388,7 @@ struct PodcastAgentToolDeps: Sendable {
             directory: directory,
             subscribe: subscribe,
             peerContext: ctx,
-            chatConversationID: chatConversationID,
-            endConversationSink: endConversationSink
+            chatConversationID: chatConversationID
         )
     }
 
@@ -419,19 +413,8 @@ struct PodcastAgentToolDeps: Sendable {
             directory: directory,
             subscribe: subscribe,
             peerContext: peerContext,
-            chatConversationID: id,
-            endConversationSink: endConversationSink
+            chatConversationID: id
         )
     }
 }
 
-/// Records that a peer-conversation root has been ended by the agent.
-/// Lives on `PodcastAgentToolDeps` so the test surface can supply a no-op.
-public protocol PeerConversationEndSink: Sendable {
-    func markEnded(rootEventID: String) async
-}
-
-public struct NoopPeerConversationEndSink: PeerConversationEndSink {
-    init() {}
-    public func markEnded(rootEventID: String) async {}
-}

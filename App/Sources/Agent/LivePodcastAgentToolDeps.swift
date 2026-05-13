@@ -55,8 +55,7 @@ enum LivePodcastAgentToolDeps {
             ttsPublisher: AgentTTSComposer(store: store, playback: playback),
             directory: LivePodcastDirectoryAdapter(),
             subscribe: LivePodcastSubscribeAdapter(store: store),
-            peerContext: nil,
-            endConversationSink: LivePeerConversationEndSink(store: store)
+            peerContext: nil
         )
     }
 }
@@ -228,7 +227,8 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         title: String,
         feedURLString: String?,
         durationSeconds: TimeInterval?,
-        timestampSeconds: Double,
+        startSeconds: Double?,
+        endSeconds: Double?,
         queuePosition: QueuePosition
     ) async -> PlayEpisodeResult? {
         // Resolve which podcast to attach this episode to WITHOUT blocking
@@ -263,17 +263,16 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
                 duration: durationSeconds
             )
             let podcastTitle = store.podcast(id: parentResolution.podcastID)?.title
-            let startSeconds: Double? = timestampSeconds > 0 ? timestampSeconds : nil
             let item = QueueItem(
                 episodeID: episode.id,
                 startSeconds: startSeconds,
-                endSeconds: nil,
+                endSeconds: endSeconds,
                 label: nil
             )
             switch queuePosition {
             case .now:
                 playback.enqueueSegments([item], playNow: true) { store.episode(id: $0) }
-                logger.info("playExternalEpisode(now): '\(title, privacy: .public)' at \(timestampSeconds)")
+                logger.info("playExternalEpisode(now): '\(title, privacy: .public)' at \(startSeconds ?? 0)")
                 return PlayEpisodeResult(
                     episodeID: episode.id.uuidString,
                     queuePosition: .now,

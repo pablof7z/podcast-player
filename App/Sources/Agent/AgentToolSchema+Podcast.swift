@@ -28,9 +28,15 @@ extension AgentTools {
             podcastTool(
                 name: PodcastNames.playEpisode,
                 description: """
-                Play an episode already in the library. Single verb covering jump-to-timestamp, \
+                Single play verb. Covers library episodes, one-off external URLs, jump-to-timestamp, \
                 bounded-segment playback, and queue management — pick `queue_position` to control \
                 whether playback starts now or the episode lands in Up Next. \
+                Identify the episode with `episode_id` when it is already in the library \
+                (from list_episodes / search_episodes / list_recent_unplayed / etc.). Otherwise pass \
+                `audio_url` plus `title` to play an arbitrary URL (e.g. an enclosure from \
+                search_podcast_directory or a user-pasted link); include `feed_url` when you have it \
+                so the app captures the show's real artwork and metadata, otherwise the episode parents \
+                to an "Unknown" podcast row. \
                 Use this when the user says 'play that part where…' (start_seconds), \
                 'play the intro' (start_seconds + end_seconds), 'play this next' (queue_position=next), \
                 or 'add this to my queue' (queue_position=end). \
@@ -39,7 +45,11 @@ extension AgentTools {
                 A subtle audio cue marks each transition when the queue advances.
                 """,
                 properties: [
-                    "episode_id": ["type": "string", "description": "The episode's stable ID (UUID). The episode must already be in the library (from list_episodes, search_episodes, etc.). For episodes not in the library, use play_external_episode."],
+                    "episode_id": ["type": "string", "description": "The episode's stable ID (UUID). Use when the episode is already in the library. Omit when supplying audio_url instead."],
+                    "audio_url": ["type": "string", "description": "Direct audio URL of an episode NOT yet in the library — e.g. the enclosure URL from search_podcast_directory, or a user-pasted link. Pair with title. Mutually exclusive with episode_id."],
+                    "title": ["type": "string", "description": "Episode title for audio_url plays. Required when audio_url is set; ignored otherwise."],
+                    "feed_url": ["type": "string", "description": "Optional RSS feed URL of the source podcast (only meaningful with audio_url). Pass this whenever you have it so the app captures the show's real metadata and artwork; omit for raw URLs with no known feed."],
+                    "duration_seconds": ["type": "number", "description": "Optional episode duration in seconds. Only used for audio_url plays; ignored for episode_id."],
                     "start_seconds": ["type": "number", "description": "Position to start playback from, in seconds. Defaults to 0 (beginning)."],
                     "end_seconds": ["type": "number", "description": "Optional position to stop playback and advance to the next queue item. Omit for open-ended playback to the end of the episode. Must be greater than start_seconds when both are set."],
                     "queue_position": [
@@ -48,7 +58,7 @@ extension AgentTools {
                         "description": "Where to land this play. 'now' = start playing immediately; existing Up Next items are preserved and resume afterward. 'next' = insert at the head of Up Next so it plays after the current item ends. 'end' = append to the bottom of Up Next.",
                     ],
                 ],
-                required: ["episode_id", "queue_position"]
+                required: ["queue_position"]
             ),
             podcastTool(
                 name: PodcastNames.pausePlayback,
@@ -185,24 +195,6 @@ extension AgentTools {
                     "podcast_id": ["type": "string", "description": "The podcast/feed UUID to refresh. Get it from list_subscriptions, list_podcasts, or list_episodes."],
                 ],
                 required: ["podcast_id"]
-            ),
-            podcastTool(
-                name: PodcastNames.endConversation,
-                description: "Gracefully end the current peer (Nostr) conversation. Call this INSTEAD OF replying when the latest peer message is mere acknowledgment or social closure (thanks, ok, sounds good, see you) and there is nothing substantive left to say. Calling this tool publishes NO outbound event by default — the peer's agent will simply not hear back, which is the correct behavior. Optionally pass final_message for one last courtesy line. Do not call this if the peer asked a question, made a request, or raised an ambiguity. Only valid inside a peer conversation — fails cleanly otherwise.",
-                properties: [
-                    "reason": ["type": "string", "description": "Why you are ending the conversation. Logged locally for diagnostics; never transmitted to the peer."],
-                    "final_message": ["type": "string", "description": "Optional one-line courtesy reply to publish before ending. Omit to end silently."],
-                ],
-                required: ["reason"]
-            ),
-            podcastTool(
-                name: PodcastNames.sendFriendMessage,
-                description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this only when the user explicitly tells you to message, tell, ask, or hand off something to a named friend. The friend_pubkey MUST match a friend stored in the user's Friends list — the tool refuses unknown pubkeys. Inside a peer conversation, the note is published as a NIP-10 reply to the conversation root; outside a peer conversation, the tool is unavailable.",
-                properties: [
-                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
-                    "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise — this lands in the friend's agent without the user's voice attached."],
-                ],
-                required: ["friend_pubkey", "message"]
             ),
             podcastTool(
                 name: PodcastNames.listSubscriptions,
@@ -383,32 +375,33 @@ extension AgentTools {
                 ],
                 required: ["podcast_id"]
             ),
+        ]
+    }
+
+    /// Tools that are only valid inside a Nostr peer conversation.
+    /// Include this schema only when a `PeerConversationContext` is present —
+    /// the dispatcher enforces the same gate at runtime, but excluding the
+    /// schemas prevents the LLM from attempting these calls in owner-chat
+    /// sessions where they can never succeed.
+    @MainActor
+    static var peerOnlySchema: [[String: Any]] {
+        [
             podcastTool(
-                name: PodcastNames.playExternalEpisode,
-                description: """
-                Play any publicly accessible podcast episode by audio URL, without requiring a prior subscription. \
-                Use when the user wants to hear a specific episode from a show they don't subscribe to \
-                — e.g. a guest appearance or a one-off recommendation. \
-                When you know the show's RSS feed_url (from search_podcast_directory results) pass it — \
-                the app will then carry the show's real artwork, title, and metadata. \
-                If you only have a raw audio URL (user-pasted link, Nostr-shared URL) and no feed, omit feed_url; \
-                the episode plays parented to an "Unknown" podcast. \
-                `queue_position` mirrors `play_episode`: 'now' starts immediately, 'next' inserts at the \
-                head of Up Next, 'end' appends. Defaults to 'now' so a one-off play just plays.
-                """,
+                name: PodcastNames.endConversation,
+                description: "Signal that you have nothing to say for the current peer message — publish no reply for this turn. Call this INSTEAD OF replying when the latest peer message is mere acknowledgment or social closure (thanks, ok, sounds good, see you) and there is nothing substantive to add. The conversation stays open — future messages from the peer will still be handled. Do not call this if the peer asked a question, made a request, or raised an ambiguity.",
                 properties: [
-                    "audio_url": ["type": "string", "description": "Direct audio URL of the episode (e.g. the enclosure URL from search_podcast_directory)."],
-                    "title": ["type": "string", "description": "Episode title shown in the player."],
-                    "feed_url": ["type": "string", "description": "Optional RSS feed URL of the source podcast. Pass this whenever you have it (e.g. from search_podcast_directory) so the app captures the show's real metadata and artwork."],
-                    "duration_seconds": ["type": "number", "description": "Optional episode duration in seconds."],
-                    "timestamp": ["type": "number", "description": "Position to seek to in seconds. Defaults to 0 (beginning)."],
-                    "queue_position": [
-                        "type": "string",
-                        "enum": ["now", "next", "end"],
-                        "description": "Where to land this play. Defaults to 'now'. See `play_episode` for full semantics.",
-                    ],
+                    "reason": ["type": "string", "description": "Why you are not replying. Logged locally for diagnostics; never transmitted to the peer."],
                 ],
-                required: ["audio_url", "title"]
+                required: ["reason"]
+            ),
+            podcastTool(
+                name: PodcastNames.sendFriendMessage,
+                description: "Send a Nostr kind:1 text note to a friend on the user's behalf. Use this only when the user explicitly tells you to message, tell, ask, or hand off something to a named friend. The friend_pubkey MUST match a friend stored in the user's Friends list — the tool refuses unknown pubkeys. The note is published as a NIP-10 reply to the conversation root.",
+                properties: [
+                    "friend_pubkey": ["type": "string", "description": "Hex pubkey of the friend. Must match a pubkey in the user's Friends list."],
+                    "message": ["type": "string", "description": "Plain text body of the note to send. Be direct and concise — this lands in the friend's agent without the user's voice attached."],
+                ],
+                required: ["friend_pubkey", "message"]
             ),
         ]
     }
