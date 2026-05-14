@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:18:00Z",
+      "lines": [
+        "Tap ••• on any show page and choose 'Download all episodes' to queue every episode for offline listening and transcription in one tap."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:17:00Z",
       "lines": [
         "New Library in the sidebar — browse every episode across all your podcasts in one scrollable list, with filters for Unplayed, In Progress, Downloaded, and Starred."
