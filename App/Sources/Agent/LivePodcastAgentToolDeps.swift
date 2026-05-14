@@ -56,6 +56,7 @@ enum LivePodcastAgentToolDeps {
             ttsPublisher: AgentTTSComposer(store: store, playback: playback),
             directory: LivePodcastDirectoryAdapter(),
             subscribe: LivePodcastSubscribeAdapter(store: store),
+            youtubeIngestion: LiveYouTubeIngestionAdapter(store: store),
             peerContext: nil
         )
     }

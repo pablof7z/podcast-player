@@ -332,6 +332,7 @@ struct PodcastAgentToolDeps: Sendable {
     let ttsPublisher: TTSPublisherProtocol
     let directory: PodcastDirectoryProtocol
     let subscribe: PodcastSubscribeProtocol
+    let youtubeIngestion: YouTubeIngestionProtocol
     /// Set by the Nostr peer-agent entrypoint per inbound turn. Nil for owner
     /// chat / voice / other entrypoints — peer-only tools early-return a clean
     /// tool error in that case.
@@ -357,6 +358,7 @@ struct PodcastAgentToolDeps: Sendable {
         ttsPublisher: TTSPublisherProtocol,
         directory: PodcastDirectoryProtocol,
         subscribe: PodcastSubscribeProtocol,
+        youtubeIngestion: YouTubeIngestionProtocol,
         peerContext: PeerConversationContext? = nil,
         chatConversationID: UUID? = nil
     ) {
@@ -376,6 +378,7 @@ struct PodcastAgentToolDeps: Sendable {
         self.ttsPublisher = ttsPublisher
         self.directory = directory
         self.subscribe = subscribe
+        self.youtubeIngestion = youtubeIngestion
         self.peerContext = peerContext
         self.chatConversationID = chatConversationID
     }
@@ -400,6 +403,7 @@ struct PodcastAgentToolDeps: Sendable {
             ttsPublisher: ttsPublisher,
             directory: directory,
             subscribe: subscribe,
+            youtubeIngestion: youtubeIngestion,
             peerContext: ctx,
             chatConversationID: chatConversationID
         )
@@ -426,6 +430,7 @@ struct PodcastAgentToolDeps: Sendable {
             ttsPublisher: ttsPublisher,
             directory: directory,
             subscribe: subscribe,
+            youtubeIngestion: youtubeIngestion,
             peerContext: peerContext,
             chatConversationID: id
         )

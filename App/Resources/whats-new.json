@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:00:00Z",
+      "lines": [
+        "The agent can now download YouTube videos as podcast episodes via a self-hosted extractor — activate the new youtube_ingestion skill and configure your endpoint in Settings."
+      ]
+    },
+    {
       "shipped_at": "2026-05-13T23:32:00Z",
       "lines": [
         "When your agent messages another agent, it now automatically resumes the conversation once the other agent replies — no manual follow-up needed."

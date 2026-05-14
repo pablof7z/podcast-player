@@ -77,6 +77,17 @@ struct AIProvidersSettingsView: View {
                     value: ollamaStatus
                 )
             }
+
+            NavigationLink {
+                YouTubeSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "play.rectangle.fill",
+                    tint: .red,
+                    title: "YouTube Ingestion",
+                    value: youtubeStatus
+                )
+            }
         } header: {
             Text("Connections")
         } footer: {
@@ -144,6 +155,10 @@ struct AIProvidersSettingsView: View {
         case .manual: return "Manual"
         case .none:   return "Connected"
         }
+    }
+
+    private var youtubeStatus: String {
+        settings.youtubeExtractorURL != nil ? "Configured" : "Not set up"
     }
 
     private var usageSummary: String? {

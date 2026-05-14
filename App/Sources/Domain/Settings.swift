@@ -129,6 +129,13 @@ struct Settings: Codable, Hashable, Sendable {
     /// typing don't break `Codable`; validated as a URL at the network call site.
     var ollamaChatURL: String = Settings.defaultOllamaChatURL
 
+    // YouTube ingestion
+    /// Endpoint of a self-hosted YouTube audio-extraction service (e.g. cobalt,
+    /// yt-dlp wrapper). The agent's `youtube_ingestion` skill POSTs
+    /// `{"url": "<youtube_url>"}` here and expects back JSON with at least an
+    /// `audio_url` (or `url`) field. `nil` means the skill is unavailable.
+    var youtubeExtractorURL: String?
+
     // ElevenLabs credentials (secret stored in Keychain; only metadata here)
     var elevenLabsCredentialSource: ElevenLabsCredentialSource = .none
     var elevenLabsBYOKKeyID: String?
@@ -253,6 +260,7 @@ struct Settings: Codable, Hashable, Sendable {
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
         case hasCompletedOnboarding
+        case youtubeExtractorURL
     }
 
     init(from decoder: Decoder) throws {
@@ -314,6 +322,7 @@ struct Settings: Codable, Hashable, Sendable {
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
+        youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
 
         if openRouterCredentialSource == .none,
            let legacy = legacyOpenRouterAPIKey,
@@ -380,6 +389,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(nostrProfilePicture, forKey: .nostrProfilePicture)
         try c.encodeIfPresent(nostrPublicKeyHex, forKey: .nostrPublicKeyHex)
         try c.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
+        try c.encodeIfPresent(youtubeExtractorURL, forKey: .youtubeExtractorURL)
     }
 
     // MARK: - Display helpers
