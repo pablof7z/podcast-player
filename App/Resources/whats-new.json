@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:05:00Z",
+      "lines": [
+        "New sidebar: tap your avatar to navigate to Clippings, Wiki, and Settings. Search moved to the top-right toolbar."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:03:00Z",
       "lines": [
         "Settings › Agent › Tasks: view, create, edit, and delete the agent's scheduled tasks."
