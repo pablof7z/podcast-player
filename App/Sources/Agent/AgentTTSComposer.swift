@@ -53,7 +53,8 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         description: String?,
         turns: [TTSTurn],
         playNow: Bool,
-        generationSource: Episode.GenerationSource? = nil
+        generationSource: Episode.GenerationSource? = nil,
+        targetPodcastID: UUID? = nil
     ) async throws -> TTSEpisodeResult {
         guard !turns.isEmpty else {
             throw AgentTTSError.emptyTurns
@@ -96,6 +97,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                 durationSeconds: durationSeconds,
                 imageURL: inheritedArtwork,
                 generationSource: generationSource,
+                targetPodcastID: targetPodcastID,
                 in: store
             )
         }
@@ -124,8 +126,13 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             }
         }
 
-        let podcastID = await MainActor.run {
-            store?.podcast(feedURL: AgentGeneratedPodcastService.sentinelFeedURL)?.id.uuidString ?? ""
+        let podcastID: String
+        if let targetPodcastID {
+            podcastID = targetPodcastID.uuidString
+        } else {
+            podcastID = await MainActor.run {
+                store?.podcast(feedURL: AgentGeneratedPodcastService.sentinelFeedURL)?.id.uuidString ?? ""
+            }
         }
 
         return TTSEpisodeResult(

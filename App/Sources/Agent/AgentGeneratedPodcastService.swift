@@ -100,9 +100,10 @@ struct AgentGeneratedPodcastService: Sendable {
         durationSeconds: TimeInterval?,
         imageURL: URL? = nil,
         generationSource: Episode.GenerationSource? = nil,
+        targetPodcastID: UUID? = nil,
         in store: AppStateStore
     ) -> Episode {
-        let podcastID = ensurePodcastID(in: store)
+        let podcastID = targetPodcastID ?? ensurePodcastID(in: store)
         let episodeID = UUID()
         let episode = Episode(
             id: episodeID,

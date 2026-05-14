@@ -107,6 +107,17 @@ private struct AgentPodcastRow: View {
                     updated.nostrVisibility = newValue ? .public : .private
                     store.updatePodcast(updated)
                     Haptics.selection()
+                    if newValue {
+                        let podcastID = podcast.id.uuidString
+                        Task {
+                            let mgr = LiveAgentOwnedPodcastManager(store: store)
+                            _ = try? await mgr.updatePodcast(
+                                podcastID: podcastID,
+                                title: nil, description: nil, author: nil,
+                                imageURL: nil, visibility: .public
+                            )
+                        }
+                    }
                 }
             ))
             .labelsHidden()

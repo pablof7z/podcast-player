@@ -26,6 +26,21 @@ extension AgentTools {
         let description = (args["description"] as? String)?.trimmed.nilIfEmpty
         let playNow = args["play_now"] as? Bool ?? false
 
+        // Validate optional podcast_id against owned shows.
+        let targetPodcastID: UUID?
+        if let rawPodcastID = (args["podcast_id"] as? String)?.trimmed.nilIfEmpty {
+            guard let uuid = UUID(uuidString: rawPodcastID) else {
+                return toolError("podcast_id '\(rawPodcastID)' is not a valid UUID")
+            }
+            let owned = await deps.ownedPodcasts.listOwnedPodcasts()
+            guard owned.contains(where: { $0.podcastID == rawPodcastID }) else {
+                return toolError("podcast_id '\(rawPodcastID)' is not an agent-owned podcast — use list_my_podcasts to find valid IDs")
+            }
+            targetPodcastID = uuid
+        } else {
+            targetPodcastID = nil
+        }
+
         // Parse turns
         var turns: [TTSTurn] = []
         for (i, raw) in rawTurns.enumerated() {
@@ -82,8 +97,13 @@ extension AgentTools {
                 description: description,
                 turns: turns,
                 playNow: playNow,
-                generationSource: generationSource
+                generationSource: generationSource,
+                targetPodcastID: targetPodcastID
             )
+            // Publish to Nostr when the target is an owned public podcast.
+            if targetPodcastID != nil {
+                try? await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: result.episodeID)
+            }
             var payload: [String: Any] = [
                 "episode_id": result.episodeID,
                 "podcast_id": result.podcastID,

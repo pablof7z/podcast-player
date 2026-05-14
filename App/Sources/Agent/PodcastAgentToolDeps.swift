@@ -263,7 +263,8 @@ protocol TTSPublisherProtocol: Sendable {
         description: String?,
         turns: [TTSTurn],
         playNow: Bool,
-        generationSource: Episode.GenerationSource?
+        generationSource: Episode.GenerationSource?,
+        targetPodcastID: UUID?
     ) async throws -> TTSEpisodeResult
 }
 

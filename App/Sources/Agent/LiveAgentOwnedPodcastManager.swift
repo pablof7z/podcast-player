@@ -47,7 +47,12 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         categories: [String],
         visibility: Podcast.NostrVisibility
     ) async throws -> AgentOwnedPodcastInfo {
-        let pubkey = try agentPubkeyHex()
+        let pubkey: String
+        if visibility == .public {
+            pubkey = try agentPubkeyHex()
+        } else {
+            pubkey = (try? agentPubkeyHex()) ?? "agent-private"
+        }
         let podcast = Podcast(
             kind: .synthetic,
             feedURL: nil,

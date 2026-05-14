@@ -432,6 +432,7 @@
 		A6FEE32582E1556C45CCF86A /* PodcastSearchEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83FECCF56623758FF567779 /* PodcastSearchEmptyState.swift */; };
 		A708BE914F81B99FA9A7F3B8 /* Transcript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBDA3FB4DF40039EC538A57 /* Transcript.swift */; };
 		A7D1653B46BF5E5BDFA852F1 /* AgentToolSchema+Podcast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84304F44DD666F60EA9A03B7 /* AgentToolSchema+Podcast.swift */; };
+		B39F4BC56D79219236DDFB3A /* AgentToolSchema+OwnedPodcasts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E88666A8C263CC7383365E7 /* AgentToolSchema+OwnedPodcasts.swift */; };
 		A7D68546D9693314EE5C7F53 /* AppStateTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791586924A7883752E5A3204 /* AppStateTestSupport.swift */; };
 		A81ACDCC1119B01D985E8A6A /* EpisodeMetadataIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C207C6A61CD8725D9CE1302 /* EpisodeMetadataIndexer.swift */; };
 		A81CE75837E30637A561D373 /* OnboardingElevenLabsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6869815913E3174C708F0D /* OnboardingElevenLabsPage.swift */; };
@@ -1089,6 +1090,7 @@
 		82535EB946036E137F65771D /* YouTubeAudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeAudioService.swift; sourceTree = "<group>"; };
 		8258C6269B8BD4716BA6B259 /* QuoteShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteShareView.swift; sourceTree = "<group>"; };
 		84304F44DD666F60EA9A03B7 /* AgentToolSchema+Podcast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentToolSchema+Podcast.swift"; sourceTree = "<group>"; };
+		9E88666A8C263CC7383365E7 /* AgentToolSchema+OwnedPodcasts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentToolSchema+OwnedPodcasts.swift"; sourceTree = "<group>"; };
 		8453091EF53D5A0748FEFF31 /* AgentChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentChatView.swift; sourceTree = "<group>"; };
 		85AB8152D55E6C47E39E9A01 /* Podcastr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Podcastr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		85D22CEE0D129CA7153295CE /* EditTextSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTextSheet.swift; sourceTree = "<group>"; };
@@ -2449,6 +2451,7 @@
 				4820E12BA400099EA107E113 /* AgentTools+YouTube.swift */,
 				D5F13F2BBC4FECC8B7B3D4BF /* AgentToolSchema.swift */,
 				84304F44DD666F60EA9A03B7 /* AgentToolSchema+Podcast.swift */,
+				9E88666A8C263CC7383365E7 /* AgentToolSchema+OwnedPodcasts.swift */,
 				C1926E9112AD0811ACE826F3 /* AgentTTSComposer.swift */,
 				468FCCF62EF745828732CD74 /* LiveBriefingComposerAdapter.swift */,
 				4D5D7E296FCF40129BBAFFE2 /* LiveEpisodeSummarizerAdapter.swift */,
@@ -2738,6 +2741,7 @@
 				69BEA02BFB281CFE6B325427 /* AgentScheduledTaskRunner.swift in Sources */,
 				3897825D6040A8BD248F702F /* AgentTTSComposer.swift in Sources */,
 				A7D1653B46BF5E5BDFA852F1 /* AgentToolSchema+Podcast.swift in Sources */,
+				B39F4BC56D79219236DDFB3A /* AgentToolSchema+OwnedPodcasts.swift in Sources */,
 				9D67CB4EE32C250E4DCFE9AD /* AgentToolSchema.swift in Sources */,
 				2F17E4D4C948CCAFF534B2E3 /* AgentTools+Ask.swift in Sources */,
 				7E2FC2183AC7960A42B31BB7 /* AgentTools+Conversations.swift in Sources */,
