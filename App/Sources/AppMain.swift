@@ -40,6 +40,7 @@ struct PodcastrApp: App {
                 .environment(userIdentity)
                 .environment(askCoordinator)
                 .task { userIdentity.start() }
+                .task { CarPlayController.shared.attach(store: store) }
                 .task {
                     let service = NostrRelayService(store: store, askCoordinator: askCoordinator)
                     relayService = service

@@ -216,6 +216,10 @@ struct RootView: View {
                 // even when the user has never opened the full player.
                 // Idempotent — `PlayerView.onAppear` calls this too.
                 AutoSnipController.shared.attach(playback: playbackState, store: store)
+                // Hand the live playback handle to CarPlay so the scene
+                // delegate can drive Now Playing / chapter navigation.
+                // `AppMain` already attached the store on its own .task.
+                CarPlayController.shared.attach(playback: playbackState)
             }
             // Re-push preferences whenever the user edits Settings so the
             // skip intervals update on the lock screen and the auto-mark
