@@ -4,18 +4,24 @@ import os.log
 // MARK: - YouTubeAudioService
 //
 // Calls the user-configured YouTube audio extraction endpoint.
-// The endpoint is expected to accept:
-//   POST <extractorURL>
-//   Content-Type: application/json
-//   Body: {"url": "<youtube_url>"}
 //
-// And return JSON with at minimum an "audio_url" or "url" field:
-//   {"audio_url": "https://…", "title": "…", "author": "…", "duration_seconds": 1234}
+// Video fetch — POST <extractorURL>  body: {"url": "<youtube_url>"}
+//   Response: {"audio_url": "…", "title": "…", "author": "…", "duration_seconds": 1234}
+//
+// Search — POST <extractorURL>  body: {"search": "<query>", "limit": N}
+//   Response: {"results": [{"url": "…", "title": "…", "author": "…", "duration_seconds": 1234}, …]}
 //
 // Compatible with cobalt (https://cobalt.tools) and simple yt-dlp wrappers.
 
 struct YouTubeVideoInfo: Sendable {
     let audioURL: URL
+    let title: String
+    let author: String
+    let durationSeconds: TimeInterval?
+}
+
+struct YouTubeSearchResult: Sendable {
+    let url: String
     let title: String
     let author: String
     let durationSeconds: TimeInterval?
@@ -81,6 +87,57 @@ struct YouTubeAudioService: Sendable {
         }
 
         return try parseResponse(data: data)
+    }
+
+    // MARK: - Search
+
+    func searchVideos(query: String, limit: Int, extractorURLString: String) async throws -> [YouTubeSearchResult] {
+        guard let extractorURL = URL(string: extractorURLString) else {
+            throw YouTubeAudioServiceError.invalidExtractorURL(extractorURLString)
+        }
+
+        var request = URLRequest(url: extractorURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["search": query, "limit": limit])
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw YouTubeAudioServiceError.networkError(error)
+        }
+
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw YouTubeAudioServiceError.requestFailed(http.statusCode, body)
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rawResults = json["results"] as? [[String: Any]] else {
+            throw YouTubeAudioServiceError.noAudioURL
+        }
+
+        return rawResults.compactMap(parseSearchHit)
+    }
+
+    private func parseSearchHit(_ json: [String: Any]) -> YouTubeSearchResult? {
+        guard let url = (json["url"] as? String), !url.isEmpty else { return nil }
+        let title = (json["title"] as? String) ?? "YouTube Video"
+        let author = (json["author"] as? String)
+            ?? (json["channel"] as? String)
+            ?? (json["uploader"] as? String)
+            ?? "YouTube"
+        let duration: TimeInterval? = {
+            if let d = json["duration_seconds"] as? Double { return d }
+            if let d = json["duration_seconds"] as? Int { return TimeInterval(d) }
+            if let d = json["duration"] as? Double { return d }
+            if let d = json["duration"] as? Int { return TimeInterval(d) }
+            return nil
+        }()
+        return YouTubeSearchResult(url: url, title: title, author: author, durationSeconds: duration)
     }
 
     // MARK: - Parsing

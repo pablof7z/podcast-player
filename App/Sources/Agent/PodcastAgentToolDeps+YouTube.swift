@@ -11,24 +11,26 @@ import Foundation
 //   3. `AgentGeneratedPodcastService.publishEpisode` to register the episode.
 //   4. Optionally `TranscriptIngestService` to kick off transcription.
 
-public protocol YouTubeIngestionProtocol: Sendable {
+protocol YouTubeIngestionProtocol: Sendable {
     func ingestVideo(
         youtubeURL: String,
         customTitle: String?,
         transcribe: Bool
     ) async throws -> YouTubeIngestionResult
+
+    func searchVideos(query: String, limit: Int) async throws -> [YouTubeSearchResult]
 }
 
 // MARK: - Result
 
-public struct YouTubeIngestionResult: Sendable {
-    public let episodeID: String
-    public let title: String
-    public let author: String
-    public let durationSeconds: TimeInterval?
-    public let transcriptStatus: String?
+struct YouTubeIngestionResult: Sendable {
+    let episodeID: String
+    let title: String
+    let author: String
+    let durationSeconds: TimeInterval?
+    let transcriptStatus: String?
 
-    public init(
+    init(
         episodeID: String,
         title: String,
         author: String,

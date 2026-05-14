@@ -4,19 +4,19 @@ import Foundation
 //
 // Defines the `youtube_ingestion` skill. When activated via
 // `use_skill(skill_id: "youtube_ingestion")` the agent receives the manual
-// below and gains access to `ingest_youtube_video`.
+// below and gains access to `search_youtube` and `ingest_youtube_video`.
 //
 // Requires a user-configured extractor endpoint in Settings → Providers →
-// YouTube Ingestion. Without it the tool returns a clear error.
+// YouTube Ingestion. Without it the tools return a clear error.
 
 enum YouTubeIngestionSkill {
 
     static let skill = AgentSkill(
         id: AgentSkillID.youtubeIngestion,
         displayName: "YouTube Ingestion",
-        summary: "Download a YouTube video's audio as a podcast episode via a self-hosted extractor, then optionally transcribe it so RAG and wiki tools can reference it.",
+        summary: "Search YouTube and download video audio as podcast episodes via a self-hosted extractor; transcribes on ingest so RAG and wiki tools can reference the content.",
         manual: manualText,
-        toolNames: [AgentTools.PodcastNames.ingestYouTubeVideo],
+        toolNames: [AgentTools.PodcastNames.searchYouTube, AgentTools.PodcastNames.ingestYouTubeVideo],
         schema: { schemaEntries }
     )
 
@@ -25,61 +25,76 @@ enum YouTubeIngestionSkill {
     private static let manualText: String = """
     # YouTube Ingestion Skill
 
-    You can download a YouTube video's audio, publish it to the "Agent Generated"
-    podcast, and optionally transcribe it — making it searchable via
-    `query_transcripts`, summarisable with `summarize_episode`, and usable as
-    a snippet in `generate_tts_episode`.
+    Two tools: `search_youtube` to find videos, and `ingest_youtube_video` to
+    download audio and publish it to the "Agent Generated" podcast — making it
+    transcribable, searchable via `query_transcripts`, summarisable with
+    `summarize_episode`, and usable as a snippet in `generate_tts_episode`.
 
     ## Prerequisites
 
     The user must have configured a YouTube extractor endpoint in
-    Settings → Providers → YouTube Ingestion. Without it `ingest_youtube_video`
-    returns an error explaining what to set up. If that happens, tell the user
-    what to configure — do not retry.
+    Settings → Providers → YouTube Ingestion. Both tools return a clear error
+    if it is missing — tell the user what to configure and do not retry.
 
     ## When to use this
 
-    - The user pastes a YouTube URL and asks you to "add it", "download it",
-      or "make a podcast from it".
+    - The user wants to find YouTube videos on a topic before deciding what to add.
+    - The user pastes a YouTube URL and asks to "add it", "download it", or
+      "make a podcast from it".
     - The user wants to transcribe or summarise a YouTube video.
-    - The user wants to include a YouTube video's audio as a snippet in a
-      generated TTS episode (ingest first, then use the returned episode_id
-      in a `generate_tts_episode` snippet turn).
+    - The user wants a YouTube clip as a snippet in a TTS episode (ingest first,
+      then use the returned `episode_id` in a `generate_tts_episode` snippet turn).
 
-    Skip this skill for tasks that don't end in a library episode.
+    ## Tools
 
-    ## Tool
+    `search_youtube(query, limit?)`
+    - `query` (required) — search terms.
+    - `limit` (optional, default 5, max 20) — number of results to return.
+    - Returns a list of hits, each with `url`, `title`, `author`, and optionally
+      `duration_seconds`. Pass `url` from a result directly to `ingest_youtube_video`.
 
     `ingest_youtube_video(url, title?, transcribe?)`
-
     - `url` (required) — full YouTube URL (youtube.com/watch?v=… or youtu.be/…).
     - `title` (optional) — override the title; defaults to the video's own title.
-    - `transcribe` (optional, default true) — whether to start transcription
-      immediately after download. Transcription is required before `query_transcripts`
-      or `summarize_episode` can work on the episode.
-
-    The tool blocks until download and transcription complete, then returns:
-    - `episode_id` — use this in subsequent tool calls.
-    - `title`, `author`, `duration_seconds` — episode metadata.
-    - `transcript_status` — "ready", "failed", or "queued" (when transcribe=true).
-    - `message` — human-readable status line to show the user.
+    - `transcribe` (optional, default true) — start transcription immediately.
+      Required before `query_transcripts` or `summarize_episode` can work.
+    - Returns `episode_id`, `title`, `author`, `duration_seconds`,
+      `transcript_status` ("ready" / "failed" / "queued"), and `message`.
 
     ## Suggested flow
 
-    1. Call `ingest_youtube_video` with the URL. Pass `transcribe: true` (default)
-       unless the user only wants the audio without search capability.
-    2. When `transcript_status == "ready"`, you can immediately call
-       `query_transcripts`, `summarize_episode`, or start a
-       `generate_tts_episode` pipeline with the returned `episode_id`.
-    3. When `transcript_status == "failed"`, tell the user — the episode is
-       still playable, just not searchable yet.
+    1. If the user doesn't have a specific URL, call `search_youtube` first and
+       surface a short list for the user to pick from.
+    2. Call `ingest_youtube_video` with the chosen URL. Default `transcribe: true`
+       unless the user only wants audio without search capability.
+    3. When `transcript_status == "ready"`, proceed with `query_transcripts`,
+       `summarize_episode`, or a `generate_tts_episode` snippet pipeline.
+    4. When `transcript_status == "failed"`, tell the user — the episode is still
+       playable, just not searchable yet.
     """
 
     // MARK: - Schema
 
     @MainActor
     private static var schemaEntries: [[String: Any]] {
-        [ingestYouTubeVideoSchema]
+        [searchYouTubeSchema, ingestYouTubeVideoSchema]
+    }
+
+    private static var searchYouTubeSchema: [String: Any] {
+        functionTool(
+            name: AgentTools.PodcastNames.searchYouTube,
+            description: """
+            Search YouTube for videos matching a query. Returns a list of results with url, title, \
+            author, and duration_seconds. Use this before ingest_youtube_video when the user doesn't \
+            have a specific URL — surface the results and let the user pick. \
+            Requires a YouTube extractor endpoint configured in Settings → Providers → YouTube Ingestion.
+            """,
+            properties: [
+                "query": ["type": "string", "description": "Search terms to find YouTube videos."],
+                "limit": ["type": "integer", "description": "Maximum results to return (1–20). Defaults to 5."],
+            ],
+            required: ["query"]
+        )
     }
 
     private static var ingestYouTubeVideoSchema: [String: Any] {

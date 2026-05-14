@@ -63,6 +63,7 @@ extension AgentTools {
 
         // Skill-gated: requires the `youtube_ingestion` skill.
         static let ingestYouTubeVideo     = "ingest_youtube_video"
+        static let searchYouTube          = "search_youtube"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch. Skill-gated names are
@@ -83,7 +84,7 @@ extension AgentTools {
                 createClip, downloadAndTranscribe,
                 generateTTSEpisode, configureAgentVoice, listAvailableVoices,
                 searchPodcastDirectory, subscribePodcast, deletePodcast,
-                ingestYouTubeVideo,
+                ingestYouTubeVideo, searchYouTube,
             ]
         }
     }
@@ -219,6 +220,8 @@ extension AgentTools {
             return await deletePodcastTool(args: args, deps: deps)
         case PodcastNames.ingestYouTubeVideo:
             return await ingestYouTubeVideoTool(args: args, deps: deps)
+        case PodcastNames.searchYouTube:
+            return await searchYouTubeTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

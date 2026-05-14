@@ -85,6 +85,15 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
         )
     }
 
+    // MARK: - Search
+
+    func searchVideos(query: String, limit: Int) async throws -> [YouTubeSearchResult] {
+        guard let store else { throw YouTubeAudioServiceError.notConfigured }
+        let extractorURL = await store.state.settings.youtubeExtractorURL ?? ""
+        guard !extractorURL.isEmpty else { throw YouTubeAudioServiceError.notConfigured }
+        return try await ytService.searchVideos(query: query, limit: limit, extractorURLString: extractorURL)
+    }
+
     // MARK: - Download helper
 
     private func downloadAudio(from remoteURL: URL, to destURL: URL) async throws {
