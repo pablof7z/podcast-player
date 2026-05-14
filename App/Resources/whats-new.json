@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:01:00Z",
+      "lines": [
+        "Agent conversations now open at the most recent message, with a scroll-to-bottom button when you've scrolled up."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:00:00Z",
       "lines": [
         "The agent can now download YouTube videos as podcast episodes via a self-hosted extractor — activate the new youtube_ingestion skill and configure your endpoint in Settings."

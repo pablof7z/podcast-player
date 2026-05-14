@@ -1,6 +1,12 @@
 import Foundation
 import os.log
 
+extension Notification.Name {
+    /// Posted on the main thread after a headless in-app delegation run completes.
+    /// `object` is the `UUID` of the conversation that was updated.
+    static let agentDelegationDidComplete = Notification.Name("agentDelegationDidComplete")
+}
+
 // MARK: - Delegation response handling
 //
 // When `send_friend_message` fires, a `PendingFriendMessage` is registered
@@ -78,6 +84,7 @@ extension NostrAgentResponder {
         )
         await session.switchToConversation(conversationID)
         await session.send(injectedContent, source: .nostrInbound)
+        NotificationCenter.default.post(name: .agentDelegationDidComplete, object: conversationID)
         Self.logger.notice("delegation: in-app chat re-invocation complete")
     }
 
