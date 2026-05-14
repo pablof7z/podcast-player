@@ -94,6 +94,17 @@ struct AgentSettingsView: View {
             }
 
             NavigationLink {
+                AgentScheduledTasksView()
+            } label: {
+                SettingsRow(
+                    icon: "calendar.badge.clock",
+                    tint: .teal,
+                    title: "Tasks",
+                    badge: store.scheduledTasks.count
+                )
+            }
+
+            NavigationLink {
                 AgentRunListView()
             } label: {
                 SettingsRow(

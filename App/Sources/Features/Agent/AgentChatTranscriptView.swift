@@ -18,47 +18,30 @@ struct AgentChatTranscriptView: View {
     var onRegenerate: (() -> Void)? = nil
 
     @Environment(AppStateStore.self) private var store
+    @State private var isAtBottom = true
 
     var body: some View {
         ScrollViewReader { proxy in
-            let isAtBottom = scrolledMessageID == nil
-                || scrolledMessageID == session.messages.last?.id
-                || scrolledMessageID == AnyHashable(Layout.typingIndicatorID)
-
             ScrollView {
                 messageList
             }
             .scrollDismissesKeyboard(.interactively)
             .scrollPosition(id: $scrolledMessageID, anchor: .bottom)
+            .defaultScrollAnchor(.bottom)
             .tabBarMinimizeBehavior(.never)
-            .onAppear {
-                if let lastID = session.messages.last?.id {
-                    proxy.scrollTo(lastID, anchor: .bottom)
-                }
-            }
             .overlay(alignment: .bottomTrailing) {
                 if !isAtBottom {
                     jumpToBottomButton(proxy: proxy)
                 }
             }
             .onChange(of: session.messages.count) { oldCount, newCount in
-                // Only auto-scroll when the user was already pinned to the
-                // bottom — if they scrolled up to re-read, leave them there.
                 guard newCount > oldCount, let last = session.messages.last else { return }
-                let priorLastID: AnyHashable? = oldCount > 0
-                    ? AnyHashable(session.messages[max(0, oldCount - 1)].id)
-                    : nil
-                let wasAtBottom = scrolledMessageID == nil
-                    || scrolledMessageID == AnyHashable(Layout.typingIndicatorID)
-                    || scrolledMessageID == priorLastID
-                guard wasAtBottom else { return }
+                guard isAtBottom else { return }
                 withAnimation(AppTheme.Animation.spring) {
                     proxy.scrollTo(last.id, anchor: .bottom)
                 }
             }
             .onChange(of: session.phase) {
-                // When the user sends a message, always pin to the typing
-                // indicator so the response begins in view.
                 if case .sending = session.phase {
                     withAnimation(AppTheme.Animation.spring) {
                         proxy.scrollTo(Layout.typingIndicatorID, anchor: .bottom)
@@ -66,13 +49,10 @@ struct AgentChatTranscriptView: View {
                 }
             }
             .onChange(of: session.streamingContent) { _, content in
-                // Follow streaming tokens only while the user is at the bottom;
-                // if they've scrolled up, leave them there and show the jump button.
                 guard let content, !content.isEmpty, isAtBottom else { return }
                 proxy.scrollTo(Layout.typingIndicatorID, anchor: .bottom)
             }
             .onChange(of: session.currentToolName) { _, _ in
-                // Keep the typing indicator in view when tool status changes.
                 guard isAtBottom else { return }
                 proxy.scrollTo(Layout.typingIndicatorID, anchor: .bottom)
             }
@@ -132,6 +112,12 @@ struct AgentChatTranscriptView: View {
                         .transition(.opacity)
                 }
             }
+            Color.clear.frame(height: 1)
+                .onScrollVisibilityChange(threshold: 0.01) { visible in
+                    withAnimation(AppTheme.Animation.springFast) {
+                        isAtBottom = visible
+                    }
+                }
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.top, AppTheme.Spacing.md)

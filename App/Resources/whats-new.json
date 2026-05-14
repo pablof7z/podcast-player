@@ -2,6 +2,18 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:03:00Z",
+      "lines": [
+        "Settings › Agent › Tasks: view, create, edit, and delete the agent's scheduled tasks."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:02:00Z",
+      "lines": [
+        "Swipe right in the player to read show notes; swipe left to return to chapters."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:01:00Z",
       "lines": [
         "Agent conversations now open at the most recent message, with a scroll-to-bottom button when you've scrolled up."

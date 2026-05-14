@@ -24,6 +24,7 @@ struct PlayerView: View {
     @State private var showSleepSheet: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var showVoiceNoteSheet: Bool = false
+    @State private var showingShowNotes: Bool = false
 
     /// Vertical scroll offset of the content. Driven by
     /// `.onScrollGeometryChange` rather than a preference key so the
@@ -240,10 +241,75 @@ struct PlayerView: View {
         return date
     }
 
-    // MARK: - Chapters / placeholder
+    // MARK: - Chapters / show notes tab switcher
 
     @ViewBuilder
     private var chaptersContent: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            panelPicker
+            if showingShowNotes {
+                PlayerShowNotesView(episode: liveEpisode)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading),
+                        removal: .move(edge: .trailing)
+                    ))
+            } else {
+                chaptersPanel
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing),
+                        removal: .move(edge: .leading)
+                    ))
+            }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 30, coordinateSpace: .local)
+                .onEnded { value in
+                    let dx = value.translation.width
+                    let dy = abs(value.translation.height)
+                    guard abs(dx) > dy, abs(dx) > 40 else { return }
+                    let wantsShowNotes = dx > 0
+                    guard wantsShowNotes != showingShowNotes else { return }
+                    Haptics.selection()
+                    withAnimation(AppTheme.Animation.spring) {
+                        showingShowNotes = wantsShowNotes
+                    }
+                }
+        )
+    }
+
+    private var panelPicker: some View {
+        HStack(spacing: 4) {
+            panelTab("Chapters", isActive: !showingShowNotes) {
+                withAnimation(AppTheme.Animation.spring) { showingShowNotes = false }
+            }
+            panelTab("Show Notes", isActive: showingShowNotes) {
+                withAnimation(AppTheme.Animation.spring) { showingShowNotes = true }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func panelTab(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(.subheadline, design: .rounded).weight(isActive ? .semibold : .regular))
+                .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                .padding(.horizontal, AppTheme.Spacing.sm)
+                .padding(.vertical, 6)
+                .background {
+                    if isActive {
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .animation(AppTheme.Animation.spring, value: isActive)
+    }
+
+    @ViewBuilder
+    private var chaptersPanel: some View {
         if let chapters = navigableChapters, !chapters.isEmpty {
             PlayerChaptersScrollView(
                 chapters: chapters,

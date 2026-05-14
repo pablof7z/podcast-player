@@ -17,6 +17,7 @@ struct NostrConversationDetailView: View {
             }
             .padding(AppTheme.Spacing.md)
         }
+        .defaultScrollAnchor(.bottom)
         .navigationTitle("Conversation")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

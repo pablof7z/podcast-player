@@ -193,6 +193,7 @@
 		47E1B04FFE185D424B5C57A1 /* ClipBoundaryResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC81E15CEB87CE3CC38654E /* ClipBoundaryResolverTests.swift */; };
 		482BECF59006DF673E88F8B7 /* OllamaEmbeddingsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468A79B75645281766177D2F /* OllamaEmbeddingsClient.swift */; };
 		492EC93AD9800FC9379A1C29 /* VoiceAudioSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144B28A8B29A36DC8E3C7642 /* VoiceAudioSessionBridge.swift */; };
+		493F83C1F9959EEAB31ABE4D /* AgentScheduledTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEE6A9DF1C9108D30A7D128 /* AgentScheduledTasksView.swift */; };
 		494A1E9BD1B9FDE385BEF661 /* AppStateStore+AgentActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0FE5F340F1575C19BFB4F5 /* AppStateStore+AgentActivity.swift */; };
 		49E40F3F67BB4B306C5762AA /* ChapterAgentContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020F06C7D423D1C20E15D2D5 /* ChapterAgentContext.swift */; };
 		49F92A8820962A76B3FF1567 /* ElevenLabsTTSPreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEE9A7B2E816DA7D7D12662 /* ElevenLabsTTSPreviewService.swift */; };
@@ -401,6 +402,7 @@
 		9DC886144CCA9FC55F8E43BB /* AgentIdentityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92CA0B276FCACD0CC69486A1 /* AgentIdentityView.swift */; };
 		9E67C4C123AA0AD2CDF3EF5C /* EpisodePlainTextSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7179EC5414B92EB5683977 /* EpisodePlainTextSummaryTests.swift */; };
 		9E98B663C230F4B532F2570A /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80A8BE2FDE1705D15D474F97 /* DeepLinkHandler.swift */; };
+		9EA79BD19298C55DB1D106AC /* AgentScheduledTaskFormSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF7B220D6BD5D10F60880042 /* AgentScheduledTaskFormSheet.swift */; };
 		A0BEF34D14F0941027FC58FF /* ElevenLabsKeyInfoCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4FE358C4B5A0D71E62CD8E /* ElevenLabsKeyInfoCard.swift */; };
 		A10F908B29438687A833C418 /* AppStateStore+Subscriptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31822DD58237A18EDF0122A4 /* AppStateStore+Subscriptions.swift */; };
 		A1D6FA4F4A84E0A57DB21F02 /* AppStateStore+Triage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E9568CA56A44DBF03A5156 /* AppStateStore+Triage.swift */; };
@@ -833,6 +835,7 @@
 		2EA7026EA7C1B98F32D9D4A9 /* SubscriptionRefreshService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionRefreshService.swift; sourceTree = "<group>"; };
 		2EE25DDA1A9EACAFB90904B1 /* HomeContinueListeningSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeContinueListeningSection.swift; sourceTree = "<group>"; };
 		2EEC639EF2351B03B72253FC /* RevealableAPIKeyField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevealableAPIKeyField.swift; sourceTree = "<group>"; };
+		2EEE6A9DF1C9108D30A7D128 /* AgentScheduledTasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentScheduledTasksView.swift; sourceTree = "<group>"; };
 		2F95093BB667AB332BA41066 /* WikiGenerateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiGenerateSheet.swift; sourceTree = "<group>"; };
 		30296920A6965DDE78A42E0E /* UserProfileDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileDisplay.swift; sourceTree = "<group>"; };
 		309D206C26BE174476D056B9 /* OllamaModelCatalogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaModelCatalogService.swift; sourceTree = "<group>"; };
@@ -1193,6 +1196,7 @@
 		BE061B15C9F7D825B4AEB282 /* HighlightedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightedText.swift; sourceTree = "<group>"; };
 		BE3C080E7BE340CF5EEC9642 /* AppStateStore+Memories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Memories.swift"; sourceTree = "<group>"; };
 		BF3A133724C43297F9DE492E /* AppTheme+Shadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppTheme+Shadow.swift"; sourceTree = "<group>"; };
+		BF7B220D6BD5D10F60880042 /* AgentScheduledTaskFormSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentScheduledTaskFormSheet.swift; sourceTree = "<group>"; };
 		BFF88F01DD5CDEFC300DD7F3 /* AgentPicksStreamingParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPicksStreamingParser.swift; sourceTree = "<group>"; };
 		C1926E9112AD0811ACE826F3 /* AgentTTSComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTTSComposer.swift; sourceTree = "<group>"; };
 		C1C6DF8032339438EBC4C906 /* AgentRunListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunListView.swift; sourceTree = "<group>"; };
@@ -2395,6 +2399,8 @@
 				C1C6DF8032339438EBC4C906 /* AgentRunListView.swift */,
 				586E4256D4FAA3BF343D3B1B /* AgentRunToolFormatter.swift */,
 				F5478E7C31101E48A9E93CA9 /* AgentRunTurnSection.swift */,
+				BF7B220D6BD5D10F60880042 /* AgentScheduledTaskFormSheet.swift */,
+				2EEE6A9DF1C9108D30A7D128 /* AgentScheduledTasksView.swift */,
 				24022F08892E493C44FD4E39 /* AgentSettingsView.swift */,
 				0CB5DC66B4775A7106BF4828 /* AgentWhitelistRows.swift */,
 				F4328EE2348E4311577A0600 /* NostrApprovalPresenter.swift */,
@@ -2980,6 +2986,8 @@
 				A89EC9ED3E2FFC2ACA1343E6 /* AgentRunListView.swift in Sources */,
 				DEDD4BDE86BD450D14A0719F /* AgentRunToolFormatter.swift in Sources */,
 				5F19096D94872170D5F19ED3 /* AgentRunTurnSection.swift in Sources */,
+				9EA79BD19298C55DB1D106AC /* AgentScheduledTaskFormSheet.swift in Sources */,
+				493F83C1F9959EEAB31ABE4D /* AgentScheduledTasksView.swift in Sources */,
 				25B1A1B3AFBCFD09760A48CA /* AgentSettingsView.swift in Sources */,
 				A9282DE968015F8AB6689D98 /* AgentWhitelistRows.swift in Sources */,
 				99860B05E3AE31D068F6917B /* NostrApprovalPresenter.swift in Sources */,
