@@ -31,6 +31,11 @@ struct AgentChatTranscriptView: View {
             .scrollDismissesKeyboard(.interactively)
             .scrollPosition(id: $scrolledMessageID, anchor: .bottom)
             .tabBarMinimizeBehavior(.never)
+            .onAppear {
+                if let lastID = session.messages.last?.id {
+                    proxy.scrollTo(lastID, anchor: .bottom)
+                }
+            }
             .overlay(alignment: .bottomTrailing) {
                 if !isAtBottom {
                     jumpToBottomButton(proxy: proxy)
