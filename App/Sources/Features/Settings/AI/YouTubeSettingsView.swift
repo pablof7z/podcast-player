@@ -11,6 +11,12 @@ struct YouTubeSettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("YouTube Ingestion")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") { commitURL() }
+                    .disabled(urlInput.trimmed == (store.state.settings.youtubeExtractorURL ?? ""))
+            }
+        }
         .onAppear {
             urlInput = store.state.settings.youtubeExtractorURL ?? ""
         }
@@ -22,18 +28,12 @@ struct YouTubeSettingsView: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .onSubmit { commitURL() }
 
             if !urlInput.isBlank, URL(string: urlInput.trimmed) == nil {
                 Text("Enter a valid URL.")
                     .inlineErrorText()
             }
-
-            Button {
-                commitURL()
-            } label: {
-                Label("Save Endpoint", systemImage: "square.and.arrow.down")
-            }
-            .disabled(urlInput.trimmed == (store.state.settings.youtubeExtractorURL ?? ""))
 
             if store.state.settings.youtubeExtractorURL != nil {
                 Button(role: .destructive) {

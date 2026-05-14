@@ -31,6 +31,12 @@ struct OpenRouterSettingsView: View {
         .animation(AppTheme.Animation.spring, value: credentialMessage)
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: keyInfo?.label)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") { saveManualKey() }
+                    .disabled(manualAPIKey.isBlank)
+            }
+        }
     }
 
     // MARK: - Connection section
@@ -61,14 +67,7 @@ struct OpenRouterSettingsView: View {
 
             // Manual key field
             RevealableAPIKeyField("Paste OpenRouter API key", text: $manualAPIKey)
-
-            // Save manual key
-            Button {
-                saveManualKey()
-            } label: {
-                Label("Save Manual Key", systemImage: "square.and.arrow.down")
-            }
-            .disabled(manualAPIKey.isBlank)
+                .onSubmit { saveManualKey() }
 
             // Disconnect (only when key stored)
             if hasStoredOpenRouterKey {

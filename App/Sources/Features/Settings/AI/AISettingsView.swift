@@ -193,6 +193,12 @@ struct PerplexitySettingsView: View {
         .animation(AppTheme.Animation.spring, value: credentialMessage)
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") { saveManualKey() }
+                    .disabled(manualAPIKey.isBlank)
+            }
+        }
     }
 
     private var connectionSection: some View {
@@ -214,13 +220,7 @@ struct PerplexitySettingsView: View {
             .disabled(isConnectingBYOK)
 
             RevealableAPIKeyField("Paste Perplexity API key", text: $manualAPIKey)
-
-            Button {
-                saveManualKey()
-            } label: {
-                Label("Save Manual Key", systemImage: "square.and.arrow.down")
-            }
-            .disabled(manualAPIKey.isBlank)
+                .onSubmit { saveManualKey() }
 
             if hasStoredKey {
                 Button(role: .destructive) {

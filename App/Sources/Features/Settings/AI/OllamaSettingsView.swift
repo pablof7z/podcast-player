@@ -34,6 +34,12 @@ struct OllamaSettingsView: View {
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: modelCount)
         .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") { commitChatURL() }
+                    .disabled(chatURLInput.isBlank || chatURLInput == settings.ollamaChatURL)
+            }
+        }
     }
 
     private var endpointSection: some View {
@@ -48,13 +54,6 @@ struct OllamaSettingsView: View {
                 Text("Enter a valid URL (e.g. http://localhost:11434/api/chat)")
                     .inlineErrorText()
             }
-
-            Button {
-                commitChatURL()
-            } label: {
-                Label("Save Endpoint", systemImage: "square.and.arrow.down")
-            }
-            .disabled(chatURLInput.isBlank || chatURLInput == settings.ollamaChatURL)
 
             if settings.ollamaChatURL != Settings.defaultOllamaChatURL {
                 Button(role: .destructive) {

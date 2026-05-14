@@ -21,6 +21,12 @@ struct ElevenLabsSettingsView: View {
         }
         .navigationTitle("ElevenLabs")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") { saveManualKey() }
+                    .disabled(manualAPIKey.isBlank)
+            }
+        }
         .onAppear {
             settings = store.state.settings
             refreshCredentialState()
@@ -55,7 +61,6 @@ struct ElevenLabsSettingsView: View {
             credentialError: credentialError,
             manualAPIKey: $manualAPIKey,
             onConnectBYOK: { Task { await connectWithBYOK() } },
-            onSaveManualKey: saveManualKey,
             onDisconnect: disconnectElevenLabs,
             onValidateKey: { Task { await validateStoredKey() } }
         )

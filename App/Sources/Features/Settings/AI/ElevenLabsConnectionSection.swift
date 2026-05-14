@@ -22,7 +22,6 @@ struct ElevenLabsConnectionSection: View {
     // MARK: - Actions
 
     let onConnectBYOK: () -> Void
-    let onSaveManualKey: () -> Void
     let onDisconnect: () -> Void
     let onValidateKey: () -> Void
 
@@ -40,11 +39,6 @@ struct ElevenLabsConnectionSection: View {
             .disabled(isConnectingBYOK)
 
             apiKeyField
-
-            Button(action: onSaveManualKey) {
-                Label("Save Manual Key", systemImage: "square.and.arrow.down")
-            }
-            .disabled(manualAPIKey.isBlank)
 
             if hasStoredKey {
                 Button(role: .destructive, action: onDisconnect) {
