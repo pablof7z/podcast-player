@@ -25,13 +25,8 @@ struct QRCodeView: View {
                     .scaledToFit()
             }
         }
-        .onAppear {
-            if cachedImage == nil {
-                cachedImage = Self.generateQR(content)
-            }
-        }
-        .onChange(of: content) { _, newValue in
-            cachedImage = Self.generateQR(newValue)
+        .task(id: content) {
+            cachedImage = Self.generateQR(content)
         }
     }
 

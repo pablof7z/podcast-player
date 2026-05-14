@@ -2,6 +2,18 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:15:00Z",
+      "lines": [
+        "Fixed: the Account ID QR code now appears correctly when you tap the QR button on the Identity screen."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:12:00Z",
+      "lines": [
+        "The mini-player now remembers which episode you were listening to and restores it automatically after an app restart — just tap play to resume."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:11:00Z",
       "lines": [
         "Player: tap the + note button in the chapter rail to jot a note anchored to your exact playhead position. Agent-saved notes appear inline too — chronologically interleaved with the chapters."
