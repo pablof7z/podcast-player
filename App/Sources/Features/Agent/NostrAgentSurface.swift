@@ -66,10 +66,17 @@ struct NostrConversationsToolbarItem: ToolbarContent {
                     Haptics.selection()
                     NotificationCenter.default.post(name: .openNostrConversationsRequested, object: nil)
                 } label: {
-                    PulsingConversationsIcon(
-                        isActive: store.activeNostrCounterparty != nil,
-                        unreadCount: unreadCount
-                    )
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .overlay(alignment: .topTrailing) {
+                            if unreadCount > 0 {
+                                Text("\(unreadCount)")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 16, height: 16)
+                                    .background(Color.red, in: Circle())
+                                    .offset(x: 6, y: -6)
+                            }
+                        }
                 }
                 .accessibilityLabel(unreadCount > 0 ? "Conversations — \(unreadCount) new" : "Conversations")
             }
@@ -135,48 +142,5 @@ extension View {
     /// `NavigationStack` separately.
     func nostrAgentSurface() -> some View {
         modifier(NostrAgentSurface())
-    }
-}
-
-// MARK: - Pulsing icon
-
-/// Conversations icon that pulses (scales up and back) while a peer
-/// conversation is live. Win-the-day's "flashing" toolbar affordance —
-/// the gentle scaleEffect cycle catches the eye without being noisy,
-/// and stops the moment `activeNostrCounterparty` clears so a quiet
-/// state isn't visually distracting.
-private struct PulsingConversationsIcon: View {
-    let isActive: Bool
-    let unreadCount: Int
-
-    @State private var pulse = false
-
-    var body: some View {
-        Image(systemName: "bubble.left.and.bubble.right")
-            .scaleEffect(pulse ? 1.12 : 1.0)
-            .animation(pulseAnimation, value: pulse)
-            .overlay(alignment: .topTrailing) {
-                if unreadCount > 0 {
-                    Text("\(unreadCount)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 16, height: 16)
-                        .background(Color.red, in: Circle())
-                        .offset(x: 6, y: -6)
-                }
-            }
-            .onAppear { pulse = isActive }
-            .onChange(of: isActive) { _, newValue in
-                pulse = newValue
-            }
-    }
-
-    /// Repeats forever while active so the toolbar keeps signalling
-    /// until the peer thread quiets down; collapses back to `.default`
-    /// the instant `isActive` flips so the icon settles immediately.
-    private var pulseAnimation: Animation {
-        isActive
-            ? .easeInOut(duration: 0.75).repeatForever(autoreverses: true)
-            : .easeOut(duration: 0.15)
     }
 }
