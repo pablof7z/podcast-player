@@ -138,17 +138,9 @@ final class AudioEngine {
     var endObserver: NSObjectProtocol?
     var fadeBaseVolume: Float = 1.0
 
-    /// Audible cue played around every seek. Owns its own AVAudioPlayer and
-    /// drives the duck-restore choreography via `seekDuckMultiplier`.
-    let seekCue = SeekCue()
-
-    /// Per-effect multipliers that compose into `player.volume` via
-    /// `applyEffectiveVolume`. Sleep timer drives `sleepFadeMultiplier`; the
-    /// seek cue drives `seekDuckMultiplier`. Keeping them separate lets a
-    /// seek during the sleep-timer fade dip and restore without erasing the
-    /// in-flight fade.
+    /// Per-effect multiplier that composes into `player.volume` via
+    /// `applyEffectiveVolume`. Sleep timer drives `sleepFadeMultiplier`.
     private var sleepFadeMultiplier: Float = 1.0
-    private var seekDuckMultiplier: Float = 1.0
 
     // MARK: - Init / deinit
 
@@ -156,7 +148,6 @@ final class AudioEngine {
         configureNowPlayingCallbacks()
         onSleepTimerFire = { [weak self] in self?.pause() }
         configureSleepTimerHooks()
-        configureSeekCueHooks()
         nowPlaying.setSkipIntervals(forward: skipForwardSeconds, backward: skipBackwardSeconds)
     }
 
@@ -196,7 +187,6 @@ final class AudioEngine {
         installItemObservers(for: item)
         installTimeObserver()
 
-        seekCue.trigger()
         publishNowPlaying()
     }
 
@@ -268,7 +258,6 @@ final class AudioEngine {
         }
         currentTime = target
         let time = CMTime(seconds: target, preferredTimescale: 600)
-        seekCue.trigger()
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             Task { @MainActor in
                 self?.publishNowPlayingElapsed()
@@ -339,20 +328,8 @@ final class AudioEngine {
         }
     }
 
-    private func configureSeekCueHooks() {
-        seekCue.applyDuck = { [weak self] mult in
-            guard let self else { return }
-            self.seekDuckMultiplier = mult
-            self.applyEffectiveVolume()
-        }
-    }
-
-    /// Compose `fadeBaseVolume` with the sleep-timer fade and the seek-cue
-    /// duck into a single `AVPlayer.volume` value. Both effects multiply,
-    /// so a seek mid-fade dips relative to the in-flight fade level rather
-    /// than overriding it.
     private func applyEffectiveVolume() {
-        player.volume = fadeBaseVolume * sleepFadeMultiplier * seekDuckMultiplier
+        player.volume = fadeBaseVolume * sleepFadeMultiplier
     }
 
     // MARK: - Internal Now Playing helpers (used from +Observers extension)

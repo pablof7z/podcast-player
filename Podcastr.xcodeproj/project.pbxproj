@@ -46,7 +46,6 @@
 		0CA986CD08F53BDBAC3BFD4C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E1AC1E33A14A2AB17F388B /* RootView.swift */; };
 		0D1D88BBD5A0D07C7B32AF53 /* RSSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229944585A479C4A0ADFBB9D /* RSSParser.swift */; };
 		0D316E4613C49A9231A71775 /* SRTParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E11F16DE4127AD138AB04C /* SRTParserTests.swift */; };
-		0D37A56E674951FB9352D243 /* SeekCue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ABD224B86A28A0E21F1F905 /* SeekCue.swift */; };
 		0D4407FCB8AB360349AD7EA7 /* PodcastSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C26132310DE731CD5831919 /* PodcastSearchTests.swift */; };
 		0DC27E50D13A0C05B6F6E446 /* HomeCategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E917CD2F2A907857EEE5D8 /* HomeCategoryPickerSheet.swift */; };
 		0E04A7288F9DEC48DFBA32A8 /* BYOKUnifiedProviderSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3AF89262E3F0896AF17033 /* BYOKUnifiedProviderSection.swift */; };
@@ -425,6 +424,7 @@
 		A36B0E8DCB73F6C7E651FF84 /* YouTubeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4F36AB9184A23AA102CF07 /* YouTubeSettingsView.swift */; };
 		A373E6206B4164B7701AE216 /* EpisodeShowNotesFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B186185610FEBCA338E83C9 /* EpisodeShowNotesFormatter.swift */; };
 		A3EE44589DF3E081B6C39C75 /* ClipAudioComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D477D42C42E084B4B13546 /* ClipAudioComposer.swift */; };
+		A45587E9FE289482A16BD89F /* ShowDetailSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2662C0BFD81474F425CD3EC8 /* ShowDetailSettingsSheet.swift */; };
 		A5092770552266F76D248B22 /* NoteAuthor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882AD6DEAFEF3720ECDE6748 /* NoteAuthor.swift */; };
 		A521437DB53EB463A5845B71 /* RAGSearchProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A465AE0080D604D0E64E62 /* RAGSearchProtocol.swift */; };
 		A57BCC96E380662909D48D8C /* DownloadsManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F8AFE6E75D63583E099948F /* DownloadsManagerView.swift */; };
@@ -550,6 +550,8 @@
 		D26DF3D8B662DFD8B6861453 /* EmbeddingsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D323573C621187F4835D5223 /* EmbeddingsClient.swift */; };
 		D296A3A113B7CA431F3F4B45 /* P256K in Frameworks */ = {isa = PBXBuildFile; productRef = A865ADD09595500A328B6A66 /* P256K */; };
 		D315CC0AAB1A41015E25E8FF /* RemoteSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2CF17D22AB4A3947456125 /* RemoteSigner.swift */; };
+		0f1a8e0a15334882a2baa87267669fe3 /* RemoteSigner+NostrConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = c44ffbcb7a194d62be56f2bcbf78f821 /* RemoteSigner+NostrConnect.swift */; };
+		7fe90a0aad4a49fd9bf88ad79fc5010e /* UserIdentityStore+NIP46.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57665082a72240c68367a949bb49bb1b /* UserIdentityStore+NIP46.swift */; };
 		D3B81AFC980EC24C46045423 /* AgentSkillsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDDF3A789DB0A1A01D1B4229 /* AgentSkillsTests.swift */; };
 		D47B2C556C6B40FB86F7D767 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC07F62D12138ADB69A8326 /* CarPlaySceneDelegate.swift */; };
 		D49EC9ED5AA96CF017B77D1E /* BriefingPlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D102DCB84B4E9869C08AC95 /* BriefingPlayerEngine.swift */; };
@@ -658,6 +660,15 @@
 		FEEA1557C2FF51272A8C754F /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC163DF4C72FD7E91A69A486 /* LLMProvider.swift */; };
 		FF62DD1E06F8CECF8884B934 /* ModeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD33DB70D3C09E844B2E528 /* ModeBadge.swift */; };
 		FF8B467D46BED00D186E8C8E /* EpisodeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915D04F93B82B999071036C5 /* EpisodeDetailView.swift */; };
+		A49CD04FCFAF404D9442DC09 /* Settings+Embeddings.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB457981DD5744CB8F29FFBF /* Settings+Embeddings.swift */; };
+		6DDD2226F1F4402B9E052648 /* NostrPodcastPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EBEA9C041B4467B456DCA5 /* NostrPodcastPublisher.swift */; };
+		18C05FAD48F44B9BAD849AC1 /* ImageGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FC89E48A894B5887CF7DBE /* ImageGenerationService.swift */; };
+		90B67E92C2D54B7EA570DA47 /* PodcastAgentToolDeps+OwnedPodcasts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC725B2FA9E4AF09B05255B /* PodcastAgentToolDeps+OwnedPodcasts.swift */; };
+		4A717A8918B34B4D96C25BE1 /* LiveAgentOwnedPodcastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EDEF91AAC9F465782486E31 /* LiveAgentOwnedPodcastManager.swift */; };
+		C8F09D4423C64FC8AE2EAEEA /* AgentTools+OwnedPodcasts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B99305155E04B78B89CB171 /* AgentTools+OwnedPodcasts.swift */; };
+		9E37A50EFB5F4B34BC24C7EE /* AgentPodcastsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8CACF1EB6A47CC8BF49058 /* AgentPodcastsView.swift */; };
+		8AFAD34FBBB94DE4BBC7D7BC /* ImageGenerationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E14E0D3CFCD4F80B85198E3 /* ImageGenerationSettingsView.swift */; };
+		87F531AF4FF74EFF8206C426 /* NostrConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE4474A09AB6418F99D6517B /* NostrConnectView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -822,6 +833,7 @@
 		25EFB3A51704A6F548207626 /* EpisodeDownloadService+Delegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EpisodeDownloadService+Delegate.swift"; sourceTree = "<group>"; };
 		260EF7D84EAF80C6578D5A92 /* AutoSnipBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSnipBanner.swift; sourceTree = "<group>"; };
 		26240CE1A3EE88C1667C4FAF /* ReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompt.swift; sourceTree = "<group>"; };
+		2662C0BFD81474F425CD3EC8 /* ShowDetailSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowDetailSettingsSheet.swift; sourceTree = "<group>"; };
 		26A735604F439E2BB4A10A52 /* LivePodcastRAGAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LivePodcastRAGAdapter.swift; sourceTree = "<group>"; };
 		26F659D3841F9C4F85C7B6E0 /* ChaptersClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaptersClient.swift; sourceTree = "<group>"; };
 		2763688843F3F2578F4B5DA8 /* ElevenLabsScribeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsScribeClient.swift; sourceTree = "<group>"; };
@@ -844,6 +856,7 @@
 		2B93A04888D8331D4E91870B /* LibraryFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFilters.swift; sourceTree = "<group>"; };
 		2BD7F743FEB2B7E0ADC851CA /* AppStateStore+DerivedViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+DerivedViews.swift"; sourceTree = "<group>"; };
 		2C2CF17D22AB4A3947456125 /* RemoteSigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSigner.swift; sourceTree = "<group>"; };
+		c44ffbcb7a194d62be56f2bcbf78f821 /* RemoteSigner+NostrConnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteSigner+NostrConnect.swift"; sourceTree = "<group>"; };
 		2C6869815913E3174C708F0D /* OnboardingElevenLabsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingElevenLabsPage.swift; sourceTree = "<group>"; };
 		2CCEC062EBD1D2D610F4B956 /* PlaybackAutoPlayNextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackAutoPlayNextTests.swift; sourceTree = "<group>"; };
 		2D35497449C304B3CCCACDEE /* AgentTools+Schedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+Schedule.swift"; sourceTree = "<group>"; };
@@ -1024,6 +1037,7 @@
 		6FD09AB644AED71A2CCADD27 /* AdvancedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedView.swift; sourceTree = "<group>"; };
 		6FECDE50A87C470829EE01E0 /* DownloadsManagerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsManagerModels.swift; sourceTree = "<group>"; };
 		70F290F8881329E5171D2E7F /* UserIdentityStore+Publishing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserIdentityStore+Publishing.swift"; sourceTree = "<group>"; };
+		57665082a72240c68367a949bb49bb1b /* UserIdentityStore+NIP46.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserIdentityStore+NIP46.swift"; sourceTree = "<group>"; };
 		70FBF6733DF99C6972EAF9E0 /* PodcastrTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "PodcastrTests-Info.plist"; sourceTree = "<group>"; };
 		711FEA8CF4D4C10EF9DF69A6 /* BriefingBranchPromptSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingBranchPromptSheet.swift; sourceTree = "<group>"; };
 		716427A88DC40761944F1873 /* FeedbackStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackStatusBadge.swift; sourceTree = "<group>"; };
@@ -1140,7 +1154,6 @@
 		9A5C71BEB7CB9908E8F4D917 /* OnboardingPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPages.swift; sourceTree = "<group>"; };
 		9A5D45F30673832A40C2EF7A /* WikiResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiResponseParser.swift; sourceTree = "<group>"; };
 		9A742DCE89B39F3ED96D3330 /* ClipExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipExporter.swift; sourceTree = "<group>"; };
-		9ABD224B86A28A0E21F1F905 /* SeekCue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeekCue.swift; sourceTree = "<group>"; };
 		9AEA03C43AECDFCE885BF7FD /* ChatConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatConversation.swift; sourceTree = "<group>"; };
 		9AEA38DEEC256DA20EA66547 /* PodcastrWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PodcastrWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B6878A00045AF65BAE84954 /* NumberExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberExtensions.swift; sourceTree = "<group>"; };
@@ -1376,6 +1389,15 @@
 		FF30CFCB7607AB17F8205471 /* AgentNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNotesView.swift; sourceTree = "<group>"; };
 		FF37971CE16B6CEFF3760F0D /* AppStateStorePerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateStorePerformanceTests.swift; sourceTree = "<group>"; };
 		FF6AE1C86914C1C0B08F3F18 /* PodcastAgentToolValues+External.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PodcastAgentToolValues+External.swift"; sourceTree = "<group>"; };
+		FB457981DD5744CB8F29FFBF /* Settings+Embeddings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Settings+Embeddings.swift"; sourceTree = "<group>"; };
+		F2EBEA9C041B4467B456DCA5 /* NostrPodcastPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrPodcastPublisher.swift; sourceTree = "<group>"; };
+		38FC89E48A894B5887CF7DBE /* ImageGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationService.swift; sourceTree = "<group>"; };
+		0DC725B2FA9E4AF09B05255B /* PodcastAgentToolDeps+OwnedPodcasts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PodcastAgentToolDeps+OwnedPodcasts.swift"; sourceTree = "<group>"; };
+		0EDEF91AAC9F465782486E31 /* LiveAgentOwnedPodcastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAgentOwnedPodcastManager.swift; sourceTree = "<group>"; };
+		6B99305155E04B78B89CB171 /* AgentTools+OwnedPodcasts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+OwnedPodcasts.swift"; sourceTree = "<group>"; };
+		BE8CACF1EB6A47CC8BF49058 /* AgentPodcastsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPodcastsView.swift; sourceTree = "<group>"; };
+		9E14E0D3CFCD4F80B85198E3 /* ImageGenerationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationSettingsView.swift; sourceTree = "<group>"; };
+		DE4474A09AB6418F99D6517B /* NostrConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrConnectView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1514,6 +1536,7 @@
 				DF2449FBA9D5A7F5E55669D9 /* RelativeDateBucket.swift */,
 				017F62B42F4FCB291064FB8C /* RelativeTimestamp.swift */,
 				B2E73D63396EF21AF9CA1562 /* Settings.swift */,
+				FB457981DD5744CB8F29FFBF /* Settings+Embeddings.swift */,
 				821E31C03B5204DED225C068 /* ThreadingMention.swift */,
 				286D406C73C2B08B7509172B /* ThreadingTopic.swift */,
 				BA3E351061AA2EE192BCEAC6 /* TranscriptAgentContext.swift */,
@@ -1825,6 +1848,7 @@
 				061347C1B283CF130F958F08 /* OpenRouterSettingsView.swift */,
 				5CDCAAC417B4604850BBB6BA /* ProviderLogoView.swift */,
 				5D99D06F95D15A6539949508 /* SpeechModelsSettingsView.swift */,
+				9E14E0D3CFCD4F80B85198E3 /* ImageGenerationSettingsView.swift */,
 				CD4F36AB9184A23AA102CF07 /* YouTubeSettingsView.swift */,
 			);
 			path = AI;
@@ -1914,6 +1938,7 @@
 				BB7D5AE106B58BCB1FB3DA05 /* OPMLImportSheet.swift */,
 				5B0FB570E3107D830CDA0354 /* ShowDetailEpisodeList.swift */,
 				072E60BC227E75BB230859FA /* ShowDetailHeader.swift */,
+				2662C0BFD81474F425CD3EC8 /* ShowDetailSettingsSheet.swift */,
 				00F1446278E2E9DDBE5DB5B9 /* ShowDetailView.swift */,
 			);
 			path = Library;
@@ -1940,6 +1965,7 @@
 				EDDCF85AB89C43F974E758FC /* IdentityRootView.swift */,
 				8F896FC50A1262997CA1A360 /* IdentitySettingsRow.swift */,
 				DAD33DB70D3C09E844B2E528 /* ModeBadge.swift */,
+				DE4474A09AB6418F99D6517B /* NostrConnectView.swift */,
 				669DC2C9F58B9A709816FA42 /* RemoteSignerView.swift */,
 				24BB042ED9CA0BD3150DF8F6 /* UseMyOwnKeyView.swift */,
 				30296920A6965DDE78A42E0E /* UserProfileDisplay.swift */,
@@ -2040,7 +2066,6 @@
 				A3B81BF533495087061843FA /* AudioEngine+Observers.swift */,
 				00CCF5D6D1819CA4405F0B7A /* AudioSessionCoordinator.swift */,
 				1E7306EF6FF2CA2DA6FC2F66 /* NowPlayingCenter.swift */,
-				9ABD224B86A28A0E21F1F905 /* SeekCue.swift */,
 				1A6FADCFDDD72BCF205768D4 /* SleepTimer.swift */,
 			);
 			path = Audio;
@@ -2231,6 +2256,7 @@
 				1B6FE38C2893D5E47E328069 /* Bech32.swift */,
 				92CA53594D5B5B3AC527ABCC /* BlossomUploader.swift */,
 				A04BFBCE02E158B5F49611AB /* BYOKConnectService.swift */,
+				38FC89E48A894B5887CF7DBE /* ImageGenerationService.swift */,
 				3ABC2DEEFBE58AA45D6E33C8 /* BYOKCredentialImporter.swift */,
 				F436E45D05D08DEB69988EC1 /* BYOKModels.swift */,
 				86B285F652D6AA574D54A0C8 /* ChaptersHydrationService.swift */,
@@ -2259,6 +2285,7 @@
 				44DB68A2A42D3C0D678256C1 /* NostrEventPublisher.swift */,
 				39B17265DC9B5B24DF801B3D /* NostrKeyPair.swift */,
 				4F5632893D431A8A00EC3232 /* NostrPeerAgentPrompt.swift */,
+				F2EBEA9C041B4467B456DCA5 /* NostrPodcastPublisher.swift */,
 				AF19E2F5628D04E5ADD60414 /* NostrProfileFetcher.swift */,
 				F9EAFD61A06355CEEBAD9AF7 /* NostrRelayService.swift */,
 				B32A2BE4A6EB783E93D01997 /* NostrThreadFetcher.swift */,
@@ -2281,6 +2308,7 @@
 				2299771095C075BD82AF670E /* TranscriptStore.swift */,
 				0E4E8F90C5ECE5E06F40C338 /* UserIdentityStore.swift */,
 				39D57FAE40C99A4DB66FEF1D /* UserIdentityStore+ProfileFetch.swift */,
+				57665082a72240c68367a949bb49bb1b /* UserIdentityStore+NIP46.swift */,
 				70F290F8881329E5171D2E7F /* UserIdentityStore+Publishing.swift */,
 				4EC9A01379FA98400B6083FB /* VoiceItemService.swift */,
 				9DA1784D7FF22F8FFE06C5E3 /* WhatsNew.swift */,
@@ -2299,6 +2327,7 @@
 				3836150AAEC2CAC09BF7FAF7 /* Nip46Message.swift */,
 				925183D1974D87241C813FFB /* NostrSigner.swift */,
 				2C2CF17D22AB4A3947456125 /* RemoteSigner.swift */,
+				c44ffbcb7a194d62be56f2bcbf78f821 /* RemoteSigner+NostrConnect.swift */,
 				954F4A274C79584BEE12C64A /* RemoteSignerClient.swift */,
 				9CCCC639E357013B3401AB39 /* RemoteSignerTransport.swift */,
 			);
@@ -2415,6 +2444,7 @@
 				978E29617431463591B015EA /* AgentTools+PodcastWiki.swift */,
 				2D35497449C304B3CCCACDEE /* AgentTools+Schedule.swift */,
 				CD667C02040DA7D00975CE99 /* AgentTools+TTS.swift */,
+				6B99305155E04B78B89CB171 /* AgentTools+OwnedPodcasts.swift */,
 				FC251F9CF9946FF112BC46DB /* AgentTools+Voices.swift */,
 				4820E12BA400099EA107E113 /* AgentTools+YouTube.swift */,
 				D5F13F2BBC4FECC8B7B3D4BF /* AgentToolSchema.swift */,
@@ -2424,6 +2454,7 @@
 				4D5D7E296FCF40129BBAFFE2 /* LiveEpisodeSummarizerAdapter.swift */,
 				B1CFFD0E7F09D95E440BA692 /* LivePeerEventPublisher.swift */,
 				C25EF9888F2B32817E59F771 /* LivePodcastAgentToolDeps.swift */,
+				0EDEF91AAC9F465782486E31 /* LiveAgentOwnedPodcastManager.swift */,
 				342C8B784FFF19006DCABEF3 /* LivePodcastDirectoryAdapter.swift */,
 				E41F78E78D2864D74B499ADB /* LivePodcastInventoryAdapter.swift */,
 				26A735604F439E2BB4A10A52 /* LivePodcastRAGAdapter.swift */,
@@ -2431,6 +2462,7 @@
 				54A97C210A0D240E47E7BB25 /* LiveYouTubeIngestionAdapter.swift */,
 				7304D6B61EDDFDC0BE016C7A /* PerplexityClient.swift */,
 				76FF1CBA3F84D3FF36B06CAA /* PodcastAgentToolDeps.swift */,
+				0DC725B2FA9E4AF09B05255B /* PodcastAgentToolDeps+OwnedPodcasts.swift */,
 				60CF898917E7C8D0A004B14B /* PodcastAgentToolDeps+YouTube.swift */,
 				0AC747416946EF17FB59E891 /* PodcastAgentToolValues.swift */,
 				FF6AE1C86914C1C0B08F3F18 /* PodcastAgentToolValues+External.swift */,
@@ -2463,6 +2495,7 @@
 				BF7B220D6BD5D10F60880042 /* AgentScheduledTaskFormSheet.swift */,
 				2EEE6A9DF1C9108D30A7D128 /* AgentScheduledTasksView.swift */,
 				24022F08892E493C44FD4E39 /* AgentSettingsView.swift */,
+				BE8CACF1EB6A47CC8BF49058 /* AgentPodcastsView.swift */,
 				0CB5DC66B4775A7106BF4828 /* AgentWhitelistRows.swift */,
 				F4328EE2348E4311577A0600 /* NostrApprovalPresenter.swift */,
 				9DF69B8241ACF13747252CF8 /* NostrConversationDetailView.swift */,
@@ -2717,6 +2750,7 @@
 				C4B6780F520EAF5300BE2386 /* AgentTools+PodcastWiki.swift in Sources */,
 				78E671B06F142A26F5105C8A /* AgentTools+Schedule.swift in Sources */,
 				13AD59BF667D8CC6565F9AC5 /* AgentTools+TTS.swift in Sources */,
+				C8F09D4423C64FC8AE2EAEEA /* AgentTools+OwnedPodcasts.swift in Sources */,
 				79B8D1F81EF1A28D03C3ADA0 /* AgentTools+Voices.swift in Sources */,
 				B77237687CBDD9F05E194AF7 /* AgentTools+YouTube.swift in Sources */,
 				1326718139DD1A8F3CF4B6D8 /* AgentTools.swift in Sources */,
@@ -2724,6 +2758,7 @@
 				CD8F4AB5CE0023E4817E80BA /* LiveEpisodeSummarizerAdapter.swift in Sources */,
 				B76C5F2E1A1B45FE5E5C7ED0 /* LivePeerEventPublisher.swift in Sources */,
 				A9412EF6C9FCED7D938C36D2 /* LivePodcastAgentToolDeps.swift in Sources */,
+				4A717A8918B34B4D96C25BE1 /* LiveAgentOwnedPodcastManager.swift in Sources */,
 				8A7D803BC30931FD815CCBDE /* LivePodcastDirectoryAdapter.swift in Sources */,
 				E768633C676466332F94A615 /* LivePodcastInventoryAdapter.swift in Sources */,
 				6082CB7A1CBE03B2AC56040A /* LivePodcastRAGAdapter.swift in Sources */,
@@ -2732,6 +2767,7 @@
 				401EA90530E9237B3718A0C7 /* PerplexityClient.swift in Sources */,
 				21F29CF282E912330AD37DDC /* PodcastAgentToolDeps+YouTube.swift in Sources */,
 				FAE8E222FD59220E95FADD79 /* PodcastAgentToolDeps.swift in Sources */,
+				90B67E92C2D54B7EA570DA47 /* PodcastAgentToolDeps+OwnedPodcasts.swift in Sources */,
 				702A8474A56CEA247EC5F322 /* PodcastAgentToolValues+External.swift in Sources */,
 				59D5AA90CDC370194414DC60 /* PodcastAgentToolValues+Wiki.swift in Sources */,
 				1855FAFACF3C177F1375A8A0 /* PodcastAgentToolValues.swift in Sources */,
@@ -2757,7 +2793,6 @@
 				9673F501102D90069B65850C /* AudioEngine.swift in Sources */,
 				2B6FBD798303C5E641070C8F /* AudioSessionCoordinator.swift in Sources */,
 				421651B3FFE1F19DBD78AD4C /* NowPlayingCenter.swift in Sources */,
-				0D37A56E674951FB9352D243 /* SeekCue.swift in Sources */,
 				B85B71804FE5850A6A96A7CD /* SleepTimer.swift in Sources */,
 				54675742FB7C9347869EBFBE /* BriefingAudioStitcher.swift in Sources */,
 				2306CCA572856C582CB58F79 /* BriefingComposer.swift in Sources */,
@@ -2829,6 +2864,7 @@
 				0882620C55798ACEE3939A12 /* RelativeDateBucket.swift in Sources */,
 				C022FA1186503C366E68154A /* RelativeTimestamp.swift in Sources */,
 				E42216B0651009E75B0436EF /* Settings.swift in Sources */,
+				A49CD04FCFAF404D9442DC09 /* Settings+Embeddings.swift in Sources */,
 				1E47147B14E22CFB530DD0DD /* ThreadingMention.swift in Sources */,
 				8F1DE39F3F63C82251490734 /* ThreadingTopic.swift in Sources */,
 				68509D2CB54970A33DA9AE82 /* TranscriptAgentContext.swift in Sources */,
@@ -2932,6 +2968,7 @@
 				DD889816602755779443B9D6 /* IdentitySettingsRow.swift in Sources */,
 				FF62DD1E06F8CECF8884B934 /* ModeBadge.swift in Sources */,
 				C19C00F31BFAAB87B3F669E1 /* RemoteSignerView.swift in Sources */,
+				87F531AF4FF74EFF8206C426 /* NostrConnectView.swift in Sources */,
 				622B6F41E14A2CAA5A9B3A75 /* UseMyOwnKeyView.swift in Sources */,
 				DCA02209036CE66AB76196F9 /* UserProfileDisplay.swift in Sources */,
 				30463832B96CC282CDC99941 /* AddShowSheet.swift in Sources */,
@@ -2950,6 +2987,7 @@
 				7F965ED580EB659C13A85FA9 /* OPMLImportSheet.swift in Sources */,
 				C4E5EBA5D87B8BA78EFD2882 /* ShowDetailEpisodeList.swift in Sources */,
 				7455146502859EE10CC0B956 /* ShowDetailHeader.swift in Sources */,
+				A45587E9FE289482A16BD89F /* ShowDetailSettingsSheet.swift in Sources */,
 				CE299C1C9AB3D6D698FAD478 /* ShowDetailView.swift in Sources */,
 				6A74F4F679BE1BC52B0A2728 /* OnboardingAISetupPage.swift in Sources */,
 				A81CE75837E30637A561D373 /* OnboardingElevenLabsPage.swift in Sources */,
@@ -3039,6 +3077,7 @@
 				EA1BA31EA27764E91FB5BA19 /* OpenRouterSettingsView.swift in Sources */,
 				14E68373D8EBA2BB1B18663C /* ProviderLogoView.swift in Sources */,
 				09F87BE2DE39805838096D53 /* SpeechModelsSettingsView.swift in Sources */,
+				8AFAD34FBBB94DE4BBC7D7BC /* ImageGenerationSettingsView.swift in Sources */,
 				E0C659D273A795E445A599CB /* LLMPayloadDetailView.swift in Sources */,
 				D7766B90F05226A0A0704818 /* UsageCostModels.swift in Sources */,
 				10AD27BBE331A487109C45B5 /* UsageCostRows.swift in Sources */,
@@ -3065,6 +3104,7 @@
 				9EA79BD19298C55DB1D106AC /* AgentScheduledTaskFormSheet.swift in Sources */,
 				493F83C1F9959EEAB31ABE4D /* AgentScheduledTasksView.swift in Sources */,
 				25B1A1B3AFBCFD09760A48CA /* AgentSettingsView.swift in Sources */,
+				9E37A50EFB5F4B34BC24C7EE /* AgentPodcastsView.swift in Sources */,
 				A9282DE968015F8AB6689D98 /* AgentWhitelistRows.swift in Sources */,
 				99860B05E3AE31D068F6917B /* NostrApprovalPresenter.swift in Sources */,
 				9636AE1CB592F90229A04D93 /* NostrConversationDetailView.swift in Sources */,
@@ -3153,6 +3193,8 @@
 				2F4DFD59DF256708120F7BD0 /* BYOKModels.swift in Sources */,
 				61CC869428D474EEF2CA9FF7 /* Bech32.swift in Sources */,
 				4BDBBB305AE94E07BCDC1F97 /* BlossomUploader.swift in Sources */,
+				18C05FAD48F44B9BAD849AC1 /* ImageGenerationService.swift in Sources */,
+				6DDD2226F1F4402B9E052648 /* NostrPodcastPublisher.swift in Sources */,
 				86D4F2F0B6A5F7414102AB1B /* ChaptersHydrationService.swift in Sources */,
 				90A3109488CB8CF566708810 /* ChatHistoryStore.swift in Sources */,
 				AD9AB76F11EF3865A4C5D811 /* ClipBoundaryResolver.swift in Sources */,
@@ -3177,6 +3219,7 @@
 				CBEE7B4848AB825466475B04 /* Nip46Message.swift in Sources */,
 				DECD0A8C7962344212621873 /* NostrSigner.swift in Sources */,
 				D315CC0AAB1A41015E25E8FF /* RemoteSigner.swift in Sources */,
+				0f1a8e0a15334882a2baa87267669fe3 /* RemoteSigner+NostrConnect.swift in Sources */,
 				E5E73B489A8AE62995B194C3 /* RemoteSignerClient.swift in Sources */,
 				A30037A82B6F98D5A47DDDD7 /* RemoteSignerTransport.swift in Sources */,
 				615763707506ABB70ACCC65B /* NostrAgentResponder+Delegation.swift in Sources */,
@@ -3210,6 +3253,7 @@
 				7B38745DD2DF0D924C751D64 /* TranscriptIngestService.swift in Sources */,
 				1A2FCFE5ADE3267030656C9B /* TranscriptStore.swift in Sources */,
 				65AEB511A71F7EE749883F1C /* UserIdentityStore+ProfileFetch.swift in Sources */,
+				7fe90a0aad4a49fd9bf88ad79fc5010e /* UserIdentityStore+NIP46.swift in Sources */,
 				A9BBB154AB602CDBD91B29E4 /* UserIdentityStore+Publishing.swift in Sources */,
 				DF02B6BAFEC8BCDC11649076 /* UserIdentityStore.swift in Sources */,
 				7A9A1A3BC1F2E6B447AE0724 /* VoiceItemService.swift in Sources */,

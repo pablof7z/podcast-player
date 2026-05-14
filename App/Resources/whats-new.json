@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T21:16:00Z",
+      "lines": [
+        "Removed the seek sound effect."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T21:15:00Z",
       "lines": [
         "Fixed: opening the app no longer interrupts audio playing in other apps."
