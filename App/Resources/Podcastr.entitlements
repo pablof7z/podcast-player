@@ -8,7 +8,5 @@
     </array>
     <key>com.apple.developer.ubiquity-kvstore-identifier</key>
     <string>$(TeamIdentifierPrefix)$(APP_BUNDLE_IDENTIFIER)</string>
-    <key>com.apple.developer.carplay-audio</key>
-    <true/>
 </dict>
 </plist>

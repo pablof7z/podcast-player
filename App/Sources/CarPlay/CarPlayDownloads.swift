@@ -37,7 +37,6 @@ enum CarPlayDownloads {
             )
             item.accessoryType = .disclosureIndicator
             item.playbackProgress = progressFraction(for: episode)
-            item.isPlayed = episode.played
             item.handler = { _, completion in
                 onSelect(episode)
                 completion()
