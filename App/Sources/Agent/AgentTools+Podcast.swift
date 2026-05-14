@@ -65,6 +65,13 @@ extension AgentTools {
         static let ingestYouTubeVideo     = "ingest_youtube_video"
         static let searchYouTube          = "search_youtube"
 
+        // Agent-owned podcast management
+        static let createPodcast          = "create_podcast"
+        static let updatePodcast          = "update_podcast"
+        static let deleteMyPodcast        = "delete_my_podcast"
+        static let listMyPodcasts         = "list_my_podcasts"
+        static let generatePodcastArtwork = "generate_podcast_artwork"
+
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch. Skill-gated names are
         /// included here so `dispatch` can route them; whether they are
@@ -85,6 +92,7 @@ extension AgentTools {
                 generateTTSEpisode, configureAgentVoice, listAvailableVoices,
                 searchPodcastDirectory, subscribePodcast, deletePodcast,
                 ingestYouTubeVideo, searchYouTube,
+                createPodcast, updatePodcast, deleteMyPodcast, listMyPodcasts, generatePodcastArtwork,
             ]
         }
     }
@@ -222,6 +230,16 @@ extension AgentTools {
             return await ingestYouTubeVideoTool(args: args, deps: deps)
         case PodcastNames.searchYouTube:
             return await searchYouTubeTool(args: args, deps: deps)
+        case PodcastNames.createPodcast:
+            return await createPodcastTool(args: args, deps: deps)
+        case PodcastNames.updatePodcast:
+            return await updatePodcastTool(args: args, deps: deps)
+        case PodcastNames.deleteMyPodcast:
+            return await deleteMyPodcastTool(args: args, deps: deps)
+        case PodcastNames.listMyPodcasts:
+            return await listMyPodcastsTool(args: args, deps: deps)
+        case PodcastNames.generatePodcastArtwork:
+            return await generatePodcastArtworkTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

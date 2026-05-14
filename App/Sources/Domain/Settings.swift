@@ -107,9 +107,19 @@ struct Settings: Codable, Hashable, Sendable {
     var chapterCompilationModelName: String = ""
     var embeddingsModel: String = Self.defaultEmbeddingsModel
     var embeddingsModelName: String = ""
+    /// Model used by `ImageGenerationService`. Uses OpenRouter's image-generation
+    /// endpoint so no extra credential is required — the connected OpenRouter key is
+    /// reused. Defaults to DALL-E 3.
+    var imageGenerationModel: String = "openai/dall-e-3"
+    var imageGenerationModelName: String = ""
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
     /// default to save tokens; settings UI exposes the toggle.
     var rerankerEnabled: Bool = false
+
+    // Blossom
+    /// Blossom BUD-02 server used for uploading podcast artwork, audio, chapters, and
+    /// transcripts. Defaults to blossom.primal.net. Configurable in Settings > Agent.
+    var blossomServerURL: String = "https://blossom.primal.net"
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
     var openRouterCredentialSource: OpenRouterCredentialSource = .none
@@ -242,6 +252,8 @@ struct Settings: Codable, Hashable, Sendable {
         case wikiModel, wikiModelName, categorizationModel, categorizationModelName
         case chapterCompilationModel, chapterCompilationModelName
         case embeddingsModel, embeddingsModelName, rerankerEnabled
+        case imageGenerationModel, imageGenerationModelName
+        case blossomServerURL
         case openRouterAPIKey                                             // legacy
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
@@ -279,6 +291,9 @@ struct Settings: Codable, Hashable, Sendable {
         chapterCompilationModelName = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) ?? ""
         embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
         embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
+        imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "openai/dall-e-3"
+        imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? ""
+        blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
@@ -347,6 +362,9 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(chapterCompilationModelName, forKey: .chapterCompilationModelName)
         try c.encode(embeddingsModel, forKey: .embeddingsModel)
         try c.encode(embeddingsModelName, forKey: .embeddingsModelName)
+        try c.encode(imageGenerationModel, forKey: .imageGenerationModel)
+        try c.encode(imageGenerationModelName, forKey: .imageGenerationModelName)
+        try c.encode(blossomServerURL, forKey: .blossomServerURL)
         try c.encode(rerankerEnabled, forKey: .rerankerEnabled)
         try c.encode(openRouterCredentialSource, forKey: .openRouterCredentialSource)
         try c.encodeIfPresent(openRouterBYOKKeyID, forKey: .openRouterBYOKKeyID)
@@ -479,25 +497,3 @@ struct Settings: Codable, Hashable, Sendable {
     }
 }
 
-// MARK: - Embedding constants
-//
-// Display-only metadata for the on-device embedding pipeline. Surfaced in the AI
-// settings UI so the user can confirm what the RAG layer is using.
-
-extension Settings {
-    /// Provider/model identifier used by `EmbeddingsClient`. The actual call site
-    /// defaults to this value until the user chooses a provider-specific model.
-    static let defaultEmbeddingsModel: String = "openai/text-embedding-3-large"
-    static let embeddingsModelID: String = defaultEmbeddingsModel
-    /// Truncation dimension applied to embeddings (Matryoshka). See
-    /// `docs/spec/research/embeddings-rag-stack.md`.
-    static let embeddingsDimensions: Int = 1024
-    /// Display string mirroring `model@dim`, used directly in settings rows.
-    static func embeddingsModelDisplay(modelID: String, modelName: String = "") -> String {
-        "\(modelDisplayName(modelID: modelID, modelName: modelName))@\(embeddingsDimensions)"
-    }
-
-    static var embeddingsModelDisplay: String {
-        embeddingsModelDisplay(modelID: defaultEmbeddingsModel)
-    }
-}

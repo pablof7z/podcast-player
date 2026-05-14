@@ -333,6 +333,7 @@ struct PodcastAgentToolDeps: Sendable {
     let directory: PodcastDirectoryProtocol
     let subscribe: PodcastSubscribeProtocol
     let youtubeIngestion: YouTubeIngestionProtocol
+    let ownedPodcasts: AgentOwnedPodcastManagerProtocol
     /// Set by the Nostr peer-agent entrypoint per inbound turn. Nil for owner
     /// chat / voice / other entrypoints — peer-only tools early-return a clean
     /// tool error in that case.
@@ -359,6 +360,7 @@ struct PodcastAgentToolDeps: Sendable {
         directory: PodcastDirectoryProtocol,
         subscribe: PodcastSubscribeProtocol,
         youtubeIngestion: YouTubeIngestionProtocol,
+        ownedPodcasts: AgentOwnedPodcastManagerProtocol,
         peerContext: PeerConversationContext? = nil,
         chatConversationID: UUID? = nil
     ) {
@@ -379,6 +381,7 @@ struct PodcastAgentToolDeps: Sendable {
         self.directory = directory
         self.subscribe = subscribe
         self.youtubeIngestion = youtubeIngestion
+        self.ownedPodcasts = ownedPodcasts
         self.peerContext = peerContext
         self.chatConversationID = chatConversationID
     }
@@ -387,52 +390,29 @@ struct PodcastAgentToolDeps: Sendable {
     /// inbound entrypoint to thread per-turn context without rebuilding adapters.
     func withPeerContext(_ ctx: PeerConversationContext?) -> PodcastAgentToolDeps {
         PodcastAgentToolDeps(
-            rag: rag,
-            wiki: wiki,
-            briefing: briefing,
-            summarizer: summarizer,
-            fetcher: fetcher,
-            playback: playback,
-            library: library,
-            inventory: inventory,
-            categories: categories,
-            peerPublisher: peerPublisher,
-            friendDirectory: friendDirectory,
-            pendingRegistrar: pendingRegistrar,
-            perplexity: perplexity,
-            ttsPublisher: ttsPublisher,
-            directory: directory,
-            subscribe: subscribe,
-            youtubeIngestion: youtubeIngestion,
-            peerContext: ctx,
-            chatConversationID: chatConversationID
+            rag: rag, wiki: wiki, briefing: briefing, summarizer: summarizer,
+            fetcher: fetcher, playback: playback, library: library,
+            inventory: inventory, categories: categories,
+            peerPublisher: peerPublisher, friendDirectory: friendDirectory,
+            pendingRegistrar: pendingRegistrar, perplexity: perplexity,
+            ttsPublisher: ttsPublisher, directory: directory,
+            subscribe: subscribe, youtubeIngestion: youtubeIngestion,
+            ownedPodcasts: ownedPodcasts,
+            peerContext: ctx, chatConversationID: chatConversationID
         )
     }
 
-    /// Returns a copy with the supplied in-app chat conversation ID. Called
-    /// by `AgentChatSession` per dispatch so `generate_tts_episode` can tag
-    /// the resulting episode with its source conversation.
     func withChatConversationID(_ id: UUID?) -> PodcastAgentToolDeps {
         PodcastAgentToolDeps(
-            rag: rag,
-            wiki: wiki,
-            briefing: briefing,
-            summarizer: summarizer,
-            fetcher: fetcher,
-            playback: playback,
-            library: library,
-            inventory: inventory,
-            categories: categories,
-            peerPublisher: peerPublisher,
-            friendDirectory: friendDirectory,
-            pendingRegistrar: pendingRegistrar,
-            perplexity: perplexity,
-            ttsPublisher: ttsPublisher,
-            directory: directory,
-            subscribe: subscribe,
-            youtubeIngestion: youtubeIngestion,
-            peerContext: peerContext,
-            chatConversationID: id
+            rag: rag, wiki: wiki, briefing: briefing, summarizer: summarizer,
+            fetcher: fetcher, playback: playback, library: library,
+            inventory: inventory, categories: categories,
+            peerPublisher: peerPublisher, friendDirectory: friendDirectory,
+            pendingRegistrar: pendingRegistrar, perplexity: perplexity,
+            ttsPublisher: ttsPublisher, directory: directory,
+            subscribe: subscribe, youtubeIngestion: youtubeIngestion,
+            ownedPodcasts: ownedPodcasts,
+            peerContext: peerContext, chatConversationID: id
         )
     }
 }

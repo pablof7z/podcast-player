@@ -57,6 +57,7 @@ enum LivePodcastAgentToolDeps {
             directory: LivePodcastDirectoryAdapter(),
             subscribe: LivePodcastSubscribeAdapter(store: store),
             youtubeIngestion: LiveYouTubeIngestionAdapter(store: store),
+            ownedPodcasts: LiveAgentOwnedPodcastManager(store: store),
             peerContext: nil
         )
     }

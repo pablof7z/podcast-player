@@ -125,6 +125,17 @@ struct AgentSettingsView: View {
                     badge: store.activeAgentActivityCount
                 )
             }
+
+            NavigationLink {
+                AgentPodcastsView()
+            } label: {
+                SettingsRow(
+                    icon: "mic.fill",
+                    tint: .red,
+                    title: "Podcasts",
+                    badge: store.allPodcasts.filter { $0.ownerPubkeyHex != nil }.count
+                )
+            }
         }
     }
 

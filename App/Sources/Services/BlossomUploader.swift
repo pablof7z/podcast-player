@@ -16,8 +16,8 @@ protocol BlossomUploading: Sendable {
 
 struct BlossomUploader: BlossomUploading {
 
-    /// Default Blossom server. Accepts BUD-02 auth, no allowlist.
-    static let defaultServer = URL(string: "https://blossom.band")!
+    /// Default Blossom server (blossom.primal.net per project config).
+    static let defaultServer = URL(string: "https://blossom.primal.net")!
 
     let server: URL
     let session: URLSession
@@ -27,12 +27,27 @@ struct BlossomUploader: BlossomUploading {
         self.session = session
     }
 
+    /// Convenience init that accepts a raw URL string from `Settings.blossomServerURL`.
+    /// Falls back to `defaultServer` when the string is empty or malformed.
+    init(serverURLString: String, session: URLSession = .shared) {
+        let parsed = URL(string: serverURLString.trimmed)
+        self.init(server: parsed ?? BlossomUploader.defaultServer, session: session)
+    }
+
     func upload(data: Data, contentType: String, signer: any NostrSigner) async throws -> URL {
         let hashHex = Data(SHA256.hash(data: data)).hexString
         let now = Int(Date().timeIntervalSince1970)
+        let description: String
+        switch contentType {
+        case "audio/mpeg", "audio/mp4", "audio/m4a": description = "Upload podcast audio"
+        case "application/json":                      description = "Upload podcast data"
+        case "text/vtt", "text/plain":                description = "Upload transcript"
+        case "image/jpeg", "image/png", "image/webp": description = "Upload podcast artwork"
+        default:                                      description = "Upload file"
+        }
         let draft = NostrEventDraft(
             kind: 24242,
-            content: "Upload profile photo",
+            content: description,
             tags: [
                 ["t", "upload"],
                 ["x", hashHex],

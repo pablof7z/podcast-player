@@ -162,7 +162,7 @@ struct AIModelsSettingsView: View {
     }
 
     private var speechSection: some View {
-        Section("Speech") {
+        Section("Speech & Media") {
             NavigationLink {
                 SpeechModelsSettingsView()
             } label: {
@@ -171,6 +171,16 @@ struct AIModelsSettingsView: View {
                     tint: AppTheme.Brand.elevenLabsTint,
                     title: "Speech",
                     subtitle: speechSummary
+                )
+            }
+            NavigationLink {
+                ImageGenerationSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "photo.badge.sparkle",
+                    tint: .pink,
+                    title: "Image Generation",
+                    subtitle: imageGenSummary
                 )
             }
         }
@@ -366,6 +376,11 @@ struct AIModelsSettingsView: View {
         let stt = s.elevenLabsSTTModel.isBlank ? "STT not set" : s.elevenLabsSTTModel
         let tts = s.elevenLabsTTSModel.isBlank ? "TTS not set" : s.elevenLabsTTSModel
         return "\(stt) · \(tts)"
+    }
+
+    private var imageGenSummary: String {
+        let s = store.state.settings
+        return Settings.modelDisplayName(modelID: s.imageGenerationModel, modelName: s.imageGenerationModelName)
     }
 
     private func catalogModel(for modelID: String) -> OpenRouterModelOption? {
