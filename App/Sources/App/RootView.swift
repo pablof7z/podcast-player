@@ -9,12 +9,16 @@ import SwiftUI
 /// Clippings, and Wiki are reachable from the avatar sidebar.
 enum RootTab: String, CaseIterable {
     case home = "Home"
+    case library = "Library"
+    case bookmarks = "Bookmarks"
     case clippings = "Clippings"
     case wiki = "Wiki"
 
     var icon: String {
         switch self {
         case .home:      "house.fill"
+        case .library:   "tray.fill"
+        case .bookmarks: "bookmark.fill"
         case .clippings: "scissors"
         case .wiki:      "book.closed.fill"
         }
@@ -268,6 +272,18 @@ struct RootView: View {
         case .home:
             NavigationStack {
                 HomeView()
+                    .toolbar { sharedToolbar() }
+            }
+            .toolbar(.hidden, for: .tabBar)
+        case .library:
+            NavigationStack {
+                AllEpisodesView()
+                    .toolbar { sharedToolbar() }
+            }
+            .toolbar(.hidden, for: .tabBar)
+        case .bookmarks:
+            NavigationStack {
+                BookmarksView()
                     .toolbar { sharedToolbar() }
             }
             .toolbar(.hidden, for: .tabBar)

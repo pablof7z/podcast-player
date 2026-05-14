@@ -31,11 +31,6 @@ struct PlayerView: View {
     @State private var showAddNoteSheet: Bool = false
     @State private var noteAnchorTime: TimeInterval = 0
 
-    /// Vertical scroll offset of the content. Driven by
-    /// `.onScrollGeometryChange` rather than a preference key so the
-    /// title-swap doesn't ride the layout-pass treadmill.
-    @State private var scrollOffset: CGFloat = 0
-
     /// Observed so the editorial-header download badge tracks the service's
     /// `progress[id]` map at 5%/200ms without each tick re-rendering through
     /// `AppStateStore`. Mirrors the pattern used by `EpisodeRow`.
@@ -50,38 +45,35 @@ struct PlayerView: View {
         podcast?.title ?? ""
     }
 
-    /// Roughly the height of the hero artwork (110 pt) + a bit of padding —
-    /// once the user has scrolled past this, the compact title takes over
-    /// the top bar's middle slot.
-    private let titleSwapThreshold: CGFloat = 90
-
-    private var titleCollapsed: Bool {
-        scrollOffset > titleSwapThreshold
-    }
-
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: AppTheme.Spacing.lg) {
-                    episodeHeader
-                    chaptersContent
-                }
+        VStack(spacing: 0) {
+            episodeHeader
                 .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.lg)
+                .padding(.top, AppTheme.Spacing.sm)
+                .padding(.bottom, AppTheme.Spacing.sm)
+            carouselPageIndicator
+                .padding(.horizontal, AppTheme.Spacing.md)
+            TabView(selection: $showingShowNotes) {
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        chaptersPanel
+                            .padding(.horizontal, AppTheme.Spacing.md)
+                            .padding(.bottom, AppTheme.Spacing.lg)
+                    }
+                    .onAppear {
+                        guard let activeID = navigableChapters?.active(at: state.currentTime)?.id else { return }
+                        proxy.scrollTo(activeID, anchor: .center)
+                    }
+                }
+                .tag(false)
+                ScrollView(.vertical, showsIndicators: false) {
+                    PlayerShowNotesView(episode: liveEpisode)
+                        .padding(.horizontal, AppTheme.Spacing.md)
+                        .padding(.bottom, AppTheme.Spacing.lg)
+                }
+                .tag(true)
             }
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top
-            } action: { _, newOffset in
-                scrollOffset = newOffset
-            }
-            .onAppear {
-                // One-time scroll-to-active on open. We intentionally do NOT
-                // re-center on chapter changes because the chapter rail now
-                // scrolls with the rest of the page — re-centering every
-                // boundary crossing would jerk the artwork header.
-                guard let activeID = navigableChapters?.active(at: state.currentTime)?.id else { return }
-                proxy.scrollTo(activeID, anchor: .center)
-            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .safeAreaInset(edge: .top, spacing: 0) { topBar }
         .safeAreaInset(edge: .bottom, spacing: 0) { floatingChrome }
@@ -121,6 +113,7 @@ struct PlayerView: View {
             NavigationStack {
                 EpisodeDetailView(episodeID: target.id)
             }
+            .environment(state)
         }
         .onReceive(NotificationCenter.default.publisher(for: .openEpisodeDetailRequested)) { note in
             guard let idString = note.userInfo?["episodeID"] as? String,
@@ -158,7 +151,7 @@ struct PlayerView: View {
             podcast: podcast,
             showName: showName,
             artworkURL: artworkURL,
-            titleCollapsed: titleCollapsed,
+            titleCollapsed: false,
             onDismiss: { dismiss() },
             onShare: { showShareSheet = true },
             onShowSleepTimer: { showSleepSheet = true },
@@ -273,42 +266,7 @@ struct PlayerView: View {
         return date
     }
 
-    // MARK: - Chapters / show notes carousel
-
-    @ViewBuilder
-    private var chaptersContent: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            carouselPageIndicator
-            if showingShowNotes {
-                PlayerShowNotesView(episode: liveEpisode)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading),
-                        removal: .move(edge: .leading)
-                    ))
-            } else {
-                chaptersPanel
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing),
-                        removal: .move(edge: .trailing)
-                    ))
-            }
-        }
-        .clipped()
-        .gesture(
-            DragGesture(minimumDistance: 30, coordinateSpace: .local)
-                .onEnded { value in
-                    let dx = value.translation.width
-                    let dy = abs(value.translation.height)
-                    guard abs(dx) > dy, abs(dx) > 40 else { return }
-                    let wantsShowNotes = dx > 0
-                    guard wantsShowNotes != showingShowNotes else { return }
-                    Haptics.selection()
-                    withAnimation(AppTheme.Animation.spring) {
-                        showingShowNotes = wantsShowNotes
-                    }
-                }
-        )
-    }
+    // MARK: - Carousel page indicator
 
     private var carouselPageIndicator: some View {
         HStack(spacing: 0) {

@@ -17,6 +17,10 @@ struct EpisodeRow: View {
     /// Fallback artwork URL when the episode has no per-item `<itunes:image>`.
     /// Typically the parent subscription's image.
     var fallbackImageURL: URL? = nil
+    /// When set, renders a small podcast-name caption above the episode title.
+    /// Used in cross-show contexts (e.g. Library "All Episodes") where the
+    /// artwork alone doesn't make the show obvious.
+    var podcastTitle: String? = nil
     /// When provided, a trailing play button is rendered that calls this closure
     /// instead of navigating to the episode detail screen.
     var onPlay: (() -> Void)? = nil
@@ -33,6 +37,12 @@ struct EpisodeRow: View {
                 .overlay(alignment: .topLeading) { stateBadge }
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                if let podcastTitle {
+                    Text(podcastTitle)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
                 Text(episode.title)
                     .font(AppTheme.Typography.headline)
                     .foregroundStyle(titleColor)

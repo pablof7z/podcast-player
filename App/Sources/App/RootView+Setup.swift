@@ -8,6 +8,7 @@ extension RootView {
     func setupPlaybackHandlers() {
         playbackState.onPersistPosition = { [store] id, position in
             store.setEpisodePlaybackPosition(id, position: position)
+            store.setLastPlayedEpisode(id)
         }
         playbackState.onEpisodeFinished = { [store, playbackState] id in
             store.markEpisodePlayed(id)
@@ -76,6 +77,16 @@ extension RootView {
             AutoSnipController.shared.captureSnip(source: .headphone)
         }
         AutoSnipController.shared.attach(playback: playbackState, store: store)
+
+        // Restore the last-played episode so the mini-player reappears after
+        // an app restart. Loads the episode in a paused state — the user taps
+        // play to resume. Only runs when no deep-link or shortcut has already
+        // loaded an episode.
+        if playbackState.episode == nil,
+           let lastID = store.state.lastPlayedEpisodeID,
+           let episode = store.episode(id: lastID) {
+            playbackState.setEpisode(episode)
+        }
     }
 
     func handleShake() {

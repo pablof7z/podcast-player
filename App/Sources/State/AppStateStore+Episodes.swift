@@ -51,6 +51,14 @@ extension AppStateStore {
         recentEpisodesView(limit: limit)
     }
 
+    /// All episodes across every podcast, sorted newest-first.
+    /// Used by the Library "All Episodes" view. Not cached — call sites should
+    /// slice via `prefix(_:)` or paginate to avoid materialising the full array
+    /// on every render.
+    var allEpisodesSorted: [Episode] {
+        state.episodes.sorted { $0.pubDate > $1.pubDate }
+    }
+
     // MARK: - Writes
 
     /// Inserts new episodes and updates existing ones (matched by `guid`)
@@ -328,6 +336,13 @@ extension AppStateStore {
             newEpisodeIDs: [episode.id]
         )
         return episode
+    }
+
+    /// Records the most-recently-loaded episode so the mini-player can be
+    /// restored after an app restart. No-op when the value is unchanged.
+    func setLastPlayedEpisode(_ id: UUID) {
+        guard state.lastPlayedEpisodeID != id else { return }
+        state.lastPlayedEpisodeID = id
     }
 
     /// Persist hydrated chapters for an episode. Used by

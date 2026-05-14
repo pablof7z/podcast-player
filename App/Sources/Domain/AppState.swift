@@ -71,6 +71,10 @@ struct AppState: Codable, Sendable {
     /// friend's kind:1 response arrives, `NostrAgentResponder` claims the
     /// matching entry and re-invokes the originating conversation.
     var pendingFriendMessages: [PendingFriendMessage] = []
+    /// The episode the user was most recently listening to. Persisted so the
+    /// mini-player can be restored after an app restart without requiring the
+    /// user to navigate back to the episode.
+    var lastPlayedEpisodeID: UUID?
 
     init() {}
 
@@ -86,6 +90,7 @@ struct AppState: Codable, Sendable {
         case threadingTopics, threadingMentions
         case agentScheduledTasks
         case pendingFriendMessages
+        case lastPlayedEpisodeID
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -130,6 +135,7 @@ struct AppState: Codable, Sendable {
         threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
         agentScheduledTasks = try c.decodeIfPresent([AgentScheduledTask].self, forKey: .agentScheduledTasks) ?? []
         pendingFriendMessages = try c.decodeIfPresent([PendingFriendMessage].self, forKey: .pendingFriendMessages) ?? []
+        lastPlayedEpisodeID = try c.decodeIfPresent(UUID.self, forKey: .lastPlayedEpisodeID)
     }
 
     /// Decodes the `subscriptions` array, handling both the new slim shape

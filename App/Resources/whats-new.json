@@ -2,6 +2,18 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:17:00Z",
+      "lines": [
+        "New Library in the sidebar — browse every episode across all your podcasts in one scrollable list, with filters for Unplayed, In Progress, Downloaded, and Starred."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:16:00Z",
+      "lines": [
+        "New Bookmarks screen in the sidebar — every episode you've starred, clipped, or annotated appears in one place, with chips showing what's there."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:15:00Z",
       "lines": [
         "Fixed: the Account ID QR code now appears correctly when you tap the QR button on the Identity screen."
