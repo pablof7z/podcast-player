@@ -81,6 +81,18 @@ struct WikiView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if !model.pinnedPages.isEmpty {
+                Section {
+                    ForEach(model.pinnedPages, id: \.id) { page in
+                        Button { selectedPage = page } label: { WikiHomeRow(page: page) }
+                            .listRowBackground(Color.clear)
+                    }
+                } header: {
+                    Text("Pinned")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             ForEach(model.groupedPages, id: \.bucket) { group in
                 Section {
                     ForEach(group.pages, id: \.id) { page in

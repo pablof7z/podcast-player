@@ -22,7 +22,6 @@ extension PlaybackState {
             imageURLString: episode.imageURL?.absoluteString,
             position: engine.currentTime,
             duration: duration,
-            updatedAt: now,
             chapterTitle: engine.resolveActiveChapterTitle(episode, engine.currentTime),
             isPlaying: isPlaying
         )

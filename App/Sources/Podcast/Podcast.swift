@@ -43,6 +43,13 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     var categories: [String]
     /// When the app first learned about this podcast.
     var discoveredAt: Date
+    /// `true` when this row's `title` is still the raw feed-host fallback
+    /// inserted at placeholder-creation time and has NOT yet been overwritten
+    /// by a successful metadata fetch. The UI may render these rows
+    /// distinctly (faded title, retry chip, etc.).  Defaults to `false` so
+    /// pre-existing persisted rows — which already have real titles — are
+    /// unaffected after decode.
+    var titleIsPlaceholder: Bool
 
     // MARK: - HTTP cache (feed polling)
     //
@@ -73,7 +80,8 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         discoveredAt: Date = Date(),
         lastRefreshedAt: Date? = nil,
         etag: String? = nil,
-        lastModified: String? = nil
+        lastModified: String? = nil,
+        titleIsPlaceholder: Bool = false
     ) {
         self.id = id
         self.kind = kind
@@ -88,6 +96,7 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         self.lastRefreshedAt = lastRefreshedAt
         self.etag = etag
         self.lastModified = lastModified
+        self.titleIsPlaceholder = titleIsPlaceholder
     }
 
     /// Built-in row inserted on store hydration when absent. The Unknown
@@ -105,6 +114,7 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         case id, kind, feedURL, title, author, imageURL, description
         case language, categories, discoveredAt
         case lastRefreshedAt, etag, lastModified
+        case titleIsPlaceholder
     }
 
     init(from decoder: Decoder) throws {
@@ -122,5 +132,8 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         lastRefreshedAt = try c.decodeIfPresent(Date.self, forKey: .lastRefreshedAt)
         etag = try c.decodeIfPresent(String.self, forKey: .etag)
         lastModified = try c.decodeIfPresent(String.self, forKey: .lastModified)
+        // `decodeIfPresent` + default `false` means pre-existing rows (written
+        // before this field existed) decode cleanly without a migration shim.
+        titleIsPlaceholder = try c.decodeIfPresent(Bool.self, forKey: .titleIsPlaceholder) ?? false
     }
 }

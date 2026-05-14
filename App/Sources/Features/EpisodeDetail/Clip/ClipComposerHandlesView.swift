@@ -3,10 +3,9 @@ import SwiftUI
 // MARK: - ClipComposerHandlesView
 
 /// Two draggable handles bracketing the clip's `[start, end]` range. Drags
-/// snap to sentence boundaries (the segment list passed in) by default;
-/// word-snap is a v2 mode the parent sheet may flip via `wordSnap`. The
-/// handle view is purely presentational: it reports proposed second-values
-/// upward and the parent applies the snap.
+/// snap to sentence boundaries (the segment list passed in). The handle view
+/// is purely presentational: it reports proposed millisecond-values upward
+/// and the parent applies the snap.
 ///
 /// We render a horizontal track of segment ticks rather than a waveform —
 /// the audio asset isn't necessarily downloaded by the time the composer

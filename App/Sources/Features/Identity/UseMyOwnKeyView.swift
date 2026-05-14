@@ -10,8 +10,12 @@ import UIKit
 
 struct UseMyOwnKeyView: View {
 
+    /// Called on a successful nsec import. The caller (AdvancedView) dismisses
+    /// itself, which pops both it and this view — landing the user on the
+    /// Identity root rather than stranding them on AdvancedView.
+    var onImportComplete: () -> Void = {}
+
     @Environment(UserIdentityStore.self) private var identity
-    @Environment(\.dismiss) private var dismiss
     @State private var nsec = ""
     @State private var revealed = false
     @State private var hasBackup = false
@@ -199,12 +203,7 @@ struct UseMyOwnKeyView: View {
         do {
             try identity.importNsec(nsec.trimmed)
             Haptics.success()
-            // TODO §4.6: brief wants a two-step pop back to Identity root.
-            // `@Environment(\.dismiss)` pops only the top view, so this lands
-            // the user on Advanced. A follow-up should thread an explicit
-            // navigation path (e.g. NavigationPath binding) through Advanced
-            // so the Identity-root pop is single-call.
-            dismiss()
+            onImportComplete()
         } catch {
             // Translation of the existing `loginError` copy per §4.6.
             inlineError = "That key doesn't look right. Check the start (it should begin with nsec1) and try again."

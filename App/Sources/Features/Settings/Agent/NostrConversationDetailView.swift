@@ -1,18 +1,25 @@
 import SwiftUI
 import UIKit
 
-/// Full transcript of a single Nostr conversation root. Mirrors the
-/// rendering style of the in-app chat history but with NIP-10 metadata
-/// (no titles — Nostr threads don't carry one by default).
+/// Full transcript of a single Nostr conversation root, rendered in a
+/// Slack-style layout: all messages left-aligned, with avatar + sender
+/// name shown at the start of each burst (sender change or > 5 min gap).
 struct NostrConversationDetailView: View {
     let conversation: NostrConversationRecord
     @State private var showExportSheet = false
+    @Environment(AppStateStore.self) private var store
+
+    private static let burstGapSeconds: TimeInterval = 300
 
     var body: some View {
         ScrollView {
-            VStack(spacing: AppTheme.Spacing.md) {
-                ForEach(conversation.turns, id: \.eventID) { turn in
-                    NostrTurnBubble(turn: turn)
+            LazyVStack(alignment: .leading, spacing: 2) {
+                ForEach(Array(conversation.turns.enumerated()), id: \.element.eventID) { index, turn in
+                    NostrSlackBubble(
+                        turn: turn,
+                        showHeader: showHeader(at: index),
+                        profile: store.state.nostrProfileCache[turn.pubkey]
+                    )
                 }
             }
             .padding(AppTheme.Spacing.md)
@@ -36,6 +43,14 @@ struct NostrConversationDetailView: View {
         }
     }
 
+    private func showHeader(at index: Int) -> Bool {
+        guard index > 0 else { return true }
+        let prev = conversation.turns[index - 1]
+        let curr = conversation.turns[index]
+        if prev.pubkey != curr.pubkey { return true }
+        return curr.createdAt.timeIntervalSince(prev.createdAt) > Self.burstGapSeconds
+    }
+
     private func generateJSONL() -> String {
         conversation.turns
             .compactMap { $0.rawEventJSON }
@@ -43,32 +58,67 @@ struct NostrConversationDetailView: View {
     }
 }
 
-// MARK: - Bubble
+// MARK: - Slack-style bubble
 
-private struct NostrTurnBubble: View {
+private struct NostrSlackBubble: View {
     let turn: NostrConversationTurn
+    let showHeader: Bool
+    let profile: NostrProfileMetadata?
+
+    private enum Layout {
+        static let avatarSize: CGFloat = 32
+        static let bubbleCornerRadius: CGFloat = 14
+        static let bubblePaddingH: CGFloat = 10
+    }
 
     var body: some View {
-        HStack {
-            if turn.direction == .outgoing { Spacer(minLength: AppTheme.Layout.bubbleSpacer) }
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+        HStack(alignment: .top, spacing: AppTheme.Spacing.sm) {
+            avatarSlot
+            VStack(alignment: .leading, spacing: 3) {
+                if showHeader {
+                    HStack(alignment: .firstTextBaseline, spacing: AppTheme.Spacing.xs) {
+                        Text(displayName)
+                            .font(AppTheme.Typography.caption.weight(.semibold))
+                            .foregroundStyle(
+                                turn.direction == .outgoing ? Color.accentColor : Color.primary
+                            )
+                        Text(timestamp)
+                            .font(AppTheme.Typography.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Text(turn.content)
                     .font(AppTheme.Typography.body)
-                    .foregroundStyle(turn.direction == .outgoing ? Color.white : Color.primary)
-                Text(timestamp)
-                    .font(AppTheme.Typography.caption2)
-                    .foregroundStyle(turn.direction == .outgoing ? Color.white.opacity(0.8) : Color.secondary)
+                    .foregroundStyle(Color.primary)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, Layout.bubblePaddingH)
+                    .padding(.vertical, AppTheme.Spacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: Layout.bubbleCornerRadius, style: .continuous)
+                            .fill(turn.direction == .outgoing
+                                ? AppTheme.Tint.agentSurface.opacity(0.18)
+                                : Color(.secondarySystemBackground))
+                    )
             }
-            .padding(.horizontal, AppTheme.Spacing.md)
-            .padding(.vertical, AppTheme.Spacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: AppTheme.Corner.bubble, style: .continuous)
-                    .fill(turn.direction == .outgoing
-                        ? AppTheme.Tint.agentSurface
-                        : Color(.secondarySystemBackground))
-            )
-            if turn.direction == .incoming { Spacer(minLength: AppTheme.Layout.bubbleSpacer) }
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 1)
+    }
+
+    @ViewBuilder
+    private var avatarSlot: some View {
+        if showHeader {
+            NostrProfileAvatar(profile: profile)
+                .frame(width: Layout.avatarSize, height: Layout.avatarSize)
+        } else {
+            Color.clear.frame(width: Layout.avatarSize, height: 1)
+        }
+    }
+
+    private var displayName: String {
+        if let label = profile?.bestLabel { return label }
+        if turn.direction == .outgoing { return "Agent" }
+        return NostrNpub.shortNpub(fromHex: turn.pubkey)
     }
 
     private var timestamp: String {

@@ -13,9 +13,7 @@ final class WikiHomeViewModel {
     // MARK: - State
 
     /// All pages on disk, sorted by `generatedAt` descending. Search and
-    /// grouping derive from this list. Pinned pages are not modeled in
-    /// v1 — the WikiPage model has no `isPinned` flag yet — so the
-    /// brief's `pinnedPages` is intentionally omitted.
+    /// grouping derive from this list.
     private(set) var recentPages: [WikiPage] = []
 
     /// Free-text query the search bar binds into. Filters `recentPages`
@@ -75,6 +73,13 @@ final class WikiHomeViewModel {
     }
 
     // MARK: - Derived views
+
+    /// Pages with `isPinned == true`, in `generatedAt` descending order.
+    /// Empty when nothing is pinned. No UI currently sets this flag —
+    /// the property is ready for a pin-gesture follow-up.
+    var pinnedPages: [WikiPage] {
+        recentPages.filter(\.isPinned)
+    }
 
     /// Pages filtered by `searchQuery`. Empty query returns the full
     /// list. Match is case-insensitive against title + summary.

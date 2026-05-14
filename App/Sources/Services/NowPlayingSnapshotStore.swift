@@ -15,9 +15,6 @@ struct NowPlayingSnapshot: Codable, Equatable, Sendable {
     var position: TimeInterval
     /// Total duration in seconds. Zero when unknown.
     var duration: TimeInterval
-    /// Wall-clock when the snapshot was written. Lets the widget show a
-    /// "stale" treatment if needed (currently unused).
-    var updatedAt: Date
     /// Title of the chapter containing the playhead, when the episode has
     /// navigable chapters. Optional so existing on-disk snapshots written
     /// by older app builds decode without migration.

@@ -49,6 +49,30 @@ extension UserIdentityStore {
         if !anyAck, let lastError {
             throw lastError
         }
+
+        // Update local state immediately so the UI reflects the new profile
+        // without waiting for a relay round-trip on next launch.
+        let trimmedName        = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAbout       = about.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPicture     = picture.trimmingCharacters(in: .whitespacesAndNewlines)
+        profileName        = trimmedName.isEmpty        ? nil : trimmedName
+        profileDisplayName = trimmedDisplayName.isEmpty ? nil : trimmedDisplayName
+        profileAbout       = trimmedAbout.isEmpty       ? nil : trimmedAbout
+        profilePicture     = trimmedPicture.isEmpty     ? nil : trimmedPicture
+
+        if let pubkey = publicKeyHex {
+            let cachePayload: [String: String] = [
+                "display_name": trimmedDisplayName,
+                "name":         trimmedName,
+                "about":        trimmedAbout,
+                "picture":      trimmedPicture,
+            ]
+            if let cacheData = try? JSONSerialization.data(withJSONObject: cachePayload) {
+                UserDefaults.standard.set(cacheData, forKey: Self.kind0CachePrefix + pubkey)
+            }
+        }
+
         return event
     }
 

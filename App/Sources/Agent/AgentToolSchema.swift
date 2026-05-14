@@ -9,10 +9,12 @@ extension AgentTools {
         [
             tool(
                 name: Names.createNote,
-                description: "Save a note or reflection.",
+                description: "Save a note or reflection. When the user is listening to an episode, pass episode_id and position_seconds so the note appears anchored to that moment in the chapter rail.",
                 properties: [
                     "text": ["type": "string", "description": "Note content"],
                     "kind": ["type": "string", "enum": ["free", "reflection"], "description": "Note type"],
+                    "episode_id": ["type": "string", "description": "UUID of the episode to anchor this note to. Pass the currently-playing episode ID when available."],
+                    "position_seconds": ["type": "number", "description": "Playhead position in seconds when the note is created. Anchors the note to that moment in the episode timeline."],
                 ],
                 required: ["text"]
             ),

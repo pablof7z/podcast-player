@@ -70,6 +70,11 @@ final class PodcastSearchViewModel {
         }
 
         do {
+            // rerank: false — search fires on every debounced keystroke, so
+            // the extra ~220 ms the Cohere reranker adds (per RAGSearch.swift
+            // latency budget) exceeds the perceptual threshold for live
+            // typing. HomeRelatedSheet can afford rerank: true because it
+            // runs a single query on sheet open, not per-keystroke.
             let matches = try await rag.search(
                 query: trimmed,
                 scope: .all,

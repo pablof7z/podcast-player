@@ -10,95 +10,87 @@ struct AppSidebarView: View {
 
     @Environment(UserIdentityStore.self) private var userIdentity
 
-    private let panelWidth: CGFloat = 300
-
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            panel
-            dismissArea
-        }
-        .ignoresSafeArea()
-    }
-
-    // MARK: - Panel
-
-    private var panel: some View {
         VStack(alignment: .leading, spacing: 0) {
-            avatarHeader
-                .padding(.top, AppTheme.Spacing.xl + AppTheme.Spacing.lg)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-                .padding(.bottom, AppTheme.Spacing.md)
-
-            Divider()
-                .padding(.bottom, AppTheme.Spacing.sm)
-
-            navItems
-
+            header
+            navSection
+                .padding(.top, AppTheme.Spacing.sm)
             Spacer()
+            footerSection
         }
-        .frame(width: panelWidth)
+        .safeAreaPadding(.top)
+        .safeAreaPadding(.bottom)
         .background(Color(.systemBackground).ignoresSafeArea())
     }
 
-    private var dismissArea: some View {
-        Color.black.opacity(0.35)
-            .ignoresSafeArea()
-            .contentShape(Rectangle())
-            .onTapGesture { dismiss() }
-    }
+    // MARK: - Header
 
-    // MARK: - Avatar header
-
-    private var avatarHeader: some View {
+    private var header: some View {
         let profile = UserProfileDisplay.from(identity: userIdentity)
         return VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             IdentityAvatarView(
                 url: profile?.pictureURL,
                 initial: profile?.displayName.first,
-                size: 64
+                size: 72
             )
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(profile?.displayName ?? "Welcome")
-                    .font(AppTheme.Typography.headline)
+                    .font(AppTheme.Typography.title3)
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
                 if let slug = profile?.slug, !slug.isEmpty {
                     Text("@\(slug)")
-                        .font(AppTheme.Typography.caption)
+                        .font(AppTheme.Typography.subheadline)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
+            }
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.top, AppTheme.Spacing.lg)
+        .padding(.bottom, AppTheme.Spacing.lg)
+    }
+
+    // MARK: - Main navigation
+
+    private var navSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.xs)
+
+            navRow("Home", icon: "house.fill", isActive: selectedTab == .home) {
+                selectedTab = .home
+                dismiss()
+            }
+            navRow("Clippings", icon: "scissors", isActive: selectedTab == .clippings) {
+                selectedTab = .clippings
+                dismiss()
+            }
+            navRow("Wiki", icon: "book.closed.fill", isActive: selectedTab == .wiki) {
+                selectedTab = .wiki
+                dismiss()
             }
         }
     }
 
-    // MARK: - Navigation items
+    // MARK: - Footer
 
-    private var navItems: some View {
+    private var footerSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            navButton("Home", icon: "house.fill", isActive: selectedTab == .home) {
-                selectedTab = .home
-                dismiss()
-            }
-            navButton("Clippings", icon: "scissors", isActive: selectedTab == .clippings) {
-                selectedTab = .clippings
-                dismiss()
-            }
-            navButton("Wiki", icon: "book.closed.fill", isActive: selectedTab == .wiki) {
-                selectedTab = .wiki
-                dismiss()
-            }
-
             Divider()
-                .padding(.vertical, AppTheme.Spacing.sm)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-
-            navButton("Settings", icon: "gear", isActive: false) {
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.xs)
+            navRow("Settings", icon: "gear", isActive: false) {
                 showSettings = true
                 dismiss()
             }
         }
     }
 
-    private func navButton(
+    // MARK: - Row
+
+    private func navRow(
         _ title: String,
         icon: String,
         isActive: Bool,
@@ -107,19 +99,27 @@ struct AppSidebarView: View {
         Button(action: action) {
             HStack(spacing: AppTheme.Spacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: isActive ? .bold : .medium))
+                    .font(.system(size: 19, weight: .medium))
                     .foregroundStyle(isActive ? Color.accentColor : .primary)
-                    .frame(width: 28)
+                    .frame(width: 26, alignment: .center)
                 Text(title)
-                    .font(isActive ? AppTheme.Typography.headline : AppTheme.Typography.title3)
+                    .font(AppTheme.Typography.title3)
+                    .fontWeight(isActive ? .bold : .semibold)
                     .foregroundStyle(isActive ? Color.accentColor : .primary)
                 Spacer()
             }
             .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.vertical, AppTheme.Spacing.sm + 2)
+            .frame(height: 52)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .background {
+            if isActive {
+                RoundedRectangle(cornerRadius: AppTheme.Corner.sm)
+                    .fill(Color.accentColor.opacity(0.08))
+                    .padding(.horizontal, AppTheme.Spacing.sm)
+            }
+        }
     }
 
     // MARK: - Dismiss

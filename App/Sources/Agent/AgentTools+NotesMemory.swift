@@ -27,9 +27,22 @@ extension AgentTools {
         }
 
         let kind: NoteKind = (args["kind"] as? String) == "reflection" ? .reflection : .free
+
+        // Optional episode anchor — when the agent is responding to a voice
+        // note or chapter context it should pass the episode_id so the note
+        // surfaces in the chapter rail at the right position.
+        let anchor: Anchor?
+        if let episodeIDStr = args["episode_id"] as? String,
+           let episodeID = UUID(uuidString: episodeIDStr) {
+            let pos = (args["position_seconds"] as? Double) ?? 0
+            anchor = .episode(id: episodeID, positionSeconds: pos)
+        } else {
+            anchor = nil
+        }
+
         // Agent-authored: takes the no-publish branch in `addNote(...)` per
         // `identity-05-synthesis.md` §5.3.
-        let note = store.addNote(text: text, kind: kind, author: .agent)
+        let note = store.addNote(text: text, kind: kind, target: anchor, author: .agent)
         store.recordAgentActivity(
             AgentActivityEntry(
                 batchID: batchID,

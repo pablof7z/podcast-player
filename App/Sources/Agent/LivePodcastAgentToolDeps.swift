@@ -347,10 +347,13 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         // Insert a thin placeholder so the episode has a real parent. Title
         // defaults to the feed host so the UI shows something sensible
         // immediately; metadata hydration overwrites it on success.
+        // titleIsPlaceholder stays true until hydration succeeds, letting
+        // the UI render it as provisional.
         let placeholder = Podcast(
             kind: .rss,
             feedURL: feedURL,
-            title: feedURL.host ?? feedURLString
+            title: feedURL.host ?? feedURLString,
+            titleIsPlaceholder: true
         )
         let stored = store.upsertPodcast(placeholder)
         return ExternalParentResolution(podcastID: stored.id, shouldHydrateMetadata: true)
@@ -363,18 +366,35 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
     private func hydratePlaceholderPodcastMetadata(podcastID: UUID, feedURL: URL) async {
         guard let store else { return }
         let client = FeedClient()
-        let placeholder = Podcast(id: podcastID, kind: .rss, feedURL: feedURL, title: feedURL.host ?? feedURL.absoluteString)
+        // Seed the fetch with a placeholder that carries the known podcast ID
+        // so FeedClient preserves foreign keys. titleIsPlaceholder stays true
+        // here; we clear it only when the fetch returns real metadata below.
+        let placeholder = Podcast(
+            id: podcastID,
+            kind: .rss,
+            feedURL: feedURL,
+            title: feedURL.host ?? feedURL.absoluteString,
+            titleIsPlaceholder: true
+        )
         do {
             let result = try await client.fetch(placeholder)
-            if case .updated(let podcast, _, _) = result {
+            if case .updated(var podcast, _, _) = result {
+                // Explicit clear — don't rely on FeedClient zero-initialising
+                // a field it doesn't know about.
+                podcast.titleIsPlaceholder = false
                 await MainActor.run {
                     store.updatePodcast(podcast)
                 }
             }
+            // .notModified on a first hydration fetch means the server sent no
+            // real title; leave titleIsPlaceholder = true in the store so the
+            // next refresh can retry.
         } catch {
-            logger.notice(
+            logger.error(
                 "playExternalEpisode: background metadata fetch failed for \(feedURL.absoluteString, privacy: .public): \(error.localizedDescription, privacy: .public)"
             )
+            // titleIsPlaceholder remains true in the store; the next refresh
+            // attempt will retry hydration.
         }
     }
 

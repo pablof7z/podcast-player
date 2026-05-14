@@ -9,6 +9,7 @@ import SwiftUI
 struct AdvancedView: View {
 
     @Environment(UserIdentityStore.self) private var identity
+    @Environment(\.dismiss) private var dismiss
     @State private var startNewConfirm = false
 
     var body: some View {
@@ -21,7 +22,7 @@ struct AdvancedView: View {
             }
             Section {
                 NavigationLink {
-                    UseMyOwnKeyView()
+                    UseMyOwnKeyView(onImportComplete: { dismiss() })
                 } label: {
                     advancedRow(
                         title: "Use my own key",

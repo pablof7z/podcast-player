@@ -96,7 +96,8 @@ struct SubscriptionService {
         let placeholder = Podcast(
             kind: .rss,
             feedURL: url,
-            title: url.host ?? trimmed
+            title: url.host ?? trimmed,
+            titleIsPlaceholder: true
         )
         let result: FeedClient.FeedFetchResult
         do {
@@ -106,6 +107,8 @@ struct SubscriptionService {
         }
         switch result {
         case .updated(let podcast, let episodes, _):
+            // FeedClient returns a new Podcast with real metadata; its
+            // titleIsPlaceholder defaults to false, so no explicit clear needed.
             let stored = store.upsertPodcast(podcast)
             store.upsertEpisodes(
                 episodes,
@@ -116,6 +119,7 @@ struct SubscriptionService {
         case .notModified:
             // First fetch can't realistically be 304 (no ETag was sent), but
             // if a server misbehaves we still want a record on disk.
+            // titleIsPlaceholder stays true — real title still unknown.
             return store.upsertPodcast(placeholder)
         }
     }
@@ -163,7 +167,8 @@ struct SubscriptionService {
         var podcastForFetch = store.podcast(feedURL: url) ?? Podcast(
             kind: .rss,
             feedURL: url,
-            title: url.host ?? trimmed
+            title: url.host ?? trimmed,
+            titleIsPlaceholder: true
         )
         podcastForFetch.etag = nil
         podcastForFetch.lastModified = nil

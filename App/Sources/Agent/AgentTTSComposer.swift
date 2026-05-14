@@ -62,17 +62,19 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             throw AgentTTSError.notConfigured
         }
 
-        // 1. Build BriefingTrack list (one per turn).
-        let (tracks, trackDurations) = try await buildTracks(for: turns)
+        // 1. Build BriefingTrack list (one per turn); skips tracks whose audio
+        //    fails to load so chapter math stays in sync with tracks.
+        let (tracks, trackDurations, survivingTurns) = try await buildTracks(for: turns)
 
         // 2. Stitch tracks into a single m4a.
         let episodeID = UUID()
         let outputURL = try AgentGeneratedPodcastService.audioFileURL(episodeID: episodeID)
         let durationSeconds = try await BriefingAudioStitcher.stitch(tracks: tracks, outputURL: outputURL)
 
-        // 3. Build chapters and transcript from turns + resolved durations.
+        // 3. Build chapters and transcript from SURVIVING turns + resolved
+        //    durations — uses the filtered list so indices stay aligned.
         let (chapters, transcript) = await buildChaptersAndTranscript(
-            turns: turns,
+            turns: survivingTurns,
             trackDurations: trackDurations,
             episodeID: episodeID
         )
@@ -137,11 +139,21 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
     // MARK: - Track building
 
-    /// Builds `BriefingTrack` values and returns the per-turn audio duration
-    /// so the chapter builder can compute cumulative start times.
-    private func buildTracks(for turns: [TTSTurn]) async throws -> ([BriefingTrack], [Double]) {
+    /// Builds `BriefingTrack` values and returns the per-turn audio durations
+    /// plus the surviving turns (turns whose audio loaded successfully).
+    ///
+    /// A turn is silently skipped — with an error log — when its audio asset
+    /// fails to load or reports a zero duration. This prevents fictional
+    /// durations from corrupting chapter start-time math. If every turn is
+    /// skipped, throws `AgentTTSError.noPlayableContent`.
+    private func buildTracks(for turns: [TTSTurn]) async throws -> (
+        tracks: [BriefingTrack],
+        durations: [Double],
+        survivingTurns: [TTSTurn]
+    ) {
         var tracks: [BriefingTrack] = []
         var durations: [Double] = []
+        var survivingTurns: [TTSTurn] = []
         let dummySegmentID = UUID()
 
         for (index, turn) in turns.enumerated() {
@@ -149,7 +161,15 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             case .speech(let text, let voiceIDOverride):
                 let voice = voiceIDOverride ?? defaultVoiceID()
                 let audioURL = try await synthesizeSpeech(text: text, voiceID: voice, index: index)
-                let duration = try await audioDuration(of: audioURL)
+                let duration: TimeInterval
+                do {
+                    duration = try await audioDuration(of: audioURL)
+                } catch {
+                    Self.logger.error(
+                        "AgentTTSComposer: skipping speech turn \(index, privacy: .public) — duration unavailable for \(audioURL.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
+                    continue
+                }
                 tracks.append(BriefingTrack(
                     segmentID: dummySegmentID,
                     indexInSegment: index,
@@ -160,6 +180,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     transcriptText: text
                 ))
                 durations.append(duration)
+                survivingTurns.append(turn)
 
             case .snippet(let episodeID, let start, let end, let label):
                 let enclosureURL = try await resolveEpisodeAudio(episodeID: episodeID)
@@ -174,10 +195,15 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     transcriptText: label ?? ""
                 ))
                 durations.append(duration)
+                survivingTurns.append(turn)
             }
         }
 
-        return (tracks, durations)
+        guard !tracks.isEmpty else {
+            throw AgentTTSError.noPlayableContent
+        }
+
+        return (tracks, durations, survivingTurns)
     }
 
     // MARK: - Chapter + transcript building
@@ -213,12 +239,10 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             speechTexts = []
         }
 
+        // turns and trackDurations are guaranteed to be parallel and
+        // contain only positive durations (buildTracks filters skipped tracks).
         for (index, turn) in turns.enumerated() {
             let duration = index < trackDurations.count ? trackDurations[index] : 0
-            guard duration > 0 else {
-                cursor += duration
-                continue
-            }
 
             switch turn.kind {
             case .speech(let text, _):
@@ -232,7 +256,7 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     text: text
                 ))
 
-            case .snippet(let sourceID, _, _, let label):
+            case .snippet(let sourceID, let snippetStart, _, let label):
                 // Close any open speech chapter first.
                 flushSpeechChapter()
 
@@ -244,9 +268,18 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
                     return ep.imageURL ?? store.podcast(id: ep.podcastID)?.imageURL
                 }
 
-                let chapterTitle = label?.isEmpty == false
-                    ? label!
-                    : await resolveEpisodeTitle(episodeID: sourceID)
+                let chapterTitle: String
+                if let nonEmpty = label, !nonEmpty.isEmpty {
+                    chapterTitle = nonEmpty
+                } else if let resolved = await resolveEpisodeTitle(episodeID: sourceID) {
+                    chapterTitle = resolved
+                } else {
+                    // Episode not in store — use a time-anchored fallback so
+                    // the chapter still has a meaningful label.
+                    let minutes = Int(snippetStart) / 60
+                    let seconds = Int(snippetStart) % 60
+                    chapterTitle = String(format: "Quote at %d:%02d", minutes, seconds)
+                }
 
                 chapters.append(Episode.Chapter(
                     startTime: cursor,
@@ -361,11 +394,17 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         throw AgentTTSError.snippetDownloadTimeout(episodeID: episodeID)
     }
 
-    private func resolveEpisodeTitle(episodeID: String) async -> String {
+    /// Returns the episode title for the given ID, or `nil` when the episode
+    /// cannot be found in the store. `nil` lets the caller compose a more
+    /// meaningful fallback than a generic string.
+    private func resolveEpisodeTitle(episodeID: String) async -> String? {
         await MainActor.run {
             guard let uuid = UUID(uuidString: episodeID),
                   let episode = store?.episode(id: uuid) else {
-                return "Clip"
+                Self.logger.error(
+                    "AgentTTSComposer: episode not found for chapter title lookup — episodeID=\(episodeID, privacy: .public)"
+                )
+                return nil
             }
             return episode.title
         }
@@ -373,17 +412,33 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
 
     // MARK: - Audio duration helper
 
+    /// Loads the playback duration of an audio asset.
+    ///
+    /// Throws `AudioDurationError` on load failure or a zero/negative duration.
+    /// Callers must skip the track rather than substituting a fictional length,
+    /// which would corrupt chapter start-time math for all subsequent tracks.
     private func audioDuration(of url: URL) async throws -> TimeInterval {
         let asset = AVURLAsset(url: url)
         do {
             let duration = try await asset.load(.duration)
             let seconds = CMTimeGetSeconds(duration)
-            return seconds > 0 ? seconds : 1.0
+            guard seconds > 0 else {
+                throw AudioDurationError.zeroDuration(url)
+            }
+            return seconds
+        } catch let err as AudioDurationError {
+            throw err
         } catch {
-            Self.logger.warning("AgentTTSComposer: could not load duration for \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            return 60.0
+            throw AudioDurationError.assetLoadFailed(url, underlying: error)
         }
     }
+}
+
+// MARK: - Audio duration errors
+
+enum AudioDurationError: Error {
+    case zeroDuration(URL)
+    case assetLoadFailed(URL, underlying: Error)
 }
 
 // MARK: - Errors
@@ -396,6 +451,7 @@ enum AgentTTSError: LocalizedError {
     case snippetEpisodeNotFound(episodeID: String)
     case snippetDownloadFailed(episodeID: String, message: String)
     case snippetDownloadTimeout(episodeID: String)
+    case noPlayableContent
 
     var errorDescription: String? {
         switch self {
@@ -413,6 +469,8 @@ enum AgentTTSError: LocalizedError {
             return "Download failed for snippet episode \(episodeID): \(message)"
         case .snippetDownloadTimeout(let episodeID):
             return "Timed out waiting for snippet episode \(episodeID) to download (5 min limit)."
+        case .noPlayableContent:
+            return "All TTS tracks failed audio loading; nothing to stitch."
         }
     }
 }

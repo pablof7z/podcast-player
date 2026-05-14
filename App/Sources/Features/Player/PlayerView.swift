@@ -25,6 +25,11 @@ struct PlayerView: View {
     @State private var showShareSheet: Bool = false
     @State private var showVoiceNoteSheet: Bool = false
     @State private var showingShowNotes: Bool = false
+    @State private var episodeDetailTarget: UUID? = nil
+    /// Tracks the playhead position captured at the moment the "Add Note"
+    /// button was tapped — used as the anchor position for the new note.
+    @State private var showAddNoteSheet: Bool = false
+    @State private var noteAnchorTime: TimeInterval = 0
 
     /// Vertical scroll offset of the content. Driven by
     /// `.onScrollGeometryChange` rather than a preference key so the
@@ -90,10 +95,37 @@ struct PlayerView: View {
             VoiceNoteRecordingSheet(state: state)
                 .environment(store)
         }
+        .sheet(isPresented: $showAddNoteSheet) {
+            if let episode = state.episode {
+                let capturedEpisodeID = episode.id
+                let capturedTime = noteAnchorTime
+                EditTextSheet(title: "Add Note", initialText: "") { text in
+                    store.addNote(
+                        text: text,
+                        kind: .free,
+                        target: .episode(id: capturedEpisodeID, positionSeconds: capturedTime)
+                    )
+                    Haptics.success()
+                }
+            }
+        }
         .sheet(isPresented: $showShareSheet) {
             if let episode = state.episode {
                 PlayerShareSheet(state: state, episode: episode, showName: showName)
             }
+        }
+        .sheet(item: Binding(
+            get: { episodeDetailTarget.map(EpisodeDetailTarget.init) },
+            set: { episodeDetailTarget = $0?.id }
+        )) { target in
+            NavigationStack {
+                EpisodeDetailView(episodeID: target.id)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openEpisodeDetailRequested)) { note in
+            guard let idString = note.userInfo?["episodeID"] as? String,
+                  let uuid = UUID(uuidString: idString) else { return }
+            episodeDetailTarget = uuid
         }
         .task(id: state.episode?.id) {
             if let episode = state.episode {
@@ -241,26 +273,27 @@ struct PlayerView: View {
         return date
     }
 
-    // MARK: - Chapters / show notes tab switcher
+    // MARK: - Chapters / show notes carousel
 
     @ViewBuilder
     private var chaptersContent: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            panelPicker
+            carouselPageIndicator
             if showingShowNotes {
                 PlayerShowNotesView(episode: liveEpisode)
                     .transition(.asymmetric(
                         insertion: .move(edge: .leading),
-                        removal: .move(edge: .trailing)
+                        removal: .move(edge: .leading)
                     ))
             } else {
                 chaptersPanel
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing),
-                        removal: .move(edge: .leading)
+                        removal: .move(edge: .trailing)
                     ))
             }
         }
+        .clipped()
         .gesture(
             DragGesture(minimumDistance: 30, coordinateSpace: .local)
                 .onEnded { value in
@@ -277,35 +310,38 @@ struct PlayerView: View {
         )
     }
 
-    private var panelPicker: some View {
-        HStack(spacing: 4) {
-            panelTab("Chapters", isActive: !showingShowNotes) {
-                withAnimation(AppTheme.Animation.spring) { showingShowNotes = false }
+    private var carouselPageIndicator: some View {
+        HStack(spacing: 0) {
+            Spacer()
+            HStack(spacing: 5) {
+                Capsule()
+                    .fill(!showingShowNotes ? Color.primary.opacity(0.7) : Color.secondary.opacity(0.25))
+                    .frame(width: !showingShowNotes ? 16 : 6, height: 5)
+                Capsule()
+                    .fill(showingShowNotes ? Color.primary.opacity(0.7) : Color.secondary.opacity(0.25))
+                    .frame(width: showingShowNotes ? 16 : 6, height: 5)
             }
-            panelTab("Show Notes", isActive: showingShowNotes) {
-                withAnimation(AppTheme.Animation.spring) { showingShowNotes = true }
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func panelTab(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(.subheadline, design: .rounded).weight(isActive ? .semibold : .regular))
-                .foregroundStyle(isActive ? Color.primary : Color.secondary)
-                .padding(.horizontal, AppTheme.Spacing.sm)
-                .padding(.vertical, 6)
-                .background {
-                    if isActive {
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
-                    }
+            .animation(AppTheme.Animation.spring, value: showingShowNotes)
+            Spacer()
+            if !showingShowNotes, state.episode != nil {
+                Button {
+                    noteAnchorTime = state.currentTime
+                    showAddNoteSheet = true
+                    Haptics.selection()
+                } label: {
+                    Image(systemName: "note.text.badge.plus")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add note at current position")
+            } else {
+                Color.clear.frame(width: 28, height: 28)
+            }
         }
-        .buttonStyle(.plain)
-        .animation(AppTheme.Animation.spring, value: isActive)
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder
@@ -313,11 +349,19 @@ struct PlayerView: View {
         if let chapters = navigableChapters, !chapters.isEmpty {
             PlayerChaptersScrollView(
                 chapters: chapters,
+                notes: episodeNotes,
                 state: state
             )
         } else {
             PlayerNoChaptersPlaceholder(episode: liveEpisode)
         }
+    }
+
+    /// Episode-anchored notes for the currently-playing episode, fed into the
+    /// chapter rail for chronological interleaving.
+    private var episodeNotes: [Note] {
+        guard let id = state.episode?.id else { return [] }
+        return store.notes(forEpisode: id)
     }
 
     private var liveEpisode: Episode? {
@@ -347,15 +391,8 @@ struct PlayerView: View {
 
     // MARK: - Navigation
 
-    /// Swap the player sheet for the episode-detail sheet via the same
-    /// notification the More-menu's "Go to episode" uses — atomic flip on
-    /// `RootView`'s side avoids the sheet-dismiss race that previously crashed.
     private func openEpisodeDetail(_ episode: Episode) {
-        NotificationCenter.default.post(
-            name: .openEpisodeDetailRequested,
-            object: nil,
-            userInfo: ["episodeID": episode.id.uuidString]
-        )
+        episodeDetailTarget = episode.id
     }
 
     // MARK: - Generation source chip
@@ -436,5 +473,9 @@ struct PlayerView: View {
         }
         .padding(.horizontal, AppTheme.Spacing.md)
         .padding(.bottom, AppTheme.Spacing.md)
+    }
+
+    private struct EpisodeDetailTarget: Identifiable {
+        let id: UUID
     }
 }

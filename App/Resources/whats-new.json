@@ -2,6 +2,36 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T20:11:00Z",
+      "lines": [
+        "Player: tap the + note button in the chapter rail to jot a note anchored to your exact playhead position. Agent-saved notes appear inline too — chronologically interleaved with the chapters."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:09:00Z",
+      "lines": [
+        "Player: tap the episode title to open episode details — no more crash."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:08:00Z",
+      "lines": [
+        "Player: swipe right on chapters to see show notes, swipe left to go back — no more tabs."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:07:00Z",
+      "lines": [
+        "Your updated profile photo now appears immediately after saving."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T20:06:00Z",
+      "lines": [
+        "Nostr conversation transcripts now show all messages left-aligned with avatar and sender name, like Slack."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:05:00Z",
       "lines": [
         "New sidebar: tap your avatar to navigate to Clippings, Wiki, and Settings. Search moved to the top-right toolbar."

@@ -40,6 +40,11 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
     /// downgrade can be detected and skipped rather than silently parsed
     /// against an incompatible shape.
     var schemaVersion: Int
+    /// Whether the user has pinned this page. Defaults to `false` so
+    /// existing on-disk pages decode without a migration (synthesized
+    /// Codable supplies the default when the key is absent, and the custom
+    /// `init(from:)` below uses `decodeIfPresent`).
+    var isPinned: Bool
 
     init(
         id: UUID = UUID(),
@@ -54,7 +59,8 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         generatedAt: Date = Date(),
         model: String = "openai/gpt-4o",
         compileRevision: Int = 1,
-        schemaVersion: Int = WikiPage.currentSchemaVersion
+        schemaVersion: Int = WikiPage.currentSchemaVersion,
+        isPinned: Bool = false
     ) {
         self.id = id
         self.slug = WikiPage.normalize(slug: slug)
@@ -69,6 +75,7 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         self.model = model
         self.compileRevision = compileRevision
         self.schemaVersion = schemaVersion
+        self.isPinned = isPinned
     }
 
     // MARK: - Codable (back-compat)
@@ -77,6 +84,7 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         case id, slug, title, kind, scope, summary
         case sections, citations, confidence
         case generatedAt, model, compileRevision, schemaVersion
+        case isPinned
     }
 
     /// Custom decode using `decodeIfPresent` on every field so older
@@ -99,6 +107,7 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
         let model = try c.decodeIfPresent(String.self, forKey: .model) ?? "openai/gpt-4o"
         let compileRevision = try c.decodeIfPresent(Int.self, forKey: .compileRevision) ?? 1
         let schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        let isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
         self.init(
             id: id,
             slug: slug,
@@ -112,7 +121,8 @@ struct WikiPage: Codable, Hashable, Identifiable, Sendable {
             generatedAt: generatedAt,
             model: model,
             compileRevision: compileRevision,
-            schemaVersion: schemaVersion
+            schemaVersion: schemaVersion,
+            isPinned: isPinned
         )
     }
 

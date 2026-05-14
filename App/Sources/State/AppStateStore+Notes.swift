@@ -16,18 +16,39 @@ extension AppStateStore {
 
     /// Author-aware overload. The agent-tool path passes `author: .agent`
     /// so the note is appended locally without going through publish.
-    /// No `episodeID` parameter today — current call-sites have no episode
-    /// anchor; the publish path passes `episodeCoord: nil` until that data
-    /// flows in.
     @discardableResult
     func addNote(text: String, kind: NoteKind = .free, target: Anchor? = nil, author: NoteAuthor) -> Note {
         let note = Note(text: text, kind: kind, target: target, author: author)
         state.notes.append(note)
         if author == .user {
+            // For episode-anchored notes, forward the episode ID as the coord
+            // so the published kind:1 event carries an ["a", episodeID] tag.
+            let episodeCoord: String?
+            if case .episode(let id, _) = target {
+                episodeCoord = id.uuidString
+            } else {
+                episodeCoord = nil
+            }
             // Fire-and-forget — relay outage must never block a local action.
-            Task { try? await UserIdentityStore.shared.publishUserNote(note, episodeCoord: nil) }
+            Task { try? await UserIdentityStore.shared.publishUserNote(note, episodeCoord: episodeCoord) }
         }
         return note
+    }
+
+    /// All non-deleted notes anchored to a specific episode, sorted by
+    /// position ascending so the chapter rail can interleave them naturally.
+    func notes(forEpisode episodeID: UUID) -> [Note] {
+        state.notes
+            .filter { note in
+                guard !note.deleted,
+                      case .episode(let id, _) = note.target else { return false }
+                return id == episodeID
+            }
+            .sorted {
+                guard case .episode(_, let a) = $0.target,
+                      case .episode(_, let b) = $1.target else { return false }
+                return a < b
+            }
     }
 
     func deleteNote(_ id: UUID) {

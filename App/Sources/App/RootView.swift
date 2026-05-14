@@ -45,7 +45,6 @@ struct RootView: View {
     @State var spotlightSheet: SpotlightIndexer.DeepLink?
     @State var playbackState = PlaybackState()
     @State var showFullPlayer = false
-    @State var clipSourceEpisodeID: UUID?
     @State var playerNavSubscriptionID: UUID?
     @State var generationSourceNostrRootID: String?
     @Namespace var playerNamespace
@@ -54,10 +53,24 @@ struct RootView: View {
         relayService.map(ObjectIdentifier.init)
     }
 
+    private let sidebarWidth: CGFloat = 300
+
     var body: some View {
         ZStack(alignment: .leading) {
             tabBar
                 .environment(playbackState)
+                .offset(x: showSidebar ? sidebarWidth : 0)
+                .overlay {
+                    if showSidebar {
+                        Color.black.opacity(0.35)
+                            .ignoresSafeArea()
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                Haptics.selection()
+                                withAnimation(AppTheme.Animation.spring) { showSidebar = false }
+                            }
+                    }
+                }
                 .task(id: relayServiceIdentity) {
                     guard let relayService else { return }
                     relayService.agentResponder.podcastDepsProvider = { [store, playbackState] in
@@ -153,12 +166,6 @@ struct RootView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .openPlayerRequested)) { _ in
                     showFullPlayer = true
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .openEpisodeDetailRequested)) { note in
-                    guard let idString = note.userInfo?["episodeID"] as? String,
-                          let uuid = UUID(uuidString: idString) else { return }
-                    showFullPlayer = false
-                    clipSourceEpisodeID = uuid
-                }
                 .onReceive(NotificationCenter.default.publisher(for: .openSubscriptionDetailRequested)) { note in
                     guard let idString = note.userInfo?["subscriptionID"] as? String,
                           let uuid = UUID(uuidString: idString) else { return }
@@ -186,7 +193,6 @@ struct RootView: View {
                     generationSourceNostrRootID = rootID
                 }
                 .modifier(PlayerNavSheets(
-                    episodeID: $clipSourceEpisodeID,
                     subscriptionID: $playerNavSubscriptionID,
                     store: store
                 ))
@@ -222,6 +228,8 @@ struct RootView: View {
                     isPresented: $showSidebar,
                     showSettings: $showSettings
                 )
+                .frame(width: sidebarWidth)
+                .ignoresSafeArea()
                 .transition(.move(edge: .leading))
                 .zIndex(100)
             }
@@ -360,16 +368,6 @@ struct RootView: View {
             }
             .accessibilityLabel(hasUnreadAgentMessages ? "Open Agent — new reply" : "Open Agent")
             .keyboardShortcut("a", modifiers: [.command, .shift])
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                Haptics.selection()
-                showSettings = true
-            } label: {
-                Image(systemName: "gear")
-            }
-            .accessibilityLabel("Settings")
-            .keyboardShortcut(",", modifiers: .command)
         }
     }
 

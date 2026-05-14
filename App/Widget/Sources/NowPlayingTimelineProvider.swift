@@ -13,7 +13,6 @@ struct NowPlayingSnapshot: Codable, Equatable {
     var imageURLString: String?
     var position: TimeInterval
     var duration: TimeInterval
-    var updatedAt: Date
     /// Title of the chapter at the playhead, when the episode has
     /// navigable chapters. Optional so older snapshots decode cleanly.
     var chapterTitle: String?

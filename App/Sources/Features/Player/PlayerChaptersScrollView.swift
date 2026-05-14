@@ -4,58 +4,63 @@ import SwiftUI
 
 /// Chapter rail for the full-screen `PlayerView`.
 ///
-/// Renders a non-scrolling `LazyVStack` of chapter rows — the parent owns the
-/// `ScrollView` so chapters scroll naturally with the rest of the page
-/// (artwork header → chapters) instead of in a self-contained box. Visual
-/// idiom is lifted from `EpisodeDetailHeroView.chaptersSection` (monospace
-/// timestamp column + serif title) so the reading surface feels editorially
-/// consistent with the episode-detail surface.
+/// Renders a non-scrolling `LazyVStack` of chapter rows interleaved with any
+/// episode-anchored notes — both sorted chronologically by their timeline
+/// position. The parent owns the `ScrollView` so everything scrolls naturally
+/// with the artwork header rather than in a self-contained box.
 ///
-/// Active chapter is highlighted; the parent handles one-time scroll-to-
-/// active on open via its own `ScrollViewReader` (we intentionally don't
-/// re-center on every boundary crossing — that would jerk the whole page
-/// roughly once per minute). Tap to seek; if the player is paused on a
-/// fresh open, also start playback so the user doesn't need a follow-up tap.
+/// Active chapter is highlighted; the parent handles one-time scroll-to-active
+/// on open via its own `ScrollViewReader`. Tap to seek; if the player is
+/// paused on a fresh open, also start playback. Notes render as lighter
+/// annotation rows and can be deleted via long-press context menu.
 struct PlayerChaptersScrollView: View {
 
     let chapters: [Episode.Chapter]
+    /// Episode-anchored notes to interleave with chapters. Supplied by
+    /// `PlayerView` from `store.notes(forEpisode:)`.
+    var notes: [Note] = []
     @Bindable var state: PlaybackState
 
-    /// Live store handle — needed for the long-press "Ask agent about this
-    /// chapter" dispatch, which mirrors the transcript-row pattern by
-    /// writing a `ChapterAgentContext` and posting `.askAgentRequested`.
-    @Environment(AppStateStore.self) private var store
+    /// Live store handle — needed for context-menu note deletion and for the
+    /// long-press "Ask agent about this chapter" dispatch.
+    @Environment(AppStateStore.self) var store
 
-    /// The chapter that contains the current playhead — see
-    /// `Collection<Episode.Chapter>.active(at:)` for the resolution rule.
+    /// The chapter that contains the current playhead.
     private var activeChapterID: UUID? {
         chapters.active(at: state.currentTime)?.id
     }
 
-    /// Detected ad spans for the currently-loaded episode. Read live via the
-    /// store rather than `PlaybackState.adSegments` so a detection result
-    /// that lands while the player surface is open (e.g. the user opened a
-    /// freshly-ingested episode) reflects on the rail immediately. The
-    /// auto-skip path still goes through `PlaybackState.adSegments` for
-    /// per-tick efficiency.
     private var adSegments: [Episode.AdSegment] {
         guard let id = state.episode?.id,
               let episode = store.episode(id: id) else { return [] }
         return episode.adSegments ?? []
     }
 
+    /// Chapters and notes merged and sorted by their timeline position.
+    private var railItems: [ChapterRailItem] {
+        let chapterItems = chapters.map { ChapterRailItem.chapter($0) }
+        let noteItems    = notes.map    { ChapterRailItem.note($0)    }
+        return (chapterItems + noteItems).sorted { $0.sortTime < $1.sortTime }
+    }
+
     var body: some View {
         LazyVStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-            ForEach(chapters) { chapter in
-                chapterRow(chapter, isActive: chapter.id == activeChapterID)
-                    .id(chapter.id)
+            ForEach(railItems) { item in
+                switch item {
+                case .chapter(let chapter):
+                    chapterRow(chapter, isActive: chapter.id == activeChapterID)
+                        .id(chapter.id)
+                case .note(let note):
+                    noteRow(note)
+                        .id(note.id)
+                }
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Chapters")
     }
 
-    // MARK: - Row
+    // MARK: - Chapter row
 
     @ViewBuilder
     private func chapterRow(_ chapter: Episode.Chapter, isActive: Bool) -> some View {
@@ -106,11 +111,6 @@ struct PlayerChaptersScrollView: View {
         }
     }
 
-    /// Long-press → "Ask the agent about this chapter." Forwards to
-    /// `ChapterAskAgentDispatcher`, which writes a `ChapterAgentContext`
-    /// (chapter title + time range — no transcript text) and posts the
-    /// `askAgentRequested` notification `RootView` observes to present the
-    /// agent chat sheet.
     private func askAgent(about chapter: Episode.Chapter) {
         ChapterAskAgentDispatcher.dispatch(
             chapter: chapter,
@@ -123,10 +123,6 @@ struct PlayerChaptersScrollView: View {
     // MARK: - Behavior
 
     private func handleTap(_ chapter: Episode.Chapter) {
-        // Seek every time the user taps a chapter; only auto-resume on
-        // a fresh open (currentTime ≈ 0). A user who deliberately paused
-        // mid-playback to read chapter titles ahead would otherwise lose
-        // their pause every time they explored the list.
         let isFreshSession = state.currentTime <= 0.5
         Haptics.selection()
         state.navigationalSeek(to: chapter.startTime)
@@ -136,9 +132,6 @@ struct PlayerChaptersScrollView: View {
     }
 
     private func formatTimestamp(_ t: TimeInterval) -> String {
-        // Use the shared formatter — guards NaN/negative inputs from a
-        // corrupt feed and keeps the zero-padded `%02d:%02d[:02d]` style
-        // by branching on hours.
         guard t.isFinite, t >= 0 else { return "0:00" }
         let total = Int(t)
         let h = total / 3600
