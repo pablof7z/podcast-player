@@ -162,6 +162,33 @@ actor RemoteSigner: NostrSigner {
         return pk
     }
 
+    /// Called after nostrconnect pairing: the signer already sent `result == secret` (that
+    /// served as the implicit `connect` ack). Skip the `connect` RPC and go straight to
+    /// `get_public_key` so no second auth-challenge is issued.
+    func finishNostrConnect(relayURL: URL) async throws -> String {
+        let convKey = try Nip44.conversationKey(
+            privateKeyHex: sessionKeyPair.privateKeyHex,
+            peerPublicKeyHex: bunker.remotePubkeyHex
+        )
+        self.conversationKey = convKey
+        let inbox = self
+        let transport = transportFactory(relayURL, sessionKeyPair.publicKeyHex, bunker.remotePubkeyHex) { [weak inbox] sender, encrypted in
+            await inbox?.handleIncoming(senderPubkey: sender, encryptedContent: encrypted)
+        }
+        await transport.connect()
+        self.transport = transport
+        self.activeRelayURL = relayURL
+        let pkResp = try await call(Nip46Request(method: .getPublicKey, params: []))
+        if let err = pkResp.error, !err.isEmpty {
+            throw NostrSignerError.remoteRejected("get_public_key: \(err)")
+        }
+        guard let pk = pkResp.result, isValidHex(pk, length: 64) else {
+            throw NostrSignerError.remoteRejected("get_public_key returned an unparseable pubkey")
+        }
+        self.userPublicKeyHex = pk
+        return pk
+    }
+
     func disconnect() async {
         await teardownTransport()
         for t in timeouts.values { t.cancel() }

@@ -12,11 +12,16 @@ struct RemoteSignerView: View {
     @Environment(UserIdentityStore.self) private var identity
     @State private var bunkerInput = ""
     @State private var isConnecting = false
+    @State private var showNostrConnect = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                 preface
+
+                scanToConnectRow
+
+                Divider()
 
                 Nip46ConnectCard(
                     bunkerInput: $bunkerInput,
@@ -33,9 +38,39 @@ struct RemoteSignerView: View {
         .navigationTitle("Remote signer")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemBackground))
+        .navigationDestination(isPresented: $showNostrConnect) {
+            NostrConnectView()
+        }
     }
 
     // MARK: - Sections
+
+    private var scanToConnectRow: some View {
+        Button {
+            showNostrConnect = true
+        } label: {
+            HStack(spacing: AppTheme.Spacing.sm) {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Scan to connect")
+                        .font(AppTheme.Typography.headline)
+                        .foregroundStyle(.primary)
+                    Text("Generate a QR code your signer app can scan")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.forward")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(AppTheme.Spacing.md)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: AppTheme.Corner.md))
+        }
+        .buttonStyle(.plain)
+    }
 
     private var preface: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {

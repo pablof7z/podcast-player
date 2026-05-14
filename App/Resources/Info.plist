@@ -27,6 +27,11 @@
 			</array>
 		</dict>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>nostrsigner</string>
+		<string>primal</string>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>202605141813</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

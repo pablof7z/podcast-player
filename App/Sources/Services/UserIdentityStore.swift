@@ -324,34 +324,6 @@ final class UserIdentityStore {
         }
     }
 
-    // MARK: - Feedback publishing
-
-    func publishFeedbackNote(
-        category: FeedbackCategory,
-        body: String,
-        parentEventID: String?,
-        replyToPubkey: String?
-    ) async throws -> SignedNostrEvent {
-        if signer == nil {
-            try generateGeneratedKey()
-        }
-        guard let signer else { throw UserIdentityError.noIdentity }
-        var tags: [[String]] = [
-            ["a", FeedbackRelayClient.projectCoordinate],
-            ["t", category.tagValue],
-            ["-"],
-        ]
-        if let parentEventID {
-            tags.append(["e", parentEventID, "", "root"])
-        }
-        if let replyToPubkey {
-            tags.append(["p", replyToPubkey])
-        }
-        let event = try await signer.sign(NostrEventDraft(kind: 1, content: body.trimmed, tags: tags))
-        try await FeedbackRelayClient().publish(event, authSigner: signer)
-        return event
-    }
-
     // MARK: - Private — remote
 
     private func resumeRemote(meta: RemoteMeta, sessionKeyPair: NostrKeyPair) async {
@@ -420,6 +392,42 @@ final class UserIdentityStore {
     /// when invoked without an active signer.
     func _ensureGeneratedKey() throws {
         try generateGeneratedKey()
+    }
+
+    func _beginNostrConnect() {
+        loginError = nil
+        remoteSignerState = .connecting
+    }
+
+    func _failNostrConnect(_ message: String) {
+        loginError = message
+        remoteSignerState = .failed(message)
+    }
+
+    /// Called by `UserIdentityStore+NIP46.swift` after nostrconnect pairing completes.
+    /// Persists the session + meta and updates published identity state.
+    func _adoptNostrConnectSigner(
+        signer: RemoteSigner,
+        userPubkeyHex: String,
+        sessionPrivKeyHex: String,
+        relayAbsoluteString: String
+    ) throws {
+        let meta = RemoteMeta(
+            bunkerPubkeyHex: signer.bunker.remotePubkeyHex,
+            relays: [relayAbsoluteString],
+            secret: nil,
+            permissions: [],
+            userPubkeyHex: userPubkeyHex
+        )
+        try KeychainStore.saveString(sessionPrivKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
+        try saveRemoteMeta(meta)
+        self.signer = signer
+        self.publicKeyHex = userPubkeyHex
+        self.keyPair = nil
+        self.mode = .remoteSigner
+        self.remoteSignerState = .connected(userPubkeyHex)
     }
 
     // MARK: - Test seam (slice B)

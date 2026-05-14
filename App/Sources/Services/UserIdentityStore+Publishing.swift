@@ -151,4 +151,32 @@ extension UserIdentityStore {
         return event
     }
 
+    /// Sign + publish a structured feedback note (kind:1) anchored to the
+    /// project's NIP-72 community coordinate. Auto-generates a key if no
+    /// identity is active (same self-heal as the rest of the publishing surface).
+    func publishFeedbackNote(
+        category: FeedbackCategory,
+        body: String,
+        parentEventID: String?,
+        replyToPubkey: String?
+    ) async throws -> SignedNostrEvent {
+        if signer == nil {
+            try _ensureGeneratedKey()
+        }
+        guard let signer else { throw UserIdentityError.noIdentity }
+        var tags: [[String]] = [
+            ["a", FeedbackRelayClient.projectCoordinate],
+            ["t", category.tagValue],
+            ["-"],
+        ]
+        if let parentEventID {
+            tags.append(["e", parentEventID, "", "root"])
+        }
+        if let replyToPubkey {
+            tags.append(["p", replyToPubkey])
+        }
+        let event = try await signer.sign(NostrEventDraft(kind: 1, content: body.trimmed, tags: tags))
+        try await FeedbackRelayClient().publish(event, authSigner: signer)
+        return event
+    }
 }

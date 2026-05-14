@@ -18,13 +18,14 @@ protocol RemoteSignerTransport: Sendable, AnyObject {
 /// Parameters mirror `RemoteSignerClient.init`:
 /// - `relayURL`: which relay to dial.
 /// - `sessionPubkeyHex`: our ephemeral session pubkey (used for `#p` filter).
-/// - `bunkerPubkeyHex`: bunker's pubkey (used for `authors` filter).
+/// - `bunkerPubkeyHex`: bunker's pubkey (used for `authors` filter). Nil during nostrconnect
+///   pairing — omits the `authors` filter so the initial connect response is accepted.
 /// - `onEvent`: callback fired for every kind:24133 event addressed to us — `senderPubkey`
 ///   is the event author, `encryptedContent` is the still-NIP-44-encrypted `content` field.
 typealias RemoteSignerTransportFactory = @Sendable (
     _ relayURL: URL,
     _ sessionPubkeyHex: String,
-    _ bunkerPubkeyHex: String,
+    _ bunkerPubkeyHex: String?,
     _ onEvent: @escaping @Sendable (_ senderPubkey: String, _ encryptedContent: String) async -> Void
 ) -> any RemoteSignerTransport
 

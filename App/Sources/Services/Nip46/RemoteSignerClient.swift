@@ -13,7 +13,9 @@ actor RemoteSignerClient: RemoteSignerTransport {
 
     private let relayURL: URL
     private let sessionPubkeyHex: String
-    private let bunkerPubkeyHex: String
+    /// Nil during the nostrconnect pairing phase — omits the `authors` filter so we
+    /// accept the initial connect response from an as-yet-unknown signer pubkey.
+    private let bunkerPubkeyHex: String?
     /// Called for every kind:24133 event whose `#p` matches our session pubkey. Includes
     /// the **encrypted** content (the caller is responsible for NIP-44 decryption).
     private let onEvent: @Sendable (_ senderPubkey: String, _ encryptedContent: String) async -> Void
@@ -32,7 +34,7 @@ actor RemoteSignerClient: RemoteSignerTransport {
     init(
         relayURL: URL,
         sessionPubkeyHex: String,
-        bunkerPubkeyHex: String,
+        bunkerPubkeyHex: String?,
         onEvent: @escaping @Sendable (_ senderPubkey: String, _ encryptedContent: String) async -> Void
     ) {
         self.relayURL = relayURL
@@ -76,11 +78,13 @@ actor RemoteSignerClient: RemoteSignerTransport {
     // MARK: - REQ subscription
 
     private func sendSubscription() {
-        let filter: [String: Any] = [
+        var filter: [String: Any] = [
             "kinds": [Constants.kind],
             "#p": [sessionPubkeyHex],
-            "authors": [bunkerPubkeyHex],
         ]
+        if let bunkerPubkeyHex {
+            filter["authors"] = [bunkerPubkeyHex]
+        }
         let message: [Any] = ["REQ", Constants.subscriptionID, filter]
         guard let data = try? JSONSerialization.data(withJSONObject: message, options: []),
               let text = String(data: data, encoding: .utf8) else { return }
