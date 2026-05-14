@@ -139,7 +139,6 @@ final class SeekCue {
             try wav.write(to: url, options: .atomic)
             let p = try AVAudioPlayer(contentsOf: url)
             p.volume = 0.55
-            p.prepareToPlay()
             player = p
         } catch {
             logger.error("Seek cue prepare failed: \(error.localizedDescription, privacy: .public)")

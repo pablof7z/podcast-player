@@ -2,6 +2,24 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-14T21:15:00Z",
+      "lines": [
+        "Fixed: opening the app no longer interrupts audio playing in other apps."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T21:02:00Z",
+      "lines": [
+        "Remote signer setup now includes a QR code flow — open your signer app (Amber, Primal, nsec.app) and scan instead of copy-pasting a bunker URI."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-14T21:00:00Z",
+      "lines": [
+        "The agent can now create and manage its own podcasts — complete with AI-generated cover art and optional Nostr publishing (NIP-74). Use Settings > Agent > Podcasts to control per-show visibility."
+      ]
+    },
+    {
       "shipped_at": "2026-05-14T20:18:00Z",
       "lines": [
         "Tap ••• on any show page and choose 'Download all episodes' to queue every episode for offline listening and transcription in one tap."
