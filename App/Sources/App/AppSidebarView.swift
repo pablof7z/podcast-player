@@ -6,7 +6,6 @@ import SwiftUI
 struct AppSidebarView: View {
     @Binding var selectedTab: RootTab
     @Binding var isPresented: Bool
-    @Binding var showSettings: Bool
 
     @Environment(UserIdentityStore.self) private var userIdentity
 
@@ -16,7 +15,6 @@ struct AppSidebarView: View {
             navSection
                 .padding(.top, AppTheme.Spacing.sm)
             Spacer()
-            footerSection
         }
         .safeAreaPadding(.top)
         .safeAreaPadding(.bottom)
@@ -77,20 +75,6 @@ struct AppSidebarView: View {
             }
             navRow("Wiki", icon: "book.closed.fill", isActive: selectedTab == .wiki) {
                 selectedTab = .wiki
-                dismiss()
-            }
-        }
-    }
-
-    // MARK: - Footer
-
-    private var footerSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Divider()
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.xs)
-            navRow("Settings", icon: "gear", isActive: false) {
-                showSettings = true
                 dismiss()
             }
         }

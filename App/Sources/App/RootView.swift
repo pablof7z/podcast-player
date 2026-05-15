@@ -229,8 +229,7 @@ struct RootView: View {
             if showSidebar {
                 AppSidebarView(
                     selectedTab: $selectedTab,
-                    isPresented: $showSidebar,
-                    showSettings: $showSettings
+                    isPresented: $showSidebar
                 )
                 .frame(width: sidebarWidth)
                 .ignoresSafeArea()
@@ -353,7 +352,17 @@ struct RootView: View {
                     size: 28
                 )
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Open sidebar")
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                Haptics.selection()
+                showSettings = true
+            } label: {
+                Image(systemName: "gear")
+            }
+            .accessibilityLabel("Settings")
         }
         NostrConversationsToolbarItem()
         ToolbarItem(placement: .topBarTrailing) {
