@@ -56,19 +56,26 @@ pub enum CommentAnchor {
 }
 
 impl CommentAnchor {
-    /// NIP-73 tag value: `"podcast:guid:<guid>"` or `"clip:<uuid>"`.
+    /// NIP-73 external content identifier (`i`/`I` tag value).
+    ///
+    /// Wire format MUST match `App/Sources/Domain/EpisodeComment.swift`
+    /// (`CommentTarget.nip73Identifier`) so Fountain and other generic
+    /// NIP-22 clients can address the same episode/clip by the same key:
+    ///   * Episode: `"podcast:item:guid:<guid>"` (Podcasting 2.0 GUID form)
+    ///   * Clip:    `"podcastr:clip:<uuid>"` (Podcastr-specific, lowercase)
     pub fn nip73_identifier(&self) -> String {
         match self {
-            CommentAnchor::Episode { guid } => format!("podcast:guid:{guid}"),
-            CommentAnchor::Clip { uuid } => format!("clip:{uuid}"),
+            CommentAnchor::Episode { guid } => format!("podcast:item:guid:{guid}"),
+            CommentAnchor::Clip { uuid } => format!("podcastr:clip:{}", uuid.to_lowercase()),
         }
     }
 
-    /// NIP-73 `k` tag value.
+    /// NIP-73 `k`/`K` tag value — the `protocol:type` prefix of the
+    /// identifier. Matches `CommentTarget.nip73Kind` in Swift.
     pub fn nip73_kind(&self) -> String {
         match self {
-            CommentAnchor::Episode { .. } => "podcast:guid".to_string(),
-            CommentAnchor::Clip { .. } => "clip".to_string(),
+            CommentAnchor::Episode { .. } => "podcast:item:guid".to_string(),
+            CommentAnchor::Clip { .. } => "podcastr:clip".to_string(),
         }
     }
 }

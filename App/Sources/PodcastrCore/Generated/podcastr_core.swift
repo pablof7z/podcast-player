@@ -735,6 +735,22 @@ public protocol PodcastrCoreProtocol: AnyObject, Sendable {
     func ping(message: String)  -> String
     
     /**
+     * Build, sign, and publish a NIP-22 kind:1111 top-level comment
+     * anchored to `anchor`. Returns the signed event so the UI can
+     * optimistically append before the relay echoes it back through a
+     * live subscription (mirrors Swift `NostrCommentService.publish`).
+     *
+     * Emits the canonical four-tag set:
+     * * `["I", <identifier>]`, `["K", <kind>]`  — root
+     * * `["i", <identifier>]`, `["k", <kind>]`  — parent (== root)
+     *
+     * Requires an authenticated session with a writable signer (i.e.
+     * `login_nsec`, not `login_pubkey` — read-only sessions error with
+     * `CoreError::Signer` from `sign_event_builder`).
+     */
+    func publishComment(content: String, anchor: CommentAnchor) async throws  -> SignedEvent
+    
+    /**
      * Sign and broadcast a kind:1 reply with NIP-10 tags. Swift owns
      * content composition; the Rust side just lays down the canonical
      * reply tag triple:
@@ -800,6 +816,22 @@ public protocol PodcastrCoreProtocol: AnyObject, Sendable {
     func setEventCallback(callback: EventCallback?) 
     
     /**
+     * Open a streaming subscription for NIP-22 (kind:1111) comments
+     * anchored to `anchor`. Events stream to the Swift `EventCallback` as
+     * `CommentReceived` deltas keyed by `callback_subscription_id`; an
+     * EOSE arrival emits a `SubscriptionEose` delta on the same key.
+     *
+     * Returns the relay-side `SubscriptionId` as a String; pass it back
+     * to [`Self::unsubscribe_comments`] to release the subscription.
+     *
+     * Wire-format parity with Swift `NostrCommentService.subscribe`:
+     * * `kind = 1111`
+     * * `#i = anchor.nip73_identifier()`  (lowercase — parent scope)
+     * * `limit = 200`
+     */
+    func subscribeComments(anchor: CommentAnchor, callbackSubscriptionId: UInt64) async throws  -> String
+    
+    /**
      * Install a persistent kind:1 subscription gated on `#p == <my pubkey>`.
      * Events stream to the Swift `EventCallback` as `PeerMessageReceived`
      * deltas keyed by `callback_subscription_id`.
@@ -844,6 +876,35 @@ public protocol PodcastrCoreProtocol: AnyObject, Sendable {
     func subscribeProfiles(pubkeys: [String], callbackSubscriptionId: UInt64) async throws  -> String
     
     /**
+     * Open a streaming subscription that delivers the root event plus
+     * every reply (any kind whose `#e` tag points at the root). Events
+     * stream to the Swift `EventCallback` as `ThreadEventReceived`
+     * deltas keyed by `callback_subscription_id`. Each leg emits its
+     * own `SubscriptionEose` delta on the same key when initial fetch
+     * completes — Swift dedups if it cares about a single "loaded"
+     * signal.
+     *
+     * Returns a composite handle: `"<root_sub_id>|<replies_sub_id>"`.
+     * Pass the exact string back to [`Self::unsubscribe_thread`] to
+     * release both legs.
+     *
+     * Wire-format parity with Swift `NostrThreadFetcher.run`:
+     * * leg 1: `Filter::new().id(<root>)`
+     * * leg 2: `Filter::new().kind(1).event(<root>)` — `#e == root`
+     *
+     * Note: the Swift original additionally pins `kinds=[1]` on the
+     * replies filter; we keep that here so kind:7 reactions and other
+     * non-thread chatter that happens to e-tag the root don't pollute
+     * the conversation view.
+     */
+    func subscribeThread(rootEventId: String, callbackSubscriptionId: UInt64) async throws  -> String
+    
+    /**
+     * Tear down a comments subscription. Idempotent.
+     */
+    func unsubscribeComments(subId: String) async 
+    
+    /**
      * Tear down a peer-message subscription previously returned by
      * [`Self::subscribe_peer_messages`]. Idempotent.
      */
@@ -861,6 +922,13 @@ public protocol PodcastrCoreProtocol: AnyObject, Sendable {
      * the relay pool side.
      */
     func unsubscribeProfiles(subId: String) async 
+    
+    /**
+     * Tear down a thread subscription. Accepts either the composite
+     * handle returned by [`Self::subscribe_thread`] (`"<a>|<b>"`) or a
+     * bare `SubscriptionId` for forward-compat. Idempotent.
+     */
+    func unsubscribeThread(subId: String) async 
     
 }
 open class PodcastrCore: PodcastrCoreProtocol, @unchecked Sendable {
@@ -1057,6 +1125,37 @@ open func ping(message: String) -> String  {
 }
     
     /**
+     * Build, sign, and publish a NIP-22 kind:1111 top-level comment
+     * anchored to `anchor`. Returns the signed event so the UI can
+     * optimistically append before the relay echoes it back through a
+     * live subscription (mirrors Swift `NostrCommentService.publish`).
+     *
+     * Emits the canonical four-tag set:
+     * * `["I", <identifier>]`, `["K", <kind>]`  — root
+     * * `["i", <identifier>]`, `["k", <kind>]`  — parent (== root)
+     *
+     * Requires an authenticated session with a writable signer (i.e.
+     * `login_nsec`, not `login_pubkey` — read-only sessions error with
+     * `CoreError::Signer` from `sign_event_builder`).
+     */
+open func publishComment(content: String, anchor: CommentAnchor)async throws  -> SignedEvent  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_podcastr_core_fn_method_podcastrcore_publish_comment(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(content),FfiConverterTypeCommentAnchor_lower(anchor)
+                )
+            },
+            pollFunc: ffi_podcastr_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_podcastr_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_podcastr_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeSignedEvent_lift,
+            errorHandler: FfiConverterTypeCoreError_lift
+        )
+}
+    
+    /**
      * Sign and broadcast a kind:1 reply with NIP-10 tags. Swift owns
      * content composition; the Rust side just lays down the canonical
      * reply tag triple:
@@ -1202,6 +1301,37 @@ open func setEventCallback(callback: EventCallback?)  {try! rustCall() {
 }
     
     /**
+     * Open a streaming subscription for NIP-22 (kind:1111) comments
+     * anchored to `anchor`. Events stream to the Swift `EventCallback` as
+     * `CommentReceived` deltas keyed by `callback_subscription_id`; an
+     * EOSE arrival emits a `SubscriptionEose` delta on the same key.
+     *
+     * Returns the relay-side `SubscriptionId` as a String; pass it back
+     * to [`Self::unsubscribe_comments`] to release the subscription.
+     *
+     * Wire-format parity with Swift `NostrCommentService.subscribe`:
+     * * `kind = 1111`
+     * * `#i = anchor.nip73_identifier()`  (lowercase — parent scope)
+     * * `limit = 200`
+     */
+open func subscribeComments(anchor: CommentAnchor, callbackSubscriptionId: UInt64)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_podcastr_core_fn_method_podcastrcore_subscribe_comments(
+                    self.uniffiClonePointer(),
+                    FfiConverterTypeCommentAnchor_lower(anchor),FfiConverterUInt64.lower(callbackSubscriptionId)
+                )
+            },
+            pollFunc: ffi_podcastr_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_podcastr_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_podcastr_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeCoreError_lift
+        )
+}
+    
+    /**
      * Install a persistent kind:1 subscription gated on `#p == <my pubkey>`.
      * Events stream to the Swift `EventCallback` as `PeerMessageReceived`
      * deltas keyed by `callback_subscription_id`.
@@ -1306,6 +1436,66 @@ open func subscribeProfiles(pubkeys: [String], callbackSubscriptionId: UInt64)as
 }
     
     /**
+     * Open a streaming subscription that delivers the root event plus
+     * every reply (any kind whose `#e` tag points at the root). Events
+     * stream to the Swift `EventCallback` as `ThreadEventReceived`
+     * deltas keyed by `callback_subscription_id`. Each leg emits its
+     * own `SubscriptionEose` delta on the same key when initial fetch
+     * completes — Swift dedups if it cares about a single "loaded"
+     * signal.
+     *
+     * Returns a composite handle: `"<root_sub_id>|<replies_sub_id>"`.
+     * Pass the exact string back to [`Self::unsubscribe_thread`] to
+     * release both legs.
+     *
+     * Wire-format parity with Swift `NostrThreadFetcher.run`:
+     * * leg 1: `Filter::new().id(<root>)`
+     * * leg 2: `Filter::new().kind(1).event(<root>)` — `#e == root`
+     *
+     * Note: the Swift original additionally pins `kinds=[1]` on the
+     * replies filter; we keep that here so kind:7 reactions and other
+     * non-thread chatter that happens to e-tag the root don't pollute
+     * the conversation view.
+     */
+open func subscribeThread(rootEventId: String, callbackSubscriptionId: UInt64)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_podcastr_core_fn_method_podcastrcore_subscribe_thread(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(rootEventId),FfiConverterUInt64.lower(callbackSubscriptionId)
+                )
+            },
+            pollFunc: ffi_podcastr_core_rust_future_poll_rust_buffer,
+            completeFunc: ffi_podcastr_core_rust_future_complete_rust_buffer,
+            freeFunc: ffi_podcastr_core_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeCoreError_lift
+        )
+}
+    
+    /**
+     * Tear down a comments subscription. Idempotent.
+     */
+open func unsubscribeComments(subId: String)async   {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_podcastr_core_fn_method_podcastrcore_unsubscribe_comments(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(subId)
+                )
+            },
+            pollFunc: ffi_podcastr_core_rust_future_poll_void,
+            completeFunc: ffi_podcastr_core_rust_future_complete_void,
+            freeFunc: ffi_podcastr_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: nil
+            
+        )
+}
+    
+    /**
      * Tear down a peer-message subscription previously returned by
      * [`Self::subscribe_peer_messages`]. Idempotent.
      */
@@ -1359,6 +1549,29 @@ open func unsubscribeProfiles(subId: String)async   {
         try!  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_podcastr_core_fn_method_podcastrcore_unsubscribe_profiles(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(subId)
+                )
+            },
+            pollFunc: ffi_podcastr_core_rust_future_poll_void,
+            completeFunc: ffi_podcastr_core_rust_future_complete_void,
+            freeFunc: ffi_podcastr_core_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: nil
+            
+        )
+}
+    
+    /**
+     * Tear down a thread subscription. Accepts either the composite
+     * handle returned by [`Self::subscribe_thread`] (`"<a>|<b>"`) or a
+     * bare `SubscriptionId` for forward-compat. Idempotent.
+     */
+open func unsubscribeThread(subId: String)async   {
+    return
+        try!  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_podcastr_core_fn_method_podcastrcore_unsubscribe_thread(
                     self.uniffiClonePointer(),
                     FfiConverterString.lower(subId)
                 )
@@ -3499,6 +3712,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_podcastr_core_checksum_method_podcastrcore_ping() != 25133) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_publish_comment() != 53567) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_podcastr_core_checksum_method_podcastrcore_publish_peer_reply() != 56159) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3517,6 +3733,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_podcastr_core_checksum_method_podcastrcore_set_event_callback() != 54731) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_subscribe_comments() != 38551) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_podcastr_core_checksum_method_podcastrcore_subscribe_peer_messages() != 34075) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3529,6 +3748,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_podcastr_core_checksum_method_podcastrcore_subscribe_profiles() != 51707) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_subscribe_thread() != 63663) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_unsubscribe_comments() != 62493) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_podcastr_core_checksum_method_podcastrcore_unsubscribe_peer_messages() != 16180) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3536,6 +3761,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_podcastr_core_checksum_method_podcastrcore_unsubscribe_profiles() != 37135) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_unsubscribe_thread() != 9228) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_podcastr_core_checksum_constructor_podcastrcore_new() != 18226) {
