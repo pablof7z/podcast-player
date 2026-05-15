@@ -65,15 +65,15 @@ struct RootView: View {
                 .environment(playbackState)
                 .offset(x: showSidebar ? sidebarWidth : 0)
                 .overlay {
-                    if showSidebar {
-                        Color.black.opacity(0.35)
-                            .ignoresSafeArea()
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                Haptics.selection()
-                                withAnimation(AppTheme.Animation.spring) { showSidebar = false }
-                            }
-                    }
+                    Color.black
+                        .opacity(showSidebar ? 0.35 : 0)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .allowsHitTesting(showSidebar)
+                        .onTapGesture {
+                            Haptics.selection()
+                            withAnimation(AppTheme.Animation.spring) { showSidebar = false }
+                        }
                 }
                 .task(id: relayServiceIdentity) {
                     guard let relayService else { return }
@@ -226,16 +226,14 @@ struct RootView: View {
                 }
                 .onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
 
-            if showSidebar {
-                AppSidebarView(
-                    selectedTab: $selectedTab,
-                    isPresented: $showSidebar
-                )
-                .frame(width: sidebarWidth)
-                .ignoresSafeArea()
-                .transition(.move(edge: .leading))
-                .zIndex(100)
-            }
+            AppSidebarView(
+                selectedTab: $selectedTab,
+                isPresented: $showSidebar
+            )
+            .frame(width: sidebarWidth)
+            .ignoresSafeArea()
+            .offset(x: showSidebar ? 0 : -sidebarWidth)
+            .zIndex(100)
         }
     }
 

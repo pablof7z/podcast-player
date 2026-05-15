@@ -172,12 +172,12 @@ private struct BookmarkRow: View {
     }
 
     private var placeholder: some View {
-        Color(.secondarySystemBackground)
-            .overlay(
-                Image(systemName: "waveform")
-                    .font(.system(size: 18, weight: .light))
-                    .foregroundStyle(.secondary)
-            )
+        ZStack {
+            Color.secondary.opacity(0.18)
+            Image(systemName: "waveform")
+                .font(.system(size: 18, weight: .light))
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Content chips

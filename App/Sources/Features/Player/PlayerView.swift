@@ -219,7 +219,7 @@ struct PlayerView: View {
     private var compactArtwork: some View {
         ZStack {
             if let url = artworkURL {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(url: url, targetSize: CGSize(width: 220, height: 220)) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
@@ -244,7 +244,7 @@ struct PlayerView: View {
 
     private var compactArtworkFallback: some View {
         ZStack {
-            Color.secondary.opacity(0.10)
+            Color.secondary.opacity(0.18)
             Image(systemName: "waveform")
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(.secondary)

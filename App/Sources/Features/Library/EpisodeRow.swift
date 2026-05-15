@@ -111,16 +111,12 @@ struct EpisodeRow: View {
     }
 
     private var thumbnailPlaceholder: some View {
-        LinearGradient(
-            colors: [showAccent.opacity(0.9), showAccent.opacity(0.55)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .overlay(
+        ZStack {
+            Color.secondary.opacity(0.18)
             Image(systemName: "waveform")
                 .font(.system(size: 20, weight: .light))
-                .foregroundStyle(.white.opacity(0.85))
-        )
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Subviews

@@ -78,7 +78,7 @@ struct MiniPlayerView: View {
         // tracks the surface's full curvature instead of starting after the
         // rounded corners.
         content
-            .glassEffect(.regular, in: .rect(cornerRadius: AppTheme.Corner.lg))
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
             .overlay(alignment: .bottom) {
                 progressLine

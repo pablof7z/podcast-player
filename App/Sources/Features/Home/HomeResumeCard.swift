@@ -54,7 +54,7 @@ struct HomeResumeCard: View {
     private var artwork: some View {
         ZStack(alignment: .bottom) {
             ZStack {
-                Color(.tertiarySystemFill)
+                Color.secondary.opacity(0.18)
                 if let url = artworkURL {
                     CachedAsyncImage(
                         url: url,

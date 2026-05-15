@@ -91,9 +91,12 @@ struct HomeAgentPickCard: View {
         let url = episode.imageURL ?? podcast?.imageURL
         let dim: CGFloat = isHero ? 64 : 44
         ZStack {
-            Color(.tertiarySystemFill)
+            Color.secondary.opacity(0.18)
             if let url {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(
+                    url: url,
+                    targetSize: CGSize(width: 128, height: 128)
+                ) { phase in
                     switch phase {
                     case .success(let image): image.resizable().scaledToFill()
                     default:

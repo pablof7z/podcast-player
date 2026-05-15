@@ -53,7 +53,6 @@ struct HomeSubscriptionListSection: View {
                 HomeSubscriptionRow(
                     podcast: sub,
                     mostRecentEpisode: store.mostRecentEpisode(forPodcast: sub.id),
-                    unplayedCount: store.unplayedCount(forPodcast: sub.id),
                     now: now,
                     onRequestUnsubscribe: { onRequestUnsubscribe(sub) }
                 )
