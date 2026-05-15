@@ -1,4 +1,5 @@
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 /// Drives the inbound-to-LLM-to-outbound pipeline for kind:1 messages
@@ -310,8 +311,19 @@ final class NostrAgentResponder {
             return
         }
 
+        // Publish via the shared NDK so we reuse the existing relay
+        // socket instead of opening a transient one. `relayURL` was
+        // validated above for parity with the legacy WebSocket path,
+        // but with NDK the relay set is driven by `NostrStack.start()` —
+        // we don't need to thread it through here.
+        guard let ndk = NostrStack.shared.ndk else {
+            Self.logger.error("process: no NDK available; cannot publish reply")
+            recordTurn(inbound: inbound, rootID: rootID)
+            return
+        }
+        _ = relayURL // retained above for the configured-relay gate
         do {
-            try await NostrWebSocketEventPublisher().publish(event: signed, relayURL: relayURL)
+            _ = try await ndk.publish(NDKEventConverter.toNDKEvent(signed))
         } catch {
             // The relay rejected or the socket dropped. Record the
             // inbound (we have its text) but leave the dedup set

@@ -1,4 +1,5 @@
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 extension Notification.Name {
@@ -169,8 +170,17 @@ extension NostrAgentResponder {
             Self.logger.error("delegation: signing failed — \(error, privacy: .public)")
             return
         }
+        // Publish via the shared NDK relay pool. `relayURL` was
+        // validated above for parity with the legacy WebSocket path,
+        // but NDK handles relay selection from its connected set —
+        // we don't pass the URL through here.
+        _ = relayURL
+        guard let ndk = NostrStack.shared.ndk else {
+            Self.logger.error("delegation: no NDK available; cannot publish nostrPeer reply")
+            return
+        }
         do {
-            try await NostrWebSocketEventPublisher().publish(event: signed, relayURL: relayURL)
+            _ = try await ndk.publish(NDKEventConverter.toNDKEvent(signed))
         } catch {
             Self.logger.error("delegation: publish failed — \(error, privacy: .public)")
             return
