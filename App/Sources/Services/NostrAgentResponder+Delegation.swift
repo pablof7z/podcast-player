@@ -141,6 +141,13 @@ extension NostrAgentResponder {
         }
 
         // Sign and publish the reply in the original peer thread.
+        // We sign in Swift (rather than calling `core.publishPeerReply`)
+        // because this path copies channel-anchor `a`-tags from the root
+        // event — `publishPeerReply` deliberately omits a-tag copy-through.
+        // Sign locally, JSON-encode, broadcast via `publishSignedEventJson`.
+        // The relay-URL misconfiguration guard above still fires before we
+        // get here; the Rust core's pool handles relay selection for the
+        // broadcast itself.
         let privateKey: String?
         do { privateKey = try NostrCredentialStore.privateKey() } catch {
             Self.logger.error("delegation: keychain read failed — \(error, privacy: .public)")
@@ -171,7 +178,12 @@ extension NostrAgentResponder {
             return
         }
         do {
-            try await NostrWebSocketEventPublisher().publish(event: signed, relayURL: relayURL)
+            let json = try Self.delegationEventEncoder.encode(signed)
+            guard let jsonString = String(data: json, encoding: .utf8) else {
+                Self.logger.error("delegation: failed to UTF-8 encode signed event")
+                return
+            }
+            _ = try await PodcastrCoreBridge.shared.core.publishSignedEventJson(eventJson: jsonString)
         } catch {
             Self.logger.error("delegation: publish failed — \(error, privacy: .public)")
             return

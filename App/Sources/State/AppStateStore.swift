@@ -245,6 +245,30 @@ final class AppStateStore {
         // retained on `self` so the observer outlives the init call but
         // dies with the store. See `AppStateStore+PositionDebounce.swift`.
         backgroundObserver = registerBackgroundFlushObserver()
+        // Load the Nostr signing key from the Keychain into the Rust core
+        // and install the app-scoped observer that reflects signer / relay
+        // status deltas back into AppState. Both are no-ops on installs
+        // that have never imported a key.
+        bootstrapNostrSession()
+    }
+
+    /// Boot the Nostr session: load any persisted Nostr private key from the
+    /// Keychain into the Rust core as the active signer, and install the
+    /// app-scoped delta observer. Idempotent and safe on installs without a
+    /// key (the load step is a no-op, observers stay attached forever).
+    private func bootstrapNostrSession() {
+        do {
+            if let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty {
+                _ = try PodcastrCoreBridge.shared.core.loginNsec(secret: hex)
+            }
+        } catch {
+            // Don't propagate — a missing/corrupt key shouldn't keep the rest
+            // of the app from booting. The signer simply stays unset and
+            // every Rust publish path will surface CoreError.notAuthenticated
+            // until the user re-imports a key.
+            Self.logger.error("bootstrapNostrSession: loginNsec failed — \(error, privacy: .public)")
+        }
+        installNostrAppObservers()
     }
 
     /// Pulls the latest iCloud values into `state.settings`.

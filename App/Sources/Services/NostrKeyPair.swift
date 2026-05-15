@@ -1,17 +1,18 @@
-import CryptoKit
 import Foundation
 import P256K
 
 /// A Nostr key pair (secp256k1). Stores only hex bytes — the live signing key
 /// is reconstructed per-operation so this type is `Sendable`.
+///
+/// All bech32 (nsec/npub) encoding/decoding routes through the Rust core via
+/// the `nip19*` free functions. Key generation and private→public derivation
+/// stay on the Swift side (P256K) because no FFI helper exposes them today.
 struct NostrKeyPair: Sendable {
     let privateKeyHex: String
     let publicKeyHex: String
 
     /// Expected byte length of a secp256k1 private key or x-only public key.
     private static let keyByteCount = 32
-    /// Bech32 human-readable part for a Nostr private key.
-    private static let nsecHRP = "nsec"
 
     private init(privateKeyHex: String, publicKeyHex: String) {
         self.privateKeyHex = privateKeyHex
@@ -28,15 +29,17 @@ struct NostrKeyPair: Sendable {
         )
     }
 
+    /// Decode an `nsec1…` bech32 string through the Rust core, then derive
+    /// the matching x-only pubkey via P256K. Throws `NostrKeyPairError.invalidPrivateKey`
+    /// if Rust rejects the nsec or the resulting hex is malformed.
     init(nsec: String) throws {
-        guard let (hrp, bytes) = Bech32.decode(nsec),
-              hrp == NostrKeyPair.nsecHRP,
-              bytes.count == NostrKeyPair.keyByteCount else {
+        let hex: String
+        do {
+            hex = try nip19NsecDecode(nsec: nsec)
+        } catch {
             throw NostrKeyPairError.invalidPrivateKey
         }
-        let key = try P256K.Schnorr.PrivateKey(dataRepresentation: bytes)
-        self.privateKeyHex = bytes.hexString
-        self.publicKeyHex = Data(key.xonly.bytes).hexString
+        try self.init(privateKeyHex: hex)
     }
 
     init(privateKeyHex: String) throws {
@@ -51,10 +54,17 @@ struct NostrKeyPair: Sendable {
 
     // MARK: - Bech32 display
 
-    /// Bech32-encoded private key (nsec…). Safe to force-unwrap: both initialisers
-    /// validate hex and length, and `generate()` produces hex directly from raw bytes.
-    var nsec: String { Bech32.encode(hrp: NostrKeyPair.nsecHRP, data: Data(hexString: privateKeyHex)!) }
-    var npub: String { Bech32.encode(hrp: "npub", data: Data(hexString: publicKeyHex)!) }
+    /// Bech32-encoded private key (`nsec1…`). Computed through the Rust core's
+    /// NIP-19 helper. Returns the empty string if encoding fails — both
+    /// initialisers validate hex/length, so in practice that branch is dead.
+    var nsec: String {
+        (try? nip19NsecEncode(privkeyHex: privateKeyHex)) ?? ""
+    }
+
+    /// Bech32-encoded public key (`npub1…`). Same fallback semantics as `nsec`.
+    var npub: String {
+        (try? nip19NpubEncode(pubkeyHex: publicKeyHex)) ?? ""
+    }
 }
 
 enum NostrKeyPairError: LocalizedError {

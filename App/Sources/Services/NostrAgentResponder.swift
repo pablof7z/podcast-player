@@ -291,6 +291,16 @@ final class NostrAgentResponder {
             inbound: inbound
         )
 
+        // Sign in Swift and broadcast through the Rust core. We avoid
+        // `core.publishPeerReply` here because `buildReplyTags` copies
+        // channel-anchor `a`-tags from the root event — the Rust reply
+        // helper deliberately omits a-tag copy-through (see contract on
+        // `publish_peer_reply`). The local signer path remains; the only
+        // change is replacing `NostrWebSocketEventPublisher` with
+        // `publishSignedEventJson`, which broadcasts the already-signed
+        // wire event unchanged. `relayURL` is still consumed earlier by
+        // `NostrThreadFetcher.fetch`; the Rust pool routes broadcasts via
+        // its own configured relays.
         let draft = NostrEventDraft(
             kind: 1,
             content: replyText,
@@ -307,7 +317,13 @@ final class NostrAgentResponder {
         }
 
         do {
-            try await NostrWebSocketEventPublisher().publish(event: signed, relayURL: relayURL)
+            let data = try Self.delegationEventEncoder.encode(signed)
+            guard let jsonString = String(data: data, encoding: .utf8) else {
+                Self.logger.error("process: failed to UTF-8 encode signed event")
+                recordTurn(inbound: inbound, rootID: rootID)
+                return
+            }
+            _ = try await PodcastrCoreBridge.shared.core.publishSignedEventJson(eventJson: jsonString)
         } catch {
             // The relay rejected or the socket dropped. Record the
             // inbound (we have its text) but leave the dedup set

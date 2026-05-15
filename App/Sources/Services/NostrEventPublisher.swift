@@ -2,10 +2,12 @@ import Foundation
 
 // MARK: - NostrEventPublishing
 //
-// Shared one-shot WebSocket publisher used by lightweight Nostr writers that
-// don't want to take a long-lived `NostrRelayService` dependency (e.g. the
-// agent peer-tools surface). Opens a transient socket, sends a single EVENT
-// frame, validates the OK ack, then closes.
+// Shared one-shot publisher used by lightweight Nostr writers that don't want
+// to take a long-lived `NostrRelayService` dependency (e.g. the agent
+// peer-tools surface). With the Rust core in place, "publish" now means:
+// hand the already-signed event JSON to the Rust pool, which broadcasts it
+// to every configured writer relay. The `relayURL` argument is preserved
+// for source compatibility but is no longer consulted.
 
 protocol NostrEventPublishing: Sendable {
     func publish(event: SignedNostrEvent, relayURL: URL) async throws
@@ -13,48 +15,39 @@ protocol NostrEventPublishing: Sendable {
 
 struct NostrWebSocketEventPublisher: NostrEventPublishing {
     func publish(event: SignedNostrEvent, relayURL: URL) async throws {
-        let task = URLSession.shared.webSocketTask(with: relayURL)
-        task.resume()
-        defer { task.cancel(with: .normalClosure, reason: nil) }
-
-        let message: [Any] = ["EVENT", eventDictionary(event)]
-        let data = try JSONSerialization.data(withJSONObject: message)
-        guard let text = String(data: data, encoding: .utf8) else {
+        // rust-cutover: relayURL ignored; Rust pool broadcasts to all writers
+        let jsonString: String
+        do {
+            let payload = try JSONSerialization.data(
+                withJSONObject: Self.eventDictionary(event),
+                options: []
+            )
+            guard let text = String(data: payload, encoding: .utf8) else {
+                throw NostrEventPublisherError.encodingFailed
+            }
+            jsonString = text
+        } catch let err as NostrEventPublisherError {
+            throw err
+        } catch {
             throw NostrEventPublisherError.encodingFailed
         }
-        try await send(text, task: task)
-        try await validateRelayAck(for: event.id, task: task)
-    }
 
-    private func send(_ text: String, task: URLSessionWebSocketTask) async throws {
-        let _: Void = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            task.send(.string(text)) { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
+        do {
+            _ = try await PodcastrCoreBridge.shared.core.publishSignedEventJson(
+                eventJson: jsonString
+            )
+        } catch {
+            // Funnel any Rust-side failure (signature reject, no relays, etc.)
+            // through the existing `.rejected` case so callers' `LocalizedError`
+            // handling continues to surface a human-readable message.
+            throw NostrEventPublisherError.rejected(error.localizedDescription)
         }
     }
 
-    private func validateRelayAck(for eventID: String, task: URLSessionWebSocketTask) async throws {
-        let message = try await task.receive()
-        guard case .string(let text) = message,
-              let data = text.data(using: .utf8),
-              let array = try JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= 3,
-              array[0] as? String == "OK",
-              array[1] as? String == eventID else {
-            throw NostrEventPublisherError.missingOK
-        }
-        if let accepted = array[2] as? Bool, !accepted {
-            let reason = array.count > 3 ? (array[3] as? String) : nil
-            throw NostrEventPublisherError.rejected(reason ?? "Relay rejected event.")
-        }
-    }
-
-    private func eventDictionary(_ event: SignedNostrEvent) -> [String: Any] {
+    /// Serialises a `SignedNostrEvent` into the exact JSON object shape the
+    /// Rust core expects (`publishSignedEventJson` parses it back into its
+    /// internal event type, then re-broadcasts).
+    private static func eventDictionary(_ event: SignedNostrEvent) -> [String: Any] {
         [
             "id": event.id,
             "pubkey": event.pubkey,

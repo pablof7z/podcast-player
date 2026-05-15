@@ -5,21 +5,23 @@ import os.log
 //
 // Live wiring for `PeerEventPublisherProtocol`. Signs kind:1 events with the
 // user's agent key (when available) and pushes them to the configured relay
-// via the shared `NostrEventPublishing` one-shot publisher. Used by the
-// `end_conversation` (final-message branch) and `send_friend_message` agent
-// tools.
+// via the Rust core's broadcast surface. Used by the `end_conversation`
+// (final-message branch) and `send_friend_message` agent tools.
+//
+// Why we sign in Swift and broadcast via Rust (rather than calling
+// `core.publishPeerReply`): both code paths copy `a`-tags from the root
+// (channel anchors) — `publishPeerReply` deliberately omits a-tag copy-through
+// per its contract. `publishFriendMessage` is even more divergent: a-tag
+// only, no e-tags. We compose the event Swift-side, sign with `LocalKeySigner`,
+// JSON-encode the `SignedNostrEvent`, and pass the wire-ready payload to
+// `core.publishSignedEventJson`, which broadcasts unchanged.
 
 final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Sendable {
     private let logger = Logger.app("AgentTools")
     weak var store: AppStateStore?
-    private let publisher: NostrEventPublishing
 
-    init(
-        store: AppStateStore,
-        publisher: NostrEventPublishing = NostrWebSocketEventPublisher()
-    ) {
+    init(store: AppStateStore) {
         self.store = store
-        self.publisher = publisher
     }
 
     func publishConversationReply(
@@ -67,6 +69,10 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
 
     // MARK: - Helpers
 
+    /// Sign a kind:1 draft locally, JSON-encode the wire event, and broadcast
+    /// via the Rust core. We bypass `core.publishPeerReply` here because both
+    /// callers carry `a`-tag channel anchors that the Rust reply helper
+    /// deliberately omits (see contract comment on `publish_peer_reply`).
     private func signAndPublish(content: String, tags: [[String]]) async throws -> String {
         guard let key = try NostrCredentialStore.privateKey() else {
             throw NostrEventPublisherError.noSigningKey
@@ -78,13 +84,28 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
 
         let settings = await MainActor.run { store?.state.settings }
         guard settings?.nostrEnabled == true,
-              let relayString = settings?.nostrRelayURL.trimmed, !relayString.isEmpty,
-              let relayURL = URL(string: relayString) else {
+              let relayString = settings?.nostrRelayURL.trimmed, !relayString.isEmpty else {
             throw NostrEventPublisherError.noRelayConfigured
         }
-        try await publisher.publish(event: signed, relayURL: relayURL)
+
+        let json = try encodeWireEvent(signed)
+        _ = try await PodcastrCoreBridge.shared.core.publishSignedEventJson(eventJson: json)
         logger.info("LivePeerEventPublisher: published kind:1 event \(signed.id, privacy: .public)")
         return signed.id
+    }
+
+    /// Encode a `SignedNostrEvent` as canonical wire JSON. The Codable
+    /// representation uses snake_case (`created_at`) per the struct's stored
+    /// property names, which matches the NIP-01 wire format the Rust core
+    /// parses inside `publish_signed_event_json`.
+    private func encodeWireEvent(_ event: SignedNostrEvent) throws -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(event)
+        guard let string = String(data: data, encoding: .utf8) else {
+            throw NostrEventPublisherError.encodingFailed
+        }
+        return string
     }
 }
 

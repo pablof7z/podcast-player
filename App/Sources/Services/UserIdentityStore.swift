@@ -430,6 +430,37 @@ final class UserIdentityStore {
         self.remoteSignerState = .connected(userPubkeyHex)
     }
 
+    /// Called by `UserIdentityStore+NIP46.swift` after the Rust-side
+    /// nostrconnect pairing completes. Rust owns the signer wholesale, so
+    /// we don't have a Swift `RemoteSigner` or session privkey to persist —
+    /// just record the connected identity and let any code that needs to
+    /// sign route through `PodcastrCoreBridge.shared.core.*` (which uses
+    /// the Rust-side signer the pairing installed).
+    func _adoptRustNostrConnect(
+        userPubkeyHex: String,
+        relayAbsoluteString: String
+    ) throws {
+        // No bunker pubkey to record (it lives inside the Rust signer) — keep
+        // the meta minimal so a relaunch can at least show the relay we paired
+        // against, until the Rust core surfaces session restoration.
+        let meta = RemoteMeta(
+            bunkerPubkeyHex: "",
+            relays: [relayAbsoluteString],
+            secret: nil,
+            permissions: [],
+            userPubkeyHex: userPubkeyHex
+        )
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
+        try saveRemoteMeta(meta)
+        // Rust holds the signer; Swift `signer` is unused for this mode.
+        self.signer = nil
+        self.publicKeyHex = userPubkeyHex
+        self.keyPair = nil
+        self.mode = .remoteSigner
+        self.remoteSignerState = .connected(userPubkeyHex)
+    }
+
     // MARK: - Test seam (slice B)
 
     /// Test-only: swap in a recording signer so wiring tests can verify
