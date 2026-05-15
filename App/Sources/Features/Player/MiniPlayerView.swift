@@ -160,7 +160,7 @@ struct MiniPlayerView: View {
             .buttonStyle(.pressable)
             .accessibilityLabel(state.isPlaying ? "Pause" : "Play")
         }
-        .padding(.horizontal, AppTheme.Spacing.xs)
+        .padding(.horizontal, AppTheme.Spacing.sm)
     }
 
     /// Re-resolves `state.episode` through the store so coarse download
@@ -219,9 +219,9 @@ struct MiniPlayerView: View {
 
     private var inlineArtwork: some View {
         artworkSurface(
-            size: 26,
+            size: 30,
             cornerRadius: AppTheme.Corner.sm,
-            placeholderGlyphSize: 11
+            placeholderGlyphSize: 12
         )
     }
 
@@ -259,15 +259,15 @@ struct MiniPlayerView: View {
 
             transportButtons
         }
-        .padding(.horizontal, AppTheme.Spacing.sm)
-        .padding(.vertical, AppTheme.Spacing.sm)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
     }
 
     private var artwork: some View {
         artworkSurface(
-            size: 44,
+            size: 50,
             cornerRadius: AppTheme.Corner.md,
-            placeholderGlyphSize: 18
+            placeholderGlyphSize: 20
         )
     }
 
