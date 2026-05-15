@@ -1,4 +1,85 @@
 import Foundation
+import os.log
+
+// MARK: - Rust core app-state observer wiring
+//
+// The Rust `PodcastrCore` emits app-scoped deltas (subscription_id == 0)
+// for SIGNER state transitions and RELAY connection status changes. This
+// extension forwards those into Swift app state so SwiftUI surfaces can
+// react.
+//
+// FIXME(rust-cutover): `AppStateStore.init` (in `AppStateStore.swift`,
+// outside this file's edit scope) must call `installNostrAppObservers()`
+// exactly once after the store finishes booting. Until that wiring lands,
+// the closure below is registered but never invoked.
+//
+// FIXME(rust-cutover): `AppState` does not yet declare `signerStatus` or
+// `relayDiagnostics`. The delta handlers below log every transition via
+// `os.Logger` so nothing is silently dropped while those fields are being
+// added. Once the storage exists, replace the `Self.logger.info(…)` lines
+// with the actual mutations described in the task brief:
+//   .signerConnected(pubkey)         → state.signerStatus = .connected(pubkey)
+//   .signerDisconnected(reason)      → state.signerStatus = .disconnected(reason)
+//   .relayStatusChanged(url, state)  → state.relayDiagnostics[url] = mapped
+//
+// Note on the observer token: `PodcastrCoreBridge.addAppObserver` returns
+// a `UInt64` cleanup token. Extensions can't add stored properties, so
+// the token is intentionally discarded — the store lives the full app
+// lifetime and the bridge is a process-wide singleton, so the observer
+// never needs to be torn down. If a future test harness needs a clean
+// teardown, hoist the token onto `AppStateStore.swift` (out-of-scope here).
+
+private let nostrObserverLogger = Logger.app("AppStateStore.NostrObserver")
+
+extension AppStateStore {
+
+    /// Wire the app-scoped Rust delta observer. Must be invoked once from
+    /// `AppStateStore.init` after the store finishes booting.
+    /// FIXME(rust-cutover): call site missing — see file-level FIXME.
+    func installNostrAppObservers() {
+        _ = PodcastrCoreBridge.shared.addAppObserver { [weak self] delta in
+            // The bridge already hopped to MainActor before invoking us,
+            // so direct state access is safe.
+            MainActor.assumeIsolated {
+                self?.handleNostrAppDelta(delta)
+            }
+        }
+    }
+
+    /// Routes a single app-scoped Rust delta into Swift state. Called
+    /// only from the observer closure registered in
+    /// `installNostrAppObservers()`. Unrelated change cases (peer
+    /// messages, comments, profile updates, …) are routed to per-
+    /// subscription handlers by `PodcastrCoreBridge` and never reach
+    /// this method.
+    private func handleNostrAppDelta(_ delta: Delta) {
+        switch delta.change {
+        case .signerConnected(let pubkey):
+            // FIXME(rust-cutover): wire `state.signerStatus = .connected(pubkey)` once the field lands on AppState.
+            nostrObserverLogger.info("signerConnected pubkey=\(pubkey, privacy: .public)")
+
+        case .signerDisconnected(let reason):
+            // FIXME(rust-cutover): wire `state.signerStatus = .disconnected(reason)` once the field lands on AppState.
+            nostrObserverLogger.info("signerDisconnected reason=\(reason, privacy: .public)")
+
+        case .relayStatusChanged(let url, let relayState):
+            // FIXME(rust-cutover): wire `state.relayDiagnostics[url] = mapped` once the field lands on AppState.
+            nostrObserverLogger.info(
+                "relayStatusChanged url=\(url, privacy: .public) state=\(String(describing: relayState), privacy: .public)"
+            )
+
+        default:
+            // All non-app-scoped change cases are routed to per-subscription
+            // handlers by the bridge. Hitting this arm would mean either
+            // (a) the bridge mis-routed a subscription_id != 0 delta to
+            // app observers, or (b) a new app-scoped DataChangeType case
+            // was added on the Rust side without updating this switch.
+            // FIXME(rust-cutover): if new app-scoped DataChangeType cases
+            // are added, extend the switch.
+            break
+        }
+    }
+}
 
 // MARK: - Nostr Access Control
 
