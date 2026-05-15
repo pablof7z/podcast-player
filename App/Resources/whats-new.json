@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T16:02:00Z",
+      "lines": [
+        "Avatar in the top-left toolbar now shows cleanly without the oversized glass ring."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T16:01:00Z",
       "lines": [
         "Settings gear icon is now in the toolbar next to your avatar, one tap away from anywhere in the app."
