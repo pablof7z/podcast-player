@@ -1,15 +1,17 @@
 import CryptoKit
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 // MARK: - NostrPodcastDiscoveryService
 //
-// Queries a Nostr relay for NIP-74 podcast events:
+// Queries the shared `NDK` instance for NIP-74 podcast events:
 //   kind:30074 — podcast show (parameterised replaceable, d-tag = show identifier)
 //   kind:30075 — podcast episode (parameterised replaceable, d-tag = episode identifier)
 //
-// Each query opens a short-lived WebSocket, collects events until EOSE or a
-// hard timeout, then closes. Models `NostrProfileFetcher` for the socket lifecycle.
+// Each query opens a single subscription that closes on EOSE; results stream
+// in via `subscription.events` (AsyncStream). An outer timeout races to bail
+// out if the relay never sends EOSE. No polling.
 
 @MainActor
 final class NostrPodcastDiscoveryService {
@@ -19,10 +21,6 @@ final class NostrPodcastDiscoveryService {
     private enum Wire {
         static let kindShow = 30074
         static let kindEpisode = 30075
-        static let req = "REQ"
-        static let close = "CLOSE"
-        static let event = "EVENT"
-        static let eose = "EOSE"
         static let timeout: Duration = .seconds(8)
     }
 
@@ -42,20 +40,19 @@ final class NostrPodcastDiscoveryService {
         let createdAt: Int
     }
 
-    // MARK: - Instance accumulator (main-actor isolated)
-
-    private var collectedEvents: [[String: Any]] = []
-
     // MARK: - Fetch shows (kind:30074)
 
-    /// Returns all kind:30074 shows the relay knows about, newest first.
+    /// Returns all kind:30074 shows the connected relay knows about, newest first.
+    /// `relayURL` is preserved for API compatibility but is no longer consulted
+    /// — NDK uses its connected relay pool.
     func fetchShows(relayURL: URL) async -> [ShowResult] {
-        let subID = "nip74-shows-\(UUID().uuidString.prefix(8))"
-        let filter: [String: Any] = ["kinds": [Wire.kindShow]]
-        await collectEvents(relayURL: relayURL, subID: subID, filter: filter)
+        let events = await collectEvents(
+            filter: NDKFilter(kinds: [Wire.kindShow]),
+            label: "shows"
+        )
 
         var seen = Set<String>()
-        return collectedEvents
+        return events
             .compactMap { Self.parseShow(from: $0) }
             .sorted { $0.createdAt > $1.createdAt }
             .filter { seen.insert($0.coordinate).inserted }
@@ -65,25 +62,21 @@ final class NostrPodcastDiscoveryService {
 
     /// Returns `Episode` objects for `show`, already mapped with `podcastID`.
     func fetchEpisodes(for show: ShowResult, relayURL: URL, podcastID: UUID) async -> [Episode] {
-        let subID = "nip74-eps-\(UUID().uuidString.prefix(8))"
         let showRef = "\(Wire.kindShow):\(show.pubkey):\(show.dTag)"
-        let filter: [String: Any] = [
-            "kinds": [Wire.kindEpisode],
-            "authors": [show.pubkey],
-            "#a": [showRef],
-        ]
-        await collectEvents(relayURL: relayURL, subID: subID, filter: filter)
+        let filter = NDKFilter(
+            authors: [show.pubkey],
+            kinds: [Wire.kindEpisode],
+            tags: ["a": Set([showRef])]
+        )
+        let events = await collectEvents(filter: filter, label: "episodes")
 
         // Dedupe by d-tag (replaceable events): keep the newest per d-tag.
-        var seen = [String: Int]()
-        var deduped: [[String: Any]] = []
-        for event in collectedEvents.sorted(by: {
-            ($0["created_at"] as? Int ?? 0) > ($1["created_at"] as? Int ?? 0)
-        }) {
-            let tags = (event["tags"] as? [[String]]) ?? []
-            let dTag = tags.first { $0.first == "d" }?[safe: 1] ?? ""
-            guard !dTag.isEmpty, seen[dTag] == nil else { continue }
-            seen[dTag] = event["created_at"] as? Int ?? 0
+        var seen = [String: Int64]()
+        var deduped: [NDKEvent] = []
+        for event in events.sorted(by: { $0.createdAt > $1.createdAt }) {
+            guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty,
+                  seen[dTag] == nil else { continue }
+            seen[dTag] = event.createdAt
             deduped.append(event)
         }
         return deduped.compactMap { Self.parseEpisode(from: $0, podcastID: podcastID) }
@@ -131,99 +124,61 @@ final class NostrPodcastDiscoveryService {
         return stored
     }
 
-    // MARK: - WebSocket collector
+    // MARK: - Subscription collector
 
-    /// Opens a short-lived WebSocket to `relayURL`, sends REQ filter, collects
-    /// EVENT payloads until EOSE or the hard timeout, then closes.
-    /// Results land in `collectedEvents` (cleared on each call).
-    private func collectEvents(relayURL: URL, subID: String, filter: [String: Any]) async {
-        collectedEvents = []
-
-        let wsTask = URLSession.shared.webSocketTask(with: relayURL)
-        wsTask.resume()
-
-        let req: [Any] = [Wire.req, subID, filter]
-        guard let payload = try? JSONSerialization.data(withJSONObject: req),
-              let text = String(data: payload, encoding: .utf8) else {
-            wsTask.cancel(with: .normalClosure, reason: nil)
-            return
+    /// Opens an `ndk.subscribe(closeOnEose: true)` for `filter`, drains the
+    /// resulting `AsyncStream` until it terminates (EOSE) or the hard timeout
+    /// fires. Returns the collected events. `label` is used only for logging.
+    private func collectEvents(filter: NDKFilter, label: String) async -> [NDKEvent] {
+        guard let ndk = NostrStack.shared.ndk else {
+            Self.logger.debug("collect \(label, privacy: .public): no NDK available")
+            return []
+        }
+        guard NostrStack.shared.relaysConnected else {
+            Self.logger.debug("collect \(label, privacy: .public): relays not connected")
+            return []
         }
 
-        do {
-            try await wsTask.send(.string(text))
-        } catch {
-            Self.logger.warning("collectEvents: REQ send failed — \(error, privacy: .public)")
-            wsTask.cancel(with: .normalClosure, reason: nil)
-            return
-        }
+        let subscription = ndk.subscribe(filter: filter, closeOnEose: true)
+        var collected: [NDKEvent] = []
 
-        await withTaskGroup(of: Void.self) { [weak self] group in
-            group.addTask { [weak self] in
-                await self?.readUntilEose(task: wsTask, subID: subID)
+        await withTaskGroup(of: [NDKEvent].self) { group in
+            group.addTask {
+                var local: [NDKEvent] = []
+                for await batch in subscription.events {
+                    local.append(contentsOf: batch)
+                }
+                return local
             }
             group.addTask {
                 try? await Task.sleep(for: Wire.timeout)
+                return []
             }
-            await group.next()
+            if let first = await group.next() {
+                collected = first
+            }
             group.cancelAll()
         }
-
-        let close: [Any] = [Wire.close, subID]
-        if let closeData = try? JSONSerialization.data(withJSONObject: close),
-           let closeText = String(data: closeData, encoding: .utf8) {
-            try? await wsTask.send(.string(closeText))
-        }
-        wsTask.cancel(with: .normalClosure, reason: nil)
-    }
-
-    private func readUntilEose(task: URLSessionWebSocketTask, subID: String) async {
-        while !Task.isCancelled {
-            do {
-                let msg = try await task.receive()
-                guard case .string(let text) = msg else { continue }
-                guard let data = text.data(using: .utf8),
-                      let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-                      array.count >= 2,
-                      let msgType = array[0] as? String else { continue }
-
-                switch msgType {
-                case Wire.eose:
-                    if (array[1] as? String) == subID { return }
-                case Wire.event:
-                    guard array.count >= 3,
-                          (array[1] as? String) == subID,
-                          let event = array[2] as? [String: Any] else { continue }
-                    collectedEvents.append(event)
-                default:
-                    break
-                }
-            } catch {
-                return
-            }
-        }
+        return collected
     }
 
     // MARK: - Event parsers
 
-    private static func parseShow(from event: [String: Any]) -> ShowResult? {
-        guard let pubkey = event["pubkey"] as? String,
-              let createdAt = event["created_at"] as? Int else { return nil }
+    private static func parseShow(from event: NDKEvent) -> ShowResult? {
+        let pubkey = event.pubkey
+        let createdAt = Int(event.createdAt)
 
-        let tags = (event["tags"] as? [[String]]) ?? []
-        guard let dTag = tags.first(where: { $0.first == "d" })?[safe: 1],
-              !dTag.isEmpty else { return nil }
+        guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty else { return nil }
 
-        let title = tags.first(where: { $0.first == "title" })?[safe: 1]
-            ?? (event["content"] as? String).map { String($0.prefix(80)) }
+        let title = event.tag(withName: "title")?[safe: 1]
+            ?? (event.content.isEmpty ? nil : String(event.content.prefix(80)))
             ?? ""
         guard !title.isEmpty else { return nil }
 
-        let author = tags.first(where: { $0.first == "author" })?[safe: 1] ?? ""
-        let description = tags.first(where: { $0.first == "summary" })?[safe: 1]
-            ?? (event["content"] as? String) ?? ""
-        let imageURL = tags.first(where: { $0.first == "image" })?[safe: 1]
-            .flatMap { URL(string: $0) }
-        let categories = tags.filter { $0.first == "t" }.compactMap { $0[safe: 1] }
+        let author = event.tag(withName: "author")?[safe: 1] ?? ""
+        let description = event.tag(withName: "summary")?[safe: 1] ?? event.content
+        let imageURL = event.tag(withName: "image")?[safe: 1].flatMap { URL(string: $0) }
+        let categories = event.tags(withName: "t").compactMap { $0[safe: 1] }
         let coordinate = "\(Wire.kindShow):\(pubkey):\(dTag)"
 
         return ShowResult(
@@ -239,41 +194,33 @@ final class NostrPodcastDiscoveryService {
         )
     }
 
-    private static func parseEpisode(from event: [String: Any], podcastID: UUID) -> Episode? {
-        let tags = (event["tags"] as? [[String]]) ?? []
-        guard let dTag = tags.first(where: { $0.first == "d" })?[safe: 1],
-              !dTag.isEmpty else { return nil }
+    private static func parseEpisode(from event: NDKEvent, podcastID: UUID) -> Episode? {
+        guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty else { return nil }
 
         // Audio URL from `imeta url` or fallback `url` tag — required.
-        let imetaTag = tags.first(where: { $0.first == "imeta" })
+        let imetaTag = event.tag(withName: "imeta")
         let audioURLStr = imetaTag?
             .dropFirst()
             .compactMap { $0.hasPrefix("url ") ? String($0.dropFirst(4)) : nil }
             .first
-            ?? tags.first(where: { $0.first == "url" })?[safe: 1]
+            ?? event.tag(withName: "url")?[safe: 1]
         guard let audioStr = audioURLStr, let audioURL = URL(string: audioStr) else { return nil }
 
-        let title = tags.first(where: { $0.first == "title" })?[safe: 1] ?? ""
-        let description = tags.first(where: { $0.first == "summary" })?[safe: 1]
-            ?? (event["content"] as? String) ?? ""
-        let imageURL = tags.first(where: { $0.first == "image" })?[safe: 1]
-            .flatMap { URL(string: $0) }
+        let title = event.tag(withName: "title")?[safe: 1] ?? ""
+        let description = event.tag(withName: "summary")?[safe: 1] ?? event.content
+        let imageURL = event.tag(withName: "image")?[safe: 1].flatMap { URL(string: $0) }
 
-        let pubDateSeconds = tags.first(where: { $0.first == "published_at" })?[safe: 1]
-            .flatMap { Int($0) } ?? (event["created_at"] as? Int) ?? 0
+        let pubDateSeconds = event.tag(withName: "published_at")?[safe: 1]
+            .flatMap { Int($0) } ?? Int(event.createdAt)
         let pubDate = Date(timeIntervalSince1970: TimeInterval(pubDateSeconds))
 
-        let duration = tags.first(where: { $0.first == "duration" })?[safe: 1]
-            .flatMap { TimeInterval($0) }
+        let duration = event.tag(withName: "duration")?[safe: 1].flatMap { TimeInterval($0) }
+        let chaptersURL = event.tag(withName: "chapters")?[safe: 1].flatMap { URL(string: $0) }
 
-        let chaptersURL = tags.first(where: { $0.first == "chapters" })?[safe: 1]
-            .flatMap { URL(string: $0) }
+        let transcriptTag = event.tag(withName: "transcript")
+        let transcriptURL = transcriptTag?[safe: 1].flatMap { URL(string: $0) }
+        let transcriptKind = TranscriptKind.from(mimeType: transcriptTag?[safe: 2])
 
-        let transcriptURL = tags.first(where: { $0.first == "transcript" })?[safe: 1]
-            .flatMap { URL(string: $0) }
-        let transcriptKind = TranscriptKind.from(
-            mimeType: tags.first(where: { $0.first == "transcript" })?[safe: 2]
-        )
         let mimeType = imetaTag?
             .dropFirst()
             .compactMap { $0.hasPrefix("m ") ? String($0.dropFirst(2)) : nil }

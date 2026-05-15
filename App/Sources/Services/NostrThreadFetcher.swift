@@ -1,14 +1,15 @@
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
-/// One-shot WebSocket fetch for a NIP-10 conversation: the root event
-/// itself plus every kind:1 that e-tags it. Used by the peer-agent
-/// responder to assemble the message history before invoking the LLM.
+/// One-shot NIP-10 conversation fetcher backed by the shared `NDK` instance.
+/// Pulls the root event (by id) plus every kind:1 that e-tags it, so the
+/// peer-agent responder can assemble message history before invoking the LLM.
 ///
-/// Pattern mirrors `NostrProfileFetcher`: open a fresh socket, send a
-/// single multi-filter REQ, read EVENTs until EOSE or a hard timeout,
-/// then close. Each call owns its own socket and subscription id so
-/// concurrent fetches don't collide.
+/// Reactive model mirrors `NostrProfileFetcher`: two parallel `ndk.subscribe`
+/// calls — one for the root, one for replies — drained concurrently into a
+/// shared accumulator. Each closes on EOSE; an outer timeout races as a
+/// safety net for relays that never send EOSE. No polling.
 @MainActor
 final class NostrThreadFetcher {
 
@@ -16,16 +17,12 @@ final class NostrThreadFetcher {
 
     private enum Wire {
         static let kindTextNote = 1
-        static let req = "REQ"
-        static let close = "CLOSE"
-        static let event = "EVENT"
-        static let eose = "EOSE"
         static let timeout: Duration = .seconds(4)
     }
 
     /// Wire-shape of an inbound kind:1 the responder needs to assemble a
-    /// conversation. Keeps the responder decoupled from raw `[String: Any]`
-    /// dictionaries by surfacing only the fields it actually reads.
+    /// conversation. Keeps the responder decoupled from `NDKEvent` so the
+    /// transport can swap without rippling into call sites.
     struct Event: Sendable, Equatable {
         let id: String
         let pubkey: String
@@ -38,11 +35,11 @@ final class NostrThreadFetcher {
     /// concurrent fetches don't share state.
     private var collected: [String: Event] = [:]
 
-    /// Fetch the root (by id) and all kind:1 replies that e-tag it from
-    /// the configured relay. Results are de-duplicated by event id and
-    /// sorted ascending by `created_at`. Returns an empty array on any
-    /// hard failure — the caller is expected to proceed with whatever
-    /// the inbound event itself carries.
+    /// Fetch the root (by id) and all kind:1 replies that e-tag it via the
+    /// shared `NDK`. The `relayURL` parameter is preserved for API
+    /// compatibility but is no longer consulted — NDK uses its connected
+    /// relay pool. Results are de-duplicated by event id and sorted ascending
+    /// by `created_at`. Returns an empty array on any hard failure.
     static func fetch(rootID: String, relayURL: URL) async -> [Event] {
         await NostrThreadFetcher().run(rootID: rootID, relayURL: relayURL)
     }
@@ -50,33 +47,45 @@ final class NostrThreadFetcher {
     private init() {}
 
     private func run(rootID: String, relayURL: URL) async -> [Event] {
-        let task = URLSession.shared.webSocketTask(with: relayURL)
-        task.resume()
-        defer { task.cancel(with: .normalClosure, reason: nil) }
-
-        let subID = "thread-\(UUID().uuidString.prefix(8))"
-        // One REQ, two filters — pulls both the root and its replies in a
-        // single subscription so we get a single EOSE that closes the
-        // socket cleanly.
-        let idFilter: [String: Any] = ["ids": [rootID]]
-        let replyFilter: [String: Any] = ["kinds": [Wire.kindTextNote], "#e": [rootID]]
-        let req: [Any] = [Wire.req, subID, idFilter, replyFilter]
-
-        guard let payload = try? JSONSerialization.data(withJSONObject: req),
-              let text = String(data: payload, encoding: .utf8) else {
+        guard let ndk = NostrStack.shared.ndk else {
+            Self.logger.debug("fetch: no NDK available; returning empty")
+            return []
+        }
+        guard NostrStack.shared.relaysConnected else {
+            Self.logger.debug("fetch: relays not connected; returning empty")
             return []
         }
 
-        do {
-            try await task.send(.string(text))
-        } catch {
-            Self.logger.warning("fetch: send failed — \(error, privacy: .public)")
-            return []
-        }
+        // Two parallel subscriptions:
+        //   1) the root event itself, by id
+        //   2) replies that e-tag the root, restricted to kind:1
+        // Both close on EOSE so their AsyncStreams terminate naturally; the
+        // outer timeout races as a backstop for missing-EOSE relays.
+        let rootSub = ndk.subscribe(
+            filter: NDKFilter(ids: [rootID]),
+            closeOnEose: true
+        )
+        let repliesSub = ndk.subscribe(
+            filter: NDKFilter(kinds: [Wire.kindTextNote], events: [rootID]),
+            closeOnEose: true
+        )
 
         await withTaskGroup(of: Void.self) { group in
             group.addTask { [weak self] in
-                await self?.readUntilEose(task: task, subID: subID)
+                guard let self else { return }
+                for await batch in rootSub.events {
+                    for event in batch {
+                        await self.absorb(event)
+                    }
+                }
+            }
+            group.addTask { [weak self] in
+                guard let self else { return }
+                for await batch in repliesSub.events {
+                    for event in batch {
+                        await self.absorb(event)
+                    }
+                }
             }
             group.addTask {
                 try? await Task.sleep(for: Wire.timeout)
@@ -85,59 +94,18 @@ final class NostrThreadFetcher {
             group.cancelAll()
         }
 
-        let close: [Any] = [Wire.close, subID]
-        if let data = try? JSONSerialization.data(withJSONObject: close),
-           let str = String(data: data, encoding: .utf8) {
-            try? await task.send(.string(str))
-        }
-
         return collected.values.sorted { $0.createdAt < $1.createdAt }
     }
 
-    private func readUntilEose(task: URLSessionWebSocketTask, subID: String) async {
-        while !Task.isCancelled {
-            do {
-                let msg = try await task.receive()
-                guard case .string(let text) = msg else { continue }
-                if handleMessage(text: text, expectedSubID: subID) == .eose {
-                    return
-                }
-            } catch {
-                return
-            }
-        }
-    }
-
-    private enum HandleOutcome { case event, eose, other }
-
-    @discardableResult
-    private func handleMessage(text: String, expectedSubID: String) -> HandleOutcome {
-        guard let data = text.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= 2,
-              let head = array[0] as? String else { return .other }
-        switch head {
-        case Wire.eose:
-            return (array[1] as? String) == expectedSubID ? .eose : .other
-        case Wire.event:
-            guard array.count >= 3,
-                  (array[1] as? String) == expectedSubID,
-                  let dict = array[2] as? [String: Any],
-                  let id = dict["id"] as? String,
-                  let pubkey = dict["pubkey"] as? String,
-                  let createdAt = dict["created_at"] as? Int,
-                  let content = dict["content"] as? String else { return .other }
-            let tags = (dict["tags"] as? [[String]]) ?? []
-            collected[id] = Event(
-                id: id,
-                pubkey: pubkey,
-                createdAt: createdAt,
-                content: content,
-                tags: tags
-            )
-            return .event
-        default:
-            return .other
-        }
+    /// Funnels an inbound `NDKEvent` into the shared accumulator. Same id
+    /// arriving from both subscriptions is harmlessly idempotent (replace).
+    private func absorb(_ event: NDKEvent) {
+        collected[event.id] = Event(
+            id: event.id,
+            pubkey: event.pubkey,
+            createdAt: Int(event.createdAt),
+            content: event.content,
+            tags: event.tags
+        )
     }
 }
