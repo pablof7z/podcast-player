@@ -175,7 +175,7 @@ struct MiniPlayerView: View {
     private var inlineTitle: some View {
         if let episode = state.episode {
             Text(episode.title)
-                .font(.caption.weight(.semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -190,7 +190,7 @@ struct MiniPlayerView: View {
     private var inlineClock: some View {
         if state.episode != nil {
             Text(PlayerTimeFormat.clock(state.currentTime))
-                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -219,9 +219,9 @@ struct MiniPlayerView: View {
 
     private var inlineArtwork: some View {
         artworkSurface(
-            size: 30,
+            size: 34,
             cornerRadius: AppTheme.Corner.sm,
-            placeholderGlyphSize: 12
+            placeholderGlyphSize: 13
         )
     }
 
@@ -259,15 +259,15 @@ struct MiniPlayerView: View {
 
             transportButtons
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
     }
 
     private var artwork: some View {
         artworkSurface(
-            size: 50,
+            size: 56,
             cornerRadius: AppTheme.Corner.md,
-            placeholderGlyphSize: 20
+            placeholderGlyphSize: 22
         )
     }
 
@@ -325,7 +325,7 @@ struct MiniPlayerView: View {
     private var titleLine: some View {
         if let episode = state.episode {
             Text(episode.title)
-                .font(.footnote.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -346,28 +346,28 @@ struct MiniPlayerView: View {
                         .foregroundStyle(.tint)
                         .accessibilityHidden(true)
                     Text(chapterTitle)
-                        .font(AppTheme.Typography.caption2)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .transition(.opacity)
                         .id(chapterTitle)
                     Text("·")
-                        .font(AppTheme.Typography.caption2)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 } else if !showName.isEmpty {
                     Text(showName)
-                        .font(AppTheme.Typography.caption2)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                     Text("·")
-                        .font(AppTheme.Typography.caption2)
+                        .font(AppTheme.Typography.caption)
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 }
                 Text(PlayerTimeFormat.clock(state.currentTime))
-                    .font(AppTheme.Typography.mono)
+                    .font(AppTheme.Typography.monoCaption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
@@ -396,10 +396,6 @@ struct MiniPlayerView: View {
             } label: {
                 Image(systemName: forwardSkipGlyph)
                     .font(.title3.weight(.semibold))
-                    // `.primary` foreground (not `.secondary`) so the
-                    // glyph doesn't read as disabled at glass-on-glass
-                    // 50 % opacity. Size + lack of glass capsule already
-                    // carry the secondary-action semantics.
                     .foregroundStyle(.primary)
                     .frame(width: 36, height: 36)
                     .frame(width: 44, height: 44)
@@ -407,7 +403,28 @@ struct MiniPlayerView: View {
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Skip forward \(state.skipForwardSeconds) seconds")
+
+            Button {
+                dismissCurrentEpisode()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Dismiss")
         }
+    }
+
+    private func dismissCurrentEpisode() {
+        guard let episodeID = state.episode?.id else { return }
+        Haptics.warning()
+        state.pause()
+        state.episode = nil
+        store.markEpisodePlayed(episodeID)
     }
 
     private var progressFraction: CGFloat {

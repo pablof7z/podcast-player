@@ -2,6 +2,20 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T15:00:00Z",
+      "lines": [
+        "Mini player is now larger with bigger fonts. Tap × to dismiss it and remove the episode from Continue Listening."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-15T14:00:00Z",
+      "lines": [
+        "Agent tool: publish_episode publishes an existing episode to Nostr as a NIP-74 kind:30075 event.",
+        "Agent tool: update_podcast now retroactively publishes all existing episodes when a podcast's visibility is flipped to public.",
+        "Agent tools create_podcast and update_podcast now return a shareable naddr (NIP-19) for the published show event."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T12:00:00Z",
       "lines": [
         "Mini player is now slightly larger and more comfortable to tap."
