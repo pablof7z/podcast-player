@@ -20,9 +20,17 @@ enum RelayConfigMerger {
 
         var configsByURL: [String: RelayConfig] = [:]
 
+        // Layer 1: NIP-65 entries (read/write) — OR flags for duplicate tags
+        // since a valid kind:10002 may include separate ["r", url, "read"] and ["r", url, "write"] tags.
         for entry in nip65 {
             let url = RelayConfig.normalizeURL(entry.url)
-            configsByURL[url] = RelayConfig(url: url, read: entry.read, write: entry.write)
+            if var existing = configsByURL[url] {
+                existing.read = existing.read || entry.read
+                existing.write = existing.write || entry.write
+                configsByURL[url] = existing
+            } else {
+                configsByURL[url] = RelayConfig(url: url, read: entry.read, write: entry.write)
+            }
         }
 
         for entry in nip78 {

@@ -216,10 +216,15 @@ struct Settings: Codable, Hashable, Sendable {
     /// that drive subscription + publish routing.
     var relayConfigs: [RelayConfig] = []
 
-    /// First read+write relay's URL, falling back to the seed default.
+    /// First read+write relay's URL. Falls back to the legacy `nostrRelayURL` field
+    /// so users with a customised single-relay setting aren't silently switched, and
+    /// only then to the seed default.
     /// Lets callers that still expect a single relay string keep working until they migrate.
     var primaryRelayURL: String {
-        relayConfigs.first(where: { $0.read && $0.write })?.url ?? Defaults.nostrRelayURL
+        if let relay = relayConfigs.first(where: { $0.read && $0.write }) {
+            return relay.url
+        }
+        return nostrRelayURL.isEmpty ? Defaults.nostrRelayURL : nostrRelayURL
     }
 
     // Onboarding

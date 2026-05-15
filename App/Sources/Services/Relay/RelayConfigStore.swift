@@ -1,9 +1,12 @@
 import Foundation
 import Observation
+import os.log
 
 @MainActor
 @Observable
 final class RelayConfigStore {
+    private static let logger = Logger.app("RelayConfigStore")
+
     private(set) var relays: [RelayConfig] = []
     private let appStateStore: AppStateStore
 
@@ -13,6 +16,8 @@ final class RelayConfigStore {
 
         if relays.isEmpty {
             migrateFromLegacy()
+        } else {
+            applyAndPersist()
         }
     }
 
@@ -21,14 +26,13 @@ final class RelayConfigStore {
     func addRelay(_ config: RelayConfig) {
         guard !relays.contains(where: { $0.url == config.url }) else { return }
         relays.append(config)
-        persistLocally()
+        applyAndPersist()
     }
 
     func removeRelay(url: String) {
         let normalized = RelayConfig.normalizeURL(url)
         relays.removeAll { $0.url == normalized }
-        RelayDefaults.enforcePinnedInvariants(&relays)
-        persistLocally()
+        applyAndPersist()
     }
 
     func updateRoles(url: String, read: Bool, write: Bool, rooms: Bool, indexer: Bool) {
@@ -38,7 +42,7 @@ final class RelayConfigStore {
         relays[idx].write = write
         relays[idx].rooms = rooms
         relays[idx].indexer = indexer
-        persistLocally()
+        applyAndPersist()
     }
 
     /// Merge relays imported from another user. Existing `rooms`/`indexer` flags
@@ -58,15 +62,23 @@ final class RelayConfigStore {
                 ))
             }
         }
-        persistLocally()
+        applyAndPersist()
     }
 
     // MARK: - Nostr Persistence
 
-    func publishToNostr(signer: NostrSigner) async {
+    func publishToNostr(signer: any NostrSigner) async {
         let snapshot = relays
-        try? await NIP65Publisher.publish(configs: snapshot, signer: signer)
-        try? await NIP78RelayStore.publish(configs: snapshot, signer: signer)
+        do {
+            try await NIP65Publisher.publish(configs: snapshot, signer: signer)
+        } catch {
+            Self.logger.warning("NIP-65 publish failed at signer step: \(error.localizedDescription, privacy: .public)")
+        }
+        do {
+            try await NIP78RelayStore.publish(configs: snapshot, signer: signer)
+        } catch {
+            Self.logger.warning("NIP-78 publish failed at signer step: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// Placeholder for Phase 2. RelayPool-based fetch wiring lands when the pool exists;
@@ -78,6 +90,12 @@ final class RelayConfigStore {
     }
 
     // MARK: - Private
+
+    /// Enforce pinned invariants, then persist. Call after every mutation.
+    private func applyAndPersist() {
+        RelayDefaults.enforcePinnedInvariants(&relays)
+        persistLocally()
+    }
 
     private func persistLocally() {
         var settings = appStateStore.state.settings
@@ -101,8 +119,7 @@ final class RelayConfigStore {
             migrated = RelayDefaults.seedRelays
         }
 
-        RelayDefaults.enforcePinnedInvariants(&migrated)
         relays = migrated
-        persistLocally()
+        applyAndPersist()
     }
 }

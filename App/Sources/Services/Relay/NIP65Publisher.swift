@@ -1,6 +1,9 @@
 import Foundation
+import os.log
 
 enum NIP65Publisher {
+    private static let logger = Logger.app("NIP65Publisher")
+
     static func buildTags(from configs: [RelayConfig]) -> [[String]] {
         configs.compactMap { config in
             guard config.read || config.write else { return nil }
@@ -23,7 +26,8 @@ enum NIP65Publisher {
     }
 
     /// Publish kind:10002 to write relays + mirror to purplepag.es so other clients can discover it.
-    static func publish(configs: [RelayConfig], signer: NostrSigner) async throws {
+    /// Only the signer call propagates errors — per-relay publishes are best-effort fire-and-forget.
+    static func publish(configs: [RelayConfig], signer: any NostrSigner) async throws {
         let draft = buildDraft(from: configs)
         let signed = try await signer.sign(draft)
 
@@ -35,7 +39,11 @@ enum NIP65Publisher {
             for urlString in targetURLs {
                 guard let url = URL(string: urlString) else { continue }
                 group.addTask {
-                    try? await publisher.publish(event: signed, relayURL: url)
+                    do {
+                        try await publisher.publish(event: signed, relayURL: url)
+                    } catch {
+                        logger.warning("Failed to publish kind:10002 to \(urlString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    }
                 }
             }
         }

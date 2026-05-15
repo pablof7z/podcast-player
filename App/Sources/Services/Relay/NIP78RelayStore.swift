@@ -1,6 +1,8 @@
 import Foundation
+import os.log
 
 enum NIP78RelayStore {
+    private static let logger = Logger.app("NIP78RelayStore")
     static let dTag = "com.podcast.relays"
 
     struct Entry: Codable {
@@ -26,7 +28,8 @@ enum NIP78RelayStore {
         )
     }
 
-    static func publish(configs: [RelayConfig], signer: NostrSigner) async throws {
+    /// Only the signer call propagates errors — per-relay publishes are best-effort fire-and-forget.
+    static func publish(configs: [RelayConfig], signer: any NostrSigner) async throws {
         guard let draft = buildDraft(from: configs) else { return }
         let signed = try await signer.sign(draft)
 
@@ -36,7 +39,11 @@ enum NIP78RelayStore {
             for urlString in writeURLs {
                 guard let url = URL(string: urlString) else { continue }
                 group.addTask {
-                    try? await publisher.publish(event: signed, relayURL: url)
+                    do {
+                        try await publisher.publish(event: signed, relayURL: url)
+                    } catch {
+                        logger.warning("Failed to publish kind:30078 to \(urlString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    }
                 }
             }
         }
