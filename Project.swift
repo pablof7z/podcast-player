@@ -55,7 +55,11 @@ let project = Project(
             "SWIFT_STRICT_CONCURRENCY": "complete",
             "DEVELOPMENT_TEAM": "\(appleTeamID)",
             "CODE_SIGN_STYLE": "Automatic",
-            "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
+            // Disabled because the Podcastr target's pre-build script invokes
+            // `cargo build`, which writes to `App/core/target/` — outside any
+            // sandbox I/O declaration. Re-enabling would block the Rust core
+            // build step and produce stale UniFFI bindings.
+            "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
         ]
     ),
     targets: [
@@ -72,6 +76,22 @@ let project = Project(
                 "App/Resources/whats-new.json",
             ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
+            scripts: [
+                // Rebuild the Rust core static library and regenerate the
+                // UniFFI Swift bindings + C header + modulemap on every build.
+                // `basedOnDependencyAnalysis: false` forces Xcode to run the
+                // script every time — without it, Xcode caches based on
+                // declared inputs and would happily compile against stale
+                // bindings whenever any Rust source under `App/core/src/`
+                // changes.
+                .pre(
+                    script: """
+                    bash "${SRCROOT}/App/core/scripts/generate-swift-bindings.sh"
+                    """,
+                    name: "Generate Swift bindings + build Rust static lib",
+                    basedOnDependencyAnalysis: false
+                ),
+            ],
             dependencies: [
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
@@ -89,6 +109,46 @@ let project = Project(
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "TARGETED_DEVICE_FAMILY": "1,2",
                     "PROVISIONING_PROFILE_SPECIFIER": "$(CI_APP_PROFILE_SPECIFIER)",
+
+                    // --- Rust core (UniFFI) wiring ---
+                    //
+                    // `App/Vendor/` holds the generated `podcastr_coreFFI.h`
+                    // and `module.modulemap` that lets Swift `import` the
+                    // C symbols emitted by uniffi-bindgen. Both Clang
+                    // (HEADER_SEARCH_PATHS) and the Swift importer
+                    // (SWIFT_INCLUDE_PATHS) need to see it.
+                    "HEADER_SEARCH_PATHS": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/Vendor",
+                    ],
+                    "SWIFT_INCLUDE_PATHS": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/Vendor",
+                    ],
+                    // Path to the platform-specific Rust static library.
+                    // `generate-swift-bindings.sh` produces these exact paths:
+                    //   iphonesimulator -> universal arm64+x86_64 via `lipo`
+                    //   iphoneos        -> aarch64-apple-ios
+                    "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/core/target/universal-ios-sim/release",
+                    ],
+                    "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/core/target/aarch64-apple-ios/release",
+                    ],
+                    // Link the static lib by absolute path (matches the
+                    // highlighter pattern). Using the full path rather than
+                    // `-lpodcastr_core` gives the linker a clear error if the
+                    // pre-build script hasn't produced the file yet.
+                    "OTHER_LDFLAGS[sdk=iphonesimulator*]": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/core/target/universal-ios-sim/release/libpodcastr_core.a",
+                    ],
+                    "OTHER_LDFLAGS[sdk=iphoneos*]": [
+                        "$(inherited)",
+                        "$(SRCROOT)/App/core/target/aarch64-apple-ios/release/libpodcastr_core.a",
+                    ],
                 ]
             )
         ),

@@ -261,6 +261,7 @@
 		6137F15C0FBF81BB9A8B14FA /* RAGSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3AAD15F0A5EED308179615E /* RAGSearch.swift */; };
 		615763707506ABB70ACCC65B /* NostrAgentResponder+Delegation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDA9595412FD6F4FF4F30C8 /* NostrAgentResponder+Delegation.swift */; };
 		61CC869428D474EEF2CA9FF7 /* Bech32.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6FE38C2893D5E47E328069 /* Bech32.swift */; };
+		61F109164F91758731DAED1C /* PodcastrCoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8518357868D64A925C4E67 /* PodcastrCoreBridge.swift */; };
 		622B6F41E14A2CAA5A9B3A75 /* UseMyOwnKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24BB042ED9CA0BD3150DF8F6 /* UseMyOwnKeyView.swift */; };
 		62C9A71B2AC8A31D92006160 /* whats-new.json in Resources */ = {isa = PBXBuildFile; fileRef = FDDE0135D737F1677B521BE8 /* whats-new.json */; };
 		6379A29002FEAB95C9077F03 /* TranscriptsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9678378224EA5AB7669C20A0 /* TranscriptsSettingsView.swift */; };
@@ -471,6 +472,7 @@
 		B09D1205689D1BA4D82DD147 /* OpenRouterKeyInfoCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F09BBB04F0D2606495E0126 /* OpenRouterKeyInfoCard.swift */; };
 		B0BC3440ACBF9888613B0281 /* InMemoryVectorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFDF992EC3145B6110E93A2 /* InMemoryVectorStore.swift */; };
 		B1C4924669DFE49AC01947B5 /* BriefingRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3CDAA817E8912E2F51254D7 /* BriefingRequest.swift */; };
+		B238EE5AE114BCAF07DBFC11 /* podcastr_core.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB67A07F7DE21EC06B0E9BAA /* podcastr_core.swift */; };
 		B36BA793C08B3FA7DF61448C /* Chunk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5DFDDEF3551BD1F2EE931E /* Chunk.swift */; };
 		B3726564C7DA6AEDAE081EDB /* ClipExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A742DCE89B39F3ED96D3330 /* ClipExporter.swift */; };
 		B389C5108FE832C3F0F5FB34 /* AgentNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30CFCB7607AB17F8205471 /* AgentNotesView.swift */; };
@@ -1281,6 +1283,7 @@
 		CA1F1E69DB05ED198000CF47 /* ElevenLabsCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsCredentialStore.swift; sourceTree = "<group>"; };
 		CA594AA5EEB9C2B662718060 /* PlayerMoreMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerMoreMenu.swift; sourceTree = "<group>"; };
 		CA9B23681B1B9A54B3F9C90E /* AIChapterCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChapterCompiler.swift; sourceTree = "<group>"; };
+		CB67A07F7DE21EC06B0E9BAA /* podcastr_core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = podcastr_core.swift; sourceTree = "<group>"; };
 		CB9C42182225DE1D0DECA8D6 /* AppStateStore+Threading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Threading.swift"; sourceTree = "<group>"; };
 		CBC250C2436FBB5E35A6D63A /* AppleNativeSTTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleNativeSTTClient.swift; sourceTree = "<group>"; };
 		CC85827C9052428B70649C4F /* EpisodeDownloadServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDownloadServiceTests.swift; sourceTree = "<group>"; };
@@ -1398,6 +1401,7 @@
 		F9EAFD61A06355CEEBAD9AF7 /* NostrRelayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrRelayService.swift; sourceTree = "<group>"; };
 		FB415E5A627F3BCFD24327F1 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		FC251F9CF9946FF112BC46DB /* AgentTools+Voices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+Voices.swift"; sourceTree = "<group>"; };
+		FC8518357868D64A925C4E67 /* PodcastrCoreBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastrCoreBridge.swift; sourceTree = "<group>"; };
 		FC887889E3D3A4F4E05AC04F /* ProviderEmbeddingsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderEmbeddingsClient.swift; sourceTree = "<group>"; };
 		FCB708E5772583FC3B73D67E /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		FD448973DAA48461838EA97B /* ImageGenerationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerationSettingsView.swift; sourceTree = "<group>"; };
@@ -1453,6 +1457,7 @@
 				1B7B4865B8CD3150569200FB /* Features */,
 				36DF121F22916087E806837C /* Knowledge */,
 				1BFCA17424CE903C40D70C0C /* Podcast */,
+				8EA06A560EF990C7E3C90DDD /* PodcastrCore */,
 				CB9C2B970C15B7AD67B84DC5 /* Services */,
 				7B9A2C5B2B80C590DDFB6090 /* State */,
 				9D1C4E91CB2A37C70F9DA589 /* Transcript */,
@@ -1894,6 +1899,14 @@
 			path = AgentChat;
 			sourceTree = "<group>";
 		};
+		5A4A63F6E6DD97E0C816BFCC /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				CB67A07F7DE21EC06B0E9BAA /* podcastr_core.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
 		5E4F3CE9E6CC801198F33D66 /* AppTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -2059,6 +2072,15 @@
 				F18BBA6536A206E89AD9A0D1 /* VTTParser.swift */,
 			);
 			path = Parsing;
+			sourceTree = "<group>";
+		};
+		8EA06A560EF990C7E3C90DDD /* PodcastrCore */ = {
+			isa = PBXGroup;
+			children = (
+				5A4A63F6E6DD97E0C816BFCC /* Generated */,
+				FC8518357868D64A925C4E67 /* PodcastrCoreBridge.swift */,
+			);
+			path = PodcastrCore;
 			sourceTree = "<group>";
 		};
 		8F63FEE79A295AF860B4666C /* Resources */ = {
@@ -2631,6 +2653,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F32525F3356145BDFDB742E2 /* Build configuration list for PBXNativeTarget "Podcastr" */;
 			buildPhases = (
+				17BE8DDCF6421A2BB1CB4838 /* Generate Swift bindings + build Rust static lib */,
 				2837A17C0CC762E72DA9928D /* Sources */,
 				D97CFCB8065649196395583B /* Resources */,
 				E932CEB28D36FB602510CFC7 /* Embed Foundation Extensions */,
@@ -2739,6 +2762,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		17BE8DDCF6421A2BB1CB4838 /* Generate Swift bindings + build Rust static lib */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Swift bindings + build Rust static lib";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "bash \"${SRCROOT}/App/core/scripts/generate-swift-bindings.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2837A17C0CC762E72DA9928D /* Sources */ = {
@@ -3199,6 +3244,8 @@
 				2765C4E7686B37B23BE18A50 /* RSSParserDelegate.swift in Sources */,
 				87B6D49DBAF7EADDD0FFB80B /* TranscriptKind.swift in Sources */,
 				77B0A55AFAECFFD755AA55AA /* TranscriptState.swift in Sources */,
+				B238EE5AE114BCAF07DBFC11 /* podcastr_core.swift in Sources */,
+				61F109164F91758731DAED1C /* PodcastrCoreBridge.swift in Sources */,
 				00398F2D3677B88258458499 /* AIChapterCompiler.swift in Sources */,
 				64AEF03C6CE3F77655D0FEC1 /* AgentPicksPrompt.swift in Sources */,
 				11F4FEA00D35EE21AC7F0BD9 /* AgentPicksService+Cache.swift in Sources */,
@@ -3452,11 +3499,31 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				INFOPLIST_FILE = App/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/aarch64-apple-ios/release",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/universal-ios-sim/release",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/aarch64-apple-ios/release/libpodcastr_core.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/universal-ios-sim/release/libpodcastr_core.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Podcastr;
@@ -3466,6 +3533,10 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -3518,11 +3589,31 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				INFOPLIST_FILE = App/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/aarch64-apple-ios/release",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/universal-ios-sim/release",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/aarch64-apple-ios/release/libpodcastr_core.a",
+				);
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
+					"$(inherited)",
+					"$(SRCROOT)/App/core/target/universal-ios-sim/release/libpodcastr_core.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Podcastr;
@@ -3536,6 +3627,10 @@
 					DEBUG,
 				);
 				SWIFT_COMPILATION_MODE = singlefile;
+				SWIFT_INCLUDE_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -3547,6 +3642,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				INFOPLIST_FILE = "Derived/InfoPlists/PodcastrTests-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3609,7 +3709,7 @@
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -3632,6 +3732,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(inherited)",
+					"$(SRCROOT)/App/Vendor",
+				);
 				INFOPLIST_FILE = "Derived/InfoPlists/PodcastrTests-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3698,7 +3803,7 @@
 				DEVELOPMENT_TEAM = 456SHKPP26;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
