@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T20:15:00Z",
+      "lines": [
+        "Fixed: agent-generated downloaded episodes now play reliably across app launches — stale sandbox paths are recomputed at playback time."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T20:00:00Z",
       "lines": [
         "Fixed: agent-generated episodes now correctly upload audio to Blossom before publishing to Nostr — local file paths no longer appear in kind:30075 events."
