@@ -14,6 +14,14 @@ struct PodcastrApp: App {
     /// Home / Library / Wiki — i.e. while no chat session exists. Mounted
     /// on `RootView` via `agentAskPresenter(coordinator:)`.
     @State private var askCoordinator = AgentAskCoordinator()
+    /// Phase 2 relay system. Coexists with `NostrRelayService` until Phase 5
+    /// migrates callers. `relayConfigStore` is constructed eagerly on launch;
+    /// `relayPool` is constructed once the user's signer is available, which
+    /// can happen synchronously (local-key path) or asynchronously (NIP-46
+    /// resume path) — `bootstrapRelaysIfReady()` is idempotent per-pubkey.
+    @State private var relayConfigStore: RelayConfigStore?
+    @State private var relayPool: RelayPool?
+    @State private var bootstrappedPubkey: String?
 
     // MARK: - What's-new sheet wiring
     //
@@ -47,6 +55,20 @@ struct PodcastrApp: App {
                     service.start()
                 }
                 .task {
+                    let configStore = RelayConfigStore(appStateStore: store)
+                    relayConfigStore = configStore
+                    await bootstrapRelaysIfReady()
+                }
+                .onChange(of: userIdentity.publicKeyHex) { _, _ in
+                    Task { await bootstrapRelaysIfReady() }
+                }
+                // NIP-46 resume sets `publicKeyHex` synchronously but `signer`
+                // asynchronously inside `resumeRemote`. Observe `remoteSignerState`
+                // too so the bootstrap fires once the bunker connect completes.
+                .onChange(of: userIdentity.remoteSignerState) { _, _ in
+                    Task { await bootstrapRelaysIfReady() }
+                }
+                .task {
                     // Seed a fresh install silently so the first launch
                     // doesn't dump the entire changelog as "new."
                     WhatsNewService.seedIfNeeded()
@@ -67,6 +89,30 @@ struct PodcastrApp: App {
                 .onChange(of: store.state.settings.nostrProfileAbout) { _, _ in relayService?.republishProfile() }
                 .onChange(of: store.state.settings.nostrProfilePicture) { _, _ in relayService?.republishProfile() }
         }
+    }
+
+    /// Builds a `RelayPool` against the current signer and runs the bootstrap
+    /// sequence. Idempotent per-pubkey: handles both the local-key path
+    /// (signer ready synchronously inside `userIdentity.start()`) and the
+    /// NIP-46 path (signer ready after the bunker handshake completes).
+    @MainActor
+    private func bootstrapRelaysIfReady() async {
+        guard let pubkey = userIdentity.publicKeyHex,
+              let signer = userIdentity.signer,
+              let configStore = relayConfigStore,
+              bootstrappedPubkey != pubkey else { return }
+        bootstrappedPubkey = pubkey
+        if let oldPool = relayPool {
+            for conn in oldPool.connections.values { conn.disconnect() }
+        }
+        let pool = RelayPool(signer: signer)
+        relayPool = pool
+        await RelayBootstrapService.bootstrap(
+            configStore: configStore,
+            pool: pool,
+            signer: signer,
+            userPubkey: pubkey
+        )
     }
 }
 

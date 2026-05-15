@@ -9,6 +9,7 @@ final class RelayConfigStore {
 
     private(set) var relays: [RelayConfig] = []
     private let appStateStore: AppStateStore
+    private var relayPool: RelayPool?
 
     init(appStateStore: AppStateStore) {
         self.appStateStore = appStateStore
@@ -19,6 +20,15 @@ final class RelayConfigStore {
         } else {
             applyAndPersist()
         }
+    }
+
+    /// Attach a pool so every mutation re-reconciles connections. The pool
+    /// is constructed once the user's signer is available, which happens
+    /// after this store has already loaded local configs, so this is a
+    /// separate hook rather than an init parameter.
+    func attachRelayPool(_ pool: RelayPool) {
+        self.relayPool = pool
+        pool.reconcile(with: relays)
     }
 
     // MARK: - Mutations
@@ -91,10 +101,12 @@ final class RelayConfigStore {
 
     // MARK: - Private
 
-    /// Enforce pinned invariants, then persist. Call after every mutation.
+    /// Enforce pinned invariants, persist locally, and re-reconcile the pool
+    /// so connections always match the current config. Call after every mutation.
     private func applyAndPersist() {
         RelayDefaults.enforcePinnedInvariants(&relays)
         persistLocally()
+        relayPool?.reconcile(with: relays)
     }
 
     private func persistLocally() {
