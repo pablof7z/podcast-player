@@ -5,12 +5,12 @@ import os.log
 // MARK: - NostrCommentService
 //
 // Standalone service for NIP-22 (kind 1111) comments anchored to NIP-73
-// external content identifiers. Each `subscribe(target:)` call opens its
-// own WebSocket session to the user's configured relay — the existing
-// `NostrRelayService` is kept single-purpose (friend-DM inbox) so the two
-// concerns can evolve independently. Multiple in-flight subscriptions are
-// supported: each one has a unique REQ id and gets its own backing
-// `AsyncStream`.
+// external content identifiers. Each `subscribe(target:)` call attaches a
+// fresh NDKSubscription to the shared `NDK` instance owned by
+// `NostrStack.shared`. Multiple in-flight subscriptions are supported —
+// each one gets its own backing `AsyncStream`. Reactive: NDK pushes
+// matching events through its AsyncStream of batches; no polling or
+// reconnect loops in this file.
 //
 // Publish path goes through whatever `NostrSigner` the caller hands in —
 // `UserIdentityStore.signer` resolves to a `LocalKeySigner` or a
@@ -38,16 +38,15 @@ final class NostrCommentService {
 
     private enum Wire {
         static let kindComment = 1111
-        static let req = "REQ"
-        static let event = "EVENT"
-        static let close = "CLOSE"
-        static let reconnectDelay: Duration = .seconds(5)
+        /// Hard cap on per-target backlog returned by the relay. The
+        /// limit is also the NDKFilter limit so the relay can short-circuit.
+        static let backfillLimit = 200
     }
 
     // MARK: - Subscription handle
 
     /// Returned to the caller so they can cancel the subscription when the
-    /// view disappears. Holding the handle keeps the websocket open.
+    /// view disappears. Holding the handle keeps the NDK subscription alive.
     final class Subscription {
         let stream: AsyncStream<EpisodeComment>
         private let cancelClosure: @Sendable () -> Void
@@ -59,33 +58,9 @@ final class NostrCommentService {
         deinit { cancelClosure() }
     }
 
-    // MARK: - Per-subscription session state
-
-    private final class Session {
-        let id: String
-        let target: CommentTarget
-        let continuation: AsyncStream<EpisodeComment>.Continuation
-        var webSocket: URLSessionWebSocketTask?
-        var receiveLoop: Task<Void, Never>?
-        /// Dedup ring so a relay returning the same event twice (via reconnect
-        /// + filter replay) doesn't double-render in the UI.
-        var seenIDs: Set<String> = []
-
-        init(id: String, target: CommentTarget, continuation: AsyncStream<EpisodeComment>.Continuation) {
-            self.id = id
-            self.target = target
-            self.continuation = continuation
-        }
-    }
-
     // MARK: - Deps
 
     private let relayURLProvider: @MainActor () -> URL?
-    /// Active sessions keyed by REQ id. The `Subscription` returned to the
-    /// caller carries that id and a weak service ref, so cancellation can
-    /// route here without capturing the non-Sendable `Session` directly in
-    /// a `@Sendable` closure.
-    private var sessions: [String: Session] = [:]
 
     init(relayURLProvider: @MainActor @escaping () -> URL?) {
         self.relayURLProvider = relayURLProvider
@@ -103,100 +78,65 @@ final class NostrCommentService {
 
     // MARK: - Subscribe
 
-    /// Opens a websocket, sends a REQ filtered to `target`, yields each
-    /// matching comment into the returned stream. Reconnects on transient
-    /// websocket failure (every 5s) until the caller cancels.
+    /// Opens an NDK subscription for `target` and yields each matching
+    /// comment into the returned stream. The subscription stays open
+    /// (`closeOnEose: false`) until the caller cancels via the returned
+    /// `Subscription` handle. NDK handles relay reconnection internally,
+    /// so this method does not run a reconnect loop.
     func subscribe(target: CommentTarget) -> Subscription {
         let (stream, continuation) = AsyncStream<EpisodeComment>.makeStream(bufferingPolicy: .unbounded)
-        let id = "cmt-\(UUID().uuidString.prefix(8))"
-        let session = Session(id: id, target: target, continuation: continuation)
-        sessions[id] = session
-        connect(session: session)
 
-        // The cancel closure captures only Sendable values (`id`, weak self).
-        // Tearing down a non-Sendable `Session` directly from `@Sendable`
-        // context is rejected by Swift 6 strict concurrency.
-        return Subscription(stream: stream, cancel: { [weak self] in
-            Task { @MainActor in
-                self?.tearDownSession(id: id)
-            }
-        })
-    }
-
-    private func tearDownSession(id: String) {
-        guard let session = sessions.removeValue(forKey: id) else { return }
-        session.receiveLoop?.cancel()
-        session.webSocket?.cancel(with: .goingAway, reason: nil)
-        session.continuation.finish()
-    }
-
-    private func connect(session: Session) {
-        guard let url = relayURLProvider() else {
-            Self.logger.info("NostrCommentService: no relay configured — skipping subscribe for \(session.id, privacy: .public)")
-            session.continuation.finish()
-            return
+        guard let ndk = NostrStack.shared.ndk else {
+            Self.logger.info("subscribe: no NDK available; finishing stream immediately")
+            continuation.finish()
+            return Subscription(stream: stream, cancel: { })
         }
-        let task = URLSession.shared.webSocketTask(with: url)
-        session.webSocket = task
-        task.resume()
-        sendREQ(session: session)
-        startReceive(session: session)
-    }
 
-    private func sendREQ(session: Session) {
-        let filter: [String: Any] = [
-            "kinds": [Wire.kindComment],
-            "#i": [session.target.nip73Identifier],
-            "limit": 200,
-        ]
-        let message: [Any] = [Wire.req, session.id, filter]
-        sendJSON(message, on: session.webSocket, label: "REQ \(session.id)")
-    }
-
-    private func startReceive(session: Session) {
-        session.receiveLoop = Task { @MainActor [weak self, weak session] in
-            guard let self, let session else { return }
-            while !Task.isCancelled, let task = session.webSocket {
-                do {
-                    let msg = try await task.receive()
-                    if case .string(let text) = msg {
-                        self.ingest(text: text, into: session)
-                    }
-                } catch {
-                    if Task.isCancelled { return }
-                    Self.logger.warning("NostrCommentService: socket error on \(session.id, privacy: .public) — \(error, privacy: .public); reconnecting")
-                    try? await Task.sleep(for: Wire.reconnectDelay)
-                    if Task.isCancelled { return }
-                    self.connect(session: session)
-                    return
-                }
-            }
-        }
-    }
-
-    private func ingest(text: String, into session: Session) {
-        guard let data = text.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= 3,
-              let head = array[0] as? String, head == Wire.event,
-              let event = array[2] as? [String: Any],
-              let kind = event["kind"] as? Int, kind == Wire.kindComment,
-              let id = event["id"] as? String,
-              let pubkey = event["pubkey"] as? String,
-              let createdAt = event["created_at"] as? Int,
-              let content = event["content"] as? String else { return }
-
-        guard !session.seenIDs.contains(id) else { return }
-        session.seenIDs.insert(id)
-
-        let comment = EpisodeComment(
-            id: id,
-            target: session.target,
-            authorPubkeyHex: pubkey,
-            content: content,
-            createdAt: Date(timeIntervalSince1970: TimeInterval(createdAt))
+        // Restrict the subscription to the user's configured relay (if any)
+        // so this stays parity with the previous single-relay subscribe
+        // semantic. Without an explicit set, NDK would fan out across the
+        // whole pool which would surface unrelated comments faster but mix
+        // sources the UI currently assumes are one-relay.
+        let relays: Set<RelayURL>? = relayURLProvider().map { [$0.absoluteString] }
+        let filter = NDKFilter(
+            kinds: [Wire.kindComment],
+            limit: Wire.backfillLimit,
+            tags: ["i": Set([target.nip73Identifier])]
         )
-        session.continuation.yield(comment)
+        let ndkSubscription = ndk.subscribe(
+            filter: filter,
+            relays: relays,
+            subscriptionId: "cmt-\(UUID().uuidString.prefix(8))",
+            closeOnEose: false
+        )
+
+        let captured = target
+        let drainTask = Task { @MainActor [weak self] in
+            var seenIDs: Set<String> = []
+            for await batch in ndkSubscription.events {
+                guard !Task.isCancelled else { break }
+                for event in batch {
+                    guard event.kind == Wire.kindComment,
+                          !seenIDs.contains(event.id) else { continue }
+                    seenIDs.insert(event.id)
+                    let comment = EpisodeComment(
+                        id: event.id,
+                        target: captured,
+                        authorPubkeyHex: event.pubkey,
+                        content: event.content,
+                        createdAt: Date(timeIntervalSince1970: TimeInterval(event.createdAt))
+                    )
+                    continuation.yield(comment)
+                }
+                _ = self // keep service alive for the lifetime of the drain
+            }
+            continuation.finish()
+        }
+
+        return Subscription(stream: stream, cancel: {
+            drainTask.cancel()
+            Task { await ndkSubscription.close() }
+        })
     }
 
     // MARK: - Publish
@@ -242,18 +182,9 @@ final class NostrCommentService {
         guard let ndk = await NostrStack.shared.ndk else {
             throw PublishError.noRelayConfigured
         }
-        let ndkEvent = NDKEvent(
-            id: event.id,
-            pubkey: event.pubkey,
-            createdAt: Timestamp(event.created_at),
-            kind: Kind(event.kind),
-            tags: event.tags,
-            content: event.content,
-            sig: event.sig
-        )
         let target = url.absoluteString
         do {
-            let accepted = try await ndk.publish(ndkEvent, to: [target])
+            let accepted = try await ndk.publish(NDKEventConverter.toNDKEvent(event), to: [target])
             if accepted.isEmpty {
                 // NDK returned without an OK from the relay — could be a
                 // queued offline publish or a silent relay drop. Old code
@@ -270,39 +201,18 @@ final class NostrCommentService {
         }
     }
 
-    // MARK: - JSON send helper
-
-    private func sendJSON(_ message: [Any], on task: URLSessionWebSocketTask?, label: String) {
-        guard let task else { return }
-        do {
-            let data = try JSONSerialization.data(withJSONObject: message)
-            guard let text = String(data: data, encoding: .utf8) else { return }
-            task.send(.string(text)) { error in
-                if let error {
-                    Self.logger.error("\(label, privacy: .public): send failed — \(error, privacy: .public)")
-                }
-            }
-        } catch {
-            Self.logger.error("\(label, privacy: .public): serialization failed — \(error, privacy: .public)")
-        }
-    }
-
     // MARK: - Errors
 
     enum PublishError: LocalizedError {
         case emptyContent
         case noRelayConfigured
-        case encodingFailed
         case relayRejected(String)
-        case relayAckTimeout
 
         var errorDescription: String? {
             switch self {
             case .emptyContent:        "Comment is empty."
             case .noRelayConfigured:   "Set a Nostr relay URL in Settings before commenting."
-            case .encodingFailed:      "Couldn't encode the comment for the relay."
             case .relayRejected(let m): "Relay rejected the comment: \(m)"
-            case .relayAckTimeout:     "Relay didn't acknowledge in time."
             }
         }
     }

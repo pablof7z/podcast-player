@@ -16,13 +16,12 @@ import os.log
 //
 // Migration note (NDKSwift): this struct used to fan out to a caller-supplied
 // list of relay URLs over raw WebSockets. It now hands the signed event to
-// the shared `NDK` instance owned by `NostrStack.shared` and lets NDK's NIP-65
-// outbox routing select destinations from the author's outbox list. The
-// `publisher` and `relayURLs` init parameters are accepted for API stability
-// (LiveAgentOwnedPodcastManager still passes them) but `publisher` is unused
-// and `relayURLs` is informational only — see `publishViaNDK` for the new
-// publish path. A future cleanup pass can drop those parameters once the
-// caller is refactored.
+// the shared `NDK` instance owned by `NostrStack.shared`. `relayURLs` is
+// still load-bearing — it's passed through to `ndk.publish(_:to:)` as the
+// explicit target set, because Podcastr agent identities do not currently
+// publish their own kind:10002 outbox list. The `publisher` init parameter
+// is vestigial (NDK does the publishing) and can be dropped once
+// `LiveAgentOwnedPodcastManager` is refactored.
 
 struct NostrPodcastPublisher: Sendable {
 
@@ -130,31 +129,25 @@ struct NostrPodcastPublisher: Sendable {
 
     // MARK: - NDK publish
 
-    /// Hands the signed event to the shared NDK instance with no explicit
-    /// relay set; NDK's outbox manager picks destinations from the author's
-    /// NIP-65 outbox list (default behaviour). The relay pool is reused, so
-    /// no transient WebSockets are opened.
+    /// Hands the signed event to the shared NDK instance and routes it to
+    /// the caller-supplied `relayURLs`. We do not rely on NDK's NIP-65
+    /// outbox routing here: Podcastr agent identities don't currently
+    /// publish their own kind:10002, so a bare `ndk.publish(event)` would
+    /// resolve to an empty relay set and the publish would queue forever.
     ///
-    /// Errors are surfaced verbatim from `ndk.publish`. If the publish call
-    /// returns an empty set we treat it as a failure (no relay accepted /
-    /// nothing in pool yet) and throw `noRelayConfigured` to mirror the
-    /// previous "at least one OK" semantic.
+    /// If `relayURLs` is empty we fall back to NDK's outbox routing as a
+    /// best-effort path. The init parameter is load-bearing, not vestigial.
     private func publishViaNDK(event: SignedNostrEvent) async throws {
         guard let ndk = await NostrStack.shared.ndk else {
             throw NostrEventPublisherError.noRelayConfigured
         }
-        let ndkEvent = NDKEvent(
-            id: event.id,
-            pubkey: event.pubkey,
-            createdAt: Timestamp(event.created_at),
-            kind: Kind(event.kind),
-            tags: event.tags,
-            content: event.content,
-            sig: event.sig
-        )
+
+        let targetSet: Set<String>? = relayURLs.isEmpty
+            ? nil
+            : Set(relayURLs.map { $0.absoluteString })
 
         do {
-            let accepted = try await ndk.publish(ndkEvent)
+            let accepted = try await ndk.publish(NDKEventConverter.toNDKEvent(event), to: targetSet)
             if accepted.isEmpty {
                 Self.logger.warning("Published \(event.id.prefix(8), privacy: .public) kind=\(event.kind) — no relay accepted (queued or no outbox)")
                 throw NostrEventPublisherError.noRelayConfigured

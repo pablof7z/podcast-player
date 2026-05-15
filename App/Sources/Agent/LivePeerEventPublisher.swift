@@ -16,7 +16,7 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
 
     init(
         store: AppStateStore,
-        publisher: NostrEventPublishing = NostrWebSocketEventPublisher()
+        publisher: NostrEventPublishing = NostrNDKEventPublisher()
     ) {
         self.store = store
         self.publisher = publisher

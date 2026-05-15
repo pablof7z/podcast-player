@@ -7,7 +7,7 @@ import os.log
 // One-shot publisher used by the agent peer-tools surface and a handful of
 // service-level callers that don't take a long-lived `NostrRelayService`
 // dependency. The protocol predates the NDKSwift migration — the type name
-// (`NostrWebSocketEventPublisher`) is retained for API stability even
+// (`NostrNDKEventPublisher`) is retained for API stability even
 // though the implementation now routes through the shared `NDK` instance
 // owned by `NostrStack.shared`. There is no transient WebSocket anymore;
 // `ndk.publish(_:to:)` reuses the relay pool and adds the target relay if
@@ -17,19 +17,18 @@ protocol NostrEventPublishing: Sendable {
     func publish(event: SignedNostrEvent, relayURL: URL) async throws
 }
 
-struct NostrWebSocketEventPublisher: NostrEventPublishing {
+struct NostrNDKEventPublisher: NostrEventPublishing {
     private static let logger = Logger.app("NostrEventPublisher")
 
     func publish(event: SignedNostrEvent, relayURL: URL) async throws {
         guard let ndk = await NostrStack.shared.ndk else {
             throw NostrEventPublisherError.noRelayConfigured
         }
-        let ndkEvent = ndkEvent(from: event)
         let target = relayURL.absoluteString
         Self.logger.debug("publish: event \(event.id.prefix(8), privacy: .public) kind=\(event.kind) → \(target, privacy: .public)")
         let accepted: Set<NDKRelay>
         do {
-            accepted = try await ndk.publish(ndkEvent, to: [target])
+            accepted = try await ndk.publish(NDKEventConverter.toNDKEvent(event), to: [target])
         } catch {
             throw NostrEventPublisherError.rejected(error.localizedDescription)
         }
@@ -41,23 +40,6 @@ struct NostrWebSocketEventPublisher: NostrEventPublishing {
             Self.logger.warning("publish: no relay accepted event \(event.id.prefix(8), privacy: .public) for \(target, privacy: .public)")
             throw NostrEventPublisherError.missingOK
         }
-    }
-
-    // MARK: - SignedNostrEvent → NDKEvent
-
-    /// Re-hydrates an already-signed in-app event into the NDK value type.
-    /// All identity / signature fields are preserved verbatim — NDK does not
-    /// re-sign or re-canonicalize; it just forwards the wire bytes.
-    private func ndkEvent(from event: SignedNostrEvent) -> NDKEvent {
-        NDKEvent(
-            id: event.id,
-            pubkey: event.pubkey,
-            createdAt: Timestamp(event.created_at),
-            kind: Kind(event.kind),
-            tags: event.tags,
-            content: event.content,
-            sig: event.sig
-        )
     }
 }
 

@@ -220,7 +220,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         let signer = try nostrSigner()
         let publisher = NostrPodcastPublisher(
-            publisher: NostrWebSocketEventPublisher(),
+            publisher: NostrNDKEventPublisher(),
             relayURLs: relayURLs
         )
         return try await publisher.publishShow(podcast: podcast, signer: signer)
@@ -240,7 +240,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         let signer = try nostrSigner()
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
         let publisher = NostrPodcastPublisher(
-            publisher: NostrWebSocketEventPublisher(),
+            publisher: NostrNDKEventPublisher(),
             relayURLs: relayURLs
         )
 
