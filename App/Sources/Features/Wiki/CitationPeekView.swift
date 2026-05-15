@@ -137,9 +137,9 @@ struct CitationPeekView: View {
 
     private var confidenceColor: Color {
         switch citation.verificationConfidence {
-        case .high: Color(red: 0.18, green: 0.55, blue: 0.34)
-        case .medium: Color(red: 0.78, green: 0.55, blue: 0.10)
-        case .low: Color(red: 0.78, green: 0.18, blue: 0.30)
+        case .high: AppTheme.Tint.evidenceHigh
+        case .medium: AppTheme.Tint.evidenceMedium
+        case .low: AppTheme.Tint.evidenceLow
         }
     }
 }

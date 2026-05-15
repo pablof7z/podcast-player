@@ -71,6 +71,7 @@ extension AgentTools {
         static let deleteMyPodcast        = "delete_my_podcast"
         static let listMyPodcasts         = "list_my_podcasts"
         static let generatePodcastArtwork = "generate_podcast_artwork"
+        static let publishEpisode         = "publish_episode"
 
         /// Every podcast tool name, for orchestrator convenience when wiring
         /// the main `AgentTools.dispatch` switch. Skill-gated names are
@@ -93,6 +94,7 @@ extension AgentTools {
                 searchPodcastDirectory, subscribePodcast, deletePodcast,
                 ingestYouTubeVideo, searchYouTube,
                 createPodcast, updatePodcast, deleteMyPodcast, listMyPodcasts, generatePodcastArtwork,
+                publishEpisode,
             ]
         }
     }
@@ -240,6 +242,8 @@ extension AgentTools {
             return await listMyPodcastsTool(args: args, deps: deps)
         case PodcastNames.generatePodcastArtwork:
             return await generatePodcastArtworkTool(args: args, deps: deps)
+        case PodcastNames.publishEpisode:
+            return await publishEpisodeTool(args: args, deps: deps)
         default:
             return toolError("Unknown podcast tool: \(name)")
         }

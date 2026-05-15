@@ -9,6 +9,7 @@ enum ModelCapabilityFilter: String, CaseIterable, Identifiable {
     case tools
     case reasoning
     case vision
+    case imageOutput
     case openWeights
 
     var id: String { rawValue }
@@ -21,6 +22,7 @@ enum ModelCapabilityFilter: String, CaseIterable, Identifiable {
         case .tools:       return "Tools"
         case .reasoning:   return "Reasoning"
         case .vision:      return "Vision"
+        case .imageOutput: return "Image generation"
         case .openWeights: return "Open weights"
         }
     }
@@ -33,6 +35,7 @@ enum ModelCapabilityFilter: String, CaseIterable, Identifiable {
         case .tools:       return "wrench.and.screwdriver"
         case .reasoning:   return "brain"
         case .vision:      return "eye"
+        case .imageOutput: return "photo.badge.sparkle"
         case .openWeights: return "lock.open"
         }
     }
@@ -45,6 +48,7 @@ enum ModelCapabilityFilter: String, CaseIterable, Identifiable {
         case .tools:       return model.supportsTools
         case .reasoning:   return model.supportsReasoning
         case .vision:      return model.inputModalities.contains("image")
+        case .imageOutput: return model.outputModalities.contains("image")
         case .openWeights: return model.openWeights
         }
     }

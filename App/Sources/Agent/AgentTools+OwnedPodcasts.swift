@@ -98,6 +98,22 @@ extension AgentTools {
         return toolSuccess(["count": rows.count, "podcasts": rows])
     }
 
+    // MARK: - publish_episode
+
+    static func publishEpisodeTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
+        guard let episodeID = (args["episode_id"] as? String)?.trimmed, !episodeID.isEmpty else {
+            return toolError("Missing or empty 'episode_id'")
+        }
+        do {
+            guard let naddr = try await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: episodeID) else {
+                return toolError("Episode '\(episodeID)' was not published — verify the podcast is agent-owned, its visibility is 'public', and Nostr is enabled in Settings.")
+            }
+            return toolSuccess(["episode_id": episodeID, "naddr": naddr])
+        } catch {
+            return toolError("publish_episode failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - generate_podcast_artwork
 
     static func generatePodcastArtworkTool(args: [String: Any], deps: PodcastAgentToolDeps) async -> String {
@@ -124,6 +140,9 @@ extension AgentTools {
             "episode_count": info.episodeCount,
         ]
         if let url = info.imageURL { row["image_url"] = url.absoluteString }
+        if let eventID = info.nostrEventID { row["nostr_event_id"] = eventID }
+        if let naddr = info.nostrAddr { row["naddr"] = naddr }
+        if let count = info.episodesPublishedToNostr { row["episodes_published_to_nostr"] = count }
         return row
     }
 }

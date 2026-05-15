@@ -361,8 +361,6 @@ actor MockFriendDirectory: FriendDirectoryProtocol {
 }
 
 actor MockTTSPublisher: TTSPublisherProtocol {
-    private var voiceID: String = "mock-voice"
-
     nonisolated func defaultVoiceID() -> String { "mock-voice" }
     nonisolated func setDefaultVoiceID(_ voiceID: String) {}
 
@@ -371,7 +369,8 @@ actor MockTTSPublisher: TTSPublisherProtocol {
         description: String?,
         turns: [TTSTurn],
         playNow: Bool,
-        generationSource: Episode.GenerationSource?
+        generationSource: Episode.GenerationSource?,
+        targetPodcastID: UUID?
     ) async throws -> TTSEpisodeResult {
         return TTSEpisodeResult(
             episodeID: "mock-tts-episode",

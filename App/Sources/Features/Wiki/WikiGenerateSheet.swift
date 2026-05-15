@@ -186,7 +186,7 @@ struct WikiGenerateSheet: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Label(message, systemImage: "exclamationmark.triangle")
                         .font(.callout)
-                        .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+                        .foregroundStyle(AppTheme.Tint.evidenceLow)
                     Button {
                         Task { await runCompile() }
                     } label: {
@@ -206,7 +206,7 @@ struct WikiGenerateSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "checkmark.seal.fill")
-                    .foregroundStyle(Color(red: 0.18, green: 0.55, blue: 0.34))
+                    .foregroundStyle(AppTheme.Tint.evidenceHigh)
                 Text("Page compiled")
                     .font(.headline)
             }

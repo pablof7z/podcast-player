@@ -210,14 +210,14 @@ struct VoiceOrbView: View {
     private var currentTint: Color {
         switch state {
         case .idle: return .white.opacity(0.18)
-        case .listening: return Color(red: 0.45, green: 0.78, blue: 1.0)
+        case .listening: return AppTheme.Tint.voiceListening
         case .transcribing:
             // Subtle iridescence — slow hue blend between the listening
             // blue and the artwork tint.
             return artworkTint.opacity(0.55)
-        case .thinking: return Color(red: 0.62, green: 0.45, blue: 1.0)
-        case .speaking: return Color(red: 0.36, green: 0.85, blue: 0.78)
-        case .bargeIn: return Color(red: 0.45, green: 0.78, blue: 1.0)
+        case .thinking: return AppTheme.Tint.voiceThinking
+        case .speaking: return AppTheme.Tint.voiceSpeaking
+        case .bargeIn: return AppTheme.Tint.voiceListening
         }
     }
 

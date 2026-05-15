@@ -102,7 +102,7 @@ extension AgentTools {
             )
             // Publish to Nostr when the target is an owned public podcast.
             if targetPodcastID != nil {
-                try? await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: result.episodeID)
+                _ = try? await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: result.episodeID)
             }
             var payload: [String: Any] = [
                 "episode_id": result.episodeID,

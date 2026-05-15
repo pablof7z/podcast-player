@@ -99,9 +99,9 @@ struct EvidenceGradedRule: ViewModifier {
 
     // MARK: - Palette
 
-    static let multiSourceColor = Color(red: 0.18, green: 0.55, blue: 0.34)
-    static let singleSourceColor = Color(red: 0.78, green: 0.55, blue: 0.10)
-    static let uncorroboratedColor = Color(red: 0.78, green: 0.18, blue: 0.30)
+    static let multiSourceColor = AppTheme.Tint.evidenceHigh
+    static let singleSourceColor = AppTheme.Tint.evidenceMedium
+    static let uncorroboratedColor = AppTheme.Tint.evidenceLow
 }
 
 // MARK: - Convenience

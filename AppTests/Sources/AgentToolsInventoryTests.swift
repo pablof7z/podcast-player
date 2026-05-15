@@ -234,7 +234,9 @@ final class AgentToolsInventoryTests: XCTestCase {
             perplexity: MockPerplexity(),
             ttsPublisher: MockTTSPublisher(),
             directory: directory,
-            subscribe: subscribe
+            subscribe: subscribe,
+            youtubeIngestion: MockYouTubeIngestion(),
+            ownedPodcasts: MockOwnedPodcasts()
         )
         // Round-trip through the JSON-string dispatcher so we don't have to
         // hand a non-Sendable `[String: Any]` across isolation boundaries.

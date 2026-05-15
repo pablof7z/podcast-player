@@ -336,10 +336,14 @@ private struct BriefingsLibraryRow: View {
     }
 
     private func relativeDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
+        BriefingsLibraryRow.relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .full
+        return f
+    }()
 }
 
 // MARK: - Playback context (Identifiable for navigationDestination(item:))

@@ -46,7 +46,9 @@ protocol AgentOwnedPodcastManagerProtocol: Sendable {
     /// publish NIP-74 kind:30074 (show) + kind:30075 (episode) events signed
     /// by the agent key. No-ops when nostr is disabled or the parent podcast is
     /// not agent-owned / is private.
-    func publishEpisodeToNostr(episodeID: EpisodeID) async throws
+    /// Returns the NIP-19 `naddr` of the published episode event, or `nil` when
+    /// the publish was skipped (disabled / private).
+    func publishEpisodeToNostr(episodeID: EpisodeID) async throws -> String?
 }
 
 // MARK: - Result types
@@ -59,4 +61,11 @@ struct AgentOwnedPodcastInfo: Sendable {
     let imageURL: URL?
     let visibility: String
     let episodeCount: Int
+    /// Nostr event ID (32-byte hex) of the most recently published show event, if any.
+    let nostrEventID: String?
+    /// NIP-19 `naddr` bech32 string for the show event, if Nostr is enabled.
+    let nostrAddr: String?
+    /// Number of existing episodes published to Nostr during a batch operation
+    /// (e.g. when a podcast's visibility flips to public). Nil when not applicable.
+    let episodesPublishedToNostr: Int?
 }

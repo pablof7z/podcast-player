@@ -21,9 +21,8 @@ struct PlayerClipSourceChip: View {
                         .foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
                         if let showName {
-                            Text(showName.uppercased())
+                            Text(showName)
                                 .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                .tracking(0.8)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }

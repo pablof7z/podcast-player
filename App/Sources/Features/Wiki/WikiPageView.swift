@@ -43,7 +43,7 @@ struct WikiPageView: View {
                 if let actionError {
                     Label(actionError, systemImage: "exclamationmark.triangle")
                         .font(.caption)
-                        .foregroundStyle(Color(red: 0.78, green: 0.18, blue: 0.30))
+                        .foregroundStyle(AppTheme.Tint.error)
                 }
                 ForEach(page.sections.sorted(by: { $0.ordinal < $1.ordinal })) { section in
                     sectionView(section)

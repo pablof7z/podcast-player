@@ -12,13 +12,6 @@ struct ImageGenerationSettingsView: View {
     @State private var selectorPresented = false
     @State private var catalog = OpenRouterModelSelectorViewModel()
 
-    private static let knownModels: [(id: String, label: String)] = [
-        ("openai/dall-e-3",            "DALL-E 3"),
-        ("openai/dall-e-2",            "DALL-E 2"),
-        ("black-forest-labs/FLUX-1.1-pro", "FLUX 1.1 Pro"),
-        ("black-forest-labs/FLUX-schnell", "FLUX Schnell"),
-    ]
-
     var body: some View {
         Form {
             modelSection
@@ -34,7 +27,8 @@ struct ImageGenerationSettingsView: View {
                 OpenRouterModelSelectorView(
                     selectedModelID: modelIDBinding,
                     selectedModelName: modelNameBinding,
-                    role: "Image Generation"
+                    role: "Image Generation",
+                    initialCapabilityFilter: .imageOutput
                 )
             }
             .presentationDragIndicator(.visible)

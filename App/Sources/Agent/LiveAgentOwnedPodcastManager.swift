@@ -24,7 +24,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
     @MainActor
     private func settings() -> Settings? { store?.state.settings }
 
-    private func nostrSigner() throws -> LocalKeySigner {
+    nonisolated private func nostrSigner() throws -> LocalKeySigner {
         guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
             throw AgentOwnedPodcastError.noSigningKey
         }
@@ -32,7 +32,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         return LocalKeySigner(keyPair: kp)
     }
 
-    private func agentPubkeyHex() throws -> String {
+    nonisolated private func agentPubkeyHex() throws -> String {
         try nostrSigner().keyPair.publicKeyHex
     }
 
@@ -69,11 +69,12 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             store?.upsertPodcast(podcast) ?? podcast
         }
         Self.logger.info("Created agent-owned podcast '\(title, privacy: .public)' id=\(stored.id, privacy: .public)")
-        // Publish show event when going public immediately
+        var showEventID: String?
         if visibility == .public, let settings = await settings(), settings.nostrEnabled {
-            try? await publishShowEvent(podcast: stored)
+            showEventID = try? await publishShowEvent(podcast: stored, settings: settings)
         }
-        return await MainActor.run { info(for: stored) }
+        let naddr = nostrAddr(for: stored, eventID: showEventID)
+        return await MainActor.run { info(for: stored, nostrEventID: showEventID, nostrAddr: naddr) }
     }
 
     // MARK: - updatePodcast
@@ -95,6 +96,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         guard existing.ownerPubkeyHex != nil else {
             throw AgentOwnedPodcastError.notOwned(podcastID)
         }
+        let wasPrivate = existing.nostrVisibility != .public
         var updated = existing
         if let title { updated.title = title }
         if let description { updated.description = description }
@@ -102,10 +104,31 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         if let imageURL { updated.imageURL = imageURL }
         if let visibility { updated.nostrVisibility = visibility }
         await MainActor.run { store?.updatePodcast(updated) }
+
+        var showEventID: String?
+        var episodesPublished: Int?
         if updated.nostrVisibility == .public, let settings = await settings(), settings.nostrEnabled {
-            try? await publishShowEvent(podcast: updated)
+            showEventID = try? await publishShowEvent(podcast: updated, settings: settings)
+            // Retroactively publish all existing episodes when flipping to public.
+            if wasPrivate {
+                let episodes = await store?.episodes(forPodcast: uuid) ?? []
+                var published = 0
+                for episode in episodes {
+                    do {
+                        try await publishEpisodeRecord(episode, podcast: updated, settings: settings)
+                        published += 1
+                    } catch {
+                        Self.logger.warning("Failed to publish episode '\(episode.title, privacy: .public)': \(error.localizedDescription, privacy: .public)")
+                    }
+                }
+                episodesPublished = published
+                Self.logger.info("Batch-published \(published)/\(episodes.count) episodes for '\(updated.title, privacy: .public)'")
+            }
         }
-        return await MainActor.run { info(for: updated) }
+        let naddr = nostrAddr(for: updated, eventID: showEventID)
+        return await MainActor.run {
+            info(for: updated, nostrEventID: showEventID, nostrAddr: naddr, episodesPublishedToNostr: episodesPublished)
+        }
     }
 
     // MARK: - deletePodcast
@@ -131,7 +154,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
     func listOwnedPodcasts() async -> [AgentOwnedPodcastInfo] {
         guard let store else { return [] }
         let podcasts = await store.allPodcasts.filter { $0.ownerPubkeyHex != nil }
-        return await MainActor.run { podcasts.map { info(for: $0) } }
+        return await MainActor.run { podcasts.map { info(for: $0, nostrEventID: nil, nostrAddr: nil) } }
     }
 
     // MARK: - generateAndUploadArtwork
@@ -156,7 +179,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
 
     // MARK: - publishEpisodeToNostr
 
-    func publishEpisodeToNostr(episodeID: EpisodeID) async throws {
+    func publishEpisodeToNostr(episodeID: EpisodeID) async throws -> String? {
         guard let uuid = UUID(uuidString: episodeID),
               let store else { throw AgentOwnedPodcastError.storeUnavailable }
         guard let episode = await store.episode(id: uuid) else {
@@ -164,10 +187,43 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         guard let podcast = await store.podcast(id: episode.podcastID),
               podcast.ownerPubkeyHex != nil,
-              podcast.nostrVisibility == .public else { return }
-        guard let settings = await settings(), settings.nostrEnabled else { return }
-        guard let relayURL = URL(string: settings.nostrRelayURL) else { return }
+              podcast.nostrVisibility == .public else { return nil }
+        guard let settings = await settings(), settings.nostrEnabled else { return nil }
 
+        let eventID = try await publishEpisodeRecord(episode, podcast: podcast, settings: settings)
+        let dTag = "podcast:item:guid:\(episode.id.uuidString.lowercased())"
+        guard let pubkeyHex = podcast.ownerPubkeyHex else { return eventID }
+        let naddr = NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30075, relayURL: settings.nostrRelayURL)
+        Self.logger.info("Published episode '\(episode.title, privacy: .public)' to Nostr NIP-74")
+        return naddr ?? eventID
+    }
+
+    // MARK: - Private helpers
+
+    /// Publishes the NIP-74 show kind:30074 event and returns the event ID.
+    @discardableResult
+    nonisolated private func publishShowEvent(podcast: Podcast, settings: Settings) async throws -> String {
+        guard let relayURL = URL(string: settings.nostrRelayURL) else {
+            throw AgentOwnedPodcastError.noRelayConfigured
+        }
+        let signer = try nostrSigner()
+        let publisher = NostrPodcastPublisher(
+            publisher: NostrWebSocketEventPublisher(),
+            relayURL: relayURL
+        )
+        return try await publisher.publishShow(podcast: podcast, signer: signer)
+    }
+
+    /// Uploads audio/chapters/transcript and publishes kind:30075. Returns event ID.
+    @discardableResult
+    nonisolated private func publishEpisodeRecord(
+        _ episode: Episode,
+        podcast: Podcast,
+        settings: Settings
+    ) async throws -> String {
+        guard let relayURL = URL(string: settings.nostrRelayURL) else {
+            throw AgentOwnedPodcastError.noRelayConfigured
+        }
         let signer = try nostrSigner()
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
         let publisher = NostrPodcastPublisher(
@@ -177,12 +233,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
 
         // Upload audio
         let audioData: Data
-        let audioLocalURL: URL?
         if case .downloaded(let localURL, _) = episode.downloadState {
-            audioLocalURL = localURL
             audioData = (try? Data(contentsOf: localURL)) ?? Data()
         } else {
-            audioLocalURL = nil
             audioData = Data()
         }
         let audioBlossomURL: URL
@@ -192,7 +245,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             audioBlossomURL = episode.enclosureURL
         }
 
-        // Upload chapters JSON if available (inline chapters take precedence over remote URL)
+        // Upload chapters JSON if available
         var chaptersBlossomURL: URL?
         if let chaptersData = serializeChapters(episode.chapters) {
             chaptersBlossomURL = try? await blossom.upload(data: chaptersData, contentType: "application/json", signer: signer)
@@ -204,13 +257,11 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         // Upload transcript if available
         var transcriptBlossomURL: URL?
         if case .ready = episode.transcriptState,
-           let transcriptData = loadTranscriptData(episodeID: uuid) {
+           let transcriptData = loadTranscriptData(episodeID: episode.id) {
             transcriptBlossomURL = try? await blossom.upload(data: transcriptData, contentType: "text/vtt", signer: signer)
         }
 
-        // Publish show + episode events
-        try await publisher.publishShow(podcast: podcast, signer: signer)
-        try await publisher.publishEpisode(
+        return try await publisher.publishEpisode(
             episode: episode,
             podcast: podcast,
             audioURL: audioBlossomURL,
@@ -219,24 +270,22 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             transcriptURL: transcriptBlossomURL,
             signer: signer
         )
-        Self.logger.info("Published episode '\(episode.title, privacy: .public)' to Nostr NIP-74")
     }
 
-    // MARK: - Private helpers
-
-    private func publishShowEvent(podcast: Podcast) async throws {
-        guard let settings = await settings(), settings.nostrEnabled,
-              let relayURL = URL(string: settings.nostrRelayURL) else { return }
-        let signer = try nostrSigner()
-        let publisher = NostrPodcastPublisher(
-            publisher: NostrWebSocketEventPublisher(),
-            relayURL: relayURL
-        )
-        try await publisher.publishShow(podcast: podcast, signer: signer)
+    /// Builds the naddr for a podcast show event.
+    nonisolated private func nostrAddr(for podcast: Podcast, eventID: String?) -> String? {
+        guard let pubkeyHex = podcast.ownerPubkeyHex else { return nil }
+        let dTag = "podcast:guid:\(podcast.id.uuidString.lowercased())"
+        return NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30074)
     }
 
     @MainActor
-    private func info(for podcast: Podcast) -> AgentOwnedPodcastInfo {
+    private func info(
+        for podcast: Podcast,
+        nostrEventID: String?,
+        nostrAddr: String?,
+        episodesPublishedToNostr: Int? = nil
+    ) -> AgentOwnedPodcastInfo {
         let episodeCount = (store?.episodes(forPodcast: podcast.id) ?? []).count
         return AgentOwnedPodcastInfo(
             podcastID: podcast.id.uuidString,
@@ -245,13 +294,15 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             author: podcast.author,
             imageURL: podcast.imageURL,
             visibility: podcast.nostrVisibility.rawValue,
-            episodeCount: episodeCount
+            episodeCount: episodeCount,
+            nostrEventID: nostrEventID,
+            nostrAddr: nostrAddr,
+            episodesPublishedToNostr: episodesPublishedToNostr
         )
     }
 
-    private func loadTranscriptData(episodeID: UUID) -> Data? {
+    nonisolated private func loadTranscriptData(episodeID: UUID) -> Data? {
         guard let transcript = TranscriptStore.shared.load(episodeID: episodeID) else { return nil }
-        // Serialize as VTT
         var vtt = "WEBVTT\n\n"
         for (i, seg) in transcript.segments.enumerated() {
             vtt += "\(i + 1)\n"
@@ -261,7 +312,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         return vtt.data(using: .utf8)
     }
 
-    private func serializeChapters(_ chapters: [Episode.Chapter]?) -> Data? {
+    nonisolated private func serializeChapters(_ chapters: [Episode.Chapter]?) -> Data? {
         guard let chapters, !chapters.isEmpty else { return nil }
         let rows = chapters.map { ch -> [String: Any] in
             var row: [String: Any] = ["startTime": ch.startTime, "title": ch.title]
@@ -273,7 +324,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         return try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted])
     }
 
-    private func formatVTTTime(_ seconds: Double) -> String {
+    nonisolated private func formatVTTTime(_ seconds: Double) -> String {
         let h = Int(seconds) / 3600
         let m = (Int(seconds) % 3600) / 60
         let s = Int(seconds) % 60
@@ -285,6 +336,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
 enum AgentOwnedPodcastError: LocalizedError {
     case storeUnavailable
     case noSigningKey
+    case noRelayConfigured
     case invalidID(String)
     case notFound(String)
     case notOwned(String)
@@ -294,6 +346,7 @@ enum AgentOwnedPodcastError: LocalizedError {
         switch self {
         case .storeUnavailable: return "App state is unavailable."
         case .noSigningKey: return "No Nostr signing key configured. Set up your identity in Settings > Agent > Identity."
+        case .noRelayConfigured: return "No Nostr relay configured. Set a relay URL in Settings > Agent > Nostr."
         case .invalidID(let id): return "Invalid UUID: \(id)"
         case .notFound(let id): return "Podcast not found: \(id)"
         case .notOwned(let id): return "Podcast \(id) is not agent-owned."

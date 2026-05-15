@@ -10,7 +10,6 @@ import SwiftUI
 struct HomeSubscriptionRow: View {
     let podcast: Podcast
     let mostRecentEpisode: Episode?
-    let unplayedCount: Int
     let now: Date
     /// Fired when the user picks "Unsubscribe" from the context menu. The
     /// parent owns the confirmation alert (so the destructive flow lives
@@ -127,7 +126,6 @@ struct HomeSubscriptionRow: View {
         var parts: [String] = [podcast.title]
         if let preview = mostRecentEpisodePreview { parts.append(preview) }
         parts.append("Last episode \(recencyLabel)")
-        if unplayedCount > 0 { parts.append("\(unplayedCount) unplayed") }
         return parts.joined(separator: ", ")
     }
 }

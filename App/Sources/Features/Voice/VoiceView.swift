@@ -89,9 +89,9 @@ struct VoiceView: View {
 
     private var badgeColor: Color {
         switch manager.state {
-        case .listening: return Color(red: 0.45, green: 0.78, blue: 1.0)
-        case .thinking: return Color(red: 0.62, green: 0.45, blue: 1.0)
-        case .speaking: return Color(red: 0.36, green: 0.85, blue: 0.78)
+        case .listening: return AppTheme.Tint.voiceListening
+        case .thinking: return AppTheme.Tint.voiceThinking
+        case .speaking: return AppTheme.Tint.voiceSpeaking
         case .duckedWhileBriefing: return .gray
         case .error: return .red
         case .idle: return .white.opacity(0.7)
@@ -307,8 +307,8 @@ private struct VoiceCaptionRow: View {
 
     private var speakerColor: Color {
         caption.speaker == .user
-            ? Color(red: 0.45, green: 0.78, blue: 1.0)
-            : Color(red: 0.62, green: 0.45, blue: 1.0)
+            ? AppTheme.Tint.voiceListening
+            : AppTheme.Tint.voiceThinking
     }
 
     private var textColor: Color {

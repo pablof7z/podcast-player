@@ -56,7 +56,10 @@ struct HomeResumeCard: View {
             ZStack {
                 Color(.tertiarySystemFill)
                 if let url = artworkURL {
-                    CachedAsyncImage(url: url) { phase in
+                    CachedAsyncImage(
+                        url: url,
+                        targetSize: CGSize(width: 440, height: 440)
+                    ) { phase in
                         switch phase {
                         case .success(let image): image.resizable().scaledToFill()
                         default: artworkPlaceholder
@@ -100,8 +103,6 @@ struct HomeResumeCard: View {
             if let showName = podcast?.title, !showName.isEmpty {
                 Text(showName)
                     .font(AppTheme.Typography.caption)
-                    .tracking(1.0)
-                    .textCase(.uppercase)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

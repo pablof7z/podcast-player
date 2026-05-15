@@ -328,7 +328,9 @@ final class AgentSkillsTests: XCTestCase {
             perplexity: MockPerplexity(),
             ttsPublisher: MockTTSPublisher(),
             directory: MockDirectory(),
-            subscribe: MockSubscribe()
+            subscribe: MockSubscribe(),
+            youtubeIngestion: MockYouTubeIngestion(),
+            ownedPodcasts: MockOwnedPodcasts()
         )
     }
 }

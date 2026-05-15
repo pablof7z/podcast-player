@@ -259,9 +259,9 @@ private struct WikiHomeRow: View {
 
     private var confidenceColor: Color {
         switch page.confidence {
-        case 0.66...: Color(red: 0.18, green: 0.55, blue: 0.34)
-        case 0.33..<0.66: Color(red: 0.78, green: 0.55, blue: 0.10)
-        default: Color(red: 0.78, green: 0.18, blue: 0.30)
+        case 0.66...: AppTheme.Tint.evidenceHigh
+        case 0.33..<0.66: AppTheme.Tint.evidenceMedium
+        default: AppTheme.Tint.evidenceLow
         }
     }
 

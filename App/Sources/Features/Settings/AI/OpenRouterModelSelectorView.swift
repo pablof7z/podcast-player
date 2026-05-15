@@ -21,14 +21,29 @@ struct OpenRouterModelSelectorView: View {
     @Binding var selectedModelName: String
     /// Human-readable role label forwarded to the detail view (e.g. "Agent", "Memory Compilation").
     var role: String = "Model"
+    /// Pre-selected capability filter chip shown when the sheet opens.
+    var initialCapabilityFilter: ModelCapabilityFilter = .compatible
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel = OpenRouterModelSelectorViewModel()
     @State private var searchText = ""
-    @State private var capabilityFilter: ModelCapabilityFilter = .compatible
+    @State private var capabilityFilter: ModelCapabilityFilter
     @State private var sort: ModelSort = .recommended
     @State private var providerFilter: String?
     @State private var manualModelID = ""
+
+    init(
+        selectedModelID: Binding<String>,
+        selectedModelName: Binding<String>,
+        role: String = "Model",
+        initialCapabilityFilter: ModelCapabilityFilter = .compatible
+    ) {
+        self._selectedModelID = selectedModelID
+        self._selectedModelName = selectedModelName
+        self.role = role
+        self.initialCapabilityFilter = initialCapabilityFilter
+        self._capabilityFilter = State(initialValue: initialCapabilityFilter)
+    }
 
     var body: some View {
         List {

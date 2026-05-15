@@ -70,7 +70,7 @@ struct EpisodeDetailHeroView: View {
         HStack(alignment: .top, spacing: AppTheme.Spacing.md) {
             artwork
             VStack(alignment: .leading, spacing: 6) {
-                Text(episode.title.uppercased())
+                Text(episode.title)
                     .font(AppTheme.Typography.title)
                     .foregroundStyle(.primary)
                 Text(showName)
@@ -87,7 +87,10 @@ struct EpisodeDetailHeroView: View {
         let url = episode.imageURL ?? showImageURL
         return Group {
             if let url {
-                CachedAsyncImage(url: url) { phase in
+                CachedAsyncImage(
+                    url: url,
+                    targetSize: CGSize(width: 220, height: 220)
+                ) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
@@ -104,16 +107,12 @@ struct EpisodeDetailHeroView: View {
     }
 
     private var artworkPlaceholder: some View {
-        RoundedRectangle(cornerRadius: AppTheme.Corner.lg, style: .continuous)
-            .fill(LinearGradient(
-                colors: [Color.orange.opacity(0.65), Color.purple.opacity(0.55)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-            .overlay(
-                Text(String(showName.prefix(1)))
-                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .foregroundStyle(.white)
-            )
+        ZStack {
+            Color.secondary.opacity(0.18)
+            Image(systemName: "waveform")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var metadataLine: String {
@@ -305,12 +304,12 @@ struct EpisodeDetailHeroView: View {
 
     private func sectionDivider(_ label: String) -> some View {
         HStack(spacing: 8) {
-            Rectangle().fill(Color.secondary.opacity(0.4)).frame(width: 18, height: 1)
+            Rectangle().fill(AppTheme.Tint.dimmed).frame(width: 18, height: 1)
             Text(label)
                 .font(.system(.caption, design: .rounded).weight(.semibold))
                 .tracking(0.6)
                 .foregroundStyle(.secondary)
-            Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
+            Rectangle().fill(AppTheme.Tint.hairline).frame(height: 1)
         }
         .padding(.top, 8)
     }

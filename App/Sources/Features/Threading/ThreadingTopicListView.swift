@@ -141,7 +141,7 @@ private struct TopicRow: View {
                         .foregroundStyle(.primary)
                     if topic.contradictionCount > 0 {
                         Circle()
-                            .fill(Color(red: 0.85, green: 0.64, blue: 0.25))
+                            .fill(AppTheme.Tint.threadingContradiction)
                             .frame(width: 6, height: 6)
                             .accessibilityHidden(true)
                     }

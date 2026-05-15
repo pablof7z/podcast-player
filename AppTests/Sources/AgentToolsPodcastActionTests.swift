@@ -345,6 +345,8 @@ final class AgentToolsPodcastActionTests: XCTestCase {
                 ttsPublisher: MockTTSPublisher(),
                 directory: MockDirectory(),
                 subscribe: MockSubscribe(),
+                youtubeIngestion: MockYouTubeIngestion(),
+                ownedPodcasts: MockOwnedPodcasts(),
                 peerContext: peerContext
             ),
             playback: playback,

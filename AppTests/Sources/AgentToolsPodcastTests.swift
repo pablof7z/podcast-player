@@ -325,6 +325,63 @@ final class AgentToolsPodcastTests: XCTestCase {
         XCTAssertTrue(result.sources.isEmpty)
     }
 
+    // MARK: - publish_episode
+
+    func testPublishEpisodeSuccessReturnsNaddr() async throws {
+        let ownedPodcasts = MockOwnedPodcasts()
+        let deps = makeDeps(ownedPodcasts: ownedPodcasts)
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.publishEpisode,
+            args: ["episode_id": "ep-abc"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertEqual(decoded["success"] as? Bool, true)
+        XCTAssertEqual(decoded["episode_id"] as? String, "ep-abc")
+        XCTAssertNotNil(decoded["naddr"])
+        let published = await ownedPodcasts.publishedEpisodeIDs
+        XCTAssertEqual(published, ["ep-abc"])
+    }
+
+    func testPublishEpisodeRejectsMissingEpisodeID() async throws {
+        let deps = makeDeps()
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.publishEpisode,
+            args: [:],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPublishEpisodeReturnsErrorWhenNotPublished() async throws {
+        let ownedPodcasts = MockOwnedPodcasts()
+        await ownedPodcasts.setShouldFailPublish(true)
+        let deps = makeDeps(ownedPodcasts: ownedPodcasts)
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.publishEpisode,
+            args: ["episode_id": "ep-private"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+    }
+
+    func testPublishEpisodeReturnsErrorOnThrow() async throws {
+        let ownedPodcasts = MockOwnedPodcasts()
+        await ownedPodcasts.setPublishError(AgentOwnedPodcastError.noSigningKey)
+        let deps = makeDeps(ownedPodcasts: ownedPodcasts)
+        let json = await AgentTools.dispatchPodcast(
+            name: AgentTools.PodcastNames.publishEpisode,
+            args: ["episode_id": "ep-nosigning"],
+            deps: deps.bundle
+        )
+        let decoded = try decode(json)
+        XCTAssertNotNil(decoded["error"])
+        let errMsg = decoded["error"] as? String ?? ""
+        XCTAssertTrue(errMsg.contains("signing key"), "Expected signing key error, got: \(errMsg)")
+    }
+
     // MARK: - Helpers
 
     private func decode(_ json: String) throws -> [String: Any] {
@@ -353,7 +410,8 @@ final class AgentToolsPodcastTests: XCTestCase {
         peerPublisher: PeerEventPublisherProtocol = MockPeerEventPublisher(),
         friendDirectory: FriendDirectoryProtocol = MockFriendDirectory(),
         perplexity: PerplexityClientProtocol = MockPerplexity(),
-        ttsPublisher: TTSPublisherProtocol = MockTTSPublisher()
+        ttsPublisher: TTSPublisherProtocol = MockTTSPublisher(),
+        ownedPodcasts: AgentOwnedPodcastManagerProtocol = MockOwnedPodcasts()
     ) -> DepsBundle {
         DepsBundle(
             bundle: PodcastAgentToolDeps(
@@ -371,7 +429,9 @@ final class AgentToolsPodcastTests: XCTestCase {
                 perplexity: perplexity,
                 ttsPublisher: ttsPublisher,
                 directory: MockDirectory(),
-                subscribe: MockSubscribe()
+                subscribe: MockSubscribe(),
+                youtubeIngestion: MockYouTubeIngestion(),
+                ownedPodcasts: ownedPodcasts
             ),
             playback: playback
         )

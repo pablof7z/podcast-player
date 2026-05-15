@@ -30,6 +30,26 @@ extension AppTheme {
         /// or declared their own `static let amber`. Consolidated here so
         /// any future tone tweak lands in one place.
         static let editorialAmber = SwiftUI.Color(red: 0.72, green: 0.45, blue: 0.10)
+
+        // MARK: Evidence / confidence levels (Wiki + Threading)
+
+        /// Multi-source / high-confidence evidence — solid green left rule.
+        static let evidenceHigh = SwiftUI.Color(red: 0.18, green: 0.55, blue: 0.34)
+        /// Single-source / medium-confidence evidence — amber dotted left rule.
+        static let evidenceMedium = SwiftUI.Color(red: 0.78, green: 0.55, blue: 0.10)
+        /// Uncorroborated / low-confidence evidence — red dotted left rule.
+        static let evidenceLow = SwiftUI.Color(red: 0.78, green: 0.18, blue: 0.30)
+        /// Contradiction / contradiction-seam tint in threading surfaces.
+        static let threadingContradiction = SwiftUI.Color(red: 0.85, green: 0.64, blue: 0.25)
+
+        // MARK: Voice conversation state
+
+        /// Voice listening / barge-in state — sky blue.
+        static let voiceListening = SwiftUI.Color(red: 0.45, green: 0.78, blue: 1.0)
+        /// Voice thinking state — lavender.
+        static let voiceThinking = SwiftUI.Color(red: 0.62, green: 0.45, blue: 1.0)
+        /// Voice speaking state — mint.
+        static let voiceSpeaking = SwiftUI.Color(red: 0.36, green: 0.85, blue: 0.78)
     }
 
     // MARK: - Gradients

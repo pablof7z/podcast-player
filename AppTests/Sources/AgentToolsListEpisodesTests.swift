@@ -251,7 +251,9 @@ final class AgentToolsListEpisodesTests: XCTestCase {
             perplexity: MockPerplexity(),
             ttsPublisher: MockTTSPublisher(),
             directory: directory,
-            subscribe: subscribe
+            subscribe: subscribe,
+            youtubeIngestion: MockYouTubeIngestion(),
+            ownedPodcasts: MockOwnedPodcasts()
         )
         let argsJSON: String
         if args.isEmpty {

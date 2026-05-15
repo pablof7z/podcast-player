@@ -72,8 +72,6 @@ struct HomeAgentPickCard: View {
                     if let showName = podcast?.title, !showName.isEmpty {
                         Text(showName)
                             .font(AppTheme.Typography.caption)
-                            .tracking(0.8)
-                            .textCase(.uppercase)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }

@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T17:00:00Z",
+      "lines": [
+        "Fixed: generate_podcast_artwork now works with Gemini (Nano Banana) models — they use the chat API, not the image endpoint. The model picker in Settings → Image Generation now shows only image-capable models."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T16:02:00Z",
       "lines": [
         "Avatar in the top-left toolbar now shows cleanly without the oversized glass ring."

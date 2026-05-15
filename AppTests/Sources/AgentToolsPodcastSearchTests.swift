@@ -268,7 +268,9 @@ final class AgentToolsPodcastSearchTests: XCTestCase {
             perplexity: perplexity,
             ttsPublisher: MockTTSPublisher(),
             directory: MockDirectory(),
-            subscribe: MockSubscribe()
+            subscribe: MockSubscribe(),
+            youtubeIngestion: MockYouTubeIngestion(),
+            ownedPodcasts: MockOwnedPodcasts()
         )
     }
 }

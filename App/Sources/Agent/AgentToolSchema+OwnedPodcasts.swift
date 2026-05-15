@@ -88,6 +88,22 @@ extension AgentTools {
                 ],
                 required: ["prompt"]
             ),
+            ownedPodcastTool(
+                name: PodcastNames.publishEpisode,
+                description: """
+                Publish an existing episode as a NIP-74 kind:30075 Nostr event to its parent \
+                agent-owned podcast. Uploads the episode audio, chapters, and transcript to \
+                Blossom, then signs and broadcasts the event to the configured relay. \
+                Returns the NIP-19 naddr of the published event so it can be shared or referenced. \
+                Fails with a descriptive error when: Nostr is disabled, the parent podcast is \
+                private, no relay is configured, or the episode does not belong to an \
+                agent-owned podcast.
+                """,
+                properties: [
+                    "episode_id": ["type": "string", "description": "The UUID of the episode to publish. Must belong to an agent-owned podcast whose visibility is 'public'."],
+                ],
+                required: ["episode_id"]
+            ),
         ]
     }
 

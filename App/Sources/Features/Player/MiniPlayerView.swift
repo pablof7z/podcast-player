@@ -219,9 +219,9 @@ struct MiniPlayerView: View {
 
     private var inlineArtwork: some View {
         artworkSurface(
-            size: 34,
+            size: 26,
             cornerRadius: AppTheme.Corner.sm,
-            placeholderGlyphSize: 13
+            placeholderGlyphSize: 10
         )
     }
 
@@ -265,9 +265,9 @@ struct MiniPlayerView: View {
 
     private var artwork: some View {
         artworkSurface(
-            size: 56,
+            size: 42,
             cornerRadius: AppTheme.Corner.md,
-            placeholderGlyphSize: 22
+            placeholderGlyphSize: 17
         )
     }
 

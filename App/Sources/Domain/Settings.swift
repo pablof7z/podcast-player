@@ -107,10 +107,10 @@ struct Settings: Codable, Hashable, Sendable {
     var chapterCompilationModelName: String = ""
     var embeddingsModel: String = Self.defaultEmbeddingsModel
     var embeddingsModelName: String = ""
-    /// Model used by `ImageGenerationService`. Uses OpenRouter's image-generation
-    /// endpoint so no extra credential is required — the connected OpenRouter key is
-    /// reused. Defaults to DALL-E 3.
-    var imageGenerationModel: String = "openai/dall-e-3"
+    /// Model used by `ImageGenerationService`. Multimodal models (Gemini/Banana,
+    /// GPT-image) route through /chat/completions; legacy DALL-E/FLUX use
+    /// /images/generations. Defaults to Gemini 2.5 Flash Image ("Nano Banana").
+    var imageGenerationModel: String = "google/gemini-2.5-flash-image"
     var imageGenerationModelName: String = ""
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
     /// default to save tokens; settings UI exposes the toggle.
@@ -291,7 +291,7 @@ struct Settings: Codable, Hashable, Sendable {
         chapterCompilationModelName = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) ?? ""
         embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
         embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
-        imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "openai/dall-e-3"
+        imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "google/gemini-2.5-flash-image"
         imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? ""
         blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
