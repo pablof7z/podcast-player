@@ -138,6 +138,15 @@ pub struct PeerMessageRecord {
     pub to_pubkey: String,
     pub content: String,
     pub created_at: i64,
+    /// Raw tag list, preserved so the Swift responder can NIP-10 walk
+    /// (root/reply markers, channel anchors) and the delegation router can
+    /// look up the originating `send_friend_message` outbound by id.
+    pub tags: Vec<Vec<String>>,
+    /// Canonical NIP-01 JSON of the inbound event. Swift persists this with
+    /// the conversation record so debug + export flows can show the raw
+    /// wire form. Empty when the event couldn't be serialized — which
+    /// should never happen for events the relay actually delivered.
+    pub raw_event_json: String,
 }
 
 #[derive(Debug, Clone, uniffi::Enum)]

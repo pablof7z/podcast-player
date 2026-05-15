@@ -187,7 +187,7 @@ fn parse_show(event: &Event) -> Option<PodcastShowRecord> {
         description,
         image_url,
         categories,
-        created_at: event.created_at.as_u64() as i64,
+        created_at: event.created_at.as_secs() as i64,
     })
 }
 
@@ -237,7 +237,7 @@ fn parse_episode(event: &Event, show_coordinate: &str) -> Option<PodcastEpisodeR
         duration,
         chapters_url,
         transcript_url,
-        created_at: event.created_at.as_u64() as i64,
+        created_at: event.created_at.as_secs() as i64,
     })
 }
 

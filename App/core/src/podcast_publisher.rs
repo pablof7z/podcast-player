@@ -214,7 +214,7 @@ fn to_signed_event(event: &Event) -> SignedEvent {
     SignedEvent {
         id: event.id.to_hex(),
         pubkey: event.pubkey.to_hex(),
-        created_at: event.created_at.as_u64() as i64,
+        created_at: event.created_at.as_secs() as i64,
         kind: u16::from(event.kind) as u32,
         tags: event
             .tags

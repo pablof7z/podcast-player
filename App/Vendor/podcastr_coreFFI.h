@@ -374,7 +374,7 @@ uint64_t uniffi_podcastr_core_fn_method_podcastrcore_publish_signed_event_json(v
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PODCASTR_CORE_FN_METHOD_PODCASTRCORE_REPUBLISH_AGENT_PROFILE
 #define UNIFFI_FFIDEF_UNIFFI_PODCASTR_CORE_FN_METHOD_PODCASTRCORE_REPUBLISH_AGENT_PROFILE
-uint64_t uniffi_podcastr_core_fn_method_podcastrcore_republish_agent_profile(void*_Nonnull ptr, RustBuffer name, RustBuffer display_name, RustBuffer about, RustBuffer picture, RustBuffer nip05, RustBuffer lud16
+uint64_t uniffi_podcastr_core_fn_method_podcastrcore_republish_agent_profile(void*_Nonnull ptr, RustBuffer name, RustBuffer display_name, RustBuffer about, RustBuffer picture, RustBuffer nip05, RustBuffer lud16, RustBuffer extra_tags
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_PODCASTR_CORE_FN_METHOD_PODCASTRCORE_SET_EVENT_CALLBACK

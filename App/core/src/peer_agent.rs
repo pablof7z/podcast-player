@@ -70,12 +70,25 @@ impl Router for PeerMessageRouter {
             return Vec::new();
         }
 
+        let tags: Vec<Vec<String>> = event
+            .tags
+            .iter()
+            .map(|t| t.as_slice().to_vec())
+            .collect();
+        // `Event::as_json` is infallible (it just serializes a struct of
+        // already-validated fields), but the trait signature returns
+        // `String` so we capture it directly. If a future nostr-sdk turns
+        // this fallible we'll see a compile error and fix the unwrap.
+        let raw_event_json = event.as_json();
+
         let record = PeerMessageRecord {
             event_id: event.id.to_hex(),
             from_pubkey: event.pubkey.to_hex(),
             to_pubkey: self.my_pubkey_hex.clone(),
             content: event.content.clone(),
             created_at: event.created_at.as_secs() as i64,
+            tags,
+            raw_event_json,
         };
 
         vec![Delta {
@@ -280,6 +293,12 @@ impl PodcastrCore {
         picture: Option<String>,
         nip05: Option<String>,
         lud16: Option<String>,
+        // `extra_tags`: tags appended to the kind:0 event verbatim. Swift uses
+        // this for the legacy `["backend", "Podcastr App in <device>"]`
+        // identifier so downstream relays / clients can tell which install
+        // last touched the profile. Each entry must be a non-empty key + 0+
+        // values; an all-empty entry is silently dropped.
+        extra_tags: Vec<Vec<String>>,
     ) -> Result<SignedEvent, CoreError> {
         if self.current_pubkey().is_none() {
             return Err(CoreError::NotAuthenticated);
@@ -304,7 +323,17 @@ impl PodcastrCore {
             metadata = metadata.lud16(s.to_string());
         }
 
-        let builder = EventBuilder::metadata(&metadata);
+        let mut builder = EventBuilder::metadata(&metadata);
+        for tag in extra_tags {
+            // Skip empties so a caller that always supplies a slot but
+            // sometimes leaves it blank doesn't ship `["", ""]` to relays.
+            if tag.iter().all(|s| s.is_empty()) {
+                continue;
+            }
+            let parsed = Tag::parse(tag)
+                .map_err(|e| CoreError::InvalidInput(format!("invalid extra tag: {e}")))?;
+            builder = builder.tag(parsed);
+        }
         let client = self.runtime().client();
         let event = client
             .sign_event_builder(builder)

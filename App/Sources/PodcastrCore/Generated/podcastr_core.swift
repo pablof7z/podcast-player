@@ -808,7 +808,7 @@ public protocol PodcastrCoreProtocol: AnyObject, Sendable {
      * as `""` so a future "clear this field" UX can do it cleanly without
      * stale-empty-string ghosts on aggressive clients.
      */
-    func republishAgentProfile(name: String, displayName: String?, about: String?, picture: String?, nip05: String?, lud16: String?) async throws  -> SignedEvent
+    func republishAgentProfile(name: String, displayName: String?, about: String?, picture: String?, nip05: String?, lud16: String?, extraTags: [[String]]) async throws  -> SignedEvent
     
     /**
      * Wire up (or replace) the Swift-side delta sink. Pass `None` to clear.
@@ -1273,13 +1273,13 @@ open func publishSignedEventJson(eventJson: String)async throws  -> String  {
      * as `""` so a future "clear this field" UX can do it cleanly without
      * stale-empty-string ghosts on aggressive clients.
      */
-open func republishAgentProfile(name: String, displayName: String?, about: String?, picture: String?, nip05: String?, lud16: String?)async throws  -> SignedEvent  {
+open func republishAgentProfile(name: String, displayName: String?, about: String?, picture: String?, nip05: String?, lud16: String?, extraTags: [[String]])async throws  -> SignedEvent  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_podcastr_core_fn_method_podcastrcore_republish_agent_profile(
                     self.uniffiClonePointer(),
-                    FfiConverterString.lower(name),FfiConverterOptionString.lower(displayName),FfiConverterOptionString.lower(about),FfiConverterOptionString.lower(picture),FfiConverterOptionString.lower(nip05),FfiConverterOptionString.lower(lud16)
+                    FfiConverterString.lower(name),FfiConverterOptionString.lower(displayName),FfiConverterOptionString.lower(about),FfiConverterOptionString.lower(picture),FfiConverterOptionString.lower(nip05),FfiConverterOptionString.lower(lud16),FfiConverterSequenceSequenceString.lower(extraTags)
                 )
             },
             pollFunc: ffi_podcastr_core_rust_future_poll_rust_buffer,
@@ -2067,15 +2067,41 @@ public struct PeerMessageRecord {
     public var toPubkey: String
     public var content: String
     public var createdAt: Int64
+    /**
+     * Raw tag list, preserved so the Swift responder can NIP-10 walk
+     * (root/reply markers, channel anchors) and the delegation router can
+     * look up the originating `send_friend_message` outbound by id.
+     */
+    public var tags: [[String]]
+    /**
+     * Canonical NIP-01 JSON of the inbound event. Swift persists this with
+     * the conversation record so debug + export flows can show the raw
+     * wire form. Empty when the event couldn't be serialized — which
+     * should never happen for events the relay actually delivered.
+     */
+    public var rawEventJson: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(eventId: String, fromPubkey: String, toPubkey: String, content: String, createdAt: Int64) {
+    public init(eventId: String, fromPubkey: String, toPubkey: String, content: String, createdAt: Int64, 
+        /**
+         * Raw tag list, preserved so the Swift responder can NIP-10 walk
+         * (root/reply markers, channel anchors) and the delegation router can
+         * look up the originating `send_friend_message` outbound by id.
+         */tags: [[String]], 
+        /**
+         * Canonical NIP-01 JSON of the inbound event. Swift persists this with
+         * the conversation record so debug + export flows can show the raw
+         * wire form. Empty when the event couldn't be serialized — which
+         * should never happen for events the relay actually delivered.
+         */rawEventJson: String) {
         self.eventId = eventId
         self.fromPubkey = fromPubkey
         self.toPubkey = toPubkey
         self.content = content
         self.createdAt = createdAt
+        self.tags = tags
+        self.rawEventJson = rawEventJson
     }
 }
 
@@ -2101,6 +2127,12 @@ extension PeerMessageRecord: Equatable, Hashable {
         if lhs.createdAt != rhs.createdAt {
             return false
         }
+        if lhs.tags != rhs.tags {
+            return false
+        }
+        if lhs.rawEventJson != rhs.rawEventJson {
+            return false
+        }
         return true
     }
 
@@ -2110,6 +2142,8 @@ extension PeerMessageRecord: Equatable, Hashable {
         hasher.combine(toPubkey)
         hasher.combine(content)
         hasher.combine(createdAt)
+        hasher.combine(tags)
+        hasher.combine(rawEventJson)
     }
 }
 
@@ -2126,7 +2160,9 @@ public struct FfiConverterTypePeerMessageRecord: FfiConverterRustBuffer {
                 fromPubkey: FfiConverterString.read(from: &buf), 
                 toPubkey: FfiConverterString.read(from: &buf), 
                 content: FfiConverterString.read(from: &buf), 
-                createdAt: FfiConverterInt64.read(from: &buf)
+                createdAt: FfiConverterInt64.read(from: &buf), 
+                tags: FfiConverterSequenceSequenceString.read(from: &buf), 
+                rawEventJson: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -2136,6 +2172,8 @@ public struct FfiConverterTypePeerMessageRecord: FfiConverterRustBuffer {
         FfiConverterString.write(value.toPubkey, into: &buf)
         FfiConverterString.write(value.content, into: &buf)
         FfiConverterInt64.write(value.createdAt, into: &buf)
+        FfiConverterSequenceSequenceString.write(value.tags, into: &buf)
+        FfiConverterString.write(value.rawEventJson, into: &buf)
     }
 }
 
@@ -3727,7 +3765,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_podcastr_core_checksum_method_podcastrcore_publish_signed_event_json() != 51287) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_podcastr_core_checksum_method_podcastrcore_republish_agent_profile() != 39054) {
+    if (uniffi_podcastr_core_checksum_method_podcastrcore_republish_agent_profile() != 32612) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_podcastr_core_checksum_method_podcastrcore_set_event_callback() != 54731) {
