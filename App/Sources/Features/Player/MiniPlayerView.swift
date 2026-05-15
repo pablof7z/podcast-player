@@ -63,36 +63,16 @@ struct MiniPlayerView: View {
         // Wrapping in `Button(action: onTap)` collapses every nested Button
         // (Pause, Skip Forward) into the parent's tap target — sighted users
         // tapping the visible pause icon end up *expanding* the player
-        // instead of pausing. Worse, the inner Buttons disappear from the
-        // accessibility tree as direct AXButtons and reappear as custom
-        // actions on the parent (only reachable via the VoiceOver rotor).
-        // Use a non-Button tap surface so the nested transport Buttons keep
-        // their own gestures, and limit the expand-on-tap target to the
-        // non-button regions via `.contentShape` + `.onTapGesture` on the
-        // background, not the whole stack.
-        //
-        // Progress line is an OVERLAY at the bottom edge — Apple Music-style.
-        // Putting it inside the VStack *under* the glassEffect makes the bar
-        // disappear into the glass material; lifting it into an overlay renders
-        // it crisply on top. The overlay drops horizontal padding so the bar
-        // tracks the surface's full curvature instead of starting after the
-        // rounded corners.
+        // instead of pausing. Use a non-Button tap surface so the nested
+        // transport Buttons keep their own gestures.
         content
             .glassEffect(.regular.interactive(), in: .rect(cornerRadius: AppTheme.Corner.lg))
             .glassEffectID("player.surface", in: glassNamespace)
-            .overlay(alignment: .bottom) {
-                progressLine
-                    .clipShape(.rect(cornerRadius: AppTheme.Corner.lg))
-            }
             .contentShape(.rect(cornerRadius: AppTheme.Corner.lg))
             .onTapGesture {
                 Haptics.light()
                 onTap()
             }
-            // Expose the tap-to-expand as a real VoiceOver action on a
-            // single combined element while letting nested Buttons keep
-            // their own AX identity for direct activation. Without this
-            // the expand gesture was unreachable to VoiceOver.
             .accessibilityElement(children: .contain)
             .accessibilityAction(named: "Open player") {
                 onTap()
@@ -226,25 +206,6 @@ struct MiniPlayerView: View {
     }
 
     // MARK: - Subviews
-
-    private var progressLine: some View {
-        // 3px is the readable minimum on top of a glass material — 2px
-        // disappears against the translucent backdrop. Background uses
-        // `Color.accentColor.opacity(0.20)` so the unfilled segment also
-        // tints toward the accent and the bar reads as a meter even before
-        // the playhead has moved.
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color.accentColor.opacity(0.20))
-                Rectangle()
-                    .fill(Color.accentColor)
-                    .frame(width: proxy.size.width * progressFraction)
-                    .animation(.linear(duration: 0.15), value: state.currentTime)
-            }
-        }
-        .frame(height: 3)
-    }
 
     private var content: some View {
         HStack(spacing: AppTheme.Spacing.sm) {
@@ -425,11 +386,6 @@ struct MiniPlayerView: View {
         state.pause()
         state.episode = nil
         store.markEpisodePlayed(episodeID)
-    }
-
-    private var progressFraction: CGFloat {
-        guard state.duration > 0 else { return 0 }
-        return CGFloat(state.currentTime / state.duration)
     }
 
     private var accessibilityLabel: String {

@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T20:20:00Z",
+      "lines": [
+        "Sidebar no longer dims the rest of the app when open, and the mini-player has been streamlined — the thin progress strip at its bottom edge is gone."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T20:15:00Z",
       "lines": [
         "Fixed: agent-generated downloaded episodes now play reliably across app launches — stale sandbox paths are recomputed at playback time."

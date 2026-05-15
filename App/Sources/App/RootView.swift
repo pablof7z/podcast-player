@@ -65,15 +65,15 @@ struct RootView: View {
                 .environment(playbackState)
                 .offset(x: showSidebar ? sidebarWidth : 0)
                 .overlay {
-                    Color.black
-                        .opacity(showSidebar ? 0.35 : 0)
-                        .ignoresSafeArea()
-                        .contentShape(Rectangle())
-                        .allowsHitTesting(showSidebar)
-                        .onTapGesture {
-                            Haptics.selection()
-                            withAnimation(AppTheme.Animation.spring) { showSidebar = false }
-                        }
+                    if showSidebar {
+                        Color.clear
+                            .ignoresSafeArea()
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                Haptics.selection()
+                                withAnimation(AppTheme.Animation.spring) { showSidebar = false }
+                            }
+                    }
                 }
                 .task(id: relayServiceIdentity) {
                     guard let relayService else { return }
