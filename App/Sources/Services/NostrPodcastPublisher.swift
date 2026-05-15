@@ -29,6 +29,7 @@ struct NostrPodcastPublisher: Sendable {
     /// Publish (or replace) the NIP-74 show event for an agent-owned podcast.
     /// Returns the signed Nostr event ID (32-byte hex).
     @discardableResult
+    @MainActor
     func publishShow(podcast: Podcast, signer _: any NostrSigner) async throws -> String {
         // rust-cutover: signer ignored; Rust core uses the configured signer.
         let dTag = "podcast:guid:\(podcast.id.uuidString.lowercased())"
@@ -53,6 +54,7 @@ struct NostrPodcastPublisher: Sendable {
     /// Publish (or replace) the NIP-74 episode event.
     /// Returns the signed Nostr event ID (32-byte hex).
     @discardableResult
+    @MainActor
     func publishEpisode(
         episode: Episode,
         podcast: Podcast,
