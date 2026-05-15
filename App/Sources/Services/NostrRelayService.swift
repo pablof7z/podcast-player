@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import UIKit
 
 /// Routes inbound kind:1 peer messages from the Rust core through the
 /// access-control layer, queuing unknown senders for user approval and
@@ -161,11 +162,14 @@ final class NostrRelayService {
         let picturePayload: String? = picture.isEmpty ? nil : picture
         // Settings doesn't currently surface display_name / nip05 / lud16;
         // pass nil so the Rust side omits those fields from the payload
-        // rather than writing empty strings. FIXME(rust-cutover): the
-        // legacy Swift path attached a `["backend", "Podcastr App in
-        // <device>"]` event tag to identify which install published the
-        // profile. The Rust `republishAgentProfile` doesn't accept extra
-        // tags — the backend hint is dropped until the FFI is extended.
+        // rather than writing empty strings.
+        //
+        // Restore the legacy `["backend", "Podcastr App in <device>"]`
+        // event tag so downstream relays / clients can tell which install
+        // last touched the profile. The Rust `republishAgentProfile`
+        // accepts these as `extraTags`.
+        let deviceName = UIDevice.current.name
+        let backendTag = ["backend", "Podcastr App in \(deviceName)"]
         Task {
             do {
                 _ = try await PodcastrCoreBridge.shared.core.republishAgentProfile(
@@ -174,7 +178,8 @@ final class NostrRelayService {
                     about: aboutPayload,
                     picture: picturePayload,
                     nip05: nil,
-                    lud16: nil
+                    lud16: nil,
+                    extraTags: [backendTag]
                 )
             } catch {
                 NostrRelayService.logger.error("republishProfile: failed — \(error, privacy: .public)")
@@ -206,21 +211,11 @@ final class NostrRelayService {
             return
         }
 
-        // FIXME(rust-cutover): PeerMessageRecord doesn't carry tags or raw JSON.
-        // Consequences:
-        //  • NIP-10 root resolution collapses — every inbound is treated as
-        //    its own root. Delegation routing (`hasPendingFriendMessage`)
-        //    will miss replies whose `e`-tagged root is the outgoing
-        //    `send_friend_message` event, and those replies will fall
-        //    through to the approval/allowed-list branch instead of the
-        //    delegation re-invocation. Until Rust exposes tags, the agent
-        //    responder's own thread fetch (`NostrThreadFetcher.fetch`) will
-        //    backfill thread context but won't restore the delegation gate.
-        //  • Transcript export loses the raw kind:1 JSON for inbound turns
-        //    (acceptable — `rawEventJSON` is best-effort on the store).
-        // Needed for full parity: extend `PeerMessageRecord` with `tags:
-        // Vec<Vec<String>>` and an optional `rawJson: Option<String>`.
-        let inboundTags: [[String]] = []
+        // Rust now carries the full tag list and the canonical NIP-01 JSON
+        // of the inbound event, so NIP-10 root resolution + delegation
+        // routing + transcript-export raw JSON all work end-to-end.
+        let inboundTags: [[String]] = msg.tags
+        let inboundRawJSON: String? = msg.rawEventJson.isEmpty ? nil : msg.rawEventJson
         let inboundRootID = NostrConversationRoot.rootEventID(
             eventID: eventID,
             tags: inboundTags
@@ -236,7 +231,7 @@ final class NostrRelayService {
                 createdAt: createdAt,
                 content: content,
                 tags: inboundTags,
-                rawEventJSON: nil
+                rawEventJSON: inboundRawJSON
             ))
             return
         }
@@ -257,7 +252,7 @@ final class NostrRelayService {
                 createdAt: createdAt,
                 content: content,
                 tags: inboundTags,
-                rawEventJSON: nil
+                rawEventJSON: inboundRawJSON
             ))
             return
         }
