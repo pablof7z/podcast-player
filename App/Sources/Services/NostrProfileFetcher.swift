@@ -1,25 +1,21 @@
 import Foundation
 import os.log
 
-/// One-shot kind:0 (`metadata`) fetcher. Opens a short-lived websocket to
-/// the configured relay, requests profile events for the given pubkeys,
-/// parses each event's JSON content, and writes the freshest record per
-/// pubkey into `AppStateStore.state.nostrProfileCache`.
+/// One-shot kind:0 (`metadata`) fetcher. Delegates relay I/O to the Rust
+/// core via `PodcastrCoreBridge`. Subscribes for profile records for the
+/// given pubkeys, writes each one into `AppStateStore.state.nostrProfileCache`
+/// as deltas arrive, and tears down when either EOSE arrives or a 4s
+/// timeout fires — whichever comes first.
 ///
-/// Designed to be cheap to call: the websocket is closed as soon as EOSE
+/// Designed to be cheap to call: the subscription closes as soon as EOSE
 /// arrives, or after a hard timeout. Concurrent calls are safe — each one
-/// owns its own socket and `REQ` id.
+/// owns its own callback id and Rust subscription id.
 @MainActor
 final class NostrProfileFetcher {
 
     nonisolated private static let logger = Logger.app("NostrProfileFetcher")
 
     private enum Wire {
-        static let kindMetadata = 0
-        static let req = "REQ"
-        static let close = "CLOSE"
-        static let event = "EVENT"
-        static let eose = "EOSE"
         static let timeout: Duration = .seconds(4)
     }
 
@@ -30,38 +26,58 @@ final class NostrProfileFetcher {
     }
 
     /// Requests kind:0 events for `pubkeys` and caches whatever comes back
-    /// before EOSE or timeout. Returns when the socket closes.
+    /// before EOSE or timeout. Returns when the subscription closes.
     func fetchProfiles(for pubkeys: [String]) async {
         guard !pubkeys.isEmpty else { return }
-        let relayURL = store.state.settings.nostrRelayURL
-        guard !relayURL.isEmpty, let url = URL(string: relayURL) else { return }
 
-        let task = URLSession.shared.webSocketTask(with: url)
-        task.resume()
+        let bridge = PodcastrCoreBridge.shared
 
-        let subID = "profile-\(UUID().uuidString.prefix(8))"
-        let filter: [String: Any] = [
-            "kinds": [Wire.kindMetadata],
-            "authors": pubkeys,
-        ]
-        let req: [Any] = [Wire.req, subID, filter]
-        guard let payload = try? JSONSerialization.data(withJSONObject: req),
-              let text = String(data: payload, encoding: .utf8) else {
-            task.cancel(with: .normalClosure, reason: nil)
-            return
+        // Single-shot signal: resumed either by EOSE delta or the timeout.
+        // Wrapped in a class so the `@Sendable` delta handler can mutate
+        // it under the main actor without capture-by-value issues.
+        let signal = OneShotSignal()
+
+        let handle = bridge.register { [weak self] delta in
+            // Bridge already hops to MainActor before invoking us.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                switch delta.change {
+                case .profileUpdated(let pubkey, let profile):
+                    let metadata = NostrProfileMetadata(
+                        pubkey: pubkey,
+                        name: profile.name,
+                        displayName: profile.displayName,
+                        about: profile.about,
+                        picture: profile.picture,
+                        nip05: profile.nip05,
+                        fetchedFromCreatedAt: Int(profile.createdAt)
+                    )
+                    self.store.setNostrProfile(metadata)
+                case .subscriptionEose:
+                    signal.fire()
+                default:
+                    break
+                }
+            }
         }
 
+        let subID: String
         do {
-            try await task.send(.string(text))
+            subID = try await bridge.core.subscribeProfiles(
+                pubkeys: pubkeys,
+                callbackSubscriptionId: handle.callbackID
+            )
         } catch {
-            Self.logger.warning("fetchProfiles: send failed — \(error, privacy: .public)")
-            task.cancel(with: .normalClosure, reason: nil)
+            Self.logger.warning("fetchProfiles: subscribe failed — \(error, privacy: .public)")
+            bridge.unregister(handle)
             return
         }
 
+        // Race EOSE vs the 4s timeout. First one to fire wins; the other
+        // is cancelled. This is a one-shot bounded wait, not a poll loop.
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { [weak self] in
-                await self?.readUntilEose(task: task, subID: subID)
+            group.addTask {
+                await signal.wait()
             }
             group.addTask {
                 try? await Task.sleep(for: Wire.timeout)
@@ -70,74 +86,51 @@ final class NostrProfileFetcher {
             group.cancelAll()
         }
 
-        let close: [Any] = [Wire.close, subID]
-        if let data = try? JSONSerialization.data(withJSONObject: close),
-           let str = String(data: data, encoding: .utf8) {
-            try? await task.send(.string(str))
+        await bridge.core.unsubscribeProfiles(subId: subID)
+        bridge.unregister(handle)
+    }
+}
+
+// MARK: - One-shot signal
+
+/// Internal helper: a single-resume continuation guarded against double-fire.
+/// Used to let the delta handler "ping" the awaiter exactly once when
+/// `.subscriptionEose` arrives. Living on the MainActor keeps mutation safe
+/// because both `fire()` and `wait()` are called there.
+@MainActor
+private final class OneShotSignal {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var fired = false
+
+    func fire() {
+        guard !fired else { return }
+        fired = true
+        if let cont = continuation {
+            continuation = nil
+            cont.resume()
         }
-        task.cancel(with: .normalClosure, reason: nil)
     }
 
-    private func readUntilEose(task: URLSessionWebSocketTask, subID: String) async {
-        while !Task.isCancelled {
-            do {
-                let msg = try await task.receive()
-                guard case .string(let text) = msg else { continue }
-                if handleMessage(text: text, expectedSubID: subID) == .eose {
-                    return
+    func wait() async {
+        if fired { return }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                if fired || Task.isCancelled {
+                    cont.resume()
+                } else {
+                    self.continuation = cont
                 }
-            } catch {
-                return
+            }
+        } onCancel: {
+            // Cancellation arrives on an unspecified executor; hop back to the
+            // MainActor to resume the (MainActor-isolated) continuation safely.
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let cont = self.continuation {
+                    self.continuation = nil
+                    cont.resume()
+                }
             }
         }
-    }
-
-    private enum HandleOutcome { case event, eose, other }
-
-    @discardableResult
-    private func handleMessage(text: String, expectedSubID: String) -> HandleOutcome {
-        guard let data = text.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              array.count >= 2,
-              let kind = array[0] as? String else { return .other }
-        switch kind {
-        case Wire.eose:
-            return array.count >= 2 && (array[1] as? String) == expectedSubID ? .eose : .other
-        case Wire.event:
-            guard array.count >= 3,
-                  (array[1] as? String) == expectedSubID,
-                  let event = array[2] as? [String: Any] else { return .other }
-            if let profile = parseProfile(from: event) {
-                store.setNostrProfile(profile)
-            }
-            return .event
-        default:
-            return .other
-        }
-    }
-
-    private func parseProfile(from event: [String: Any]) -> NostrProfileMetadata? {
-        guard let pubkey = event["pubkey"] as? String,
-              let createdAt = event["created_at"] as? Int,
-              let content = event["content"] as? String else { return nil }
-
-        guard let contentData = content.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: contentData) as? [String: Any] else {
-            return NostrProfileMetadata(
-                pubkey: pubkey,
-                name: nil, displayName: nil, about: nil, picture: nil, nip05: nil,
-                fetchedFromCreatedAt: createdAt
-            )
-        }
-
-        return NostrProfileMetadata(
-            pubkey: pubkey,
-            name: json["name"] as? String,
-            displayName: (json["display_name"] as? String) ?? (json["displayName"] as? String),
-            about: json["about"] as? String,
-            picture: json["picture"] as? String,
-            nip05: json["nip05"] as? String,
-            fetchedFromCreatedAt: createdAt
-        )
     }
 }
