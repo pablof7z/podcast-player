@@ -60,6 +60,12 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     /// Defaults to `.public` so new agent-owned podcasts are live on Nostr
     /// whenever `settings.nostrEnabled` is true.
     var nostrVisibility: NostrVisibility
+    /// NIP-74 addressable coordinate for podcasts *discovered* via Nostr
+    /// (i.e. shows published by others). Format: `"30074:<pubkey-hex>:<d-tag>"`.
+    /// Non-nil only for Nostr-native shows; RSS shows always have nil here.
+    /// Stored so the app can re-query the relay for new episodes without
+    /// needing to re-parse the feedURL (which is nil for these rows).
+    var nostrCoordinate: String?
     /// `true` when this row's `title` is still the raw feed-host fallback
     /// inserted at placeholder-creation time and has NOT yet been overwritten
     /// by a successful metadata fetch. The UI may render these rows
@@ -100,7 +106,8 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         lastModified: String? = nil,
         titleIsPlaceholder: Bool = false,
         ownerPubkeyHex: String? = nil,
-        nostrVisibility: NostrVisibility = .public
+        nostrVisibility: NostrVisibility = .public,
+        nostrCoordinate: String? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -118,6 +125,7 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         self.titleIsPlaceholder = titleIsPlaceholder
         self.ownerPubkeyHex = ownerPubkeyHex
         self.nostrVisibility = nostrVisibility
+        self.nostrCoordinate = nostrCoordinate
     }
 
     /// Built-in row inserted on store hydration when absent. The Unknown
@@ -136,7 +144,7 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         case language, categories, discoveredAt
         case lastRefreshedAt, etag, lastModified
         case titleIsPlaceholder
-        case ownerPubkeyHex, nostrVisibility
+        case ownerPubkeyHex, nostrVisibility, nostrCoordinate
     }
 
     init(from decoder: Decoder) throws {
@@ -159,5 +167,6 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         titleIsPlaceholder = try c.decodeIfPresent(Bool.self, forKey: .titleIsPlaceholder) ?? false
         ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
         nostrVisibility = try c.decodeIfPresent(NostrVisibility.self, forKey: .nostrVisibility) ?? .public
+        nostrCoordinate = try c.decodeIfPresent(String.self, forKey: .nostrCoordinate)
     }
 }

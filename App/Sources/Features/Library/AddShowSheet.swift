@@ -17,6 +17,7 @@ struct AddShowSheet: View {
 
     enum Mode: String, CaseIterable, Identifiable {
         case search = "Search"
+        case nostr = "Nostr"
         case url = "From URL"
         case opml = "OPML"
 
@@ -43,6 +44,8 @@ struct AddShowSheet: View {
                     switch mode {
                     case .search:
                         DiscoverSearchForm(store: store, onAdded: handleAdded)
+                    case .nostr:
+                        NostrDiscoverForm(store: store, onAdded: handleAdded)
                     case .url:
                         AddByURLForm(store: store, onAdded: handleAddedFromURL)
                     case .opml:
