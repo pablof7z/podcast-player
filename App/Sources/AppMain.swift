@@ -40,9 +40,14 @@ struct PodcastrApp: App {
                 .environment(store)
                 .environment(userIdentity)
                 .environment(askCoordinator)
-                .task { userIdentity.start() }
                 .task { CarPlayController.shared.attach(store: store) }
                 .task {
+                    // Order matters: NDK must exist before UserIdentityStore's
+                    // generated-profile self-publish path reaches the signer
+                    // shim, which routes through NDKEventBuilder.
+                    await NostrStack.shared.bind(store: store)
+                    userIdentity.start()
+                    await NostrStack.shared.start()
                     let service = NostrRelayService(store: store, askCoordinator: askCoordinator)
                     relayService = service
                     service.start()
@@ -71,8 +76,14 @@ struct PodcastrApp: App {
                 .sheet(item: $whatsNewPresentation) { presentation in
                     WhatsNewSheet(entries: presentation.entries)
                 }
-                .onChange(of: store.state.settings.nostrEnabled) { _, _ in relayService?.start() }
-                .onChange(of: store.state.settings.nostrRelayURL) { _, _ in relayService?.start() }
+                .onChange(of: store.state.settings.nostrEnabled) { _, _ in
+                    Task { await NostrStack.shared.start() }
+                    relayService?.start()
+                }
+                .onChange(of: store.state.settings.nostrRelayURL) { _, _ in
+                    Task { await NostrStack.shared.start() }
+                    relayService?.start()
+                }
                 .onChange(of: store.state.settings.nostrPublicKeyHex) { _, _ in relayService?.start() }
                 .onChange(of: store.state.settings.nostrProfileName) { _, _ in relayService?.republishProfile() }
                 .onChange(of: store.state.settings.nostrProfileAbout) { _, _ in relayService?.republishProfile() }

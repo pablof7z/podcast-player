@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 // MARK: - LiveAgentOwnedPodcastManager
@@ -28,12 +29,14 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
             throw AgentOwnedPodcastError.noSigningKey
         }
-        let kp = try NostrKeyPair(privateKeyHex: hex)
-        return LocalKeySigner(keyPair: kp)
+        return try LocalKeySigner(privateKeyHex: hex)
     }
 
     nonisolated private func agentPubkeyHex() throws -> String {
-        try nostrSigner().keyPair.publicKeyHex
+        guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
+            throw AgentOwnedPodcastError.noSigningKey
+        }
+        return try Crypto.getPublicKey(from: hex)
     }
 
     // MARK: - createPodcast

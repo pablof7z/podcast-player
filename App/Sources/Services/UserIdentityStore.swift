@@ -1,4 +1,6 @@
+@preconcurrency import Combine
 import Foundation
+@preconcurrency import NDKSwiftCore
 import Observation
 import os.log
 
@@ -10,8 +12,10 @@ import os.log
 /// 2. **Remote signer (NIP-46)** — a "bunker" connection where the user's nsec lives
 ///    elsewhere (Amber, nsec.app, nsecBunker, …) and we delegate signing over a relay.
 ///
-/// Call `start()` once at app launch so the store auto-loads any previously saved key
-/// or remote-signer connection from the keychain.
+/// Call `start()` once at app launch so the store auto-loads any previously saved key.
+/// Bunker sessions are **not** persisted across launches — under NDKSwift the user
+/// re-pairs their bunker on each app install (one-time disruption on the migration
+/// release, then standard NDKBunkerSigner sessions from there).
 @MainActor
 @Observable
 final class UserIdentityStore {
@@ -20,7 +24,10 @@ final class UserIdentityStore {
     /// The user's signing pubkey (32-byte hex x-only). Always reflects whichever signer
     /// is currently active — local key or NIP-46 user pubkey.
     private(set) var publicKeyHex: String?
-    private(set) var keyPair: NostrKeyPair?
+    /// Hex private key for the local-key path. `nil` when no local key is active
+    /// (either no identity, or remote-signer mode). Surfaced for the few callers
+    /// that need it for NIP-04 / NIP-44 operations outside the signer.
+    private(set) var privateKeyHex: String?
     private(set) var loginError: String?
 
     /// What kind of identity is currently active.
@@ -55,41 +62,36 @@ final class UserIdentityStore {
     private static let userKeyAccount = "user-private-key-hex"
     private static let userKeyOriginAccount = "user-private-key-origin"
     private static let generatedProfileAccount = "generated-profile-published-pubkey"
-    private static let nip46SessionService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-session"
-    private static let nip46SessionAccount = "session-private-key-hex"
-    private static let nip46MetaService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-meta"
-    private static let nip46MetaAccount = "connection"
+    /// Legacy NIP-46 keychain entries from the pre-NDKSwift signer. We delete
+    /// these on first launch under NDKSwift; users re-pair their bunker.
+    private static let legacyNip46SessionService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-session"
+    private static let legacyNip46SessionAccount = "session-private-key-hex"
+    private static let legacyNip46MetaService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-meta"
+    private static let legacyNip46MetaAccount = "connection"
     private static let generatedOrigin = "generated"
 
     // MARK: - Lifecycle
 
     func start() {
+        purgeLegacyNip46KeychainEntries()
         // Prefer an existing local key.
         do {
             if let hex = try KeychainStore.readString(service: Self.userKeyService, account: Self.userKeyAccount),
                !hex.isEmpty {
-                let pair = try NostrKeyPair(privateKeyHex: hex)
-                adoptLocal(pair)
+                try adoptLocal(privateKeyHex: hex)
                 if isGeneratedLocalKey {
-                    publishGeneratedProfileIfNeeded(pair: pair)
+                    publishGeneratedProfileIfNeeded(privateKeyHex: hex)
                 }
                 return
             }
         } catch {
             logger.error("UserIdentityStore.start failed to load local key: \(error, privacy: .public)")
         }
-        // Otherwise, try to resume a remote-signer connection.
-        if let meta = try? loadRemoteMeta(), let session = try? loadSessionKeyPair() {
-            publicKeyHex = meta.userPubkeyHex
-            mode = .remoteSigner
-            remoteSignerState = .reconnecting
-            Task { await self.resumeRemote(meta: meta, sessionKeyPair: session) }
-        } else {
-            do {
-                try generateGeneratedKey()
-            } catch {
-                logger.error("UserIdentityStore.start failed to generate local key: \(error, privacy: .public)")
-            }
+        // Force-re-pair migration: no resume of NIP-46 sessions; user re-pairs.
+        do {
+            try generateGeneratedKey()
+        } catch {
+            logger.error("UserIdentityStore.start failed to generate local key: \(error, privacy: .public)")
         }
     }
 
@@ -99,11 +101,12 @@ final class UserIdentityStore {
         loginError = nil
         let trimmed = nsec.trimmed
         do {
-            let pair = try NostrKeyPair(nsec: trimmed)
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            let parsed = try NDKPrivateKeySigner(nsec: trimmed)
+            let privHex = parsed.privateKeyForNIP59
+            try KeychainStore.saveString(privHex, service: Self.userKeyService, account: Self.userKeyAccount)
             try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
             clearRemoteConnectionState()
-            adoptLocal(pair)
+            try adoptLocal(privateKeyHex: privHex)
         } catch {
             loginError = "Invalid nsec — check the key and try again."
             throw error
@@ -115,12 +118,12 @@ final class UserIdentityStore {
     func generateKey() throws {
         loginError = nil
         do {
-            let pair = try NostrKeyPair.generate()
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+            let privHex = try NDKPrivateKeySigner.generate().privateKeyForNIP59
+            try KeychainStore.saveString(privHex, service: Self.userKeyService, account: Self.userKeyAccount)
             try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
             clearRemoteConnectionState()
-            adoptLocal(pair)
-            publishGeneratedProfileIfNeeded(pair: pair)
+            try adoptLocal(privateKeyHex: privHex)
+            publishGeneratedProfileIfNeeded(privateKeyHex: privHex)
         } catch {
             loginError = "Failed to generate key — please try again."
             throw error
@@ -138,9 +141,7 @@ final class UserIdentityStore {
         try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
         try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.generatedProfileAccount)
         Task { await self.tearDownRemote() }
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
-        keyPair = nil
+        privateKeyHex = nil
         publicKeyHex = nil
         signer = nil
         mode = .none
@@ -153,41 +154,22 @@ final class UserIdentityStore {
 
     // MARK: - NIP-46 connect / disconnect
 
-    /// Parse a `bunker://…` URI, run the connect handshake, and (on success) persist the
-    /// connection so the next app launch reconnects automatically. If the bunker replies
-    /// with an `auth_url` challenge, the state advances to `.awaitingAuthorization(url)`
-    /// and the UI surfaces a button to open the URL in the browser.
+    /// Pair with a `bunker://…` URI through NDKSwift's `NDKBunkerSigner`.
+    /// On success, the bunker connection is held in memory for the session;
+    /// it is **not** persisted to Keychain (force-re-pair model).
     func connectRemoteSigner(uri: String) async {
         loginError = nil
-        let parsed: BunkerURI
-        do {
-            parsed = try BunkerURI.parse(uri)
-        } catch {
-            loginError = (error as? LocalizedError)?.errorDescription ?? "Invalid bunker URI."
-            remoteSignerState = .failed(loginError ?? "Invalid bunker URI.")
-            return
-        }
         remoteSignerState = .connecting
         do {
-            let sessionPair = try NostrKeyPair.generate()
-            let signer = RemoteSigner(bunker: parsed, sessionKeyPair: sessionPair)
-            let userPub = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            try KeychainStore.saveString(sessionPair.privateKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+            let trimmed = uri.trimmed
+            let signer = try await RemoteSigner.bunker(uri: trimmed)
+            await wireAuthChallengeBridge(on: signer)
+            let userPub = try await signer.connect()
             try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
             try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-            let meta = RemoteMeta(
-                bunkerPubkeyHex: parsed.remotePubkeyHex,
-                relays: parsed.relays,
-                secret: parsed.secret,
-                permissions: parsed.permissions,
-                userPubkeyHex: userPub
-            )
-            try saveRemoteMeta(meta)
             self.signer = signer
             self.publicKeyHex = userPub
-            self.keyPair = nil
+            self.privateKeyHex = nil
             self.mode = .remoteSigner
             self.remoteSignerState = .connected(userPub)
             self.loadCachedProfile(for: userPub)
@@ -200,22 +182,27 @@ final class UserIdentityStore {
         }
     }
 
-    /// Surfaces the bunker's `auth_url` URL to the UI. Called from inside `connect(...)`'s
-    /// `onAuthChallenge` continuation; the connect call itself is still suspended waiting
-    /// for the eventual `ack`.
-    private func handleAuthChallenge(url: URL) {
-        remoteSignerState = .awaitingAuthorization(url)
+    /// Subscribes to the bunker's `auth_url` publisher and routes URLs to
+    /// `remoteSignerState` so the UI can surface a "Tap to authorize" button.
+    private func wireAuthChallengeBridge(on signer: RemoteSigner) async {
+        let publisher = signer.authUrlPublisher
+        publisher.sink { [weak self] url in
+            Task { @MainActor in
+                self?.remoteSignerState = .awaitingAuthorization(url)
+            }
+        }.store(in: &authChallengeBag)
     }
+
+    private var authChallengeBag: Set<AnyCancellable> = []
 
     func disconnectRemoteSigner() async {
         await tearDownRemote()
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
         publicKeyHex = nil
-        keyPair = nil
+        privateKeyHex = nil
         signer = nil
         mode = .none
         remoteSignerState = .idle
+        authChallengeBag.removeAll()
     }
 
     // MARK: - Display helpers
@@ -232,16 +219,17 @@ final class UserIdentityStore {
 
     // MARK: - Private — local
 
-    private func adoptLocal(_ pair: NostrKeyPair) {
-        keyPair = pair
-        publicKeyHex = pair.publicKeyHex
-        signer = LocalKeySigner(keyPair: pair)
+    private func adoptLocal(privateKeyHex hex: String) throws {
+        let pubHex = try Crypto.getPublicKey(from: hex)
+        let localSigner = try LocalKeySigner(privateKeyHex: hex)
+        self.privateKeyHex = hex
+        self.publicKeyHex = pubHex
+        self.signer = localSigner
         mode = .localKey
         remoteSignerState = .idle
-        loadCachedProfile(for: pair.publicKeyHex)
+        loadCachedProfile(for: pubHex)
         guard !isGeneratedLocalKey else { return }
-        let pubkey = pair.publicKeyHex
-        Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
+        Task { await self.fetchAndCacheProfile(pubkeyHex: pubHex) }
     }
 
     private var isGeneratedLocalKey: Bool {
@@ -252,32 +240,30 @@ final class UserIdentityStore {
     }
 
     private func generateGeneratedKey() throws {
-        let pair = try NostrKeyPair.generate()
-        try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
+        let privHex = try NDKPrivateKeySigner.generate().privateKeyForNIP59
+        try KeychainStore.saveString(privHex, service: Self.userKeyService, account: Self.userKeyAccount)
         try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
-        adoptLocal(pair)
-        publishGeneratedProfileIfNeeded(pair: pair)
+        try adoptLocal(privateKeyHex: privHex)
+        publishGeneratedProfileIfNeeded(privateKeyHex: privHex)
     }
 
     private func clearRemoteConnectionState() {
         if let remote = signer as? RemoteSigner {
             Task { await remote.disconnect() }
         }
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
         remoteSignerState = .idle
     }
 
-    private func publishGeneratedProfileIfNeeded(pair: NostrKeyPair) {
+    private func publishGeneratedProfileIfNeeded(privateKeyHex: String) {
         let alreadyPublished = try? KeychainStore.readString(
             service: Self.userKeyService,
             account: Self.generatedProfileAccount
         )
-        guard alreadyPublished != pair.publicKeyHex else { return }
-        let pubkey = pair.publicKeyHex
+        guard let pubkey = try? Crypto.getPublicKey(from: privateKeyHex),
+              alreadyPublished != pubkey else { return }
         let keyService = Self.userKeyService
         let profileAccount = Self.generatedProfileAccount
-        let signer = LocalKeySigner(keyPair: pair)
+        guard let signer = try? LocalKeySigner(privateKeyHex: privateKeyHex) else { return }
         let profile = Self.generatedProfile(pubkey: pubkey)
         Task.detached {
             guard let data = try? JSONSerialization.data(withJSONObject: profile, options: [.sortedKeys]),
@@ -324,56 +310,20 @@ final class UserIdentityStore {
         }
     }
 
-    // MARK: - Private — remote
+    // MARK: - Legacy NIP-46 keychain purge (one-time on upgrade)
 
-    private func resumeRemote(meta: RemoteMeta, sessionKeyPair: NostrKeyPair) async {
-        let bunker = BunkerURI(
-            remotePubkeyHex: meta.bunkerPubkeyHex,
-            relays: meta.relays,
-            secret: meta.secret,
-            permissions: meta.permissions
-        )
-        // Pass the previously-known pubkey so callers of `signer.publicKey()` during the
-        // ~1s reconnect window get the cached value instead of `.missingPublicKey`.
-        let signer = RemoteSigner(
-            bunker: bunker,
-            sessionKeyPair: sessionKeyPair,
-            cachedUserPublicKeyHex: meta.userPubkeyHex
-        )
-        // Make the cached signer available to callers immediately (it answers
-        // `publicKey()` from cache; sign requests will block on the WebSocket).
-        self.signer = signer
-        do {
-            _ = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            self.remoteSignerState = .connected(meta.userPubkeyHex)
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            self.remoteSignerState = .failed(msg)
-        }
+    /// Wipes pre-NDKSwift bunker session entries from the Keychain so the
+    /// app starts in a clean state on the migration release. Users re-pair
+    /// their bunker after upgrading. Safe to run on every launch; idempotent.
+    private func purgeLegacyNip46KeychainEntries() {
+        try? KeychainStore.deleteString(service: Self.legacyNip46SessionService, account: Self.legacyNip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.legacyNip46MetaService, account: Self.legacyNip46MetaAccount)
     }
+
+    // MARK: - Private — remote
 
     private func tearDownRemote() async {
         if let s = signer as? RemoteSigner { await s.disconnect() }
-    }
-
-    private func loadSessionKeyPair() throws -> NostrKeyPair? {
-        guard let hex = try KeychainStore.readString(service: Self.nip46SessionService, account: Self.nip46SessionAccount),
-              !hex.isEmpty else { return nil }
-        return try NostrKeyPair(privateKeyHex: hex)
-    }
-
-    private func loadRemoteMeta() throws -> RemoteMeta? {
-        guard let json = try KeychainStore.readString(service: Self.nip46MetaService, account: Self.nip46MetaAccount),
-              let data = json.data(using: .utf8) else { return nil }
-        return try JSONDecoder().decode(RemoteMeta.self, from: data)
-    }
-
-    private func saveRemoteMeta(_ meta: RemoteMeta) throws {
-        let data = try JSONEncoder().encode(meta)
-        guard let s = String(data: data, encoding: .utf8) else { return }
-        try KeychainStore.saveString(s, service: Self.nip46MetaService, account: Self.nip46MetaAccount)
     }
 
     // MARK: - Process-wide singleton (slice B)
@@ -405,27 +355,15 @@ final class UserIdentityStore {
     }
 
     /// Called by `UserIdentityStore+NIP46.swift` after nostrconnect pairing completes.
-    /// Persists the session + meta and updates published identity state.
-    func _adoptNostrConnectSigner(
-        signer: RemoteSigner,
-        userPubkeyHex: String,
-        sessionPrivKeyHex: String,
-        relayAbsoluteString: String
-    ) throws {
-        let meta = RemoteMeta(
-            bunkerPubkeyHex: signer.bunker.remotePubkeyHex,
-            relays: [relayAbsoluteString],
-            secret: nil,
-            permissions: [],
-            userPubkeyHex: userPubkeyHex
-        )
-        try KeychainStore.saveString(sessionPrivKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+    /// Updates published identity state. Bunker session is not persisted
+    /// (force-re-pair model).
+    func _adoptNostrConnectSigner(signer: RemoteSigner, userPubkeyHex: String) async {
+        await wireAuthChallengeBridge(on: signer)
         try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
         try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-        try saveRemoteMeta(meta)
         self.signer = signer
         self.publicKeyHex = userPubkeyHex
-        self.keyPair = nil
+        self.privateKeyHex = nil
         self.mode = .remoteSigner
         self.remoteSignerState = .connected(userPubkeyHex)
     }
@@ -464,16 +402,6 @@ enum RemoteSignerState: Sendable, Equatable {
     case awaitingAuthorization(URL)
     case connected(String)            // associated value: user pubkey hex
     case failed(String)               // error message
-}
-
-/// Minimal persisted NIP-46 metadata. Stored in the Keychain (JSON) alongside the
-/// session private key so the app can resume on launch without prompting for the URI again.
-private struct RemoteMeta: Codable, Sendable {
-    let bunkerPubkeyHex: String
-    let relays: [String]
-    let secret: String?
-    let permissions: [String]
-    let userPubkeyHex: String
 }
 
 enum UserIdentityError: LocalizedError {

@@ -1,6 +1,69 @@
 {
-  "originHash" : "ae42ef728a99a082dcd2d9b6de8415d68cb4cfa9a0d9972f9bda7477b3d75d71",
+  "originHash" : "fd032a55703c384e6d93b3147262c6a84e8a9c7acd7608f4015c599aff4c6e64",
   "pins" : [
+    {
+      "identity" : "base58",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/anquii/Base58.git",
+      "state" : {
+        "revision" : "7e4a1e4e6813c750ed2f9e80a0494c608eebb2ca",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "base58check",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/anquii/Base58Check.git",
+      "state" : {
+        "revision" : "f35a770ff7f3fd553cc44057f492c0107cc7b481",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt.git",
+      "state" : {
+        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "bip32",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/zeugmaster/BIP32.git",
+      "state" : {
+        "revision" : "9147451d2fecc9678ef0ab4a880c8dd105ff5c8e",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "bip39",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pengpengliu/BIP39.git",
+      "state" : {
+        "revision" : "4948b8b47072dad519f4e2c2b946b0a2d8238dc0",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "cashuswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/zeugmaster/CashuSwift.git",
+      "state" : {
+        "revision" : "618decee07ab85ba3749fb459f5e8146e6af98bf",
+        "version" : "0.3.2"
+      }
+    },
+    {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
+      "state" : {
+        "revision" : "e45a26384239e028ec87fbcc788f513b67e10d8f",
+        "version" : "1.9.0"
+      }
+    },
     {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",
@@ -11,12 +74,21 @@
       }
     },
     {
-      "identity" : "secp256k1.swift",
+      "identity" : "ndkswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/GigaBitcoin/secp256k1.swift",
+      "location" : "https://github.com/pablof7z/NDKSwift",
       "state" : {
-        "revision" : "cfab52e538683557259302c39ef25df60226eb30",
-        "version" : "0.23.1"
+        "branch" : "master",
+        "revision" : "b0846731f89831a88b690ced067c0780dbf08dc0"
+      }
+    },
+    {
+      "identity" : "ripemd160",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/anquii/RIPEMD160.git",
+      "state" : {
+        "revision" : "15679c6fe1f3ae32ec1bad63bcc45aa422954f01",
+        "version" : "1.0.0"
       }
     },
     {
@@ -26,6 +98,33 @@
       "state" : {
         "revision" : "1504246d0900db950a5065f43fce964bf4adceda",
         "version" : "0.0.14"
+      }
+    },
+    {
+      "identity" : "swift-bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mkrd/Swift-BigInt.git",
+      "state" : {
+        "revision" : "7e2117797cd1b608303cc2da1a3a2263cc4e7727",
+        "version" : "2.4.0"
+      }
+    },
+    {
+      "identity" : "swift-secp256k1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/21-DOT-DEV/swift-secp256k1",
+      "state" : {
+        "revision" : "e2f4de7caec61e971081d44e73ea6ef20359743b",
+        "version" : "0.19.0"
+      }
+    },
+    {
+      "identity" : "swiftcbor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/myfreeweb/SwiftCBOR.git",
+      "state" : {
+        "revision" : "fd929a6d8f7651ce0f63fc99397fd5762358cc29",
+        "version" : "0.6.0"
       }
     }
   ],

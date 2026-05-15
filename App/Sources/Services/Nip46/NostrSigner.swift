@@ -1,8 +1,12 @@
-import CryptoKit
 import Foundation
-import P256K
+@preconcurrency import NDKSwiftCore
 
 // MARK: - Event types
+//
+// `NostrEventDraft` and `SignedNostrEvent` are the in-app adapter surface
+// over NDKSwift's `NDKEvent`. Callers continue to construct drafts and
+// receive signed events as Codable value types; the signer implementations
+// delegate the actual canonicalization + signing to NDKSwift.
 
 /// Unsigned event draft as accepted by `NostrSigner.sign(_:)`.
 /// Mirrors the NIP-01 event JSON minus `id` / `pubkey` / `sig` (the signer fills those).
@@ -36,7 +40,8 @@ struct SignedNostrEvent: Sendable, Equatable, Codable {
 
 /// Anything that can produce a Nostr signature. Lets the rest of the app stay agnostic
 /// of whether the user is signing locally (`LocalKeySigner`) or via a remote bunker
-/// over NIP-46 (`RemoteSigner`).
+/// over NIP-46 (`RemoteSigner`). Both implementations delegate to NDKSwift's
+/// `NDKSigner` family internally.
 protocol NostrSigner: Sendable {
     /// The user-facing pubkey this signer publishes events under (32-byte hex x-only).
     func publicKey() async throws -> String
@@ -44,110 +49,59 @@ protocol NostrSigner: Sendable {
     func sign(_ draft: NostrEventDraft) async throws -> SignedNostrEvent
 }
 
-// MARK: - Local-key signer (current behaviour)
+// MARK: - Local-key signer (NDKPrivateKeySigner-backed)
 
-/// `NostrSigner` backed by an in-process secp256k1 key pair (the existing nsec flow).
+/// `NostrSigner` backed by an in-process secp256k1 key pair. Internally wraps
+/// `NDKPrivateKeySigner`; event canonicalization + signing happens through
+/// NDKSwift, so the app no longer carries hand-rolled BIP-340 or NIP-01 code.
 struct LocalKeySigner: NostrSigner {
-    let keyPair: NostrKeyPair
+    let ndkSigner: NDKPrivateKeySigner
 
-    func publicKey() async throws -> String { keyPair.publicKeyHex }
+    init(privateKeyHex: String) throws {
+        self.ndkSigner = try NDKPrivateKeySigner(privateKey: privateKeyHex)
+    }
+
+    func publicKey() async throws -> String {
+        try await ndkSigner.pubkey
+    }
 
     func sign(_ draft: NostrEventDraft) async throws -> SignedNostrEvent {
-        let pubkey = keyPair.publicKeyHex
-        let id = try EventID.compute(
-            pubkey: pubkey,
-            createdAt: draft.createdAt,
-            kind: draft.kind,
-            tags: draft.tags,
-            content: draft.content
-        )
-        let sig = try schnorrSign(messageHex: id, privateKeyHex: keyPair.privateKeyHex)
-        return SignedNostrEvent(
-            id: id,
-            pubkey: pubkey,
-            created_at: draft.createdAt,
-            kind: draft.kind,
-            tags: draft.tags,
-            content: draft.content,
-            sig: sig
-        )
+        try await NostrSignerShim.signDraft(draft, with: ndkSigner)
     }
+}
 
-    private func schnorrSign(messageHex: String, privateKeyHex: String) throws -> String {
-        guard let msg = Data(hexString: messageHex), msg.count == 32,
-              let privBytes = Data(hexString: privateKeyHex), privBytes.count == 32 else {
+// MARK: - Shared draft→signed adapter
+
+/// Bridges our `NostrEventDraft` value type to NDKSwift's `NDKEventBuilder`
+/// pipeline. Both `LocalKeySigner` and the NIP-46-backed `RemoteSigner` go
+/// through this so the canonical-id + signature path is owned by NDKSwift.
+enum NostrSignerShim {
+    static func signDraft(_ draft: NostrEventDraft, with signer: NDKSigner) async throws -> SignedNostrEvent {
+        // NDK must be constructed (signer-ready) — relay connection state
+        // is orthogonal. `NostrStack.shared.bind(store:)` resolves this at
+        // app launch before any signer call site fires.
+        guard let ndk = await NostrStack.shared.ndk else {
             throw NostrSignerError.invalidEventForSigning
         }
-        let key = try P256K.Schnorr.PrivateKey(dataRepresentation: privBytes)
-        var msgBytes = [UInt8](msg)
-        var aux = [UInt8](repeating: 0, count: 32)
-        // Fill aux with random bytes (BIP-340 recommends fresh randomness per signature).
-        for i in 0..<32 { aux[i] = UInt8.random(in: .min ... .max) }
-        let signature = try key.signature(message: &msgBytes, auxiliaryRand: &aux)
-        return Data(signature.dataRepresentation).hexString
+        let builder = NDKEventBuilder(ndk: ndk)
+            .kind(draft.kind)
+            .content(draft.content, extractImeta: false)
+            .createdAt(Timestamp(draft.createdAt))
+            .setTags(draft.tags)
+        let event = try await builder.build(signer: signer, generateContentTags: false)
+        return SignedNostrEvent(
+            id: event.id,
+            pubkey: event.pubkey,
+            created_at: Int(event.createdAt),
+            kind: event.kind,
+            tags: event.tags,
+            content: event.content,
+            sig: event.sig
+        )
     }
 }
 
-// MARK: - Event ID
-
-/// Canonical NIP-01 event id: `SHA256(JSON([0, pubkey, created_at, kind, tags, content]))`,
-/// with the JSON serialized in a deterministic, no-whitespace form (and UTF-8 escapes per spec).
-enum EventID {
-    static func compute(pubkey: String, createdAt: Int, kind: Int, tags: [[String]], content: String) throws -> String {
-        let canonical = canonicalJSON([0, pubkey, createdAt, kind, tags, content])
-        guard let data = canonical.data(using: .utf8) else { throw NostrSignerError.invalidEventForSigning }
-        let hash = SHA256.hash(data: data)
-        return Data(hash).hexString
-    }
-
-    /// JSON-serialize the canonical NIP-01 array. We hand-roll this rather than using
-    /// `JSONSerialization` to avoid implementation-defined whitespace and Foundation's
-    /// over-aggressive escaping (it escapes `/` which is not what NIP-01 asks for, and
-    /// is order-unstable for dictionaries).
-    static func canonicalJSON(_ value: Any) -> String {
-        switch value {
-        case let n as Int: return String(n)
-        case let s as String: return jsonString(s)
-        case let arr as [Any]:
-            let parts = arr.map { canonicalJSON($0) }
-            return "[" + parts.joined(separator: ",") + "]"
-        case let arr as [[String]]:
-            let parts = arr.map { canonicalJSON($0) }
-            return "[" + parts.joined(separator: ",") + "]"
-        default:
-            // Fallback through JSONSerialization for anything exotic (shouldn't happen for events).
-            if let data = try? JSONSerialization.data(withJSONObject: value, options: []),
-               let s = String(data: data, encoding: .utf8) { return s }
-            return "null"
-        }
-    }
-
-    /// JSON-string-escape per NIP-01: backslash escape `"`, `\`, and the C0 controls
-    /// `\b`, `\t`, `\n`, `\f`, `\r`; other controls become `\u00XX`. No other escapes.
-    private static func jsonString(_ s: String) -> String {
-        var out = "\""
-        out.reserveCapacity(s.utf8.count + 2)
-        for scalar in s.unicodeScalars {
-            switch scalar {
-            case "\"": out.append("\\\"")
-            case "\\": out.append("\\\\")
-            case "\u{08}": out.append("\\b")
-            case "\u{09}": out.append("\\t")
-            case "\u{0A}": out.append("\\n")
-            case "\u{0C}": out.append("\\f")
-            case "\u{0D}": out.append("\\r")
-            default:
-                if scalar.value < 0x20 {
-                    out.append(String(format: "\\u%04x", scalar.value))
-                } else {
-                    out.append(Character(scalar))
-                }
-            }
-        }
-        out.append("\"")
-        return out
-    }
-}
+// MARK: - Errors
 
 enum NostrSignerError: LocalizedError {
     case invalidEventForSigning

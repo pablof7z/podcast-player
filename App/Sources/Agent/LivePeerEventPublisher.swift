@@ -71,10 +71,9 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
         guard let key = try NostrCredentialStore.privateKey() else {
             throw NostrEventPublisherError.noSigningKey
         }
-        let pair = try NostrKeyPair(privateKeyHex: key)
         let createdAt = Int(Date().timeIntervalSince1970)
         let draft = NostrEventDraft(kind: 1, content: content, tags: tags, createdAt: createdAt)
-        let signed = try await LocalKeySigner(keyPair: pair).sign(draft)
+        let signed = try await LocalKeySigner(privateKeyHex: key).sign(draft)
 
         let settings = await MainActor.run { store?.state.settings }
         guard settings?.nostrEnabled == true,

@@ -1,3 +1,4 @@
+@preconcurrency import NDKSwiftCore
 import SwiftUI
 
 struct AgentIdentityView: View {
@@ -236,9 +237,11 @@ struct AgentIdentityView: View {
 
     private func generateKeyPair() {
         do {
-            let pair = try NostrKeyPair.generate()
-            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
+            let signer = try NDKPrivateKeySigner.generate()
+            let privHex = signer.privateKeyForNIP59
+            let pubHex = try Crypto.getPublicKey(from: privHex)
+            try NostrCredentialStore.savePrivateKey(privHex)
+            settings.nostrPublicKeyHex = pubHex
             refreshKeyState()
         } catch {
             keychainErrorMessage = "Could not generate key pair: \(error.localizedDescription)"
@@ -250,14 +253,15 @@ struct AgentIdentityView: View {
         let trimmed = importKeyInput.trimmed.lowercased()
         guard !trimmed.isEmpty else { return }
         do {
-            let pair: NostrKeyPair
+            let privHex: String
             if trimmed.hasPrefix("nsec") {
-                pair = try NostrKeyPair(nsec: trimmed)
+                privHex = try NDKPrivateKeySigner(nsec: trimmed).privateKeyForNIP59
             } else {
-                pair = try NostrKeyPair(privateKeyHex: trimmed)
+                privHex = try NDKPrivateKeySigner(privateKey: trimmed).privateKeyForNIP59
             }
-            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
+            let pubHex = try Crypto.getPublicKey(from: privHex)
+            try NostrCredentialStore.savePrivateKey(privHex)
+            settings.nostrPublicKeyHex = pubHex
             importKeyInput = ""
             refreshKeyState()
             Haptics.success()

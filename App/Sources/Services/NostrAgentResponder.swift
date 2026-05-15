@@ -237,9 +237,14 @@ final class NostrAgentResponder {
             recordTurn(inbound: inbound, rootID: rootID)
             return
         }
-        guard let privKey = privateKey,
-              let keyPair = try? NostrKeyPair(privateKeyHex: privKey) else {
+        guard let privKey = privateKey else {
             Self.logger.notice("process: no local private key; recording inbound, skipping reply")
+            recordTurn(inbound: inbound, rootID: rootID)
+            return
+        }
+        let signer: LocalKeySigner
+        do { signer = try LocalKeySigner(privateKeyHex: privKey) } catch {
+            Self.logger.error("process: signer init failed — \(error, privacy: .public)")
             recordTurn(inbound: inbound, rootID: rootID)
             return
         }
@@ -296,7 +301,6 @@ final class NostrAgentResponder {
             content: replyText,
             tags: replyTags
         )
-        let signer = LocalKeySigner(keyPair: keyPair)
         let signed: SignedNostrEvent
         do {
             signed = try await signer.sign(draft)

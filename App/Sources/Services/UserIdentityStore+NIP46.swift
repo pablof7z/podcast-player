@@ -7,29 +7,22 @@ import Foundation
 
 extension UserIdentityStore {
 
-    /// Begin nostrconnect:// pairing. Generates the nostrconnect URI and calls
-    /// `onURI` synchronously so the UI can display the QR code or open a signer
-    /// app immediately. Blocks until pairing completes or the 5-minute timeout
-    /// expires. On success the identity switches to `.remoteSigner` and the
-    /// connection is persisted for automatic reconnect on next launch.
+    /// Begin nostrconnect:// pairing through NDKSwift. Generates a
+    /// nostrconnect URI synchronously and calls `onURI` so the UI can
+    /// display the QR code or open a signer app immediately. Blocks until
+    /// the bunker dials back or the underlying NDKBunkerSigner times out.
+    /// On success the identity switches to `.remoteSigner`. The bunker
+    /// session is not persisted — re-pair on next launch (force-re-pair).
     func connectViaNostrConnect(
         relay: URL = RemoteSigner.nostrConnectDefaultRelay,
         onURI: @escaping @Sendable (String) -> Void
     ) async {
         _beginNostrConnect()
         do {
-            let sessionPair = try NostrKeyPair.generate()
-            let (signer, userPub) = try await RemoteSigner.nostrConnect(
-                relayURL: relay,
-                sessionKeyPair: sessionPair,
-                onURI: onURI
-            )
-            try _adoptNostrConnectSigner(
-                signer: signer,
-                userPubkeyHex: userPub,
-                sessionPrivKeyHex: sessionPair.privateKeyHex,
-                relayAbsoluteString: relay.absoluteString
-            )
+            let (signer, uri) = try await RemoteSigner.nostrConnect(relays: [relay])
+            onURI(uri)
+            let userPub = try await signer.connect()
+            await _adoptNostrConnectSigner(signer: signer, userPubkeyHex: userPub)
             loadCachedProfile(for: userPub)
             let pub = userPub
             Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }

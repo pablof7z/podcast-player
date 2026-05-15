@@ -146,8 +146,7 @@ extension NostrAgentResponder {
             Self.logger.error("delegation: keychain read failed — \(error, privacy: .public)")
             return
         }
-        guard let privKey = privateKey,
-              let keyPair = try? NostrKeyPair(privateKeyHex: privKey) else {
+        guard let privKey = privateKey else {
             Self.logger.notice("delegation: no local private key; cannot publish nostrPeer reply")
             return
         }
@@ -165,7 +164,7 @@ extension NostrAgentResponder {
         let draft = NostrEventDraft(kind: 1, content: replyText, tags: replyTags)
         let signed: SignedNostrEvent
         do {
-            signed = try await LocalKeySigner(keyPair: keyPair).sign(draft)
+            signed = try await LocalKeySigner(privateKeyHex: privKey).sign(draft)
         } catch {
             Self.logger.error("delegation: signing failed — \(error, privacy: .public)")
             return

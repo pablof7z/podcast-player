@@ -143,13 +143,13 @@ final class NostrRelayService {
 
         Task {
             guard let privKey = try? NostrCredentialStore.privateKey() else { return }
-            guard let pair = try? NostrKeyPair(privateKeyHex: privKey) else { return }
+            guard let signer = try? LocalKeySigner(privateKeyHex: privKey) else { return }
             var metadata: [String: String] = ["name": effectiveName, "about": about]
             if !picture.isEmpty { metadata["picture"] = picture }
             guard let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]),
                   let content = String(data: data, encoding: .utf8) else { return }
             let draft = NostrEventDraft(kind: 0, content: content, tags: [["backend", "Podcastr App in \(deviceName)"]])
-            guard let event = try? await LocalKeySigner(keyPair: pair).sign(draft) else { return }
+            guard let event = try? await signer.sign(draft) else { return }
             let publisher = NostrWebSocketEventPublisher()
             try? await publisher.publish(event: event, relayURL: relayURL)
         }
@@ -369,13 +369,13 @@ final class NostrRelayService {
                 NostrRelayService.logger.notice("AUTH: no local private key; cannot respond")
                 return
             }
-            guard let pair = try? NostrKeyPair(privateKeyHex: privKey) else { return }
+            guard let signer = try? LocalKeySigner(privateKeyHex: privKey) else { return }
             let draft = NostrEventDraft(
                 kind: NostrProtocol.kindAuth,
                 content: "",
                 tags: [["relay", relayURL], ["challenge", challenge]]
             )
-            guard let event = try? await LocalKeySigner(keyPair: pair).sign(draft) else { return }
+            guard let event = try? await signer.sign(draft) else { return }
             self?.sendAuthEvent(event)
         }
     }

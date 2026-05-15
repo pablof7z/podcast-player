@@ -28,10 +28,6 @@ let project = Project(
         developmentRegion: "en"
     ),
     packages: [
-        .remote(
-            url: "https://github.com/GigaBitcoin/secp256k1.swift",
-            requirement: .upToNextMajor(from: "0.23.1")
-        ),
         // Lane 6 — RAG: on-device vector store via sqlite-vec.
         // Hosts both the `vec0` virtual table for embeddings and `fts5` for
         // hybrid lexical search in a single SQLite file.
@@ -46,6 +42,16 @@ let project = Project(
         .remote(
             url: "https://github.com/onevcat/Kingfisher",
             requirement: .upToNextMajor(from: "8.0.0")
+        ),
+        // NDKSwift — Nostr Development Kit. Powers all Nostr code in the
+        // app (NIP-46 bunker signing, NIP-44 v2 encryption, relay pool with
+        // NIP-65 outbox routing, event subscription/publish, profile cache).
+        // Tracking `master` to pick up NIP-46 session-persistence fixes that
+        // post-date v0.15.0; switch to a stable version requirement once the
+        // next tag is cut.
+        .remote(
+            url: "https://github.com/pablof7z/NDKSwift",
+            requirement: .branch("master")
         ),
         .local(path: "../ios-shake-feedback"),
     ],
@@ -73,9 +79,10 @@ let project = Project(
             ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
             dependencies: [
-                .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
                 .package(product: "Kingfisher"),
+                .package(product: "NDKSwiftCore"),
+                .package(product: "NDKSwiftUI"),
                 .package(product: "ShakeFeedbackKit"),
                 .target(name: "\(appName)Widget"),
             ],
