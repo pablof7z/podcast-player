@@ -22,6 +22,7 @@ struct PodcastrApp: App {
     @State private var relayConfigStore: RelayConfigStore?
     @State private var relayPool: RelayPool?
     @State private var bootstrappedPubkey: String?
+    @State private var bootstrapTask: Task<Void, Never>?
 
     // MARK: - What's-new sheet wiring
     //
@@ -57,16 +58,16 @@ struct PodcastrApp: App {
                 .task {
                     let configStore = RelayConfigStore(appStateStore: store)
                     relayConfigStore = configStore
-                    await bootstrapRelaysIfReady()
+                    bootstrapRelaysIfReady()
                 }
                 .onChange(of: userIdentity.publicKeyHex) { _, _ in
-                    Task { await bootstrapRelaysIfReady() }
+                    bootstrapRelaysIfReady()
                 }
                 // NIP-46 resume sets `publicKeyHex` synchronously but `signer`
                 // asynchronously inside `resumeRemote`. Observe `remoteSignerState`
                 // too so the bootstrap fires once the bunker connect completes.
                 .onChange(of: userIdentity.remoteSignerState) { _, _ in
-                    Task { await bootstrapRelaysIfReady() }
+                    bootstrapRelaysIfReady()
                 }
                 .task {
                     // Seed a fresh install silently so the first launch
@@ -96,23 +97,54 @@ struct PodcastrApp: App {
     /// (signer ready synchronously inside `userIdentity.start()`) and the
     /// NIP-46 path (signer ready after the bunker handshake completes).
     @MainActor
-    private func bootstrapRelaysIfReady() async {
+    private func bootstrapRelaysIfReady() {
         guard let pubkey = userIdentity.publicKeyHex,
               let signer = userIdentity.signer,
-              let configStore = relayConfigStore,
-              bootstrappedPubkey != pubkey else { return }
-        bootstrappedPubkey = pubkey
-        if let oldPool = relayPool {
-            for conn in oldPool.connections.values { conn.disconnect() }
+              let configStore = relayConfigStore else {
+            // Sign-out (or signer not yet available after a sign-out): tear down
+            // if a previous session is active. Without this the old user's
+            // WebSockets would keep running until process exit.
+            if bootstrappedPubkey != nil {
+                tearDownRelaySession()
+            }
+            return
         }
+
+        // Same pubkey already bootstrapped — re-entrancy from a redundant
+        // `remoteSignerState` change must not replace the live pool, which
+        // would leak the previous pool's receive tasks.
+        guard bootstrappedPubkey != pubkey else { return }
+
+        // Switching identities: tear down the previous session before
+        // spinning up a new pool.
+        if bootstrappedPubkey != nil {
+            tearDownRelaySession()
+        }
+
+        bootstrappedPubkey = pubkey
         let pool = RelayPool(signer: signer)
         relayPool = pool
-        await RelayBootstrapService.bootstrap(
-            configStore: configStore,
-            pool: pool,
-            signer: signer,
-            userPubkey: pubkey
-        )
+        configStore.attachRelayPool(pool)
+        bootstrapTask = Task {
+            await RelayBootstrapService.bootstrap(
+                configStore: configStore,
+                pool: pool,
+                signer: signer,
+                userPubkey: pubkey
+            )
+        }
+    }
+
+    /// Cancel the in-flight bootstrap (so a stale fetch can't mutate the
+    /// config store after an identity switch) and tear down the live pool.
+    @MainActor
+    private func tearDownRelaySession() {
+        bootstrapTask?.cancel()
+        bootstrapTask = nil
+        relayPool?.disconnectAll()
+        relayPool = nil
+        relayConfigStore?.detachRelayPool()
+        bootstrappedPubkey = nil
     }
 }
 

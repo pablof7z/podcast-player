@@ -6,6 +6,11 @@ extension RelayConnection {
     func handleAuthOK(accepted: Bool, message: String?) {
         guard accepted else {
             setStatus(.error("AUTH rejected: \(message ?? "")"))
+            // Auth-required relays will keep refusing publishes until a fresh
+            // AUTH succeeds, so any in-flight `send(event:)` waiters would
+            // otherwise hang. Drop them (and the pending event buffer so a
+            // future reconnect doesn't replay events doomed to fail again).
+            failPendingPublishes(reason: "AUTH rejected: \(message ?? "")")
             return
         }
         setStatus(.connected)
@@ -38,6 +43,11 @@ extension RelayConnection {
                 self.sendFrame(["AUTH", self.eventDict(event)])
             } catch {
                 self.setStatus(.error("AUTH signing failed: \(error.localizedDescription)"))
+                // Without a signed AUTH event we can't reply to the challenge,
+                // so the relay will keep rejecting publishes. Drain any
+                // waiting `send(event:)` continuations rather than letting
+                // them hang on a socket that will never make progress.
+                self.failPendingPublishes(reason: "AUTH signing failed: \(error.localizedDescription)")
             }
         }
     }

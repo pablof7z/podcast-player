@@ -120,6 +120,14 @@ final class RelayPool {
         }
     }
 
+    /// Tear down every connection and drop them from the pool. Used by the
+    /// identity teardown path so signing out / switching accounts doesn't
+    /// leave the previous user's WebSockets running.
+    func disconnectAll() {
+        for conn in connections.values { conn.disconnect() }
+        connections.removeAll()
+    }
+
     // MARK: - Diagnostics
 
     var onlineCount: Int { connections.values.filter { $0.status.isConnected }.count }

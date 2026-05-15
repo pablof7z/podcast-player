@@ -31,6 +31,12 @@ final class RelayConfigStore {
         pool.reconcile(with: relays)
     }
 
+    /// Drop the pool reference on sign-out so subsequent mutations don't
+    /// reconnect the previous user's sockets through a torn-down pool.
+    func detachRelayPool() {
+        relayPool = nil
+    }
+
     // MARK: - Mutations
 
     func addRelay(_ config: RelayConfig) {
@@ -55,21 +61,18 @@ final class RelayConfigStore {
         applyAndPersist()
     }
 
-    /// Merge relays imported from another user. Existing `rooms`/`indexer` flags
-    /// are preserved because those are app-specific; only `read`/`write` are OR'd in.
+    /// Merge relays imported from another source (NIP-65, NIP-78, peer import).
+    /// All four role fields are OR'd in so kind:30078 `rooms`/`indexer` flags
+    /// survive; brand-new relays are copied wholesale.
     func importRelays(_ newRelays: [RelayConfig]) {
         for newRelay in newRelays {
             if let idx = relays.firstIndex(where: { $0.url == newRelay.url }) {
                 relays[idx].read = relays[idx].read || newRelay.read
                 relays[idx].write = relays[idx].write || newRelay.write
+                relays[idx].rooms = relays[idx].rooms || newRelay.rooms
+                relays[idx].indexer = relays[idx].indexer || newRelay.indexer
             } else {
-                relays.append(RelayConfig(
-                    url: newRelay.url,
-                    read: newRelay.read,
-                    write: newRelay.write,
-                    rooms: false,
-                    indexer: false
-                ))
+                relays.append(newRelay)
             }
         }
         applyAndPersist()
@@ -89,14 +92,6 @@ final class RelayConfigStore {
         } catch {
             Self.logger.warning("NIP-78 publish failed at signer step: \(error.localizedDescription, privacy: .public)")
         }
-    }
-
-    /// Placeholder for Phase 2. RelayPool-based fetch wiring lands when the pool exists;
-    /// resolves the indexer/fallback URLs the fetch will target so the surface is settled.
-    func fetchAndMergeFromNostr(pubkey _: String) async {
-        let indexerURLs = relays.filter(\.indexer).map(\.url)
-        let fallbackURLs = ["wss://purplepag.es", "wss://relay.primal.net"].map(RelayConfig.normalizeURL)
-        _ = indexerURLs.isEmpty ? fallbackURLs : indexerURLs
     }
 
     // MARK: - Private

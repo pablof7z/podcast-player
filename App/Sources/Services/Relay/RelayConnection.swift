@@ -91,8 +91,17 @@ final class RelayConnection: Identifiable {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
         status = .disconnected
+        failPendingPublishes(reason: "Disconnected")
+    }
+
+    /// Resume every awaiting `send(event:)` caller with a failure result and
+    /// clear all transient send-side state. Called from `disconnect()`,
+    /// `scheduleReconnect()`, and the AUTH-failure paths in
+    /// `RelayConnection+Auth.swift` so the WebSocket teardown never leaves a
+    /// continuation stranded.
+    func failPendingPublishes(reason: String) {
         for (_, continuation) in pendingPublishes {
-            continuation.resume(returning: PublishResult(success: false, message: "Disconnected"))
+            continuation.resume(returning: PublishResult(success: false, message: reason))
         }
         pendingPublishes.removeAll()
         pendingPublishEvents.removeAll()
@@ -191,6 +200,7 @@ final class RelayConnection: Identifiable {
         reconnectBackoff = min(Self.backoffCap, reconnectBackoff * 2)
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
+        failPendingPublishes(reason: "Disconnected")
         try? await Task.sleep(for: .seconds(delay))
         guard !explicitlyDisconnected else { return }
         await connect()
@@ -254,6 +264,12 @@ final class RelayConnection: Identifiable {
         let message = array.count >= 4 ? array[3] as? String : nil
         if pendingAuthEventIDs.remove(eventID) != nil {
             handleAuthOK(accepted: accepted, message: message)
+            return
+        }
+        // `OK false auth-required: ...` — leave the event + continuation in
+        // place so the AUTH replay (see `RelayConnection+Auth.handleAuthOK`)
+        // can resend it. A subsequent OK on the same id resolves the caller.
+        if !accepted, let message, message.hasPrefix("auth-required") {
             return
         }
         if let cont = pendingPublishes.removeValue(forKey: eventID) {

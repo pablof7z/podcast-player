@@ -33,16 +33,22 @@ enum RelayBootstrapService {
         signer _: any NostrSigner,
         userPubkey: String
     ) async {
-        configStore.attachRelayPool(pool)
-
         let indexerURLs = configStore.relays.filter(\.indexer).map(\.url)
         let targets = indexerURLs.isEmpty ? fallbackIndexers : indexerURLs
 
         let fetched = await fetchSelfRelayEvents(targets: targets, userPubkey: userPubkey)
 
+        // The caller (`AppMain.bootstrapRelaysIfReady`) cancels this Task when
+        // the active identity changes. Re-check before each step that mutates
+        // shared state so a slow fetch from the previous user can't land their
+        // relays into the new user's config store.
+        if Task.isCancelled { return }
+
         if fetched.nip65 != nil || fetched.nip78 != nil {
             mergeAndApply(fetched: fetched, configStore: configStore)
         }
+
+        if Task.isCancelled { return }
 
         subscribeForLiveUpdates(pool: pool, configStore: configStore, userPubkey: userPubkey)
     }
@@ -152,16 +158,16 @@ enum RelayBootstrapService {
             return FetchedRelayEvents()
         }
 
-        return await withTaskGroup(of: FetchedRelayEvents.self) { group in
-            group.addTask { await readUntilEose(task: task, subID: subID) }
-            group.addTask {
-                try? await Task.sleep(for: fetchTimeout)
-                return FetchedRelayEvents()
-            }
-            let first = await group.next() ?? FetchedRelayEvents()
-            group.cancelAll()
-            return first
+        // Race a sleeper that cancels the WebSocket on expiry against the
+        // EOSE reader. On timeout the cancel makes `task.receive()` throw, so
+        // `readUntilEose` returns whatever events it has already collected
+        // rather than dropping them.
+        let timeoutTask = Task {
+            try? await Task.sleep(for: fetchTimeout)
+            task.cancel(with: .normalClosure, reason: nil)
         }
+        defer { timeoutTask.cancel() }
+        return await readUntilEose(task: task, subID: subID)
     }
 
     private static func readUntilEose(task: URLSessionWebSocketTask, subID: String) async -> FetchedRelayEvents {
