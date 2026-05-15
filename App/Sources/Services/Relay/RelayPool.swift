@@ -13,6 +13,16 @@ final class RelayPool {
     private(set) var connections: [String: RelayConnection] = [:]
     private let signer: any NostrSigner
 
+    /// URLs currently wanted by `RelayConfigStore` (user-configured relays).
+    /// Tracked separately from `transientURLs` so transient outbox connections
+    /// survive a config-driven reconcile that no longer mentions them.
+    private var configURLs: Set<String> = []
+
+    /// URLs the outbox router has asked us to keep open. These are read-only
+    /// fetch endpoints discovered from follows' kind:10002 and have no
+    /// matching `RelayConfig` row.
+    private var transientURLs: Set<String> = []
+
     init(signer: any NostrSigner) {
         self.signer = signer
     }
@@ -26,18 +36,47 @@ final class RelayPool {
     // MARK: - Reconciliation
 
     /// Diff-and-apply: connect new relays, disconnect removed relays,
-    /// leave existing connections alone (don't drop & re-open).
+    /// leave existing connections alone (don't drop & re-open). Transient
+    /// outbox connections (see `connectTransient`) are preserved across
+    /// reconciles even when no config row mentions them.
     func reconcile(with configs: [RelayConfig]) {
-        let desiredURLs = Set(configs.filter(\.hasAnyRole).map(\.url))
-        let currentURLs = Set(connections.keys)
+        configURLs = Set(configs.filter(\.hasAnyRole).map(\.url))
+        syncConnections()
+    }
 
-        for url in desiredURLs.subtracting(currentURLs) {
+    // MARK: - Transient outbox connections
+
+    /// Ask the pool to keep read-only connections open to the given URLs
+    /// without writing them into the user's `RelayConfig` set. Used by the
+    /// outbox router for follows' write relays we've never user-configured.
+    func connectTransient(urls: [String]) {
+        let normalized = urls.map(RelayConfig.normalizeURL)
+        transientURLs.formUnion(normalized)
+        syncConnections()
+    }
+
+    /// Release the given transient URLs. URLs still claimed by configs (a
+    /// transient relay the user later added by hand) stay connected.
+    func disconnectTransient(urls: [String]) {
+        let normalized = urls.map(RelayConfig.normalizeURL)
+        transientURLs.subtract(normalized)
+        syncConnections()
+    }
+
+    /// Reconcile `connections` against the union of `configURLs` and
+    /// `transientURLs`. Centralised so every entry point (reconcile,
+    /// connectTransient, disconnectTransient) goes through the same diff.
+    private func syncConnections() {
+        let desired = configURLs.union(transientURLs)
+        let current = Set(connections.keys)
+
+        for url in desired.subtracting(current) {
             let conn = RelayConnection(url: url, signer: signer)
             connections[url] = conn
             Task { await conn.connect() }
         }
 
-        for url in currentURLs.subtracting(desiredURLs) {
+        for url in current.subtracting(desired) {
             connections[url]?.disconnect()
             connections.removeValue(forKey: url)
         }
@@ -126,6 +165,8 @@ final class RelayPool {
     func disconnectAll() {
         for conn in connections.values { conn.disconnect() }
         connections.removeAll()
+        configURLs.removeAll()
+        transientURLs.removeAll()
     }
 
     // MARK: - Diagnostics

@@ -12,6 +12,10 @@ import os.log
 /// 4. Merge fetched with local → update store → pool re-reconciles.
 /// 5. Long-lived subscription on read relays so subsequent updates to
 ///    the user's own kind:10002 / kind:30078 trigger another merge.
+/// 6. Long-lived subscription on indexer relays for follows' kind:10002
+///    so the outbox router learns where each followed author writes.
+/// 7. Initial outbox computation after a short settle delay, then a
+///    periodic cleanup loop that disconnects stale transient relays.
 enum RelayBootstrapService {
     private static let logger = Logger.app("RelayBootstrapService")
     private static let fallbackIndexers: [String] = [
@@ -20,6 +24,8 @@ enum RelayBootstrapService {
     ].map(RelayConfig.normalizeURL)
     private static let liveSubID = "relay-config-self"
     private static let fetchTimeout: Duration = .seconds(4)
+    private static let outboxInitialSettle: Duration = .seconds(3)
+    private static let outboxCleanupInterval: Duration = .seconds(300)
 
     struct FetchedRelayEvents: Sendable {
         var nip65: SignedNostrEvent?
@@ -31,7 +37,9 @@ enum RelayBootstrapService {
         configStore: RelayConfigStore,
         pool: RelayPool,
         signer _: any NostrSigner,
-        userPubkey: String
+        userPubkey: String,
+        outboxRouter: OutboxRouter,
+        followPubkeys: [String]
     ) async {
         let indexerURLs = configStore.relays.filter(\.indexer).map(\.url)
         let targets = indexerURLs.isEmpty ? fallbackIndexers : indexerURLs
@@ -51,6 +59,21 @@ enum RelayBootstrapService {
         if Task.isCancelled { return }
 
         subscribeForLiveUpdates(pool: pool, configStore: configStore, userPubkey: userPubkey)
+
+        if Task.isCancelled { return }
+
+        // Steps 6–7: follow-author NIP-65 stream + initial outbox computation
+        // + periodic cleanup loop. Skip entirely when the user has no follows
+        // so empty-authors REQs never reach the indexers.
+        await OutboxBootstrap.run(
+            router: outboxRouter,
+            pool: pool,
+            configStore: configStore,
+            followPubkeys: followPubkeys,
+            settleDelay: outboxInitialSettle,
+            cleanupInterval: outboxCleanupInterval,
+            fallbackIndexers: fallbackIndexers
+        )
     }
 
     // MARK: - Merge

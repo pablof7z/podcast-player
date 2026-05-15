@@ -21,6 +21,7 @@ struct PodcastrApp: App {
     /// resume path) — `bootstrapRelaysIfReady()` is idempotent per-pubkey.
     @State private var relayConfigStore: RelayConfigStore?
     @State private var relayPool: RelayPool?
+    @State private var outboxRouter: OutboxRouter?
     @State private var bootstrappedPubkey: String?
     @State private var bootstrapTask: Task<Void, Never>?
 
@@ -124,13 +125,22 @@ struct PodcastrApp: App {
         bootstrappedPubkey = pubkey
         let pool = RelayPool(signer: signer)
         relayPool = pool
+        let router = OutboxRouter()
+        outboxRouter = router
         configStore.attachRelayPool(pool)
+        // Snapshot follow pubkeys at bootstrap time. The outbox loop reuses
+        // this list for its entire lifetime; an in-flight identity switch
+        // cancels the bootstrap task before the next iteration runs, so a
+        // stale list never leaks into the next user's session.
+        let followPubkeys = store.state.friends.map(\.identifier)
         bootstrapTask = Task {
             await RelayBootstrapService.bootstrap(
                 configStore: configStore,
                 pool: pool,
                 signer: signer,
-                userPubkey: pubkey
+                userPubkey: pubkey,
+                outboxRouter: router,
+                followPubkeys: followPubkeys
             )
         }
     }
@@ -141,6 +151,10 @@ struct PodcastrApp: App {
     private func tearDownRelaySession() {
         bootstrapTask?.cancel()
         bootstrapTask = nil
+        if let router = outboxRouter, let pool = relayPool {
+            router.reset(pool: pool)
+        }
+        outboxRouter = nil
         relayPool?.disconnectAll()
         relayPool = nil
         relayConfigStore?.detachRelayPool()
