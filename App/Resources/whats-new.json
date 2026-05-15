@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T17:05:00Z",
+      "lines": [
+        "Episode and podcast titles no longer appear in ALL CAPS — natural casing throughout.",
+        "Artwork placeholders are now consistent across the app: neutral waveform icon on a soft gray background."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T17:00:00Z",
       "lines": [
         "Fixed: generate_podcast_artwork now works with Gemini (Nano Banana) models — they use the chat API, not the image endpoint. The model picker in Settings → Image Generation now shows only image-capable models."
