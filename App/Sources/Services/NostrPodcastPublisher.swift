@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os.log
 
 // MARK: - NostrPodcastPublisher
 //
@@ -10,11 +11,16 @@ import Foundation
 // Audio, chapters, and transcripts must be uploaded to Blossom before calling
 // `publishEpisode` — the caller passes the resulting URLs; this service only
 // handles event construction and relay publishing.
+//
+// Events are published concurrently to all `relayURLs`. Success requires at
+// least one relay to acknowledge; individual failures are logged but not thrown.
 
 struct NostrPodcastPublisher: Sendable {
 
+    private static let logger = Logger.app("NostrPodcastPublisher")
+
     let publisher: any NostrEventPublishing
-    let relayURL: URL
+    let relayURLs: [URL]
 
     // MARK: - Publish show (kind:30074)
 
@@ -43,7 +49,7 @@ struct NostrPodcastPublisher: Sendable {
         }
         let draft = NostrEventDraft(kind: 30074, content: podcast.description, tags: tags)
         let signed = try await signer.sign(draft)
-        try await publisher.publish(event: signed, relayURL: relayURL)
+        try await publishToAll(event: signed)
         return signed.id
     }
 
@@ -109,8 +115,45 @@ struct NostrPodcastPublisher: Sendable {
 
         let draft = NostrEventDraft(kind: 30075, content: episode.description, tags: tags)
         let signed = try await signer.sign(draft)
-        try await publisher.publish(event: signed, relayURL: relayURL)
+        try await publishToAll(event: signed)
         return signed.id
     }
-}
 
+    // MARK: - Multi-relay publish
+
+    /// Publishes `event` to all configured relay URLs concurrently.
+    /// Succeeds if at least one relay acknowledges; throws if all fail.
+    private func publishToAll(event: SignedNostrEvent) async throws {
+        guard !relayURLs.isEmpty else {
+            throw NostrEventPublisherError.noRelayConfigured
+        }
+        var lastError: Error?
+        var anySuccess = false
+
+        await withTaskGroup(of: (URL, Error?).self) { group in
+            for url in relayURLs {
+                group.addTask {
+                    do {
+                        try await self.publisher.publish(event: event, relayURL: url)
+                        return (url, nil)
+                    } catch {
+                        return (url, error)
+                    }
+                }
+            }
+            for await (url, error) in group {
+                if let error {
+                    Self.logger.warning("Relay \(url.host ?? url.absoluteString, privacy: .public) rejected event \(event.id.prefix(8), privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    lastError = error
+                } else {
+                    Self.logger.info("Published \(event.id.prefix(8), privacy: .public) → \(url.host ?? url.absoluteString, privacy: .public)")
+                    anySuccess = true
+                }
+            }
+        }
+
+        if !anySuccess, let lastError {
+            throw lastError
+        }
+    }
+}

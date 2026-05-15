@@ -2,6 +2,24 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-15T20:00:00Z",
+      "lines": [
+        "Fixed: agent-generated episodes now correctly upload audio to Blossom before publishing to Nostr — local file paths no longer appear in kind:30075 events."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-15T19:00:00Z",
+      "lines": [
+        "Discover and subscribe to podcasts published on Nostr (NIP-74) from the Add Show sheet — tap the new Nostr tab."
+      ]
+    },
+    {
+      "shipped_at": "2026-05-15T18:00:00Z",
+      "lines": [
+        "NIP-74 podcast events now publish to your Nostr outbox relays (NIP-65). Manage the relay list in Settings → Agent → Podcasts."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T17:05:00Z",
       "lines": [
         "Episode and podcast titles no longer appear in ALL CAPS — natural casing throughout.",

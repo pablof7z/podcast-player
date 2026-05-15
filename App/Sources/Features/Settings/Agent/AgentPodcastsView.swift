@@ -5,13 +5,24 @@ import SwiftUI
 // Lists agent-owned podcasts (shows created via the `create_podcast` tool or
 // the AI agent) and lets the user toggle per-podcast Nostr visibility between
 // private (library only) and public (published as NIP-74 kind:30074 events).
+//
+// Also manages the relay list used when publishing NIP-74 events — initialised
+// from the user's NIP-65 kind:10002 outbox relays, falling back to
+// relay.primal.net and relay.damus.io when none are found.
 
 struct AgentPodcastsView: View {
     @Environment(AppStateStore.self) private var store
+    @State private var isAddingRelay = false
+    @State private var newRelayURL = ""
+    @State private var isFetchingRelays = false
 
     private var ownedPodcasts: [Podcast] {
         store.allPodcasts.filter { $0.ownerPubkeyHex != nil }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    private var publicRelays: [String] {
+        store.state.settings.nostrPublicRelays
     }
 
     var body: some View {
@@ -21,10 +32,19 @@ struct AgentPodcastsView: View {
             } else {
                 podcastsSection
             }
+            relaySection
         }
         .settingsListStyle()
         .navigationTitle("Agent Podcasts")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isAddingRelay) {
+            addRelaySheet
+        }
+        .task {
+            if publicRelays.isEmpty {
+                await initializeRelays()
+            }
+        }
     }
 
     // MARK: - Sections
@@ -58,6 +78,118 @@ struct AgentPodcastsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
         }
+    }
+
+    private var relaySection: some View {
+        Section {
+            ForEach(publicRelays, id: \.self) { relay in
+                HStack {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20)
+                    Text(relay)
+                        .font(AppTheme.Typography.monoCaption)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+            .onDelete { indexSet in
+                var relays = publicRelays
+                relays.remove(atOffsets: indexSet)
+                updateRelays(relays)
+            }
+
+            if isFetchingRelays {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Fetching your relay list…")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Button {
+                    isAddingRelay = true
+                } label: {
+                    Label("Add relay", systemImage: "plus.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+        } header: {
+            Label("Publishing Relays", systemImage: "network")
+        } footer: {
+            Text("NIP-74 podcast events are published to these relays. Initialized from your NIP-65 relay list. Swipe a row to remove.")
+        }
+    }
+
+    // MARK: - Add relay sheet
+
+    private var addRelaySheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("wss://relay.example.com", text: $newRelayURL)
+                        .font(AppTheme.Typography.monoCallout)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                } header: {
+                    Text("Relay URL")
+                } footer: {
+                    Text("WebSocket relay URL starting with wss://")
+                }
+            }
+            .navigationTitle("Add Relay")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        newRelayURL = ""
+                        isAddingRelay = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        let trimmed = newRelayURL.trimmed
+                        if !trimmed.isEmpty, !publicRelays.contains(trimmed) {
+                            updateRelays(publicRelays + [trimmed])
+                        }
+                        newRelayURL = ""
+                        isAddingRelay = false
+                    }
+                    .disabled(newRelayURL.trimmed.isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    // MARK: - Helpers
+
+    private func updateRelays(_ relays: [String]) {
+        var settings = store.state.settings
+        settings.nostrPublicRelays = relays
+        store.updateSettings(settings)
+    }
+
+    private func initializeRelays() async {
+        let userPubkey = await MainActor.run { UserIdentityStore.shared.publicKeyHex }
+        let inboxRelay = await MainActor.run { store.state.settings.nostrRelayURL }
+
+        isFetchingRelays = true
+        defer { Task { @MainActor in isFetchingRelays = false } }
+
+        var relays: [String] = []
+        if let pubkey = userPubkey, !pubkey.isEmpty {
+            relays = await NIP65RelayFetcher.fetchWriteRelays(
+                for: pubkey,
+                extraRelayURL: inboxRelay.isEmpty ? nil : inboxRelay
+            )
+        }
+        if relays.isEmpty {
+            relays = NIP65RelayFetcher.defaultRelays
+        }
+        await MainActor.run { updateRelays(relays) }
     }
 }
 

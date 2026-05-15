@@ -232,6 +232,9 @@ struct Settings: Codable, Hashable, Sendable {
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
     var nostrRelayURL: String = Defaults.nostrRelayURL
+    /// Relay list used when publishing NIP-74 podcast events. Initialized from the
+    /// user's NIP-65 kind:10002 outbox relays; falls back to primal + damus when empty.
+    var nostrPublicRelays: [String] = []
     var nostrProfileName: String = ""
     var nostrProfileAbout: String = ""
     var nostrProfilePicture: String = ""
@@ -268,7 +271,7 @@ struct Settings: Codable, Hashable, Sendable {
         case wikiAutoGenerateOnTranscriptIngest
         case autoIngestPublisherTranscripts, autoFallbackToScribe
         case notifyOnNewEpisodes, notifyOnBriefingReady
-        case nostrEnabled, nostrRelayURL
+        case nostrEnabled, nostrRelayURL, nostrPublicRelays
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
         case hasCompletedOnboarding
@@ -332,6 +335,7 @@ struct Settings: Codable, Hashable, Sendable {
         notifyOnBriefingReady = try c.decodeIfPresent(Bool.self, forKey: .notifyOnBriefingReady) ?? true
         nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
         nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? Defaults.nostrRelayURL
+        nostrPublicRelays = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) ?? []
         nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
         nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
@@ -402,6 +406,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(notifyOnBriefingReady, forKey: .notifyOnBriefingReady)
         try c.encode(nostrEnabled, forKey: .nostrEnabled)
         try c.encode(nostrRelayURL, forKey: .nostrRelayURL)
+        try c.encode(nostrPublicRelays, forKey: .nostrPublicRelays)
         try c.encode(nostrProfileName, forKey: .nostrProfileName)
         try c.encode(nostrProfileAbout, forKey: .nostrProfileAbout)
         try c.encode(nostrProfilePicture, forKey: .nostrProfilePicture)

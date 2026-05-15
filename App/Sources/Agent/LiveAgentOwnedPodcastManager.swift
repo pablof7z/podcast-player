@@ -193,23 +193,32 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         let eventID = try await publishEpisodeRecord(episode, podcast: podcast, settings: settings)
         let dTag = "podcast:item:guid:\(episode.id.uuidString.lowercased())"
         guard let pubkeyHex = podcast.ownerPubkeyHex else { return eventID }
-        let naddr = NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30075, relayURL: settings.nostrRelayURL)
+        let relays = effectivePublicRelays(settings: settings)
+        let relayHint = relays.first ?? settings.nostrRelayURL
+        let naddr = NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30075, relayURL: relayHint)
         Self.logger.info("Published episode '\(episode.title, privacy: .public)' to Nostr NIP-74")
         return naddr ?? eventID
     }
 
     // MARK: - Private helpers
 
+    /// Resolves the effective public relay list: stored list if non-empty, else defaults.
+    nonisolated private func effectivePublicRelays(settings: Settings) -> [String] {
+        let stored = settings.nostrPublicRelays.filter { !$0.isEmpty }
+        return stored.isEmpty ? NIP65RelayFetcher.defaultRelays : stored
+    }
+
     /// Publishes the NIP-74 show kind:30074 event and returns the event ID.
     @discardableResult
     nonisolated private func publishShowEvent(podcast: Podcast, settings: Settings) async throws -> String {
-        guard let relayURL = URL(string: settings.nostrRelayURL) else {
+        let relayURLs = effectivePublicRelays(settings: settings).compactMap { URL(string: $0) }
+        guard !relayURLs.isEmpty else {
             throw AgentOwnedPodcastError.noRelayConfigured
         }
         let signer = try nostrSigner()
         let publisher = NostrPodcastPublisher(
             publisher: NostrWebSocketEventPublisher(),
-            relayURL: relayURL
+            relayURLs: relayURLs
         )
         return try await publisher.publishShow(podcast: podcast, signer: signer)
     }
@@ -221,20 +230,26 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         podcast: Podcast,
         settings: Settings
     ) async throws -> String {
-        guard let relayURL = URL(string: settings.nostrRelayURL) else {
+        let relayURLs = effectivePublicRelays(settings: settings).compactMap { URL(string: $0) }
+        guard !relayURLs.isEmpty else {
             throw AgentOwnedPodcastError.noRelayConfigured
         }
         let signer = try nostrSigner()
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
         let publisher = NostrPodcastPublisher(
             publisher: NostrWebSocketEventPublisher(),
-            relayURL: relayURL
+            relayURLs: relayURLs
         )
 
         // Upload audio
         let audioData: Data
         if case .downloaded(let localURL, _) = episode.downloadState {
-            audioData = (try? Data(contentsOf: localURL)) ?? Data()
+            do {
+                audioData = try Data(contentsOf: localURL)
+            } catch {
+                Self.logger.error("publishEpisodeRecord: cannot read audio for '\(episode.title, privacy: .public)' at \(localURL.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                audioData = Data()
+            }
         } else {
             audioData = Data()
         }
@@ -242,6 +257,13 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         if !audioData.isEmpty {
             audioBlossomURL = try await blossom.upload(data: audioData, contentType: "audio/mp4", signer: signer)
         } else {
+            // Only use the enclosure URL directly when it is a remote (HTTP/HTTPS) URL —
+            // for example, an RSS episode not yet downloaded. A local file:// URL must
+            // never appear in a published Nostr event.
+            let scheme = episode.enclosureURL.scheme?.lowercased() ?? ""
+            guard scheme == "http" || scheme == "https" else {
+                throw AgentOwnedPodcastError.audioNotAvailable(episode.title)
+            }
             audioBlossomURL = episode.enclosureURL
         }
 
@@ -341,6 +363,7 @@ enum AgentOwnedPodcastError: LocalizedError {
     case notFound(String)
     case notOwned(String)
     case episodeNotFound(String)
+    case audioNotAvailable(String)
 
     var errorDescription: String? {
         switch self {
@@ -351,6 +374,7 @@ enum AgentOwnedPodcastError: LocalizedError {
         case .notFound(let id): return "Podcast not found: \(id)"
         case .notOwned(let id): return "Podcast \(id) is not agent-owned."
         case .episodeNotFound(let id): return "Episode not found: \(id)"
+        case .audioNotAvailable(let title): return "Audio file for '\(title)' could not be read for upload."
         }
     }
 }
