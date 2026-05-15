@@ -211,6 +211,17 @@ struct Settings: Codable, Hashable, Sendable {
     var nostrProfilePicture: String = ""
     var nostrPublicKeyHex: String?
 
+    /// Unified relay configuration list. Replaces `nostrRelayURL` once Phase 2 wires
+    /// `RelayPool` to consume this. Each entry carries the role flags (read/write/rooms/indexer)
+    /// that drive subscription + publish routing.
+    var relayConfigs: [RelayConfig] = []
+
+    /// First read+write relay's URL, falling back to the seed default.
+    /// Lets callers that still expect a single relay string keep working until they migrate.
+    var primaryRelayURL: String {
+        relayConfigs.first(where: { $0.read && $0.write })?.url ?? Defaults.nostrRelayURL
+    }
+
     // Onboarding
     var hasCompletedOnboarding: Bool = false
 
@@ -243,6 +254,7 @@ struct Settings: Codable, Hashable, Sendable {
         case nostrEnabled, nostrRelayURL
         case nostrProfileName, nostrProfileAbout, nostrProfilePicture
         case nostrPublicKeyHex
+        case relayConfigs
         case hasCompletedOnboarding
     }
 
@@ -303,6 +315,7 @@ struct Settings: Codable, Hashable, Sendable {
         nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
         nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
+        relayConfigs = try c.decodeIfPresent([RelayConfig].self, forKey: .relayConfigs) ?? []
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
 
         if openRouterCredentialSource == .none,
@@ -368,6 +381,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encode(nostrProfileAbout, forKey: .nostrProfileAbout)
         try c.encode(nostrProfilePicture, forKey: .nostrProfilePicture)
         try c.encodeIfPresent(nostrPublicKeyHex, forKey: .nostrPublicKeyHex)
+        try c.encode(relayConfigs, forKey: .relayConfigs)
         try c.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
     }
 
