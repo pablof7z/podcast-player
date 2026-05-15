@@ -1,19 +1,28 @@
 import CryptoKit
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 // MARK: - NostrPodcastPublisher
 //
-// Publishes NIP-74 (kind:30074 podcast show, kind:30075 podcast episode) addressable
-// events signed by the agent's key. Both kinds are parameterised replaceable events
-// (NIP-33): each `d` tag uniquely identifies the show / episode across updates.
+// Publishes NIP-74 (kind:30074 podcast show, kind:30075 podcast episode)
+// addressable events signed by the agent's key. Both kinds are parameterised
+// replaceable events (NIP-33): each `d` tag uniquely identifies the show /
+// episode across updates.
 //
 // Audio, chapters, and transcripts must be uploaded to Blossom before calling
 // `publishEpisode` — the caller passes the resulting URLs; this service only
 // handles event construction and relay publishing.
 //
-// Events are published concurrently to all `relayURLs`. Success requires at
-// least one relay to acknowledge; individual failures are logged but not thrown.
+// Migration note (NDKSwift): this struct used to fan out to a caller-supplied
+// list of relay URLs over raw WebSockets. It now hands the signed event to
+// the shared `NDK` instance owned by `NostrStack.shared` and lets NDK's NIP-65
+// outbox routing select destinations from the author's outbox list. The
+// `publisher` and `relayURLs` init parameters are accepted for API stability
+// (LiveAgentOwnedPodcastManager still passes them) but `publisher` is unused
+// and `relayURLs` is informational only — see `publishViaNDK` for the new
+// publish path. A future cleanup pass can drop those parameters once the
+// caller is refactored.
 
 struct NostrPodcastPublisher: Sendable {
 
@@ -49,7 +58,7 @@ struct NostrPodcastPublisher: Sendable {
         }
         let draft = NostrEventDraft(kind: 30074, content: podcast.description, tags: tags)
         let signed = try await signer.sign(draft)
-        try await publishToAll(event: signed)
+        try await publishViaNDK(event: signed)
         return signed.id
     }
 
@@ -115,45 +124,48 @@ struct NostrPodcastPublisher: Sendable {
 
         let draft = NostrEventDraft(kind: 30075, content: episode.description, tags: tags)
         let signed = try await signer.sign(draft)
-        try await publishToAll(event: signed)
+        try await publishViaNDK(event: signed)
         return signed.id
     }
 
-    // MARK: - Multi-relay publish
+    // MARK: - NDK publish
 
-    /// Publishes `event` to all configured relay URLs concurrently.
-    /// Succeeds if at least one relay acknowledges; throws if all fail.
-    private func publishToAll(event: SignedNostrEvent) async throws {
-        guard !relayURLs.isEmpty else {
+    /// Hands the signed event to the shared NDK instance with no explicit
+    /// relay set; NDK's outbox manager picks destinations from the author's
+    /// NIP-65 outbox list (default behaviour). The relay pool is reused, so
+    /// no transient WebSockets are opened.
+    ///
+    /// Errors are surfaced verbatim from `ndk.publish`. If the publish call
+    /// returns an empty set we treat it as a failure (no relay accepted /
+    /// nothing in pool yet) and throw `noRelayConfigured` to mirror the
+    /// previous "at least one OK" semantic.
+    private func publishViaNDK(event: SignedNostrEvent) async throws {
+        guard let ndk = await NostrStack.shared.ndk else {
             throw NostrEventPublisherError.noRelayConfigured
         }
-        var lastError: Error?
-        var anySuccess = false
+        let ndkEvent = NDKEvent(
+            id: event.id,
+            pubkey: event.pubkey,
+            createdAt: Timestamp(event.created_at),
+            kind: Kind(event.kind),
+            tags: event.tags,
+            content: event.content,
+            sig: event.sig
+        )
 
-        await withTaskGroup(of: (URL, Error?).self) { group in
-            for url in relayURLs {
-                group.addTask {
-                    do {
-                        try await self.publisher.publish(event: event, relayURL: url)
-                        return (url, nil)
-                    } catch {
-                        return (url, error)
-                    }
-                }
+        do {
+            let accepted = try await ndk.publish(ndkEvent)
+            if accepted.isEmpty {
+                Self.logger.warning("Published \(event.id.prefix(8), privacy: .public) kind=\(event.kind) — no relay accepted (queued or no outbox)")
+                throw NostrEventPublisherError.noRelayConfigured
             }
-            for await (url, error) in group {
-                if let error {
-                    Self.logger.warning("Relay \(url.host ?? url.absoluteString, privacy: .public) rejected event \(event.id.prefix(8), privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    lastError = error
-                } else {
-                    Self.logger.info("Published \(event.id.prefix(8), privacy: .public) → \(url.host ?? url.absoluteString, privacy: .public)")
-                    anySuccess = true
-                }
-            }
-        }
-
-        if !anySuccess, let lastError {
-            throw lastError
+            let names = accepted.map { $0.url }.sorted().joined(separator: ", ")
+            Self.logger.info("Published \(event.id.prefix(8), privacy: .public) kind=\(event.kind) → \(names, privacy: .public)")
+        } catch let error as NostrEventPublisherError {
+            throw error
+        } catch {
+            Self.logger.warning("Publish failed for \(event.id.prefix(8), privacy: .public) kind=\(event.kind): \(error.localizedDescription, privacy: .public)")
+            throw error
         }
     }
 }

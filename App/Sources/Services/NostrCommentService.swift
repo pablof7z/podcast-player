@@ -1,4 +1,5 @@
 import Foundation
+@preconcurrency import NDKSwiftCore
 import os.log
 
 // MARK: - NostrCommentService
@@ -230,52 +231,42 @@ final class NostrCommentService {
     }
 
     private func publishSignedEvent(_ event: SignedNostrEvent, to url: URL) async throws {
-        let task = URLSession.shared.webSocketTask(with: url)
-        task.resume()
-        defer { task.cancel(with: .normalClosure, reason: nil) }
-
-        let eventDict: [String: Any] = [
-            "id": event.id,
-            "pubkey": event.pubkey,
-            "created_at": event.created_at,
-            "kind": event.kind,
-            "tags": event.tags,
-            "content": event.content,
-            "sig": event.sig,
-        ]
-        let message: [Any] = [Wire.event, eventDict]
-        let data = try JSONSerialization.data(withJSONObject: message, options: [])
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw PublishError.encodingFailed
+        // The publish path now routes through the shared `NDK` instance
+        // owned by `NostrStack.shared`. NDK's `publish(event, to:)` reuses
+        // the existing relay pool and adds + connects the target relay if
+        // it isn't already in the pool, so we no longer open a transient
+        // WebSocket per comment. The target URL is preserved verbatim from
+        // the caller (user's configured relay) to keep semantics identical:
+        // a top-level comment goes to the user's single relay, not to NDK's
+        // outbox.
+        guard let ndk = await NostrStack.shared.ndk else {
+            throw PublishError.noRelayConfigured
         }
-        try await task.send(.string(text))
-        // Best-effort: wait for an OK frame from the relay, but don't block
-        // the UI forever if the relay is slow. Most public relays reply in
-        // <500ms with `["OK", <id>, true, ""]`.
+        let ndkEvent = NDKEvent(
+            id: event.id,
+            pubkey: event.pubkey,
+            createdAt: Timestamp(event.created_at),
+            kind: Kind(event.kind),
+            tags: event.tags,
+            content: event.content,
+            sig: event.sig
+        )
+        let target = url.absoluteString
         do {
-            let response = try await withThrowingTaskGroup(of: URLSessionWebSocketTask.Message.self) { group in
-                group.addTask { try await task.receive() }
-                group.addTask {
-                    try? await Task.sleep(for: .seconds(3))
-                    throw PublishError.relayAckTimeout
-                }
-                let result = try await group.next()!
-                group.cancelAll()
-                return result
+            let accepted = try await ndk.publish(ndkEvent, to: [target])
+            if accepted.isEmpty {
+                // NDK returned without an OK from the relay — could be a
+                // queued offline publish or a silent relay drop. Old code
+                // logged "no ack within 3s; assuming success" in this case;
+                // preserve that optimistic UX (the UI has already appended
+                // the comment) and don't throw.
+                Self.logger.notice("publish: \(event.id.prefix(8), privacy: .public) → \(target, privacy: .public): no ack yet; assuming success")
+            } else {
+                Self.logger.info("publish: \(event.id.prefix(8), privacy: .public) → \(target, privacy: .public) ✓")
             }
-            if case .string(let text) = response,
-               let data = text.data(using: .utf8),
-               let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-               array.count >= 3,
-               let head = array[0] as? String, head == "OK",
-               let accepted = array[2] as? Bool, !accepted {
-                let reason = (array.count > 3 ? (array[3] as? String) : nil) ?? "relay rejected event"
-                throw PublishError.relayRejected(reason)
-            }
-        } catch PublishError.relayAckTimeout {
-            // Soft timeout — the event probably landed, but we can't
-            // confirm. UI optimistically shows the comment either way.
-            Self.logger.notice("publish: no ack from relay within 3s; assuming success")
+        } catch {
+            Self.logger.error("publish: \(event.id.prefix(8), privacy: .public) → \(target, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+            throw PublishError.relayRejected(error.localizedDescription)
         }
     }
 
