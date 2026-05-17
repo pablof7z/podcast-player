@@ -14,6 +14,7 @@ import UIKit
 struct NostrConnectView: View {
 
     @Environment(UserIdentityStore.self) private var identity
+    @Environment(AppStateStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
     @State private var nostrConnectURI: String = ""
@@ -204,8 +205,9 @@ struct NostrConnectView: View {
         nostrConnectURI = ""
         qrImage = nil
         detectSignerApps()
+        let relay = pairingRelay
         pairingTask = Task {
-            await identity.connectViaNostrConnect { [self] uri in
+            await identity.connectViaNostrConnect(relay: relay) { [self] uri in
                 Task { @MainActor in
                     self.nostrConnectURI = uri
                     self.qrImage = makeQR(from: uri)
@@ -231,6 +233,11 @@ struct NostrConnectView: View {
               let url = URL(string: "\(signer.urlScheme)://\(nostrConnectURI)&callback=\(callback)")
         else { return }
         UIApplication.shared.open(url)
+    }
+
+    private var pairingRelay: URL? {
+        let configured = store.state.settings.nostrRelayURL.trimmed
+        return configured.isEmpty ? nil : URL(string: configured)
     }
 
     private func detectSignerApps() {

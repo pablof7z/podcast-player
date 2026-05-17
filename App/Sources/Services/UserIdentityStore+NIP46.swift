@@ -14,11 +14,12 @@ extension UserIdentityStore {
     /// On success the identity switches to `.remoteSigner`. The bunker
     /// session is not persisted — re-pair on next launch (force-re-pair).
     func connectViaNostrConnect(
-        relay: URL = RemoteSigner.nostrConnectDefaultRelay,
+        relay: URL?,
         onURI: @escaping @Sendable (String) -> Void
     ) async {
         _beginNostrConnect()
         do {
+            let relay = try nostrConnectRelay(from: relay)
             let (signer, uri) = try await RemoteSigner.nostrConnect(relays: [relay])
             onURI(uri)
             let userPub = try await signer.connect()
@@ -30,5 +31,14 @@ extension UserIdentityStore {
             let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
             _failNostrConnect(msg)
         }
+    }
+
+    private func nostrConnectRelay(from relay: URL?) throws -> URL {
+        if let relay { return relay }
+        if let connected = NostrStack.shared.connectedRelayURL?.trimmed,
+           let url = URL(string: connected) {
+            return url
+        }
+        throw NostrSignerError.notConnected
     }
 }

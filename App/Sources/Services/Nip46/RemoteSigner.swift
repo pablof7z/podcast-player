@@ -15,11 +15,6 @@ import os.log
 actor RemoteSigner: NostrSigner {
     nonisolated private static let logger = Logger.app("RemoteSigner")
 
-    /// Default relay used when constructing a nostrconnect:// URI for the
-    /// "the app initiates" flow. Mirrors the prior value so the existing
-    /// `UserIdentityStore+NIP46` call site does not need a code change.
-    nonisolated static let nostrConnectDefaultRelay = URL(string: "wss://relay.nsec.app")!
-
     private let bunkerSigner: NDKBunkerSigner
     /// Forwards `auth_url` events from `NDKBunkerSigner.authUrlPublisher`
     /// out to UI without forcing UI code to take a transitive dependency

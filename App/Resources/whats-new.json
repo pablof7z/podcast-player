@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-17T16:51:03Z",
+      "lines": [
+        "Networking now stops showing the retired nsec.app relay unless it is actually connected, and signer pairing uses your configured Nostr relay."
+      ]
+    },
+    {
       "shipped_at": "2026-05-17T15:03:14Z",
       "lines": [
         "New Settings > Networking screen shows every Nostr relay the app uses, with live status, roles, statistics, subscriptions, and per-relay details."

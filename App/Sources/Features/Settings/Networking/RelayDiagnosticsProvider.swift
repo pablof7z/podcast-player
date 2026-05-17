@@ -182,7 +182,6 @@ enum RelayDiagnosticsProvider {
         for relay in FeedbackRelayClient.profileRelayURLs {
             add(relay.absoluteString, roles: [.profile], source: "Profile")
         }
-        add(RemoteSigner.nostrConnectDefaultRelay.absoluteString, roles: [.pairing], source: "NIP-46 pairing")
         add("wss://relay.primal.net", roles: [.discovery], source: "Discovery")
         return relays
     }
