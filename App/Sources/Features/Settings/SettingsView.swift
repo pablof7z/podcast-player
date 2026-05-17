@@ -145,29 +145,11 @@ struct SettingsView: View {
     }
 
     private var systemSection: some View {
-        Section("System") {
-            NavigationLink {
-                NotificationSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "bell.badge",
-                    tint: .red,
-                    title: "Notifications",
-                    value: notificationsRowValue
-                )
-            }
-
-            NavigationLink {
-                DataStorageSettingsView()
-            } label: {
-                SettingsRow(
-                    icon: "externaldrive.fill",
-                    tint: .teal,
-                    title: "Data & Storage",
-                    value: dataStorageSummary
-                )
-            }
-        }
+        SettingsSystemSection(
+            notificationsRowValue: notificationsRowValue,
+            networkingRowValue: networkingRowValue,
+            dataStorageSummary: dataStorageSummary
+        )
     }
 
     static func formatSize(_ bytes: Int64) -> String {
@@ -280,6 +262,10 @@ struct SettingsView: View {
 
     private var wikiRowValue: String {
         "Manual"
+    }
+
+    private var networkingRowValue: String {
+        NostrStack.shared.relaysConnected ? "Connected" : "Offline"
     }
 
     private var dataStorageSummary: String? {
