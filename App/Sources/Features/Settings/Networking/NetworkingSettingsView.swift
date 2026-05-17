@@ -13,7 +13,7 @@ struct NetworkingSettingsView: View {
         .settingsListStyle()
         .navigationTitle("Networking")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await refreshLoop() }
+        .task { await observeChanges() }
         .refreshable { await refresh() }
     }
 
@@ -24,10 +24,6 @@ struct NetworkingSettingsView: View {
             summaryRow("Subscriptions", value: "\(snapshot.activeSubscriptionCount)")
             summaryRow("Messages received", value: "\(snapshot.messagesReceived)")
             summaryRow("Messages sent", value: "\(snapshot.messagesSent)")
-            summaryRow(
-                "Last refresh",
-                value: snapshot.refreshedAt.formatted(date: .omitted, time: .standard)
-            )
         }
     }
 
@@ -84,11 +80,11 @@ struct NetworkingSettingsView: View {
         }
     }
 
-    private func refreshLoop() async {
-        await refresh()
-        while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(1))
-            await refresh()
+    private func observeChanges() async {
+        snapshot = await RelayDiagnosticsProvider.load(store: store)
+        guard let ndk = NostrStack.shared.ndk else { return }
+        for await _ in await ndk.relayChanges {
+            snapshot = await RelayDiagnosticsProvider.load(store: store)
         }
     }
 

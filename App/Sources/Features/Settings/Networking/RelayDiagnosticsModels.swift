@@ -4,7 +4,6 @@ import SwiftUI
 
 struct RelayDiagnosticsSnapshot: Equatable {
     var relays: [RelayViewModel] = []
-    var refreshedAt: Date = Date()
 
     var connectedCount: Int {
         relays.filter(\.state.isConnected).count

@@ -44,7 +44,7 @@ enum RelayDiagnosticsProvider {
             }
             return lhs.displayURL.localizedCaseInsensitiveCompare(rhs.displayURL) == .orderedAscending
         }
-        return RelayDiagnosticsSnapshot(relays: relays, refreshedAt: Date())
+        return RelayDiagnosticsSnapshot(relays: relays)
     }
 
     private static func relayViewModel(

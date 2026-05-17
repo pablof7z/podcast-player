@@ -21,7 +21,7 @@ struct RelayDetailView: View {
         .settingsListStyle()
         .navigationTitle(relay.displayURL)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await refreshLoop() }
+        .task { await observeChanges() }
         .refreshable { await refresh() }
     }
 
@@ -209,10 +209,10 @@ struct RelayDetailView: View {
         return .secondary
     }
 
-    private func refreshLoop() async {
+    private func observeChanges() async {
         await refresh()
-        while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(1))
+        guard let ndk = NostrStack.shared.ndk else { return }
+        for await _ in await ndk.relayChanges {
             await refresh()
         }
     }

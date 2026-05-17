@@ -195,31 +195,35 @@ final class NostrPodcastDiscoveryService {
     }
 
     private func ensureRelayConnected(_ relayURL: String, ndk: NDK, label: String) async -> Bool {
-        let relay = await ndk.addRelay(
-            relayURL,
-            origin: .discovery,
-            reason: "NIP-F4 \(label) fetch"
-        )
-        if await isConnected(relay) { return true }
+        let relay = await ndk.addRelay(relayURL, origin: .discovery, reason: "NIP-F4 \(label) fetch")
         do {
             try await relay.connect()
         } catch {
             Self.logger.error(
                 "collect \(label, privacy: .public): failed to connect \(relayURL, privacy: .public): \(error, privacy: .public)"
             )
+            return false
         }
-        let deadline = Date().addingTimeInterval(3)
-        while Date() < deadline {
-            if await isConnected(relay) { return true }
-            try? await Task.sleep(for: .milliseconds(200))
+        return await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await state in relay.stateStream {
+                    switch state.connectionState {
+                    case .connected, .authenticated: return true
+                    case .failed: return false
+                    default: continue
+                    }
+                }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(3))
+                Self.logger.error("collect \(label, privacy: .public): \(relayURL, privacy: .public) timed out")
+                return false
+            }
+            let result = await group.next() ?? false
+            group.cancelAll()
+            return result
         }
-        Self.logger.error("collect \(label, privacy: .public): \(relayURL, privacy: .public) is not connected")
-        return false
-    }
-
-    private func isConnected(_ relay: NDKRelay) async -> Bool {
-        let state = await relay.connectionState
-        return state == .connected || state == .authenticated
     }
 
     // MARK: - Event parsers
