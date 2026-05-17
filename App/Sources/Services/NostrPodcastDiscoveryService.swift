@@ -12,9 +12,21 @@ import os.log
 // In NIP-F4 each podcast IS its own keypair: the pubkey alone identifies the
 // show. Episodes are discovered by author, not by an `a`-tag reference.
 //
-// Each query opens a single subscription that closes on EOSE; results stream
-// in via `subscription.events` (AsyncStream). An outer timeout races to bail
-// out if the relay never sends EOSE. No polling.
+// Each query uses one app-owned NDK subscription scoped to the selected relay.
+// Results stream in via `subscription.events`; the collector waits for EOSE or
+// an outer timeout, then closes the subscription after draining queued batches.
+
+private actor NostrDiscoveryEventAccumulator {
+    private var events: [NDKEvent] = []
+
+    func append(_ batch: [NDKEvent]) {
+        events.append(contentsOf: batch)
+    }
+
+    func snapshot() -> [NDKEvent] {
+        events
+    }
+}
 
 @MainActor
 final class NostrPodcastDiscoveryService {
@@ -24,6 +36,7 @@ final class NostrPodcastDiscoveryService {
     private enum Wire {
         static let kindShow = 10154
         static let kindEpisode = 54
+        static let showLimit = 100
         static let timeout: Duration = .seconds(8)
     }
 
@@ -47,7 +60,8 @@ final class NostrPodcastDiscoveryService {
     /// Returns all kind:10154 shows the connected relay knows about, newest first.
     func fetchShows(relayURL: URL) async -> [ShowResult] {
         let events = await collectEvents(
-            filter: NDKFilter(kinds: [Wire.kindShow]),
+            filter: NDKFilter(kinds: [Wire.kindShow], limit: Wire.showLimit),
+            relayURL: relayURL,
             label: "shows"
         )
 
@@ -66,7 +80,7 @@ final class NostrPodcastDiscoveryService {
             authors: [show.pubkey],
             kinds: [Wire.kindEpisode]
         )
-        let events = await collectEvents(filter: filter, label: "episodes")
+        let events = await collectEvents(filter: filter, relayURL: relayURL, label: "episodes")
 
         // Dedupe by event ID (regular events; each is unique).
         var seen = Set<String>()
@@ -120,37 +134,92 @@ final class NostrPodcastDiscoveryService {
 
     // MARK: - Subscription collector
 
-    private func collectEvents(filter: NDKFilter, label: String) async -> [NDKEvent] {
+    private func collectEvents(filter: NDKFilter, relayURL: URL, label: String) async -> [NDKEvent] {
+        let relay = URLNormalizer.tryNormalizeRelayUrl(relayURL.absoluteString) ?? relayURL.absoluteString
         guard let ndk = NostrStack.shared.ndk else {
             Self.logger.debug("collect \(label, privacy: .public): no NDK available")
             return []
         }
-        guard NostrStack.shared.relaysConnected else {
-            Self.logger.debug("collect \(label, privacy: .public): relays not connected")
-            return []
+        if !NostrStack.shared.relaysConnected {
+            Self.logger.debug("collect \(label, privacy: .public): relay pool is not marked connected; trying explicit relay")
         }
+        guard await ensureRelayConnected(relay, ndk: ndk, label: label) else { return [] }
 
-        let subscription = ndk.subscribe(filter: filter, closeOnEose: true)
-        var collected: [NDKEvent] = []
+        Self.logger.notice("collect \(label, privacy: .public): subscribing on \(relay, privacy: .public)")
+        let options = NDKSubscriptionOptions(
+            cachePolicy: .networkOnly,
+            relays: Set([relay]),
+            exclusiveRelays: true,
+            subscriptionId: "nip-f4-\(label)",
+            closeOnEose: false,
+            groupable: false
+        )
+        let subscription = ndk.subscribe(filter: filter, options: options, includeRelayUpdates: true)
+        let accumulator = NostrDiscoveryEventAccumulator()
 
-        await withTaskGroup(of: [NDKEvent].self) { group in
+        await withTaskGroup(of: Void.self) { group in
             group.addTask {
-                var local: [NDKEvent] = []
                 for await batch in subscription.events {
-                    local.append(contentsOf: batch)
+                    await accumulator.append(batch)
                 }
-                return local
+            }
+            group.addTask {
+                guard let relayUpdates = subscription.relayUpdates else { return }
+                for await update in relayUpdates {
+                    switch update {
+                    case let .eose(updateRelay) where updateRelay == relay:
+                        try? await Task.sleep(for: .milliseconds(150))
+                        return
+                    case .aggregatedEose:
+                        try? await Task.sleep(for: .milliseconds(150))
+                        return
+                    case let .closed(updateRelay) where updateRelay == relay:
+                        return
+                    default:
+                        continue
+                    }
+                }
             }
             group.addTask {
                 try? await Task.sleep(for: Wire.timeout)
-                return []
             }
-            if let first = await group.next() {
-                collected = first
-            }
+            await group.next()
             group.cancelAll()
         }
+        await subscription.close()
+        let collected = await accumulator.snapshot()
+        Self.logger.notice(
+            "collect \(label, privacy: .public): received \(collected.count, privacy: .public) event(s) from \(relay, privacy: .public)"
+        )
         return collected
+    }
+
+    private func ensureRelayConnected(_ relayURL: String, ndk: NDK, label: String) async -> Bool {
+        let relay = await ndk.addRelay(
+            relayURL,
+            origin: .discovery,
+            reason: "NIP-F4 \(label) fetch"
+        )
+        if await isConnected(relay) { return true }
+        do {
+            try await relay.connect()
+        } catch {
+            Self.logger.error(
+                "collect \(label, privacy: .public): failed to connect \(relayURL, privacy: .public): \(error, privacy: .public)"
+            )
+        }
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if await isConnected(relay) { return true }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        Self.logger.error("collect \(label, privacy: .public): \(relayURL, privacy: .public) is not connected")
+        return false
+    }
+
+    private func isConnected(_ relay: NDKRelay) async -> Bool {
+        let state = await relay.connectionState
+        return state == .connected || state == .authenticated
     }
 
     // MARK: - Event parsers

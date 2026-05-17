@@ -1,5 +1,5 @@
 {
-  "originHash" : "90807db795f08357481848a860b7ae7466cfd0dc56ba52e2ba35c1e9bc380b7b",
+  "originHash" : "793c3b3781084bb62b84d42d543a87f1251000d311478c786525c615795bdc30",
   "pins" : [
     {
       "identity" : "base58",
@@ -79,7 +79,7 @@
       "location" : "https://github.com/pablof7z/NDKSwift",
       "state" : {
         "branch" : "master",
-        "revision" : "b0846731f89831a88b690ced067c0780dbf08dc0"
+        "revision" : "9268d95a5fe0a834b47953601dab5b5566e3ff18"
       }
     },
     {

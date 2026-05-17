@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-17T17:28:34Z",
+      "lines": [
+        "Nostr podcast discovery now keeps the live Primal relay connected through the app relay pool, so NIP-F4 shows appear again."
+      ]
+    },
+    {
       "shipped_at": "2026-05-17T16:51:03Z",
       "lines": [
         "Networking now stops showing the retired nsec.app relay unless it is actually connected, and signer pairing uses your configured Nostr relay."

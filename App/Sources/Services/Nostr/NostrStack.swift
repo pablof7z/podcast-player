@@ -58,11 +58,7 @@ final class NostrStack {
         if self.store == nil { self.store = store }
         if ndk != nil { return }
 
-        let cache: NDKNostrDBCache
-        do {
-            cache = try await NDKNostrDBCache(path: cacheDirectoryPath())
-        } catch {
-            Self.logger.error("bind: cache init failed — \(error, privacy: .public); proceeding without cache")
+        guard let cache = await makeCache() else {
             return
         }
         self.cache = cache
@@ -98,25 +94,41 @@ final class NostrStack {
         let userRelayURL: String? = (settings.nostrEnabled && !settings.nostrRelayURL.isEmpty)
             ? settings.nostrRelayURL : nil
 
-        // Already connected with the same relay set → nothing to do.
-        if relaysConnected, connectedRelayURL == userRelayURL { return }
+        // Already started with the same relay set. Re-read the actual pool
+        // state so a dead socket does not leave the app reporting "Connected."
+        if relaysConnected, connectedRelayURL == userRelayURL {
+            let summary = await ndk.getRelayConnectionSummary()
+            if summary.connected > 0 { return }
+            relaysConnected = false
+            connectedRelayURL = nil
+        }
 
         // Relay config changed: disconnect and reconnect with updated set.
         if relaysConnected {
             await ndk.disconnect()
             relaysConnected = false
         }
-        _ = await ndk.addRelay(Self.discoveryRelay, reason: "discovery relay")
+        _ = await ndk.addRelay(
+            Self.discoveryRelay,
+            origin: .discovery,
+            reason: "NIP-F4 discovery relay"
+        )
         if let userRelayURL {
             _ = await ndk.addRelay(userRelayURL, reason: "user-configured relay")
         }
         await ndk.connect()
-        relaysConnected = true
-        connectedRelayURL = userRelayURL
+        let connectedCount = await ndk.waitForRelayConnections(minimumRelays: 1, timeout: 8)
+        let summary = await ndk.getRelayConnectionSummary()
+        relaysConnected = connectedCount > 0 || summary.connected > 0
+        connectedRelayURL = await userRelayIsConnected(userRelayURL, ndk: ndk) ? userRelayURL : nil
+        guard relaysConnected else {
+            Self.logger.error("start: NDK failed to connect any relays")
+            return
+        }
         if let userRelayURL {
-            Self.logger.notice("start: NDK connected to \(userRelayURL, privacy: .public) + \(Self.discoveryRelay, privacy: .public)")
+            Self.logger.notice("start: NDK connected \(summary.connected, privacy: .public)/\(summary.total, privacy: .public) relays; requested \(userRelayURL, privacy: .public) + \(Self.discoveryRelay, privacy: .public)")
         } else {
-            Self.logger.notice("start: NDK connected to \(Self.discoveryRelay, privacy: .public) (discovery-only; agent Nostr disabled)")
+            Self.logger.notice("start: NDK connected \(summary.connected, privacy: .public)/\(summary.total, privacy: .public) relays; discovery-only \(Self.discoveryRelay, privacy: .public)")
         }
     }
 
@@ -137,6 +149,30 @@ final class NostrStack {
         let dir = (urls.first ?? URL(fileURLWithPath: NSTemporaryDirectory()))
             .appendingPathComponent("nostr-ndk", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("ndk.db").path
+        return dir.path
+    }
+
+    private func makeCache() async -> NDKNostrDBCache? {
+        do {
+            return try await NDKNostrDBCache(path: cacheDirectoryPath())
+        } catch {
+            Self.logger.error("bind: app cache init failed — \(error, privacy: .public); retrying default cache")
+        }
+        do {
+            return try await NDKNostrDBCache()
+        } catch {
+            Self.logger.error("bind: default cache init failed — \(error, privacy: .public); NDK unavailable")
+            return nil
+        }
+    }
+
+    private func userRelayIsConnected(_ relayURL: String?, ndk: NDK) async -> Bool {
+        guard let relayURL else { return false }
+        let normalized = URLNormalizer.tryNormalizeRelayUrl(relayURL) ?? relayURL
+        for relay in await ndk.poolRelays where relay.url == normalized {
+            let state = await relay.connectionState
+            if state == .connected || state == .authenticated { return true }
+        }
+        return false
     }
 }
