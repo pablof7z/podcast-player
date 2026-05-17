@@ -38,10 +38,13 @@ final class NostrStack {
     /// not consult this.
     private(set) var relaysConnected: Bool = false
 
-    /// URL of the currently-connected relay (single-relay model), or `nil`
-    /// when disconnected. Used to detect whether a settings change needs
-    /// a relay swap.
+    /// URL of the currently-connected user-configured relay, or `nil` when
+    /// disconnected. Used to detect whether a settings change needs a relay
+    /// swap. Discovery relays (Primal) are always added alongside this one.
     private(set) var connectedRelayURL: String?
+
+    /// Fixed relay added on every connect for broad NIP-F4 discovery coverage.
+    private static let discoveryRelay = "wss://relay.primal.net"
 
     private var store: AppStateStore?
     private var cache: NDKNostrDBCache?
@@ -100,10 +103,11 @@ final class NostrStack {
             relaysConnected = false
         }
         _ = await ndk.addRelay(settings.nostrRelayURL, reason: "user-configured relay")
+        _ = await ndk.addRelay(Self.discoveryRelay, reason: "discovery relay")
         await ndk.connect()
         relaysConnected = true
         connectedRelayURL = settings.nostrRelayURL
-        Self.logger.notice("start: NDK connected to \(settings.nostrRelayURL, privacy: .public)")
+        Self.logger.notice("start: NDK connected to \(settings.nostrRelayURL, privacy: .public) + \(Self.discoveryRelay, privacy: .public)")
     }
 
     /// Disconnect the relay pool. The NDK instance itself stays alive so
