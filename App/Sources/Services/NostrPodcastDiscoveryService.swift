@@ -5,9 +5,12 @@ import os.log
 
 // MARK: - NostrPodcastDiscoveryService
 //
-// Queries the shared `NDK` instance for NIP-74 podcast events:
-//   kind:30074 — podcast show (parameterised replaceable, d-tag = show identifier)
-//   kind:30075 — podcast episode (parameterised replaceable, d-tag = episode identifier)
+// Queries the shared `NDK` instance for NIP-F4 podcast events:
+//   kind:10154 — podcast show (replaceable; one per podcast keypair)
+//   kind:54    — podcast episode (regular events authored by podcast pubkey)
+//
+// In NIP-F4 each podcast IS its own keypair: the pubkey alone identifies the
+// show. Episodes are discovered by author, not by an `a`-tag reference.
 //
 // Each query opens a single subscription that closes on EOSE; results stream
 // in via `subscription.events` (AsyncStream). An outer timeout races to bail
@@ -19,19 +22,18 @@ final class NostrPodcastDiscoveryService {
     nonisolated private static let logger = Logger.app("NostrPodcastDiscoveryService")
 
     private enum Wire {
-        static let kindShow = 30074
-        static let kindEpisode = 30075
+        static let kindShow = 10154
+        static let kindEpisode = 54
         static let timeout: Duration = .seconds(8)
     }
 
     // MARK: - Public result types
 
     struct ShowResult: Identifiable, Sendable {
-        /// Unique key: "<pubkey>:<dTag>"
-        var id: String { "\(pubkey):\(dTag)" }
-        let coordinate: String   // "30074:<pubkey>:<dTag>"
+        /// Unique key: the podcast's pubkey hex.
+        var id: String { pubkey }
+        let coordinate: String   // "10154:<pubkey>"
         let pubkey: String
-        let dTag: String
         let title: String
         let author: String
         let imageURL: URL?
@@ -40,11 +42,9 @@ final class NostrPodcastDiscoveryService {
         let createdAt: Int
     }
 
-    // MARK: - Fetch shows (kind:30074)
+    // MARK: - Fetch shows (kind:10154)
 
-    /// Returns all kind:30074 shows the connected relay knows about, newest first.
-    /// `relayURL` is preserved for API compatibility but is no longer consulted
-    /// — NDK uses its connected relay pool.
+    /// Returns all kind:10154 shows the connected relay knows about, newest first.
     func fetchShows(relayURL: URL) async -> [ShowResult] {
         let events = await collectEvents(
             filter: NDKFilter(kinds: [Wire.kindShow]),
@@ -55,36 +55,30 @@ final class NostrPodcastDiscoveryService {
         return events
             .compactMap { Self.parseShow(from: $0) }
             .sorted { $0.createdAt > $1.createdAt }
-            .filter { seen.insert($0.coordinate).inserted }
+            .filter { seen.insert($0.pubkey).inserted }
     }
 
-    // MARK: - Fetch episodes (kind:30075)
+    // MARK: - Fetch episodes (kind:54)
 
-    /// Returns `Episode` objects for `show`, already mapped with `podcastID`.
+    /// Returns `Episode` objects for `show`, fetched by the show's author pubkey.
     func fetchEpisodes(for show: ShowResult, relayURL: URL, podcastID: UUID) async -> [Episode] {
-        let showRef = "\(Wire.kindShow):\(show.pubkey):\(show.dTag)"
         let filter = NDKFilter(
             authors: [show.pubkey],
-            kinds: [Wire.kindEpisode],
-            tags: ["a": Set([showRef])]
+            kinds: [Wire.kindEpisode]
         )
         let events = await collectEvents(filter: filter, label: "episodes")
 
-        // Dedupe by d-tag (replaceable events): keep the newest per d-tag.
-        var seen = [String: Int64]()
-        var deduped: [NDKEvent] = []
-        for event in events.sorted(by: { $0.createdAt > $1.createdAt }) {
-            guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty,
-                  seen[dTag] == nil else { continue }
-            seen[dTag] = event.createdAt
-            deduped.append(event)
-        }
-        return deduped.compactMap { Self.parseEpisode(from: $0, podcastID: podcastID) }
+        // Dedupe by event ID (regular events; each is unique).
+        var seen = Set<String>()
+        return events
+            .sorted { $0.createdAt > $1.createdAt }
+            .filter { seen.insert($0.id).inserted }
+            .compactMap { Self.parseEpisode(from: $0, podcastID: podcastID) }
     }
 
     // MARK: - Deterministic UUID
 
-    /// Derives a stable `UUID` from a NIP-74 coordinate using SHA-256.
+    /// Derives a stable `UUID` from a NIP-F4 coordinate using SHA-256.
     /// Identical coordinates always produce the same UUID, enabling dedup
     /// by `store.podcast(id:)` without a feedURL.
     static func podcastID(for coordinate: String) -> UUID {
@@ -126,9 +120,6 @@ final class NostrPodcastDiscoveryService {
 
     // MARK: - Subscription collector
 
-    /// Opens an `ndk.subscribe(closeOnEose: true)` for `filter`, drains the
-    /// resulting `AsyncStream` until it terminates (EOSE) or the hard timeout
-    /// fires. Returns the collected events. `label` is used only for logging.
     private func collectEvents(filter: NDKFilter, label: String) async -> [NDKEvent] {
         guard let ndk = NostrStack.shared.ndk else {
             Self.logger.debug("collect \(label, privacy: .public): no NDK available")
@@ -168,23 +159,24 @@ final class NostrPodcastDiscoveryService {
         let pubkey = event.pubkey
         let createdAt = Int(event.createdAt)
 
-        guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty else { return nil }
-
         let title = event.tag(withName: "title")?[safe: 1]
             ?? (event.content.isEmpty ? nil : String(event.content.prefix(80)))
             ?? ""
         guard !title.isEmpty else { return nil }
 
-        let author = event.tag(withName: "author")?[safe: 1] ?? ""
-        let description = event.tag(withName: "summary")?[safe: 1] ?? event.content
+        let description = event.tag(withName: "description")?[safe: 1] ?? event.content
         let imageURL = event.tag(withName: "image")?[safe: 1].flatMap { URL(string: $0) }
         let categories = event.tags(withName: "t").compactMap { $0[safe: 1] }
-        let coordinate = "\(Wire.kindShow):\(pubkey):\(dTag)"
+
+        // Author is the "host" p-tag, if any.
+        let author = event.tags(withName: "p")
+            .first(where: { $0[safe: 2] == "host" || $0[safe: 2] == nil })?[safe: 1] ?? ""
+
+        let coordinate = "\(Wire.kindShow):\(pubkey)"
 
         return ShowResult(
             coordinate: coordinate,
             pubkey: pubkey,
-            dTag: dTag,
             title: title,
             author: author,
             imageURL: imageURL,
@@ -195,25 +187,17 @@ final class NostrPodcastDiscoveryService {
     }
 
     private static func parseEpisode(from event: NDKEvent, podcastID: UUID) -> Episode? {
-        guard let dTag = event.tag(withName: "d")?[safe: 1], !dTag.isEmpty else { return nil }
+        // Audio URL from `audio` tag — required.
+        guard let audioTag = event.tag(withName: "audio"),
+              let audioStr = audioTag[safe: 1],
+              let audioURL = URL(string: audioStr) else { return nil }
 
-        // Audio URL from `imeta url` or fallback `url` tag — required.
-        let imetaTag = event.tag(withName: "imeta")
-        let audioURLStr = imetaTag?
-            .dropFirst()
-            .compactMap { $0.hasPrefix("url ") ? String($0.dropFirst(4)) : nil }
-            .first
-            ?? event.tag(withName: "url")?[safe: 1]
-        guard let audioStr = audioURLStr, let audioURL = URL(string: audioStr) else { return nil }
-
+        let mimeType = audioTag[safe: 2]
         let title = event.tag(withName: "title")?[safe: 1] ?? ""
-        let description = event.tag(withName: "summary")?[safe: 1] ?? event.content
+        let description = event.tag(withName: "description")?[safe: 1]
+            ?? (event.content.isEmpty ? "" : event.content)
         let imageURL = event.tag(withName: "image")?[safe: 1].flatMap { URL(string: $0) }
-
-        let pubDateSeconds = event.tag(withName: "published_at")?[safe: 1]
-            .flatMap { Int($0) } ?? Int(event.createdAt)
-        let pubDate = Date(timeIntervalSince1970: TimeInterval(pubDateSeconds))
-
+        let pubDate = Date(timeIntervalSince1970: TimeInterval(event.createdAt))
         let duration = event.tag(withName: "duration")?[safe: 1].flatMap { TimeInterval($0) }
         let chaptersURL = event.tag(withName: "chapters")?[safe: 1].flatMap { URL(string: $0) }
 
@@ -221,14 +205,9 @@ final class NostrPodcastDiscoveryService {
         let transcriptURL = transcriptTag?[safe: 1].flatMap { URL(string: $0) }
         let transcriptKind = TranscriptKind.from(mimeType: transcriptTag?[safe: 2])
 
-        let mimeType = imetaTag?
-            .dropFirst()
-            .compactMap { $0.hasPrefix("m ") ? String($0.dropFirst(2)) : nil }
-            .first
-
         return Episode(
             podcastID: podcastID,
-            guid: dTag,
+            guid: event.id,
             title: title.isEmpty ? "Untitled Episode" : title,
             description: description,
             pubDate: pubDate,

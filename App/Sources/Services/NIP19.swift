@@ -12,6 +12,12 @@ import Foundation
 //   3 — kind (4-byte big-endian UInt32)
 
 enum NIP19 {
+    /// Encode a pubkey hex as an `npub` bech32 string.
+    static func npub(pubkeyHex: String) -> String? {
+        guard let data = Data(hexString: pubkeyHex), data.count == 32 else { return nil }
+        return Bech32.encode(hrp: "npub", data: data)
+    }
+
     /// Encode a parameterised replaceable event as an `naddr` bech32 string.
     ///
     /// - Parameters:

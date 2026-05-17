@@ -23,11 +23,11 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     }
 
     /// Visibility for agent-owned synthetic podcasts. Controls whether the show
-    /// and its episodes are published as NIP-74 Nostr events (kind:30074 / kind:30075).
+    /// and its episodes are published as NIP-F4 Nostr events (kind:10154 / kind:54).
     enum NostrVisibility: String, Codable, Sendable, Hashable {
         /// Library-only — not published to Nostr.
         case `private`
-        /// Published as NIP-74 addressable events signed by the agent's key.
+        /// Published as NIP-F4 events signed by the podcast's own keypair.
         case `public`
     }
 
@@ -52,19 +52,19 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     var categories: [String]
     /// When the app first learned about this podcast.
     var discoveredAt: Date
-    /// Hex public key of the agent that owns this podcast. Non-nil only for
-    /// agent-created synthetic shows; `nil` for RSS shows and the legacy
-    /// "Agent Generated" singleton podcast.
+    /// In NIP-F4 each podcast IS its own Nostr keypair. For agent-owned
+    /// synthetic shows this stores the PODCAST's own pubkey hex (derived from
+    /// the key stored in PodcastKeyStore). Non-nil only for agent-created shows;
+    /// `nil` for RSS shows and the legacy "Agent Generated" singleton podcast.
     var ownerPubkeyHex: String?
-    /// NIP-74 publish visibility. Only relevant when `ownerPubkeyHex` is set.
+    /// NIP-F4 publish visibility. Only relevant when `ownerPubkeyHex` is set.
     /// Defaults to `.public` so new agent-owned podcasts are live on Nostr
     /// whenever `settings.nostrEnabled` is true.
     var nostrVisibility: NostrVisibility
-    /// NIP-74 addressable coordinate for podcasts *discovered* via Nostr
-    /// (i.e. shows published by others). Format: `"30074:<pubkey-hex>:<d-tag>"`.
+    /// NIP-F4 coordinate for podcasts *discovered* via Nostr (shows published
+    /// by others). Format: `"10154:<podcast-pubkey-hex>"` — just kind + pubkey,
+    /// no d-tag (kind:10154 is a regular replaceable event, not parameterised).
     /// Non-nil only for Nostr-native shows; RSS shows always have nil here.
-    /// Stored so the app can re-query the relay for new episodes without
-    /// needing to re-parse the feedURL (which is nil for these rows).
     var nostrCoordinate: String?
     /// `true` when this row's `title` is still the raw feed-host fallback
     /// inserted at placeholder-creation time and has NOT yet been overwritten

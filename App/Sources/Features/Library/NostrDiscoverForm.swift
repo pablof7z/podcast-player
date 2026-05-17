@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - NostrDiscoverForm
 
-/// "Nostr" segment body in `AddShowSheet`. Fetches kind:30074 podcast shows
+/// "Nostr" segment body in `AddShowSheet`. Fetches kind:10154 podcast shows
 /// from the configured relay and lets the user subscribe to them.
 ///
 /// Shows are fetched once on appearance and cached for the session.
@@ -143,7 +143,7 @@ struct NostrDiscoverForm: View {
             if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("No Nostr podcasts found")
                     .font(AppTheme.Typography.headline)
-                Text("No NIP-74 shows were found on this relay.")
+                Text("No NIP-F4 shows were found on this relay.")
                     .font(AppTheme.Typography.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

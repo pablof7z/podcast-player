@@ -1,50 +1,40 @@
-import CryptoKit
 import Foundation
 @preconcurrency import NDKSwiftCore
 import os.log
 
 // MARK: - NostrPodcastPublisher
 //
-// Publishes NIP-74 (kind:30074 podcast show, kind:30075 podcast episode)
-// addressable events signed by the agent's key. Both kinds are parameterised
-// replaceable events (NIP-33): each `d` tag uniquely identifies the show /
-// episode across updates.
+// Publishes NIP-F4 Nostr podcast events:
+//   kind:10154 — podcast show (replaceable, no d-tag; show == podcast keypair)
+//   kind:54    — podcast episode (regular event; authored by podcast key)
+//   kind:10064 — agent author claim (replaceable; agent key lists owned podcast pubkeys)
+//
+// Each podcast has its own Nostr keypair (see PodcastKeyStore). The signer
+// passed to publishShow/publishEpisode is the PODCAST's signer, not the agent's.
+// publishAuthorClaim takes the AGENT's signer.
 //
 // Audio, chapters, and transcripts must be uploaded to Blossom before calling
-// `publishEpisode` — the caller passes the resulting URLs; this service only
-// handles event construction and relay publishing.
-//
-// Migration note (NDKSwift): this struct used to fan out to a caller-supplied
-// list of relay URLs over raw WebSockets. It now hands the signed event to
-// the shared `NDK` instance owned by `NostrStack.shared`. `relayURLs` is
-// still load-bearing — it's passed through to `ndk.publish(_:to:)` as the
-// explicit target set, because Podcastr agent identities do not currently
-// publish their own kind:10002 outbox list. The `publisher` init parameter
-// is vestigial (NDK does the publishing) and can be dropped once
-// `LiveAgentOwnedPodcastManager` is refactored.
+// publishEpisode — the caller passes the resulting URLs.
 
 struct NostrPodcastPublisher: Sendable {
 
     private static let logger = Logger.app("NostrPodcastPublisher")
 
-    let publisher: any NostrEventPublishing
     let relayURLs: [URL]
 
-    // MARK: - Publish show (kind:30074)
+    // MARK: - Publish show (kind:10154)
 
-    /// Publish (or replace) the NIP-74 show event for an agent-owned podcast.
-    /// Returns the signed Nostr event ID (32-byte hex).
+    /// Publish (or replace) the NIP-F4 show event for a podcast.
+    /// Signed by the podcast's own key. Returns the signed event ID.
     @discardableResult
     func publishShow(podcast: Podcast, signer: any NostrSigner) async throws -> String {
+        let pubkey = try await signer.publicKey()
+
         var tags: [[String]] = [
-            ["d", "podcast:guid:\(podcast.id.uuidString.lowercased())"],
             ["title", podcast.title],
         ]
         if !podcast.description.isEmpty {
-            tags.append(["summary", podcast.description])
-        }
-        if !podcast.author.isEmpty {
-            tags.append(["p", try await signer.publicKey()])
+            tags.append(["description", podcast.description])
         }
         if let image = podcast.imageURL {
             tags.append(["image", image.absoluteString])
@@ -55,65 +45,42 @@ struct NostrPodcastPublisher: Sendable {
         for category in podcast.categories {
             tags.append(["t", category])
         }
-        let draft = NostrEventDraft(kind: 30074, content: podcast.description, tags: tags)
+        if !podcast.author.isEmpty {
+            tags.append(["p", pubkey, "host"])
+        }
+
+        let draft = NostrEventDraft(kind: 10154, content: "", tags: tags)
         let signed = try await signer.sign(draft)
         try await publishViaNDK(event: signed)
         return signed.id
     }
 
-    // MARK: - Publish episode (kind:30075)
+    // MARK: - Publish episode (kind:54)
 
-    /// Publish (or replace) the NIP-74 episode event.
-    /// Returns the signed Nostr event ID (32-byte hex).
-    ///
-    /// - Parameters:
-    ///   - episode: The episode to publish.
-    ///   - podcast: The owning podcast (must have an `ownerPubkeyHex`).
-    ///   - audioURL: Blossom URL of the uploaded audio file.
-    ///   - audioData: Raw audio bytes — used to compute the `x` (SHA-256) hash for `imeta`.
-    ///   - chaptersURL: Optional Blossom URL of the uploaded chapters JSON.
-    ///   - transcriptURL: Optional Blossom URL of the uploaded transcript.
+    /// Publish a NIP-F4 episode event. Signed by the podcast's own key.
+    /// Returns the signed event ID.
     @discardableResult
     func publishEpisode(
         episode: Episode,
-        podcast: Podcast,
         audioURL: URL,
-        audioData: Data,
+        mimeType: String = "audio/mp4",
         chaptersURL: URL? = nil,
         transcriptURL: URL? = nil,
         signer: any NostrSigner
     ) async throws -> String {
-        let pubkey = try await signer.publicKey()
-        let showDTag = "podcast:guid:\(podcast.id.uuidString.lowercased())"
-        let audioHash = Data(SHA256.hash(data: audioData)).hexString
-        let pubDateSeconds = String(Int(episode.pubDate.timeIntervalSince1970))
-
         var tags: [[String]] = [
-            ["d", "podcast:item:guid:\(episode.id.uuidString.lowercased())"],
             ["title", episode.title],
-            ["published_at", pubDateSeconds],
-            ["a", "30074:\(pubkey):\(showDTag)"],
+            ["audio", audioURL.absoluteString, mimeType],
         ]
-
         if !episode.description.isEmpty {
-            tags.append(["summary", episode.description])
+            tags.append(["description", episode.description])
         }
         if let dur = episode.duration {
             tags.append(["duration", String(Int(dur))])
         }
-        if let image = episode.imageURL ?? podcast.imageURL {
+        if let image = episode.imageURL {
             tags.append(["image", image.absoluteString])
         }
-
-        var imetaParts = [
-            "url \(audioURL.absoluteString)",
-            "m audio/mp4",
-            "x \(audioHash)",
-            "size \(audioData.count)",
-        ]
-        if let dur = episode.duration { imetaParts.append("duration \(Int(dur))") }
-        tags.append(["imeta"] + imetaParts)
-
         if let chaptersURL {
             tags.append(["chapters", chaptersURL.absoluteString, "application/json+chapters"])
         }
@@ -121,22 +88,27 @@ struct NostrPodcastPublisher: Sendable {
             tags.append(["transcript", transcriptURL.absoluteString, "text/vtt"])
         }
 
-        let draft = NostrEventDraft(kind: 30075, content: episode.description, tags: tags)
+        let draft = NostrEventDraft(kind: 54, content: episode.description, tags: tags)
         let signed = try await signer.sign(draft)
+        try await publishViaNDK(event: signed)
+        return signed.id
+    }
+
+    // MARK: - Publish author claim (kind:10064)
+
+    /// Publish (or replace) the agent's NIP-F4 author claim listing all podcast pubkeys.
+    /// Signed by the AGENT's key (not the podcast key).
+    @discardableResult
+    func publishAuthorClaim(podcastPubkeys: [String], agentSigner: any NostrSigner) async throws -> String {
+        let tags = podcastPubkeys.map { ["p", $0] }
+        let draft = NostrEventDraft(kind: 10064, content: "", tags: tags)
+        let signed = try await agentSigner.sign(draft)
         try await publishViaNDK(event: signed)
         return signed.id
     }
 
     // MARK: - NDK publish
 
-    /// Hands the signed event to the shared NDK instance and routes it to
-    /// the caller-supplied `relayURLs`. We do not rely on NDK's NIP-65
-    /// outbox routing here: Podcastr agent identities don't currently
-    /// publish their own kind:10002, so a bare `ndk.publish(event)` would
-    /// resolve to an empty relay set and the publish would queue forever.
-    ///
-    /// If `relayURLs` is empty we fall back to NDK's outbox routing as a
-    /// best-effort path. The init parameter is load-bearing, not vestigial.
     private func publishViaNDK(event: SignedNostrEvent) async throws {
         guard let ndk = await NostrStack.shared.ndk else {
             throw NostrEventPublisherError.noRelayConfigured

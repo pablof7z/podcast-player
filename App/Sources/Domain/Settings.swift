@@ -232,7 +232,7 @@ struct Settings: Codable, Hashable, Sendable {
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
     var nostrEnabled: Bool = false
     var nostrRelayURL: String = Defaults.nostrRelayURL
-    /// Relay list used when publishing NIP-74 podcast events. Initialized from the
+    /// Relay list used when publishing NIP-F4 podcast events. Initialized from the
     /// user's NIP-65 kind:10002 outbox relays; falls back to primal + damus when empty.
     var nostrPublicRelays: [String] = []
     var nostrProfileName: String = ""

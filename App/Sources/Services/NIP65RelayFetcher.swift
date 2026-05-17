@@ -4,7 +4,7 @@ import os.log
 // MARK: - NIP65RelayFetcher
 //
 // Fetches the user's kind:10002 relay list (NIP-65 outbox model) so that
-// NIP-74 podcast events can be published to the user's own write relays.
+// NIP-F4 podcast events can be published to the user's own write relays.
 //
 // Bootstrap problem: we query a set of well-known relays (primal + damus)
 // plus the configured inbox relay. Write relays are `["r", url]` tags
