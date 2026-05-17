@@ -79,6 +79,43 @@ final class SubscriptionRefreshServiceTests: XCTestCase {
         XCTAssertTrue(store.episodes(forPodcast: subscription.id).isEmpty)
     }
 
+    func testRefreshAllBatchesNotModifiedPersistencePerSlice() async throws {
+        let originalDate = Date(timeIntervalSince1970: 1_000)
+        let first = Podcast(
+            feedURL: URL(string: "https://feeds.example.com/one.xml")!,
+            title: "One",
+            lastRefreshedAt: originalDate
+        )
+        let second = Podcast(
+            feedURL: URL(string: "https://feeds.example.com/two.xml")!,
+            title: "Two",
+            lastRefreshedAt: originalDate
+        )
+        store.upsertPodcast(first)
+        store.upsertPodcast(second)
+        XCTAssertTrue(store.addSubscription(podcastID: first.id))
+        XCTAssertTrue(store.addSubscription(podcastID: second.id))
+
+        FeedRefreshStubProtocol.responseStatus = 304
+        FeedRefreshStubProtocol.responseBody = Data()
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [FeedRefreshStubProtocol.self] + (config.protocolClasses ?? [])
+        let session = URLSession(configuration: config)
+        let refresh = SubscriptionRefreshService(client: FeedClient(session: session))
+
+        store.persistence.resetSaveInvocationCount()
+        await refresh.refreshAll(store: store, maxConcurrent: 2)
+
+        XCTAssertGreaterThan(store.podcast(id: first.id)?.lastRefreshedAt ?? originalDate, originalDate)
+        XCTAssertGreaterThan(store.podcast(id: second.id)?.lastRefreshedAt ?? originalDate, originalDate)
+        XCTAssertEqual(
+            store.persistence.saveInvocationCount,
+            1,
+            "A refresh slice should persist once after applying all feed outcomes, not once per feed."
+        )
+    }
+
     private static func feedXML(title: String, guid: String) -> String {
         #"""
         <?xml version="1.0" encoding="UTF-8"?>

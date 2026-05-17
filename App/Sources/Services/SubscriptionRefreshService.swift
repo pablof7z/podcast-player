@@ -67,14 +67,16 @@ final class SubscriptionRefreshService {
             return
         }
         let result = try await client.fetch(podcast)
-        let pending = apply(
-            outcome: .success(
-                originalID: podcastID,
-                original: podcast,
-                result: result
-            ),
-            store: store
-        )
+        let pending = store.performMutationBatch {
+            apply(
+                outcome: .success(
+                    originalID: podcastID,
+                    original: podcast,
+                    result: result
+                ),
+                store: store
+            )
+        }
         InboxTriageService.shared.triageNewEpisodes(store: store)
         await waitForTriageToSettle()
         if let pending {
@@ -124,9 +126,11 @@ final class SubscriptionRefreshService {
                 return collected
             }
 
-            for outcome in outcomes {
-                if let pending = apply(outcome: outcome, store: store) {
-                    pendingSideEffects.append(pending)
+            store.performMutationBatch {
+                for outcome in outcomes {
+                    if let pending = apply(outcome: outcome, store: store) {
+                        pendingSideEffects.append(pending)
+                    }
                 }
             }
 

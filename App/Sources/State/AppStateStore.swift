@@ -103,6 +103,10 @@ final class AppStateStore {
     /// Drives `ShowDetailView` without duplicating every `Episode` in memory.
     var episodeIndexesByShow: [UUID: [Int]] = [:]
 
+    /// Episode array index by stable episode ID. Keeps high-frequency
+    /// point-lookups (`episode(id:)`, playback ticks, RAG shaping) O(1).
+    var episodeIndexByID: [UUID: Int] = [:]
+
     /// Episodes whose persisted `playbackPosition > 0` and `played == false`,
     /// pre-sorted newest first. Reads merge the position-cache so an episode
     /// the user *just* started (cache > 0, persisted == 0) shows up too.
@@ -118,6 +122,14 @@ final class AppStateStore {
     /// rendered limit; if a caller asks for more we recompute on the fly.
     static let recentEpisodesCacheLimit = 30
 
+    /// Triage counts keyed by show. Home aggregates these by active category
+    /// instead of scanning the full episode array on every render.
+    var triageCountsByShow: [UUID: EpisodeTriageCounts] = [:]
+
+    /// Unplayed `.inbox` episode IDs, globally sorted newest first. Home uses
+    /// this to build hero/secondary picks without a full filter+sort pass.
+    var inboxEpisodeIDsSorted: [UUID] = []
+
     /// Storage backing this store. Production code uses `Persistence.shared`
     /// (the App Group suite); tests inject an instance over a unique
     /// in-memory suite so fixtures never leak into the real app.
@@ -132,14 +144,18 @@ final class AppStateStore {
     /// See `AppStateStore+PositionDebounce.swift` for the rationale.
     private var backgroundObserver: NSObjectProtocol?
 
+    @ObservationIgnored
     var mutationBatchDepth = 0
+    @ObservationIgnored
     var deferredStateSideEffects = false
+    @ObservationIgnored
     var deferredEpisodeProjectionRebuild = false
     /// Trailing-debounce task for `WidgetCenter.reloadAllTimelines()`.
     /// Cancelled and re-armed on each mutation so a burst (e.g. marking
     /// 50 episodes played) collapses to a single reload signal — the
     /// system has a daily timeline-reload budget that flooding burns
     /// without producing extra refreshes.
+    @ObservationIgnored
     var widgetReloadTask: Task<Void, Never>?
 
     // MARK: - Position debounce
@@ -160,11 +176,13 @@ final class AppStateStore {
     /// Read-folded into `episode(id:)`/`inProgressEpisodes`/`recentEpisodes`
     /// so UI surfaces never see a stale position. Drained by
     /// `flushPendingPositions()`.
+    @ObservationIgnored
     var positionCache: [UUID: TimeInterval] = [:]
 
     /// Pending trailing-debounce flush task. Cancelled and re-armed on each
     /// `setEpisodePlaybackPosition` call so the deadline keeps moving while
     /// updates stream in (true trailing debounce).
+    @ObservationIgnored
     var positionFlushTask: Task<Void, Never>?
 
     /// Wall-clock time of the most recent position flush. Drives the
@@ -172,6 +190,7 @@ final class AppStateStore {
     /// `positionMaxInterval` since this timestamp, the next call writes
     /// eagerly so a crash never loses more than one cap-window of
     /// position.
+    @ObservationIgnored
     var lastPositionFlush: Date?
 
     init(persistence: Persistence = .shared) {

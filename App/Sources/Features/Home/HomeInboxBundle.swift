@@ -30,29 +30,15 @@ enum HomeInboxBundleBuilder {
         allowedSubscriptionIDs: Set<UUID>?,
         now: Date = Date()
     ) -> HomeAgentPicksBundle {
-        let inbox = store.state.episodes
-            .filter { episode in
-                guard episode.triageDecision == .inbox else { return false }
-                // Triage marks `.inbox` even after the user has started
-                // listening; once they finish the episode it should drop
-                // off the surface. `played` covers the explicit case;
-                // very-near-end positions are still surfaced (no special
-                // case here).
-                if episode.played { return false }
-                if let allowed = allowedSubscriptionIDs,
-                   !allowed.contains(episode.podcastID) {
-                    return false
-                }
-                return true
-            }
-            .sorted { $0.pubDate > $1.pubDate }
+        let inboxIDs = store.inboxEpisodeIDs(allowedSubscriptionIDs: allowedSubscriptionIDs)
 
         // Hero precedence: agent-crowned `triageIsHero` wins; fall back
-        // to newest pubDate (already first after the sort above).
-        let heroEpisode = inbox.first(where: { $0.triageIsHero }) ?? inbox.first
+        // to newest pubDate (the projection is already newest first).
+        let heroID = inboxIDs.first { store.episode(id: $0)?.triageIsHero == true }
+            ?? inboxIDs.first
         var picks: [HomeAgentPick] = []
         picks.reserveCapacity(1 + secondariesCap)
-        if let hero = heroEpisode {
+        if let heroID, let hero = store.episode(id: heroID) {
             picks.append(HomeAgentPick(
                 episodeID: hero.id,
                 rationale: hero.triageRationale ?? "",
@@ -60,8 +46,9 @@ enum HomeInboxBundleBuilder {
                 isHero: true
             ))
             var counted = 0
-            for next in inbox where next.id != hero.id {
+            for nextID in inboxIDs where nextID != hero.id {
                 if counted >= secondariesCap { break }
+                guard let next = store.episode(id: nextID) else { continue }
                 picks.append(HomeAgentPick(
                     episodeID: next.id,
                     rationale: next.triageRationale ?? "",

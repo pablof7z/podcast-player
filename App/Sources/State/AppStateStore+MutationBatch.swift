@@ -16,7 +16,8 @@ extension AppStateStore {
         markStateSideEffectsDirty()
     }
 
-    func performMutationBatch(_ body: () -> Void) {
+    @discardableResult
+    func performMutationBatch<Output>(_ body: () -> Output) -> Output {
         mutationBatchDepth += 1
         defer {
             mutationBatchDepth -= 1
@@ -24,7 +25,7 @@ extension AppStateStore {
                 flushDeferredMutationWork()
             }
         }
-        body()
+        return body()
     }
 
     func markEpisodeProjectionsDirty() {

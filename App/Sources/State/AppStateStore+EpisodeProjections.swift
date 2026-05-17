@@ -1,5 +1,31 @@
 import Foundation
 
+struct EpisodeTriageCounts: Equatable, Sendable {
+    var inbox: Int = 0
+    var archived: Int = 0
+    var shows: Int = 0
+
+    var isEmpty: Bool {
+        inbox == 0 && archived == 0 && shows == 0
+    }
+
+    mutating func add(_ other: EpisodeTriageCounts) {
+        inbox += other.inbox
+        archived += other.archived
+        shows += other.shows
+    }
+
+    mutating func record(decision: TriageDecision, played: Bool) {
+        shows = 1
+        switch decision {
+        case .inbox:
+            if !played { inbox += 1 }
+        case .archived:
+            archived += 1
+        }
+    }
+}
+
 // MARK: - AppStateStore + EpisodeProjections
 //
 // **Why this exists.** Several SwiftUI surfaces — the Library subscriptions
@@ -59,8 +85,11 @@ extension AppStateStore {
         var downloaded: Set<UUID> = []
         var transcribed: Set<UUID> = []
         var byShow: [UUID: [Int]] = [:]
+        var byID: [UUID: Int] = [:]
         var inProgress: [Episode] = []
         var recent: [Episode] = []
+        var triageByShow: [UUID: EpisodeTriageCounts] = [:]
+        var inboxIDs: [UUID] = []
 
         // Reserve capacity to avoid the rehash storm when growing through
         // a 10k-episode pass. Conservative bounds: bucket counts ≤ unique
@@ -71,11 +100,15 @@ extension AppStateStore {
         downloaded.reserveCapacity(state.subscriptions.count)
         transcribed.reserveCapacity(state.subscriptions.count)
         byShow.reserveCapacity(state.subscriptions.count)
+        byID.reserveCapacity(episodes.count)
         inProgress.reserveCapacity(min(64, episodes.count))
         recent.reserveCapacity(min(Self.recentEpisodesCacheLimit, episodes.count))
+        triageByShow.reserveCapacity(state.subscriptions.count)
 
         for (index, episode) in episodes.enumerated() {
             let podID = episode.podcastID
+
+            byID[episode.id] = index
 
             // Unplayed-count bucket. Default to 0 so the dict has an entry
             // for every show that has any episode at all (cheaper than
@@ -103,6 +136,14 @@ extension AppStateStore {
             // Per-show index cache: append indexes now, sort once per show.
             byShow[podID, default: []].append(index)
 
+            if let decision = episode.triageDecision {
+                triageByShow[podID, default: EpisodeTriageCounts()]
+                    .record(decision: decision, played: episode.played)
+                if decision == .inbox, !episode.played {
+                    inboxIDs.append(episode.id)
+                }
+            }
+
             // In-progress: persisted position > 0 AND not played AND not
             // triage-archived. The position-cache fold at read time also
             // surfaces episodes whose cached position crossed zero but
@@ -126,6 +167,10 @@ extension AppStateStore {
         }
 
         inProgress.sort { $0.pubDate > $1.pubDate }
+        inboxIDs.sort {
+            guard let lhs = byID[$0], let rhs = byID[$1] else { return false }
+            return episodes[lhs].pubDate > episodes[rhs].pubDate
+        }
 
         // recentEpisodesCached: top-N unplayed episodes across all shows.
         // We do a global sort + prefix here. For 10k episodes this is
@@ -145,8 +190,11 @@ extension AppStateStore {
         hasDownloadedByShow = downloaded
         hasTranscribedByShow = transcribed
         episodeIndexesByShow = byShow
+        episodeIndexByID = byID
         inProgressEpisodesCached = inProgress
         recentEpisodesCached = recent
+        triageCountsByShow = triageByShow
+        inboxEpisodeIDsSorted = inboxIDs
     }
 
     /// Alias for `recomputeEpisodeProjections()`. Kept as a separate name
@@ -189,7 +237,7 @@ extension AppStateStore {
         if !positionCache.isEmpty {
             let existingIDs = Set(inProgressEpisodesCached.map(\.id))
             for (id, position) in positionCache where position > 0 && !existingIDs.contains(id) {
-                guard var ep = state.episodes.first(where: { $0.id == id }), !ep.played else { continue }
+                guard var ep = episode(id: id), !ep.played else { continue }
                 ep.playbackPosition = position
                 result.append(ep)
             }
@@ -229,6 +277,40 @@ extension AppStateStore {
             return episodes[index]
         }
         return applyingPositionCache(cached)
+    }
+
+    func episodeFromProjection(id: UUID) -> Episode? {
+        guard let index = episodeIndexByID[id],
+              state.episodes.indices.contains(index),
+              state.episodes[index].id == id else {
+            return state.episodes.first { $0.id == id }
+        }
+        return state.episodes[index]
+    }
+
+    func triageCounts(allowedSubscriptionIDs: Set<UUID>?) -> EpisodeTriageCounts {
+        var total = EpisodeTriageCounts()
+        if let allowedSubscriptionIDs {
+            for id in allowedSubscriptionIDs {
+                if let counts = triageCountsByShow[id] {
+                    total.add(counts)
+                }
+            }
+        } else {
+            for counts in triageCountsByShow.values {
+                total.add(counts)
+            }
+        }
+        return total
+    }
+
+    func inboxEpisodeIDs(allowedSubscriptionIDs: Set<UUID>?) -> [UUID] {
+        guard let allowedSubscriptionIDs else { return inboxEpisodeIDsSorted }
+        return inboxEpisodeIDsSorted.filter { id in
+            guard let index = episodeIndexByID[id],
+                  state.episodes.indices.contains(index) else { return false }
+            return allowedSubscriptionIDs.contains(state.episodes[index].podcastID)
+        }
     }
 
     // MARK: - Fingerprint (didSet safety net)

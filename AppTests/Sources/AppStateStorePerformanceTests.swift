@@ -159,6 +159,42 @@ final class AppStateStorePerformanceTests: XCTestCase {
         )
     }
 
+    func testEpisodeLookupIsConstantTime() throws {
+        seedLargeState()
+        let target = try XCTUnwrap(store.state.episodes.last)
+
+        let start = Date()
+        var hits = 0
+        for _ in 0..<5_000 {
+            if store.episode(id: target.id)?.id == target.id { hits += 1 }
+        }
+        let elapsed = Date().timeIntervalSince(start)
+
+        XCTAssertEqual(hits, 5_000)
+        XCTAssertLessThan(
+            elapsed, 0.05,
+            "5000 episode(id:) lookups took \(elapsed)s — lookup regressed to a per-call O(N) scan."
+        )
+    }
+
+    func testTriageInboxProjectionScopesBySubscription() {
+        let a = addSubscription(title: "A")
+        let b = addSubscription(title: "B")
+        var hero = makeEpisode(podcastID: a.id, guid: "hero")
+        hero.triageDecision = .inbox
+        hero.triageIsHero = true
+        var archived = makeEpisode(podcastID: a.id, guid: "archived")
+        archived.triageDecision = .archived
+        var other = makeEpisode(podcastID: b.id, guid: "other")
+        other.triageDecision = .inbox
+        store.upsertEpisodes([hero, archived], forPodcast: a.id)
+        store.upsertEpisodes([other], forPodcast: b.id)
+
+        XCTAssertEqual(store.triageCounts(allowedSubscriptionIDs: nil), EpisodeTriageCounts(inbox: 2, archived: 1, shows: 2))
+        XCTAssertEqual(store.triageCounts(allowedSubscriptionIDs: [a.id]), EpisodeTriageCounts(inbox: 1, archived: 1, shows: 1))
+        XCTAssertEqual(store.inboxEpisodeIDs(allowedSubscriptionIDs: [a.id]), [hero.id])
+    }
+
     func testBatchSubscriptionImportPersistsOnce() {
         let payloads = (0..<5).map { i in
             makeImportPayload(index: i, episodeCount: 25)

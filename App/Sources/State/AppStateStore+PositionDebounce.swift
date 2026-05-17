@@ -73,7 +73,9 @@ extension AppStateStore {
     /// we skip the bookkeeping entirely so the engine's coalesced ticks
     /// don't double-touch the cache.
     func setEpisodePlaybackPosition(_ id: UUID, position: TimeInterval) {
-        guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else {
+        guard let idx = episodeIndexByID[id],
+              state.episodes.indices.contains(idx),
+              state.episodes[idx].id == id else {
             // Episode is gone (rare: removed mid-tick). Drop the cached entry
             // so it can't resurrect the record on the next flush.
             positionCache.removeValue(forKey: id)
@@ -128,7 +130,15 @@ extension AppStateStore {
         var working = state.episodes
         var mutated = false
         for (id, position) in positionCache {
-            guard let idx = working.firstIndex(where: { $0.id == id }) else { continue }
+            let idx: Int?
+            if let projected = episodeIndexByID[id],
+               working.indices.contains(projected),
+               working[projected].id == id {
+                idx = projected
+            } else {
+                idx = working.firstIndex { $0.id == id }
+            }
+            guard let idx else { continue }
             if working[idx].playbackPosition != position {
                 working[idx].playbackPosition = position
                 mutated = true

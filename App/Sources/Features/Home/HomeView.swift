@@ -165,23 +165,8 @@ struct HomeView: View {
     /// line reads consistently with the magazine-mode UI. Unplayed-only on
     /// the inbox side — listened episodes drop off the surface anyway, so
     /// counting them reads as stale.
-    private var triageCounts: (inbox: Int, archived: Int, shows: Int) {
-        let allowed = allowedSubscriptionIDs
-        var inbox = 0
-        var archived = 0
-        var coveredShows: Set<UUID> = []
-        for episode in store.state.episodes {
-            if let allowed, !allowed.contains(episode.podcastID) { continue }
-            guard let decision = episode.triageDecision else { continue }
-            coveredShows.insert(episode.podcastID)
-            switch decision {
-            case .inbox:
-                if !episode.played { inbox += 1 }
-            case .archived:
-                archived += 1
-            }
-        }
-        return (inbox, archived, coveredShows.count)
+    private var triageCounts: EpisodeTriageCounts {
+        store.triageCounts(allowedSubscriptionIDs: allowedSubscriptionIDs)
     }
 
     // MARK: - Layout
@@ -327,8 +312,8 @@ struct HomeView: View {
 
     /// Persisted Inbox bundle for the currently-active category. The
     /// triage service writes `.inbox` decisions onto episodes; this
-    /// composes the bundle by filtering + sorting them and is therefore
-    /// cheap to recompute on every body pass.
+    /// composes the bundle from the store's pre-sorted inbox projection so
+    /// body recomposition does not scan and sort the full episode array.
     private var inboxBundle: HomeAgentPicksBundle {
         HomeInboxBundleBuilder.make(
             store: store,

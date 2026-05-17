@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-17T15:02:10Z",
+      "lines": [
+        "Large libraries and AI Inbox now stay smoother by avoiding repeated episode scans during playback, Home updates, and feed refreshes."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T22:30:00Z",
       "lines": [
         "Nostr internals rebuilt on NDKSwift. If you sign with a NIP-46 bunker (Amber, nsec.app, …) you'll need to re-pair it once after this update — your local nsec, profile, and feeds are unaffected."

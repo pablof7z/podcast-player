@@ -14,7 +14,7 @@ extension AppStateStore {
 
     /// Returns the live episode record matching `id`, or `nil` when not found.
     func episode(id: UUID) -> Episode? {
-        guard var found = state.episodes.first(where: { $0.id == id }) else { return nil }
+        guard var found = episodeFromProjection(id: id) else { return nil }
         if let cached = cachedPosition(for: id) {
             found.playbackPosition = cached
         }
