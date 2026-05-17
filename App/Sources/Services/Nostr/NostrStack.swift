@@ -77,6 +77,11 @@ final class NostrStack {
     /// Idempotent — calling twice with the same settings is a no-op.
     /// Does **not** rebuild the NDK instance; signing remains available
     /// throughout.
+    ///
+    /// The discovery relay (Primal) is **always** connected regardless of
+    /// `nostrEnabled`, so NIP-F4 podcast browsing works unconditionally.
+    /// The user-configured relay is added only when agent Nostr features are
+    /// enabled (`settings.nostrEnabled == true`).
     func start() async {
         guard let store else {
             Self.logger.error("start: not bound to an AppStateStore yet")
@@ -87,27 +92,32 @@ final class NostrStack {
             return
         }
         let settings = store.state.settings
-        guard settings.nostrEnabled, !settings.nostrRelayURL.isEmpty else {
-            await stop()
-            return
-        }
-        // Relay URL unchanged + already connected → nothing to do.
-        if relaysConnected, connectedRelayURL == settings.nostrRelayURL {
-            return
-        }
-        // Relay URL changed: disconnect, swap relay, reconnect. We rebuild
-        // the relay set rather than mutating in place so subscribers see a
-        // clean disconnect → connect transition.
+
+        // User relay is only added when agent Nostr features are enabled.
+        // Discovery relay (Primal) is always connected regardless of nostrEnabled.
+        let userRelayURL: String? = (settings.nostrEnabled && !settings.nostrRelayURL.isEmpty)
+            ? settings.nostrRelayURL : nil
+
+        // Already connected with the same relay set → nothing to do.
+        if relaysConnected, connectedRelayURL == userRelayURL { return }
+
+        // Relay config changed: disconnect and reconnect with updated set.
         if relaysConnected {
             await ndk.disconnect()
             relaysConnected = false
         }
-        _ = await ndk.addRelay(settings.nostrRelayURL, reason: "user-configured relay")
         _ = await ndk.addRelay(Self.discoveryRelay, reason: "discovery relay")
+        if let userRelayURL {
+            _ = await ndk.addRelay(userRelayURL, reason: "user-configured relay")
+        }
         await ndk.connect()
         relaysConnected = true
-        connectedRelayURL = settings.nostrRelayURL
-        Self.logger.notice("start: NDK connected to \(settings.nostrRelayURL, privacy: .public) + \(Self.discoveryRelay, privacy: .public)")
+        connectedRelayURL = userRelayURL
+        if let userRelayURL {
+            Self.logger.notice("start: NDK connected to \(userRelayURL, privacy: .public) + \(Self.discoveryRelay, privacy: .public)")
+        } else {
+            Self.logger.notice("start: NDK connected to \(Self.discoveryRelay, privacy: .public) (discovery-only; agent Nostr disabled)")
+        }
     }
 
     /// Disconnect the relay pool. The NDK instance itself stays alive so

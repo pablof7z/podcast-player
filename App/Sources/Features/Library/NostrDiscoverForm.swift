@@ -40,10 +40,11 @@ struct NostrDiscoverForm: View {
     // MARK: - Computed state
 
     private var configuredRelayURL: URL? {
-        let settings = store.state.settings
-        guard !settings.nostrRelayURL.isEmpty,
-              let url = URL(string: settings.nostrRelayURL) else { return nil }
-        return url
+        let relayStr = store.state.settings.nostrRelayURL
+        if !relayStr.isEmpty, let url = URL(string: relayStr) { return url }
+        // Fall back to the always-connected discovery relay so NIP-F4 browsing
+        // works even when agent Nostr features are not configured.
+        return URL(string: "wss://relay.primal.net")
     }
 
     private var filteredShows: [NostrPodcastDiscoveryService.ShowResult] {
