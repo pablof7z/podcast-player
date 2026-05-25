@@ -78,6 +78,14 @@ char *nmp_app_podcast_snapshot(void *handle);
 void nmp_app_podcast_snapshot_free(char *ptr);
 void nmp_app_podcast_unregister(void *handle);
 
+// Bind the podcast library store to a persistence directory. Must be called
+// once between `nmp_app_podcast_register` and `nmp_app_start`. `path` must be
+// a nul-terminated UTF-8 C string pointing at a writable directory (created
+// if missing). Passing a NULL handle, NULL path, or empty path is a silent
+// no-op (D6). Subsequent mutations (subscribe / unsubscribe / refresh) flush
+// to `<path>/podcasts.json` atomically.
+void nmp_app_podcast_set_data_dir(void *handle, const char *path);
+
 // Deliver a JSON-encoded AudioReport to the Rust PlayerActor.
 // Returns a malloc-allocated JSON AudioCommand the caller should execute, or
 // NULL when no follow-up is needed. Caller MUST free via `nmp_app_free_string`.
