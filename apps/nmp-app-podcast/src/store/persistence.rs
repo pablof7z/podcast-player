@@ -9,17 +9,23 @@
 //! ```text
 //! {
 //!   "schema_version": 1,
-//!   "podcasts": [ { "podcast": <Podcast>, "episodes": [<Episode>, ...] }, ... ]
+//!   "podcasts": [ { "podcast": <Podcast>, "episodes": [<Episode>, ...] }, ... ],
+//!   "memory_facts": [ { "id": "...", "key": "...", ... }, ... ]  // optional
 //! }
 //! ```
 //!
 //! Versioned so future migrations can detect older payloads. Unknown
-//! schema_version is treated as "empty" — the file is replaced on next write.
+//! schema_version is treated as "empty" — the file is replaced on next
+//! write. New optional fields (e.g. `memory_facts` added in feature #33)
+//! are tagged `#[serde(default)]` so older payloads decode cleanly without
+//! bumping the schema and wiping every subscription on upgrade.
 
 use std::path::{Path, PathBuf};
 
 use podcast_core::{Episode, Podcast};
 use serde::{Deserialize, Serialize};
+
+use crate::ffi::projections::MemoryFact;
 
 /// Schema marker for `podcasts.json`. Bump on incompatible format changes.
 pub const PERSIST_SCHEMA_VERSION: u32 = 1;
@@ -40,6 +46,10 @@ pub(super) struct PersistedStore {
     pub podcasts: Vec<PersistedPodcast>,
     #[serde(default)]
     pub has_completed_onboarding: bool,
+    /// Agent memory bag. Optional on the wire so existing v1 payloads
+    /// (written before feature #33) decode without losing podcasts.
+    #[serde(default)]
+    pub memory_facts: Vec<MemoryFact>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -167,6 +177,7 @@ mod tests {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
             has_completed_onboarding: false,
+            memory_facts: vec![],
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
@@ -189,6 +200,7 @@ mod tests {
                 auto_download: false,
             }],
             has_completed_onboarding: false,
+            memory_facts: vec![],
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
@@ -206,6 +218,7 @@ mod tests {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
             has_completed_onboarding: false,
+            memory_facts: vec![],
         };
         save(&nested, &payload).unwrap();
         assert!(nested.join(PODCASTS_FILE).exists());
@@ -218,6 +231,7 @@ mod tests {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
             has_completed_onboarding: false,
+            memory_facts: vec![],
         };
         save(&dir.path, &payload).unwrap();
         // After a successful save the .tmp file must be gone (renamed).
@@ -263,6 +277,43 @@ mod tests {
         });
         std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
         assert!(load(&dir.path).unwrap().is_none());
+    }
+
+    #[test]
+    fn legacy_payload_without_memory_facts_loads_with_empty_default() {
+        // A v1 file written before feature #33 has no `memory_facts` field;
+        // it must still load (with an empty bag) so users don't lose their
+        // subscriptions on upgrade.
+        let dir = TempDir::new();
+        let raw = serde_json::json!({
+            "schema_version": PERSIST_SCHEMA_VERSION,
+            "podcasts": []
+        });
+        std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
+        let loaded = load(&dir.path).unwrap().expect("file present");
+        assert!(loaded.memory_facts.is_empty());
+        assert_eq!(loaded.podcasts.len(), 0);
+    }
+
+    #[test]
+    fn save_then_load_round_trips_memory_facts() {
+        let dir = TempDir::new();
+        let payload = PersistedStore {
+            schema_version: PERSIST_SCHEMA_VERSION,
+            podcasts: vec![],
+            memory_facts: vec![MemoryFact {
+                id: "preferred_genre".into(),
+                key: "preferred_genre".into(),
+                value: "technology".into(),
+                source: "user".into(),
+                created_at: 1_700_000_000,
+            }],
+        };
+        save(&dir.path, &payload).unwrap();
+        let loaded = load(&dir.path).unwrap().expect("file present");
+        assert_eq!(loaded.memory_facts.len(), 1);
+        assert_eq!(loaded.memory_facts[0].key, "preferred_genre");
+        assert_eq!(loaded.memory_facts[0].value, "technology");
     }
 
     #[test]

@@ -1,5 +1,15 @@
 use crate::ffi::projections::PodcastSummary;
 
+//! iTunes Search API helpers shared by [`crate::host_op_handler`].
+//!
+//! Extracted into its own module so `host_op_handler.rs` stays under the
+//! 500-line hard cap. No state — pure functions over strings.
+
+use crate::ffi::projections::PodcastSummary;
+
+/// Percent-encode `s` for use in an `https://itunes.apple.com/search?term=…`
+/// query string. RFC 3986 unreserved characters pass through; space becomes
+/// `+`; everything else is `%HH` UTF-8.
 pub(crate) fn url_encode(s: &str) -> String {
     s.chars()
         .flat_map(|c| match c {
@@ -9,6 +19,8 @@ pub(crate) fn url_encode(s: &str) -> String {
                 let mut buf = [0u8; 4];
                 other
                     .encode_utf8(&mut buf)
+                let bytes = other.encode_utf8(&mut buf);
+                bytes
                     .bytes()
                     .flat_map(|b| {
                         let hi = char::from_digit((b >> 4) as u32, 16).unwrap_or('0');
@@ -21,6 +33,11 @@ pub(crate) fn url_encode(s: &str) -> String {
         .collect()
 }
 
+/// Parse the iTunes Search API JSON payload into [`PodcastSummary`] rows.
+///
+/// Returns an empty `Vec` on any decode failure (D6). Used by
+/// `PodcastAction::SearchItunes` to populate `PodcastHandle.search_results`
+/// without throwing across the FFI.
 pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
     #[derive(serde::Deserialize)]
     struct ItunesResponse {

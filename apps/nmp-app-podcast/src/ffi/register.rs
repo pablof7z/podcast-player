@@ -9,6 +9,7 @@ use nmp_ffi::NmpApp;
 use super::actions::chapters_module::ChaptersActionModule;
 use super::actions::picks_module::AgentPicksModule;
 use super::actions::knowledge_module::KnowledgeActionModule;
+use super::actions::memory_module::MemoryActionModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -69,6 +70,10 @@ pub extern "C" fn nmp_app_podcast_register(
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<KnowledgeActionModule>();
+    // (playback), and "podcast.memory" (agent memory bag — feature #33).
+    app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
+    app_mut.register_action::<MemoryActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));

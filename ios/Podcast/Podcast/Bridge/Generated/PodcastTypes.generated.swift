@@ -100,6 +100,9 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     /// `podcast.knowledge.search` action and cleared by
     /// `podcast.knowledge.clear_results`.
     var knowledgeSearchResults: [KnowledgeSearchResult] = []
+    /// Agent-memory bag (feature #33). `nil` on the wire (the kernel
+    /// omits empty `Vec` payloads); call sites read `memoryFacts ?? []`.
+    var memoryFacts: [MemoryFact]? = nil
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -346,4 +349,14 @@ struct KnowledgeSearchResult: Codable, Identifiable, Equatable, Hashable {
     /// when M6.B starts returning chunk-level hits, so we mix in the
     /// snippet hash to keep `ForEach` happy).
     var id: String { "\(episodeId)|\(snippet.hashValue)" }
+/// One row in `PodcastUpdate.memoryFacts` — a single key→value fact the
+/// agent or the user wrote so the assistant remembers it across sessions
+/// (feature #33). `source` is `"user"` or `"agent"`. `createdAt` is Unix
+/// seconds (preserved across upserts).
+struct MemoryFact: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var key: String
+    var value: String
+    var source: String
+    var createdAt: Int
 }

@@ -46,6 +46,8 @@ pub(crate) mod host_op_helpers;
 pub(crate) mod host_op_helpers;
 pub(crate) mod picks_handler;
 pub mod knowledge;
+pub(crate) mod itunes_search;
+pub(crate) mod memory_handler;
 pub mod player;
 pub(crate) mod social_handler;
 pub(crate) mod host_op_handler_itunes;

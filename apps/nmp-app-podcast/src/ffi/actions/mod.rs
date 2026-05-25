@@ -62,6 +62,7 @@
 pub mod chapters_module;
 pub mod picks_module;
 pub mod knowledge_module;
+pub mod memory_module;
 pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
@@ -75,6 +76,7 @@ pub use knowledge_module::{
     KnowledgeAction, KnowledgeActionModule, ACTION_KNOWLEDGE_CLEAR_RESULTS,
     ACTION_KNOWLEDGE_INDEX_EPISODE, ACTION_KNOWLEDGE_SEARCH,
 };
+pub use memory_module::{MemoryAction, MemoryActionModule};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};
