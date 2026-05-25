@@ -52,6 +52,9 @@ use super::projections::{
     EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
+    EpisodeSummary, InboxItem, PodcastSummary, VoiceState, WidgetSnapshot,
+};
+use crate::inbox_handler::build_inbox;
 use crate::player::PlayerState;
 
 /// Typed root of the snapshot JSON.
@@ -231,6 +234,12 @@ pub struct PodcastUpdate {
     /// snapshot so renames flow through automatically.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub clips: Vec<ClipSummary>,
+    /// AI-triaged inbox: every unlistened episode across the library
+    /// that hasn't been dismissed, sorted highest-priority-first by
+    /// [`crate::inbox_handler::build_inbox`]. Empty when there's nothing
+    /// to show; omitted from the wire payload then (D5 byte-identity).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inbox: Vec<InboxItem>,
 }
 
 impl Default for PodcastUpdate {
@@ -263,6 +272,7 @@ impl Default for PodcastUpdate {
             memory_facts: Vec::new(),
             tts_episodes: Vec::new(),
             clips: Vec::new(),
+            inbox: Vec::new(),
         }
     }
 }
@@ -481,6 +491,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
 
     let clips = crate::clip_handler::project_clips(&handle.clips, &library);
 
+    let inbox = build_inbox(&handle.store, &handle.dismissed_episode_ids);
+
     let update = PodcastUpdate {
         rev,
         now_playing,
@@ -499,6 +511,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         memory_facts,
         tts_episodes,
         clips,
+        inbox,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)

@@ -64,6 +64,7 @@ pub mod picks_module;
 pub mod knowledge_module;
 pub mod memory_module;
 pub mod clip_module;
+pub mod inbox_module;
 pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
@@ -82,6 +83,7 @@ pub use memory_module::{MemoryAction, MemoryActionModule};
 pub use clip_module::{
     ClipAction, ClipActionModule, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
 };
+pub use inbox_module::{InboxAction, InboxActionModule};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};
@@ -127,6 +129,17 @@ pub const ACTION_PLAYER_PAUSE_DOWNLOAD: &str = "podcast.player.pause_download";
 pub const ACTION_PLAYER_RESUME_DOWNLOAD: &str = "podcast.player.resume_download";
 /// `podcast.player.cancel_all_downloads` — cancel every in-flight + queued download.
 pub const ACTION_PLAYER_CANCEL_ALL_DOWNLOADS: &str = "podcast.player.cancel_all_downloads";
+
+// ---------------------------------------------------------------------------
+// Inbox action id constants (kernel ↔ shell contract — feature #31)
+// ---------------------------------------------------------------------------
+
+/// `podcast.inbox.triage` — recompute the inbox projection.
+pub const ACTION_INBOX_TRIAGE: &str = "podcast.inbox.triage";
+/// `podcast.inbox.dismiss` — remove an episode from the inbox.
+pub const ACTION_INBOX_DISMISS: &str = "podcast.inbox.dismiss";
+/// `podcast.inbox.mark_listened` — mark an episode as played.
+pub const ACTION_INBOX_MARK_LISTENED: &str = "podcast.inbox.mark_listened";
 
 // Siri / AppIntents action ids (M11 platform-integration contract)
 // ---------------------------------------------------------------------------
@@ -326,6 +339,13 @@ mod tests {
             ACTION_PLAYER_CANCEL_ALL_DOWNLOADS,
             "podcast.player.cancel_all_downloads"
         );
+    }
+
+    #[test]
+    fn inbox_action_ids_match_documented_strings() {
+        assert_eq!(ACTION_INBOX_TRIAGE, "podcast.inbox.triage");
+        assert_eq!(ACTION_INBOX_DISMISS, "podcast.inbox.dismiss");
+        assert_eq!(ACTION_INBOX_MARK_LISTENED, "podcast.inbox.mark_listened");
     }
 
     #[test]

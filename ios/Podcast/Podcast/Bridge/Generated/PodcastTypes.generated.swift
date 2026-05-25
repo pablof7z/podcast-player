@@ -113,6 +113,29 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     /// the Rust side skips serializing an empty Vec to preserve the
     /// byte-compatible legacy stub payload.
     var clips: [ClipSummary]? = nil
+    /// AI-triaged inbox — unlistened-not-dismissed episodes ranked by a
+    /// kernel-side heuristic. Empty when there is nothing to surface.
+    var inbox: [InboxItem]? = nil
+}
+
+/// One row in the AI-triaged inbox surfaced via `PodcastUpdate.inbox`.
+struct InboxItem: Codable, Identifiable, Equatable, Hashable {
+    /// `EpisodeId` (hyphenated UUID string) — uniquely identifies the row.
+    var episodeId: String
+    var episodeTitle: String
+    var podcastId: String
+    var podcastTitle: String
+    var artworkUrl: String? = nil
+    /// Unix seconds from `Episode::pub_date`.
+    var publishedAt: Int
+    var durationSecs: Double? = nil
+    /// `0.0..=1.0`; higher = more important.
+    var priorityScore: Double
+    /// Short caption ("Just published", "Recent", …). `nil` when the
+    /// kernel has nothing distinctive to say.
+    var priorityReason: String? = nil
+
+    var id: String { episodeId }
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
