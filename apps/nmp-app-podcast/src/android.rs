@@ -111,7 +111,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
     // call site). `app` is valid (just allocated), `tx` is a fresh box, and
     // `on_update` matches the kernel's `UpdateCallback` C ABI.
     nmp_app_set_update_callback(app, tx as *mut c_void, Some(on_update));
-    let podcast = nmp_app_podcast_register(app, std::ptr::null());
+    let podcast = nmp_app_podcast_register(app);
     let session = Box::new(Session {
         app,
         podcast,

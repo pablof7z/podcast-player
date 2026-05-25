@@ -46,6 +46,18 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    // ─── media3 — ExoPlayer + MediaSession for the real audio capability ──
+    //
+    // The capability executor (`capabilities/ExoPlayerCapability.kt`) drives
+    // an `ExoPlayer` instance owned by `service/PodcastPlaybackService` so
+    // playback continues in the foreground service while the activity is
+    // backgrounded. The session module wires the lock-screen / Bluetooth /
+    // Android Auto surfaces. The UI module is pulled in for future
+    // `PlayerNotificationManager` interop.
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.media3:media3-session:1.4.1")
 }
 
 // ── cargo-ndk task ───────────────────────────────────────────────────────────
