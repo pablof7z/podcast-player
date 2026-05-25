@@ -9,24 +9,10 @@ import Foundation
 import Observation
 import SwiftUI
 
-// MARK: - Signer marker protocol
-
-/// Marker protocol — `NostrSigner` is referenced as a type by
-/// `BlossomUploading.upload(data:contentType:signer:)` and historically by
-/// the legacy `UserIdentityStore.signer` accessor. No methods are called on
-/// it in the migrated views, so an empty marker protocol is sufficient.
-///
-/// Declared `Sendable` so view-side code can pass it across a `Task`
-/// boundary into `BlossomUploading.upload`.
-///
-/// Moved here (from the deleted `UserIdentityStoreCompat.swift`) as part of
-/// PR 16 so the M10 Blossom cluster stays self-contained.
-protocol NostrSigner: AnyObject, Sendable {}
-
 // MARK: - Compat error
 
-/// Shared error type for the remaining `Compat/` stubs (Blossom upload,
-/// `NostrKeyPair`, BYOK connect, etc.). Surfaces a "not yet implemented"
+/// Shared error type for the remaining `Compat/` stubs (`NostrKeyPair`,
+/// BYOK connect, OpenRouter credentials). Surfaces a "not yet implemented"
 /// message that calling views can display verbatim.
 enum CompatError: LocalizedError {
     case notImplemented(String)
@@ -36,23 +22,6 @@ enum CompatError: LocalizedError {
         case .notImplemented(let symbol):
             return "\(symbol) is not yet implemented in the compat shim."
         }
-    }
-}
-
-// MARK: - Blossom upload (M10 stub)
-
-/// Image-upload protocol. M1.E compat — replaced when the Blossom Capability
-/// lands in M10. Declared `Sendable` so view-side code can hold a default
-/// instance and pass it into a `Task`.
-protocol BlossomUploading: AnyObject, Sendable {
-    func upload(data: Data, contentType: String, signer: any NostrSigner) async throws -> URL
-}
-
-/// Default implementation — fails immediately so the calling view surfaces
-/// an "upload failed" banner without crashing.
-final class BlossomUploader: BlossomUploading {
-    func upload(data: Data, contentType: String, signer: any NostrSigner) async throws -> URL {
-        throw CompatError.notImplemented("BlossomUploader.upload")
     }
 }
 
@@ -119,9 +88,12 @@ enum OpenRouterCredentialStore {
 // MARK: - Subscription service (M2 stub)
 
 /// Compat shim — replaced when the subscription projection lands.
+///
+/// Only the `addSubscription(feedURLString:)` entry point is exercised by
+/// the migrated `OnboardingSubscribePage`; everything else has been pruned
+/// as part of PR 20.
 @MainActor
 struct SubscriptionService {
-    let store: AppStateStore
 
     enum AddError: LocalizedError {
         case notImplemented
@@ -140,15 +112,11 @@ struct SubscriptionService {
         }
     }
 
-    init(store: AppStateStore) { self.store = store }
-    init(store: KernelModel) { self.store = AppStateStore() }
+    init(store: KernelModel) {}
 
     func addSubscription(feedURLString: String) async throws -> Podcast {
         throw AddError.notImplemented
     }
-
-    func refresh(_ podcast: Podcast) async {}
-    func fetchForAdoption(opmlEntry: Podcast) async throws -> SubscriptionImportPayload? { nil }
 }
 
 // MARK: - LiquidGlassSegmentedPicker (compat stub)

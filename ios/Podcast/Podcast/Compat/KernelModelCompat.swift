@@ -88,25 +88,11 @@ extension KernelModel {
     func blockNostrPubkey(_ pubkeyHex: String) {}
 }
 
-// MARK: - AutoDownloadPolicy
-
-struct AutoDownloadPolicy: Hashable, Codable {
-    enum Mode: Hashable, Codable {
-        case off
-        case latestN(Int)
-        case allNew
-    }
-    var mode: Mode = .latestN(5)
-    var wifiOnly: Bool = true
-
-    static let `default` = AutoDownloadPolicy()
-}
-
 // MARK: - Subscription stub
 
-/// Compat shim — replaced when subscription projection lands.
+/// Compat shim — replaced when subscription projection lands. Only used as
+/// the return type of the always-nil `subscription(podcastID:)` shim, so the
+/// fields are intentionally minimal.
 struct Subscription: Hashable {
     var podcastID: UUID
-    var notificationsEnabled: Bool = true
-    var autoDownload: AutoDownloadPolicy = .default
 }
