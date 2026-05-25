@@ -46,6 +46,33 @@ extension PodcastHandle {
         podcastHandle = nmp_app_podcast_register(raw)
         if podcastHandle == nil {
             kbLog.error("nmp_app_podcast_register returned NULL — projection unwired")
+            return
+        }
+
+        // Wire the podcast library persistence directory. Lives under
+        // Application Support so it follows the iOS "user data, not synced
+        // via iTunes file sharing" convention. Distinct from the NMP/
+        // EventStore directory (`configureStoragePath`) so the two stores
+        // can be wiped independently for debugging.
+        Self.configurePodcastDataDir(for: podcastHandle)
+    }
+
+    private static func configurePodcastDataDir(for handle: UnsafeMutableRawPointer?) {
+        guard let handle else { return }
+        guard let base = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask).first
+        else {
+            kbLog.error("no applicationSupportDirectory — library persistence disabled")
+            return
+        }
+        let directory = base.appendingPathComponent("PodcastLibrary", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+            directory.path.withCString { nmp_app_podcast_set_data_dir(handle, $0) }
+        } catch {
+            kbLog.error(
+                "failed to create PodcastLibrary directory: \(error.localizedDescription, privacy: .public)")
         }
     }
 
