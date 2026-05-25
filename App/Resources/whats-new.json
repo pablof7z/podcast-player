@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T00:20:00Z",
+      "lines": [
+        "Downloads: manage all your saved episodes in one place."
+      ]
+    },
+    {
       "shipped_at": "2026-05-25T23:10:00Z",
       "lines": [
         "Episode detail now shows show notes — the description from the RSS feed appears below the play button so you can read what the episode is about before pressing play."

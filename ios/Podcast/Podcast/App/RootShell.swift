@@ -25,7 +25,7 @@ final class PodcastRouter: ObservableObject {
     func popToRoot() { path = NavigationPath() }
 }
 
-enum PodcastTab: Hashable { case library, identity }
+enum PodcastTab: Hashable { case library, downloads, identity }
 
 struct RootShell: View {
     @Environment(KernelModel.self) private var model
@@ -46,6 +46,10 @@ struct RootShell: View {
             LibraryView()
                 .tabItem { Label("Library", systemImage: "books.vertical") }
                 .tag(PodcastTab.library)
+
+            DownloadsView()
+                .tabItem { Label("Downloads", systemImage: "arrow.down.circle") }
+                .tag(PodcastTab.downloads)
 
             IdentityRootView()
                 .tabItem { Label("Identity", systemImage: "person.circle") }
