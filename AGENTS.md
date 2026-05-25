@@ -4,11 +4,12 @@
 
 - All implementation work must happen in a git worktree owned by the agent doing the work.
 - Each agent is responsible for its own branch/worktree lifecycle. Do not edit from the shared root checkout for feature, fix, or refactor work.
-- Before starting work, every agent must read `WIP.md` from the project base directory to understand what other agents are currently doing.
-- When an agent starts work, it must add an entry to `WIP.md` in the project base directory with a timestamp, a one-line description of the work, the branch name, and the git worktree path it is using.
+- Before starting work, every agent must read `WIP.md` from the **project base directory** (`/path/to/podcast-player/WIP.md`) to understand what other agents are currently doing.
+- When an agent starts work, it must add an entry to `WIP.md` **in the project base directory** (not in its worktree) with a timestamp, a one-line description of the work, the branch name, and the git worktree path it is using.
+- **`WIP.md` is gitignored and must NEVER be committed.** It lives only in the main checkout directory and is shared across all worktrees. Agents read and write it at its absolute path — do not stage it, do not `git add` it, do not include it in any commit.
 - When the work is complete, open a pull request before reporting completion. The PR description must include a short TLDR, a detailed overview of the work performed, validation performed, and any subjective decisions, tradeoffs, or assumptions.
 - Do not open completed work as a draft pull request. Use draft PRs only when explicitly asked or when the work is intentionally incomplete.
-- After the PR merges, remove the agent's own entry from `WIP.md` and clean up the agent-owned worktree.
+- After the PR merges, remove the agent's own entry from `WIP.md` (at the project base directory) and clean up the agent-owned worktree.
 
 ## Planning discipline
 
