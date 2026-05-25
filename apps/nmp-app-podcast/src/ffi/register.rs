@@ -5,6 +5,7 @@ use std::ffi::c_char;
 
 use nmp_ffi::NmpApp;
 
+use super::actions::register_identity_actions;
 use super::handle::PodcastHandle;
 use super::helpers::c_string_opt;
 
@@ -17,6 +18,21 @@ use super::helpers::c_string_opt;
 ///
 /// `app` MUST outlive the returned handle. Call
 /// [`nmp_app_podcast_unregister`] before `nmp_app_free`.
+///
+/// ## Identity actions registered
+///
+/// - `podcast.identity.sign_in_nsec` — import nsec / hex secret
+/// - `podcast.identity.sign_in_bunker` — initiate NIP-46 bunker handshake
+/// - `podcast.identity.sign_out` — remove an account by hex pubkey
+/// - `podcast.identity.switch_account` — switch the active account
+/// - `podcast.identity.publish_profile` — sign and publish kind:0 metadata
+///
+/// ## Identity actions NOT registered (deliberate)
+///
+/// - `cancel_bunker` — the broker is process-global; Swift calls
+///   `nmp_app_cancel_bunker_handshake` directly (see `nmp-signer-broker`).
+/// - `edit_profile` — draft edits are Swift-side ephemeral state; only
+///   `publish_profile` crosses the FFI boundary (D4).
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn nmp_app_podcast_register(
@@ -36,9 +52,14 @@ pub extern "C" fn nmp_app_podcast_register(
     // taken only after this exclusive borrow is dropped.
     nmp_app_template::register_defaults(unsafe { &mut *app });
 
-    // Podcast-specific action module registrations will be added here in
-    // subsequent milestones (NIP-74 feed actions, playback intents, etc.).
-    // See `actions.rs`.
+    // Podcast identity action modules: sign-in (nsec + bunker), sign-out,
+    // account switch, profile publish. `register_action` requires `&mut NmpApp`,
+    // so this must precede `nmp_app_start`.
+    //
+    // SAFETY: same exclusive-borrow rationale as `register_defaults` above —
+    // no other reference aliases `app` at this point; the `&*app` shared borrow
+    // taken for the handle is only created after these `&mut` borrows are done.
+    register_identity_actions(unsafe { &mut *app });
 
     // Consume the viewer_pubkey argument (used in future projections).
     let _viewer = c_string_opt(viewer_pubkey);
