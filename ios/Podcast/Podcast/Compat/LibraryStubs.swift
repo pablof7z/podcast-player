@@ -216,13 +216,6 @@ struct OPMLImport {
     func parseOPML(data: Data) throws -> [Podcast] { [] }
 }
 
-// MARK: - EpisodeDetailView
-
-struct EpisodeDetailView: View {
-    let episodeID: UUID
-    var body: some View { Text("Episode").navigationTitle("Episode") }
-}
-
 // MARK: - EpisodeShowNotesFormatter
 
 enum EpisodeShowNotesFormatter {
