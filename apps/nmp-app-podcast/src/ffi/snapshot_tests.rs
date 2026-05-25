@@ -45,6 +45,14 @@ use super::projections::{
     BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot,
     MemoryFact, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
 };
+//! Snapshot tests — pulled into a sibling file with `#[path]` to keep
+//! `snapshot.rs` under the 500-LOC hard ceiling. The test module
+//! semantics are unchanged (it's still `mod tests` inside `snapshot.rs`).
+
+use super::projections::{
+    BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadItemSnapshot,
+    DownloadQueueSnapshot, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
+};
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
 
@@ -53,6 +61,8 @@ fn default_snapshot_omits_now_playing() {
     let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
     // `skip_serializing_if = "Option::is_none"` keeps the empty
     // payload byte-identical to the legacy stub.
+    // `skip_serializing_if = "Option::is_none"` keeps the empty payload
+    // byte-identical to the legacy stub.
     assert_eq!(json, r#"{"running":true,"rev":0,"schema_version":1}"#);
 }
 
@@ -535,4 +545,30 @@ fn snapshot_with_memory_facts_round_trips() {
     let json = serde_json::to_string(&snap).expect("encode");
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded.memory_facts, facts);
+fn snapshot_with_clips_round_trips() {
+    let clip = ClipSummary {
+        id: "clip-1".into(),
+        episode_id: "ep-1".into(),
+        episode_title: "Pilot".into(),
+        podcast_title: "Some Show".into(),
+        start_secs: 10.0,
+        end_secs: 70.0,
+        title: Some("Marcus on retrieval".into()),
+        created_at: 1_700_000_000,
+    };
+    let snap = PodcastUpdate {
+        clips: vec![clip.clone()],
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    assert!(json.contains("\"clips\":["));
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.clips, vec![clip]);
+}
+
+#[test]
+fn default_snapshot_omits_empty_clips() {
+    // D5 byte-identity: empty clips list must not show up on the wire.
+    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!json.contains("clips"));
 }

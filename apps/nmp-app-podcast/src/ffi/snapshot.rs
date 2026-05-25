@@ -48,6 +48,8 @@ use super::projections::{
     KnowledgeSearchResult, PodcastSummary, VoiceState, WidgetSnapshot,
     MemoryFact, PodcastSummary, VoiceState, WidgetSnapshot,
     PodcastSummary, TtsEpisodeSummary, VoiceState, WidgetSnapshot,
+    AccountSummary, BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadQueueSnapshot,
+    EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
 use crate::player::PlayerState;
@@ -222,6 +224,13 @@ pub struct PodcastUpdate {
     /// from the wire when empty so the legacy stub stays byte-identical.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tts_episodes: Vec<TtsEpisodeSummary>,
+    /// User-saved audio clips across all episodes. Newest-first. Empty
+    /// until the first `podcast.clip.create` or `podcast.clip.auto_snip`
+    /// action lands during a kernel lifetime. `episode_title` /
+    /// `podcast_title` are re-joined against `PodcastStore` on every
+    /// snapshot so renames flow through automatically.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clips: Vec<ClipSummary>,
 }
 
 impl Default for PodcastUpdate {
@@ -253,6 +262,7 @@ impl Default for PodcastUpdate {
             knowledge_search_results: Vec::new(),
             memory_facts: Vec::new(),
             tts_episodes: Vec::new(),
+            clips: Vec::new(),
         }
     }
 }
@@ -454,6 +464,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         .map(|r| r.clone())
         .unwrap_or_default();
 
+    let clips = crate::clip_handler::project_clips(&handle.clips, &library);
+
     let update = PodcastUpdate {
         rev,
         now_playing,
@@ -471,6 +483,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         knowledge_search_results,
         memory_facts,
         tts_episodes,
+        clips,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)

@@ -59,6 +59,18 @@ pub use actions::{
     SetVoiceAction, SetVolumeAction, SpeakAction, StopAction, StopVoiceAction, TtsEpisodeAction,
     TtsEpisodeModule, ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD,
     ACTION_PLAYER_DOWNLOAD, ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD, ACTION_PLAYER_PLAY,
+pub(crate) mod snapshot;
+#[cfg(test)]
+mod snapshot_tests;
+
+pub use actions::{
+    CancelAllDownloadsAction, CancelDownloadAction, ClipAction, ClipActionModule,
+    DownloadEpisodeAction, PauseAction, PauseDownloadAction, PlayAction, PlayerAction,
+    PlayerActionModule, PodcastAction, PodcastActionModule, ResumeDownloadAction, SeekAction,
+    SetSleepTimerAction, SetSpeedAction, SetVoiceAction, SetVolumeAction, SpeakAction, StopAction,
+    StopVoiceAction, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
+    ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD, ACTION_PLAYER_DOWNLOAD,
+    ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD, ACTION_PLAYER_PLAY,
     ACTION_PLAYER_RESUME_DOWNLOAD, ACTION_PLAYER_SEEK, ACTION_PLAYER_SET_SLEEP_TIMER,
     ACTION_PLAYER_SET_SPEED, ACTION_PLAYER_SET_VOLUME, ACTION_PLAYER_STOP, ACTION_TTS_DELETE,
     ACTION_TTS_GENERATE, ACTION_TTS_PLAY, ACTION_VOICE_SET_VOICE, ACTION_VOICE_SPEAK,
@@ -73,6 +85,7 @@ pub use projections::{
     DownloadItemSnapshot, DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot,
     PodcastSummary, VoiceState,
     AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot,
+    AccountSummary, BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadItemSnapshot,
     DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot, PodcastSummary, VoiceState,
     WikiArticle,
     DownloadQueueSnapshot, EpisodeSummary, MemoryFact, PendingApprovalSnapshot, PodcastSummary,

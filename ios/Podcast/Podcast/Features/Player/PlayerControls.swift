@@ -19,6 +19,7 @@ struct PlayerControls: View {
     @Binding var scrubbingPosition: Double?
     @Binding var showSpeedSheet: Bool
     @Binding var showSleepSheet: Bool
+    @Binding var showClipComposer: Bool
 
     private static let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
 
@@ -192,10 +193,21 @@ struct PlayerControls: View {
         HStack(spacing: PodcastSpace.m) {
             speedChip
             sleepChip
+            clipChip
             Spacer(minLength: 0)
             AirPlayRoutePicker()
                 .frame(width: 32, height: 32)
         }
+    }
+
+    private var clipChip: some View {
+        Button {
+            showClipComposer = true
+        } label: {
+            chipLabel(text: "Clip", systemImage: "scissors")
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("New clip")
     }
 
     private var speedChip: some View {

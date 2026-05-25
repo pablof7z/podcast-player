@@ -23,6 +23,7 @@ struct PlayerView: View {
     @State private var showSpeedSheet = false
     @State private var showSleepSheet = false
     @State private var showUpNextSheet = false
+    @State private var showClipComposer = false
 
     private var nowPlaying: PlayerState? {
         model.podcastSnapshot?.nowPlaying
@@ -106,7 +107,8 @@ struct PlayerView: View {
                     player: player,
                     scrubbingPosition: $scrubbingPosition,
                     showSpeedSheet: $showSpeedSheet,
-                    showSleepSheet: $showSleepSheet
+                    showSleepSheet: $showSleepSheet,
+                    showClipComposer: $showClipComposer
                 )
                 .padding(.horizontal, PodcastSpace.l)
                 .padding(.bottom, PodcastSpace.l)
@@ -114,6 +116,13 @@ struct PlayerView: View {
             .task { dispatchFetchChaptersIfNeeded(for: player.episodeId) }
             .onChange(of: player.episodeId) { _, newId in
                 dispatchFetchChaptersIfNeeded(for: newId)
+            .sheet(isPresented: $showClipComposer) {
+                ClipComposerView(
+                    player: player,
+                    episode: episode,
+                    podcastTitle: podcastTitle
+                )
+                .environment(model)
             }
         } else {
             emptyState
