@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// Agent identity (Nostr profile + key management).
+///
+/// NMP migration note: this view used to round-trip its profile fields
+/// through the compat `Settings` struct via `store.state.settings` /
+/// `store.updateSettings`. That path was in-memory only — values were lost
+/// across launches. The view now persists profile fields directly with
+/// `@AppStorage` keyed under `agent.profile.*`. The compat `Settings`
+/// shape stays around for `Onboarding/OnboardingView+Handlers` (which also
+/// writes the same `@AppStorage` keys for `name` + `pictureURL` so the
+/// values land here on first open) and for `hasCompletedOnboarding`. A
+/// real Rust-side `settings` projection lands at M3 (see
+/// `docs/BACKLOG.md` — "M3 — Settings projection").
 struct AgentIdentityView: View {
 
     private enum Layout {
@@ -10,9 +22,18 @@ struct AgentIdentityView: View {
         static let shareCardSpacing: CGFloat = 10
     }
 
-    @Environment(KernelModel.self) private var store
+    // ── Profile fields (persisted to UserDefaults) ─────────────────────────
+    //
+    // Keys are namespaced `agent.profile.*` so the M3 settings-projection
+    // migration can grep them out in one pass. The defaults match the
+    // legacy compat `Settings` initial values so existing in-memory state
+    // doesn't appear "lost" on first launch after the migration.
+    @AppStorage("agent.profile.name") private var profileName: String = ""
+    @AppStorage("agent.profile.about") private var profileAbout: String = ""
+    @AppStorage("agent.profile.pictureURL") private var profilePictureURL: String = ""
+    @AppStorage("agent.profile.publicKeyHex") private var publicKeyHex: String = ""
+    @AppStorage("agent.profile.relayURL") private var relayURL: String = "wss://relay.tenex.chat"
 
-    @State private var settings: Settings = Settings()
     @State private var hasPrivateKey: Bool = false
     @State private var showCopied: Bool = false
     @State private var showRegenerateConfirm: Bool = false
@@ -39,7 +60,9 @@ struct AgentIdentityView: View {
 
                 VStack(spacing: 0) {
                     AgentIdentityHero(
-                        settings: $settings,
+                        profileName: $profileName,
+                        profileAbout: $profileAbout,
+                        profilePictureURL: $profilePictureURL,
                         hasPrivateKey: hasPrivateKey,
                         npubFull: npubFull,
                         nameFocused: $nameFocused,
@@ -88,11 +111,9 @@ struct AgentIdentityView: View {
             }
         }
         .onAppear {
-            settings = store.state.settings
             refreshKeyState()
             keyManagementExpanded = !hasPrivateKey
         }
-        .onChange(of: settings) { _, new in store.updateSettings(new) }
         .alert("Regenerate Key Pair?", isPresented: $showRegenerateConfirm) {
             Button("Regenerate", role: .destructive) { generateKeyPair(); Haptics.success() }
             Button("Cancel", role: .cancel) {}
@@ -100,17 +121,17 @@ struct AgentIdentityView: View {
             Text("This permanently replaces your current Nostr identity. Friends who know your old key will no longer recognize you.")
         }
         .fullScreenCover(isPresented: $showQRFullScreen) {
-            AgentIdentityQRView(npub: npubFull, name: settings.nostrProfileName)
+            AgentIdentityQRView(npub: npubFull, name: profileName)
                 .presentationBackground(.clear)
         }
         .sheet(isPresented: $showConnectionSettings) {
             AgentConnectionSettingsView(
-                relayURL: $settings.nostrRelayURL,
+                relayURL: $relayURL,
                 hasPrivateKey: hasPrivateKey
             )
         }
         .sheet(isPresented: $editingPictureURL) {
-            AgentPictureURLSheet(pictureURL: $settings.nostrProfilePicture, isPresented: $editingPictureURL)
+            AgentPictureURLSheet(pictureURL: $profilePictureURL, isPresented: $editingPictureURL)
         }
         .alert(
             "Couldn't save key",
@@ -209,9 +230,7 @@ struct AgentIdentityView: View {
     // MARK: - Computed
 
     private var npubFull: String {
-        guard let hex = settings.nostrPublicKeyHex, !hex.isEmpty,
-              let data = Data(hexString: hex)
-        else { return "" }
+        guard !publicKeyHex.isEmpty, let data = Data(hexString: publicKeyHex) else { return "" }
         return Bech32.encode(hrp: "npub", data: data)
     }
 
@@ -219,7 +238,7 @@ struct AgentIdentityView: View {
     /// Includes a human-readable invite text and a deep-link URL the recipient can tap
     /// to open `AddFriendSheet` with the sender's details pre-filled.
     private var shareInviteItems: [Any] {
-        let name = settings.nostrProfileName.trimmed
+        let name = profileName.trimmed
         let displayedName = name.isEmpty ? "a friend" : name
         let inviteURL = DeepLinkHandler.friendInviteURL(
             npub: npubFull,
@@ -238,7 +257,7 @@ struct AgentIdentityView: View {
         do {
             let pair = try NostrKeyPair.generate()
             try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
+            publicKeyHex = pair.publicKeyHex
             refreshKeyState()
         } catch {
             keychainErrorMessage = "Could not generate key pair: \(error.localizedDescription)"
@@ -257,7 +276,7 @@ struct AgentIdentityView: View {
                 pair = try NostrKeyPair(privateKeyHex: trimmed)
             }
             try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
+            publicKeyHex = pair.publicKeyHex
             importKeyInput = ""
             refreshKeyState()
             Haptics.success()

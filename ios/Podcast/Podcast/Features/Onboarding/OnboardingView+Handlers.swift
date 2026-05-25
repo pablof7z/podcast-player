@@ -7,13 +7,9 @@ import SwiftUI
 // any side effects (Keychain writes, BYOK connect calls, etc.).
 //
 // NMP migration note: handlers no longer mutate a Swift-side `Settings`
-// struct. The Rust kernel does not yet expose a `settings` action namespace
-// (no `op` for `nostrProfileName`, `nostrProfilePicture`,
-// `markOpenRouterManual`, or `hasCompletedOnboarding`). Until the settings
-// projection lands, these draft values are kept only in local view state and
-// the side-effecting Keychain / BYOK writes still run. Tracked in
-// `docs/BACKLOG.md` under "Onboarding settings dispatch — pending settings
-// projection".
+// struct. Identity fields temporarily seed `agent.profile.*` UserDefaults
+// keys read by `AgentIdentityView`; the remaining settings shadows are TODOs
+// until the Rust settings projection lands.
 
 extension OnboardingView {
 
@@ -66,10 +62,21 @@ extension OnboardingView {
     }
 
     func handleIdentityContinue() {
-        // TODO(NMP settings projection): dispatch `nostrProfileName` and
-        // `nostrProfilePicture` updates through the Rust kernel once a
-        // settings action namespace exists. The draft values live in local
-        // view state today; the user can re-enter them in Settings later.
+        // Profile name + picture seed the same UserDefaults keys
+        // (`agent.profile.name`, `agent.profile.pictureURL`) that
+        // `AgentIdentityView` reads via `@AppStorage`. This avoids
+        // round-tripping through the in-memory compat `Settings` struct,
+        // which dropped values across launches. The keys are namespaced
+        // for the M3 settings-projection migration (see `docs/BACKLOG.md`).
+        let nameTrimmed = agentNameDraft.trimmed
+        let pictureTrimmed = profilePictureDraft.trimmed
+        let defaults = UserDefaults.standard
+        if !nameTrimmed.isEmpty {
+            defaults.set(nameTrimmed, forKey: "agent.profile.name")
+        }
+        if !pictureTrimmed.isEmpty {
+            defaults.set(pictureTrimmed, forKey: "agent.profile.pictureURL")
+        }
         Haptics.success()
         advance()
     }

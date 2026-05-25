@@ -87,25 +87,44 @@ migrated view re-wired) before the milestone it is anchored to closes.
   Settings should be a real kernel projection emitted by `nmp-app-podcast`.
   Also delete the `OpenRouterCredentialStore` + `BYOKConnectService` shims
   in `Compat/ServiceStubs.swift` and replace with the LLM-provider credential
-  capability.
+  capability. PR 11 moved the `nostrProfileName/About/Picture/PublicKeyHex/RelayURL`
+  fields off the compat struct into `@AppStorage("agent.profile.*")` keys
+  read by `AgentIdentityView` (and seeded by `OnboardingView+Handlers`); the
+  M3 projection should reclaim those keys (grep `agent.profile.` in the iOS
+  tree) and reroute writes through dispatch. After PR 11 the surviving
+  `Settings` struct holds exactly one field (`hasCompletedOnboarding: Bool`)
+  plus a no-op `markOpenRouterManual()` — a thin target for the projection swap.
 - **pr9-onboarding-settings-dispatch** — `OnboardingView+Handlers.swift` no
-  longer writes through to a `Settings` struct. The four legacy mutations
-  (`markOpenRouterManual` after manual key save, BYOK credential import,
-  `nostrProfileName` / `nostrProfilePicture` from the identity step,
-  `hasCompletedOnboarding` at finish) are TODO comments today — the
-  side-effecting Keychain / BYOK calls still run, but their settings
-  shadow does not. Wire each through the Rust kernel when the settings
-  action namespace lands (likely under the existing `podcast` namespace or
-  a new `settings` namespace). Until then, returning users may re-see the
-  onboarding flow if any callsite later checks `hasCompletedOnboarding`
-  (no caller does today). Blocked on M3 settings projection.
+  longer writes through to a `Settings` struct. Manual OpenRouter key save,
+  BYOK credential import, and `hasCompletedOnboarding` are TODO comments today;
+  their side-effecting Keychain / BYOK calls still run, but their settings
+  shadow does not. Identity name / picture now seed the temporary
+  `agent.profile.*` keys above. Wire each through the Rust kernel when the
+  settings action namespace lands. Until then, returning users may re-see the
+  onboarding flow if any callsite later checks `hasCompletedOnboarding` (no
+  caller does today). Blocked on M3 settings projection.
 - **M7 — Agent / Nostr conversation projections.** Delete the
   `NostrConversationRecord/Turn/ProfileMetadata/PendingApproval` stubs in
   `Compat/DomainStubs.swift`, plus the agent surface (`nostrConversations`,
   `nostrProfileCache`, `pendingNostrApprovals`, `allowNostrPubkey`,
   `blockNostrPubkey`) in `Compat/KernelModelCompat.swift`. Delete the
   `Nip46ConnectCard` + `AgentConnectionSettingsView` stubs in
-  `Compat/ServiceStubs.swift`.
+  `Compat/ServiceStubs.swift`. PR 11 audited the consumers — they all
+  render compat empty state today:
+    - `Features/Settings/Agent/NostrConversationsView.swift` reads
+      `store.state.nostrConversations` + `store.state.nostrProfileCache`;
+      both are always empty in compat → view perpetually shows
+      "No conversations yet". Needs Rust-side conversation projection +
+      a kind:0 profile cache before it can render real data.
+    - `Features/Settings/Agent/NostrConversationDetailView.swift` is reached
+      from the list above; same blocker.
+    - `Features/Settings/Agent/NostrApprovalPresenter.swift` reads
+      `store.pendingNostrApprovals` (always empty) and calls
+      `allowNostrPubkey` / `blockNostrPubkey` (no-ops). Needs a Rust
+      trust-list projection + `podcast.agent.{allow,block}_pubkey` actions
+      before its sheet can ever surface.
+  No iOS shell work to land before M7; the views compile and render
+  empty state through the compat layer until then.
 - **M10 — Blossom + image cache.** Delete `BlossomUploading` + `BlossomUploader`
   stubs in `Compat/ServiceStubs.swift`. Delete `CachedAsyncImage` shim in
   `Compat/UtilityStubs.swift` and replace with the disk + memory cache
