@@ -2,7 +2,6 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime};
 
 use chrono::Utc;
 use nmp_core::substrate::{CapabilityRequest, HostOpHandler};
@@ -12,17 +11,21 @@ use podcast_feeds::client::{build_feed_request, handle_feed_response, FeedResult
 use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
 
 use crate::capability::{
-    AudioCommand, DownloadCommand, AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE,
+    notification_command_json, AudioCommand, DownloadCommand, NotificationCommand,
+    AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE, NOTIFICATION_CAPABILITY_NAMESPACE,
 };
 use crate::chapter::handle_fetch_chapters;
 use crate::discover_nostr;
 use crate::ffi::actions::player_module::PlayerAction;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::projections::{NostrShowSummary, PodcastSummary};
+use crate::host_op_handler_helpers::merge_episodes;
 use crate::itunes_search::{parse_itunes_results, url_encode};
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
 use crate::transcript::handle_fetch_transcript;
+
+mod player_actions;
 
 pub struct PodcastHostOpHandler {
     app: *mut NmpApp,
@@ -159,16 +162,46 @@ impl PodcastHostOpHandler {
         };
         match handle_feed_response(url, podcast_id, &http_result, None, Utc::now()) {
             Ok(FeedResult::Parsed { parsed, .. }) => {
-                let episodes = match self.store.lock() {
+                // Compute the set of newly-discovered episodes BEFORE the
+                // subsequent `subscribe` call writes the parsed list into the
+                // store. After `subscribe` lands, the "new" ids would all be
+                // present and the diff would be empty. D0: this is a Rust
+                // policy decision — the iOS capability never inspects which
+                // episode is new, it just schedules whatever Rust hands it.
+                //
+                // Edge case: when `existing` is empty (first refresh after a
+                // wiped store, or a podcast freshly seeded from somewhere
+                // other than `handle_subscribe`), every parsed episode looks
+                // new. Acceptable v1; revisit if it becomes noisy.
+                let (episodes, new_for_notification, podcast_title) = match self.store.lock() {
                     Ok(s) => {
                         let existing: Vec<Episode> = s.episodes_for(podcast_id).to_vec();
-                        merge_episodes(parsed.episodes, existing)
+                        let existing_ids: std::collections::HashSet<String> =
+                            existing.iter().map(|e| e.id.0.to_string()).collect();
+                        // Only notify on refreshes that follow at least one
+                        // prior episode load. `subscribe` already wrote the
+                        // initial enclosure list during the first-subscribe
+                        // path, so a non-empty `existing` is the
+                        // "we've-seen-this-feed-before" gate.
+                        let new_for_notification: Vec<(String, String)> = if existing.is_empty() {
+                            Vec::new()
+                        } else {
+                            parsed
+                                .episodes
+                                .iter()
+                                .filter(|ep| !existing_ids.contains(&ep.id.0.to_string()))
+                                .map(|ep| (ep.id.0.to_string(), ep.title.clone()))
+                                .collect()
+                        };
+                        let podcast_title = parsed.podcast.title.clone();
+                        let merged = merge_episodes(parsed.episodes.clone(), existing);
+                        (merged, new_for_notification, podcast_title)
                     }
-                    Err(_) => parsed.episodes,
+                    Err(_) => (parsed.episodes.clone(), Vec::new(), parsed.podcast.title.clone()),
                 };
                 let etag_out = http_result.header("etag").map(str::to_owned);
                 let lm_out = http_result.header("last-modified").map(str::to_owned);
-                match self.store.lock() {
+                let subscribe_outcome = match self.store.lock() {
                     Ok(mut s) => {
                         s.subscribe(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
@@ -176,7 +209,22 @@ impl PodcastHostOpHandler {
                         serde_json::json!({"ok": true})
                     }
                     Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
+                };
+                // Dispatch notifications AFTER all store locks are released
+                // (lock discipline documented at the top of this file). One
+                // command per new episode — batching/dedup is a Rust-side
+                // policy decision we defer for now.
+                if subscribe_outcome["ok"] == true {
+                    for (episode_id, episode_title) in new_for_notification {
+                        let cmd = NotificationCommand::schedule_new_episode(
+                            episode_title,
+                            &podcast_title,
+                            episode_id,
+                        );
+                        let _ = self.dispatch_notification(&cmd, correlation_id);
+                    }
                 }
+                subscribe_outcome
             }
             Ok(FeedResult::NotModified { .. }) => serde_json::json!({"ok": true, "not_modified": true}),
             Err(e) => serde_json::json!({"ok": false, "error": format!("{e:?}")}),
@@ -283,6 +331,27 @@ impl PodcastHostOpHandler {
         Ok(())
     }
 
+    /// Dispatch a notification command to the iOS executor.
+    ///
+    /// Fire-and-forget — the notification capability has no back-channel
+    /// reports. The capability envelope is constructed exactly like the
+    /// audio/download dispatchers above so the iOS-side router can fan out
+    /// by namespace without special-casing.
+    fn dispatch_notification(
+        &self,
+        cmd: &NotificationCommand,
+        correlation_id: &str,
+    ) -> Result<(), String> {
+        let payload_json = notification_command_json(cmd);
+        let req = CapabilityRequest {
+            namespace: NOTIFICATION_CAPABILITY_NAMESPACE.to_owned(),
+            correlation_id: correlation_id.to_owned(),
+            payload_json,
+        };
+        let _ = unsafe { &*self.app }.dispatch_capability(&req);
+        Ok(())
+    }
+
     fn handle_download(&self, episode_id_str: String, correlation_id: &str) -> serde_json::Value {
         let url = {
             match self.store.lock() {
@@ -320,139 +389,6 @@ impl PodcastHostOpHandler {
         serde_json::json!({"ok": true})
     }
 
-    fn handle_play(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
-        let (podcast_id, url, position_secs) = {
-            match self.store.lock() {
-                Ok(s) => match s.episode_playback_info(&episode_id) {
-                    Some(info) => info,
-                    None => return serde_json::json!({"ok": false, "error": format!("episode not found: {episode_id}")}),
-                },
-                Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
-            }
-        };
-        {
-            if let Ok(mut actor) = self.player_actor.lock() {
-                actor.stage_load(&episode_id, Some(podcast_id), &url, position_secs);
-            }
-        }
-        self.rev.fetch_add(1, Ordering::Relaxed);
-        let load_cmd = AudioCommand::load(&url, position_secs);
-        if let Err(e) = self.dispatch_audio(&load_cmd, correlation_id) {
-            return serde_json::json!({"ok": false, "error": e});
-        }
-        if let Err(e) = self.dispatch_audio(&AudioCommand::Play, correlation_id) {
-            return serde_json::json!({"ok": false, "error": e});
-        }
-        serde_json::json!({"ok": true})
-    }
-
-    fn handle_player_action(&self, action: PlayerAction, correlation_id: &str) -> serde_json::Value {
-        match action {
-            PlayerAction::Play { episode_id } => self.handle_play(episode_id, correlation_id),
-            PlayerAction::Pause => {
-                match self.dispatch_audio(&AudioCommand::Pause, correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::Seek { position_secs } => {
-                match self.dispatch_audio(&AudioCommand::seek(position_secs), correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::SetSpeed { speed } => {
-                if let Ok(mut a) = self.player_actor.lock() { a.set_speed(speed); }
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                match self.dispatch_audio(&AudioCommand::SetSpeed { speed }, correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::SetVolume { volume } => {
-                if let Ok(mut a) = self.player_actor.lock() { a.set_volume(volume); }
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                match self.dispatch_audio(&AudioCommand::SetVolume { volume }, correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::SetSleepTimer { secs } => {
-                if let Ok(mut a) = self.player_actor.lock() {
-                    match secs {
-                        Some(s) if s > 0 => a.arm_sleep_timer(Duration::from_secs(s), SystemTime::now()),
-                        _ => a.cancel_sleep_timer(),
-                    }
-                }
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                match self.dispatch_audio(&AudioCommand::SetSleepTimer { secs }, correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::Stop => {
-                match self.dispatch_audio(&AudioCommand::Stop, correlation_id) {
-                    Ok(_) => serde_json::json!({"ok": true}),
-                    Err(e) => serde_json::json!({"ok": false, "error": e}),
-                }
-            }
-            PlayerAction::Enqueue { episode_id } => self.handle_enqueue(episode_id),
-            PlayerAction::Dequeue { episode_id } => self.handle_dequeue(episode_id),
-            PlayerAction::ClearQueue => self.handle_clear_queue(),
-            PlayerAction::PlayNext => self.handle_play_next(correlation_id),
-        }
-    }
-
-    fn handle_enqueue(&self, episode_id: String) -> serde_json::Value {
-        let exists = match self.store.lock() {
-            Ok(s) => s.episode_playback_info(&episode_id).is_some(),
-            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
-        };
-        if !exists {
-            return serde_json::json!({"ok": false, "error": format!("episode not found: {episode_id}")});
-        }
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.enqueue(&episode_id);
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        }
-    }
-
-    fn handle_dequeue(&self, episode_id: String) -> serde_json::Value {
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.dequeue(&episode_id);
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        }
-    }
-
-    fn handle_clear_queue(&self) -> serde_json::Value {
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.clear_queue();
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        }
-    }
-
-    fn handle_play_next(&self, correlation_id: &str) -> serde_json::Value {
-        let next_id = match self.player_actor.lock() {
-            Ok(mut a) => a.pop_next(),
-            Err(_) => return serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        };
-        match next_id {
-            Some(id) => self.handle_play(id, correlation_id),
-            None => serde_json::json!({"ok": false, "error": "queue is empty"}),
-        }
-    }
 }
 
 impl HostOpHandler for PodcastHostOpHandler {
@@ -477,16 +413,4 @@ impl HostOpHandler for PodcastHostOpHandler {
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }
-}
-
-fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
-    fresh
-        .into_iter()
-        .map(|mut ep| {
-            if let Some(prev) = existing.iter().find(|e| e.id == ep.id) {
-                ep.position_secs = prev.position_secs;
-            }
-            ep
-        })
-        .collect()
 }
