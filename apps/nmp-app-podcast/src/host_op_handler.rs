@@ -54,6 +54,11 @@ use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::projections::PodcastSummary;
 use crate::itunes_search::{parse_itunes_results, url_encode};
 use crate::memory_handler;
+use crate::clip_handler::{ClipHandler, ClipRecord};
+use crate::ffi::actions::clip_module::ClipAction;
+use crate::ffi::actions::player_module::PlayerAction;
+use crate::ffi::actions::podcast_module::PodcastAction;
+use crate::ffi::projections::PodcastSummary;
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
 use crate::tasks_handler;
@@ -78,6 +83,7 @@ pub struct PodcastHostOpHandler {
     agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
     knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
     tts: TtsEpisodeHandler,
+    clips: Arc<Mutex<Vec<ClipRecord>>>,
     rev: Arc<AtomicU64>,
 }
 
@@ -122,6 +128,10 @@ impl PodcastHostOpHandler {
             tts,
             rev,
         }
+        clips: Arc<Mutex<Vec<ClipRecord>>>,
+        rev: Arc<AtomicU64>,
+    ) -> Self {
+        Self { app, store, player_actor, search_results, clips, rev }
     }
         knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
         rev: Arc<AtomicU64>,
@@ -441,7 +451,7 @@ impl PodcastHostOpHandler {
     }
 
     fn handle_search_itunes(&self, query: String, correlation_id: &str) -> serde_json::Value {
-        let encoded = url_encode(&query);
+        let encoded = crate::itunes::url_encode(&query);
         let search_url = format!(
             "https://itunes.apple.com/search?media=podcast&entity=podcast&limit=25&term={encoded}"
         );
@@ -456,7 +466,7 @@ impl PodcastHostOpHandler {
                 return serde_json::json!({"ok": false, "error": message})
             }
         };
-        let results = parse_itunes_results(body);
+        let results = crate::itunes::parse_itunes_results(body);
         match self.search_results.lock() {
             Ok(mut r) => {
                 *r = results;
@@ -774,6 +784,9 @@ impl HostOpHandler for PodcastHostOpHandler {
             return memory_handler::handle(action, &self.store, &self.rev);
         if let Ok(action) = serde_json::from_str::<TtsEpisodeAction>(action_json) {
             return self.tts.handle(action, correlation_id);
+        if let Ok(action) = serde_json::from_str::<ClipAction>(action_json) {
+            return ClipHandler::new(self.clips.clone(), self.store.clone(), self.rev.clone())
+                .handle(action);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }

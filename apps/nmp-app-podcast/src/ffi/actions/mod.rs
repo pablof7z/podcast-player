@@ -63,6 +63,7 @@ pub mod chapters_module;
 pub mod picks_module;
 pub mod knowledge_module;
 pub mod memory_module;
+pub mod clip_module;
 pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
@@ -78,6 +79,9 @@ pub use knowledge_module::{
     ACTION_KNOWLEDGE_INDEX_EPISODE, ACTION_KNOWLEDGE_SEARCH,
 };
 pub use memory_module::{MemoryAction, MemoryActionModule};
+pub use clip_module::{
+    ClipAction, ClipActionModule, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
+};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};

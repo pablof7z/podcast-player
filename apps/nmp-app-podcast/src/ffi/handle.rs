@@ -12,6 +12,8 @@ use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
 use crate::ffi::projections::{AgentTaskSummary, PodcastSummary};
 use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
 use crate::ffi::projections::{PodcastSummary, TtsEpisodeSummary};
+use crate::clip_handler::ClipRecord;
+use crate::ffi::projections::PodcastSummary;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::PodcastStore;
@@ -76,6 +78,11 @@ pub struct PodcastHandle {
     /// the LLM-script generator lands and these become user-visible
     /// artefacts worth keeping.
     pub(super) tts_episodes: Arc<Mutex<Vec<TtsEpisodeSummary>>>,
+    /// User-saved audio clips. Written by `ClipHandler` on the actor
+    /// thread; read by `build_snapshot_payload` on the main thread.
+    /// In-memory only — clips evaporate on app restart (persistence is
+    /// a follow-up).
+    pub(crate) clips: Arc<Mutex<Vec<ClipRecord>>>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

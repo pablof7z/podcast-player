@@ -107,6 +107,12 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     /// hasn't generated any yet — the Rust kernel omits the field in
     /// that case, so the optional decode degrades to `[]`.
     var ttsEpisodes: [TtsEpisodeSummary]? = nil
+    /// User-saved audio clips across all episodes (newest-first).
+    /// Populated by `podcast.clip.create` / `auto_snip`; emptied by
+    /// `podcast.clip.delete`. Absent (`nil`) when no clips exist —
+    /// the Rust side skips serializing an empty Vec to preserve the
+    /// byte-compatible legacy stub payload.
+    var clips: [ClipSummary]? = nil
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -376,4 +382,18 @@ struct TtsEpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     var createdAt: Int
     var status: String
     var voiceId: String? = nil
+/// User-saved audio clip from an episode. One row per saved clip.
+/// `start_secs` / `end_secs` are absolute positions inside the episode.
+/// `episode_title` / `podcast_title` are re-joined against the live
+/// library on every snapshot tick so a podcast rename is visible
+/// immediately. `created_at` is Unix seconds.
+struct ClipSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var episodeId: String
+    var episodeTitle: String
+    var podcastTitle: String
+    var startSecs: Double
+    var endSecs: Double
+    var title: String? = nil
+    var createdAt: Int
 }

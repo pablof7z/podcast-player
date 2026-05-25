@@ -10,6 +10,7 @@ use super::actions::chapters_module::ChaptersActionModule;
 use super::actions::picks_module::AgentPicksModule;
 use super::actions::knowledge_module::KnowledgeActionModule;
 use super::actions::memory_module::MemoryActionModule;
+use super::actions::clip_module::ClipActionModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -79,6 +80,10 @@ pub extern "C" fn nmp_app_podcast_register(
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<TtsEpisodeModule>();
+    // (playback), and "podcast.clip" (AutoSnip / clip composer).
+    app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
+    app_mut.register_action::<ClipActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -96,6 +101,7 @@ pub extern "C" fn nmp_app_podcast_register(
     let agent_tasks = Arc::new(Mutex::new(tasks_handler::default_seed()));
     let knowledge_search_results = Arc::new(Mutex::new(Vec::new()));
     let tts_episodes = Arc::new(Mutex::new(Vec::new()));
+    let clips = Arc::new(Mutex::new(Vec::new()));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
     // Subsequent increments happen in PodcastHostOpHandler on store writes.
@@ -118,6 +124,7 @@ pub extern "C" fn nmp_app_podcast_register(
         agent_tasks.clone(),
         knowledge_search_results.clone(),
         tts_episodes.clone(),
+        clips.clone(),
         rev.clone(),
     )));
 
@@ -137,5 +144,6 @@ pub extern "C" fn nmp_app_podcast_register(
         agent_tasks,
         knowledge_search_results,
         tts_episodes,
+        clips,
     }))
 }
