@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T01:20:00Z",
+      "lines": [
+        "Live Activity: see what's playing on your lock screen and Dynamic Island."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:15:00Z",
       "lines": [
         "Social: see who you're following on Nostr."
