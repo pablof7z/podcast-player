@@ -8,6 +8,12 @@
 //! Extracted into its own file so `host_op_handler.rs` stays under the 500-line
 //! hard cap. These functions are pure (no kernel state, no FFI) so unit tests
 //! live alongside.
+//! Pure helpers used by [`crate::host_op_handler::PodcastHostOpHandler`].
+//!
+//! Split out of `host_op_handler.rs` so that file can absorb the
+//! TTS-handling dispatch wiring without crossing the 500-LOC ceiling.
+//! Behaviour is unchanged — every function moved here was previously a
+//! private free function in `host_op_handler.rs`.
 
 use podcast_core::Episode;
 
@@ -25,6 +31,10 @@ pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec
 /// Merge a freshly-parsed episode list onto an existing one, carrying forward
 /// per-episode `position_secs` so a feed refresh doesn't erase resume points.
 pub fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
+/// Merge fresh feed episodes with the existing in-store copies, keeping
+/// the previously-recorded `position_secs` so refreshes don't reset
+/// listener progress.
+pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
     fresh
         .into_iter()
         .map(|mut ep| {
@@ -49,6 +59,13 @@ pub fn url_encode(s: &str) -> String {
             'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => {
                 vec![c]
             }
+/// RFC 3986 unreserved-char URL-encoder used to build the iTunes search
+/// query string. Spaces become `+`; everything else outside the unreserved
+/// set is percent-encoded.
+pub(crate) fn url_encode(s: &str) -> String {
+    s.chars()
+        .flat_map(|c| match c {
+            'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => vec![c],
             ' ' => vec!['+'],
             other => {
                 let mut buf = [0u8; 4];

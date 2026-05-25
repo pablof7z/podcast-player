@@ -140,6 +140,9 @@
       "shipped_at": "2026-05-26T01:30:00Z",
       "lines": [
         "Search across your podcast library — a new magnifying-glass button in Library lets you find episodes by topic, host, or any text in the show notes."
+      "shipped_at": "2026-05-26T03:00:00Z",
+      "lines": [
+        "AI Episodes — generate short narrated episodes about any topic from Identity → Advanced → Agent. Tap to listen via on-device speech."
       ]
     },
     {

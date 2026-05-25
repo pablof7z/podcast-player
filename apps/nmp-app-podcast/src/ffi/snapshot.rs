@@ -21,14 +21,20 @@
 //!
 //! Per-projection field definitions live in [`super::projections`] to keep
 //! this file focused on the typed root + the C-ABI entry points.
+//! [`PodcastUpdate`] is the typed root of the JSON the kernel emits on
+//! every tick. The iOS shell decodes it via `Codable`. Fields are added
+//! milestone by milestone; the empty defaults are byte-compatible with
+//! the legacy stub `{"running":true,"rev":0,"schema_version":1}` so
+//! existing decoders don't break before each projection's milestone
+//! wires it up. Per-projection field definitions live in
+//! [`super::projections`].
 
 use std::ffi::{c_char, CString};
+use std::sync::atomic::Ordering;
 
 use serde::{Deserialize, Serialize};
 
 use super::handle::PodcastHandle;
-use std::sync::atomic::Ordering;
-
 use super::projections::{
     AccountSummary, BriefingSnapshot, ChapterSummary, CommentSummary, ConversationsSnapshot,
     DownloadQueueSnapshot, EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot,
@@ -41,6 +47,7 @@ use super::projections::{
     AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadQueueSnapshot, EpisodeSummary,
     KnowledgeSearchResult, PodcastSummary, VoiceState, WidgetSnapshot,
     MemoryFact, PodcastSummary, VoiceState, WidgetSnapshot,
+    PodcastSummary, TtsEpisodeSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
 use crate::player::PlayerState;
@@ -57,6 +64,11 @@ use crate::player::PlayerState;
 /// decoder. **Backward** compatibility (older binaries decoding a newer
 /// snapshot) is the contract behind `schema_version`; bump it only when
 /// removing or renaming a field.
+/// Typed root of the snapshot JSON. `running`, `rev`, and
+/// `schema_version` mirror the kernel's existing tick contract.
+/// Forward compatibility is via Swift's `Codable` tolerating unknown
+/// fields; backward compatibility is gated by `schema_version` — bump
+/// it only when removing or renaming a field.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct PodcastUpdate {
     /// `true` once the kernel is running. False during shutdown.
@@ -117,23 +129,12 @@ pub struct PodcastUpdate {
     /// Platform-integration projection: the narrow slice the iOS
     /// widget extension, Live Activity, Handoff, and Siri-shortcut
     /// executors need to render "now playing" + queue summary
-    /// without re-reading the rest of the snapshot.
-    ///
-    /// `None` until the M11 platform capability lands; the field
-    /// is the kernel's policy hand-off to the host (D7 — Rust
-    /// decides *what* the widget surfaces; iOS only serializes).
-    /// Defined alongside [`WidgetSnapshot`].
+    /// (defined alongside [`WidgetSnapshot`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub widget: Option<WidgetSnapshot>,
     /// Transient toast message the kernel wants the host to surface
     /// (e.g. "nothing to resume" after a Siri `Resume` with no active
-    /// episode — see `ffi::actions::SiriResumeAction` doc-comment).
-    ///
-    /// `None` on every tick that doesn't have a fresh message;
-    /// preserves byte-identity with the legacy stub. The host clears
-    /// its surfaced banner when the field flips back to `None`.
-    /// Per D7 the kernel decides whether to emit a toast; the host
-    /// only renders.
+    /// episode). `None` on every tick without a fresh message.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub toast: Option<String>,
     /// iTunes search results, populated after a `podcast.search_itunes` action.
@@ -214,6 +215,13 @@ pub struct PodcastUpdate {
     /// wire payload so the legacy stub stays byte-identical.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub memory_facts: Vec<MemoryFact>,
+    /// Agent-generated TTS episode list (feature #43). Each entry is a
+    /// kernel-minted [`TtsEpisodeSummary`] holding the script the voice
+    /// capability speaks when the user plays it. Empty until the first
+    /// `podcast.tts.generate` action; per D5/D6 the field is omitted
+    /// from the wire when empty so the legacy stub stays byte-identical.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tts_episodes: Vec<TtsEpisodeSummary>,
 }
 
 impl Default for PodcastUpdate {
@@ -244,6 +252,7 @@ impl Default for PodcastUpdate {
             agent_tasks: Vec::new(),
             knowledge_search_results: Vec::new(),
             memory_facts: Vec::new(),
+            tts_episodes: Vec::new(),
         }
     }
 }
@@ -441,6 +450,10 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
 
     let knowledge_search_results = handle.knowledge_search_results.lock().ok().map(|r| r.clone()).unwrap_or_default();
 
+    let tts_episodes = handle.tts_episodes.lock().ok()
+        .map(|r| r.clone())
+        .unwrap_or_default();
+
     let update = PodcastUpdate {
         rev,
         now_playing,
@@ -457,6 +470,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         agent_tasks,
         knowledge_search_results,
         memory_facts,
+        tts_episodes,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)
@@ -473,11 +487,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
 ///
 /// Returns null on any failure (null handle, `CString` nul-byte conflict).
 /// The returned pointer is owned by the caller; pass it to
-/// [`nmp_app_podcast_snapshot_free`] when done.
-///
-/// The payload shape is defined by [`PodcastUpdate`]; new projections are
-/// added milestone by milestone (M3.A adds `now_playing`; subsequent
-/// milestones wire `podcasts`, `today_queue`, `triage`, …).
+/// [`nmp_app_podcast_snapshot_free`] when done. Payload shape is
+/// defined by [`PodcastUpdate`].
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn nmp_app_podcast_snapshot(handle: *mut PodcastHandle) -> *mut c_char {
@@ -587,6 +598,36 @@ mod tests {
         assert!(decoded.social.is_none());
         assert!(decoded.widget.is_none());
         assert!(decoded.toast.is_none());
+        assert!(decoded.tts_episodes.is_empty());
+    }
+
+    #[test]
+    fn snapshot_with_tts_episodes_round_trips() {
+        let ep = TtsEpisodeSummary {
+            id: "tts-1".into(),
+            title: "Topic Roundup".into(),
+            script: "This is a placeholder script.".into(),
+            duration_estimate_secs: 300.0,
+            created_at: 1_700_000_000,
+            status: "ready".into(),
+            voice_id: None,
+        };
+        let snap = PodcastUpdate {
+            tts_episodes: vec![ep.clone()],
+            ..PodcastUpdate::default()
+        };
+        let json = serde_json::to_string(&snap).expect("encode");
+        assert!(json.contains("tts_episodes"));
+        assert!(json.contains("Topic Roundup"));
+        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded.tts_episodes, vec![ep]);
+    }
+
+    #[test]
+    fn snapshot_omits_empty_tts_episodes() {
+        // D5 byte-identity: empty list must not bloat the wire payload.
+        let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+        assert!(!json.contains("tts_episodes"));
     }
 
     #[test]
