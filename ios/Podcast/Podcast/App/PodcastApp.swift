@@ -25,7 +25,14 @@ struct PodcastApp: App {
             RootShell()
                 .environment(model)
                 .tint(PodcastColor.accent)
-                .task { model.start() }
+                .task {
+                    model.start()
+                    // iCloud settings sync attaches *after* the kernel is
+                    // up so its inbound dispatches have a live destination.
+                    // The capability holds a weak handle to the model, so
+                    // an out-of-order shutdown is safe.
+                    PodcastCapabilities.shared.startICloudSync(kernel: model)
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             // D7: Swift reports the fact; the kernel decides what each

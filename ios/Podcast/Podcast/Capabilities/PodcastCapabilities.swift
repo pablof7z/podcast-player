@@ -57,6 +57,12 @@ final class PodcastCapabilities {
     let audio: AudioCapability
     let download: DownloadCapability
     let platform: PlatformCapability
+    /// iCloud settings sync (`pcst.icloud_sync.capability`). Passive —
+    /// driven by KVS notifications and the snapshot poll, not by
+    /// kernel-issued requests. Started separately from `start()` because
+    /// the inbound dispatch path needs a `KernelModel` reference; see
+    /// `startICloudSync(kernel:)`.
+    let iCloudSync: iCloudSyncCapability
 
     init(
         keyring: KeychainCapability = KeychainCapability(),
@@ -65,7 +71,8 @@ final class PodcastCapabilities {
         legacyIO: LegacyIOCapability = LegacyIOCapability(),
         audio: AudioCapability = AudioCapability(),
         download: DownloadCapability = DownloadCapability(),
-        platform: PlatformCapability = PlatformCapability()
+        platform: PlatformCapability = PlatformCapability(),
+        iCloudSync: iCloudSyncCapability = iCloudSyncCapability()
     ) {
         self.keyring = keyring
         self.identity = identity
@@ -74,10 +81,16 @@ final class PodcastCapabilities {
         self.audio = audio
         self.download = download
         self.platform = platform
+        self.iCloudSync = iCloudSync
     }
 
     /// Idempotent: start all owned capabilities. Safe to call on every app
     /// foreground.
+    ///
+    /// Note: `iCloudSync` is **not** started from here because it needs a
+    /// `KernelModel` to dispatch inbound actions through. Callers (today
+    /// only `PodcastApp.body.task`) invoke `startICloudSync(kernel:)`
+    /// after `model.start()` has been issued.
     func start() {
         keyring.start()
         identity.start()
@@ -86,6 +99,13 @@ final class PodcastCapabilities {
         audio.start()
         download.start()
         platform.start()
+    }
+
+    /// Bring the iCloud sync capability online. Idempotent. Separated
+    /// from `start()` so the model can be wired in after the kernel has
+    /// booted and the capability has somewhere to dispatch.
+    func startICloudSync(kernel: KernelModel) {
+        iCloudSync.start(kernel: kernel)
     }
 
     /// Idempotent: mark capabilities inactive. Does not erase stored secrets.
@@ -97,6 +117,7 @@ final class PodcastCapabilities {
         audio.stop()
         download.stop()
         platform.stop()
+        iCloudSync.stop()
     }
 
     /// Single capability-callback entry point. Routes the raw kernel
