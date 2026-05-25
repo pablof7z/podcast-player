@@ -19,6 +19,22 @@ private let kmLog = Logger(subsystem: "io.f7z.podcast", category: "KernelModel")
 @Observable
 final class KernelModel {
 
+    // ── AppIntents / Siri shared handle ────────────────────────────────────
+
+    /// Process-wide weak handle to the live `KernelModel`. iOS `AppIntent`
+    /// performers cannot resolve a SwiftUI `@Environment` — they execute on
+    /// the OS-driven extension queue with no view tree attached. This static
+    /// gives intent code a stable pointer to the same model the UI is reading
+    /// without forcing a singleton lifetime (the property is `weak`, so the
+    /// model still goes away when the scene tears down).
+    ///
+    /// `nonisolated(unsafe)` is required because `@MainActor`-isolated stored
+    /// properties cannot be `static`; the lone writer is `KernelModel.init`
+    /// (which runs on `@MainActor` per the class isolation) and the lone
+    /// reader is the AppIntent performer (also `@MainActor`). The pointer is
+    /// never published off the main thread.
+    nonisolated(unsafe) static weak var shared: KernelModel?
+
     // ── Snapshot slot ──────────────────────────────────────────────────────
 
     /// Latest decoded snapshot. `nil` before the first tick lands.
@@ -74,6 +90,10 @@ final class KernelModel {
         })
         kernel.attachAudioReportChannel()
         kernel.attachDownloadReportChannel()
+        // Publish to the AppIntents handle. The static is `weak`, so the
+        // model still deallocates on scene teardown; the next instance
+        // re-publishes from its own `init`.
+        Self.shared = self
     }
 
     private func markKernelDead() {

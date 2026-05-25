@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UIKit
 
@@ -32,6 +33,11 @@ struct PodcastApp: App {
                     // The capability holds a weak handle to the model, so
                     // an out-of-order shutdown is safe.
                     PodcastCapabilities.shared.startICloudSync(kernel: model)
+                    // Re-register App Shortcuts with the system so Siri /
+                    // Shortcuts / Spotlight pick up phrase changes after an
+                    // install or upgrade. iOS caches the provider's output
+                    // until this call (or a fresh install) refreshes it.
+                    PodcastAppShortcuts.updateAppShortcutParameters()
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
