@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-25T23:10:00Z",
+      "lines": [
+        "Episode detail now shows show notes — the description from the RSS feed appears below the play button so you can read what the episode is about before pressing play."
+      ]
+    },
+    {
       "shipped_at": "2026-05-25T23:08:00Z",
       "lines": [
         "Pull-to-refresh keeps your podcast feeds up to date."

@@ -35,6 +35,8 @@ mod download_report;
 mod handle;
 mod helpers;
 pub mod projections;
+#[cfg(test)]
+mod projections_tests;
 mod register;
 mod snapshot;
 #[cfg(test)]
