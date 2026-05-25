@@ -22,7 +22,7 @@ struct ShowDetailEpisodeList: View {
                 onPlay: {
                     Haptics.medium()
                     model.dispatch(
-                        namespace: "player",
+                        namespace: "podcast.player",
                         body: ["op": "play", "episode_id": ep.id]
                     )
                     NotificationCenter.default.post(name: .openPlayerRequested, object: nil)
