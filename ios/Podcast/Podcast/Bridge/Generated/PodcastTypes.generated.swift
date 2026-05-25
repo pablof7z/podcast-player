@@ -19,21 +19,24 @@ struct PodcastUpdate: Codable {
     var nowPlaying: PlayerState? = nil
     var activeAccount: AccountSummary? = nil
     var toast: String? = nil
+    var searchResults: [PodcastSummary] = []
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
 /// Episode rows are embedded so the show-detail view doesn't need a second pull.
-struct PodcastSummary: Codable, Identifiable, Equatable {
+struct PodcastSummary: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var title: String
     var episodeCount: Int = 0
     var unplayedCount: Int = 0
     var artworkUrl: String? = nil
+    var feedUrl: String? = nil
+    var author: String? = nil
     var episodes: [EpisodeSummary] = []
 }
 
 /// One episode row embedded in `PodcastSummary.episodes`.
-struct EpisodeSummary: Codable, Identifiable, Equatable {
+struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var title: String
     var podcastId: String? = nil

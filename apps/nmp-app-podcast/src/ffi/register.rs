@@ -51,6 +51,7 @@ pub extern "C" fn nmp_app_podcast_register(
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let player_actor = Arc::new(Mutex::new(PlayerActor::new()));
+    let search_results = Arc::new(Mutex::new(Vec::new()));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
     // Subsequent increments happen in PodcastHostOpHandler on store writes.
@@ -63,6 +64,7 @@ pub extern "C" fn nmp_app_podcast_register(
         app,
         store.clone(),
         player_actor.clone(),
+        search_results.clone(),
         rev.clone(),
     )));
 
@@ -74,5 +76,6 @@ pub extern "C" fn nmp_app_podcast_register(
         player_actor,
         store,
         rev,
+        search_results,
     }))
 }

@@ -144,7 +144,10 @@ final class KernelModel {
 
     // ── scenePhase pass-through ────────────────────────────────────────────
 
-    func lifecycleForeground() { kernel.lifecycleForeground() }
+    func lifecycleForeground() {
+        kernel.lifecycleForeground()
+        dispatch(namespace: "podcast", body: ["op": "refresh_all"])
+    }
     func lifecycleBackground() { kernel.lifecycleBackground() }
 
     // ── Toast ──────────────────────────────────────────────────────────────
