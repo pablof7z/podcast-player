@@ -160,6 +160,30 @@ pub struct ResumeDownloadAction {
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub struct CancelAllDownloadsAction;
 
+// ---------------------------------------------------------------------------
+// Agent actions (re-exported from `podcast-agent-core` for M7.A)
+// ---------------------------------------------------------------------------
+//
+// The agent-chat action ids + payloads live in `podcast-agent-core` so the
+// crate that owns the conversation/approval domain also owns its wire
+// format. Re-exported through this module so the iOS shell links against
+// `nmp_app_podcast::ffi::actions::ACTION_AGENT_*` exactly like the player
+// actions above — one import path for every action contract.
+//
+// Mapped surface:
+//
+// ```text
+// podcast.agent.send    — SendAgentMessageAction { conversation_id?, message }
+// podcast.agent.approve — ApproveAction          { approval_id }
+// podcast.agent.deny    — DenyAction             { approval_id, reason? }
+// podcast.agent.clear   — ClearConversationAction{ conversation_id }
+// ```
+pub use podcast_agent_core::{
+    ApproveAction as AgentApproveAction, ClearConversationAction as AgentClearConversationAction,
+    DenyAction as AgentDenyAction, SendAgentMessageAction, ACTION_AGENT_APPROVE,
+    ACTION_AGENT_CLEAR, ACTION_AGENT_DENY, ACTION_AGENT_SEND,
+};
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,6 +297,27 @@ mod tests {
         };
         let json = serde_json::to_string(&a).expect("encode");
         let decoded: SeekAction = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, a);
+    }
+
+    // ── Agent action re-export contract (M7.A) ──────────────────────
+
+    #[test]
+    fn agent_action_ids_match_documented_strings() {
+        assert_eq!(ACTION_AGENT_SEND, "podcast.agent.send");
+        assert_eq!(ACTION_AGENT_APPROVE, "podcast.agent.approve");
+        assert_eq!(ACTION_AGENT_DENY, "podcast.agent.deny");
+        assert_eq!(ACTION_AGENT_CLEAR, "podcast.agent.clear");
+    }
+
+    #[test]
+    fn agent_send_action_round_trips_through_reexport() {
+        let a = SendAgentMessageAction {
+            conversation_id: Some("c1".into()),
+            message: "hi".into(),
+        };
+        let json = serde_json::to_string(&a).expect("encode");
+        let decoded: SendAgentMessageAction = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, a);
     }
 }

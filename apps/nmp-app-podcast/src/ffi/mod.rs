@@ -47,5 +47,6 @@ pub use handle::PodcastHandle;
 pub use register::nmp_app_podcast_register;
 pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_unregister,
-    DownloadItemSnapshot, DownloadQueueSnapshot, PodcastUpdate,
+    ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot, PendingApprovalSnapshot,
+    PodcastUpdate,
 };
