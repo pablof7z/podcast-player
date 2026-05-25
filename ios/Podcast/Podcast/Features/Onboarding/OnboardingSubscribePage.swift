@@ -15,12 +15,16 @@ struct OnboardingSubscribePage: View {
 
     nonisolated private static let logger = Logger.app("OnboardingSubscribe")
 
-    /// Closure invoked once a subscription has been added so the parent can
-    /// react (e.g. flip a "has subscribed" flag that re-labels the primary
-    /// button). Failures stay inline; the page does NOT auto-navigate on
-    /// success — the user needs to see the row flip to a checkmark first,
+    /// Closure invoked once a subscription has been dispatched so the parent
+    /// can react (e.g. flip a "has subscribed" flag that re-labels the
+    /// primary button). Failures stay inline; the page does NOT auto-navigate
+    /// on success — the user needs to see the row flip to a checkmark first,
     /// otherwise the tap reads as a no-op.
-    var onSubscribed: (Podcast) -> Void
+    ///
+    /// The closure receives no payload: the Rust kernel updates the library
+    /// snapshot asynchronously and the iOS shell is a pure rendering surface,
+    /// so the parent has no domain object to consume at the call site.
+    var onSubscribed: () -> Void
 
     /// Curated, vendor-agnostic starter shows. Every URL points at a public
     /// RSS feed that has reliably hosted episodes for years; the goal is to
@@ -53,7 +57,7 @@ struct OnboardingSubscribePage: View {
         ),
     ]
 
-    @Environment(KernelModel.self) private var store
+    @Environment(KernelModel.self) private var model
 
     @State private var feedURL: String = ""
     @State private var isWorking: Bool = false
@@ -212,31 +216,18 @@ struct OnboardingSubscribePage: View {
             isWorking = false
             subscribingSuggestionID = nil
         }
-        let service = SubscriptionService(store: store)
-        do {
-            let added = try await service.addSubscription(feedURLString: suggestion.feed)
+        let result = model.dispatch(
+            namespace: "podcast",
+            body: ["op": "subscribe", "feed_url": suggestion.feed])
+        switch result {
+        case .accepted:
             Haptics.success()
-            // Sanity check the subscription is actually persisted — if a
-            // future regression starts losing writes, we'd rather log than
-            // silently flip the checkmark.
-            if let url = URL(string: suggestion.feed),
-               store.podcast(feedURL: url) == nil {
-                Self.logger.error(
-                    "Subscription \(suggestion.title, privacy: .public) reported success but was not found in store after add"
-                )
-            }
-            onSubscribed(added)
-        } catch let addError as SubscriptionService.AddError {
+            onSubscribed()
+        case .failure(let message):
             Self.logger.error(
-                "Failed to subscribe to \(suggestion.title, privacy: .public) (\(suggestion.feed, privacy: .public)): \(addError.localizedDescription, privacy: .public)"
+                "Failed to subscribe to \(suggestion.title, privacy: .public) (\(suggestion.feed, privacy: .public)): \(message, privacy: .public)"
             )
-            errorMessage = addError.localizedDescription
-            Haptics.warning()
-        } catch {
-            Self.logger.error(
-                "Unexpected error subscribing to \(suggestion.title, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
-            errorMessage = error.localizedDescription
+            errorMessage = message
             Haptics.warning()
         }
     }
@@ -247,31 +238,25 @@ struct OnboardingSubscribePage: View {
         errorMessage = nil
         isWorking = true
         defer { isWorking = false }
-        let service = SubscriptionService(store: store)
-        do {
-            let added = try await service.addSubscription(feedURLString: trimmed)
+        let result = model.dispatch(
+            namespace: "podcast",
+            body: ["op": "subscribe", "feed_url": trimmed])
+        switch result {
+        case .accepted:
             Haptics.success()
             feedURL = ""
-            onSubscribed(added)
-        } catch let addError as SubscriptionService.AddError {
+            onSubscribed()
+        case .failure(let message):
             Self.logger.error(
-                "Failed to subscribe to typed URL \(trimmed, privacy: .public): \(addError.localizedDescription, privacy: .public)"
+                "Failed to subscribe to typed URL \(trimmed, privacy: .public): \(message, privacy: .public)"
             )
-            errorMessage = addError.localizedDescription
-            Haptics.warning()
-        } catch {
-            Self.logger.error(
-                "Unexpected error subscribing to typed URL \(trimmed, privacy: .public): \(error.localizedDescription, privacy: .public)"
-            )
-            errorMessage = error.localizedDescription
+            errorMessage = message
             Haptics.warning()
         }
     }
 
     private func isAlreadySubscribed(to suggestion: Suggestion) -> Bool {
-        guard let url = URL(string: suggestion.feed),
-              let podcast = store.podcast(feedURL: url) else { return false }
-        return store.subscription(podcastID: podcast.id) != nil
+        model.library.contains { $0.feedUrl == suggestion.feed }
     }
 }
 

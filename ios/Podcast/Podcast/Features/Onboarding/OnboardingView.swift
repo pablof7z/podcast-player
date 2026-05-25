@@ -12,8 +12,6 @@ import SwiftUI
 // (not `private`) so the handler extension can mutate it without indirection.
 
 struct OnboardingView: View {
-    @Environment(KernelModel.self) var store
-
     @State var step: OnboardingStep = .welcome
 
     // Provider setup state
@@ -79,7 +77,7 @@ struct OnboardingView: View {
             .tag(OnboardingStep.identity)
             .padding(.horizontal, AppTheme.Spacing.lg)
 
-            OnboardingSubscribePage { _ in
+            OnboardingSubscribePage {
                 // Don't auto-advance: the user just tapped a row and we
                 // want them to *see* it flip to the green checkmark before
                 // the page transitions away (otherwise the tap looks like
