@@ -38,6 +38,8 @@ use super::projections::{
     AccountSummary, AgentPickSummary, BriefingSnapshot, ConversationsSnapshot,
     AccountSummary, AgentTaskSummary, BriefingSnapshot, ConversationsSnapshot,
     DownloadQueueSnapshot, EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
+    AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadQueueSnapshot, EpisodeSummary,
+    KnowledgeSearchResult, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
 use crate::player::PlayerState;
@@ -202,6 +204,10 @@ pub struct PodcastUpdate {
     /// byte-identity.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub agent_tasks: Vec<AgentTaskSummary>,
+    /// RAG / knowledge results — written by `podcast.knowledge.search`,
+    /// cleared by `clear_results`. Empty preserves D5 byte-identity.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub knowledge_search_results: Vec<KnowledgeSearchResult>,
 }
 
 impl Default for PodcastUpdate {
@@ -230,6 +236,7 @@ impl Default for PodcastUpdate {
             wiki_search_results: Vec::new(),
             picks: Vec::new(),
             agent_tasks: Vec::new(),
+            knowledge_search_results: Vec::new(),
         }
     }
 }
@@ -422,6 +429,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         .map(|t| t.clone())
         .unwrap_or_default();
 
+    let knowledge_search_results = handle.knowledge_search_results.lock().ok().map(|r| r.clone()).unwrap_or_default();
+
     let update = PodcastUpdate {
         rev,
         now_playing,
@@ -436,6 +445,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         wiki_search_results,
         picks,
         agent_tasks,
+        knowledge_search_results,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)

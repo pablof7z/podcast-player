@@ -96,6 +96,10 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     /// `true` when the scheduler should consider this task; toggled
     /// via `enable` / `disable` ops.
     var isEnabled: Bool
+    /// RAG / knowledge-base search results, populated after a
+    /// `podcast.knowledge.search` action and cleared by
+    /// `podcast.knowledge.clear_results`.
+    var knowledgeSearchResults: [KnowledgeSearchResult] = []
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -320,4 +324,26 @@ struct AgentPickSummary: Codable, Identifiable, Equatable, Hashable {
     /// across refreshes — the SwiftUI `ForEach` keeps row identity even
     /// when the rank shuffles.
     var id: String { episodeId }
+/// One row in the RAG / vector-search projection. The Rust
+/// `podcast.knowledge.search` action populates an array of these on the
+/// snapshot; the iOS shell renders them in `KnowledgeSearchView`.
+///
+/// `startSecs` is present when the matched chunk has a timestamp (real
+/// transcript chunks will; the current title/description-only stub
+/// leaves it `nil`). When present, the row offers a "seek to" button
+/// that dispatches `podcast.player.play` + `podcast.player.seek`.
+struct KnowledgeSearchResult: Codable, Identifiable, Equatable, Hashable {
+    var episodeId: String
+    var episodeTitle: String
+    var podcastTitle: String
+    var snippet: String
+    var startSecs: Double? = nil
+    /// `0.0...1.0` — drives the relevance bar in the row.
+    var relevanceScore: Double = 0
+
+    /// Synthesize a stable identity for `Identifiable` (the wire shape
+    /// has no `id` of its own; multiple results can share an episode id
+    /// when M6.B starts returning chunk-level hits, so we mix in the
+    /// snippet hash to keep `ForEach` happy).
+    var id: String { "\(episodeId)|\(snippet.hashValue)" }
 }
