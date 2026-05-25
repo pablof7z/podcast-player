@@ -9,12 +9,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-// MARK: - Numeric helpers
-
-extension Double {
-    var clamped01: Double { min(1, max(0, self)) }
-}
-
 // MARK: - String helpers
 
 extension String {
@@ -163,20 +157,6 @@ enum SystemShareSheet {
         var presenter: UIViewController = root
         while let next = presenter.presentedViewController { presenter = next }
         presenter.present(avc, animated: true)
-    }
-}
-
-// MARK: - Copyable text menu
-
-extension View {
-    func copyableTextMenu(_ text: String) -> some View {
-        self.contextMenu {
-            Button {
-                UIPasteboard.general.string = text
-            } label: {
-                Label("Copy", systemImage: "doc.on.doc")
-            }
-        }
     }
 }
 
