@@ -6,6 +6,7 @@ use std::sync::atomic::AtomicU64;
 
 use nmp_ffi::NmpApp;
 
+use super::actions::chapters_module::ChaptersActionModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -41,10 +42,12 @@ pub extern "C" fn nmp_app_podcast_register(
     nmp_app_template::register_defaults(app_mut);
 
     // Register action modules: "podcast" (subscribe/refresh), "podcast.player"
-    // (playback), and "podcast.queue" (Up Next list).
+    // (playback), "podcast.queue" (Up Next list), and "podcast.chapters"
+    // (AI chapter compile).
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<QueueActionModule>();
+    app_mut.register_action::<ChaptersActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));

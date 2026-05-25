@@ -110,12 +110,19 @@ struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// Narrow chapter projection for full-player chapter rail rendering.
+///
+/// `isAiGenerated == true` for chapters synthesized by
+/// `podcast.chapters.compile` (transcript-based stub LLM); `false` for
+/// publisher-supplied RSS / Podcasting 2.0 chapters. The iOS shell uses
+/// this flag to render a `sparkles` badge in `ChaptersView` so the user
+/// can tell at a glance where the boundary came from.
 struct ChapterSummary: Codable, Equatable, Hashable {
     var startSecs: Double
     var endSecs: Double? = nil
     var title: String
     var imageUrl: String? = nil
     var url: String? = nil
+    var isAiGenerated: Bool = false
 }
 
 /// NIP-F4 podcast discovery result row.

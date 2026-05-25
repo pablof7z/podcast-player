@@ -362,6 +362,16 @@ pub struct EpisodeSummary {
 
 /// Narrow chapter projection for the player rail. Mirrors the relevant
 /// fields of `podcast_core::Chapter` for UI rendering.
+///
+/// `is_ai_generated` distinguishes chapters synthesized by
+/// `podcast.chapters.compile` (the LLM-stub path that splits a transcript
+/// into equal-length segments) from publisher-supplied RSS / Podcasting 2.0
+/// JSON chapters. iOS renders a `sparkles` badge for AI chapters so the
+/// user can tell at a glance where the boundaries came from. Mirrors
+/// `podcast_core::Chapter::is_ai_generated`; serialized always (no
+/// `skip_serializing_if`) so the wire payload carries the explicit
+/// `false` for RSS chapters — the iOS shell relies on the field being
+/// present to render the badge or not.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct ChapterSummary {
     pub start_secs: f64,
@@ -372,6 +382,8 @@ pub struct ChapterSummary {
     pub image_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    #[serde(default)]
+    pub is_ai_generated: bool,
 }
 
 /// NIP-F4 podcast discovery result projected into the iOS Add Show sheet.
@@ -592,6 +604,7 @@ mod tests {
                     title: "Intro".into(),
                     image_url: Some("https://ex.com/intro.png".into()),
                     url: None,
+                    is_ai_generated: false,
                 },
                 ChapterSummary {
                     start_secs: 60.0,
@@ -679,6 +692,25 @@ mod tests {
         assert!(json.contains("\"author_name\":\"Satoshi\""));
         let decoded: CommentSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, c);
+    fn chapter_summary_ai_generated_round_trip() {
+        let ai = ChapterSummary {
+            start_secs: 0.0,
+            title: "Chapter 1".into(),
+            is_ai_generated: true,
+            ..ChapterSummary::default()
+        };
+        let json = serde_json::to_string(&ai).expect("encode");
+        assert!(json.contains("\"is_ai_generated\":true"));
+        let decoded: ChapterSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, ai);
+    }
+
+    #[test]
+    fn chapter_summary_decodes_when_is_ai_generated_omitted() {
+        // Forward-compat: payloads predating the field decode with `is_ai_generated = false`.
+        let json = r#"{"start_secs":0.0,"title":"Intro"}"#;
+        let decoded: ChapterSummary = serde_json::from_str(json).expect("decode");
+        assert!(!decoded.is_ai_generated);
     }
 
     #[test]
