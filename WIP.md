@@ -21,6 +21,7 @@ Related files:
 - 2026-05-25 - M6.A: add `apps/podcast-transcripts/` + `apps/podcast-knowledge/` Rust crates (VTT/SRT/JSON parsers, chunker, in-memory knowledge store + cosine search) — branch `m6/transcripts-knowledge` worktree `/Users/pablofernandez/Work/podcast-player-m6`. Stacked on `m2a/podcast-core`.
 - 2026-05-25 - M7.A: `apps/podcast-agent-core/` Rust crate skeleton — agent-chat conversation + approval + task + memory domain types, conversation state machine projection, and agent action constants wired into `nmp-app-podcast`. Branch `m7a/podcast-agent` worktree `/Users/pablofernandez/Work/podcast-player-m7`.
 - 2026-05-25 - M4.B: iOS `DownloadCapability` executor — `URLSessionDownloadDelegate` background-session wiring against the M4.A `DownloadCommand`/`DownloadReport` contract (`nmp.download.capability`). Branch `m4b/ios-download-capability` worktree `/Users/pablofernandez/Work/podcast-player-m4b`.
+- 2026-05-25 - M5: HTTP capability — Rust `HttpRequest`/`HttpResult` schema mirroring the existing Swift wire format, FeedClient request/response bridge in `podcast-feeds`, and additive response-headers extension on `HttpCapability.swift` so `If-None-Match`/`If-Modified-Since` round-trips work. Branch `m5/http-capability` worktree `/Users/pablofernandez/Work/podcast-player-m5`.
 
 ## Recent History
 
