@@ -566,6 +566,42 @@ pub struct AgentTaskSummary {
     pub is_enabled: bool,
 }
 
+/// One row in the RAG / vector-search projection surfaced via
+/// [`super::snapshot::PodcastUpdate::knowledge_search_results`].
+///
+/// M6.A's `podcast-knowledge` crate owns the production chunk store +
+/// hybrid ranker (KNN + BM25 + RRF + reranker). The iOS shell renders
+/// from this narrow wire shape so the kernel can swap the underlying
+/// implementation (current stub: case-insensitive substring match over
+/// `Episode.title` + `Episode.description`; follow-up: real embedding
+/// search) without breaking the host decoder.
+///
+/// Fields:
+///
+/// * `episode_id` / `episode_title` / `podcast_title` — what the row
+///   labels itself with. `episode_id` is the hyphenated UUID so the
+///   iOS shell can dispatch `podcast.player.play` against it.
+/// * `snippet` — the relevant text excerpt (up to ~200 chars). The
+///   projection layer truncates so the UI never has to.
+/// * `start_secs` — position in the episode the snippet appears at,
+///   when the underlying chunk has a timestamp (transcripts will;
+///   description-only matches stay `None`). The iOS shell renders a
+///   "seek to" button only when this is set.
+/// * `relevance_score` — `0.0..=1.0`. Used by the UI to render a
+///   relevance bar and (incidentally) to validate the ranker's order
+///   in a regression test. The stub uses a simple "how early in the
+///   text did the query land" heuristic.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct KnowledgeSearchResult {
+    pub episode_id: String,
+    pub episode_title: String,
+    pub podcast_title: String,
+    pub snippet: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_secs: Option<f64>,
+    pub relevance_score: f32,
+}
+
 /// Narrow identity projection surfaced via
 /// [`super::snapshot::PodcastUpdate::active_account`].
 ///
@@ -895,6 +931,35 @@ mod tests {
         // Round-trip survives the elided optionals.
         let decoded: AgentTaskSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, task);
+    fn knowledge_search_result_round_trips_with_all_fields() {
+        let row = KnowledgeSearchResult {
+            episode_id: "ep-1".into(),
+            episode_title: "Pilot".into(),
+            podcast_title: "Some Show".into(),
+            snippet: "…the relevant excerpt…".into(),
+            start_secs: Some(123.5),
+            relevance_score: 0.87,
+        };
+        let json = serde_json::to_string(&row).expect("encode");
+        assert!(json.contains("\"start_secs\":123.5"));
+        let decoded: KnowledgeSearchResult = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, row);
+    }
+
+    #[test]
+    fn knowledge_search_result_omits_none_start_secs() {
+        let row = KnowledgeSearchResult {
+            episode_id: "ep-1".into(),
+            episode_title: "Pilot".into(),
+            podcast_title: "Some Show".into(),
+            snippet: "x".into(),
+            start_secs: None,
+            relevance_score: 0.5,
+        };
+        let json = serde_json::to_string(&row).expect("encode");
+        assert!(!json.contains("start_secs"));
+        let decoded: KnowledgeSearchResult = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, row);
     }
 
     #[test]

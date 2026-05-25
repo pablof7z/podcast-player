@@ -8,6 +8,7 @@ use nmp_ffi::NmpApp;
 
 use super::actions::chapters_module::ChaptersActionModule;
 use super::actions::picks_module::AgentPicksModule;
+use super::actions::knowledge_module::KnowledgeActionModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -64,6 +65,10 @@ pub extern "C" fn nmp_app_podcast_register(
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<AgentTasksModule>();
+    // (playback), "podcast.knowledge" (RAG / search stub).
+    app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
+    app_mut.register_action::<KnowledgeActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -79,6 +84,7 @@ pub extern "C" fn nmp_app_podcast_register(
     // to render before the user has scheduled anything (see
     // `tasks_handler::default_seed`).
     let agent_tasks = Arc::new(Mutex::new(tasks_handler::default_seed()));
+    let knowledge_search_results = Arc::new(Mutex::new(Vec::new()));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
     // Subsequent increments happen in PodcastHostOpHandler on store writes.
@@ -99,6 +105,7 @@ pub extern "C" fn nmp_app_podcast_register(
         wiki_search_results.clone(),
         picks.clone(),
         agent_tasks.clone(),
+        knowledge_search_results.clone(),
         rev.clone(),
     )));
 
@@ -116,5 +123,6 @@ pub extern "C" fn nmp_app_podcast_register(
         wiki_search_results,
         picks,
         agent_tasks,
+        knowledge_search_results,
     }))
 }

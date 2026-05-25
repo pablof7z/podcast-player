@@ -10,6 +10,7 @@ use crate::ffi::projections::{BriefingSnapshot, NostrShowSummary, PodcastSummary
 use crate::ffi::projections::{PodcastSummary, WikiArticle};
 use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
 use crate::ffi::projections::{AgentTaskSummary, PodcastSummary};
+use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::PodcastStore;
@@ -62,6 +63,11 @@ pub struct PodcastHandle {
     /// Seeded with two defaults in `register.rs` so the iOS UI has
     /// rows to render on first launch.
     pub(super) agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
+    /// Transient RAG / knowledge-search results. Written by
+    /// `handle_knowledge_search` on the actor thread; read by
+    /// `build_snapshot_payload` on the main thread. Mirrors the
+    /// `search_results` shape so the snapshot reads stay symmetric.
+    pub(super) knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

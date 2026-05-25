@@ -45,6 +45,9 @@ use crate::wiki::handle_wiki_action;
 mod player_actions;
 use crate::ffi::actions::tasks_module::AgentTasksAction;
 use crate::ffi::projections::{AgentTaskSummary, PodcastSummary};
+use crate::capability::{AudioCommand, DownloadCommand, AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE};
+use crate::ffi::actions::{knowledge_module::KnowledgeAction, player_module::PlayerAction, podcast_module::PodcastAction};
+use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
 use crate::tasks_handler;
@@ -61,6 +64,7 @@ pub struct PodcastHostOpHandler {
     wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
     picks: Arc<Mutex<Vec<AgentPickSummary>>>,
     agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
+    knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
     rev: Arc<AtomicU64>,
 }
 
@@ -94,6 +98,10 @@ impl PodcastHostOpHandler {
     ) -> Self {
         Self { app, store, player_actor, search_results, agent_tasks, rev }
     }
+        knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
+        rev: Arc<AtomicU64>,
+    ) -> Self { Self { app, store, player_actor, search_results, knowledge_search_results, rev } }
+
     fn dispatch_http(&self, req: &HttpRequest, correlation_id: &str) -> Result<HttpResult, String> {
         let payload_json = serde_json::to_string(req).map_err(|e| e.to_string())?;
         let cap_req = CapabilityRequest {
@@ -735,6 +743,8 @@ impl HostOpHandler for PodcastHostOpHandler {
             return picks_handle_refresh(&self.store, &self.picks, &self.rev);
         if let Ok(action) = serde_json::from_str::<AgentTasksAction>(action_json) {
             return tasks_handler::handle_tasks_action(action, &self.agent_tasks, &self.rev);
+        if let Ok(a) = serde_json::from_str::<KnowledgeAction>(action_json) {
+            return crate::knowledge::handle_knowledge_action(a, &self.store, &self.knowledge_search_results, &self.rev);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }

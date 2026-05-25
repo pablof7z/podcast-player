@@ -34,6 +34,16 @@ struct LibraryView: View {
                         .accessibilityLabel("All Episodes")
                     }
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    if !model.library.isEmpty {
+                        NavigationLink {
+                            KnowledgeSearchView()
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .accessibilityLabel("Search Library")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
