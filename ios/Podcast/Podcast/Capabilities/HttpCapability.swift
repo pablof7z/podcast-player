@@ -2,8 +2,13 @@ import Foundation
 
 // MARK: - HTTP capability
 //
-// iOS half of the kernel-side `HttpCapability`
-// (`crates/nmp-core/src/substrate/http.rs`, namespace `nmp.http.capability`).
+// iOS half of the kernel-side HTTP capability (namespace
+// `nmp.http.capability`). The Rust contract lives in
+// `apps/podcast-feeds/src/http.rs` (M5 introduced it; the canonical
+// `nmp-core::capability::http` hasn't landed upstream yet, so the
+// podcast-player crate graph owns the schema for now). The
+// `nmp-app-podcast::capability::http` module re-exports it for symmetry
+// with `capability::audio` / `capability::download`.
 //
 // The kernel never makes HTTP calls directly; it routes them through the
 // capability socket so the platform supplies the transport. This is the
@@ -68,21 +73,32 @@ struct HttpRequest: Decodable {
 
 /// Capability-private result payload — the encoded `result_json`. Mirrors the
 /// Rust `HttpResult` (`#[serde(tag = "status", rename_all = "snake_case")]`):
-///   `{"status":"ok","status_code":200,"body":"…"}`
+///   `{"status":"ok","status_code":200,"headers":[["ETag","…"]],"body":"…"}`
 ///   `{"status":"error","message":"…"}`
 ///
 /// There is no error *exception*: a transport failure is data (`status ==
 /// "error"`), satisfying D6.
+///
+/// **M5 — response headers on `Ok`.** The `headers` field on `.ok` was added
+/// to round-trip `ETag` / `Last-Modified` to Rust callers (the FeedClient
+/// conditional-GET path can't read response headers otherwise). The wire
+/// addition is purely additive — older Rust decoders that don't know the
+/// field skip it, and an empty header set is omitted to keep the payload
+/// tidy. This is a podcast-player-side extension of Chirp's `HttpCapability`
+/// contract; if Chirp adopts the same shape later we can collapse the two.
 enum HttpResult: Encodable {
     /// Transport succeeded — `statusCode` is the raw HTTP status (a 200 and a
     /// 404 are both `ok`; interpreting it is the caller's policy, D7).
-    case ok(statusCode: UInt16, body: String)
+    /// `headers` is the response's `allHeaderFields` flattened to ordered
+    /// `[name, value]` pairs (preserves case from the server response).
+    case ok(statusCode: UInt16, headers: [[String]], body: String)
     /// Transport-level failure (DNS, TLS, timeout, malformed request, …).
     case error(message: String)
 
     enum CodingKeys: String, CodingKey {
         case status
         case statusCode = "status_code"
+        case headers
         case body
         case message
     }
@@ -90,9 +106,16 @@ enum HttpResult: Encodable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .ok(statusCode, body):
+        case let .ok(statusCode, headers, body):
             try c.encode("ok", forKey: .status)
             try c.encode(statusCode, forKey: .statusCode)
+            // Match the Rust `skip_serializing_if = "Vec::is_empty"`: omit the
+            // headers field entirely when empty so the wire payload stays
+            // identical to the pre-M5 shape for non-HTTP responses
+            // (`file://` short-circuit, etc.).
+            if !headers.isEmpty {
+                try c.encode(headers, forKey: .headers)
+            }
             try c.encode(body, forKey: .body)
         case let .error(message):
             try c.encode("error", forKey: .status)
@@ -250,7 +273,11 @@ final class HttpCapability {
                 return
             }
             let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
-            box.set(.ok(statusCode: UInt16(clamping: http.statusCode), body: body))
+            let headers = Self.headerPairs(from: http)
+            box.set(.ok(
+                statusCode: UInt16(clamping: http.statusCode),
+                headers: headers,
+                body: body))
         }
         task.resume()
         // A generous ceiling above `timeoutIntervalForRequest` so the session's
@@ -260,6 +287,22 @@ final class HttpCapability {
             return .error(message: "timeout")
         }
         return box.get()
+    }
+
+    /// Project `HTTPURLResponse.allHeaderFields` to ordered `[name, value]`
+    /// pairs. Values aren't necessarily strings (the API types them as
+    /// `[AnyHashable: Any]`); coerce non-string values via `String(describing:)`
+    /// so an unusual header (`Content-Length` returned as `NSNumber` in some
+    /// stacks) still round-trips as text.
+    private static func headerPairs(from response: HTTPURLResponse) -> [[String]] {
+        var pairs: [[String]] = []
+        pairs.reserveCapacity(response.allHeaderFields.count)
+        for (rawName, rawValue) in response.allHeaderFields {
+            let name = rawName as? String ?? String(describing: rawName)
+            let value = rawValue as? String ?? String(describing: rawValue)
+            pairs.append([name, value])
+        }
+        return pairs
     }
 
 #if DEBUG

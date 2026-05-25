@@ -47,6 +47,14 @@ The M2.F PR landed a working Rust→JNI→Compose proof; the items below are dow
 - **m2f-jni-shim-location** — once `apps/nmp-app-podcast/src/android.rs` grows beyond ~500 LOC or a sibling crate (e.g. a separate Android app) needs to consume the JNI, split it into `nmp-app-podcast-android-ffi` mirroring NMP's `nmp-android-ffi` pattern. Not blocking M3; defer until pain hits.
 - **m2f-real-signin-sheet** — replace the stub `signinNsec` button in `MainActivity.kt` with a real nsec entry sheet that routes through the Keychain capability (mirror of `ios/Podcast/Features/Identity/`). Blocked on Android Keychain capability impl.
 
+## NMP Migration — M5 HTTP capability follow-ups
+
+The M5 PR landed the Rust `HttpRequest`/`HttpResult` schema mirroring the iOS executor, plus `FeedClient` request/response bridge in `podcast-feeds`. The items below were deferred to keep that PR tight.
+
+- **m5-non-utf8-feed-bodies** — `HttpCapability.swift` lossy-converts response bytes to a UTF-8 string via `String(data:encoding:.utf8)` before the bytes cross FFI. RSS feeds declared as Windows-1252 / ISO-8859-1 lose their original bytes here, so `quick_xml::Reader::from_reader` can't honour their `<?xml encoding=...?>` declaration. Pre-existing limitation also present in the legacy Swift `RSSParser`. Fix path: widen the HTTP capability wire to carry body bytes (base64 or a length-prefixed binary channel) and update both Swift + Rust to skip the lossy string round-trip. Track impact via feed-refresh telemetry once that exists. Not blocking M5–M13.
+- **m5-podcastcapabilities-syntax-fix** — the iOS `PodcastCapabilities.swift:38` initializer is missing a `,` between `legacyIO` and `audio` parameters (introduced by M3.B `aae317c`). Independent of M5; tracked here so the next iOS-touching PR sweeps it.
+- **m5-chirp-headers-parity** — `HttpResult.ok` now carries a `headers: [[String]]` field in podcast-player's executor; Chirp's `ios/Chirp/Chirp/Capabilities/HttpCapability.swift` does not. When the canonical `nmp-core::capability::http` lands upstream, reconcile both implementations against the canonical schema (likely lifting the header round-trip into the shared shape).
+
 ## NMP Migration — M1.E compat shims to remove
 
 The M1.E build-compat layer at `ios/Podcast/Podcast/Compat/` is staging

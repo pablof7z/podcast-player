@@ -10,11 +10,18 @@
 //!
 //! - [`audio`] — `nmp.audio.capability` (M3.A; iOS executor in M3.C).
 //! - [`download`] — `nmp.download.capability` (M4.A; iOS executor in M4.C).
+//! - [`http`] — `nmp.http.capability` (M5; iOS executor already lives at
+//!   `ios/Podcast/Podcast/Capabilities/HttpCapability.swift` since M0.C and
+//!   was implemented before the Rust contract existed). The types here are
+//!   re-exported from `podcast-feeds::http`; see that module for the wire
+//!   format.
 
 pub mod audio;
 pub mod dispatch;
 pub mod download;
+pub mod http;
 
 pub use audio::{AudioCommand, AudioReport, AUDIO_CAPABILITY_NAMESPACE};
 pub use dispatch::{dispatch_audio_report_json, encode_audio_command, DispatchOutcome};
 pub use download::{DownloadCommand, DownloadReport, DOWNLOAD_CAPABILITY_NAMESPACE};
+pub use http::{HttpMethod, HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};

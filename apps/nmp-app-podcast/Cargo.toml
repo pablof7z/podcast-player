@@ -51,6 +51,12 @@ podcast-core = { path = "../podcast-core" }
 # alongside `now_playing` / `downloads`; the kernel-side action modules
 # arrive in M7.B.
 podcast-agent-core = { path = "../podcast-agent-core" }
+# M5 — re-exports the canonical `HttpRequest` / `HttpResult` / `HttpMethod`
+# wire types so `capability::http` mirrors the `capability::audio` /
+# `capability::download` layout. The types themselves live in
+# `podcast-feeds` (the lower-level consumer); routing them through this
+# re-export keeps the per-app capability surface uniform.
+podcast-feeds = { path = "../podcast-feeds" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 zeroize = { version = "1", features = ["derive"] }
