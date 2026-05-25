@@ -35,6 +35,7 @@ pub(crate) mod briefings_handler;
 pub mod capability;
 pub(crate) mod chapter;
 pub(crate) mod discover_nostr;
+pub(crate) mod comments_handler;
 pub mod download;
 pub mod ffi;
 pub(crate) mod host_op_handler;

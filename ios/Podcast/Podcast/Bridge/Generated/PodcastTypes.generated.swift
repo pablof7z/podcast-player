@@ -53,6 +53,10 @@ struct SettingsSnapshot: Codable, Equatable, Hashable {
     /// or scheduled slot tick). M9.A stub: the field exists so the iOS
     /// Briefings tab can read it; live population lands in M9.B.
     var briefing: BriefingSnapshot? = nil
+    /// NIP-22 (kind 1111) comments for the currently-playing episode.
+    /// Populated by the Rust projection after a `podcast.fetch_comments`
+    /// dispatch lands; empty otherwise.
+    var comments: [CommentSummary] = []
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -185,4 +189,18 @@ struct BriefingSegmentSummary: Codable, Equatable, Hashable, Identifiable {
     var id: String {
         "\(kind)|\(text.prefix(40))"
     }
+/// One NIP-22 (kind 1111) comment row in `PodcastUpdate.comments`.
+/// Mirrors the Rust-side `CommentSummary` projection. `id` is the
+/// Nostr event id (hex). `authorNpub` is the bech32-encoded author
+/// pubkey so the iOS shell doesn't need a bech32 dependency to render
+/// the truncated stub. `authorName` falls back to `nil` when the
+/// projection layer doesn't yet have cached NIP-01 metadata for the
+/// author; the UI renders the npub stub in that case. `createdAt` is
+/// Unix seconds.
+struct CommentSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var authorNpub: String
+    var authorName: String? = nil
+    var content: String
+    var createdAt: Int
 }

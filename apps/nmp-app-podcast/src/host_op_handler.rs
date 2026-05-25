@@ -436,6 +436,8 @@ impl HostOpHandler for PodcastHostOpHandler {
                     self.handle_update_settings(has_completed_onboarding)
                 }
                 PodcastAction::GenerateBriefing => crate::briefings_handler::handle_generate_briefing(&self.briefing, &self.rev),
+                PodcastAction::FetchComments { episode_id } => crate::comments_handler::handle_fetch_comments(&episode_id),
+                PodcastAction::PostComment { episode_id, content } => crate::comments_handler::handle_post_comment(&episode_id, &content),
             };
         }
         if let Ok(action) = serde_json::from_str::<PlayerAction>(action_json) {

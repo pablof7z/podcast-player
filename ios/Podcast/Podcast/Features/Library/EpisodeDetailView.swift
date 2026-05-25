@@ -21,6 +21,7 @@ struct EpisodeDetailView: View {
     let podcast: PodcastSummary
 
     @Environment(KernelModel.self) private var model
+    @State private var isCommentsSheetPresented: Bool = false
 
     var body: some View {
         ScrollView {
@@ -57,6 +58,23 @@ struct EpisodeDetailView: View {
         .background(Color(.systemBackground))
         .navigationTitle("Episode")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.light()
+                    isCommentsSheetPresented = true
+                } label: {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                }
+                .accessibilityLabel("Comments")
+            }
+        }
+        .sheet(isPresented: $isCommentsSheetPresented) {
+            EpisodeCommentsSheet(
+                episodeId: episode.id,
+                onDismiss: { isCommentsSheetPresented = false }
+            )
+        }
     }
 
     // MARK: - Live snapshot

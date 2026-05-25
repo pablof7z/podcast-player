@@ -411,6 +411,36 @@ impl SettingsSnapshot {
     }
 }
 
+/// One NIP-22 (kind 1111) comment surfaced via
+/// [`super::snapshot::PodcastUpdate::comments`] for the
+/// currently-playing episode.
+///
+/// The shape is intentionally narrow — id, author, body, timestamp.
+/// Reply threading, reactions, and zaps live in follow-up projections.
+///
+/// `id` is the Nostr event id (lowercase hex). `author_npub` is the
+/// bech32 encoding of the event's `pubkey` so the iOS shell can render
+/// it without re-encoding. `author_name` is the cached display name
+/// from NIP-01 metadata when the projection layer has one; `None`
+/// means the UI should fall back to the truncated npub stub.
+/// `created_at` is Unix seconds (matches NIP-01's `created_at`).
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct CommentSummary {
+    /// Event id (lowercase hex) — stable Nostr identifier.
+    pub id: String,
+    /// Author bech32 (`npub1…`) — pre-encoded so iOS doesn't need a
+    /// bech32 dependency to render the stub key.
+    pub author_npub: String,
+    /// Cached display name from the author's NIP-01 metadata, when
+    /// known. `None` means the UI renders the truncated npub instead.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_name: Option<String>,
+    /// Comment body — the raw `content` field of the kind 1111 event.
+    pub content: String,
+    /// Unix seconds (matches NIP-01 `created_at`).
+    pub created_at: i64,
+}
+
 /// Narrow identity projection surfaced via
 /// [`super::snapshot::PodcastUpdate::active_account`].
 ///
@@ -559,6 +589,35 @@ mod tests {
         assert!(!s.has_completed_onboarding);
         let json = serde_json::to_string(&s).expect("encode");
         assert!(json.contains("\"has_completed_onboarding\":false"));
+    fn comment_summary_omits_none_author_name() {
+        // Anonymous (or yet-uncached) author — `author_name` must not
+        // appear in the JSON, so iOS reliably falls back to the npub stub.
+        let c = CommentSummary {
+            id: "abc".into(),
+            author_npub: "npub1example".into(),
+            author_name: None,
+            content: "first!".into(),
+            created_at: 1_700_000_000,
+        };
+        let json = serde_json::to_string(&c).expect("encode");
+        assert!(!json.contains("author_name"));
+        let decoded: CommentSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, c);
+    }
+
+    #[test]
+    fn comment_summary_round_trips_with_author_name() {
+        let c = CommentSummary {
+            id: "abc".into(),
+            author_npub: "npub1example".into(),
+            author_name: Some("Satoshi".into()),
+            content: "love this episode".into(),
+            created_at: 1_700_000_000,
+        };
+        let json = serde_json::to_string(&c).expect("encode");
+        assert!(json.contains("\"author_name\":\"Satoshi\""));
+        let decoded: CommentSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, c);
     }
 
     #[test]

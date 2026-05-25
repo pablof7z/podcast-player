@@ -30,8 +30,9 @@ use super::handle::PodcastHandle;
 use std::sync::atomic::Ordering;
 
 use super::projections::{
-    AccountSummary, BriefingSnapshot, ChapterSummary, ConversationsSnapshot, DownloadQueueSnapshot,
-    EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot, VoiceState, WidgetSnapshot,
+    AccountSummary, BriefingSnapshot, ChapterSummary, CommentSummary, ConversationsSnapshot,
+    DownloadQueueSnapshot, EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot,
+    VoiceState, WidgetSnapshot,
 };
 use crate::player::PlayerState;
 
@@ -146,6 +147,20 @@ pub struct PodcastUpdate {
     /// no-op snapshot byte-identical to the legacy stub (D6).
     #[serde(default, skip_serializing_if = "SettingsSnapshot::is_default")]
     pub settings: SettingsSnapshot,
+    /// NIP-22 (kind 1111) comments for the currently-playing episode.
+    ///
+    /// Populated after a `podcast.fetch_comments` action lands; empty
+    /// otherwise so the legacy-stub byte-identity holds for snapshots
+    /// the user never asked for comments on. The projection layer
+    /// orders newest-first by the projection layer so the iOS shell can
+    /// render the list without re-sorting.
+    ///
+    /// The real relay subscription wiring is deferred — see
+    /// `docs/BACKLOG.md` (`pr-episode-comments-relay-wiring`). Until it
+    /// lands the field stays empty even after a fetch dispatch; iOS
+    /// renders the empty-state copy.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub comments: Vec<CommentSummary>,
 }
 
 impl Default for PodcastUpdate {
@@ -167,6 +182,7 @@ impl Default for PodcastUpdate {
             nostr_results: Vec::new(),
             queue: Vec::new(),
             settings: SettingsSnapshot::default(),
+            comments: Vec::new(),
         }
     }
 }
@@ -361,3 +377,11 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
     let _ = boxed.app;
     // boxed dropped here.
 }
+
+// Snapshot tests live in `snapshot_tests.rs` to keep this file under
+// the 500-line hard limit (AGENTS.md). Behaviour identical — the
+// `#[path]` attribute re-attaches the file as the canonical `tests`
+// submodule of this module.
+#[cfg(test)]
+#[path = "snapshot_tests.rs"]
+mod tests;
