@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct AgentIdentityHero: View {
-    @Binding var settings: Settings
+    @Binding var profileName: String
+    @Binding var profileAbout: String
+    @Binding var profilePictureURL: String
     let hasPrivateKey: Bool
     let npubFull: String
     var nameFocused: FocusState<Bool>.Binding
@@ -10,7 +12,7 @@ struct AgentIdentityHero: View {
     let onShowQR: () -> Void
 
     private var displayName: String {
-        let name = settings.nostrProfileName.trimmed
+        let name = profileName.trimmed
         return name.isEmpty ? "Agent" : name
     }
 
@@ -19,12 +21,12 @@ struct AgentIdentityHero: View {
             avatarButton
 
             VStack(spacing: AppTheme.Spacing.sm) {
-                TextField("Agent name", text: $settings.nostrProfileName)
+                TextField("Agent name", text: $profileName)
                     .font(AppTheme.Typography.title)
                     .multilineTextAlignment(.center)
                     .focused(nameFocused)
 
-                TextField("Short bio", text: $settings.nostrProfileAbout, axis: .vertical)
+                TextField("Short bio", text: $profileAbout, axis: .vertical)
                     .font(AppTheme.Typography.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -92,7 +94,7 @@ struct AgentIdentityHero: View {
     }
 
     private var avatarURL: URL? {
-        guard let url = URL(string: settings.nostrProfilePicture),
+        guard let url = URL(string: profilePictureURL),
               let scheme = url.scheme?.lowercased(),
               scheme == "http" || scheme == "https" else { return nil }
         return url
