@@ -10,6 +10,8 @@ Related files:
 
 ## Active
 
+- 2026-05-25 - PR 1: subscribe action → kernel dispatch → library snapshot — branch `pr-1-subscribe-library`, opening PR now.
+
 ## Recent History
 
 - 2026-05-25 - M13.A: Android shell — full snapshot types + action dispatch + audio stub — merged PR #28.
