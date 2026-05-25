@@ -72,6 +72,7 @@ final class KernelModel {
                 MainActor.assumeIsolated { self.markKernelDead() }
             }
         })
+        kernel.attachAudioReportChannel()
     }
 
     private func markKernelDead() {

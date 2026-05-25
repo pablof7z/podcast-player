@@ -7,6 +7,7 @@ use std::sync::atomic::AtomicU64;
 
 use nmp_ffi::NmpApp;
 
+use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::handle::PodcastHandle;
 use super::helpers::c_string_opt;
@@ -43,8 +44,9 @@ pub extern "C" fn nmp_app_podcast_register(
     let app_mut = unsafe { &mut *app };
     nmp_app_template::register_defaults(app_mut);
 
-    // Register the compound podcast action module (all "podcast.*" dispatches).
+    // Register action modules: "podcast" (subscribe/refresh) and "podcast.player" (playback).
     app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -60,6 +62,7 @@ pub extern "C" fn nmp_app_podcast_register(
     app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(
         app,
         store.clone(),
+        player_actor.clone(),
         rev.clone(),
     )));
 

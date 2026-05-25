@@ -55,6 +55,24 @@ impl PodcastStore {
     pub fn podcast(&self, podcast_id: PodcastId) -> Option<&Podcast> {
         self.podcasts.get(&podcast_id)
     }
+
+    /// Find episode playback info by the string form of its `EpisodeId` UUID.
+    ///
+    /// Returns `(podcast_id_str, enclosure_url, position_secs)` or `None` when
+    /// no episode with that id is found. Compares by converting stored UUIDs to
+    /// their hyphenated string form — same format used in `EpisodeSummary.id`.
+    pub fn episode_playback_info(&self, id_str: &str) -> Option<(String, String, f64)> {
+        for (podcast_id, episodes) in &self.episodes {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                return Some((
+                    podcast_id.0.to_string(),
+                    ep.enclosure_url.to_string(),
+                    ep.position_secs,
+                ));
+            }
+        }
+        None
+    }
 }
 
 impl Default for PodcastStore {

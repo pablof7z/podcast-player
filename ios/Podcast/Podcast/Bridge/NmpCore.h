@@ -78,4 +78,9 @@ char *nmp_app_podcast_snapshot(void *handle);
 void nmp_app_podcast_snapshot_free(char *ptr);
 void nmp_app_podcast_unregister(void *handle);
 
+// Deliver a JSON-encoded AudioReport to the Rust PlayerActor.
+// Returns a malloc-allocated JSON AudioCommand the caller should execute, or
+// NULL when no follow-up is needed. Caller MUST free via `nmp_app_free_string`.
+char *nmp_app_podcast_audio_report(void *handle, const char *report_json);
+
 #endif

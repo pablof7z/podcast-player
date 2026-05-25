@@ -49,6 +49,31 @@ extension PodcastHandle {
         }
     }
 
+    /// Wire the async iOS→Rust audio report channel.
+    ///
+    /// Must be called from a `@MainActor` context (e.g. `KernelModel.init()`)
+    /// after `registerPodcastProjection()` has run. `AudioCapability` fires
+    /// the `sendReport` closure from its own `@MainActor` methods; the closure
+    /// uses `MainActor.assumeIsolated` to safely reach back into
+    /// `PodcastCapabilities.shared` from the non-isolated closure type.
+    @MainActor
+    func attachAudioReportChannel() {
+        PodcastCapabilities.shared.audio.attach { [weak self] reportJSON in
+            MainActor.assumeIsolated {
+                guard let handle = self?.podcastHandle else { return }
+                guard let result = nmp_app_podcast_audio_report(handle, reportJSON)
+                else { return }
+                defer { nmp_app_free_string(result) }
+                let followUpJSON = String(cString: result)
+                guard
+                    let data = followUpJSON.data(using: .utf8),
+                    let command = try? JSONDecoder().decode(AudioCommand.self, from: data)
+                else { return }
+                PodcastCapabilities.shared.audio.execute(command)
+            }
+        }
+    }
+
     func unregisterPodcastProjectionIfNeeded() {
         guard let handle = podcastHandle else { return }
         nmp_app_podcast_unregister(handle)
