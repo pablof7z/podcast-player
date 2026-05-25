@@ -3,6 +3,11 @@
 //! stays under the 500-line hard limit. None of these touch the
 //! handler's state — they're pure transforms exercised by the
 //! handler's methods.
+//! Free-function helpers used by [`crate::host_op_handler`].
+//!
+//! Extracted into its own file so `host_op_handler.rs` stays under the 500-line
+//! hard cap. These functions are pure (no kernel state, no FFI) so unit tests
+//! live alongside.
 
 use podcast_core::Episode;
 
@@ -17,6 +22,9 @@ use crate::ffi::projections::PodcastSummary;
 /// fires in practice — tracked as a follow-up; this helper keeps the
 /// shape stable so the fix lands in one place.
 pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
+/// Merge a freshly-parsed episode list onto an existing one, carrying forward
+/// per-episode `position_secs` so a feed refresh doesn't erase resume points.
+pub fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
     fresh
         .into_iter()
         .map(|mut ep| {
@@ -32,6 +40,10 @@ pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec
 /// the iTunes Search API query string. Kept local so we don't pull
 /// in a heavy dependency for one call site.
 pub(crate) fn url_encode(s: &str) -> String {
+/// Minimal `application/x-www-form-urlencoded` style percent-encoder for the
+/// iTunes search `term=` parameter. Standalone so we don't pull in a heavier
+/// `percent-encoding` dependency just for this one call site.
+pub fn url_encode(s: &str) -> String {
     s.chars()
         .flat_map(|c| match c {
             'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => {
@@ -46,6 +58,14 @@ pub(crate) fn url_encode(s: &str) -> String {
                     let lo = char::from_digit((b & 0xf) as u32, 16).unwrap_or('0');
                     vec!['%', hi.to_ascii_uppercase(), lo.to_ascii_uppercase()]
                 }).collect()
+                bytes
+                    .bytes()
+                    .flat_map(|b| {
+                        let hi = char::from_digit((b >> 4) as u32, 16).unwrap_or('0');
+                        let lo = char::from_digit((b & 0xf) as u32, 16).unwrap_or('0');
+                        vec!['%', hi.to_ascii_uppercase(), lo.to_ascii_uppercase()]
+                    })
+                    .collect()
             }
         })
         .collect()
@@ -54,6 +74,8 @@ pub(crate) fn url_encode(s: &str) -> String {
 /// Parse the iTunes Search API JSON payload into `PodcastSummary` rows.
 /// Returns an empty Vec on any decode failure (D6).
 pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
+/// Returns an empty `Vec` on any decode failure (D6).
+pub fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
     #[derive(serde::Deserialize)]
     struct ItunesResponse {
         results: Vec<ItunesResult>,
@@ -86,4 +108,46 @@ pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn url_encode_passes_through_alnum() {
+        assert_eq!(url_encode("abcXYZ123"), "abcXYZ123");
+    }
+
+    #[test]
+    fn url_encode_encodes_space_as_plus() {
+        assert_eq!(url_encode("hello world"), "hello+world");
+    }
+
+    #[test]
+    fn url_encode_percent_encodes_unicode() {
+        assert_eq!(url_encode("é"), "%C3%A9");
+    }
+
+    #[test]
+    fn parse_itunes_results_handles_empty_payload() {
+        assert!(parse_itunes_results("{\"results\":[]}").is_empty());
+        assert!(parse_itunes_results("not json").is_empty());
+    }
+
+    #[test]
+    fn parse_itunes_results_extracts_one_row() {
+        let body = r#"{"results":[{"collectionId":42,"collectionName":"Show","feedUrl":"https://x/y.rss","artworkUrl600":"https://x/art.png","artistName":"Host"}]}"#;
+        let rows = parse_itunes_results(body);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].id, "42");
+        assert_eq!(rows[0].title, "Show");
+        assert_eq!(rows[0].author.as_deref(), Some("Host"));
+    }
+
+    #[test]
+    fn parse_itunes_results_skips_rows_without_collection_id() {
+        let body = r#"{"results":[{"collectionName":"NoId"}]}"#;
+        assert!(parse_itunes_results(body).is_empty());
+    }
 }

@@ -35,6 +35,8 @@ use super::projections::{
     SocialSnapshot, VoiceState, WidgetSnapshot,
     AccountSummary, BriefingSnapshot, ChapterSummary, ConversationsSnapshot, DownloadQueueSnapshot,
     EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot, WikiArticle,
+    AccountSummary, AgentPickSummary, BriefingSnapshot, ConversationsSnapshot,
+    DownloadQueueSnapshot, EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
 use crate::player::PlayerState;
@@ -188,6 +190,11 @@ pub struct PodcastUpdate {
     /// so the full library stays visible while a search overlay is open.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub wiki_search_results: Vec<WikiArticle>,
+    /// AI agent picks for the Home rail. Recomputed after every successful
+    /// feed refresh and on explicit `podcast.picks.refresh` dispatches.
+    /// Empty until the first refresh has run. See [`AgentPickSummary`].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub picks: Vec<AgentPickSummary>,
 }
 
 impl Default for PodcastUpdate {
@@ -214,6 +221,7 @@ impl Default for PodcastUpdate {
             queue: Vec::new(),
             wiki_articles: Vec::new(),
             wiki_search_results: Vec::new(),
+            picks: Vec::new(),
         }
     }
 }
@@ -398,6 +406,10 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         .map(|w| w.clone())
         .unwrap_or_default();
 
+    let picks = handle.picks.lock().ok()
+        .map(|p| p.clone())
+        .unwrap_or_default();
+
     let update = PodcastUpdate {
         rev,
         now_playing,
@@ -410,6 +422,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         queue,
         wiki_articles,
         wiki_search_results,
+        picks,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)
@@ -742,3 +755,8 @@ mod tests {
         assert!(!json.contains("social"));
     }
 }
+// Snapshot tests live in a sibling file so this module stays under the
+// 500-line hard cap.
+#[cfg(test)]
+#[path = "snapshot_tests.rs"]
+mod tests;

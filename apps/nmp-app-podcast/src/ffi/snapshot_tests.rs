@@ -13,6 +13,13 @@ use super::projections::{
 };
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
+//! Tests for `super::snapshot::PodcastUpdate` round-trips. Lives in a sibling
+//! file so [`super::snapshot`] stays under the 500-line hard cap.
+
+use super::*;
+use super::super::projections::{
+    AgentPickSummary, DownloadItemSnapshot, PendingApprovalSnapshot,
+};
 
 #[test]
 fn default_snapshot_omits_now_playing() {
@@ -408,4 +415,28 @@ fn snapshot_with_wiki_search_results_round_trips() {
     assert!(json.contains(r#""wiki_search_results""#));
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded.wiki_search_results, snap.wiki_search_results);
+// ── AgentPickSummary snapshot wiring (feature #46) ───────────────
+//
+// Picks-field-on-PodcastUpdate round-tripping is covered together with
+// the default-omit byte-compat guarantee.
+
+#[test]
+fn snapshot_picks_round_trips_and_default_omits_field() {
+    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!json.contains("picks"));
+    let pick = AgentPickSummary {
+        episode_id: "ep-1".into(),
+        episode_title: "Pilot".into(),
+        podcast_id: "pod-1".into(),
+        podcast_title: "Show".into(),
+        published_at: 1_700_000_000,
+        pick_reason: "New from Show".into(),
+        pick_score: 1.0,
+        ..AgentPickSummary::default()
+    };
+    let snap = PodcastUpdate { picks: vec![pick.clone()], ..PodcastUpdate::default() };
+    let decoded: PodcastUpdate =
+        serde_json::from_str(&serde_json::to_string(&snap).expect("encode"))
+            .expect("decode");
+    assert_eq!(decoded.picks, vec![pick]);
 }

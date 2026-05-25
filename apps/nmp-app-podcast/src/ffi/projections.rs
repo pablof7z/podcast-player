@@ -461,6 +461,48 @@ pub struct CommentSummary {
     pub created_at: i64,
 }
 
+/// One agent-curated pick row surfaced via
+/// [`super::snapshot::PodcastUpdate::picks`].
+///
+/// Built by the picks-projection layer (see `picks_module::AgentPicksModule`)
+/// from a heuristic walk over the library: newest episodes across all
+/// subscribed shows, capped per show for diversity, top-N overall. Real
+/// LLM-driven picks land in a follow-up; the wire shape is forward-
+/// compatible — the `pick_score` + `pick_reason` fields are populated by
+/// whichever projection is in effect.
+///
+/// The fields are pre-resolved (podcast title + artwork denormalized from
+/// `PodcastSummary`) so the iOS Home view can render the pick rail
+/// without a second snapshot lookup per row.
+///
+/// `pick_score` is a `0.0..=1.0` confidence (1.0 = best pick); the
+/// projection layer normalizes whichever signal it uses (recency rank in
+/// the heuristic stub, model probability in the future LLM variant) onto
+/// this range. `pick_reason` is a short, human-readable string the UI
+/// renders directly (no localization in M-stub).
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct AgentPickSummary {
+    /// Stable id of the episode the pick refers to. Matches
+    /// `EpisodeSummary.id`.
+    pub episode_id: String,
+    pub episode_title: String,
+    /// Owning podcast's id (string form of `PodcastId` UUID).
+    pub podcast_id: String,
+    pub podcast_title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artwork_url: Option<String>,
+    /// Unix seconds.
+    pub published_at: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_secs: Option<f64>,
+    /// Short reason the row was selected, rendered in the chip overlay.
+    /// e.g. `"New from {podcast_title}"`.
+    pub pick_reason: String,
+    /// `0.0..=1.0` — higher is better. Used for sort order; the
+    /// projection layer is the sole owner of normalization.
+    pub pick_score: f32,
+}
+
 /// Narrow identity projection surfaced via
 /// [`super::snapshot::PodcastUpdate::active_account`].
 ///
@@ -846,5 +888,43 @@ mod tests {
         };
         let json = serde_json::to_string(&article).expect("encode");
         assert!(!json.contains("source_episode_ids"));
+    // ── AgentPickSummary projection (feature #46) ───────────────────
+
+    #[test]
+    fn agent_pick_summary_round_trips_with_all_fields() {
+        let pick = AgentPickSummary {
+            episode_id: "ep-1".into(),
+            episode_title: "Pilot".into(),
+            podcast_id: "pod-1".into(),
+            podcast_title: "Some Show".into(),
+            artwork_url: Some("https://ex.com/art.png".into()),
+            published_at: 1_700_000_000,
+            duration_secs: Some(3600.0),
+            pick_reason: "New from Some Show".into(),
+            pick_score: 0.95,
+        };
+        let json = serde_json::to_string(&pick).expect("encode");
+        let decoded: AgentPickSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, pick);
+    }
+
+    #[test]
+    fn agent_pick_summary_omits_none_optionals() {
+        let pick = AgentPickSummary {
+            episode_id: "ep-2".into(),
+            episode_title: "Untitled".into(),
+            podcast_id: "pod-2".into(),
+            podcast_title: "No-Art Show".into(),
+            artwork_url: None,
+            published_at: 1_700_000_000,
+            duration_secs: None,
+            pick_reason: "New".into(),
+            pick_score: 0.5,
+        };
+        let json = serde_json::to_string(&pick).expect("encode");
+        assert!(!json.contains("artwork_url"));
+        assert!(!json.contains("duration_secs"));
+        let decoded: AgentPickSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, pick);
     }
 }

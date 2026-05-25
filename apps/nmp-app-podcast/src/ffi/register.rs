@@ -7,6 +7,7 @@ use std::sync::atomic::AtomicU64;
 use nmp_ffi::NmpApp;
 
 use super::actions::chapters_module::ChaptersActionModule;
+use super::actions::picks_module::AgentPicksModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -53,6 +54,10 @@ pub extern "C" fn nmp_app_podcast_register(
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<WikiActionModule>();
+    // (playback) and "podcast.picks" (AI agent picks).
+    app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
+    app_mut.register_action::<AgentPicksModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -63,6 +68,7 @@ pub extern "C" fn nmp_app_podcast_register(
     let queue = Arc::new(Mutex::new(PlaybackQueue::new()));
     let wiki_articles = Arc::new(Mutex::new(Vec::new()));
     let wiki_search_results = Arc::new(Mutex::new(Vec::new()));
+    let picks = Arc::new(Mutex::new(Vec::new()));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
     // Subsequent increments happen in PodcastHostOpHandler on store writes.
@@ -81,6 +87,7 @@ pub extern "C" fn nmp_app_podcast_register(
         queue.clone(),
         wiki_articles.clone(),
         wiki_search_results.clone(),
+        picks.clone(),
         rev.clone(),
     )));
 
@@ -96,5 +103,6 @@ pub extern "C" fn nmp_app_podcast_register(
         queue,
         wiki_articles,
         wiki_search_results,
+        picks,
     }))
 }

@@ -28,12 +28,13 @@ final class PodcastRouter: ObservableObject {
 enum PodcastTab: Hashable { case library, downloads, identity }
 enum PodcastTab: Hashable { case library, briefings, identity }
 enum PodcastTab: Hashable { case library, social, identity }
+enum PodcastTab: Hashable { case home, library, identity }
 
 struct RootShell: View {
     @Environment(KernelModel.self) private var model
     @Environment(SpotlightDeepLinkRouter.self) private var deepLinkRouter
 
-    @State private var tab: PodcastTab = .library
+    @State private var tab: PodcastTab = .home
 
     var body: some View {
         mainTabs
@@ -55,6 +56,10 @@ struct RootShell: View {
 
     private var mainTabs: some View {
         TabView(selection: $tab) {
+            HomeView()
+                .tabItem { Label("Home", systemImage: "house") }
+                .tag(PodcastTab.home)
+
             LibraryView()
                 .tabItem { Label("Library", systemImage: "books.vertical") }
                 .tag(PodcastTab.library)

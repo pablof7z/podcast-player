@@ -60,6 +60,7 @@ mod tests {
     use super::*;
     use crate::ffi::handle::PodcastHandle;
     use crate::ffi::projections::{NostrShowSummary, PodcastSummary};
+    use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
     use crate::player::PlayerActor;
     use crate::queue::PlaybackQueue;
     use crate::store::PodcastStore;
@@ -82,6 +83,7 @@ mod tests {
             queue: Arc::new(Mutex::new(PlaybackQueue::new())),
             wiki_articles: Arc::new(Mutex::new(Vec::new())),
             wiki_search_results: Arc::new(Mutex::new(Vec::new())),
+            picks: Arc::new(Mutex::new(Vec::<AgentPickSummary>::new())),
         })
     }
 

@@ -9,6 +9,7 @@ use nmp_core::substrate::{CapabilityRequest, HostOpHandler};
 use nmp_ffi::NmpApp;
 use podcast_core::{Episode, EpisodeId, PodcastId};
 use uuid::Uuid;
+use podcast_core::{Episode, PodcastId};
 use podcast_feeds::client::{build_feed_request, handle_feed_response, FeedResult};
 use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
 
@@ -29,6 +30,12 @@ use crate::host_op_handler_queue::handle_queue_action;
 use crate::ffi::actions::wiki_module::WikiAction;
 use crate::ffi::projections::{PodcastSummary, WikiArticle};
 use crate::itunes_search::{parse_itunes_results, url_encode};
+use crate::ffi::actions::picks_module::PicksAction;
+use crate::ffi::actions::player_module::PlayerAction;
+use crate::ffi::actions::podcast_module::PodcastAction;
+use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
+use crate::host_op_helpers::{merge_episodes, parse_itunes_results, url_encode};
+use crate::picks_handler::{handle_refresh as picks_handle_refresh, refresh_picks_into_slot};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::{episodes_to_auto_download, PodcastStore};
@@ -47,6 +54,7 @@ pub struct PodcastHostOpHandler {
     queue: Arc<Mutex<PlaybackQueue>>,
     wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
     wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
+    picks: Arc<Mutex<Vec<AgentPickSummary>>>,
     rev: Arc<AtomicU64>,
 }
 
@@ -71,6 +79,10 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
     ) -> Self {
         Self { app, store, player_actor, search_results, wiki_articles, wiki_search_results, rev }
+        picks: Arc<Mutex<Vec<AgentPickSummary>>>,
+        rev: Arc<AtomicU64>,
+    ) -> Self {
+        Self { app, store, player_actor, search_results, picks, rev }
     }
     fn dispatch_http(&self, req: &HttpRequest, correlation_id: &str) -> Result<HttpResult, String> {
         let payload_json = serde_json::to_string(req).map_err(|e| e.to_string())?;
@@ -95,14 +107,21 @@ impl PodcastHostOpHandler {
         };
         let podcast_id = PodcastId::generate();
         match handle_feed_response(&url, podcast_id, &http_result, None, Utc::now()) {
-            Ok(FeedResult::Parsed { parsed, .. }) => match self.store.lock() {
-                Ok(mut s) => {
-                    s.subscribe(parsed.podcast, parsed.episodes);
-                    self.rev.fetch_add(1, Ordering::Relaxed);
-                    serde_json::json!({"ok": true})
+            Ok(FeedResult::Parsed { parsed, .. }) => {
+                let ok = match self.store.lock() {
+                    Ok(mut s) => {
+                        s.subscribe(parsed.podcast, parsed.episodes);
+                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        true
+                    }
+                    Err(_) => false,
+                };
+                if !ok {
+                    return serde_json::json!({"ok": false, "error": "store poisoned"});
                 }
-                Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
-            },
+                refresh_picks_into_slot(&self.store, &self.picks, &self.rev);
+                serde_json::json!({"ok": true})
+            }
             Ok(FeedResult::NotModified { .. }) => serde_json::json!({"ok": true, "not_modified": true}),
             Err(e) => serde_json::json!({"ok": false, "error": format!("{e:?}")}),
         }
@@ -253,6 +272,7 @@ impl PodcastHostOpHandler {
                 // never run with the store locked (lock discipline at the top
                 // of this file).
                 match self.store.lock() {
+                let write_ok = match self.store.lock() {
                     Ok(mut s) => {
                         s.subscribe(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
@@ -281,6 +301,17 @@ impl PodcastHostOpHandler {
                 // the iOS capability owns the actual fetch; the kernel only
                 // tells it what to start.
                 self.dispatch_auto_downloads(&to_auto_download, correlation_id);
+                        true
+                    }
+                    Err(_) => false,
+                };
+                if !write_ok {
+                    return serde_json::json!({"ok": false, "error": "store poisoned"});
+                }
+                // Auto-recompute picks: the library just changed, so the
+                // pick slot is stale. Lock discipline: refresh_picks_into_slot
+                // takes the store lock independently — it does not nest.
+                refresh_picks_into_slot(&self.store, &self.picks, &self.rev);
                 serde_json::json!({"ok": true})
             }
             Ok(FeedResult::NotModified { .. }) => serde_json::json!({"ok": true, "not_modified": true}),
@@ -683,6 +714,8 @@ impl HostOpHandler for PodcastHostOpHandler {
             };
         if let Ok(action) = serde_json::from_str::<WikiAction>(action_json) {
             return handle_wiki_action(&self.wiki_articles, &self.wiki_search_results, &self.rev, action);
+        if let Ok(PicksAction::Refresh) = serde_json::from_str::<PicksAction>(action_json) {
+            return picks_handle_refresh(&self.store, &self.picks, &self.rev);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }
@@ -699,3 +732,6 @@ fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
         })
         .collect()
 }
+// `merge_episodes`, `url_encode`, and `parse_itunes_results` are pure helpers
+// now defined in `crate::host_op_helpers` so this file stays under the
+// 500-line hard cap.

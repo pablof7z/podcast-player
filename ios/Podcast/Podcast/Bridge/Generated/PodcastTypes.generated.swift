@@ -63,6 +63,10 @@ struct SettingsSnapshot: Codable, Equatable, Hashable {
     /// Result of the most recent `podcast.wiki.search`. `nil` until the
     /// first search lands; an empty array means a search with no hits.
     var wikiSearchResults: [WikiArticle]? = nil
+    /// AI agent picks for the Home rail. Empty until the first
+    /// `podcast.picks.refresh` lands (or an implicit refresh fired
+    /// at the end of `podcast.refresh_all`).
+    var picks: [AgentPickSummary]? = nil
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -261,4 +265,30 @@ struct WikiArticle: Codable, Identifiable, Equatable, Hashable {
     /// Unix seconds. Mirrors `WikiArticle::last_updated_at` in Rust.
     var lastUpdatedAt: Int = 0
     var isGenerating: Bool = false
+/// One AI agent pick row surfaced via `PodcastUpdate.picks`. Built by the
+/// Rust `picks_handler` from a heuristic walk over the library (newest
+/// episodes across all shows, capped per show, top-10).
+///
+/// The podcast title + artwork are denormalized so the Home rail can
+/// render a card without doing a second lookup against the library
+/// snapshot.
+struct AgentPickSummary: Codable, Identifiable, Equatable, Hashable {
+    /// Stable id of the underlying episode. Matches `EpisodeSummary.id`.
+    var episodeId: String
+    var episodeTitle: String
+    var podcastId: String
+    var podcastTitle: String
+    var artworkUrl: String? = nil
+    /// Unix seconds.
+    var publishedAt: Int = 0
+    var durationSecs: Double? = nil
+    /// Short reason rendered in the pick chip ("New from {show}").
+    var pickReason: String = ""
+    /// `0.0..=1.0` — higher is better; used for sort order.
+    var pickScore: Double = 0
+
+    /// `Identifiable` conformance uses the episode id, which is stable
+    /// across refreshes — the SwiftUI `ForEach` keeps row identity even
+    /// when the rank shuffles.
+    var id: String { episodeId }
 }
