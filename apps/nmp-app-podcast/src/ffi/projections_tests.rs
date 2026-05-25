@@ -4,9 +4,8 @@
 //! AGENTS.md 500-line hard limit.
 
 use super::projections::{
-    ChapterSummary, EpisodeSummary, NostrShowSummary, TranscriptEntry, WidgetSnapshot,
     AgentMessageSummary, AgentSnapshot, ChapterSummary, EpisodeSummary, NostrShowSummary,
-    WidgetSnapshot,
+    TranscriptEntry, WidgetSnapshot,
 };
 use crate::player::AdSegment;
 
@@ -115,6 +114,7 @@ fn episode_summary_round_trips_with_chapters() {
                 title: "Intro".into(),
                 image_url: Some("https://ex.com/intro.png".into()),
                 url: None,
+                is_ai_generated: false,
             },
             ChapterSummary {
                 start_secs: 60.0,

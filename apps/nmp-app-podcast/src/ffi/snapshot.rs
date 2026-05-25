@@ -39,33 +39,15 @@ use serde::{Deserialize, Serialize};
 
 use super::handle::PodcastHandle;
 use super::projections::{
-    AccountSummary, BriefingSnapshot, ChapterSummary, CommentSummary, ConversationsSnapshot,
-    DownloadQueueSnapshot, EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot,
-    SocialSnapshot, VoiceState, WidgetSnapshot,
-    AccountSummary, BriefingSnapshot, ChapterSummary, ConversationsSnapshot, DownloadQueueSnapshot,
-    EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot, WikiArticle,
-    AccountSummary, AgentPickSummary, BriefingSnapshot, ConversationsSnapshot,
-    AccountSummary, AgentTaskSummary, BriefingSnapshot, ConversationsSnapshot,
-    DownloadQueueSnapshot, EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
-    AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadQueueSnapshot, EpisodeSummary,
-    KnowledgeSearchResult, PodcastSummary, VoiceState, WidgetSnapshot,
-    MemoryFact, PodcastSummary, VoiceState, WidgetSnapshot,
-    PodcastSummary, TtsEpisodeSummary, VoiceState, WidgetSnapshot,
-    AccountSummary, BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadQueueSnapshot,
-    EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
-    AccountSummary, AgentSnapshot, BriefingSnapshot, ChapterSummary, DownloadQueueSnapshot,
-    EpisodeSummary, NostrShowSummary, PodcastSummary, VoiceState, WidgetSnapshot,
-    AccountSummary, BriefingSnapshot, CategoryBrowseItem, ChapterSummary, ConversationsSnapshot,
-    DownloadQueueSnapshot, EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
-    EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot, VoiceState, WidgetSnapshot,
-};
-use super::snapshot_queue::resolve_queue_rows;
-    EpisodeSummary, InboxItem, PodcastSummary, VoiceState, WidgetSnapshot,
-};
-use crate::inbox_handler::build_inbox;
-    OwnedPodcastInfo, PodcastSummary, VoiceState, WidgetSnapshot,
+    AccountSummary, AgentPickSummary, AgentSnapshot, AgentTaskSummary, BriefingSnapshot,
+    CategoryBrowseItem, ChapterSummary, ClipSummary, CommentSummary, ConversationsSnapshot,
+    DownloadQueueSnapshot, EpisodeSummary, InboxItem, KnowledgeSearchResult, MemoryFact,
+    NostrShowSummary, OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot,
+    TtsEpisodeSummary, VoiceState, WidgetSnapshot, WikiArticle,
 };
 use super::snapshot_owned::collect_owned_podcasts;
+use super::snapshot_queue::resolve_queue_rows;
+use crate::inbox_handler::build_inbox;
 use crate::player::PlayerState;
 
 /// Typed root of the snapshot JSON.
@@ -164,22 +146,9 @@ pub struct PodcastUpdate {
     /// NIP-F4 discovery results, populated after `podcast.discover_nostr`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub nostr_results: Vec<NostrShowSummary>,
-    /// Playback queue ("Up Next") — ordered list of episode ids the
-    /// player will pick up after `now_playing` finishes (manually via
-    /// `play_next`, or on natural completion once auto-advance lands).
+    /// App-settings projection (onboarding completion, auto-skip-ads, …).
     ///
-    /// Lives at the snapshot root, not inside [`PlayerState`], so the
-    /// queue stays visible even when `now_playing` is `None` (e.g.
-    /// before the first `play` action). Per D5 we serialize an empty
-    /// vec only by omitting it from the wire payload, preserving
-    /// byte-identity with the legacy stub.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub queue: Vec<String>,
-    /// App-settings projection (onboarding completion, …).
-    ///
-    /// Defaults to the fresh-install `SettingsSnapshot` (`has_completed_onboarding
-    /// = false`). Always emitted by the snapshot builder so iOS can read
-    /// `snapshot.settings` directly without an `if let` dance; the
+    /// Defaults to the fresh-install `SettingsSnapshot`. The
     /// `skip_serializing_if = "SettingsSnapshot::is_default"` guard keeps the
     /// no-op snapshot byte-identical to the legacy stub (D6).
     #[serde(default, skip_serializing_if = "SettingsSnapshot::is_default")]
@@ -188,14 +157,7 @@ pub struct PodcastUpdate {
     ///
     /// Populated after a `podcast.fetch_comments` action lands; empty
     /// otherwise so the legacy-stub byte-identity holds for snapshots
-    /// the user never asked for comments on. The projection layer
-    /// orders newest-first by the projection layer so the iOS shell can
-    /// render the list without re-sorting.
-    ///
-    /// The real relay subscription wiring is deferred — see
-    /// `docs/BACKLOG.md` (`pr-episode-comments-relay-wiring`). Until it
-    /// lands the field stays empty even after a fetch dispatch; iOS
-    /// renders the empty-state copy.
+    /// the user never asked for comments on.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub comments: Vec<CommentSummary>,
     /// Playback "Up Next" queue, front-first. Each entry is an
@@ -270,13 +232,6 @@ pub struct PodcastUpdate {
     /// one that follows the very first subscription's refresh).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub categories: Vec<CategoryBrowseItem>,
-    /// User-facing playback / behaviour preferences. `None` until the
-    /// kernel has resolved at least one setting — for now this is
-    /// always populated since `auto_skip_ads_enabled` defaults to
-    /// `false` and is read on every tick. Per D7 the iOS shell only
-    /// renders this; mutations go through `podcast.settings.*`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub settings: Option<SettingsSnapshot>,
 }
 
 impl Default for PodcastUpdate {
@@ -297,7 +252,6 @@ impl Default for PodcastUpdate {
             toast: None,
             search_results: Vec::new(),
             nostr_results: Vec::new(),
-            queue: Vec::new(),
             settings: SettingsSnapshot::default(),
             comments: Vec::new(),
             queue: Vec::new(),
@@ -312,7 +266,6 @@ impl Default for PodcastUpdate {
             inbox: Vec::new(),
             owned_podcasts: Vec::new(),
             categories: Vec::new(),
-            settings: None,
         }
     }
 }
@@ -324,12 +277,9 @@ impl Default for PodcastUpdate {
 /// and serializes it. Failures degrade to the byte-compatible legacy stub
 /// (D6).
 fn build_snapshot_payload(handle: &PodcastHandle) -> String {
-    // Read rev without modifying it — writes bump rev in PodcastHostOpHandler.
     let rev = handle.rev.load(Ordering::Relaxed);
 
-    // Fast path: return the cached JSON if rev hasn't changed. This avoids
-    // re-serializing the entire library on every 500ms poll when nothing
-    // has changed — critical for large libraries.
+    // Fast path: skip re-serialization when rev hasn't changed.
     if let Ok(cache) = handle.snapshot_cache.lock() {
         if let Some((cached_rev, ref cached_json)) = *cache {
             if cached_rev == rev {
@@ -338,105 +288,20 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         }
     }
 
-    // Single lock acquisition for both projections so the queue and
-    // `now_playing` are read from the same actor state without a gap
-    // a concurrent mutation could slip through.
-    let (now_playing, queue) = handle.player_actor.lock().ok().map(|a| {
+    let now_playing = handle.player_actor.lock().ok().and_then(|a| {
         let s = a.state().clone();
-        let now_playing = if s.episode_id.is_some() { Some(s) } else { None };
-        (now_playing, a.queue().to_vec())
-    }).unwrap_or((None, Vec::new()));
+        if s.episode_id.is_some() { Some(s) } else { None }
+    });
 
-    // Hold the store lock once to derive both library + settings — saves
-    // a second acquisition and guarantees both projections see the same
-    // store revision.
-    let (library, settings) = handle
-        .store
-        .lock()
-        .ok()
-        .map(|s| {
-            let library: Vec<PodcastSummary> = s
-                .all_podcasts()
-                .into_iter()
-                .map(|(podcast, episodes)| PodcastSummary {
-                    id: podcast.id.0.to_string(),
-                    title: podcast.title.clone(),
-                    episode_count: episodes.len(),
-                    unplayed_count: 0,
-                    artwork_url: podcast.image_url.as_ref().map(|u| u.to_string()),
-                    feed_url: podcast.feed_url.as_ref().map(|u| u.to_string()),
-                    author: if podcast.author.is_empty() {
-                        None
-                    } else {
-                        Some(podcast.author.clone())
-                    },
-                    episodes: episodes
-                        .iter()
-                        .map(|ep| {
-                            let id_str = ep.id.0.to_string();
-                            let transcript = s.transcript_for(&id_str).map(str::to_owned);
-                            EpisodeSummary {
-                                title: ep.title.clone(),
-                                podcast_id: Some(podcast.id.0.to_string()),
-                                podcast_title: Some(podcast.title.clone()),
-                                duration_secs: ep.duration_secs,
-                                artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
-                                published_at: Some(ep.pub_date.timestamp()),
-                                download_path: s.local_path_for(&ep.id).map(str::to_owned),
-                                description: Some(ep.description.clone()).filter(|s| !s.is_empty()),
-                                transcript,
-                                chapters: ep
-                                    .chapters
-                                    .as_ref()
-                                    .map(|cs| {
-                                        cs.iter()
-                                            .map(|c| ChapterSummary {
-                                                start_secs: c.start_secs,
-                                                end_secs: c.end_secs,
-                                                title: c.title.clone(),
-                                                image_url: c.image_url.as_ref().map(|u| u.to_string()),
-                                                url: c.link_url.as_ref().map(|u| u.to_string()),
-                                            })
-                                            .collect()
-                                    })
-                                    .unwrap_or_default(),
-                                // `position_for` already returns `None` when
-                                // position == 0.0, so the projection naturally
-                                // hides the field for untouched episodes.
-                                playback_position_secs: s.position_for(&id_str),
-                                id: id_str,
-                            }
-                        })
-                        .collect(),
-                })
-                .collect();
-            let settings = SettingsSnapshot {
-                has_completed_onboarding: s.has_completed_onboarding(),
-            };
-            (library, settings)
-        })
-        .unwrap_or_default();
-    // Snapshot the transcript cache once so the per-episode loop below can
-    // do plain `HashMap::get` lookups without re-locking. Clone is cheap
-    // (transcripts only populate for episodes the user has actively opened).
-    let transcripts = handle.transcripts.lock().ok()
-        .map(|t| t.clone())
-        .unwrap_or_default();
-
-    let library = handle.store.lock().ok().map(|s| {
-    // Snapshot the categorizer cache once so every episode row + the
-    // browse aggregate see the same labels (a refresh that lands mid-
-    // build would otherwise pull labels for one show and miss them on
-    // another).
+    // Snapshot caches before the store lock so we don't hold two locks at once.
+    let transcripts = handle.transcripts.lock().ok().map(|t| t.clone()).unwrap_or_default();
     let categories_cache: std::collections::HashMap<String, Vec<String>> =
         handle.categories.lock().ok().map(|c| c.clone()).unwrap_or_default();
 
-    let library: Vec<PodcastSummary> = handle.store.lock().ok().map(|s| {
-        s.all_podcasts()
-    let (library, memory_facts) = handle.store.lock().ok().map(|s| {
-        let lib = s.all_podcasts()
-    let (library, settings) = handle.store.lock().ok().map(|s| {
-        let library: Vec<PodcastSummary> = s.all_podcasts()
+    // Single store lock → library + memory_facts + settings.
+    let (library, memory_facts, settings) = handle.store.lock().ok().map(|s| {
+        let library: Vec<PodcastSummary> = s
+            .all_podcasts()
             .into_iter()
             .map(|(podcast, episodes)| PodcastSummary {
                 id: podcast.id.0.to_string(),
@@ -445,30 +310,24 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                 unplayed_count: 0,
                 artwork_url: podcast.image_url.as_ref().map(|u| u.to_string()),
                 feed_url: podcast.feed_url.as_ref().map(|u| u.to_string()),
-                author: if podcast.author.is_empty() { None } else { Some(podcast.author.clone()) },
+                author: if podcast.author.is_empty() {
+                    None
+                } else {
+                    Some(podcast.author.clone())
+                },
                 auto_download: s.is_auto_download_enabled(podcast.id),
                 episodes: episodes
                     .iter()
-                    .map(|ep| EpisodeSummary {
-                        id: ep.id.0.to_string(),
-                        title: ep.title.clone(),
-                        podcast_id: Some(podcast.id.0.to_string()),
-                        podcast_title: Some(podcast.title.clone()),
-                        duration_secs: ep.duration_secs,
-                        artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
-                        published_at: Some(ep.pub_date.timestamp()),
-                        download_path: s.local_path_for(&ep.id).map(str::to_owned),
                     .map(|ep| {
                         let ep_id = ep.id.0.to_string();
-                        let transcript_entries = transcripts
-                            .get(&ep_id)
-                            .cloned()
-                            .unwrap_or_default();
                         let transcript = s.transcript_for(&ep_id).map(str::to_owned);
-                        let ai_categories = categories_cache.get(&ep_id).cloned().unwrap_or_default();
+                        let transcript_entries =
+                            transcripts.get(&ep_id).cloned().unwrap_or_default();
+                        let ai_categories =
+                            categories_cache.get(&ep_id).cloned().unwrap_or_default();
                         let ad_segments = s.ad_segments_for(&ep_id).to_vec();
                         EpisodeSummary {
-                            id: ep_id,
+                            id: ep_id.clone(),
                             title: ep.title.clone(),
                             podcast_id: Some(podcast.id.0.to_string()),
                             podcast_title: Some(podcast.title.clone()),
@@ -476,9 +335,11 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                             artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
                             published_at: Some(ep.pub_date.timestamp()),
                             download_path: s.local_path_for(&ep.id).map(str::to_owned),
+                            description: Some(ep.description.clone())
+                                .filter(|d| !d.is_empty()),
                             transcript,
-                            description: Some(ep.description.clone()).filter(|s| !s.is_empty()),
-                            transcript_url: ep.publisher_transcript_url
+                            transcript_url: ep
+                                .publisher_transcript_url
                                 .as_ref()
                                 .map(|u| u.to_string()),
                             transcript_entries,
@@ -491,13 +352,17 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                                             start_secs: c.start_secs,
                                             end_secs: c.end_secs,
                                             title: c.title.clone(),
-                                            image_url: c.image_url.as_ref().map(|u| u.to_string()),
+                                            image_url: c
+                                                .image_url
+                                                .as_ref()
+                                                .map(|u| u.to_string()),
                                             url: c.link_url.as_ref().map(|u| u.to_string()),
                                             is_ai_generated: c.is_ai_generated,
                                         })
                                         .collect()
                                 })
                                 .unwrap_or_default(),
+                            playback_position_secs: s.position_for(&ep_id),
                             ai_categories,
                             ad_segments,
                         }
@@ -505,67 +370,37 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                     .collect(),
             })
             .collect();
-        (lib, s.all_memory_facts())
-    }).unwrap_or_default();
         let settings = SettingsSnapshot {
+            has_completed_onboarding: s.has_completed_onboarding(),
             auto_skip_ads_enabled: s.auto_skip_ads_enabled(),
         };
-        (library, Some(settings))
-    }).unwrap_or((Vec::new(), None));
+        (library, s.all_memory_facts(), settings)
+    })
+    .unwrap_or_default();
 
     let categories = build_category_aggregate(&library);
-
-    let search_results = handle.search_results.lock().ok()
-        .map(|r| r.clone())
-        .unwrap_or_default();
-    let nostr_results = handle.nostr_results.lock().ok()
-        .map(|r| r.clone())
-        .unwrap_or_default();
-
+    let search_results = handle.search_results.lock().ok().map(|r| r.clone()).unwrap_or_default();
+    let nostr_results = handle.nostr_results.lock().ok().map(|r| r.clone()).unwrap_or_default();
     let briefing = handle.briefing.lock().ok().and_then(|b| b.clone());
-
     let queue_ids: Vec<String> = handle.queue.lock().ok()
         .map(|q| q.items().to_vec()).unwrap_or_default();
     let queue = resolve_queue_rows(&queue_ids, &library);
-
-    let wiki_articles = handle.wiki_articles.lock().ok()
-        .map(|w| w.clone())
-        .unwrap_or_default();
-
-    let wiki_search_results = handle.wiki_search_results.lock().ok()
-        .map(|w| w.clone())
-        .unwrap_or_default();
-
-    let picks = handle.picks.lock().ok()
-        .map(|p| p.clone())
-        .unwrap_or_default();
-
-    let agent_tasks = handle.agent_tasks.lock().ok()
-        .map(|t| t.clone())
-        .unwrap_or_default();
-
-    let knowledge_search_results = handle.knowledge_search_results.lock().ok().map(|r| r.clone()).unwrap_or_default();
-
-    let tts_episodes = handle.tts_episodes.lock().ok()
-        .map(|r| r.clone())
-        .unwrap_or_default();
-
+    let wiki_articles = handle.wiki_articles.lock().ok().map(|w| w.clone()).unwrap_or_default();
+    let wiki_search_results = handle.wiki_search_results.lock().ok().map(|w| w.clone()).unwrap_or_default();
+    let picks = handle.picks.lock().ok().map(|p| p.clone()).unwrap_or_default();
+    let agent_tasks = handle.agent_tasks.lock().ok().map(|t| t.clone()).unwrap_or_default();
+    let knowledge_search_results = handle.knowledge_search_results.lock().ok()
+        .map(|r| r.clone()).unwrap_or_default();
+    let tts_episodes = handle.tts_episodes.lock().ok().map(|r| r.clone()).unwrap_or_default();
     let clips = crate::clip_handler::project_clips(&handle.clips, &library);
-
     let inbox = build_inbox(&handle.store, &handle.dismissed_episode_ids);
-
     let owned_podcasts = collect_owned_podcasts(handle);
 
-    // Voice projection — `None` when state is default (preserves
-    // legacy-stub byte identity for non-voice-mode snapshots).
     let voice = handle.voice_state.lock().ok().and_then(|v| {
         let snap = v.clone();
         (snap != VoiceState::default()).then_some(snap)
-    // Agent transcript — `None` while the conversation is empty so the
-    // wire payload stays byte-identical to the legacy stub on cold-launch.
-    // Once the user sends a message the field stays `Some` for the rest
-    // of the kernel lifetime, even after `clear` (so the UI can tell
-    // "empty cleared conversation" from "agent never touched").
+    });
+
     let agent = handle.conversation.lock().ok().and_then(|c| {
         if c.is_empty() && !handle.agent_touched.load(Ordering::Relaxed) {
             None
@@ -583,9 +418,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         library,
         search_results,
         nostr_results,
-        queue,
         settings,
-        briefing,
         queue,
         wiki_articles,
         wiki_search_results,
@@ -600,12 +433,12 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         voice,
         agent,
         categories,
+        briefing,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)
         .unwrap_or_else(|_| r#"{"running":true,"rev":0,"schema_version":1}"#.to_owned());
 
-    // Update the cache so the next poll at the same rev skips this work.
     if let Ok(mut cache) = handle.snapshot_cache.lock() {
         *cache = Some((rev, json.clone()));
     }
@@ -667,6 +500,7 @@ fn build_category_aggregate(library: &[PodcastSummary]) -> Vec<CategoryBrowseIte
                 episode_count: bucket.episode_ids_by_recency.len(),
                 podcast_count: bucket.podcast_ids.len(),
                 top_episode_ids,
+                ad_segments: vec![],
             };
             (bucket.latest, item)
         })
@@ -744,290 +578,3 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
 #[cfg(test)]
 #[path = "snapshot_tests.rs"]
 mod tests;
-mod tests {
-    use super::*;
-    use super::super::projections::{
-        ContactSummary, DownloadItemSnapshot, PendingApprovalSnapshot,
-    };
-
-    #[test]
-    fn default_snapshot_omits_now_playing() {
-        let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-        // `skip_serializing_if = "Option::is_none"` keeps the empty
-        // payload byte-identical to the legacy stub.
-        assert_eq!(json, r#"{"running":true,"rev":0,"schema_version":1}"#);
-        // Round-trip decode succeeds.
-        let _decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-    }
-
-    #[test]
-    fn snapshot_with_now_playing_round_trips() {
-        let mut state = PlayerState::idle();
-        state.episode_id = Some("ep-1".into());
-        state.url = Some("https://ex.com/ep-1.mp3".into());
-        state.position_secs = 12.0;
-        state.is_playing = true;
-
-        let snap = PodcastUpdate {
-            now_playing: Some(state.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.now_playing, Some(state));
-        assert!(decoded.running);
-        assert_eq!(decoded.schema_version, 1);
-    }
-
-    #[test]
-    fn snapshot_decoder_tolerates_unknown_fields() {
-        // Forward-compat: an older binary decoding a newer snapshot ignores
-        // fields it doesn't know about (Codable parity).
-        let payload = r#"{"running":true,"rev":7,"schema_version":1,"future_field":"ignored"}"#;
-        let decoded: PodcastUpdate = serde_json::from_str(payload).expect("decode");
-        assert_eq!(decoded.rev, 7);
-        assert!(decoded.now_playing.is_none());
-        assert!(decoded.downloads.is_none());
-        assert!(decoded.agent.is_none());
-        assert!(decoded.voice.is_none());
-        assert!(decoded.briefing.is_none());
-        assert!(decoded.social.is_none());
-        assert!(decoded.widget.is_none());
-        assert!(decoded.toast.is_none());
-        assert!(decoded.tts_episodes.is_empty());
-    }
-
-    #[test]
-    fn snapshot_with_tts_episodes_round_trips() {
-        let ep = TtsEpisodeSummary {
-            id: "tts-1".into(),
-            title: "Topic Roundup".into(),
-            script: "This is a placeholder script.".into(),
-            duration_estimate_secs: 300.0,
-            created_at: 1_700_000_000,
-            status: "ready".into(),
-            voice_id: None,
-        };
-        let snap = PodcastUpdate {
-            tts_episodes: vec![ep.clone()],
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        assert!(json.contains("tts_episodes"));
-        assert!(json.contains("Topic Roundup"));
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.tts_episodes, vec![ep]);
-    }
-
-    #[test]
-    fn snapshot_omits_empty_tts_episodes() {
-        // D5 byte-identity: empty list must not bloat the wire payload.
-        let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-        assert!(!json.contains("tts_episodes"));
-    }
-
-    #[test]
-    fn snapshot_with_toast_round_trips() {
-        let snap = PodcastUpdate {
-            toast: Some("Nothing to resume".into()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        assert!(json.contains("\"toast\":\"Nothing to resume\""));
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.toast, Some("Nothing to resume".to_owned()));
-    }
-
-    #[test]
-    fn snapshot_omits_none_toast() {
-        // D5 byte-identity: empty toast must not bloat the wire payload.
-        let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-        assert!(!json.contains("toast"));
-    }
-
-    #[test]
-    fn snapshot_with_widget_round_trips() {
-        let widget = WidgetSnapshot {
-            now_playing_episode_title: Some("Ep 42".into()),
-            now_playing_podcast_title: Some("Some Show".into()),
-            now_playing_artwork_url: Some("https://ex.com/art.png".into()),
-            is_playing: true,
-            position_fraction: 0.42,
-            unplayed_count: 7,
-        };
-        let snap = PodcastUpdate {
-            widget: Some(widget.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.widget, Some(widget));
-    }
-
-    #[test]
-    fn snapshot_with_agent_round_trips() {
-        let agent = ConversationsSnapshot {
-            active_count: 2,
-            pending_approvals: vec![PendingApprovalSnapshot {
-                id: "ap-1".into(),
-                description: "publish".into(),
-                requested_at: 1_700_000_000,
-            }],
-            latest_conversation_id: Some("conv-1".into()),
-        };
-        let snap = PodcastUpdate {
-            agent: Some(agent.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.agent, Some(agent));
-    }
-
-    #[test]
-    fn pending_approval_snapshot_omits_unset_fields() {
-        let agent = ConversationsSnapshot {
-            active_count: 0,
-            pending_approvals: vec![],
-            latest_conversation_id: None,
-        };
-        let json = serde_json::to_string(&agent).expect("encode");
-        // `latest_conversation_id: None` should be skipped; the other
-        // fields are always present.
-        assert!(!json.contains("latest_conversation_id"));
-        assert!(json.contains("\"active_count\":0"));
-        assert!(json.contains("\"pending_approvals\":[]"));
-    }
-
-    #[test]
-    fn snapshot_with_downloads_round_trips() {
-        let downloads = DownloadQueueSnapshot {
-            active: vec![DownloadItemSnapshot {
-                episode_id: "ep-1".into(),
-                progress: 0.5,
-                state: "active".into(),
-                error: None,
-            }],
-            queued_count: 2,
-            completed_today: 0,
-        };
-        let snap = PodcastUpdate {
-            downloads: Some(downloads.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.downloads, Some(downloads));
-    }
-
-    #[test]
-    fn download_item_snapshot_omits_none_error() {
-        let item = DownloadItemSnapshot {
-            episode_id: "ep-1".into(),
-            progress: 0.0,
-            state: "queued".into(),
-            error: None,
-        };
-        let json = serde_json::to_string(&item).expect("encode");
-        assert!(!json.contains("error"));
-        let decoded: DownloadItemSnapshot = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded, item);
-    }
-
-    // ── Voice / briefing snapshot wiring (M8.A + M9.A) ───────────────
-
-    #[test]
-    fn snapshot_with_voice_round_trips() {
-        let voice = VoiceState {
-            is_speaking: true,
-            current_request_id: Some("req-1".into()),
-            current_voice_id: Some("rachel".into()),
-            is_listening: true,
-            partial_transcript: Some("play the latest…".into()),
-            last_response: Some("Sure thing.".into()),
-        };
-        let snap = PodcastUpdate { voice: Some(voice.clone()), ..PodcastUpdate::default() };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.voice, Some(voice));
-    }
-
-    #[test]
-    fn voice_state_omits_none_fields() {
-        let v = VoiceState::default();
-        let json = serde_json::to_string(&v).expect("encode");
-        for absent in ["current_request_id", "current_voice_id", "partial_transcript", "last_response"] {
-            assert!(!json.contains(absent), "default voice state should omit {absent}");
-        }
-        assert!(json.contains("\"is_speaking\":false"));
-        assert!(json.contains("\"is_listening\":false"));
-        assert_eq!(serde_json::from_str::<VoiceState>(&json).expect("decode"), v);
-    }
-
-    #[test]
-    fn snapshot_with_briefing_round_trips() {
-        let b = BriefingSnapshot {
-            status: "generating".into(),
-            segment_count: 0,
-            next_scheduled_minutes: Some(45),
-        };
-        let snap = PodcastUpdate {
-            briefing: Some(b.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.briefing, Some(b));
-    }
-
-    #[test]
-    fn briefing_snapshot_omits_none_next_scheduled() {
-        let b = BriefingSnapshot {
-            status: "pending".into(),
-            segment_count: 0,
-            next_scheduled_minutes: None,
-        };
-        let json = serde_json::to_string(&b).expect("encode");
-        assert!(!json.contains("next_scheduled_minutes"));
-        let decoded: BriefingSnapshot = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded, b);
-    }
-
-    // ── Social projection wiring ─────────────────────────────────────
-
-    #[test]
-    fn snapshot_with_social_round_trips() {
-        let social = SocialSnapshot {
-            following: vec![ContactSummary {
-                npub: "npub1aaa".into(),
-                display_name: Some("Alice".into()),
-                picture_url: Some("https://ex.com/a.png".into()),
-            }],
-            following_count: 1,
-        };
-        let snap = PodcastUpdate {
-            social: Some(social.clone()),
-            ..PodcastUpdate::default()
-        };
-        let json = serde_json::to_string(&snap).expect("encode");
-        assert!(json.contains("\"social\""));
-        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-        assert_eq!(decoded.social, Some(social));
-    }
-
-    #[test]
-    fn snapshot_omits_none_social() {
-        // D5 byte-identity: a pre-fetch snapshot (no contact list yet)
-        // must not bloat the wire payload with an empty `social` object.
-        let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-        assert!(!json.contains("social"));
-    }
-}
-// Snapshot tests live in a sibling file so this module stays under the
-// 500-line hard cap.
-#[cfg(test)]
-#[path = "snapshot_tests.rs"]
-mod tests;
-// Tests live in `super::snapshot_tests` (a sibling `#[cfg(test)] mod`
-// in `ffi/mod.rs`) so this file stays under the 500-LOC hard ceiling
-// as new projections land.

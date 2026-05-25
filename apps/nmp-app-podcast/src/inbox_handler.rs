@@ -82,6 +82,7 @@ pub fn build_inbox(
                 duration_secs: ep.duration_secs,
                 priority_score,
                 priority_reason: Some(priority_reason.to_owned()),
+                ai_categories: vec![],
             });
         }
     }
@@ -187,6 +188,7 @@ mod tests {
         // Three episodes: 1 hour old, 5 days old, 60 days old.
         let one_hour = Episode::new(
             podcast_id,
+            "https://example.com/feed.xml",
             "guid-1h",
             "Fresh",
             url::Url::parse("https://ex.com/1.mp3").unwrap(),
@@ -194,6 +196,7 @@ mod tests {
         );
         let five_days = Episode::new(
             podcast_id,
+            "https://example.com/feed.xml",
             "guid-5d",
             "Mid",
             url::Url::parse("https://ex.com/2.mp3").unwrap(),
@@ -201,6 +204,7 @@ mod tests {
         );
         let sixty_days = Episode::new(
             podcast_id,
+            "https://example.com/feed.xml",
             "guid-60d",
             "Old",
             url::Url::parse("https://ex.com/3.mp3").unwrap(),
@@ -356,6 +360,7 @@ mod tests {
             duration_secs: Some(2_700.0),
             priority_score: 0.87,
             priority_reason: Some("Just published".into()),
+            ai_categories: vec![],
         };
         let json = serde_json::to_string(&item).expect("encode");
         let decoded: InboxItem = serde_json::from_str(&json).expect("decode");
@@ -391,6 +396,7 @@ mod tests {
             duration_secs: None,
             priority_score: 0.5,
             priority_reason: None,
+            ai_categories: vec![],
         };
         let json = serde_json::to_string(&item).expect("encode");
         assert!(!json.contains("artwork_url"));

@@ -271,6 +271,7 @@ mod tests {
         let podcast = Podcast::new("Show");
         let mut episode = Episode::new(
             podcast.id,
+            "https://example.com/feed.xml",
             "guid",
             "Episode",
             url::Url::parse("https://example.com/audio.mp3").unwrap(),
@@ -316,6 +317,7 @@ mod tests {
         let podcast = Podcast::new("Show");
         let episode = Episode::new(
             podcast.id,
+            "https://example.com/feed.xml",
             "guid",
             "Episode",
             url::Url::parse("https://example.com/audio.mp3").unwrap(),

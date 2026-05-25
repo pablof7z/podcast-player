@@ -1,9 +1,7 @@
-use crate::ffi::projections::PodcastSummary;
-
-//! iTunes Search API helpers shared by [`crate::host_op_handler`].
+//! iTunes Search API helpers.
 //!
-//! Extracted into its own module so `host_op_handler.rs` stays under the
-//! 500-line hard cap. No state — pure functions over strings.
+//! Extracted so `host_op_handler.rs` stays under the 500-LOC hard cap.
+//! No state — pure functions over strings.
 
 use crate::ffi::projections::PodcastSummary;
 
@@ -17,8 +15,6 @@ pub(crate) fn url_encode(s: &str) -> String {
             ' ' => vec!['+'],
             other => {
                 let mut buf = [0u8; 4];
-                other
-                    .encode_utf8(&mut buf)
                 let bytes = other.encode_utf8(&mut buf);
                 bytes
                     .bytes()
@@ -35,9 +31,7 @@ pub(crate) fn url_encode(s: &str) -> String {
 
 /// Parse the iTunes Search API JSON payload into [`PodcastSummary`] rows.
 ///
-/// Returns an empty `Vec` on any decode failure (D6). Used by
-/// `PodcastAction::SearchItunes` to populate `PodcastHandle.search_results`
-/// without throwing across the FFI.
+/// Returns an empty `Vec` on any decode failure (D6).
 pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
     #[derive(serde::Deserialize)]
     struct ItunesResponse {
@@ -68,6 +62,7 @@ pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
                 artwork_url: r.artwork_url600,
                 feed_url: r.feed_url,
                 author: r.artist_name,
+                auto_download: false,
                 episodes: vec![],
             })
         })

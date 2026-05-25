@@ -73,6 +73,7 @@ mod tests {
     fn make_episode(podcast_id: PodcastId, guid: &str, url: &str) -> Episode {
         Episode::new(
             podcast_id,
+            "https://example.com/feed.xml",
             guid,
             "Title",
             Url::parse(url).unwrap(),

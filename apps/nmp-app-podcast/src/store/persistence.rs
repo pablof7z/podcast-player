@@ -41,25 +41,18 @@ pub const PODCASTS_FILE: &str = "podcasts.json";
 /// shell's `OnboardingView` gate survives restart without a second file.
 /// `serde(default)` keeps older saved files (predating the field) loading
 /// cleanly as `false`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// All fields except `schema_version` and `podcasts` use `#[serde(default)]`
+/// so older saved files (pre-dating a field) load without errors.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(super) struct PersistedStore {
     pub schema_version: u32,
     pub podcasts: Vec<PersistedPodcast>,
     #[serde(default)]
     pub has_completed_onboarding: bool,
-    /// Agent memory bag. Optional on the wire so existing v1 payloads
-    /// (written before feature #33) decode without losing podcasts.
+    /// Agent memory bag — optional so pre-v2 files decode cleanly.
     #[serde(default)]
     pub memory_facts: Vec<MemoryFact>,
-/// `ad_segments` and `settings` are `#[serde(default)]` so payloads written
-/// before this PR landed (no ad-skip support) still load cleanly into a
-/// store with auto-skip-ads off and no per-episode segments.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub(super) struct PersistedStore {
-    pub schema_version: u32,
-    pub podcasts: Vec<PersistedPodcast>,
-    /// `episode_id` (UUID string) → ad-break intervals. Sorted on
-    /// write for deterministic on-disk bytes.
+    /// Per-episode ad-break intervals. Sorted on write for deterministic bytes.
     #[serde(default)]
     pub ad_segments: Vec<(String, Vec<AdSegment>)>,
     #[serde(default)]
@@ -273,6 +266,7 @@ mod tests {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
             has_completed_onboarding: true,
+            ..PersistedStore::default()
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
@@ -311,6 +305,17 @@ mod tests {
         // A v1 file written before feature #33 has no `memory_facts` field;
         // it must still load (with an empty bag) so users don't lose their
         // subscriptions on upgrade.
+        let dir = TempDir::new();
+        let raw = serde_json::json!({
+            "schema_version": PERSIST_SCHEMA_VERSION,
+            "podcasts": []
+        });
+        std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
+        let loaded = load(&dir.path).unwrap().expect("file present");
+        assert!(loaded.memory_facts.is_empty());
+    }
+
+    #[test]
     fn round_trip_preserves_ad_segments_and_settings() {
         use podcast_core::AdKind;
         let dir = TempDir::new();
@@ -324,6 +329,7 @@ mod tests {
             settings: PersistedSettings {
                 auto_skip_ads_enabled: true,
             },
+            ..PersistedStore::default()
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
@@ -363,6 +369,7 @@ mod tests {
                 source: "user".into(),
                 created_at: 1_700_000_000,
             }],
+            ..PersistedStore::default()
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");

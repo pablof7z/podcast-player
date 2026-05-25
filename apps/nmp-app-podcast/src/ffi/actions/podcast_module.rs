@@ -199,6 +199,9 @@ mod tests {
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(r#""op":"update_settings""#));
         assert!(json.contains(r#""has_completed_onboarding":true"#));
+    }
+
+    #[test]
     fn set_auto_download_action_round_trips() {
         let action = PodcastAction::SetAutoDownload {
             podcast_id: "abc-123".into(),
@@ -245,10 +248,16 @@ mod tests {
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(r#""op":"discover_nostr""#));
         assert!(json.contains(r#""query":"rust""#));
+    }
+
+    #[test]
     fn generate_briefing_action_round_trips() {
         let action = PodcastAction::GenerateBriefing;
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(r#""op":"generate_briefing""#));
+    }
+
+    #[test]
     fn fetch_comments_action_round_trips() {
         let action = PodcastAction::FetchComments {
             episode_id: "ep-7".into(),
@@ -268,6 +277,9 @@ mod tests {
         };
         let json = serde_json::to_string(&action).expect("encode");
         assert_eq!(json, r#"{"op":"discover_nostr"}"#);
+    }
+
+    #[test]
     fn post_comment_action_round_trips() {
         let action = PodcastAction::PostComment {
             episode_id: "ep-7".into(),
@@ -277,6 +289,9 @@ mod tests {
         assert!(json.contains(r#""op":"post_comment""#));
         assert!(json.contains(r#""episode_id":"ep-7""#));
         assert!(json.contains(r#""content":"loved it""#));
+    }
+
+    #[test]
     fn fetch_contacts_action_round_trips() {
         let action = PodcastAction::FetchContacts;
         let json = serde_json::to_string(&action).expect("encode");

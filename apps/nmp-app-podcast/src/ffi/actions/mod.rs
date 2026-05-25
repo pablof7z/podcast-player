@@ -103,6 +103,7 @@ pub use tasks_module::{AgentTasksAction, AgentTasksModule};
 pub use tts_module::{
     TtsEpisodeAction, TtsEpisodeModule, ACTION_TTS_DELETE, ACTION_TTS_GENERATE, ACTION_TTS_PLAY,
     TTS_NAMESPACE,
+};
 pub use publish_module::{
     NipF4PublishModule, PublishAction, ACTION_PUBLISH_CREATE_OWNED,
     ACTION_PUBLISH_PUBLISH_AUTHOR_CLAIM, ACTION_PUBLISH_PUBLISH_EPISODE,

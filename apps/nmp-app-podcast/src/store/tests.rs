@@ -7,13 +7,6 @@
 use super::*;
 use podcast_core::{Episode, Podcast, PodcastId};
 use std::path::PathBuf;
-//! Unit + integration tests for [`super::PodcastStore`].
-//!
-//! Lifted out of `mod.rs` so the production module stays under the 500-LOC
-//! hard cap. Wired in via `#[cfg(test)] mod tests;` from `mod.rs`.
-
-use super::*;
-use podcast_core::{Episode, Podcast, PodcastId};
 use std::sync::atomic::{AtomicU64, Ordering};
 use uuid::Uuid;
 
@@ -194,6 +187,8 @@ fn set_episode_position_does_not_persist_until_flush() {
     let mut store3 = PodcastStore::new();
     store3.set_data_dir(dir.path.clone());
     assert_eq!(store3.position_for(&ep_id_str), Some(36.0));
+}
+
 // ── Auto-download flag ──────────────────────────────────────────────────
 
 #[test]
@@ -283,6 +278,8 @@ fn auto_download_off_state_persists_across_reload() {
     let mut store2 = PodcastStore::new();
     store2.set_data_dir(dir.path.clone());
     assert!(!store2.is_auto_download_enabled(podcast_id));
+}
+
 // ── Agent memory (feature #33) ───────────────────────────────────────
 
 #[test]

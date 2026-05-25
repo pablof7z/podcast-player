@@ -68,6 +68,7 @@ pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
                 artwork_url: r.artwork_url600,
                 feed_url: r.feed_url,
                 author: r.artist_name,
+                auto_download: false,
                 episodes: vec![],
             })
         })

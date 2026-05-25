@@ -444,6 +444,19 @@ pub struct EpisodeSummary {
     /// counts as "started"; the host only renders.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub playback_position_secs: Option<f64>,
+    /// Raw plain-text transcript, when one has been fetched and stored via
+    /// the transcript write path. Used internally by AI features (chapter
+    /// generation, summaries). Per D5 omitted when `None`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transcript: Option<String>,
+    /// Topic labels the agent's heuristic categorizer assigned to this
+    /// episode. Empty until `podcast.categorize.run` triggers. Per D5
+    /// omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ai_categories: Vec<String>,
+    /// Ad-break intervals for this episode. Per D5 omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ad_segments: Vec<AdSegment>,
 }
 
 /// One time-stamped transcript row surfaced to the iOS shell.
@@ -513,7 +526,7 @@ pub struct InboxItem {
 ///
 /// The list is ordered newest-first by the projection layer so the
 /// category whose most recent episode published latest renders first.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct CategoryBrowseItem {
     pub category: String,
     pub episode_count: usize,
@@ -595,7 +608,13 @@ pub struct SettingsSnapshot {
     /// Whether the user has finished the iOS onboarding flow. iOS reads
     /// this from the `settings` snapshot to decide whether to present
     /// `OnboardingView`. Mutated via the `podcast.update_settings` action.
+    #[serde(default)]
     pub has_completed_onboarding: bool,
+    /// When `true`, the player actor seeks past each ad segment in the
+    /// currently-loaded episode. Mirrored from
+    /// `PodcastStore::auto_skip_ads_enabled`. Defaults to `false`.
+    #[serde(default)]
+    pub auto_skip_ads_enabled: bool,
 }
 
 impl SettingsSnapshot {
@@ -835,25 +854,6 @@ pub struct OwnedPodcastInfo {
     pub show_event_json: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_published_at: Option<i64>,
-/// User-facing playback / behaviour preferences surfaced via
-/// [`super::snapshot::PodcastUpdate::settings`].
-///
-/// Kept narrow on purpose — only fields the iOS shell reads to render
-/// settings UI live here. Per D7 the kernel owns the canonical
-/// values; iOS only displays them and dispatches
-/// `podcast.settings.*` actions to mutate.
-///
-/// Fields default to "neutral / off" so a stale snapshot decoded by a
-/// newer binary doesn't accidentally surface enabled prefs the user
-/// never opted into.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
-pub struct SettingsSnapshot {
-    /// When `true`, the player actor seeks past each
-    /// [`crate::player::AdSegment`] in the currently-loaded episode
-    /// (once per id per playback session). Mirrored from
-    /// `PodcastStore::auto_skip_ads_enabled`. Defaults to `false`.
-    #[serde(default)]
-    pub auto_skip_ads_enabled: bool,
 }
 
 /// Narrow identity projection surfaced via
@@ -923,6 +923,8 @@ pub struct SocialSnapshot {
     /// `following.len()` for now; surfaced separately so paged variants
     /// of `following` keep working without a second snapshot field.
     pub following_count: usize,
+}
+
 /// One row in [`super::snapshot::PodcastUpdate::wiki_articles`].
 ///
 /// A `WikiArticle` is the AI-synthesised, per-podcast knowledge entry the user
@@ -963,6 +965,8 @@ pub struct WikiArticle {
     /// `true` while a generation is in flight; `false` once the article is
     /// readable. Lets the UI render a progress indicator without polling.
     pub is_generating: bool,
+}
+
 /// One row in the agent-memory projection surfaced via
 /// [`super::snapshot::PodcastUpdate::memory_facts`].
 ///
@@ -998,6 +1002,8 @@ pub struct MemoryFact {
     /// Unix seconds when the fact was first written (preserved across
     /// upserts so the UI can show "remembered since …" if it wants to).
     pub created_at: i64,
+}
+
 /// One row in the agent-generated TTS episode list surfaced via
 /// [`super::snapshot::PodcastUpdate::tts_episodes`].
 ///
@@ -1171,7 +1177,7 @@ mod tests {
 
     #[test]
     fn settings_snapshot_round_trips() {
-        let s = SettingsSnapshot { has_completed_onboarding: true };
+        let s = SettingsSnapshot { has_completed_onboarding: true, ..SettingsSnapshot::default() };
         let json = serde_json::to_string(&s).expect("encode");
         assert!(json.contains("\"has_completed_onboarding\":true"));
         let decoded: SettingsSnapshot = serde_json::from_str(&json).expect("decode");
@@ -1184,6 +1190,9 @@ mod tests {
         assert!(!s.has_completed_onboarding);
         let json = serde_json::to_string(&s).expect("encode");
         assert!(json.contains("\"has_completed_onboarding\":false"));
+    }
+
+    #[test]
     fn comment_summary_omits_none_author_name() {
         // Anonymous (or yet-uncached) author — `author_name` must not
         // appear in the JSON, so iOS reliably falls back to the npub stub.
@@ -1213,6 +1222,9 @@ mod tests {
         assert!(json.contains("\"author_name\":\"Satoshi\""));
         let decoded: CommentSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, c);
+    }
+
+    #[test]
     fn chapter_summary_ai_generated_round_trip() {
         let ai = ChapterSummary {
             start_secs: 0.0,
@@ -1232,6 +1244,9 @@ mod tests {
         let json = r#"{"start_secs":0.0,"title":"Intro"}"#;
         let decoded: ChapterSummary = serde_json::from_str(json).expect("decode");
         assert!(!decoded.is_ai_generated);
+    }
+
+    #[test]
     fn agent_task_summary_round_trips_with_all_fields() {
         let task = AgentTaskSummary {
             id: "task-1".into(),
@@ -1271,6 +1286,9 @@ mod tests {
         // Round-trip survives the elided optionals.
         let decoded: AgentTaskSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, task);
+    }
+
+    #[test]
     fn knowledge_search_result_round_trips_with_all_fields() {
         let row = KnowledgeSearchResult {
             episode_id: "ep-1".into(),
@@ -1300,6 +1318,9 @@ mod tests {
         assert!(!json.contains("start_secs"));
         let decoded: KnowledgeSearchResult = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, row);
+    }
+
+    #[test]
     fn clip_summary_omits_none_title() {
         let clip = ClipSummary {
             id: "clip-1".into(),
@@ -1410,6 +1431,8 @@ mod tests {
         let json = serde_json::to_string(&snap).expect("encode");
         assert!(json.contains("\"following\":[]"));
         assert!(json.contains("\"following_count\":0"));
+    }
+
     // ── Wiki article (#39 — AI wiki scaffold) ────────────────────────
     //
     // Round-trip coverage lives in `super::super::snapshot_tests` because
@@ -1430,6 +1453,8 @@ mod tests {
         };
         let json = serde_json::to_string(&article).expect("encode");
         assert!(!json.contains("source_episode_ids"));
+    }
+
     // ── AgentPickSummary projection (feature #46) ───────────────────
 
     #[test]
@@ -1468,6 +1493,9 @@ mod tests {
         assert!(!json.contains("duration_secs"));
         let decoded: AgentPickSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, pick);
+    }
+
+    #[test]
     fn memory_fact_round_trips() {
         let fact = MemoryFact {
             id: "preferred_genre".into(),
@@ -1488,6 +1516,9 @@ mod tests {
         let json = r#"{"id":"k","key":"k","value":"v","source":"agent","created_at":1700000000}"#;
         let decoded: MemoryFact = serde_json::from_str(json).expect("decode");
         assert_eq!(decoded.source, "agent");
+    }
+
+    #[test]
     fn tts_episode_summary_round_trips_with_all_fields() {
         let ep = TtsEpisodeSummary {
             id: "tts-1".into(),
@@ -1500,6 +1531,10 @@ mod tests {
         };
         let json = serde_json::to_string(&ep).expect("encode");
         let decoded: TtsEpisodeSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, ep);
+    }
+
+    #[test]
     fn episode_summary_omits_empty_ai_categories() {
         let ep = EpisodeSummary {
             id: "ep-1".into(),
@@ -1544,12 +1579,15 @@ mod tests {
     // InboxItem round-trip / wire-shape tests live next to
     // `inbox_handler::build_inbox` in `crate::inbox_handler::tests` so
     // they stay near the projection layer that builds them.
+
+    #[test]
     fn category_browse_item_round_trips() {
         let item = CategoryBrowseItem {
             category: "Technology".into(),
             episode_count: 12,
             podcast_count: 3,
             top_episode_ids: vec!["ep-1".into(), "ep-2".into(), "ep-3".into()],
+            ad_segments: vec![],
         };
         let json = serde_json::to_string(&item).expect("encode");
         assert!(json.contains("\"category\":\"Technology\""));

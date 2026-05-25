@@ -95,6 +95,13 @@ pub fn handle_player_action(
         PlayerAction::PlayNext => {
             handle_play_next(store, player_actor, rev, dispatch_audio)
         }
+        PlayerAction::SetAdSegments { episode_id, segments } => {
+            if let Ok(mut s) = store.lock() {
+                s.set_ad_segments_for(&episode_id, segments);
+            }
+            rev.fetch_add(1, Ordering::Relaxed);
+            serde_json::json!({"ok": true})
+        }
     }
 }
 

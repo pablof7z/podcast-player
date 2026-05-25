@@ -242,26 +242,52 @@ fn build_unsigned_event_json(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ffi::projections::PodcastSummary;
+    use crate::agent_handler::AgentChatHandler;
     use crate::player::PlayerActor;
+    use crate::queue::PlaybackQueue;
     use crate::store::{PodcastKeyStore, PodcastStore};
     use podcast_core::Podcast;
-    use std::collections::HashMap;
-    use std::sync::atomic::AtomicU64;
+    use std::collections::{HashMap, HashSet};
+    use std::sync::atomic::{AtomicBool, AtomicU64};
     use std::sync::{Arc, Mutex};
 
     /// Construct a `PodcastHostOpHandler` with a NULL `app` pointer
     /// — the publish handlers never dispatch capabilities, so the
-    /// pointer is never read.
+    /// pointer is never read. All other slots are initialized with the
+    /// same defaults `ffi::register::nmp_app_podcast_register` uses, so
+    /// the handler is fully wired even though only the publish path is
+    /// exercised here.
     fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
+        let rev = Arc::new(AtomicU64::new(1));
+        let agent_chat = AgentChatHandler::new(
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(AtomicBool::new(false)),
+            Arc::new(AtomicBool::new(false)),
+            rev.clone(),
+        );
         PodcastHostOpHandler::new(
             std::ptr::null_mut(),
             store,
             Arc::new(Mutex::new(PlayerActor::new())),
-            Arc::new(Mutex::new(Vec::<PodcastSummary>::new())),
-            Arc::new(AtomicU64::new(1)),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(None)),
+            Arc::new(Mutex::new(PlaybackQueue::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(HashMap::new())),
+            Arc::new(Mutex::new(HashSet::new())),
+            Arc::new(Mutex::new(Default::default())),
+            Arc::new(Mutex::new(HashMap::new())),
+            rev,
             Arc::new(Mutex::new(PodcastKeyStore::new())),
             Arc::new(Mutex::new(HashMap::new())),
+            agent_chat,
         )
     }
 

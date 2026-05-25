@@ -33,7 +33,8 @@ mod tests {
     fn ep(title: &str, position: f64) -> Episode {
         let mut e = Episode::new(
             PodcastId::generate(),
-            "guid",
+            "https://example.com/feed.xml",
+            title, // use title as guid so each episode gets a distinct EpisodeId
             title,
             Url::parse("https://example.com/audio.mp3").unwrap(),
             Utc::now(),

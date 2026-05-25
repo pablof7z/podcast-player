@@ -231,6 +231,7 @@ mod tests {
         podcast.feed_url = Some(Url::parse("https://ex.com/rss").unwrap());
         let mut episode = Episode::new(
             podcast.id,
+            "https://example.com/feed.xml",
             format!("guid-{}", Uuid::new_v4()),
             "Pilot",
             Url::parse("https://ex.com/ep-1.mp3").unwrap(),
@@ -352,6 +353,7 @@ mod tests {
     }
 
     fn library_with_show(ep_id: &str, episode_title: &str, show_title: &str) -> Vec<PodcastSummary> {
+        use crate::ffi::projections::EpisodeSummary;
         vec![PodcastSummary {
             id: Uuid::new_v4().to_string(),
             title: show_title.into(),
@@ -360,15 +362,13 @@ mod tests {
             artwork_url: None,
             feed_url: None,
             author: None,
-            episodes: vec![crate::ffi::projections::EpisodeSummary {
+            auto_download: false,
+            episodes: vec![EpisodeSummary {
                 id: ep_id.into(),
                 title: episode_title.into(),
                 podcast_id: None,
                 podcast_title: Some(show_title.into()),
-                duration_secs: None,
-                artwork_url: None,
-                published_at: None,
-                download_path: None,
+                ..EpisodeSummary::default()
             }],
         }]
     }
