@@ -88,6 +88,17 @@ migrated view re-wired) before the milestone it is anchored to closes.
   Also delete the `OpenRouterCredentialStore` + `BYOKConnectService` shims
   in `Compat/ServiceStubs.swift` and replace with the LLM-provider credential
   capability.
+- **pr9-onboarding-settings-dispatch** — `OnboardingView+Handlers.swift` no
+  longer writes through to a `Settings` struct. The four legacy mutations
+  (`markOpenRouterManual` after manual key save, BYOK credential import,
+  `nostrProfileName` / `nostrProfilePicture` from the identity step,
+  `hasCompletedOnboarding` at finish) are TODO comments today — the
+  side-effecting Keychain / BYOK calls still run, but their settings
+  shadow does not. Wire each through the Rust kernel when the settings
+  action namespace lands (likely under the existing `podcast` namespace or
+  a new `settings` namespace). Until then, returning users may re-see the
+  onboarding flow if any callsite later checks `hasCompletedOnboarding`
+  (no caller does today). Blocked on M3 settings projection.
 - **M7 — Agent / Nostr conversation projections.** Delete the
   `NostrConversationRecord/Turn/ProfileMetadata/PendingApproval` stubs in
   `Compat/DomainStubs.swift`, plus the agent surface (`nostrConversations`,
