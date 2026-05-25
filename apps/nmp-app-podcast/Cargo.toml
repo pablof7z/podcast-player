@@ -28,6 +28,10 @@ nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core" }
 # dep.
 nmp-ffi = { path = "../../../nostrmultiplatform/crates/nmp-ffi" }
 nmp-signer-broker = { path = "../../../nostrmultiplatform/crates/nmp-signer-broker" }
+# `nmp-signers` exposes `AccountManager`, `Signer` trait, and NIP-46 helpers.
+# M1.A adds this dep so future Keychain / nsec management (M1.B) and the
+# identity runtime (M1.C+) have the types in scope without a dep upgrade.
+nmp-signers = { path = "../../../nostrmultiplatform/crates/nmp-signers" }
 # Canonical NMP composition root. One call wires the default action modules
 # (NIP-02 / NIP-17 / NIP-57 / NIP-65), the kind:10050 ingest parser, the
 # production routing substrate, and the DM-inbox + zap-receipts runtime
