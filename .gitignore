@@ -1,4 +1,5 @@
 .DS_Store
+WIP.md
 /build/
 target/
 Cargo.lock
