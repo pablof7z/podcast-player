@@ -7,8 +7,8 @@
 //! shape.
 //!
 //! For M3.A the only new field is `now_playing: Option<PlayerState>`. M4.A
-//! adds `downloads: Option<DownloadQueueSnapshot>`. M7.A adds
-//! `agent: Option<ConversationsSnapshot>`. M8.A adds
+//! adds `downloads: Option<DownloadQueueSnapshot>`. Feature #32 wires
+//! `agent: Option<AgentSnapshot>` (single-thread chat). M8.A adds
 //! `voice: Option<VoiceState>`. M9.A adds
 //! `briefing: Option<BriefingSnapshot>`. M11 adds
 //! `widget: Option<WidgetSnapshot>`. Every other field stays unset until
@@ -53,6 +53,8 @@ use super::projections::{
     PodcastSummary, TtsEpisodeSummary, VoiceState, WidgetSnapshot,
     AccountSummary, BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadQueueSnapshot,
     EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
+    AccountSummary, AgentSnapshot, BriefingSnapshot, ChapterSummary, DownloadQueueSnapshot,
+    EpisodeSummary, NostrShowSummary, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
     EpisodeSummary, InboxItem, PodcastSummary, VoiceState, WidgetSnapshot,
@@ -102,14 +104,18 @@ pub struct PodcastUpdate {
     /// "no-op snapshot" intact.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub downloads: Option<DownloadQueueSnapshot>,
-    /// Agent-chat projection: active conversation count + pending
-    /// approvals queue + the most recently touched conversation id.
+    /// Agent-chat projection: the ordered message transcript of the
+    /// active conversation plus an `is_busy` flag.
     ///
-    /// `None` until the first agent turn lands during a kernel
-    /// lifetime — preserves byte-identity with the legacy stub.
-    /// The shape is defined alongside [`ConversationsSnapshot`].
+    /// `None` until the first agent turn lands during a kernel lifetime —
+    /// preserves byte-identity with the legacy stub. The shape is
+    /// defined alongside [`AgentSnapshot`]. The legacy multi-conversation
+    /// surface lives at `super::projections::ConversationsSnapshot`
+    /// (kept available as a re-export for the future
+    /// `ConversationActor`-backed projection); this `agent` field is the
+    /// single-thread chat surface feature #32 ships against.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub agent: Option<ConversationsSnapshot>,
+    pub agent: Option<AgentSnapshot>,
     /// Voice projection: whether TTS is currently speaking and (when
     /// it is) the in-flight request id + active voice id.
     ///
@@ -512,6 +518,20 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
     let voice = handle.voice_state.lock().ok().and_then(|v| {
         let snap = v.clone();
         (snap != VoiceState::default()).then_some(snap)
+    // Agent transcript — `None` while the conversation is empty so the
+    // wire payload stays byte-identical to the legacy stub on cold-launch.
+    // Once the user sends a message the field stays `Some` for the rest
+    // of the kernel lifetime, even after `clear` (so the UI can tell
+    // "empty cleared conversation" from "agent never touched").
+    let agent = handle.conversation.lock().ok().and_then(|c| {
+        if c.is_empty() && !handle.agent_touched.load(Ordering::Relaxed) {
+            None
+        } else {
+            Some(AgentSnapshot {
+                messages: c.clone(),
+                is_busy: handle.agent_busy.load(Ordering::Relaxed),
+            })
+        }
     });
 
     let update = PodcastUpdate {
@@ -535,6 +555,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         inbox,
         owned_podcasts,
         voice,
+        agent,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)

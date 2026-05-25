@@ -172,6 +172,32 @@ struct VoiceSnapshot: Codable, Equatable {
     var currentVoiceId: String? = nil
     var partialTranscript: String? = nil
     var lastResponse: String? = nil
+    /// Agent-chat transcript + busy flag. `nil` until the user has sent
+    /// their first message during the kernel lifetime; stays non-nil
+    /// (with `messages == []`) after a `podcast.agent.clear` so the UI
+    /// can distinguish "cleared" from "never opened".
+    var agent: AgentSnapshot? = nil
+}
+
+/// Agent-chat conversation surfaced via `PodcastUpdate.agent`.
+struct AgentSnapshot: Codable, Equatable {
+    var messages: [AgentMessageSummary] = []
+    /// `true` while the kernel is composing an assistant reply. UI uses
+    /// this to disable the send button and render the typing indicator.
+    var isBusy: Bool = false
+}
+
+/// One row in `AgentSnapshot.messages`.
+struct AgentMessageSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    /// `"user"` or `"assistant"`.
+    var role: String
+    var content: String
+    /// Unix seconds (epoch).
+    var createdAt: Int
+    /// `true` while the assistant is still composing this message
+    /// (placeholder bubble with typing indicator).
+    var isGenerating: Bool = false
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).

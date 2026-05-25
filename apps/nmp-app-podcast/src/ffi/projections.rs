@@ -112,6 +112,61 @@ pub struct PendingApprovalSnapshot {
     pub requested_at: i64,
 }
 
+/// One message in the agent-chat transcript surfaced via
+/// [`AgentSnapshot::messages`].
+///
+/// `role` is a string (`"user"` / `"assistant"`) rather than an enum because
+/// the iOS Swift `Codable` decoder switches on it directly without needing
+/// a domain enum on the wire. `is_generating` lets the UI render an in-place
+/// typing indicator on an assistant placeholder bubble while the kernel is
+/// still composing the response — once the real LLM integration lands, that
+/// flag flips back to `false` when the final content is filled in.
+///
+/// `created_at` is Unix seconds (epoch) so SwiftUI views can format
+/// against `Date()` without a string round-trip — matches the pattern
+/// used by [`PendingApprovalSnapshot::requested_at`].
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct AgentMessageSummary {
+    pub id: String,
+    /// `"user"` for messages the user sent, `"assistant"` for replies the
+    /// agent produced.
+    pub role: String,
+    pub content: String,
+    /// Unix seconds — see struct-level comment.
+    pub created_at: i64,
+    /// `true` while the assistant is still composing this message
+    /// (placeholder bubble with the typing indicator).
+    pub is_generating: bool,
+}
+
+/// Agent-chat conversation surfaced via
+/// [`super::snapshot::PodcastUpdate::agent`].
+///
+/// Holds the full ordered transcript of the active conversation plus an
+/// `is_busy` flag the UI uses to disable the send button + render the
+/// typing indicator. The conversation lives on the
+/// [`super::handle::PodcastHandle`] for the lifetime of the kernel;
+/// clearing it is a dedicated `podcast.agent.clear` action so the UI
+/// doesn't have to manage history state on the Swift side.
+///
+/// This is intentionally narrower than [`ConversationsSnapshot`] (which is
+/// reserved for the future multi-conversation surface backed by
+/// `podcast_agent_core::ConversationActor`): the feature-32 UI scaffold
+/// only needs a single linear thread, and a wider shape would invite the
+/// iOS view to depend on policy the kernel doesn't yet enforce.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct AgentSnapshot {
+    /// Ordered transcript — oldest message first. The UI renders this
+    /// directly without re-sorting.
+    pub messages: Vec<AgentMessageSummary>,
+    /// `true` while the kernel is producing a response. UI uses this to
+    /// disable the send button and render the typing indicator. Always
+    /// `false` in the scaffold (the canned reply is committed
+    /// synchronously); the field is on the wire now so real LLM
+    /// integration can flip it without a schema bump.
+    pub is_busy: bool,
+}
+
 /// Snapshot of the voice (TTS) session surfaced via
 /// [`super::snapshot::PodcastUpdate::voice`].
 ///

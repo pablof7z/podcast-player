@@ -56,6 +56,9 @@
       "shipped_at": "2026-05-26T02:00:00Z",
       "lines": [
         "Episode transcripts: tap the speech-bubble in the episode detail toolbar to read a time-synced transcript, with the current segment highlighted and tap-to-seek on every row."
+      "shipped_at": "2026-05-26T00:30:00Z",
+      "lines": [
+        "Chat with the agent from the new Agent tab — ask a question and the agent replies in a chat thread (LLM coming soon)."
       ]
     },
     {

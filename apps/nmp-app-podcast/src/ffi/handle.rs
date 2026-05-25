@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 
 use nmp_ffi::NmpApp;
 
@@ -18,6 +18,7 @@ use crate::clip_handler::ClipRecord;
 use crate::ffi::projections::PodcastSummary;
 use crate::ffi::projections::{NostrShowSummary, PodcastSummary, TranscriptEntry};
 use crate::ffi::projections::{PodcastSummary, VoiceState};
+use crate::ffi::projections::{AgentMessageSummary, NostrShowSummary, PodcastSummary};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::PodcastStore;
@@ -129,6 +130,23 @@ pub struct PodcastHandle {
     /// reports translate back into projection updates). Read by the
     /// snapshot builder on each tick.
     pub(super) voice_state: Arc<Mutex<VoiceState>>,
+    /// Active agent-chat transcript. Written by the
+    /// [`super::actions::agent_module::AgentActionModule`] handler on the
+    /// actor thread; read by `build_snapshot_payload` on the main thread.
+    /// In-memory only — feature #32 is a UI scaffold, real LLM integration
+    /// (and persistence) lands in a follow-up.
+    pub(super) conversation: Arc<Mutex<Vec<AgentMessageSummary>>>,
+    /// `true` while the kernel is composing an assistant reply (mirrored
+    /// into `AgentSnapshot::is_busy`). Stays `false` in the scaffold since
+    /// the canned reply is committed synchronously; the flag exists now so
+    /// the snapshot reader doesn't need rewiring once streaming lands.
+    pub(super) agent_busy: Arc<AtomicBool>,
+    /// `true` once the user has interacted with the agent in this kernel
+    /// lifetime (Send → flips to `true`, Clear keeps it `true`). Used by
+    /// the snapshot builder to keep `agent` `Some` after a clear so the UI
+    /// can tell "cleared" from "never touched". Reset only by a process
+    /// restart.
+    pub(super) agent_touched: Arc<AtomicBool>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

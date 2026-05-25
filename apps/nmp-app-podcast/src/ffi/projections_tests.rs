@@ -5,6 +5,8 @@
 
 use super::projections::{
     ChapterSummary, EpisodeSummary, NostrShowSummary, TranscriptEntry, WidgetSnapshot,
+    AgentMessageSummary, AgentSnapshot, ChapterSummary, EpisodeSummary, NostrShowSummary,
+    WidgetSnapshot,
 };
 
 #[test]
@@ -233,4 +235,66 @@ fn widget_snapshot_round_trips_with_all_fields() {
     let json = serde_json::to_string(&widget).expect("encode");
     let decoded: WidgetSnapshot = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, widget);
+}
+
+// ── Agent chat projection (feature #32) ────────────────────────────
+
+#[test]
+fn agent_message_summary_round_trips() {
+    let msg = AgentMessageSummary {
+        id: "msg-1".into(),
+        role: "user".into(),
+        content: "What's new today?".into(),
+        created_at: 1_700_000_000,
+        is_generating: false,
+    };
+    let json = serde_json::to_string(&msg).expect("encode");
+    // All fields are always present on the wire — the iOS decoder
+    // assumes a stable shape for every message row.
+    assert!(json.contains("\"id\":\"msg-1\""));
+    assert!(json.contains("\"role\":\"user\""));
+    assert!(json.contains("\"content\":\"What's new today?\""));
+    assert!(json.contains("\"created_at\":1700000000"));
+    assert!(json.contains("\"is_generating\":false"));
+    let decoded: AgentMessageSummary = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, msg);
+}
+
+#[test]
+fn agent_snapshot_round_trips_with_messages() {
+    let snap = AgentSnapshot {
+        messages: vec![
+            AgentMessageSummary {
+                id: "m1".into(),
+                role: "user".into(),
+                content: "hi".into(),
+                created_at: 1,
+                is_generating: false,
+            },
+            AgentMessageSummary {
+                id: "m2".into(),
+                role: "assistant".into(),
+                content: "I'm thinking…".into(),
+                created_at: 2,
+                is_generating: true,
+            },
+        ],
+        is_busy: true,
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    let decoded: AgentSnapshot = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, snap);
+}
+
+#[test]
+fn agent_snapshot_default_has_empty_transcript() {
+    let snap = AgentSnapshot::default();
+    assert!(snap.messages.is_empty());
+    assert!(!snap.is_busy);
+    let json = serde_json::to_string(&snap).expect("encode");
+    // Even when empty the shape stays stable — `messages` must be `[]`
+    // (not absent) and `is_busy` must be `false` on the wire so the
+    // Swift decoder doesn't have to handle a missing key.
+    assert!(json.contains("\"messages\":[]"));
+    assert!(json.contains("\"is_busy\":false"));
 }

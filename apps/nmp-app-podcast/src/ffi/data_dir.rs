@@ -70,7 +70,7 @@ mod tests {
     use crate::store::{PodcastKeyStore, PodcastStore};
     use std::collections::HashMap;
     use std::ffi::CString;
-    use std::sync::atomic::AtomicU64;
+    use std::sync::atomic::{AtomicBool, AtomicU64};
     use std::sync::{Arc, Mutex};
 
     /// Build a `PodcastHandle` with a NULL `app` pointer — these tests only
@@ -98,6 +98,9 @@ mod tests {
             podcast_keys: Arc::new(Mutex::new(PodcastKeyStore::new())),
             publish_state: Arc::new(Mutex::new(HashMap::new())),
             voice_state: Arc::new(Mutex::new(VoiceState::default())),
+            conversation: Arc::new(Mutex::new(Vec::new())),
+            agent_busy: Arc::new(AtomicBool::new(false)),
+            agent_touched: Arc::new(AtomicBool::new(false)),
         })
     }
 
