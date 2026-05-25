@@ -5,8 +5,9 @@
 //! limit as new projections (queue, …) accrete onto the typed root.
 
 use super::projections::{
-    BriefingSegmentSummary, BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot,
-    DownloadQueueSnapshot, PendingApprovalSnapshot, SettingsSnapshot, VoiceState, WidgetSnapshot,
+    BriefingSegmentSummary, BriefingSnapshot, CommentSummary, ConversationsSnapshot,
+    DownloadItemSnapshot, DownloadQueueSnapshot, PendingApprovalSnapshot, SettingsSnapshot,
+    VoiceState, WidgetSnapshot,
 };
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
@@ -83,6 +84,7 @@ fn snapshot_omits_default_settings() {
     // the legacy stub.
     let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
     assert!(!json.contains("settings"));
+    assert!(decoded.comments.is_empty());
 }
 
 #[test]
@@ -234,6 +236,7 @@ fn snapshot_with_briefing_round_trips() {
         segment_count: 0,
         segments: vec![],
         last_generated_at: None,
+        segment_count: 0,
         next_scheduled_minutes: Some(45),
     };
     let snap = PodcastUpdate {
@@ -253,6 +256,44 @@ fn briefing_snapshot_omits_none_next_scheduled() {
         segment_count: 0,
         segments: vec![],
         last_generated_at: None,
+fn snapshot_with_comments_round_trips() {
+    let comments = vec![
+        CommentSummary {
+            id: "a".repeat(64),
+            author_npub: "npub1example".into(),
+            author_name: Some("Satoshi".into()),
+            content: "Great episode!".into(),
+            created_at: 1_700_000_100,
+        },
+        CommentSummary {
+            id: "b".repeat(64),
+            author_npub: "npub1other".into(),
+            author_name: None,
+            content: "Agreed.".into(),
+            created_at: 1_700_000_050,
+        },
+    ];
+    let snap = PodcastUpdate {
+        comments: comments.clone(),
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.comments, comments);
+}
+
+#[test]
+fn default_snapshot_omits_empty_comments() {
+    // D5 byte-identity: empty comments must not bloat the wire payload.
+    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!json.contains("\"comments\""));
+}
+
+#[test]
+fn briefing_snapshot_omits_none_next_scheduled() {
+    let b = BriefingSnapshot {
+        status: "pending".into(),
+        segment_count: 0,
         next_scheduled_minutes: None,
     };
     let json = serde_json::to_string(&b).expect("encode");
@@ -313,4 +354,7 @@ fn snapshot_with_queue_round_trips() {
     assert!(json.contains(r#""queue":["ep-1","ep-2","ep-3"]"#));
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded.queue, snap.queue);
+}
+    let decoded: BriefingSnapshot = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, b);
 }

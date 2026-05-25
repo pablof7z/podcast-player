@@ -29,6 +29,35 @@ worktrees currently in flight.
 - **pr1-500ms-poll-to-push** — The podcast snapshot uses a 500ms Task poll in `KernelModel`. Replace with push-style delivery via the NMP `KernelUpdateSink` callback once the podcast projection is wired into `nmp-ffi`'s push surface. Tracked here; not blocking PR 2.
 - **pr1-capability-bridge-unify** — `SyncCapabilityBridge` (synchronous, actor-thread) and `PodcastCapabilities.shared.handleJSON()` (async, main-thread) are two parallel routers. Each capability should decide its own threading model internally; the bridge should be the single router. Resolve before audio wiring (PR 3).
 - **pr10-episode-description-htmlstrip** — `EpisodeSummary.description` is now projected and rendered, but RSS `<description>` is frequently HTML. `EpisodeDetailView` renders it raw, so users can see literal tags. Strip / convert to plain text (the legacy `EpisodeShowNotesFormatter.plainText(from:)` did this) before rendering, or use an attributed-string renderer. Tracked separately from the original `pr10-episode-description-projection` item which has been resolved.
+- **pr10-episode-description-projection** — `EpisodeSummary` projection (`apps/nmp-app-podcast/src/ffi/projections.rs`) does not include the episode description / show notes. `EpisodeDetailView` currently omits its show-notes section because the field is absent. Add `description: Option<String>` to `EpisodeSummary`, regenerate `PodcastTypes.generated.swift`, then render the show notes in `EpisodeDetailView` via `EpisodeShowNotesFormatter.plainText(from:)` (or a non-compat equivalent).
+- **pr-episode-comments-relay-wiring** — feature #29 (NIP-22 episode comments) shipped with `apps/nmp-app-podcast/src/comments_handler.rs` as a stub: `handle_fetch_comments` returns `{"ok":true}` without opening a relay subscription, and `handle_post_comment` returns `{"ok":true,"status":"nostr_relay_pending"}` without publishing. The follow-up needs to wire the real Nostr relay subscription/publish path against the user's configured relay (`App/Sources/Services/NostrCommentService.swift` is the legacy reference implementation), populate `PodcastUpdate.comments` from the subscription stream, and publish drafts as kind-1111 events. Note the `episode_id` on the actions is the local `EpisodeId` UUID; the legacy `NostrCommentService` anchors via NIP-73 `i podcast:item:guid:<guid>` from the Podcasting 2.0 `<podcast:guid>` rather than raw `["E", ...]` tags — mapping `EpisodeId` → guid → tag set is part of the follow-up.
+
+## NMP Migration — Cross-cutting backlog items
+
+These items are prerequisites or follow-up work for specific milestones in `Plans/nmp-migration/`. Each is blocked until its milestone starts, then becomes Active.
+
+- **nmp-foundation-audit** — replace every reference to `DomainModule`, `ViewModule`, `IdentityModule` in the migration plan with the shipped substrate traits (`ActionModule`, `CapabilityModule`, `DomainMigration`, `KernelEventObserver`). Pre-M0. (Partially done — substrate verified 2026-05-25.)
+- **nmp-nip74-add** — new crate in NMP for podcast events (kind:30074, 30075). ADR pinning schema. Pre-M2.
+- **nmp-blossom** — new crate in NMP for Blossom protocol. Pre-M10.
+- **nmp-nip26-add** — delegation crate (verify if already inside `nmp-signer-iface` first). Pre-M10.
+- **nmp-nip65-query** — explicit query module if `nmp-router` doesn't already export it. Pre-M1.
+- **cap-audio** — `nmp.audio.capability` schema + ADR + Android stub. Pre-M3.
+- **cap-download** — same pattern as cap-audio. Pre-M4.
+- **cap-notifications** — same pattern. Pre-M11.
+- **cap-stt** — no polling; webhook design required. Pre-M5.
+- **cap-tts** — same pattern. Pre-M8.
+- **cap-vector** — raw primitives only (`KnnSearch`, `BM25Search`, not `QueryHybrid`). Pre-M6.
+- **cap-spotlight** — iOS-only. Pre-M11.
+- **cap-carplay** — iOS-only. Pre-M11.
+- **cap-handoff** — iOS-only. Pre-M11.
+- **cap-icloud** — iOS-only. Pre-M11.
+- **cap-review** — iOS-only. Pre-M11.
+- **cap-data-export** — multi-platform. Pre-M11.
+- **cap-legacy-io** — iOS-only, used only during migration for reading legacy data stores. Pre-M1.
+- **cap-video** — clip export. May defer post-M13.
+- **apps-podcast-scaffolding** — accept `apps/podcast/` tree into NMP repo (mirror `apps/chirp/`). This is M0.A.
+- **per-view-emit-rate** — extend `nmp-core` tick loop to support per-view emit rates so agent streaming tokens can hit 30 Hz. Required before M7. File NMP BACKLOG entry when M7 starts.
+- **threading-podcast-peer** — confirm `nmp-threading` exposes the API `podcast-peer` needs; extend if not. Pre-M10.
 
 ## NMP Migration — M2.F Android proof follow-ups
 

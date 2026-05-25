@@ -79,6 +79,25 @@ pub enum PodcastAction {
     /// reserves the action-dispatch path so the iOS button can be wired
     /// against a stable contract today.
     GenerateBriefing,
+    /// Open the NIP-22 (kind 1111) comments subscription for
+    /// `episode_id` and surface any matching events on the snapshot's
+    /// `comments` field.
+    ///
+    /// Stub for this PR — the handler returns `{"ok":true}` and the
+    /// projection layer leaves `comments` empty. The full relay
+    /// subscription is tracked in `docs/BACKLOG.md`
+    /// (`pr-episode-comments-relay-wiring`).
+    FetchComments { episode_id: String },
+    /// Publish a kind-1111 NIP-22 comment anchored to `episode_id`.
+    ///
+    /// Stub for this PR — returns
+    /// `{"ok":true,"status":"nostr_relay_pending"}` so iOS can render an
+    /// optimistic confirmation while the relay-publish path is wired in
+    /// a follow-up.
+    PostComment {
+        episode_id: String,
+        content: String,
+    },
 }
 
 /// Single action module for the whole `"podcast"` namespace.
@@ -202,6 +221,13 @@ mod tests {
         let action = PodcastAction::GenerateBriefing;
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(r#""op":"generate_briefing""#));
+    fn fetch_comments_action_round_trips() {
+        let action = PodcastAction::FetchComments {
+            episode_id: "ep-7".into(),
+        };
+        let json = serde_json::to_string(&action).expect("encode");
+        assert!(json.contains(r#""op":"fetch_comments""#));
+        assert!(json.contains(r#""episode_id":"ep-7""#));
         let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, action);
     }
@@ -214,6 +240,17 @@ mod tests {
         };
         let json = serde_json::to_string(&action).expect("encode");
         assert_eq!(json, r#"{"op":"discover_nostr"}"#);
+    fn post_comment_action_round_trips() {
+        let action = PodcastAction::PostComment {
+            episode_id: "ep-7".into(),
+            content: "loved it".into(),
+        };
+        let json = serde_json::to_string(&action).expect("encode");
+        assert!(json.contains(r#""op":"post_comment""#));
+        assert!(json.contains(r#""episode_id":"ep-7""#));
+        assert!(json.contains(r#""content":"loved it""#));
+        let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, action);
     }
 
     #[test]
