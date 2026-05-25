@@ -65,6 +65,7 @@ mod tests {
     use crate::queue::PlaybackQueue;
     use crate::store::PodcastStore;
     use std::collections::HashMap;
+    use std::collections::HashSet;
     use std::ffi::CString;
     use std::sync::atomic::AtomicU64;
     use std::sync::{Arc, Mutex};
@@ -90,6 +91,7 @@ mod tests {
             tts_episodes: Arc::new(Mutex::new(Vec::new())),
             clips: Arc::new(Mutex::new(Vec::new())),
             transcripts: Arc::new(Mutex::new(HashMap::new())),
+            dismissed_episode_ids: Arc::new(Mutex::new(HashSet::new())),
         })
     }
 

@@ -51,9 +51,11 @@ use crate::capability::{AudioCommand, DownloadCommand, AUDIO_CAPABILITY_NAMESPAC
 use crate::ffi::actions::{knowledge_module::KnowledgeAction, player_module::PlayerAction, podcast_module::PodcastAction};
 use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
 use crate::ffi::actions::memory_module::MemoryAction;
+use crate::ffi::actions::inbox_module::InboxAction;
 use crate::ffi::actions::player_module::PlayerAction;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::projections::PodcastSummary;
+use crate::inbox_handler::handle_inbox_action;
 use crate::itunes_search::{parse_itunes_results, url_encode};
 use crate::memory_handler;
 use crate::clip_handler::{ClipHandler, ClipRecord};
@@ -87,6 +89,7 @@ pub struct PodcastHostOpHandler {
     tts: TtsEpisodeHandler,
     clips: Arc<Mutex<Vec<ClipRecord>>>,
     transcripts: Arc<Mutex<HashMap<String, Vec<TranscriptEntry>>>>,
+    dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
     rev: Arc<AtomicU64>,
 }
 
@@ -123,6 +126,9 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
     ) -> Self {
         let tts = TtsEpisodeHandler::new(app, tts_episodes, rev.clone());
+        dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
+        rev: Arc<AtomicU64>,
+    ) -> Self {
         Self {
             app,
             store,
@@ -139,6 +145,9 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
     ) -> Self {
         Self { app, store, player_actor, search_results, nostr_results, transcripts, rev }
+            dismissed_episode_ids,
+            rev,
+        }
     }
         knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
         rev: Arc<AtomicU64>,
@@ -238,6 +247,12 @@ impl PodcastHostOpHandler {
                 }
             }
         }
+        // Feature #31 auto-trigger: after refresh_all bump rev so the next
+        // snapshot tick recomputes the inbox projection from the freshly-
+        // pulled episodes. `refresh_one` already bumps rev on a per-podcast
+        // basis when episodes actually change; this extra bump guarantees a
+        // tick even when every feed returned 304 Not Modified.
+        self.rev.fetch_add(1, Ordering::Relaxed);
         if errors.is_empty() {
             serde_json::json!({"ok": true})
         } else {
@@ -769,7 +784,21 @@ impl HostOpHandler for PodcastHostOpHandler {
             };
         }
         if let Ok(action) = serde_json::from_str::<PlayerAction>(action_json) {
-            return self.handle_player_action(action, correlation_id);
+            return crate::player_handler::handle_player_action(
+                action,
+                &self.store,
+                &self.player_actor,
+                &self.rev,
+                &|cmd| self.dispatch_audio(cmd, correlation_id),
+            );
+        }
+        if let Ok(action) = serde_json::from_str::<InboxAction>(action_json) {
+            return handle_inbox_action(
+                action,
+                &self.store,
+                &self.dismissed_episode_ids,
+                &self.rev,
+            );
         }
         if let Ok(action) = serde_json::from_str::<QueueAction>(action_json) {
             return handle_queue_action(&self.queue, &self.rev, action);

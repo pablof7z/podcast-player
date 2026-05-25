@@ -378,6 +378,17 @@ impl PodcastStore {
         for episodes in self.episodes.values_mut() {
             if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
                 ep.position_secs = pos;
+    /// Mark an episode (by stringified `EpisodeId`) as listened. Returns
+    /// `true` only when the flag actually flipped (unknown id and
+    /// already-played both return `false`). Flushes to disk when bound.
+    pub fn mark_episode_played(&mut self, id_str: &str) -> bool {
+        for episodes in self.episodes.values_mut() {
+            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
+                if ep.played {
+                    return false;
+                }
+                ep.played = true;
+                self.persist();
                 return true;
             }
         }
@@ -559,7 +570,7 @@ mod tests {
     use uuid::Uuid;
 
     /// RAII tempdir for store integration tests. Same pattern as
-    /// `persistence::tests::TempDir`; duplicated here so the two test modules
+    /// `persistence::tests::TempDir`; duplicated so the two test modules
     /// can be reordered independently.
     struct TempDir {
         path: PathBuf,

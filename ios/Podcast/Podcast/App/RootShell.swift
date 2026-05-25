@@ -29,6 +29,7 @@ enum PodcastTab: Hashable { case library, downloads, identity }
 enum PodcastTab: Hashable { case library, briefings, identity }
 enum PodcastTab: Hashable { case library, social, identity }
 enum PodcastTab: Hashable { case home, library, identity }
+enum PodcastTab: Hashable { case library, inbox, identity }
 
 struct RootShell: View {
     @Environment(KernelModel.self) private var model
@@ -73,6 +74,9 @@ struct RootShell: View {
             SocialView()
                 .tabItem { Label("Social", systemImage: "person.2") }
                 .tag(PodcastTab.social)
+            InboxView()
+                .tabItem { Label("Inbox", systemImage: "tray") }
+                .tag(PodcastTab.inbox)
 
             IdentityRootView()
                 .tabItem { Label("Identity", systemImage: "person.circle") }

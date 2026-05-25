@@ -92,6 +92,8 @@ pub use projections::{
     VoiceState,
     DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot, PodcastSummary,
     TtsEpisodeSummary, VoiceState,
+    DownloadQueueSnapshot, EpisodeSummary, InboxItem, PendingApprovalSnapshot, PodcastSummary,
+    VoiceState,
 };
 pub use register::nmp_app_podcast_register;
 pub use snapshot::{

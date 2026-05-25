@@ -2,6 +2,7 @@
 //! `nmp_app_podcast_snapshot` / `nmp_app_podcast_unregister`.
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicU64;
 
@@ -94,6 +95,11 @@ pub struct PodcastHandle {
     /// thread after parsing publisher bytes; read by
     /// `build_snapshot_payload` on every snapshot tick.
     pub(super) transcripts: Arc<Mutex<HashMap<String, Vec<TranscriptEntry>>>>,
+    /// Set of episode ids the user has dismissed from the inbox. In-memory
+    /// only — the dismissal is a current-session-only signal; cold launch
+    /// re-surfaces everything so the user can re-triage. Written by the
+    /// inbox handler's `Dismiss` op; read by the inbox projection builder.
+    pub(super) dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

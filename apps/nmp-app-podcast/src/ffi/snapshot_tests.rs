@@ -52,6 +52,7 @@ use super::projections::{
 use super::projections::{
     BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadItemSnapshot,
     DownloadQueueSnapshot, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
+    InboxItem, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
 };
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
@@ -571,4 +572,30 @@ fn default_snapshot_omits_empty_clips() {
     // D5 byte-identity: empty clips list must not show up on the wire.
     let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
     assert!(!json.contains("clips"));
+
+#[test]
+fn snapshot_with_inbox_round_trips_and_empty_is_omitted() {
+    // Empty inbox stays off the wire (D5 byte-identity).
+    let empty_json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!empty_json.contains("inbox"));
+
+    let item = InboxItem {
+        episode_id: "ep-1".into(),
+        episode_title: "Pilot".into(),
+        podcast_id: "pod-1".into(),
+        podcast_title: "Some Show".into(),
+        artwork_url: None,
+        published_at: 1_700_000_000,
+        duration_secs: None,
+        priority_score: 0.9,
+        priority_reason: Some("Just published".into()),
+    };
+    let snap = PodcastUpdate {
+        inbox: vec![item.clone()],
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    assert!(json.contains(r#""inbox":["#));
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.inbox, vec![item]);
 }
