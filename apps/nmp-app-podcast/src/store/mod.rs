@@ -28,6 +28,9 @@ mod chapters;
 pub mod auto_download;
 mod persistence;
 mod transcripts;
+use crate::ffi::projections::MemoryFact;
+
+mod persistence;
 #[cfg(test)]
 mod tests;
 
@@ -72,6 +75,11 @@ pub struct PodcastStore {
     /// new episodes are surfaced in the snapshot but not downloaded.
     /// Cleared by `unsubscribe` so a later re-subscribe starts fresh.
     auto_download_enabled: HashSet<PodcastId>,
+    /// Durable agent-memory bag (feature #33). Keyed on `MemoryFact.key`
+    /// so writes upsert and the snapshot can render a deduped list. Lives
+    /// alongside `podcasts` in `podcasts.json` so both projections share
+    /// one persistence pass.
+    memory_facts: HashMap<String, MemoryFact>,
     data_dir: Option<PathBuf>,
 }
 
@@ -85,6 +93,7 @@ impl PodcastStore {
             last_flushed_positions: HashMap::new(),
             has_completed_onboarding: false,
             auto_download_enabled: HashSet::new(),
+            memory_facts: HashMap::new(),
             data_dir: None,
         }
     }
@@ -125,6 +134,7 @@ impl PodcastStore {
         // doesn't immediately re-flush on the next `Playing` tick.
         self.last_flushed_positions.clear();
         self.auto_download_enabled.clear();
+        self.memory_facts.clear();
         for row in loaded.podcasts {
             let id = row.podcast.id;
             for ep in &row.episodes {
@@ -143,6 +153,9 @@ impl PodcastStore {
         // survives restart without a second file. `serde(default)` keeps
         // older saved files (predating the field) loading cleanly.
         self.has_completed_onboarding = loaded.has_completed_onboarding;
+        for fact in loaded.memory_facts {
+            self.memory_facts.insert(fact.key.clone(), fact);
+        }
         self.podcasts.len()
     }
 
@@ -168,10 +181,14 @@ impl PodcastStore {
         // Stable order so two consecutive saves produce identical bytes —
         // helps when diffing on-disk state during debugging.
         rows.sort_by(|a, b| a.podcast.id.0.cmp(&b.podcast.id.0));
+        let mut facts: Vec<MemoryFact> = self.memory_facts.values().cloned().collect();
+        // Same stable-order rationale as podcasts: keep saves byte-stable.
+        facts.sort_by(|a, b| a.key.cmp(&b.key));
         PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: rows,
             has_completed_onboarding: self.has_completed_onboarding,
+            memory_facts: facts,
         }
     }
 
@@ -443,6 +460,63 @@ impl PodcastStore {
     /// already known to be on disk is not re-queued.
     pub fn local_paths(&self) -> &HashMap<EpisodeId, String> {
         &self.local_paths
+    // ── Agent memory (feature #33) ────────────────────────────────────────
+
+    /// Upsert a memory fact keyed on `key`. When a fact with the same key
+    /// already exists, only the value and source change — the original
+    /// `created_at` and `id` are preserved so the UI sees stable identity
+    /// across edits.
+    ///
+    /// `source` is taken verbatim; the action handler is responsible for
+    /// defaulting it (typically to `"user"`).
+    pub fn set_memory_fact(&mut self, key: String, value: String, source: String, now_unix: i64) {
+        let fact = match self.memory_facts.get(&key) {
+            Some(existing) => MemoryFact {
+                id: existing.id.clone(),
+                key: existing.key.clone(),
+                value,
+                source,
+                created_at: existing.created_at,
+            },
+            None => MemoryFact {
+                id: key.clone(),
+                key: key.clone(),
+                value,
+                source,
+                created_at: now_unix,
+            },
+        };
+        self.memory_facts.insert(key, fact);
+        self.persist();
+    }
+
+    /// Delete a memory fact by key. Returns `true` when a row was removed
+    /// so the caller can decide whether to bump `rev`.
+    pub fn remove_memory_fact(&mut self, key: &str) -> bool {
+        let removed = self.memory_facts.remove(key).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
+    }
+
+    /// Wipe the entire memory bag. Returns the number of facts that were
+    /// removed so the caller can decide whether to bump `rev`.
+    pub fn clear_memory(&mut self) -> usize {
+        let n = self.memory_facts.len();
+        if n > 0 {
+            self.memory_facts.clear();
+            self.persist();
+        }
+        n
+    }
+
+    /// Snapshot of every memory fact, sorted by `key` so the iOS list is
+    /// stable across re-renders without a client-side sort.
+    pub fn all_memory_facts(&self) -> Vec<MemoryFact> {
+        let mut facts: Vec<MemoryFact> = self.memory_facts.values().cloned().collect();
+        facts.sort_by(|a, b| a.key.cmp(&b.key));
+        facts
     }
 
     /// Test-only accessor for the currently-bound data dir.

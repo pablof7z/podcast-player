@@ -50,6 +50,12 @@ struct AdvancedView: View {
                         title: "Scheduled Tasks",
                         subtitle: "Recurring jobs the agent runs for you",
                         systemImage: "calendar.badge.clock"
+                    AgentMemoryView()
+                } label: {
+                    advancedRow(
+                        title: "Agent Memory",
+                        subtitle: "Facts the assistant remembers about you",
+                        systemImage: "brain"
                     )
                 }
             }

@@ -7,6 +7,13 @@
 use super::*;
 use podcast_core::{Episode, Podcast, PodcastId};
 use std::path::PathBuf;
+//! Unit + integration tests for [`super::PodcastStore`].
+//!
+//! Lifted out of `mod.rs` so the production module stays under the 500-LOC
+//! hard cap. Wired in via `#[cfg(test)] mod tests;` from `mod.rs`.
+
+use super::*;
+use podcast_core::{Episode, Podcast, PodcastId};
 use std::sync::atomic::{AtomicU64, Ordering};
 use uuid::Uuid;
 
@@ -276,6 +283,73 @@ fn auto_download_off_state_persists_across_reload() {
     let mut store2 = PodcastStore::new();
     store2.set_data_dir(dir.path.clone());
     assert!(!store2.is_auto_download_enabled(podcast_id));
+// ── Agent memory (feature #33) ───────────────────────────────────────
+
+#[test]
+fn set_memory_fact_inserts_then_lists_in_key_order() {
+    let mut store = PodcastStore::new();
+    store.set_memory_fact("zebra".into(), "stripes".into(), "user".into(), 100);
+    store.set_memory_fact("alpha".into(), "first".into(), "agent".into(), 200);
+    let facts = store.all_memory_facts();
+    assert_eq!(facts.len(), 2);
+    assert_eq!(facts[0].key, "alpha");
+    assert_eq!(facts[0].source, "agent");
+    assert_eq!(facts[1].key, "zebra");
+}
+
+#[test]
+fn set_memory_fact_upsert_preserves_id_and_created_at() {
+    let mut store = PodcastStore::new();
+    store.set_memory_fact("genre".into(), "tech".into(), "user".into(), 100);
+    store.set_memory_fact("genre".into(), "history".into(), "agent".into(), 999);
+    let facts = store.all_memory_facts();
+    assert_eq!(facts.len(), 1);
+    assert_eq!(facts[0].value, "history");
+    assert_eq!(facts[0].source, "agent");
+    // Upsert preserves the original created_at — the row is the same
+    // memory, just re-stated.
+    assert_eq!(facts[0].created_at, 100);
+    assert_eq!(facts[0].id, "genre");
+}
+
+#[test]
+fn remove_memory_fact_reports_hit_vs_miss() {
+    let mut store = PodcastStore::new();
+    store.set_memory_fact("k".into(), "v".into(), "user".into(), 1);
+    assert!(store.remove_memory_fact("k"));
+    assert!(!store.remove_memory_fact("k")); // already gone
+    assert!(store.all_memory_facts().is_empty());
+}
+
+#[test]
+fn clear_memory_returns_count_and_wipes() {
+    let mut store = PodcastStore::new();
+    store.set_memory_fact("a".into(), "1".into(), "user".into(), 1);
+    store.set_memory_fact("b".into(), "2".into(), "user".into(), 2);
+    assert_eq!(store.clear_memory(), 2);
+    assert!(store.all_memory_facts().is_empty());
+    // Empty bag → second clear is a no-op (count 0).
+    assert_eq!(store.clear_memory(), 0);
+}
+
+#[test]
+fn memory_facts_persist_across_reload() {
+    let dir = TempDir::new();
+    {
+        let mut store = PodcastStore::new();
+        store.set_data_dir(dir.path.clone());
+        store.set_memory_fact("tz".into(), "UTC".into(), "user".into(), 42);
+        store.set_memory_fact("pref".into(), "dark".into(), "agent".into(), 43);
+    }
+    let mut store2 = PodcastStore::new();
+    store2.set_data_dir(dir.path.clone());
+    let facts = store2.all_memory_facts();
+    assert_eq!(facts.len(), 2);
+    assert_eq!(facts[0].key, "pref");
+    assert_eq!(facts[0].source, "agent");
+    assert_eq!(facts[0].created_at, 43);
+    assert_eq!(facts[1].key, "tz");
+    assert_eq!(facts[1].value, "UTC");
 }
 
 // ── Persistence integration tests ────────────────────────────────────

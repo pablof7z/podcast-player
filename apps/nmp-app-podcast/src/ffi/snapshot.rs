@@ -40,6 +40,7 @@ use super::projections::{
     DownloadQueueSnapshot, EpisodeSummary, PodcastSummary, VoiceState, WidgetSnapshot,
     AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadQueueSnapshot, EpisodeSummary,
     KnowledgeSearchResult, PodcastSummary, VoiceState, WidgetSnapshot,
+    MemoryFact, PodcastSummary, VoiceState, WidgetSnapshot,
 };
 use super::snapshot_queue::resolve_queue_rows;
 use crate::player::PlayerState;
@@ -208,6 +209,11 @@ pub struct PodcastUpdate {
     /// cleared by `clear_results`. Empty preserves D5 byte-identity.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub knowledge_search_results: Vec<KnowledgeSearchResult>,
+    /// Agent-memory bag (feature #33). Sorted by key, empty until the user
+    /// or the agent writes the first fact. Empty `Vec` is omitted from the
+    /// wire payload so the legacy stub stays byte-identical.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub memory_facts: Vec<MemoryFact>,
 }
 
 impl Default for PodcastUpdate {
@@ -237,6 +243,7 @@ impl Default for PodcastUpdate {
             picks: Vec::new(),
             agent_tasks: Vec::new(),
             knowledge_search_results: Vec::new(),
+            memory_facts: Vec::new(),
         }
     }
 }
@@ -343,6 +350,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
     let library = handle.store.lock().ok().map(|s| {
     let library: Vec<PodcastSummary> = handle.store.lock().ok().map(|s| {
         s.all_podcasts()
+    let (library, memory_facts) = handle.store.lock().ok().map(|s| {
+        let lib = s.all_podcasts()
             .into_iter()
             .map(|(podcast, episodes)| PodcastSummary {
                 id: podcast.id.0.to_string(),
@@ -397,7 +406,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                     })
                     .collect(),
             })
-            .collect()
+            .collect();
+        (lib, s.all_memory_facts())
     }).unwrap_or_default();
 
     let search_results = handle.search_results.lock().ok()
@@ -446,6 +456,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         picks,
         agent_tasks,
         knowledge_search_results,
+        memory_facts,
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&update)

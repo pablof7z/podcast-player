@@ -35,6 +35,18 @@ use super::projections::{
     DownloadQueueSnapshot, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
 };
 use crate::player::PlayerState;
+//! Snapshot round-trip + byte-identity tests for [`super::snapshot`].
+//!
+//! Lifted out of `snapshot.rs` so the production module stays under the
+//! 500-LOC hard cap. Wired in via `#[cfg(test)] mod snapshot_tests;` from
+//! `super::mod`.
+
+use super::projections::{
+    BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot,
+    MemoryFact, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
+};
+use super::snapshot::PodcastUpdate;
+use crate::player::PlayerState;
 
 #[test]
 fn default_snapshot_omits_now_playing() {
@@ -140,6 +152,7 @@ fn snapshot_with_agent_tasks_round_trips() {
     assert!(json.contains("\"agent_tasks\":["));
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded.agent_tasks, tasks);
+    assert!(decoded.memory_facts.is_empty());
 }
 
 #[test]
@@ -488,4 +501,38 @@ fn snapshot_picks_round_trips_and_default_omits_field() {
 }
     let decoded: BriefingSnapshot = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, b);
+// ── Agent memory (feature #33) ───────────────────────────────────
+
+#[test]
+fn snapshot_omits_empty_memory_facts() {
+    // D5 byte-identity: empty memory bag must not pollute the wire.
+    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!json.contains("memory_facts"));
+}
+
+#[test]
+fn snapshot_with_memory_facts_round_trips() {
+    let facts = vec![
+        MemoryFact {
+            id: "k1".into(),
+            key: "k1".into(),
+            value: "v1".into(),
+            source: "user".into(),
+            created_at: 1_700_000_000,
+        },
+        MemoryFact {
+            id: "k2".into(),
+            key: "k2".into(),
+            value: "v2".into(),
+            source: "agent".into(),
+            created_at: 1_700_000_500,
+        },
+    ];
+    let snap = PodcastUpdate {
+        memory_facts: facts.clone(),
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.memory_facts, facts);
 }

@@ -709,6 +709,41 @@ pub struct WikiArticle {
     /// `true` while a generation is in flight; `false` once the article is
     /// readable. Lets the UI render a progress indicator without polling.
     pub is_generating: bool,
+/// One row in the agent-memory projection surfaced via
+/// [`super::snapshot::PodcastUpdate::memory_facts`].
+///
+/// Agent memory is a flat key→value bag the AI agent (and the user) can
+/// write to so the assistant remembers durable facts about the user across
+/// sessions (`"preferred_genre"` → `"technology"`,
+/// `"timezone"` → `"Europe/Madrid"`, …). Keyed on `key` so writes upsert:
+/// the most recent write wins.
+///
+/// `source` is `"user"` when the user wrote the fact through Settings,
+/// `"agent"` when the assistant recorded it mid-conversation. Surfaced as
+/// a string (not a typed enum) so the iOS decoder doesn't need a variant
+/// case-mapping — matches every other `source` / `status` field on the
+/// snapshot.
+///
+/// `created_at` is Unix seconds — the rendering layer formats it; the
+/// projection stays format-free.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct MemoryFact {
+    /// Stable id for the row. Currently the same as `key` so two writes
+    /// from the same user collapse on upsert (key is the upsert handle).
+    /// Surfaced as `String` rather than typed `Uuid` so the iOS
+    /// `Identifiable` conformance has a non-empty handle without any
+    /// custom decoding.
+    pub id: String,
+    /// User-readable key (e.g. `"preferred_genre"`).
+    pub key: String,
+    /// Free-form value the agent or user wrote.
+    pub value: String,
+    /// `"user"` or `"agent"`. The action handler defaults missing values
+    /// to `"user"` so the wire shape stays narrow for hand-written calls.
+    pub source: String,
+    /// Unix seconds when the fact was first written (preserved across
+    /// upserts so the UI can show "remembered since …" if it wants to).
+    pub created_at: i64,
 }
 
 #[cfg(test)]
@@ -1093,5 +1128,25 @@ mod tests {
         assert!(!json.contains("duration_secs"));
         let decoded: AgentPickSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, pick);
+    fn memory_fact_round_trips() {
+        let fact = MemoryFact {
+            id: "preferred_genre".into(),
+            key: "preferred_genre".into(),
+            value: "technology".into(),
+            source: "user".into(),
+            created_at: 1_700_000_000,
+        };
+        let json = serde_json::to_string(&fact).expect("encode");
+        let decoded: MemoryFact = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, fact);
+    }
+
+    #[test]
+    fn memory_fact_decodes_agent_source() {
+        // The agent writes facts with source="agent" — same wire shape,
+        // just a different `source` literal. Decoder accepts both.
+        let json = r#"{"id":"k","key":"k","value":"v","source":"agent","created_at":1700000000}"#;
+        let decoded: MemoryFact = serde_json::from_str(json).expect("decode");
+        assert_eq!(decoded.source, "agent");
     }
 }

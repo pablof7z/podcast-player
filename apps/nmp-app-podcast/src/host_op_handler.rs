@@ -48,6 +48,12 @@ use crate::ffi::projections::{AgentTaskSummary, PodcastSummary};
 use crate::capability::{AudioCommand, DownloadCommand, AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE};
 use crate::ffi::actions::{knowledge_module::KnowledgeAction, player_module::PlayerAction, podcast_module::PodcastAction};
 use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
+use crate::ffi::actions::memory_module::MemoryAction;
+use crate::ffi::actions::player_module::PlayerAction;
+use crate::ffi::actions::podcast_module::PodcastAction;
+use crate::ffi::projections::PodcastSummary;
+use crate::itunes_search::{parse_itunes_results, url_encode};
+use crate::memory_handler;
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
 use crate::tasks_handler;
@@ -745,6 +751,8 @@ impl HostOpHandler for PodcastHostOpHandler {
             return tasks_handler::handle_tasks_action(action, &self.agent_tasks, &self.rev);
         if let Ok(a) = serde_json::from_str::<KnowledgeAction>(action_json) {
             return crate::knowledge::handle_knowledge_action(a, &self.store, &self.knowledge_search_results, &self.rev);
+        if let Ok(action) = serde_json::from_str::<MemoryAction>(action_json) {
+            return memory_handler::handle(action, &self.store, &self.rev);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }
