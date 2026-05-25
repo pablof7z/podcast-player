@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Legacy I/O capability — wire types
 //
 // Split out of `LegacyIOCapability.swift` to keep both files under the
-// 300-LOC soft cap (`Plans/nmp-migration/06-cross-cutting.md` §5). The
+// 300-LOC soft cap. The
 // request enum + result envelope here are the *only* shapes the kernel
 // sees over the capability boundary; they live alongside the capability
 // implementation, not in a generic location, because the namespace is

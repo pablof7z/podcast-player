@@ -22,7 +22,7 @@ This repository uses three canonical planning/status files:
 | `WIP.md` | Live in-flight tracker for branches currently on worktrees. | When an agent starts work and when its PR merges. |
 
 - Do not create new top-level planning files. No new `PLAN.md`, `TODO.md`, `ROADMAP.md`, `NEXT.md`, `STATUS.md`, or ad-hoc plan files at the repo root or directly under `docs/`.
-- New detailed implementation plans belong under `docs/plan/` and must be linked from `docs/plan.md`. Existing files under `Plans/` are historical reference material; do not add new active plans there.
+- New detailed implementation plans belong under `docs/plan/` and must be linked from `docs/plan.md`. Do not recreate deleted historical plan directories.
 - Do not duplicate state across files. If a backlog item is actively being fixed, `docs/BACKLOG.md` keeps the item and `WIP.md` only records the active branch/worktree.
 - Edit existing entries instead of appending parallel ones. A plan or backlog item should have one canonical home.
 - Inline `TODO` comments are not a planning system. If they represent follow-up work, track them in `docs/BACKLOG.md`.

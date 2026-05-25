@@ -1,7 +1,5 @@
 # Token-swap table for NMP migration.
 #
-# Source: Plans/nmp-migration/05-migration-map.md §A
-#
 # Each [[swap]] entry describes one mechanical replacement that
 # apply-token-swap.swift performs at the AST level.
 #

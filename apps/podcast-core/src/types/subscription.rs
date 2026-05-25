@@ -37,9 +37,8 @@ impl AutoDownloadPolicy {
     /// This is the M4.A skeleton: it only inspects the [`AutoDownloadMode`]
     /// variant. Real policy — storage cap, network-type guard (`wifi_only`),
     /// per-subscription "newest N already downloaded" counting, time-of-day
-    /// window — lives in `podcast-feeds::refresh::policy` and lands in
-    /// M4.B (see `Plans/nmp-migration/milestones/M04-download-capability.md`
-    /// §M4.B). Callers in M4.A use this for the action-emission decision; M4.B
+    /// window — lives in `podcast-feeds::refresh::policy`. Callers in M4.A
+    /// use this for the action-emission decision; M4.B
     /// will refine the policy site without breaking this signature.
     ///
     /// Behaviour today:

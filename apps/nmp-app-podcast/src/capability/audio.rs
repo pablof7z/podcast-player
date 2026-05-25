@@ -23,8 +23,8 @@
 //!
 //! The namespace string is `nmp.audio.capability` to match the existing
 //! `HttpCapability::namespace` / `KeychainCapability` convention and the
-//! canonical capability spec at `Plans/nmp-migration/03-capabilities.md`
-//! §5.1. (A podcast-prefixed `pcst.audio.capability` was briefly under
+//! active NMP feature-parity plan. (A podcast-prefixed
+//! `pcst.audio.capability` was briefly under
 //! consideration during M3.A drafting; the canonical nmp form won so
 //! M3.B/C see the same string the broader plan uses.)
 //!
@@ -32,7 +32,7 @@
 //!
 //! This is the M3.A skeleton — a podcast-local two-enum
 //! Command/Report shape. The canonical `nmp-core::capability::audio`
-//! per `03-capabilities.md` §5.1 uses a three-enum
+//! uses a three-enum
 //! `AudioRequest`/`Response`/`Event` split. When that lands in
 //! `nostrmultiplatform`, M3.B/C will reconcile this contract against
 //! the canonical one in a follow-up migration. The split here is

@@ -9,9 +9,8 @@
 //!
 //! * Domain: [`NostrConversation`], [`PendingApproval`], [`AgentTask`],
 //!   [`AgentMemory`] — port of the legacy Swift `Domain/Agent*` files
-//!   into Rust, retagged for the LLM-chat model (per
-//!   `Plans/nmp-migration/02-crates.md` §C, the peer-Nostr types belong
-//!   to the future `podcast-peer` crate).
+//!   into Rust, retagged for the LLM-chat model. Peer-Nostr types belong
+//!   to the future `podcast-peer` crate.
 //! * Actions: [`SendAgentMessageAction`], [`ApproveAction`],
 //!   [`DenyAction`], [`ClearConversationAction`] plus their stable
 //!   `podcast.agent.*` ids.

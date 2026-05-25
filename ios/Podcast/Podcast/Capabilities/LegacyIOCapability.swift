@@ -3,8 +3,7 @@ import Foundation
 // MARK: - Legacy I/O capability
 //
 // One-shot read primitives the kernel uses on first launch to recover data
-// the legacy Swift Podcastr app wrote into its App Group. Per
-// `Plans/nmp-migration/03-capabilities.md` and `06-cross-cutting.md` §1.
+// the legacy Swift Podcastr app wrote into its App Group.
 //
 // Doctrine (docs/product-spec/overview-and-dx.md §1.5):
 //   D6 — failures cross the boundary as `result_json` payloads, never as
