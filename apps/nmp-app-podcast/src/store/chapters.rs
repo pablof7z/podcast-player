@@ -13,6 +13,21 @@ impl PodcastStore {
         None
     }
 
+    /// Look up the published duration of an episode (`Episode::duration_secs`).
+    ///
+    /// Returns `None` when the episode is missing or when the RSS feed did
+    /// not advertise a duration. The AI chapter compiler ([`crate::ai_chapters`])
+    /// gates on this — without a duration there's no way to compute
+    /// equally-spaced chapter offsets.
+    pub fn episode_duration_secs(&self, id_str: &str) -> Option<f64> {
+        for episodes in self.episodes.values() {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                return ep.duration_secs;
+            }
+        }
+        None
+    }
+
     pub fn set_episode_chapters(&mut self, id_str: &str, chapters: Vec<Chapter>) -> bool {
         for episodes in self.episodes.values_mut() {
             if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
@@ -57,5 +72,24 @@ mod tests {
         let (_url, loaded) = store.episode_chapters_state(&ep_id).unwrap();
         assert!(loaded);
         assert!(!store.set_episode_chapters("missing", vec![]));
+    }
+
+    #[test]
+    fn episode_duration_secs_returns_published_duration() {
+        let mut store = PodcastStore::new();
+        let podcast = Podcast::new("Show");
+        let podcast_id = podcast.id;
+        let mut ep = Episode::new(
+            podcast_id,
+            "guid-1",
+            "Ep",
+            url::Url::parse("https://example.com/e.mp3").unwrap(),
+            chrono::Utc::now(),
+        );
+        let ep_id = ep.id.0.to_string();
+        ep.duration_secs = Some(1800.0);
+        store.subscribe(podcast, vec![ep]);
+        assert_eq!(store.episode_duration_secs(&ep_id), Some(1800.0));
+        assert_eq!(store.episode_duration_secs("missing"), None);
     }
 }

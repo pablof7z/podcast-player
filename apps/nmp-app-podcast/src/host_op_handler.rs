@@ -12,12 +12,14 @@ use uuid::Uuid;
 use podcast_feeds::client::{build_feed_request, handle_feed_response, FeedResult};
 use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
 
+use crate::ai_chapters::handle_compile_chapters;
 use crate::capability::{
     notification_command_json, AudioCommand, DownloadCommand, NotificationCommand,
     AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE, NOTIFICATION_CAPABILITY_NAMESPACE,
 };
 use crate::chapter::handle_fetch_chapters;
 use crate::discover_nostr;
+use crate::ffi::actions::chapters_module::ChaptersAction;
 use crate::ffi::actions::player_module::PlayerAction;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::actions::queue_module::QueueAction;
@@ -529,6 +531,12 @@ impl HostOpHandler for PodcastHostOpHandler {
         }
         if let Ok(action) = serde_json::from_str::<QueueAction>(action_json) {
             return handle_queue_action(&self.queue, &self.rev, action);
+        if let Ok(action) = serde_json::from_str::<ChaptersAction>(action_json) {
+            return match action {
+                ChaptersAction::Compile { episode_id } => {
+                    handle_compile_chapters(&self.store, &self.rev, episode_id)
+                }
+            };
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }

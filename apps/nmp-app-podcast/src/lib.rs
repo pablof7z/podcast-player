@@ -32,6 +32,7 @@
 //!   per-projection actors under [`player`] et al.
 
 pub(crate) mod briefings_handler;
+pub(crate) mod ai_chapters;
 pub mod capability;
 pub(crate) mod chapter;
 pub(crate) mod discover_nostr;

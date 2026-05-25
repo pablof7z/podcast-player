@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T01:45:00Z",
+      "lines": [
+        "Episodes without published chapters now offer a Generate Chapters button — once a transcript is fetched, the kernel synthesizes evenly-spaced AI chapters with a sparkles badge so you can tell them apart from publisher chapters."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:20:00Z",
       "lines": [
         "Live Activity: see what's playing on your lock screen and Dynamic Island."

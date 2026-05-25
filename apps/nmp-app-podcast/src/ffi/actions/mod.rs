@@ -56,11 +56,13 @@
 //! owns its wire format; this module is the single import path the
 //! iOS shell links against.
 
+pub mod chapters_module;
 pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
 pub mod voice;
 
+pub use chapters_module::{ChaptersAction, ChaptersActionModule};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};
