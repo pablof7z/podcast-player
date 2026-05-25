@@ -27,6 +27,8 @@ use podcast_core::{Episode, EpisodeId, Podcast, PodcastId};
 mod chapters;
 mod persistence;
 mod transcripts;
+#[cfg(test)]
+mod tests;
 
 use persistence::{PersistedPodcast, PersistedStore, PERSIST_SCHEMA_VERSION};
 
@@ -254,6 +256,59 @@ impl PodcastStore {
         self.local_paths.remove(episode_id)
     }
 
+    /// Read the persisted playback position for an episode keyed by the string
+    /// form of its UUID. Returns `None` when no episode with that id is found
+    /// or when its position is at the start (`0.0`).
+    ///
+    /// Used by the snapshot projection so iOS can render a "Resume at X:XX"
+    /// indicator without having to keep its own copy of the position. The Play
+    /// path itself reads position directly via [`episode_playback_info`].
+    pub fn position_for(&self, id_str: &str) -> Option<f64> {
+        for episodes in self.episodes.values() {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                return if ep.position_secs > 0.0 {
+                    Some(ep.position_secs)
+                } else {
+                    None
+                };
+            }
+        }
+        None
+    }
+
+    /// Update an episode's playback position in memory. **Does not** persist;
+    /// call [`flush_positions`] (or any other persisting mutation) to write
+    /// through to disk.
+    ///
+    /// Returns `true` when the episode was found and updated, `false`
+    /// otherwise. `Playing` reports arrive at ≤4 Hz (`AudioReport` D8); writing
+    /// the entire `podcasts.json` on every tick would burn disk bandwidth and
+    /// shorten flash life, so the writeback path stays in-memory and the FFI
+    /// layer batches disk flushes on terminal events (pause / stop) and on a
+    /// coarse interval. The "every durable concept has one canonical
+    /// representation" rule (AGENTS.md) keeps position on `Episode.position_secs`
+    /// rather than a parallel side-map.
+    pub fn set_episode_position(&mut self, id_str: &str, position_secs: f64) -> bool {
+        let pos = position_secs.max(0.0);
+        for episodes in self.episodes.values_mut() {
+            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
+                ep.position_secs = pos;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Force-flush the in-memory state to disk. Companion to
+    /// [`set_episode_position`] — call when a natural checkpoint is reached
+    /// (pause, stop, app background, periodic interval) so the in-memory
+    /// position deltas survive a hard kill.
+    ///
+    /// Silent no-op when no data dir has been bound (D6).
+    pub fn flush_positions(&self) {
+        self.persist();
+    }
+
     /// Test-only accessor for the currently-bound data dir.
     #[cfg(test)]
     pub(crate) fn data_dir(&self) -> Option<&Path> {
@@ -264,223 +319,5 @@ impl PodcastStore {
 impl Default for PodcastStore {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use podcast_core::{Episode, Podcast, PodcastId};
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use uuid::Uuid;
-
-    /// RAII tempdir for store integration tests. Same pattern as
-    /// `persistence::tests::TempDir`; duplicated here so the two test modules
-    /// can be reordered independently.
-    struct TempDir {
-        path: PathBuf,
-    }
-
-    impl TempDir {
-        fn new() -> Self {
-            static SEQ: AtomicU64 = AtomicU64::new(0);
-            let n = SEQ.fetch_add(1, Ordering::Relaxed);
-            let path = std::env::temp_dir().join(format!(
-                "nmp-podcast-store-{}-{}",
-                std::process::id(),
-                n,
-            ));
-            std::fs::create_dir_all(&path).expect("create temp dir");
-            Self { path }
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
-
-    fn make_podcast(title: &str) -> Podcast {
-        Podcast::new(title)
-    }
-
-    fn make_episode(podcast_id: PodcastId, title: &str) -> Episode {
-        // Random guid so two `make_episode` calls produce distinct episode
-        // ids (the store dedupes by id). With `Episode::new` now deriving the
-        // id from `(feed_url, guid)`, randomness lives in the guid.
-        Episode::new(
-            podcast_id,
-            "https://example.com/feed.xml",
-            format!("guid-{}", Uuid::new_v4()),
-            title,
-            url::Url::parse("https://example.com/audio.mp3").unwrap(),
-            chrono::Utc::now(),
-        )
-    }
-
-    #[test]
-    fn subscribe_and_retrieve() {
-        let mut store = PodcastStore::new();
-        let podcast = make_podcast("Test Show");
-        let id = podcast.id;
-        store.subscribe(podcast, vec![]);
-        assert_eq!(store.podcast_count(), 1);
-        assert!(store.podcast(id).is_some());
-    }
-
-    #[test]
-    fn all_podcasts_returns_all() {
-        let mut store = PodcastStore::new();
-        store.subscribe(make_podcast("Show A"), vec![]);
-        store.subscribe(make_podcast("Show B"), vec![]);
-        assert_eq!(store.all_podcasts().len(), 2);
-    }
-
-    #[test]
-    fn resubscribe_replaces_existing() {
-        let mut store = PodcastStore::new();
-        let p1 = make_podcast("Original Title");
-        let id = p1.id;
-        store.subscribe(p1, vec![]);
-
-        let mut p2 = make_podcast("Updated Title");
-        p2.id = id; // same id — should replace
-        store.subscribe(p2, vec![]);
-        assert_eq!(store.podcast_count(), 1);
-        assert_eq!(store.podcast(id).map(|p| p.title.as_str()), Some("Updated Title"));
-    }
-
-    #[test]
-    fn set_and_get_local_path() {
-        let mut store = PodcastStore::new();
-        let ep_id = EpisodeId::generate();
-        assert!(store.local_path_for(&ep_id).is_none());
-        store.set_local_path(ep_id, "/tmp/ep.mp3".into());
-        assert_eq!(store.local_path_for(&ep_id), Some("/tmp/ep.mp3"));
-    }
-
-    #[test]
-    fn clear_local_path_returns_previous_and_unsets() {
-        let mut store = PodcastStore::new();
-        let ep_id = EpisodeId::generate();
-        store.set_local_path(ep_id, "/tmp/ep.mp3".into());
-        let prev = store.clear_local_path(&ep_id);
-        assert_eq!(prev.as_deref(), Some("/tmp/ep.mp3"));
-        assert!(store.local_path_for(&ep_id).is_none());
-        assert!(store.clear_local_path(&ep_id).is_none());
-    }
-
-    // ── Persistence integration tests ────────────────────────────────────
-
-    #[test]
-    fn set_data_dir_on_empty_dir_returns_zero() {
-        let dir = TempDir::new();
-        let mut store = PodcastStore::new();
-        let loaded = store.set_data_dir(dir.path.clone());
-        assert_eq!(loaded, 0);
-        assert_eq!(store.podcast_count(), 0);
-        assert_eq!(store.data_dir(), Some(dir.path.as_path()));
-    }
-
-    #[test]
-    fn subscribe_writes_to_disk_when_bound() {
-        let dir = TempDir::new();
-        let mut store = PodcastStore::new();
-        store.set_data_dir(dir.path.clone());
-        store.subscribe(make_podcast("Disk Show"), vec![]);
-        assert!(dir.path.join("podcasts.json").exists());
-    }
-
-    #[test]
-    fn fresh_store_can_reload_after_subscribe() {
-        let dir = TempDir::new();
-        let podcast_id;
-        let episodes;
-        {
-            let mut store = PodcastStore::new();
-            store.set_data_dir(dir.path.clone());
-            let podcast = make_podcast("Persistent Show");
-            podcast_id = podcast.id;
-            episodes = vec![make_episode(podcast_id, "Ep 1"), make_episode(podcast_id, "Ep 2")];
-            store.subscribe(podcast, episodes.clone());
-        }
-        // New store, same dir — should rehydrate.
-        let mut store2 = PodcastStore::new();
-        let loaded = store2.set_data_dir(dir.path.clone());
-        assert_eq!(loaded, 1);
-        assert_eq!(store2.podcast_count(), 1);
-        let restored = store2.podcast(podcast_id).expect("podcast restored");
-        assert_eq!(restored.title, "Persistent Show");
-        assert_eq!(store2.episodes_for(podcast_id).len(), 2);
-        assert_eq!(store2.episodes_for(podcast_id), episodes.as_slice());
-    }
-
-    #[test]
-    fn unsubscribe_writes_to_disk_when_bound() {
-        let dir = TempDir::new();
-        let mut store = PodcastStore::new();
-        store.set_data_dir(dir.path.clone());
-        let podcast = make_podcast("Doomed");
-        let id = podcast.id;
-        store.subscribe(podcast, vec![]);
-        store.unsubscribe(id);
-
-        // Reload — should be empty.
-        let mut store2 = PodcastStore::new();
-        let loaded = store2.set_data_dir(dir.path.clone());
-        assert_eq!(loaded, 0);
-        assert_eq!(store2.podcast_count(), 0);
-    }
-
-    #[test]
-    fn update_refresh_metadata_writes_to_disk_when_bound() {
-        let dir = TempDir::new();
-        let mut store = PodcastStore::new();
-        store.set_data_dir(dir.path.clone());
-        let podcast = make_podcast("Etag Show");
-        let id = podcast.id;
-        store.subscribe(podcast, vec![]);
-        store.update_refresh_metadata(id, Some("W/\"abc\"".into()), Some("Mon, 25 May".into()));
-
-        let mut store2 = PodcastStore::new();
-        store2.set_data_dir(dir.path.clone());
-        let restored = store2.podcast(id).expect("podcast restored");
-        assert_eq!(restored.etag.as_deref(), Some("W/\"abc\""));
-        assert_eq!(restored.last_modified.as_deref(), Some("Mon, 25 May"));
-        assert!(restored.last_refreshed_at.is_some());
-    }
-
-    #[test]
-    fn set_data_dir_replaces_in_memory_state() {
-        // If the store already has content in memory and a different data dir
-        // is bound, the on-disk state from that dir wins (replaces in-mem).
-        let dir = TempDir::new();
-        // Pre-populate dir from store A.
-        {
-            let mut store_a = PodcastStore::new();
-            store_a.set_data_dir(dir.path.clone());
-            store_a.subscribe(make_podcast("From Disk"), vec![]);
-        }
-        // Store B starts with a different in-memory podcast, then binds.
-        let mut store_b = PodcastStore::new();
-        store_b.subscribe(make_podcast("Transient"), vec![]);
-        assert_eq!(store_b.podcast_count(), 1);
-
-        let loaded = store_b.set_data_dir(dir.path.clone());
-        assert_eq!(loaded, 1);
-        // The transient podcast was replaced by the one on disk.
-        let titles: Vec<&str> = store_b.all_podcasts().iter().map(|(p, _)| p.title.as_str()).collect();
-        assert_eq!(titles, vec!["From Disk"]);
-    }
-
-    #[test]
-    fn store_without_data_dir_never_touches_disk() {
-        // Sanity: in-memory only mode is the default and does not panic.
-        let mut store = PodcastStore::new();
-        store.subscribe(make_podcast("Memory Only"), vec![]);
-        store.unsubscribe(PodcastId::generate()); // no-op
-        assert_eq!(store.podcast_count(), 1);
-        assert!(store.data_dir().is_none());
     }
 }

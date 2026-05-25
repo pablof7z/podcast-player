@@ -14,6 +14,12 @@
       ]
     },
     {
+      "shipped_at": "2026-05-26T00:15:00Z",
+      "lines": [
+        "Episodes now remember where you left off — pause or close the app mid-listen and the play button switches to Resume with the saved time shown in the episode list and detail."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T00:10:00Z",
       "lines": [
         "We're now Pod0 — the app's display name has changed from Podcastr; your library, account, and downloads carry over untouched."

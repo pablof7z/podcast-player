@@ -194,10 +194,9 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                 episodes: episodes
                     .iter()
                     .map(|ep| {
-                        let ep_id = ep.id.0.to_string();
-                        let transcript = s.transcript_for(&ep_id).map(str::to_owned);
+                        let id_str = ep.id.0.to_string();
+                        let transcript = s.transcript_for(&id_str).map(str::to_owned);
                         EpisodeSummary {
-                            id: ep_id,
                             title: ep.title.clone(),
                             podcast_id: Some(podcast.id.0.to_string()),
                             podcast_title: Some(podcast.title.clone()),
@@ -222,6 +221,11 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                                         .collect()
                                 })
                                 .unwrap_or_default(),
+                            // `position_for` already returns `None` when
+                            // position == 0.0, so the projection naturally
+                            // hides the field for untouched episodes.
+                            playback_position_secs: s.position_for(&id_str),
+                            id: id_str,
                         }
                     })
                     .collect(),

@@ -65,6 +65,11 @@ struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     var transcript: String? = nil
     /// Chapter markers projected after a successful `podcast.fetch_chapters`.
     var chapters: [ChapterSummary]? = nil
+    /// Persisted playback position in seconds. `nil` when the episode has
+    /// not been started (or the user has rewound to 0). Populated by the
+    /// Rust `PodcastStore::position_for` on each snapshot tick; drives the
+    /// "Resume at X:XX" indicator in the iOS shell.
+    var playbackPositionSecs: Double? = nil
 }
 
 /// Narrow chapter projection for full-player chapter rail rendering.

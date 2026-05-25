@@ -36,6 +36,13 @@ struct EpisodeDetailView: View {
                     Text(podcast.title)
                         .font(AppTheme.Typography.headline)
                         .foregroundStyle(.secondary)
+
+                    if let resumeSecs = episode.playbackPositionSecs {
+                        Text("Resume at \(formatDuration(resumeSecs))")
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(.tertiary)
+                            .accessibilityLabel("Resume playback at \(formatDuration(resumeSecs))")
+                    }
                 }
 
                 metaRow
@@ -147,7 +154,7 @@ struct EpisodeDetailView: View {
             HStack(spacing: AppTheme.Spacing.sm) {
                 Image(systemName: isThisEpisodePlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 18, weight: .semibold))
-                Text(isThisEpisodePlaying ? "Pause" : "Play episode")
+                Text(playButtonLabel)
                     .font(AppTheme.Typography.headline)
             }
             .frame(maxWidth: .infinity)
@@ -159,7 +166,16 @@ struct EpisodeDetailView: View {
             .foregroundStyle(Color.white)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isThisEpisodePlaying ? "Pause" : "Play \(episode.title)")
+        .accessibilityLabel(isThisEpisodePlaying ? "Pause" : "\(playButtonLabel) \(episode.title)")
+    }
+
+    /// Play / Pause / Resume label that respects the snapshot's stored
+    /// resume point. Mirrors the legacy `EpisodeDetailHeroView` behaviour:
+    /// shows "Resume" when there is a persisted playhead and the episode
+    /// isn't currently playing.
+    private var playButtonLabel: String {
+        if isThisEpisodePlaying { return "Pause" }
+        return episode.playbackPositionSecs != nil ? "Resume" : "Play episode"
     }
 
     // MARK: - Show notes
