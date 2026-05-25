@@ -10,7 +10,7 @@ Related files:
 
 ## Active
 
-- M11+M12: platform integration stubs (widget snapshot, handoff activity types, Siri shortcut action ids, iOS `PlatformCapability`) + M1/M2 deletion sweep audit (no deletions yet — legacy `App/Sources/` still has live references; documented in `docs/BACKLOG.md`) — branch `m11m12/platform-deletion`.
+_(M0–M11 complete — M13 second-platform proof starting)_
 
 ## Recent History
 
@@ -37,4 +37,5 @@ Related files:
 - 2026-05-25 - M7.A: podcast-agent-core — conversation, approval, and task types — merged PR #21.
 - 2026-05-25 - M10.A: podcast-discovery NIP-74 parse+build crate (45 tests) — merged PR #24.
 - 2026-05-25 - M8+M9: voice capability schema + podcast-briefings crate (148 tests) — merged PR #25.
+- 2026-05-25 - M11+M12: platform stubs (WidgetSnapshot, HandoffState, Siri actions, PlatformCapability.swift) + M12 audit — merged PR #26.
 - 2026-05-25 - Adopted the NMP-derived coordination protocol for future feature, fix, and refactor work.
