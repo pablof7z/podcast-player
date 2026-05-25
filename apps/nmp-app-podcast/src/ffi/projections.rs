@@ -290,6 +290,16 @@ pub struct EpisodeSummary {
     /// has no chapter markers, or when chapters have not been fetched yet.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub chapters: Vec<ChapterSummary>,
+    /// Persisted playback position in seconds, when the user has started but
+    /// not finished the episode.
+    ///
+    /// Populated by the snapshot projection from `PodcastStore::position_for`,
+    /// which returns `None` when the position is `0.0` (fresh episode) — so
+    /// the iOS shell can render a "Resume at X:XX" indicator only on episodes
+    /// that have an actual resume point. Per D7 the kernel decides what
+    /// counts as "started"; the host only renders.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub playback_position_secs: Option<f64>,
 }
 
 /// Narrow chapter projection for the player rail. Mirrors the relevant
@@ -336,4 +346,137 @@ pub struct AccountSummary {
     pub mode: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub picture_url: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn widget_snapshot_omits_none_optionals() {
+        // Empty widget (e.g. nothing loaded) should not pollute the JSON
+        // payload with `null` strings — the widget reads it as "show empty".
+        let widget = WidgetSnapshot {
+            now_playing_episode_title: None,
+            now_playing_podcast_title: None,
+            now_playing_artwork_url: None,
+            is_playing: false,
+            position_fraction: 0.0,
+            unplayed_count: 0,
+        };
+        let json = serde_json::to_string(&widget).expect("encode");
+        assert!(!json.contains("now_playing_episode_title"));
+        assert!(!json.contains("now_playing_podcast_title"));
+        assert!(!json.contains("now_playing_artwork_url"));
+        assert!(json.contains("\"is_playing\":false"));
+        assert!(json.contains("\"position_fraction\":0.0"));
+        assert!(json.contains("\"unplayed_count\":0"));
+    }
+
+    #[test]
+    fn episode_summary_omits_none_download_path() {
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        // No download yet — field must not appear on the wire.
+        assert!(!json.contains("download_path"));
+    }
+
+    #[test]
+    fn episode_summary_round_trips_with_download_path() {
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            download_path: Some("/var/mobile/Containers/Downloads/ep-1.mp3".into()),
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        assert!(json.contains("download_path"));
+        let decoded: EpisodeSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, ep);
+    }
+
+    #[test]
+    fn episode_summary_omits_empty_chapters() {
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        assert!(!json.contains("chapters"));
+    }
+
+    #[test]
+    fn episode_summary_round_trips_with_chapters() {
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            chapters: vec![
+                ChapterSummary {
+                    start_secs: 0.0,
+                    end_secs: Some(60.0),
+                    title: "Intro".into(),
+                    image_url: Some("https://ex.com/intro.png".into()),
+                    url: None,
+                },
+                ChapterSummary {
+                    start_secs: 60.0,
+                    title: "Main".into(),
+                    ..ChapterSummary::default()
+                },
+            ],
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        let decoded: EpisodeSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, ep);
+        assert!(!json.contains("\"url\":null"));
+    }
+
+    #[test]
+    fn episode_summary_omits_none_playback_position() {
+        // No resume point on a fresh episode — field stays off the wire so
+        // older binaries continue to round-trip cleanly and the iOS shell
+        // doesn't render a "Resume at 0:00" indicator on every untouched row.
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        assert!(!json.contains("playback_position_secs"));
+    }
+
+    #[test]
+    fn episode_summary_round_trips_with_playback_position() {
+        let ep = EpisodeSummary {
+            id: "ep-1".into(),
+            title: "Pilot".into(),
+            playback_position_secs: Some(123.5),
+            ..EpisodeSummary::default()
+        };
+        let json = serde_json::to_string(&ep).expect("encode");
+        assert!(json.contains("\"playback_position_secs\":123.5"));
+        let decoded: EpisodeSummary = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, ep);
+    }
+
+    #[test]
+    fn widget_snapshot_round_trips_with_all_fields() {
+        let widget = WidgetSnapshot {
+            now_playing_episode_title: Some("Ep 42".into()),
+            now_playing_podcast_title: Some("Some Show".into()),
+            now_playing_artwork_url: Some("https://ex.com/art.png".into()),
+            is_playing: true,
+            position_fraction: 0.42,
+            unplayed_count: 7,
+        };
+        let json = serde_json::to_string(&widget).expect("encode");
+        let decoded: WidgetSnapshot = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, widget);
+    }
 }

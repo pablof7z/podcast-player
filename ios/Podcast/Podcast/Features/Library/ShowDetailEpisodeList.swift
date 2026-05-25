@@ -193,7 +193,8 @@ private struct KernelEpisodeRow: View {
     private var metaRow: some View {
         let hasDuration = episode.durationSecs != nil
         let hasDate = episode.publishedAt != nil
-        if hasDuration || hasDate {
+        let resumeSecs = episode.playbackPositionSecs
+        if hasDuration || hasDate || resumeSecs != nil {
             HStack(spacing: AppTheme.Spacing.sm) {
                 if let secs = episode.durationSecs {
                     Text(formatDuration(secs))
@@ -209,6 +210,16 @@ private struct KernelEpisodeRow: View {
                     Text(relativeDate(from: ts))
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(.secondary)
+                }
+                if let resumeSecs {
+                    if hasDuration || hasDate {
+                        Text("·")
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Text("Resume \(formatDuration(resumeSecs))")
+                        .font(AppTheme.Typography.monoCaption)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
         }
