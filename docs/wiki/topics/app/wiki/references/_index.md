@@ -1,6 +1,6 @@
 # References Index
 
-> Practical maps and operating references for agents working on Podcastr.
+> Practical maps and operating references for agents working on Pod0.
 
 Last updated: 2026-05-12
 

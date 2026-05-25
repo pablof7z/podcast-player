@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `AgentPicksFallback.derive` — the heuristic used when the
 /// LLM agent path is unavailable (no API key) or fails. The picks must

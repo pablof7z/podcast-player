@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the `AppStateStore` episode-projection cache that backs
 /// `unplayedCount(forPodcast:)`, `hasDownloadedEpisode(forPodcast:)`,

@@ -77,7 +77,7 @@ enum NostrPeerAgentPrompt {
     /// mid-stream override.
     ///
     /// Note: win-the-day mixes in `state.settings.nostrSystemPrompt` as
-    /// a persona prefix. Podcastr does not have that setting yet — the
+    /// a persona prefix. Pod0 does not have that setting yet — the
     /// hook is wired here so adding the field later is one decode/encode
     /// patch plus a single line in this builder.
     static func peerContextPreamble(

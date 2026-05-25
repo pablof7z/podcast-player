@@ -1,5 +1,5 @@
 import Foundation
-@testable import Podcastr
+@testable import Pod0
 
 // MARK: - Lane-10 test mocks
 //

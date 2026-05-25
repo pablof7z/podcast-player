@@ -1,4 +1,4 @@
-# Podcastr Wiki Hub Index
+# Pod0 Wiki Hub Index
 
 > Repo-local wiki hub for the podcast player product, focused on durable product, knowledge, agent, and experience decisions.
 
@@ -28,7 +28,7 @@ Last updated: 2026-05-12
 | Wiki | Summary | Tags | Updated |
 |------|---------|------|---------|
 | [product](topics/product/_index.md) | Product promise, launch floor, and capability map. | product, strategy, launch | 2026-05-09 |
-| [app](topics/app/_index.md) | End-to-end operating guide for the current Podcastr app, codebase, runtime flows, integrations, and development rules. | app, architecture, implementation | 2026-05-12 |
+| [app](topics/app/_index.md) | End-to-end operating guide for the current Pod0 app, codebase, runtime flows, integrations, and development rules. | app, architecture, implementation | 2026-05-12 |
 | [knowledge](topics/knowledge/_index.md) | Transcript, wiki compilation, embeddings, RAG, and citation architecture. | knowledge, transcripts, rag | 2026-05-09 |
 | [agent](topics/agent/_index.md) | Embedded agent runtime, tool surface, voice loop, and Nostr safety. | agent, tools, nostr, voice | 2026-05-09 |
 | [experience](topics/experience/_index.md) | UX north star, core surfaces, ambient modes, and accessibility. | ux, liquid-glass, accessibility | 2026-05-09 |

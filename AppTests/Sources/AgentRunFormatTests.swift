@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Locks the wall-clock representation rendered in the agent Run Logs
 /// list and detail surfaces. Past 60s the formatter switches from

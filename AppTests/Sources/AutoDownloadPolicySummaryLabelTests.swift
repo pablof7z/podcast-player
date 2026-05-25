@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `AutoDownloadPolicy.summaryLabel` — the compact badge
 /// surfaced on Settings → Subscriptions list rows. The label is the only

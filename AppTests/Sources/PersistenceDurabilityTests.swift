@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 @MainActor
 final class PersistenceDurabilityTests: XCTestCase {

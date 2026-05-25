@@ -148,17 +148,16 @@ with stages + deadlines. Undocumented temporary measures are forbidden.
 ## 7. Planning discipline
 
 NMP has three canonical planning files: `docs/plan.md`,
-`docs/BACKLOG.md`, `WIP.md`. The Podcastr repo has this `Plans/` tree
-+ its own `Plans/WIP.md` (to be added).
+`docs/BACKLOG.md`, `WIP.md`. This repo now uses the same shape:
+`docs/plan.md`, `docs/BACKLOG.md`, and root `WIP.md`.
 
 - Every NMP-side work item that this migration creates is filed as a
   `BACKLOG.md` entry in NMP. Don't create new top-level planning files
   in NMP.
-- Every Podcastr-side in-flight branch is recorded in
-  `Plans/WIP.md` (to be added if not already present).
-- This `Plans/nmp-migration/` directory is the authoritative migration
-  plan. If a fact about the migration is wrong, edit the relevant page
-  here — don't fork it elsewhere.
+- Every Pod0-side in-flight branch is recorded in root `WIP.md`.
+- This `Plans/nmp-migration/` directory is historical migration
+  reference. Active status and new implementation plans belong in
+  `docs/plan.md`, `docs/BACKLOG.md`, or linked files under `docs/plan/`.
 - The plan is updated in place when milestones complete (see each
   milestone page's exit checklist).
 

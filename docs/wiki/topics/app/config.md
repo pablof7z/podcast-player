@@ -1,6 +1,6 @@
 ---
-title: "Podcastr App Wiki"
-description: "End-to-end operating guide for the current Podcastr app, codebase, runtime flows, integrations, and development rules."
+title: "Pod0 App Wiki"
+description: "End-to-end operating guide for the current Pod0 app, codebase, runtime flows, integrations, and development rules."
 created: 2026-05-12
 freshness_threshold: 30
 ---
@@ -9,7 +9,7 @@ freshness_threshold: 30
 
 ## Scope
 
-This topic wiki is the app-wide entry point for Podcastr. It explains how the current shipped code hangs together across product surfaces, Swift modules, persistent state, audio playback, transcripts, local wiki/RAG, agent tools, BYOK provider credentials, Nostr identity, settings, feedback, and release operations.
+This topic wiki is the app-wide entry point for Pod0. It explains how the current shipped code hangs together across product surfaces, Swift modules, persistent state, audio playback, transcripts, local wiki/RAG, agent tools, BYOK provider credentials, Nostr identity, settings, feedback, and release operations.
 
 ## Conventions
 

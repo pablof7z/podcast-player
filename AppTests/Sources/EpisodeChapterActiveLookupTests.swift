@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the `Collection<Episode.Chapter>.active(at:)` helper that
 /// drives active-chapter highlighting on the player and follow-along

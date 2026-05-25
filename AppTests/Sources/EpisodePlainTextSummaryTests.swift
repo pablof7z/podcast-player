@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `Episode.plainTextSummary` — the row-preview projection
 /// used by every episode list (Library show detail, Search). The previous

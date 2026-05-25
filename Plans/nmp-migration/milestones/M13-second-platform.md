@@ -130,5 +130,6 @@ Once M13 ships, the original migration goal is met:
 - Zero hacks — verified by doctrine lint + codex review every PR.
 
 Further milestones (M14+) would be product feature work, not
-migration. They go into normal Podcastr planning (`Plans/`) and NMP
-planning (`docs/plan.md`), not this directory.
+migration. They go into normal Pod0 planning (`docs/plan.md`,
+`docs/BACKLOG.md`, or linked files under `docs/plan/`) and NMP planning,
+not this directory.

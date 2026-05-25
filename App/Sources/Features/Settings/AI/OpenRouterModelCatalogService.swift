@@ -11,7 +11,7 @@ struct OpenRouterModelCatalogService: Sendable {
     private enum Constants {
         static let openRouterModelsURL = "https://openrouter.ai/api/v1/models"
         static let modelsDevURL = "https://models.dev/api.json"
-        static let xTitleHeader = "Podcastr"
+        static let xTitleHeader = "Pod0"
         static let openRouterTimeout: TimeInterval = 30
         static let modelsDevTimeout: TimeInterval = 15
     }

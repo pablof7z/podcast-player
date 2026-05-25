@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pins the pure pieces of `AIChapterCompiler`'s ad-segment + chapter
 /// pipeline. The LLM round-trip itself isn't tested here — it requires a

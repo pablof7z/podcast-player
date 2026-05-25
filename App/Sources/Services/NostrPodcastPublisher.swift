@@ -1,12 +1,12 @@
-import CryptoKit
 import Foundation
 import os.log
 
 // MARK: - NostrPodcastPublisher
 //
-// Publishes NIP-74 (kind:30074 podcast show, kind:30075 podcast episode) addressable
-// events signed by the agent's key. Both kinds are parameterised replaceable events
-// (NIP-33): each `d` tag uniquely identifies the show / episode across updates.
+// Publishes NIP-F4 podcast events. Each podcast has its own keypair: the show
+// metadata (kind:10154) and episodes (kind:54) are signed by the podcast key,
+// while the owner agent periodically publishes a kind:10064 claim listing the
+// podcast pubkeys it controls.
 //
 // Audio, chapters, and transcripts must be uploaded to Blossom before calling
 // `publishEpisode` — the caller passes the resulting URLs; this service only
@@ -22,21 +22,21 @@ struct NostrPodcastPublisher: Sendable {
     let publisher: any NostrEventPublishing
     let relayURLs: [URL]
 
-    // MARK: - Publish show (kind:30074)
+    // MARK: - Publish show (kind:10154)
 
-    /// Publish (or replace) the NIP-74 show event for an agent-owned podcast.
+    /// Publish (or replace) the NIP-F4 show event for an agent-owned podcast.
     /// Returns the signed Nostr event ID (32-byte hex).
     @discardableResult
     func publishShow(podcast: Podcast, signer: any NostrSigner) async throws -> String {
         var tags: [[String]] = [
-            ["d", "podcast:guid:\(podcast.id.uuidString.lowercased())"],
             ["title", podcast.title],
+            ["p", try await signer.publicKey()],
         ]
         if !podcast.description.isEmpty {
-            tags.append(["summary", podcast.description])
+            tags.append(["description", podcast.description])
         }
         if !podcast.author.isEmpty {
-            tags.append(["p", try await signer.publicKey()])
+            tags.append(["author", podcast.author])
         }
         if let image = podcast.imageURL {
             tags.append(["image", image.absoluteString])
@@ -47,22 +47,21 @@ struct NostrPodcastPublisher: Sendable {
         for category in podcast.categories {
             tags.append(["t", category])
         }
-        let draft = NostrEventDraft(kind: 30074, content: podcast.description, tags: tags)
+        let draft = NostrEventDraft(kind: 10154, content: podcast.description, tags: tags)
         let signed = try await signer.sign(draft)
         try await publishToAll(event: signed)
         return signed.id
     }
 
-    // MARK: - Publish episode (kind:30075)
+    // MARK: - Publish episode (kind:54)
 
-    /// Publish (or replace) the NIP-74 episode event.
+    /// Publish the NIP-F4 episode event.
     /// Returns the signed Nostr event ID (32-byte hex).
     ///
     /// - Parameters:
     ///   - episode: The episode to publish.
-    ///   - podcast: The owning podcast (must have an `ownerPubkeyHex`).
+    ///   - podcast: The owning podcast.
     ///   - audioURL: Blossom URL of the uploaded audio file.
-    ///   - audioData: Raw audio bytes — used to compute the `x` (SHA-256) hash for `imeta`.
     ///   - chaptersURL: Optional Blossom URL of the uploaded chapters JSON.
     ///   - transcriptURL: Optional Blossom URL of the uploaded transcript.
     @discardableResult
@@ -75,20 +74,13 @@ struct NostrPodcastPublisher: Sendable {
         transcriptURL: URL? = nil,
         signer: any NostrSigner
     ) async throws -> String {
-        let pubkey = try await signer.publicKey()
-        let showDTag = "podcast:guid:\(podcast.id.uuidString.lowercased())"
-        let audioHash = Data(SHA256.hash(data: audioData)).hexString
-        let pubDateSeconds = String(Int(episode.pubDate.timeIntervalSince1970))
-
         var tags: [[String]] = [
-            ["d", "podcast:item:guid:\(episode.id.uuidString.lowercased())"],
             ["title", episode.title],
-            ["published_at", pubDateSeconds],
-            ["a", "30074:\(pubkey):\(showDTag)"],
+            ["audio", audioURL.absoluteString, episode.enclosureMimeType ?? "audio/mp4"],
         ]
 
         if !episode.description.isEmpty {
-            tags.append(["summary", episode.description])
+            tags.append(["description", episode.description])
         }
         if let dur = episode.duration {
             tags.append(["duration", String(Int(dur))])
@@ -97,15 +89,6 @@ struct NostrPodcastPublisher: Sendable {
             tags.append(["image", image.absoluteString])
         }
 
-        var imetaParts = [
-            "url \(audioURL.absoluteString)",
-            "m audio/mp4",
-            "x \(audioHash)",
-            "size \(audioData.count)",
-        ]
-        if let dur = episode.duration { imetaParts.append("duration \(Int(dur))") }
-        tags.append(["imeta"] + imetaParts)
-
         if let chaptersURL {
             tags.append(["chapters", chaptersURL.absoluteString, "application/json+chapters"])
         }
@@ -113,8 +96,23 @@ struct NostrPodcastPublisher: Sendable {
             tags.append(["transcript", transcriptURL.absoluteString, "text/vtt"])
         }
 
-        let draft = NostrEventDraft(kind: 30075, content: episode.description, tags: tags)
+        let draft = NostrEventDraft(kind: 54, content: episode.description, tags: tags)
         let signed = try await signer.sign(draft)
+        try await publishToAll(event: signed)
+        return signed.id
+    }
+
+    // MARK: - Publish author claim (kind:10064)
+
+    /// Publish the agent's replaceable claim listing podcast pubkeys it owns.
+    @discardableResult
+    func publishAuthorClaim(podcastPubkeys: [String], agentSigner: any NostrSigner) async throws -> String {
+        let tags = podcastPubkeys
+            .filter { !$0.isEmpty }
+            .sorted()
+            .map { ["p", $0] }
+        let draft = NostrEventDraft(kind: 10064, content: "", tags: tags)
+        let signed = try await agentSigner.sign(draft)
         try await publishToAll(event: signed)
         return signed.id
     }

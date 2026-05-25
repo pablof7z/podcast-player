@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Verifies the playback boundary triggers a background download for any
 /// episode the user streams that isn't yet on disk.

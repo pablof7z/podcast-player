@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pin the NIP-73 wire format for `CommentTarget`. The `i` and `k` tag
 /// values are what makes our comments interoperable with Fountain and any
@@ -13,7 +13,7 @@ final class EpisodeCommentTargetTests: XCTestCase {
         XCTAssertEqual(t.nip73Kind, "podcast:item:guid")
     }
 
-    func testClipIdentifierIsPodcastrScopedAndLowercased() {
+    func testClipIdentifierIsPod0ScopedAndLowercased() {
         // UUID string output is uppercase on Apple platforms; the NIP-73
         // identifier must be lowercased so two readers comparing strings
         // for the same clip don't miss each other on case.

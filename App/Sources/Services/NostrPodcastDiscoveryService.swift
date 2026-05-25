@@ -4,9 +4,9 @@ import os.log
 
 // MARK: - NostrPodcastDiscoveryService
 //
-// Queries a Nostr relay for NIP-74 podcast events:
-//   kind:30074 — podcast show (parameterised replaceable, d-tag = show identifier)
-//   kind:30075 — podcast episode (parameterised replaceable, d-tag = episode identifier)
+// Queries a Nostr relay for NIP-F4 podcast events:
+//   kind:10154 — podcast show metadata signed by the podcast key
+//   kind:54 — podcast episode signed by the same podcast key
 //
 // Each query opens a short-lived WebSocket, collects events until EOSE or a
 // hard timeout, then closes. Models `NostrProfileFetcher` for the socket lifecycle.
@@ -17,8 +17,8 @@ final class NostrPodcastDiscoveryService {
     nonisolated private static let logger = Logger.app("NostrPodcastDiscoveryService")
 
     private enum Wire {
-        static let kindShow = 30074
-        static let kindEpisode = 30075
+        static let kindShow = 10154
+        static let kindEpisode = 54
         static let req = "REQ"
         static let close = "CLOSE"
         static let event = "EVENT"
@@ -29,11 +29,10 @@ final class NostrPodcastDiscoveryService {
     // MARK: - Public result types
 
     struct ShowResult: Identifiable, Sendable {
-        /// Unique key: "<pubkey>:<dTag>"
-        var id: String { "\(pubkey):\(dTag)" }
-        let coordinate: String   // "30074:<pubkey>:<dTag>"
+        /// Unique key: the podcast pubkey.
+        var id: String { pubkey }
+        let coordinate: String   // "10154:<pubkey>"
         let pubkey: String
-        let dTag: String
         let title: String
         let author: String
         let imageURL: URL?
@@ -46,11 +45,11 @@ final class NostrPodcastDiscoveryService {
 
     private var collectedEvents: [[String: Any]] = []
 
-    // MARK: - Fetch shows (kind:30074)
+    // MARK: - Fetch shows (kind:10154)
 
-    /// Returns all kind:30074 shows the relay knows about, newest first.
+    /// Returns all kind:10154 shows the relay knows about, newest first.
     func fetchShows(relayURL: URL) async -> [ShowResult] {
-        let subID = "nip74-shows-\(UUID().uuidString.prefix(8))"
+        let subID = "nipf4-shows-\(UUID().uuidString.prefix(8))"
         let filter: [String: Any] = ["kinds": [Wire.kindShow]]
         await collectEvents(relayURL: relayURL, subID: subID, filter: filter)
 
@@ -61,29 +60,24 @@ final class NostrPodcastDiscoveryService {
             .filter { seen.insert($0.coordinate).inserted }
     }
 
-    // MARK: - Fetch episodes (kind:30075)
+    // MARK: - Fetch episodes (kind:54)
 
     /// Returns `Episode` objects for `show`, already mapped with `podcastID`.
     func fetchEpisodes(for show: ShowResult, relayURL: URL, podcastID: UUID) async -> [Episode] {
-        let subID = "nip74-eps-\(UUID().uuidString.prefix(8))"
-        let showRef = "\(Wire.kindShow):\(show.pubkey):\(show.dTag)"
+        let subID = "nipf4-eps-\(UUID().uuidString.prefix(8))"
         let filter: [String: Any] = [
             "kinds": [Wire.kindEpisode],
             "authors": [show.pubkey],
-            "#a": [showRef],
         ]
         await collectEvents(relayURL: relayURL, subID: subID, filter: filter)
 
-        // Dedupe by d-tag (replaceable events): keep the newest per d-tag.
-        var seen = [String: Int]()
+        // NIP-F4 episodes are regular events, so dedupe by event id.
+        var seen = Set<String>()
         var deduped: [[String: Any]] = []
         for event in collectedEvents.sorted(by: {
             ($0["created_at"] as? Int ?? 0) > ($1["created_at"] as? Int ?? 0)
         }) {
-            let tags = (event["tags"] as? [[String]]) ?? []
-            let dTag = tags.first { $0.first == "d" }?[safe: 1] ?? ""
-            guard !dTag.isEmpty, seen[dTag] == nil else { continue }
-            seen[dTag] = event["created_at"] as? Int ?? 0
+            guard let eventID = event["id"] as? String, seen.insert(eventID).inserted else { continue }
             deduped.append(event)
         }
         return deduped.compactMap { Self.parseEpisode(from: $0, podcastID: podcastID) }
@@ -91,10 +85,10 @@ final class NostrPodcastDiscoveryService {
 
     // MARK: - Deterministic UUID
 
-    /// Derives a stable `UUID` from a NIP-74 coordinate using SHA-256.
+    /// Derives a stable `UUID` from a NIP-F4 coordinate using SHA-256.
     /// Identical coordinates always produce the same UUID, enabling dedup
     /// by `store.podcast(id:)` without a feedURL.
-    static func podcastID(for coordinate: String) -> UUID {
+    nonisolated static func podcastID(for coordinate: String) -> UUID {
         let hash = SHA256.hash(data: Data(coordinate.utf8))
         var bytes = Array(hash.prefix(16))
         bytes[6] = (bytes[6] & 0x0F) | 0x50  // UUID version 5
@@ -205,31 +199,27 @@ final class NostrPodcastDiscoveryService {
 
     // MARK: - Event parsers
 
-    private static func parseShow(from event: [String: Any]) -> ShowResult? {
+    nonisolated static func parseShow(from event: [String: Any]) -> ShowResult? {
         guard let pubkey = event["pubkey"] as? String,
               let createdAt = event["created_at"] as? Int else { return nil }
 
         let tags = (event["tags"] as? [[String]]) ?? []
-        guard let dTag = tags.first(where: { $0.first == "d" })?[safe: 1],
-              !dTag.isEmpty else { return nil }
-
         let title = tags.first(where: { $0.first == "title" })?[safe: 1]
             ?? (event["content"] as? String).map { String($0.prefix(80)) }
             ?? ""
         guard !title.isEmpty else { return nil }
 
         let author = tags.first(where: { $0.first == "author" })?[safe: 1] ?? ""
-        let description = tags.first(where: { $0.first == "summary" })?[safe: 1]
+        let description = tags.first(where: { $0.first == "description" })?[safe: 1]
             ?? (event["content"] as? String) ?? ""
         let imageURL = tags.first(where: { $0.first == "image" })?[safe: 1]
             .flatMap { URL(string: $0) }
         let categories = tags.filter { $0.first == "t" }.compactMap { $0[safe: 1] }
-        let coordinate = "\(Wire.kindShow):\(pubkey):\(dTag)"
+        let coordinate = "\(Wire.kindShow):\(pubkey)"
 
         return ShowResult(
             coordinate: coordinate,
             pubkey: pubkey,
-            dTag: dTag,
             title: title,
             author: author,
             imageURL: imageURL,
@@ -239,28 +229,20 @@ final class NostrPodcastDiscoveryService {
         )
     }
 
-    private static func parseEpisode(from event: [String: Any], podcastID: UUID) -> Episode? {
+    nonisolated static func parseEpisode(from event: [String: Any], podcastID: UUID) -> Episode? {
         let tags = (event["tags"] as? [[String]]) ?? []
-        guard let dTag = tags.first(where: { $0.first == "d" })?[safe: 1],
-              !dTag.isEmpty else { return nil }
+        guard let eventID = event["id"] as? String, !eventID.isEmpty else { return nil }
 
-        // Audio URL from `imeta url` or fallback `url` tag — required.
-        let imetaTag = tags.first(where: { $0.first == "imeta" })
-        let audioURLStr = imetaTag?
-            .dropFirst()
-            .compactMap { $0.hasPrefix("url ") ? String($0.dropFirst(4)) : nil }
-            .first
-            ?? tags.first(where: { $0.first == "url" })?[safe: 1]
-        guard let audioStr = audioURLStr, let audioURL = URL(string: audioStr) else { return nil }
+        let audioTag = tags.first(where: { $0.first == "audio" })
+        guard let audioStr = audioTag?[safe: 1], let audioURL = URL(string: audioStr) else { return nil }
 
         let title = tags.first(where: { $0.first == "title" })?[safe: 1] ?? ""
-        let description = tags.first(where: { $0.first == "summary" })?[safe: 1]
+        let description = tags.first(where: { $0.first == "description" })?[safe: 1]
             ?? (event["content"] as? String) ?? ""
         let imageURL = tags.first(where: { $0.first == "image" })?[safe: 1]
             .flatMap { URL(string: $0) }
 
-        let pubDateSeconds = tags.first(where: { $0.first == "published_at" })?[safe: 1]
-            .flatMap { Int($0) } ?? (event["created_at"] as? Int) ?? 0
+        let pubDateSeconds = (event["created_at"] as? Int) ?? 0
         let pubDate = Date(timeIntervalSince1970: TimeInterval(pubDateSeconds))
 
         let duration = tags.first(where: { $0.first == "duration" })?[safe: 1]
@@ -274,14 +256,11 @@ final class NostrPodcastDiscoveryService {
         let transcriptKind = TranscriptKind.from(
             mimeType: tags.first(where: { $0.first == "transcript" })?[safe: 2]
         )
-        let mimeType = imetaTag?
-            .dropFirst()
-            .compactMap { $0.hasPrefix("m ") ? String($0.dropFirst(2)) : nil }
-            .first
+        let mimeType = audioTag?[safe: 2]
 
         return Episode(
             podcastID: podcastID,
-            guid: dTag,
+            guid: eventID,
             title: title.isEmpty ? "Untitled Episode" : title,
             description: description,
             pubDate: pubDate,

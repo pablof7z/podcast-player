@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Covers the agent skills system: registry shape, schema gating, dispatcher
 /// gate, prompt rendering, and `ChatConversation` round-trip with the new
@@ -87,14 +87,18 @@ final class AgentSkillsTests: XCTestCase {
         }
     }
 
-    func testSkillToolNamesAreAllRoutedByDispatchPodcast() {
-        // Every skill-gated tool must be in PodcastNames.all so dispatch can
-        // route to dispatchPodcast (the only place that knows how to handle
-        // them). Without this, the skill-enabled happy path would 404.
-        let routed = Set(AgentTools.PodcastNames.all)
+    func testSkillToolNamesAreAllRoutedByDispatch() {
+        // Every skill-gated tool must be reachable from AgentTools.dispatch.
+        // Most skill tools route through dispatchPodcast; conversation-history
+        // tools route through the top-level dispatcher because they need store
+        // access rather than PodcastAgentToolDeps.
+        let routed = Set(AgentTools.PodcastNames.all).union([
+            AgentTools.Names.listConversations,
+            AgentTools.Names.searchConversations,
+        ])
         for skill in AgentSkillRegistry.all {
             for name in skill.toolNames {
-                XCTAssertTrue(routed.contains(name), "\(name) missing from PodcastNames.all")
+                XCTAssertTrue(routed.contains(name), "\(name) missing from AgentTools.dispatch routes")
             }
         }
     }

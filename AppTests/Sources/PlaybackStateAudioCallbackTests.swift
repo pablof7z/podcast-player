@@ -1,7 +1,7 @@
 import MediaPlayer
 import UIKit
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 @MainActor
 final class PlaybackStateAudioCallbackTests: XCTestCase {

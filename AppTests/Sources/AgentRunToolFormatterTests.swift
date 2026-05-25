@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `AgentRunToolFormatter` — the per-tool render of the
 /// agent Run Logs detail surface. The formatter previously rendered raw

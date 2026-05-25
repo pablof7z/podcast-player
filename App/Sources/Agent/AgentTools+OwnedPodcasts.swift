@@ -105,10 +105,10 @@ extension AgentTools {
             return toolError("Missing or empty 'episode_id'")
         }
         do {
-            guard let naddr = try await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: episodeID) else {
+            guard let eventID = try await deps.ownedPodcasts.publishEpisodeToNostr(episodeID: episodeID) else {
                 return toolError("Episode '\(episodeID)' was not published — verify the podcast is agent-owned, its visibility is 'public', and Nostr is enabled in Settings.")
             }
-            return toolSuccess(["episode_id": episodeID, "naddr": naddr])
+            return toolSuccess(["episode_id": episodeID, "nostr_event_id": eventID])
         } catch {
             return toolError("publish_episode failed: \(error.localizedDescription)")
         }
@@ -141,7 +141,7 @@ extension AgentTools {
         ]
         if let url = info.imageURL { row["image_url"] = url.absoluteString }
         if let eventID = info.nostrEventID { row["nostr_event_id"] = eventID }
-        if let naddr = info.nostrAddr { row["naddr"] = naddr }
+        if let nostrIdentity = info.nostrAddr { row["nostr_identity"] = nostrIdentity }
         if let count = info.episodesPublishedToNostr { row["episodes_published_to_nostr"] = count }
         return row
     }

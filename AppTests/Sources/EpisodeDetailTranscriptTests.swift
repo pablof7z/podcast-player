@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Covers `EpisodeDetailView.readyTranscript(for:store:)` — the bridge from
 /// the in-memory `Episode.transcriptState` to the on-disk `TranscriptStore`.

@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `AgentPicksStreamingParser`. The parser drives the
 /// progressive-render UX for agent picks — each test simulates the way

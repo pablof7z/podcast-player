@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `PlaybackState`'s pure chapter-nav helpers
 /// (`nextChapter(after:in:)` and `previousChapter(from:in:restartThreshold:)`)

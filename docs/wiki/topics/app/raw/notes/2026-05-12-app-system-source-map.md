@@ -1,7 +1,7 @@
 ---
-title: "Podcastr App System Source Map"
-summary: "Repo-grounded source note for the app-wide Podcastr wiki, covering product docs, runtime surfaces, data flow, providers, and development rules."
-tags: [podcastr, app, source-map, architecture]
+title: "Pod0 App System Source Map"
+summary: "Repo-grounded source note for the app-wide Pod0 wiki, covering product docs, runtime surfaces, data flow, providers, and development rules."
+tags: [pod0, app, source-map, architecture]
 ingested: 2026-05-12
 source-type: repo-inspection
 confidence: high
@@ -9,11 +9,11 @@ volatility: warm
 verified: 2026-05-12
 ---
 
-# Podcastr App System Source Map
+# Pod0 App System Source Map
 
 ## Primary Documents
 
-- `README.md` describes Podcastr as an iOS podcast player centered on an embedded AI agent with knowledge of subscribed shows and episodes.
+- `README.md` describes Pod0 as an iOS podcast player centered on an embedded AI agent with knowledge of subscribed shows and episodes.
 - `docs/spec/PROJECT_CONTEXT.md` defines the vision: talk to all podcasts, retrieve remembered moments, generate TLDR briefings, use voice mode, and support Nostr-mediated agent communication.
 - `docs/architecture.md` documents the inherited single-store pattern: `AppState`, `AppStateStore`, SwiftUI views, direct store mutations, and App Group persistence.
 - `docs/features.md` captures inherited template systems: shake-to-feedback, agent loop, friends, anchors, persistence, and CI/CD.

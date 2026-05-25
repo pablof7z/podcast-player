@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Polish-surface coverage for `PlayerTranscriptScrollView`'s active-segment
 /// resolver — the binary-search lookup it newly relies on for follow-along

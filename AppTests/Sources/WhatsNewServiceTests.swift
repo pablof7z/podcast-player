@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `WhatsNewService` — the changelog-diff helper that
 /// decides which entries to surface on the next cold launch.

@@ -3,7 +3,7 @@ import os.log
 
 enum OllamaCredentialStore {
     private static let logger = Logger.app("OllamaCredentialStore")
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").ollama"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "Pod0").ollama"
     private static let account = "api-key"
 
     static func saveAPIKey(_ apiKey: String) throws {

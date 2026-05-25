@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the dateline composition rule. Pinned to a fixed clock
 /// + en_US calendar so the test is timezone- and locale-stable.

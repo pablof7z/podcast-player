@@ -6,7 +6,7 @@ import os.log
 //
 // Production implementation of `AgentOwnedPodcastManagerProtocol`. Owns the
 // full lifecycle: store mutations, image generation, Blossom uploads, and
-// NIP-74 event publishing. Constructed once per `AgentChatSession` via
+// NIP-F4 event publishing. Constructed once per `AgentChatSession` via
 // `LivePodcastAgentToolDeps.make(...)`.
 
 final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unchecked Sendable {
@@ -36,6 +36,23 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         try nostrSigner().keyPair.publicKeyHex
     }
 
+    nonisolated private func podcastKeyPair(for podcastID: UUID) throws -> NostrKeyPair {
+        try PodcastKeyStore.keyPair(for: podcastID)
+    }
+
+    nonisolated private func podcastSigner(for podcastID: UUID) throws -> LocalKeySigner {
+        LocalKeySigner(keyPair: try podcastKeyPair(for: podcastID))
+    }
+
+    private func ensurePublishingIdentity(_ podcast: Podcast) async throws -> Podcast {
+        let pair = try podcastKeyPair(for: podcast.id)
+        guard podcast.ownerPubkeyHex != pair.publicKeyHex else { return podcast }
+        var updated = podcast
+        updated.ownerPubkeyHex = pair.publicKeyHex
+        await MainActor.run { store?.updatePodcast(updated) }
+        return updated
+    }
+
     // MARK: - createPodcast
 
     func createPodcast(
@@ -47,13 +64,10 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         categories: [String],
         visibility: Podcast.NostrVisibility
     ) async throws -> AgentOwnedPodcastInfo {
-        let pubkey: String
-        if visibility == .public {
-            pubkey = try agentPubkeyHex()
-        } else {
-            pubkey = (try? agentPubkeyHex()) ?? "agent-private"
-        }
+        let podcastID = UUID()
+        let pubkey = try podcastKeyPair(for: podcastID).publicKeyHex
         let podcast = Podcast(
+            id: podcastID,
             kind: .synthetic,
             feedURL: nil,
             title: title,
@@ -73,8 +87,8 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         if visibility == .public, let settings = await settings(), settings.nostrEnabled {
             showEventID = try? await publishShowEvent(podcast: stored, settings: settings)
         }
-        let naddr = nostrAddr(for: stored, eventID: showEventID)
-        return await MainActor.run { info(for: stored, nostrEventID: showEventID, nostrAddr: naddr) }
+        let nostrIdentity = nostrAddr(for: stored, eventID: showEventID)
+        return await MainActor.run { info(for: stored, nostrEventID: showEventID, nostrAddr: nostrIdentity) }
     }
 
     // MARK: - updatePodcast
@@ -103,6 +117,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         if let author { updated.author = author }
         if let imageURL { updated.imageURL = imageURL }
         if let visibility { updated.nostrVisibility = visibility }
+        if updated.nostrVisibility == .public {
+            updated = try await ensurePublishingIdentity(updated)
+        }
         await MainActor.run { store?.updatePodcast(updated) }
 
         var showEventID: String?
@@ -125,9 +142,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
                 Self.logger.info("Batch-published \(published)/\(episodes.count) episodes for '\(updated.title, privacy: .public)'")
             }
         }
-        let naddr = nostrAddr(for: updated, eventID: showEventID)
+        let nostrIdentity = nostrAddr(for: updated, eventID: showEventID)
         return await MainActor.run {
-            info(for: updated, nostrEventID: showEventID, nostrAddr: naddr, episodesPublishedToNostr: episodesPublished)
+            info(for: updated, nostrEventID: showEventID, nostrAddr: nostrIdentity, episodesPublishedToNostr: episodesPublished)
         }
     }
 
@@ -143,9 +160,18 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         guard existing.ownerPubkeyHex != nil else {
             throw AgentOwnedPodcastError.notOwned(podcastID)
         }
+        let settings = await settings()
         await MainActor.run {
             guard let store else { return }
             store.deletePodcast(podcastID: uuid)
+        }
+        try? PodcastKeyStore.deletePrivateKey(podcastID: uuid)
+        if existing.nostrVisibility == .public, let settings, settings.nostrEnabled {
+            do {
+                try await publishAuthorClaim(settings: settings)
+            } catch {
+                Self.logger.warning("Failed to refresh NIP-F4 author claim after delete: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
@@ -190,14 +216,10 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
               podcast.nostrVisibility == .public else { return nil }
         guard let settings = await settings(), settings.nostrEnabled else { return nil }
 
-        let eventID = try await publishEpisodeRecord(episode, podcast: podcast, settings: settings)
-        let dTag = "podcast:item:guid:\(episode.id.uuidString.lowercased())"
-        guard let pubkeyHex = podcast.ownerPubkeyHex else { return eventID }
-        let relays = effectivePublicRelays(settings: settings)
-        let relayHint = relays.first ?? settings.nostrRelayURL
-        let naddr = NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30075, relayURL: relayHint)
-        Self.logger.info("Published episode '\(episode.title, privacy: .public)' to Nostr NIP-74")
-        return naddr ?? eventID
+        let publishablePodcast = try await ensurePublishingIdentity(podcast)
+        let eventID = try await publishEpisodeRecord(episode, podcast: publishablePodcast, settings: settings)
+        Self.logger.info("Published episode '\(episode.title, privacy: .public)' to Nostr NIP-F4")
+        return eventID
     }
 
     // MARK: - Private helpers
@@ -208,22 +230,28 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         return stored.isEmpty ? NIP65RelayFetcher.defaultRelays : stored
     }
 
-    /// Publishes the NIP-74 show kind:30074 event and returns the event ID.
+    /// Publishes the NIP-F4 show kind:10154 event and returns the event ID.
     @discardableResult
-    nonisolated private func publishShowEvent(podcast: Podcast, settings: Settings) async throws -> String {
+    private func publishShowEvent(podcast: Podcast, settings: Settings) async throws -> String {
         let relayURLs = effectivePublicRelays(settings: settings).compactMap { URL(string: $0) }
         guard !relayURLs.isEmpty else {
             throw AgentOwnedPodcastError.noRelayConfigured
         }
-        let signer = try nostrSigner()
+        let signer = try podcastSigner(for: podcast.id)
         let publisher = NostrPodcastPublisher(
             publisher: NostrWebSocketEventPublisher(),
             relayURLs: relayURLs
         )
-        return try await publisher.publishShow(podcast: podcast, signer: signer)
+        let eventID = try await publisher.publishShow(podcast: podcast, signer: signer)
+        do {
+            try await publishAuthorClaim(settings: settings)
+        } catch {
+            Self.logger.warning("Published show but failed to refresh NIP-F4 author claim: \(error.localizedDescription, privacy: .public)")
+        }
+        return eventID
     }
 
-    /// Uploads audio/chapters/transcript and publishes kind:30075. Returns event ID.
+    /// Uploads audio/chapters/transcript and publishes kind:54. Returns event ID.
     @discardableResult
     nonisolated private func publishEpisodeRecord(
         _ episode: Episode,
@@ -234,7 +262,7 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         guard !relayURLs.isEmpty else {
             throw AgentOwnedPodcastError.noRelayConfigured
         }
-        let signer = try nostrSigner()
+        let signer = try podcastSigner(for: podcast.id)
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
         let publisher = NostrPodcastPublisher(
             publisher: NostrWebSocketEventPublisher(),
@@ -294,11 +322,32 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         )
     }
 
-    /// Builds the naddr for a podcast show event.
+    /// Builds a shareable podcast identity for a NIP-F4 show.
     nonisolated private func nostrAddr(for podcast: Podcast, eventID: String?) -> String? {
         guard let pubkeyHex = podcast.ownerPubkeyHex else { return nil }
-        let dTag = "podcast:guid:\(podcast.id.uuidString.lowercased())"
-        return NIP19.naddr(dTag: dTag, pubkeyHex: pubkeyHex, kind: 30074)
+        return NIP19.npub(pubkeyHex: pubkeyHex) ?? pubkeyHex
+    }
+
+    @discardableResult
+    private func publishAuthorClaim(settings: Settings) async throws -> String {
+        let relayURLs = effectivePublicRelays(settings: settings).compactMap { URL(string: $0) }
+        guard !relayURLs.isEmpty else {
+            throw AgentOwnedPodcastError.noRelayConfigured
+        }
+        let podcastPubkeys = await MainActor.run {
+            (store?.allPodcasts ?? [])
+                .filter { $0.nostrVisibility == .public }
+                .compactMap(\.ownerPubkeyHex)
+                .filter { !$0.isEmpty }
+        }
+        let publisher = NostrPodcastPublisher(
+            publisher: NostrWebSocketEventPublisher(),
+            relayURLs: relayURLs
+        )
+        return try await publisher.publishAuthorClaim(
+            podcastPubkeys: podcastPubkeys,
+            agentSigner: nostrSigner()
+        )
     }
 
     @MainActor

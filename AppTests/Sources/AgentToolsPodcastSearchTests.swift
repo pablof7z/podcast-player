@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Tests for search, wiki, transcript, briefing, perplexity, summarize, and
 /// find-similar dispatch paths. Playback and action tool tests live in

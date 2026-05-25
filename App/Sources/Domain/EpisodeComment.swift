@@ -5,7 +5,7 @@ import Foundation
 // What a comment is anchored to. Episodes use the Podcasting 2.0
 // `<podcast:guid>` form so Nostr clients across the ecosystem (Fountain,
 // generic NIP-22 readers) can address the same episode by the same key.
-// Clips are Podcastr-specific — no global addressing scheme exists for
+// Clips are Pod0-specific — no global addressing scheme exists for
 // user-authored excerpts, so we mint a custom scheme that's stable inside
 // our own surfaces and intentionally inert outside them.
 //

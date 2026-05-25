@@ -7,7 +7,7 @@ import Kingfisher
 /// pressure but has no explicit byte cap) and 1 GB disk with 1-week TTL.
 /// For a podcast app where the same handful of show covers churn through
 /// every list, we want tighter bounds so cold-launch I/O stays small and
-/// devices with less storage don't see Podcastr ballooning into hundreds
+/// devices with less storage don't see Pod0 ballooning into hundreds
 /// of MB just for cover art.
 ///
 /// Tunables are deliberately conservative:

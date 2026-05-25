@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Lane-10 tests. Drive `AgentTools.dispatchPodcast` against mock deps and
 /// verify (a) schema validation rejects bad arguments cleanly and (b) the
@@ -327,7 +327,7 @@ final class AgentToolsPodcastTests: XCTestCase {
 
     // MARK: - publish_episode
 
-    func testPublishEpisodeSuccessReturnsNaddr() async throws {
+    func testPublishEpisodeSuccessReturnsEventID() async throws {
         let ownedPodcasts = MockOwnedPodcasts()
         let deps = makeDeps(ownedPodcasts: ownedPodcasts)
         let json = await AgentTools.dispatchPodcast(
@@ -338,7 +338,7 @@ final class AgentToolsPodcastTests: XCTestCase {
         let decoded = try decode(json)
         XCTAssertEqual(decoded["success"] as? Bool, true)
         XCTAssertEqual(decoded["episode_id"] as? String, "ep-abc")
-        XCTAssertNotNil(decoded["naddr"])
+        XCTAssertEqual(decoded["nostr_event_id"] as? String, "event1mockep-abc")
         let published = await ownedPodcasts.publishedEpisodeIDs
         XCTAssertEqual(published, ["ep-abc"])
     }

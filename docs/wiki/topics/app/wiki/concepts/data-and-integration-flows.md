@@ -1,8 +1,8 @@
 ---
 title: "Data And Integration Flows"
-summary: "How podcasts, playback, transcripts, RAG, wiki, agent tools, provider credentials, and Nostr communication connect inside Podcastr."
+summary: "How podcasts, playback, transcripts, RAG, wiki, agent tools, provider credentials, and Nostr communication connect inside Pod0."
 tags: [data-flow, integrations, rag, byok, nostr]
-aliases: [Podcastr data flows, integration map]
+aliases: [Pod0 data flows, integration map]
 sources:
   - raw/notes/2026-05-12-app-system-source-map.md
 created: 2026-05-12
@@ -14,7 +14,7 @@ confidence: high
 
 # Data And Integration Flows
 
-Podcastr's architecture is best understood as a set of loops around episodes. Feeds add episodes; playback produces position and context; transcripts make episodes searchable; wiki and RAG turn them into durable knowledge; agent tools turn knowledge back into playback, clips, briefings, or app mutations.
+Pod0's architecture is best understood as a set of loops around episodes. Feeds add episodes; playback produces position and context; transcripts make episodes searchable; wiki and RAG turn them into durable knowledge; agent tools turn knowledge back into playback, clips, briefings, or app mutations.
 
 ## Feed To Episode
 
@@ -65,4 +65,4 @@ Nostr is used for identity, remote signing, trusted friends, pending approvals, 
 
 ## Sources
 
-- [Podcastr App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)
+- [Pod0 App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)

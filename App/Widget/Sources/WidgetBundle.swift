@@ -5,7 +5,7 @@ import WidgetKit
 /// Playing widget — additional widgets (queue, recent episodes, …) drop
 /// into the `body` builder.
 @main
-struct PodcastrWidgetBundle: WidgetBundle {
+struct Pod0WidgetBundle: WidgetBundle {
     var body: some Widget {
         NowPlayingWidget()
     }

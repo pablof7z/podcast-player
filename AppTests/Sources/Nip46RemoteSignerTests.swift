@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Round-trip tests for `RemoteSigner` that exercise its actor logic without ever opening
 /// a real WebSocket. We inject a mock transport that records outgoing events and lets the
@@ -370,13 +370,13 @@ final actor MockRemoteSignerTransport: RemoteSignerTransport {
     init(
         relayURL: URL,
         sessionPubkeyHex: String,
-        bunkerPubkeyHex: String,
+        bunkerPubkeyHex: String?,
         onEvent: @escaping @Sendable (_ senderPubkey: String, _ encryptedContent: String) async -> Void,
         initialOnPublish: (@Sendable (SignedNostrEvent) async throws -> Void)? = nil
     ) {
         self.relayURL = relayURL
         self.sessionPubkeyHex = sessionPubkeyHex
-        self.bunkerPubkeyHex = bunkerPubkeyHex
+        self.bunkerPubkeyHex = bunkerPubkeyHex ?? ""
         self.onEvent = onEvent
         self._onPublish = initialOnPublish
     }

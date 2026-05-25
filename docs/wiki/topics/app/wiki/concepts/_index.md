@@ -1,6 +1,6 @@
 # Concepts Index
 
-> Bounded implementation concepts for the app-wide Podcastr guide.
+> Bounded implementation concepts for the app-wide Pod0 guide.
 
 Last updated: 2026-05-12
 

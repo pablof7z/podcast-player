@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `DeepLinkHandler.resolve` and `friendInviteURL`. The
 /// parser sits behind every quick-action, push-notification tap, and

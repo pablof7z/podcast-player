@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the unified `list_episodes` tool surface. Three input shapes:
 ///   - Internal UUID `podcast_id` → reads straight from the inventory adapter.

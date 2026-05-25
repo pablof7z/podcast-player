@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `OPMLImport.parseOPML`. The OPML import path runs at
 /// onboarding and via Library → Add Show → OPML, so it deserves

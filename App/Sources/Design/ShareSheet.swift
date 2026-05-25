@@ -68,7 +68,7 @@ enum SystemShareSheet {
 ///
 /// Example usage:
 /// ```swift
-/// ShareButton(items: [item.title, "Shared from Podcastr"]) {
+/// ShareButton(items: [item.title, "Shared from Pod0"]) {
 ///     Image(systemName: "square.and.arrow.up")
 /// }
 /// ```

@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `ChaptersClient.decode(_:)` — the pure JSON decode path.
 /// The `fetch(url:)` path itself is just a URLSession round-trip; the

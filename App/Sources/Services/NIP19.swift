@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - NIP-19 naddr encoder
+// MARK: - NIP-19 encoders
 //
 // Encodes parameterised replaceable Nostr events (NIP-33) as bech32 `naddr`
 // strings using TLV (Type-Length-Value) encoding per the NIP-19 spec.
@@ -12,12 +12,20 @@ import Foundation
 //   3 — kind (4-byte big-endian UInt32)
 
 enum NIP19 {
+    /// Encode a Nostr public key as an `npub` bech32 string.
+    static func npub(pubkeyHex: String) -> String? {
+        guard let pubkeyBytes = Data(hexString: pubkeyHex), pubkeyBytes.count == 32 else {
+            return nil
+        }
+        return Bech32.encode(hrp: "npub", data: pubkeyBytes)
+    }
+
     /// Encode a parameterised replaceable event as an `naddr` bech32 string.
     ///
     /// - Parameters:
     ///   - dTag: Full d-tag string, e.g. `"podcast:guid:<uuid-lowercase>"`.
     ///   - pubkeyHex: 64-character lowercase hex x-only pubkey.
-    ///   - kind: Nostr event kind (e.g. 30074 or 30075).
+    ///   - kind: Nostr event kind for the parameterised replaceable event.
     ///   - relayURL: Optional relay hint included as TLV type-1.
     /// - Returns: `nil` when `pubkeyHex` cannot be decoded to exactly 32 bytes.
     static func naddr(

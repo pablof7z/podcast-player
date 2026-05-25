@@ -33,7 +33,7 @@ struct ChaptersClient: Sendable {
         // chrome doesn't sit waiting on the default 60s timeout.
         request.timeoutInterval = 20
         request.setValue("application/json, */*;q=0.8", forHTTPHeaderField: "Accept")
-        request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("Pod0/1.0", forHTTPHeaderField: "User-Agent")
 
         let data: Data
         let response: URLResponse

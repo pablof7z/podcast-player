@@ -185,7 +185,7 @@ struct AgentIdentityQRView: View {
             .buttonStyle(.glass)
 
             // Deep-link-aware share. When a `podcastr://friend/add` URL
-            // is buildable, prefer sharing it (recipients on Podcastr tap
+            // is buildable, prefer sharing it (recipients on Pod0 tap
             // → AddFriendSheet pre-filled). Falls back to the bare npub
             // string when the URL builder returns nil. Either way wraps
             // a SharePreview so the share sheet header shows the
@@ -229,7 +229,7 @@ struct AgentIdentityQRView: View {
 
     private var sharePreviewTitle: String {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedName.isEmpty ? "Podcastr invite" : "\(trimmedName) on Podcastr"
+        return trimmedName.isEmpty ? "Pod0 invite" : "\(trimmedName) on Pod0"
     }
 
     // MARK: - Actions

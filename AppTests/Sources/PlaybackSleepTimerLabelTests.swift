@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `PlaybackState.sleepTimerChipLabel` — the live countdown
 /// the player's action cluster reads when the sleep timer is armed.

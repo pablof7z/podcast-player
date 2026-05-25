@@ -272,7 +272,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
            !displayName.isEmpty {
             return displayName
         }
-        return Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Podcastr"
+        return Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Pod0"
     }
 
     private static func randomBase64URL(byteCount: Int) throws -> String {

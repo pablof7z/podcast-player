@@ -31,7 +31,7 @@ struct OpenRouterEmbeddingsClient: EmbeddingsClient {
 
     private static let logger = Logger.app("OpenRouterEmbeddingsClient")
     private static let endpoint = URL(string: "https://openrouter.ai/api/v1/embeddings")!
-    private static let xTitle = "Podcastr"
+    private static let xTitle = "Pod0"
 
     /// Shared encoder/decoder. Each batch in `embedBatch` was minting
     /// one encoder + two decoders, and a full transcript ingest spends

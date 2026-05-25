@@ -8,7 +8,7 @@ Last updated: 2026-05-12
 
 | File | Summary | Tags | Updated |
 |------|---------|------|---------|
-| [2026-05-12-app-system-source-map.md](2026-05-12-app-system-source-map.md) | Repo-grounded map of Podcastr docs, Swift modules, runtime surfaces, provider integrations, and operating rules. | app, source-map, architecture | 2026-05-12 |
+| [2026-05-12-app-system-source-map.md](2026-05-12-app-system-source-map.md) | Repo-grounded map of Pod0 docs, Swift modules, runtime surfaces, provider integrations, and operating rules. | app, source-map, architecture | 2026-05-12 |
 
 ## Categories
 

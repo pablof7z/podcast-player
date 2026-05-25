@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the unplayed-count badge label rendered on
 /// `LibraryGridCell`. The view file exposes the threshold logic via

@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the magazine-mode category-scoping derivations: resume
 /// rail filtering, dateline prefix + per-category counts, and the

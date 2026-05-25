@@ -1,5 +1,5 @@
 import Foundation
-@testable import Podcastr
+@testable import Pod0
 
 // MARK: - Directory + Subscribe + OwnedPodcasts + YouTube mocks
 //
@@ -187,7 +187,7 @@ actor MockOwnedPodcasts: AgentOwnedPodcastManagerProtocol {
         if let err = publishError { throw err }
         if shouldFailPublish { return nil }
         publishedEpisodeIDs.append(episodeID)
-        return "naddr1mock\(episodeID)"
+        return "event1mock\(episodeID)"
     }
 }
 

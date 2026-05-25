@@ -54,7 +54,7 @@ struct OpenRouterRerankerClient: RerankerClient {
 
     private static let logger = Logger.app("OpenRouterRerankerClient")
     private static let endpoint = URL(string: "https://openrouter.ai/api/v1/rerank")!
-    private static let xTitle = "Podcastr"
+    private static let xTitle = "Pod0"
 
     private let apiKeyProvider: @Sendable () throws -> String?
     private let model: String

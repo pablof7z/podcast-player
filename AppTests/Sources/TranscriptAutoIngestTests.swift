@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `TranscriptIngestService.evaluateAutoIngest(newEpisodeIDs:)`
 /// — the feed-refresh-triggered batch path that finally wires

@@ -1,8 +1,8 @@
 ---
 title: "Codebase Map"
-summary: "Where to look before changing each major Podcastr subsystem."
+summary: "Where to look before changing each major Pod0 subsystem."
 tags: [implementation, swift, files, codebase]
-aliases: [Podcastr file map, implementation map]
+aliases: [Pod0 file map, implementation map]
 sources:
   - raw/notes/2026-05-12-app-system-source-map.md
 created: 2026-05-12
@@ -14,7 +14,7 @@ confidence: high
 
 # Codebase Map
 
-Use this map before editing. Podcastr has many connected surfaces, and the fastest way to avoid drift is to start in the owner module instead of patching the visible view only.
+Use this map before editing. Pod0 has many connected surfaces, and the fastest way to avoid drift is to start in the owner module instead of patching the visible view only.
 
 ## Project And App Shell
 
@@ -75,4 +75,4 @@ Use this map before editing. Podcastr has many connected surfaces, and the faste
 
 ## Sources
 
-- [Podcastr App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)
+- [Pod0 App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)

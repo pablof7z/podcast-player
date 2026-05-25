@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Regression coverage for the on-disk `Settings` JSON round-trip. The
 /// custom `CodingKeys` enum + manual encode/decode pair makes it easy

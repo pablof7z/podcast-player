@@ -1,4 +1,4 @@
-# Podcastr
+# Pod0
 
 A next-generation iOS podcast player built around an embedded AI agent that has perfect knowledge of every podcast the user is subscribed to — including episodes they have not listened to yet.
 
@@ -198,8 +198,8 @@ App/Sources/
 
    Edit `Project.swift`:
    ```swift
-   let appName = "Podcastr"
-   let appDisplayName = "Podcastr"
+   let appName = "Pod0"
+   let appDisplayName = "Pod0"
    let appBundleID = "io.f7z.podcast"
    let appleTeamID = "456SHKPP26"
    ```
@@ -208,7 +208,7 @@ App/Sources/
 
    ```bash
    tuist generate
-   open Podcastr.xcodeproj
+   open Pod0.xcodeproj
    ```
 
 3. **Rename the App Group**
@@ -220,7 +220,7 @@ App/Sources/
 ### Running
 
 ```bash
-tuist generate && open Podcastr.xcodeproj
+tuist generate && open Pod0.xcodeproj
 # Press Cmd+R in Xcode
 ```
 
@@ -244,8 +244,8 @@ Create an API key at [appstoreconnect.apple.com/access/api](https://appstoreconn
   --auth-key ~/Downloads/AuthKey_KEYID.p8 \
   [--p12 ~/Downloads/Certificates.p12] \
   [--p12-password your_p12_password] \
-  [--app-profile ~/Downloads/Podcastr.mobileprovision] \
-  [--widget-profile ~/Downloads/PodcastrWidget.mobileprovision]
+  [--app-profile ~/Downloads/Pod0.mobileprovision] \
+  [--widget-profile ~/Downloads/Pod0Widget.mobileprovision]
 ```
 
 Omit `--p12` to use Xcode automatic signing (requires a logged-in Apple account on the runner).
@@ -256,7 +256,7 @@ The workflow uses `runs-on: self-hosted`. You need a macOS machine registered as
 
 **Step 4 — Verify workflow env**
 
-`.github/workflows/testflight.yml` is configured for `Podcastr`, `io.f7z.podcast`, and `io.f7z.podcast.widget`. Update those env vars only when release IDs change.
+`.github/workflows/testflight.yml` is configured for `Pod0`, `io.f7z.podcast`, and `io.f7z.podcast.widget`. Update those env vars only when release IDs change.
 
 **Step 5 — First deploy**
 
@@ -302,7 +302,7 @@ Automatic signing works without the certificate/profile secrets if your runner h
 2. Update `APP_GROUP_IDENTIFIER` in entitlements
 3. Update `Persistence.swift` suite name
 4. Update `.github/workflows/testflight.yml` env vars
-5. Rename `App/Resources/Podcastr.entitlements`
+5. Rename the entitlements files only if their filenames are part of the requested rename scope.
 6. Run `tuist generate`
 
 ### Adding a new feature tab

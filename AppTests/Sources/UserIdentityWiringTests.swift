@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 // MARK: - UserIdentityWiringTests
 //

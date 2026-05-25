@@ -1,8 +1,8 @@
 ---
 title: "User-Facing Capabilities"
-summary: "Current user-visible Podcastr surfaces and the runtime systems each one owns."
+summary: "Current user-visible Pod0 surfaces and the runtime systems each one owns."
 tags: [app, ux, features, surfaces]
-aliases: [Podcastr features, app surfaces]
+aliases: [Pod0 features, app surfaces]
 sources:
   - raw/notes/2026-05-12-app-system-source-map.md
 created: 2026-05-12
@@ -14,7 +14,7 @@ confidence: high
 
 # User-Facing Capabilities
 
-Podcastr's visible product surface is split into a few stable entry points, but most of the value comes from how they interact. The Home feed, Now Playing, Wiki, Agent, Voice, Settings, and Feedback surfaces all share the same state and knowledge substrate.
+Pod0's visible product surface is split into a few stable entry points, but most of the value comes from how they interact. The Home feed, Now Playing, Wiki, Agent, Voice, Settings, and Feedback surfaces all share the same state and knowledge substrate.
 
 ## Home And Library
 
@@ -59,4 +59,4 @@ Shake-to-feedback is global and uses a compose/capture/annotate workflow. The ap
 
 ## Sources
 
-- [Podcastr App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)
+- [Pod0 App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)

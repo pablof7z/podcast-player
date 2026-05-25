@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `PlaybackState.playNext(resolve:)` — the queue dequeue +
 /// load + play sequence that drives auto-play-next when an episode

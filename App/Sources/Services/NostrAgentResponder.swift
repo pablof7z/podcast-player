@@ -53,7 +53,7 @@ final class NostrAgentResponder {
 
     /// NIP-10 reply tag for the wrap signal. When an inbound carries
     /// this tag we record the turn, mark the root ended, and bail
-    /// without invoking the model. (Podcastr does not emit this tag
+    /// without invoking the model. (Pod0 does not emit this tag
     /// today, but win-the-day does — supporting inbound parity keeps
     /// cross-app conversations terminable from either side.)
     private static let endConversationTagName = "wtd-end"

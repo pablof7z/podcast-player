@@ -43,7 +43,7 @@ struct PublisherTranscriptIngestor: Sendable {
     static let defaultFetch: @Sendable (URL) async throws -> (Data, String?) = { url in
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
-        request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("Pod0/1.0", forHTTPHeaderField: "User-Agent")
         request.setValue(
             "application/json;q=1.0, text/vtt;q=0.9, application/x-subrip;q=0.9, */*;q=0.5",
             forHTTPHeaderField: "Accept"

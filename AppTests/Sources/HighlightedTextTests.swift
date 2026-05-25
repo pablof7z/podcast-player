@@ -1,6 +1,6 @@
 import XCTest
 import SwiftUI
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `HighlightedText.makeAttributed(text:query:)`. The
 /// previous implementation lowercased both inputs and walked grapheme

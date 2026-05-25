@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Predicate-level coverage for `PlayerShareSheet`. We can't render the SwiftUI
 /// hierarchy from XCTest without an `@MainActor` host, so we keep these tests

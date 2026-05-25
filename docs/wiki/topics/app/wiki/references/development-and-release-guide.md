@@ -1,8 +1,8 @@
 ---
 title: "Development And Release Guide"
-summary: "Build, test, release, and repo-rule guide for agents working in Podcastr."
+summary: "Build, test, release, and repo-rule guide for agents working in Pod0."
 tags: [operations, release, rules, testflight, tuist]
-aliases: [Podcastr development guide, release guide]
+aliases: [Pod0 development guide, release guide]
 sources:
   - raw/notes/2026-05-12-app-system-source-map.md
 created: 2026-05-12
@@ -14,12 +14,12 @@ confidence: high
 
 # Development And Release Guide
 
-Podcastr is a Tuist-based SwiftUI app with an app target, widget target, and unit-test target. It also has repo-specific rules that matter for every implementation pass.
+Pod0 is a Tuist-based SwiftUI app with an app target, widget target, and unit-test target. It also has repo-specific rules that matter for every implementation pass.
 
 ## Build Model
 
 - Generate the project with Tuist when project files are missing or stale.
-- `Project.swift` defines app name `Podcastr`, bundle ID `io.f7z.podcast`, widget bundle ID `io.f7z.podcast.widget`, App Group `group.com.podcastr.app`, deployment target iOS 26.0, and the main packages.
+- `Project.swift` defines app name `Pod0`, bundle ID `io.f7z.podcast`, widget bundle ID `io.f7z.podcast.widget`, App Group `group.com.podcastr.app`, deployment target iOS 26.0, and the main packages.
 - The app target includes `App/Sources/**`, `Assets.xcassets`, and `App/Resources/whats-new.json`.
 - The widget target reads through the same App Group boundary.
 
@@ -31,7 +31,7 @@ For UI or runtime changes, build and launch the app on the requested simulator o
 
 ## Release Rules
 
-Every commit that ships a user-facing iPhone change must add an entry to `App/Resources/whats-new.json`. The entry id is the short SHA of the commit. Skip entries only for purely internal changes.
+Every commit that ships a user-facing iPhone change must add an entry to `App/Resources/whats-new.json` with a unique `shipped_at` timestamp and user-readable `lines`. Skip entries only for purely internal changes.
 
 CI and upload scripts live under `ci_scripts/`. Versioning and upload behavior are documented in `docs/features.md`; archive/upload logic should stay aligned with those scripts rather than being recreated ad hoc.
 
@@ -56,4 +56,4 @@ Start with [[codebase-map|Codebase Map]] ([Codebase Map](codebase-map.md)) befor
 
 ## Sources
 
-- [Podcastr App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)
+- [Pod0 App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)

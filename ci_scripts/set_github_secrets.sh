@@ -6,8 +6,8 @@
 #   [--p12 path/to/Certificates.p12] \
 #   [--p12-password password] \
 #   [--keychain-password password] \
-#   [--app-profile path/to/Podcastr.mobileprovision] \
-#   [--widget-profile path/to/PodcastrWidget.mobileprovision]
+#   [--app-profile path/to/Pod0.mobileprovision] \
+#   [--widget-profile path/to/Pod0Widget.mobileprovision]
 set -euo pipefail
 
 REPO=""

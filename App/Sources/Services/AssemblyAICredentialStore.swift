@@ -3,7 +3,7 @@ import os.log
 
 enum AssemblyAICredentialStore {
     private static let logger = Logger.app("AssemblyAICredentialStore")
-    private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").assemblyai"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "Pod0").assemblyai"
     private static let account = "api-key"
 
     static func saveAPIKey(_ apiKey: String) throws {

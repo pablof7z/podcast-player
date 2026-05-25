@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `DateParsing.parseRFC822` — the cascade of RFC 822 / 1123 /
 /// ISO 8601 shapes RSS publishers emit under `<pubDate>` in the wild.

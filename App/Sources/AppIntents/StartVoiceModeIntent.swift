@@ -4,7 +4,7 @@ import Foundation
 // MARK: - StartVoiceModeIntent
 
 /// Single entry point that wires Voice Mode into the system. Once an
-/// `AppShortcut` is published from `PodcastrShortcuts` below, this intent
+/// `AppShortcut` is published from `Pod0Shortcuts` below, this intent
 /// is reachable from:
 ///   - The iPhone 15 Pro+ Action Button (Settings → Action Button →
 ///     Shortcut → "Talk to my podcasts").
@@ -25,7 +25,7 @@ struct StartVoiceModeIntent: AppIntent {
     static let title: LocalizedStringResource = "Talk to my podcasts"
 
     static let description = IntentDescription(
-        "Open Podcastr and start a hands-free conversation with the agent. Ask about anything you've listened to.",
+        "Open Pod0 and start a hands-free conversation with the agent. Ask about anything you've listened to.",
         categoryName: "Voice"
     )
 
@@ -59,7 +59,7 @@ extension Notification.Name {
 /// `appShortcuts` is the only place where phrases are localised — the
 /// `\(.applicationName)` token is replaced at runtime with the user-facing
 /// app name so the same shortcut works for re-branded builds.
-struct PodcastrShortcuts: AppShortcutsProvider {
+struct Pod0Shortcuts: AppShortcutsProvider {
 
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

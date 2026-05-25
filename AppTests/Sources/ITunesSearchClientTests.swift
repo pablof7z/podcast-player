@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pure-value tests for `ITunesSearchClient.Result`. Verifies the artwork-URL
 /// preference logic and the feed-URL coercion — both of which the rest of

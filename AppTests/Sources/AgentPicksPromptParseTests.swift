@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the JSON parser that ingests the LLM picks response.
 /// Tolerance to markdown fences + extra prose is the failure mode we're

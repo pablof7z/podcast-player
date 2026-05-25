@@ -19,8 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_SCHEME: Podcastr
-  PROJECT_PATH: Podcastr.xcodeproj
+  APP_SCHEME: Pod0
+  PROJECT_PATH: Pod0.xcodeproj
   APP_INFO_PLIST: App/Resources/Info.plist
   WIDGET_INFO_PLIST: App/Widget/Resources/Info.plist
   APPLE_TEAM_ID: 456SHKPP26

@@ -1,8 +1,8 @@
 ---
 title: "App Operating Model"
-summary: "End-to-end model of how Podcastr hangs together at runtime: root shell, state, playback, knowledge, agent, providers, and platform services."
+summary: "End-to-end model of how Pod0 hangs together at runtime: root shell, state, playback, knowledge, agent, providers, and platform services."
 tags: [app, architecture, runtime, podcastr]
-aliases: [Podcastr operating model, app overview]
+aliases: [Pod0 operating model, app overview]
 sources:
   - raw/notes/2026-05-12-app-system-source-map.md
 created: 2026-05-12
@@ -14,7 +14,7 @@ confidence: high
 
 # App Operating Model
 
-Podcastr is an iOS podcast player whose baseline podcast behavior is deliberately fused with local knowledge and an embedded agent. The app is not just "play feeds plus chat"; the central loop is library -> playback -> transcript/wiki/RAG -> agent tools -> playback or generated outputs.
+Pod0 is an iOS podcast player whose baseline podcast behavior is deliberately fused with local knowledge and an embedded agent. The app is not just "play feeds plus chat"; the central loop is library -> playback -> transcript/wiki/RAG -> agent tools -> playback or generated outputs.
 
 The product promise is documented in [[product-vision|Product Vision]] ([Product Vision](../../../product/wiki/topics/product-vision.md)), while the runtime mechanics are grounded in `RootView`, `AppStateStore`, `PlaybackState`, `TranscriptIngestService`, `RAGService`, `WikiStorage`, and `AgentChatSession`.
 
@@ -56,4 +56,4 @@ Provider choice then affects agent chat, embeddings, wiki compilation, chapter c
 
 ## Sources
 
-- [Podcastr App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)
+- [Pod0 App System Source Map](../../raw/notes/2026-05-12-app-system-source-map.md)

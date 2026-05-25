@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Test suite for the NIP-46 / NIP-44 v2 stack:
 /// ChaCha20 (RFC 8439), NIP-44 (paulmillr spec vectors), bunker URI parsing,

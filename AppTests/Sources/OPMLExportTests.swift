@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `OPMLExport.exportOPML`. Pairs with `OPMLImportTests`:
 /// the most valuable assertion here is that **export → re-import → same

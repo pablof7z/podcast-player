@@ -1,6 +1,6 @@
 import SwiftUI
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pure-logic coverage for `LiquidGlassSegmentedPicker`.
 ///

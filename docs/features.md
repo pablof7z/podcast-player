@@ -195,7 +195,7 @@ For SwiftData (used in cut-tracker), replace the JSON blob with a `ModelContaine
 Client-initiated NIP-46 pairing: the app generates the `nostrconnect://` URI (instead of receiving a `bunker://` URI from the signer).
 
 1. `RemoteSigner.nostrConnect(...)` generates an ephemeral session keypair and a random 16-byte hex secret.
-2. Builds a `nostrconnect://<sessionPubkey>?relay=…&secret=…&name=Podcastr&perms=…` URI and immediately surfaces it via `onURI` callback so the UI can render the QR code.
+2. Builds a `nostrconnect://<sessionPubkey>?relay=…&secret=…&name=Pod0&perms=…` URI and immediately surfaces it via `onURI` callback so the UI can render the QR code.
 3. Subscribes on the relay with **no `authors` filter** — the signer's pubkey is unknown at this point.
 4. For each inbound `kind:24133` event, attempts NIP-44 decryption with `(sessionPrivKey, senderPubkey)`. Parses the JSON response; if `result == secret`, that sender is the signer.
 5. Builds a `RemoteSigner` with the discovered bunker pubkey; calls `finishNostrConnect` (only `get_public_key` — skips a redundant `connect` RPC to avoid duplicate `auth_url` challenges).
@@ -208,7 +208,7 @@ Default relay: `wss://relay.primal.net` (same as Olas, highlighter). Default per
 - Detects installed signer apps (Amber, Primal) and shows one-tap deep-link buttons for each.
 - States: setup → waiting (spinner + "Waiting for signer…") → connected → error.
 - Cancel only disconnects if the session is not yet paired (prevents accidental disconnect post-link).
-- `podcastr://nip46` registered as a URL scheme for signer app callbacks.
+- `podcastr://nip46` remains registered as the stable URL scheme for signer app callbacks.
 
 ### Adding a new known signer
 
@@ -216,13 +216,13 @@ Add an entry to the `KnownSigner` enum in `NostrConnectView.swift` with its URL 
 
 ---
 
-## NIP-74 — Agent-Owned Podcasts
+## NIP-F4 — Agent-Owned Podcasts
 
-**Source:** `App/Sources/Agent/AgentTools+OwnedPodcasts.swift`, `App/Sources/Agent/LiveAgentOwnedPodcastManager.swift`, `App/Sources/Agent/AgentToolSchema+Podcast.swift`, `App/Sources/Features/Settings/Agent/AgentPodcastsView.swift`
+**Source:** `App/Sources/Agent/AgentTools+OwnedPodcasts.swift`, `App/Sources/Agent/LiveAgentOwnedPodcastManager.swift`, `App/Sources/Agent/AgentToolSchema+OwnedPodcasts.swift`, `App/Sources/Services/NostrPodcastPublisher.swift`, `App/Sources/Services/PodcastKeyStore.swift`, `App/Sources/Features/Settings/Agent/AgentPodcastsView.swift`
 
 ### Concept
 
-The AI agent can create and manage its own podcast shows — complete with AI-generated cover art and optional Nostr publishing via NIP-74. Agent-owned shows appear in the library alongside subscribed shows and can contain TTS-generated episodes.
+The AI agent can create and manage its own podcast shows — complete with AI-generated cover art and optional Nostr publishing via NIP-F4. Agent-owned shows appear in the library alongside subscribed shows and can contain TTS-generated episodes. Public shows use a podcast-specific Nostr key so the show is a first-class Nostr identity; the user's agent identity signs a kind `10064` author claim linking those podcast identities back to the creator.
 
 ### Tools
 
@@ -233,21 +233,21 @@ The AI agent can create and manage its own podcast shows — complete with AI-ge
 | `delete_my_podcast` | Delete an agent-owned show and all its episodes. |
 | `list_my_podcasts` | List all agent-owned shows with metadata and episode counts. |
 | `generate_podcast_artwork` | Generate cover art via the configured image-gen model, upload via Blossom, return a CDN URL. |
-| `publish_episode` | Publish an existing TTS episode to Nostr (NIP-74). Requires `visibility=public` and Nostr enabled in Settings. |
+| `publish_episode` | Publish an existing TTS episode to Nostr (NIP-F4). Requires `visibility=public` and Nostr enabled in Settings. |
 
 `generate_tts_episode` (in `AgentTools+TTS.swift`) accepts an optional `podcast_id`; when the podcast is public and Nostr is enabled, the episode is auto-published after generation.
 
 ### Lifecycle (`LiveAgentOwnedPodcastManager`)
 
 1. `createPodcast(...)` — creates a `Podcast` with `kind: .synthetic` and calls `store.upsertPodcast(...)`.
-2. If `visibility == .public` and Nostr is enabled, immediately publishes a NIP-74 show event signed by the agent's Nostr key from `NostrCredentialStore`.
+2. If `visibility == .public` and Nostr is enabled, ensures a podcast-specific key exists, publishes a NIP-F4 kind `10154` show event signed by that podcast key, and refreshes the user's kind `10064` author claim.
 3. `generateAndUploadArtwork(prompt:)` — calls the image-gen API (model configured in Image Generation Settings), uploads the result to the user's Blossom server, returns the CDN URL.
-4. `publishEpisodeToNostr(episodeID:)` — looks up the episode, builds a NIP-74 episode event, signs and publishes, returns the `naddr`.
+4. `publishEpisodeToNostr(episodeID:)` — looks up the episode, uploads audio through Blossom, builds a NIP-F4 kind `54` episode event with an `audio` tag, signs with the podcast key, publishes, and returns the event id.
 
 ### Visibility
 
 - `private` — show exists only in the local library; not signed or published.
-- `public` — show and episodes are signed with the agent's nsec and published to Nostr relays as NIP-74 events.
+- `public` — show and episodes are signed with the podcast-specific nsec and published to Nostr relays as NIP-F4 events.
 
 Visibility can be changed after creation via `update_podcast(podcast_id:, visibility:)`.
 
@@ -263,7 +263,7 @@ Visibility can be changed after creation via `update_podcast(podcast_id:, visibi
 
 ### Key difference from win-the-day
 
-win-the-day uses XcodeGen (`xcodegen generate`). Podcastr uses Tuist (`tuist generate --no-open`). The rest of the CI pipeline is similar.
+win-the-day uses XcodeGen (`xcodegen generate`). Pod0 uses Tuist (`tuist generate --no-open`). The rest of the CI pipeline is similar.
 
 ### Version numbering
 

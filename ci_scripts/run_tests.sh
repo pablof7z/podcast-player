@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_SCHEME="${APP_SCHEME:-Podcastr}"
-PROJECT_PATH="${PROJECT_PATH:-Podcastr.xcodeproj}"
+APP_SCHEME="${APP_SCHEME:-Pod0}"
+PROJECT_PATH="${PROJECT_PATH:-Pod0.xcodeproj}"
 TEST_DESTINATION="${TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=latest}"
 
 xcodebuild \

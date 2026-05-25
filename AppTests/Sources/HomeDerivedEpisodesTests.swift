@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for the `AppStateStore` derived views Home Today depends on:
 /// `inProgressEpisodes` (Continue Listening rail) and

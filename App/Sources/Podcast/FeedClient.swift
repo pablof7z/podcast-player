@@ -66,7 +66,7 @@ struct FeedClient: Sendable {
             "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
             forHTTPHeaderField: "Accept"
         )
-        request.setValue("Podcastr/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("Pod0/1.0", forHTTPHeaderField: "User-Agent")
         if let etag = podcast.etag, !etag.isEmpty {
             request.setValue(etag, forHTTPHeaderField: "If-None-Match")
         }

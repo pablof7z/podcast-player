@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pins the `ElevenLabsScribeClient` multipart encoding to the OpenAPI spec
 /// at `https://api.elevenlabs.io/openapi.json`. Without these tests, the

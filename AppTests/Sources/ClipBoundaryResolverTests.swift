@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Pins the pure pieces of `ClipBoundaryResolver`: parsing, validation,
 /// speaker resolution. The LLM round-trip itself is exercised via a stubbed

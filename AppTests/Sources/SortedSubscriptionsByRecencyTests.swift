@@ -1,5 +1,5 @@
 import XCTest
-@testable import Podcastr
+@testable import Pod0
 
 /// Coverage for `AppStateStore.sortedFollowedPodcastsByRecency` — the new sort
 /// driving the merged Home subscription list. Drops alphabetical ordering
