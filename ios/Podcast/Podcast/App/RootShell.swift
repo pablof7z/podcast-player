@@ -25,12 +25,14 @@ final class PodcastRouter: ObservableObject {
     func popToRoot() { path = NavigationPath() }
 }
 
-enum PodcastTab: Hashable { case home }
+enum PodcastTab: Hashable { case library, identity }
 
 struct RootShell: View {
     @Environment(KernelModel.self) private var model
+    @Environment(AppStateStore.self) private var store
+    @Environment(PlaybackState.self) private var playback
 
-    @State private var tab: PodcastTab = .home
+    @State private var tab: PodcastTab = .library
 
     var body: some View {
         mainTabs
@@ -43,14 +45,13 @@ struct RootShell: View {
 
     private var mainTabs: some View {
         TabView(selection: $tab) {
-            tabStack {
-                PodcastPlaceholder(
-                    systemImage: "headphones",
-                    title: "Pod0",
-                    subtitle: "Feature views migrate here in M1+")
-            }
-            .tabItem { Label("Pod0", systemImage: "headphones") }
-            .tag(PodcastTab.home)
+            LibraryView()
+                .tabItem { Label("Library", systemImage: "books.vertical") }
+                .tag(PodcastTab.library)
+
+            IdentityRootView()
+                .tabItem { Label("Identity", systemImage: "person.circle") }
+                .tag(PodcastTab.identity)
         }
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarBackground(.regularMaterial, for: .tabBar)

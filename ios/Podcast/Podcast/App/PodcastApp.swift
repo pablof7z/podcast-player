@@ -10,6 +10,13 @@ struct PodcastApp: App {
     // injection. Replaced when functional sign-in lands at M1 exit.
     @State private var identityStore = UserIdentityStore()
 
+    // Compat store — holds podcast/episode state surfaced by Library views.
+    // Replaced when Rust snapshot projection drives AppStateStore directly.
+    @State private var appStore = AppStateStore()
+
+    // Shared playback state for the audio layer.
+    @State private var playback = PlaybackState()
+
     // UIKit app delegate is the only surface that receives
     // `application(_:handleEventsForBackgroundURLSession:completionHandler:)`,
     // which the OS calls when it relaunches the app to drain a
@@ -29,6 +36,8 @@ struct PodcastApp: App {
             RootShell()
                 .environment(model)
                 .environment(identityStore)
+                .environment(appStore)
+                .environment(playback)
                 .tint(PodcastColor.accent)
                 .task { model.start() }
         }
