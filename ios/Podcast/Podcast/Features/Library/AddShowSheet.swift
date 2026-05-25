@@ -2,29 +2,22 @@ import SwiftUI
 
 // MARK: - AddShowSheet
 
-/// Modal "+ Add Show" sheet for the Library tab. Three segments:
+/// Modal "+ Add Show" sheet for the Library tab. Two segments:
 ///
-///   - **Search**   — Apple Podcasts directory search → one-tap subscribe.
-///                    The default segment because most users discover by
-///                    name, not by URL.
-///   - **From URL** — paste / type a feed URL → `SubscriptionService.addSubscription`.
-///   - **OPML**     — hands off to `OPMLImportSheet` for the file picker
-///                    + per-row enrichment flow.
+///   - **Search**   — Apple Podcasts directory search → one-tap subscribe,
+///                    dispatched through the NMP `podcast.search_itunes` action.
+///   - **From URL** — paste / type a feed URL → `podcast.subscribe` dispatch.
 ///
-/// Surfaces all `SubscriptionService.AddError` cases inline so the user knows
-/// whether they pasted a typo, hit a network blip, or are already subscribed.
+/// OPML import and Nostr discovery arrive in later PRs once those capabilities
+/// are implemented in the Rust kernel (Nostr uses NIP-F4, not NIP-74).
 struct AddShowSheet: View {
 
     enum Mode: String, CaseIterable, Identifiable {
         case search = "Search"
-        case nostr = "Nostr"
         case url = "From URL"
-        case opml = "OPML"
-
         var id: String { rawValue }
     }
 
-    let store: AppStateStore
     let onDismiss: () -> Void
 
     @State private var mode: Mode = .search
@@ -43,14 +36,9 @@ struct AddShowSheet: View {
                 Group {
                     switch mode {
                     case .search:
-                        DiscoverSearchForm(store: store, onAdded: handleAdded)
-                    case .nostr:
-                        NostrDiscoverForm(store: store, onAdded: handleAdded)
+                        DiscoverSearchForm(onAdded: handleAdded)
                     case .url:
-                        AddByURLForm(store: store, onAdded: handleAddedFromURL)
-                    case .opml:
-                        OPMLImportContent(store: store, onDismiss: onDismiss)
-                            .padding(.top, -AppTheme.Spacing.md)
+                        AddByURLForm(onAdded: handleAddedFromURL)
                     }
                 }
 
@@ -77,19 +65,13 @@ struct AddShowSheet: View {
         }
     }
 
-    private func handleAdded(_ podcast: Podcast) {
-        // Intentionally NOT auto-dismissing here. The Search segment lets
-        // users add multiple shows in one sitting (and we want them to
-        // *see* the row flip to a green checkmark — auto-dismiss made the
-        // tap read as a no-op). The "From URL" segment, by contrast, is
-        // single-shot, so it dismisses via its own success path.
+    private func handleAdded() {
+        // Search lets users add multiple shows per session — don't auto-dismiss.
         Haptics.success()
     }
 
-    /// Single-shot success path for the From-URL segment. Closes the sheet
-    /// because that flow always adds exactly one feed at a time and there
-    /// is no list-of-rows to re-render with a checkmark.
-    private func handleAddedFromURL(_ podcast: Podcast) {
+    private func handleAddedFromURL() {
+        // From-URL is a single-shot flow — close on success.
         Haptics.success()
         onDismiss()
     }
@@ -97,15 +79,13 @@ struct AddShowSheet: View {
 
 // MARK: - AddByURLForm
 
-/// "From URL" segment body. Lives next to `AddShowSheet` because the two are
-/// always presented together and share the dismissal closure.
+/// "From URL" segment body. Dispatches `podcast.subscribe` with the typed URL
+/// and dismisses via `onAdded` on success.
 struct AddByURLForm: View {
 
-    let store: AppStateStore
-    /// Invoked on a successful subscribe so the parent can close the sheet.
-    let onAdded: (Podcast) -> Void
+    let onAdded: () -> Void
 
-    @Environment(KernelModel.self) private var kernel
+    @Environment(KernelModel.self) private var model
 
     @State private var feedURL: String = ""
     @State private var isWorking: Bool = false
@@ -130,9 +110,7 @@ struct AddByURLForm: View {
                             .fill(Color(.secondarySystemBackground))
                     )
 
-                Button {
-                    paste()
-                } label: {
+                Button { paste() } label: {
                     Label("Paste from clipboard", systemImage: "doc.on.clipboard")
                         .font(AppTheme.Typography.caption)
                 }
@@ -178,18 +156,14 @@ struct AddByURLForm: View {
         isWorking = true
         errorMessage = nil
 
-        let result = kernel.dispatch(
+        let result = model.dispatch(
             namespace: "podcast",
             body: ["op": "subscribe", "feed_url": trimmed])
 
         isWorking = false
         switch result {
         case .accepted:
-            // Kernel accepted the action; the library will populate via the
-            // 500ms snapshot poll. Dismiss optimistically.
-            var synthetic = Podcast()
-            synthetic.feedURL = URL(string: trimmed)
-            onAdded(synthetic)
+            onAdded()
         case .failure(let message):
             errorMessage = message
             Haptics.warning()

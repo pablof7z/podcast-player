@@ -50,8 +50,8 @@ pub use capability::{
 };
 pub use download::{DownloadItem, DownloadItemState, DownloadQueue, DEFAULT_MAX_CONCURRENT};
 pub use ffi::{
-    nmp_app_podcast_register, nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free,
-    nmp_app_podcast_unregister, PodcastHandle,
+    nmp_app_podcast_audio_report, nmp_app_podcast_register, nmp_app_podcast_snapshot,
+    nmp_app_podcast_snapshot_free, nmp_app_podcast_unregister, PodcastHandle,
 };
 pub use nmp_signer_broker::{
     nmp_app_cancel_bunker_handshake, nmp_app_nostrconnect_uri, nmp_broker_free_string,

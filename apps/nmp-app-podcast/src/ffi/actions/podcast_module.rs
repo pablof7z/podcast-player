@@ -24,6 +24,10 @@ use nmp_core::ActorCommand;
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum PodcastAction {
     Subscribe { feed_url: String },
+    Unsubscribe { podcast_id: String },
+    Refresh { podcast_id: String },
+    RefreshAll,
+    SearchItunes { query: String },
 }
 
 /// Single action module for the whole `"podcast"` namespace.

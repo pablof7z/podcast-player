@@ -119,6 +119,10 @@ pub struct PodcastUpdate {
     /// only renders.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub toast: Option<String>,
+    /// iTunes search results, populated after a `podcast.search_itunes` action.
+    /// Empty when no search has been performed or after the results are consumed.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub search_results: Vec<PodcastSummary>,
 }
 
 impl Default for PodcastUpdate {
@@ -136,6 +140,7 @@ impl Default for PodcastUpdate {
             active_account: None,
             widget: None,
             toast: None,
+            search_results: Vec::new(),
         }
     }
 }
@@ -164,6 +169,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                 episode_count: episodes.len(),
                 unplayed_count: 0,
                 artwork_url: podcast.image_url.as_ref().map(|u| u.to_string()),
+                feed_url: podcast.feed_url.as_ref().map(|u| u.to_string()),
+                author: if podcast.author.is_empty() { None } else { Some(podcast.author.clone()) },
                 episodes: episodes
                     .iter()
                     .map(|ep| EpisodeSummary {
@@ -180,10 +187,15 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
             .collect()
     }).unwrap_or_default();
 
+    let search_results = handle.search_results.lock().ok()
+        .map(|r| r.clone())
+        .unwrap_or_default();
+
     let update = PodcastUpdate {
         rev,
         now_playing,
         library,
+        search_results,
         ..PodcastUpdate::default()
     };
     serde_json::to_string(&update)

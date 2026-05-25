@@ -55,6 +55,63 @@ impl PodcastStore {
     pub fn podcast(&self, podcast_id: PodcastId) -> Option<&Podcast> {
         self.podcasts.get(&podcast_id)
     }
+
+    /// Remove a podcast and all its episodes. Silent no-op when not found.
+    pub fn unsubscribe(&mut self, podcast_id: PodcastId) {
+        self.podcasts.remove(&podcast_id);
+        self.episodes.remove(&podcast_id);
+    }
+
+    /// Look up a podcast by the string form of its UUID.
+    pub fn podcast_by_id_str(&self, id_str: &str) -> Option<&Podcast> {
+        self.podcasts.values().find(|p| p.id.0.to_string() == id_str)
+    }
+
+    /// Return `(id, feed_url, etag, last_modified)` for every podcast that has
+    /// an RSS feed URL. Used by `refresh_all`.
+    pub fn all_feed_infos(&self) -> Vec<(PodcastId, url::Url, Option<String>, Option<String>)> {
+        self.podcasts
+            .values()
+            .filter_map(|p| {
+                p.feed_url
+                    .clone()
+                    .map(|url| (p.id, url, p.etag.clone(), p.last_modified.clone()))
+            })
+            .collect()
+    }
+
+    /// Patch refresh metadata (etag/last-modified/timestamp) after a successful
+    /// feed refresh without replacing the entire podcast record.
+    pub fn update_refresh_metadata(
+        &mut self,
+        podcast_id: PodcastId,
+        etag: Option<String>,
+        last_modified: Option<String>,
+    ) {
+        if let Some(podcast) = self.podcasts.get_mut(&podcast_id) {
+            podcast.etag = etag;
+            podcast.last_modified = last_modified;
+            podcast.last_refreshed_at = Some(chrono::Utc::now());
+        }
+    }
+
+    /// Find episode playback info by the string form of its `EpisodeId` UUID.
+    ///
+    /// Returns `(podcast_id_str, enclosure_url, position_secs)` or `None` when
+    /// no episode with that id is found. Compares by converting stored UUIDs to
+    /// their hyphenated string form — same format used in `EpisodeSummary.id`.
+    pub fn episode_playback_info(&self, id_str: &str) -> Option<(String, String, f64)> {
+        for (podcast_id, episodes) in &self.episodes {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                return Some((
+                    podcast_id.0.to_string(),
+                    ep.enclosure_url.to_string(),
+                    ep.position_secs,
+                ));
+            }
+        }
+        None
+    }
 }
 
 impl Default for PodcastStore {
