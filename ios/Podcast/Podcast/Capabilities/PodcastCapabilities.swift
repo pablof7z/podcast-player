@@ -16,6 +16,8 @@ import Foundation
 ///                                from the pre-NMP Swift app; idle thereafter.
 ///                                iOS-only — Android/web targets stub this out.
 ///   - `AudioCapability`       — AVPlayer-backed audio (`nmp.audio.capability`)
+///   - `DownloadCapability`    — URLSession background downloads
+///                                (`nmp.download.capability`)
 ///
 /// Rust decides when and what to call; Swift only executes the request and
 /// reports the raw result (D7).
@@ -25,24 +27,43 @@ import Foundation
 /// see [`handleJSON(_:)`].
 @MainActor
 final class PodcastCapabilities {
+    /// Process-wide instance.
+    ///
+    /// Background `URLSession` delegate events can arrive before SwiftUI's
+    /// `@State` initialisers run (notably when the OS relaunches the app
+    /// into the background to drain an in-flight download), so the
+    /// capability holder must be reachable from the
+    /// `UIApplicationDelegate` hook regardless of view-graph state. The
+    /// `PodcastAppDelegate` forwards
+    /// `application(_:handleEventsForBackgroundURLSession:completionHandler:)`
+    /// into `shared.download.handleEventsForBackgroundURLSession(...)`.
+    ///
+    /// This is the same "singleton holder" pattern the legacy
+    /// `EpisodeDownloadService.shared` used; the iOS-side capability
+    /// surface owns the OS hook regardless of where the kernel wires it.
+    static let shared = PodcastCapabilities()
+
     let keyring: KeychainCapability
     let identity: PcstIdentityCapability
     let http: HttpCapability
     let legacyIO: LegacyIOCapability
     let audio: AudioCapability
+    let download: DownloadCapability
 
     init(
         keyring: KeychainCapability = KeychainCapability(),
         identity: PcstIdentityCapability = PcstIdentityCapability(),
         http: HttpCapability = HttpCapability(),
-        legacyIO: LegacyIOCapability = LegacyIOCapability()
-        audio: AudioCapability = AudioCapability()
+        legacyIO: LegacyIOCapability = LegacyIOCapability(),
+        audio: AudioCapability = AudioCapability(),
+        download: DownloadCapability = DownloadCapability()
     ) {
         self.keyring = keyring
         self.identity = identity
         self.http = http
         self.legacyIO = legacyIO
         self.audio = audio
+        self.download = download
     }
 
     /// Idempotent: start all owned capabilities. Safe to call on every app
@@ -53,6 +74,7 @@ final class PodcastCapabilities {
         http.start()
         legacyIO.start()
         audio.start()
+        download.start()
     }
 
     /// Idempotent: mark capabilities inactive. Does not erase stored secrets.
@@ -62,6 +84,7 @@ final class PodcastCapabilities {
         http.stop()
         legacyIO.stop()
         audio.stop()
+        download.stop()
     }
 
     /// Single capability-callback entry point. Routes the raw kernel
@@ -94,6 +117,8 @@ final class PodcastCapabilities {
             return legacyIO.handleJSON(requestJSON)
         case AudioCapability.namespace:
             return audio.handleJSON(requestJSON)
+        case DownloadCapability.namespace:
+            return download.handleJSON(requestJSON)
         default:
             // D6 — an unknown namespace is data, not a crash. Echo the
             // correlation id so the issuing kernel module can still correlate.
