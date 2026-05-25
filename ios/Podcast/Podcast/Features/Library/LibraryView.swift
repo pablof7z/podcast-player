@@ -22,6 +22,16 @@ struct LibraryView: View {
             }
             .navigationTitle("Library")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if !model.library.isEmpty {
+                        NavigationLink {
+                            AllEpisodesView()
+                        } label: {
+                            Image(systemName: "list.bullet")
+                        }
+                        .accessibilityLabel("All Episodes")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
@@ -30,6 +40,9 @@ struct LibraryView: View {
             }
             .navigationDestination(for: PodcastSummary.self) { podcast in
                 ShowDetailView(podcast: podcast)
+            }
+            .navigationDestination(for: EpisodeRoute.self) { route in
+                EpisodeDetailView(episode: route.episode, podcast: route.podcast)
             }
             .refreshable {
                 model.dispatch(namespace: "podcast", body: ["op": "refresh_all"])

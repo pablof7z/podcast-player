@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-25T23:00:00Z",
+      "lines": [
+        "Library gained an All Episodes view — every episode across every subscribed show, newest first — plus a dedicated episode detail screen with artwork, metadata, and one-tap play."
+      ]
+    },
+    {
       "shipped_at": "2026-05-25T22:45:00Z",
       "lines": [
         "Library is now fully powered by the Rust kernel — legacy compat stores removed, episode list backed entirely by real-time NMP snapshots"
