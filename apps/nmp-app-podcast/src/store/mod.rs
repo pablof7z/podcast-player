@@ -58,6 +58,11 @@ pub struct PodcastStore {
     /// hydrated values from disk are themselves the most-recent checkpoint.
     /// Not persisted: this is a runtime throttling marker, not durable state.
     last_flushed_positions: HashMap<String, f64>,
+    /// Whether the user has finished the iOS onboarding flow. Surfaced via
+    /// the `settings` snapshot projection so the iOS shell can decide
+    /// whether to present `OnboardingView`. Mirrored to disk under the same
+    /// `podcasts.json` envelope as the library so the flag survives restart.
+    has_completed_onboarding: bool,
     data_dir: Option<PathBuf>,
 }
 
@@ -69,6 +74,7 @@ impl PodcastStore {
             local_paths: HashMap::new(),
             transcripts: HashMap::new(),
             last_flushed_positions: HashMap::new(),
+            has_completed_onboarding: false,
             data_dir: None,
         }
     }
@@ -119,6 +125,10 @@ impl PodcastStore {
             self.podcasts.insert(id, row.podcast);
             self.episodes.insert(id, row.episodes);
         }
+        // Settings are stored in the same envelope so onboarding completion
+        // survives restart without a second file. `serde(default)` keeps
+        // older saved files (predating the field) loading cleanly.
+        self.has_completed_onboarding = loaded.has_completed_onboarding;
         self.podcasts.len()
     }
 
@@ -146,6 +156,7 @@ impl PodcastStore {
         PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: rows,
+            has_completed_onboarding: self.has_completed_onboarding,
         }
     }
 
@@ -356,6 +367,25 @@ impl PodcastStore {
     pub fn last_flushed_position(&self, id_str: &str) -> Option<f64> {
         self.last_flushed_positions.get(id_str).copied()
     }
+
+    /// Whether the user has finished iOS onboarding. The iOS shell reads this
+    /// from the `settings` snapshot to gate `OnboardingView`. Defaults to
+    /// `false` for fresh installs.
+    pub fn has_completed_onboarding(&self) -> bool {
+        self.has_completed_onboarding
+    }
+
+    /// Update the onboarding-complete flag and flush to disk when a data dir
+    /// is registered. Idempotent: writing the same value is a no-op for the
+    /// disk file (the bytes are unchanged) and for the in-memory flag.
+    pub fn set_onboarding_complete(&mut self, value: bool) {
+        if self.has_completed_onboarding == value {
+            return;
+        }
+        self.has_completed_onboarding = value;
+        self.persist();
+    }
+
 
     /// Test-only accessor for the currently-bound data dir.
     #[cfg(test)]

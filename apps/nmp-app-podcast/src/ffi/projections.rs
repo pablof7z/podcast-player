@@ -332,6 +332,35 @@ pub struct NostrShowSummary {
     pub categories: Vec<String>,
 }
 
+/// App-settings projection surfaced via
+/// [`super::snapshot::PodcastUpdate::settings`].
+///
+/// Narrow on purpose: the iOS shell only needs a handful of bools / strings
+/// from this struct to gate UI (onboarding flow, manual-credentials banners,
+/// …). Replaces the legacy in-memory `Settings` compat shim. The kernel
+/// authoritative source is [`crate::store::PodcastStore::has_completed_onboarding`].
+///
+/// `Default` produces the fresh-install state (`has_completed_onboarding =
+/// false`) so the snapshot builder can always emit a `SettingsSnapshot`
+/// regardless of store-lock acquisition.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SettingsSnapshot {
+    /// Whether the user has finished the iOS onboarding flow. iOS reads
+    /// this from the `settings` snapshot to decide whether to present
+    /// `OnboardingView`. Mutated via the `podcast.update_settings` action.
+    pub has_completed_onboarding: bool,
+}
+
+impl SettingsSnapshot {
+    /// Returns true when the snapshot equals `Default::default()`. Used as
+    /// the `skip_serializing_if` guard on
+    /// [`super::snapshot::PodcastUpdate::settings`] so the empty-state
+    /// snapshot stays byte-identical to the legacy stub (D6).
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// Narrow identity projection surfaced via
 /// [`super::snapshot::PodcastUpdate::active_account`].
 ///
@@ -463,6 +492,23 @@ mod tests {
         assert!(json.contains("\"playback_position_secs\":123.5"));
         let decoded: EpisodeSummary = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, ep);
+    }
+
+    #[test]
+    fn settings_snapshot_round_trips() {
+        let s = SettingsSnapshot { has_completed_onboarding: true };
+        let json = serde_json::to_string(&s).expect("encode");
+        assert!(json.contains("\"has_completed_onboarding\":true"));
+        let decoded: SettingsSnapshot = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, s);
+    }
+
+    #[test]
+    fn settings_snapshot_default_is_fresh_install() {
+        let s = SettingsSnapshot::default();
+        assert!(!s.has_completed_onboarding);
+        let json = serde_json::to_string(&s).expect("encode");
+        assert!(json.contains("\"has_completed_onboarding\":false"));
     }
 
     #[test]

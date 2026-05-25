@@ -29,10 +29,17 @@ pub const PODCASTS_FILE: &str = "podcasts.json";
 
 /// On-disk envelope. One row per subscribed podcast with its episodes inlined
 /// so the load is a single fread.
+///
+/// `has_completed_onboarding` is part of the same envelope so the iOS
+/// shell's `OnboardingView` gate survives restart without a second file.
+/// `serde(default)` keeps older saved files (predating the field) loading
+/// cleanly as `false`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(super) struct PersistedStore {
     pub schema_version: u32,
     pub podcasts: Vec<PersistedPodcast>,
+    #[serde(default)]
+    pub has_completed_onboarding: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,11 +158,13 @@ mod tests {
         let payload = PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
+            has_completed_onboarding: false,
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
         assert_eq!(loaded.schema_version, PERSIST_SCHEMA_VERSION);
         assert_eq!(loaded.podcasts.len(), 0);
+        assert!(!loaded.has_completed_onboarding);
     }
 
     #[test]
@@ -170,6 +179,7 @@ mod tests {
                 podcast: podcast.clone(),
                 episodes: episodes.clone(),
             }],
+            has_completed_onboarding: false,
         };
         save(&dir.path, &payload).unwrap();
         let loaded = load(&dir.path).unwrap().expect("file present");
@@ -186,6 +196,7 @@ mod tests {
         let payload = PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
+            has_completed_onboarding: false,
         };
         save(&nested, &payload).unwrap();
         assert!(nested.join(PODCASTS_FILE).exists());
@@ -197,11 +208,40 @@ mod tests {
         let payload = PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: vec![],
+            has_completed_onboarding: false,
         };
         save(&dir.path, &payload).unwrap();
         // After a successful save the .tmp file must be gone (renamed).
         assert!(!dir.path.join(format!("{PODCASTS_FILE}.tmp")).exists());
         assert!(dir.path.join(PODCASTS_FILE).exists());
+    }
+
+    #[test]
+    fn save_then_load_round_trips_has_completed_onboarding() {
+        let dir = TempDir::new();
+        let payload = PersistedStore {
+            schema_version: PERSIST_SCHEMA_VERSION,
+            podcasts: vec![],
+            has_completed_onboarding: true,
+        };
+        save(&dir.path, &payload).unwrap();
+        let loaded = load(&dir.path).unwrap().expect("file present");
+        assert!(loaded.has_completed_onboarding);
+    }
+
+    #[test]
+    fn legacy_envelope_without_onboarding_field_loads_as_false() {
+        // Forward compat: an older `podcasts.json` predating the settings
+        // projection lacks the `has_completed_onboarding` field. `serde(default)`
+        // must keep the load succeeding and produce `false` for the flag.
+        let dir = TempDir::new();
+        let raw = serde_json::json!({
+            "schema_version": PERSIST_SCHEMA_VERSION,
+            "podcasts": []
+        });
+        std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
+        let loaded = load(&dir.path).unwrap().expect("file present");
+        assert!(!loaded.has_completed_onboarding);
     }
 
     #[test]

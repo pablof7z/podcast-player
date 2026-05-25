@@ -3,15 +3,14 @@ import SwiftUI
 /// Agent identity (Nostr profile + key management).
 ///
 /// NMP migration note: this view used to round-trip its profile fields
-/// through the compat `Settings` struct via `store.state.settings` /
-/// `store.updateSettings`. That path was in-memory only — values were lost
+/// through an in-memory `Settings` compat struct. That path lost values
 /// across launches. The view now persists profile fields directly with
-/// `@AppStorage` keyed under `agent.profile.*`. The compat `Settings`
-/// shape stays around for `Onboarding/OnboardingView+Handlers` (which also
-/// writes the same `@AppStorage` keys for `name` + `pictureURL` so the
-/// values land here on first open) and for `hasCompletedOnboarding`. A
-/// real Rust-side `settings` projection lands at M3 (see
-/// `docs/BACKLOG.md` — "M3 — Settings projection").
+/// `@AppStorage` keyed under `agent.profile.*`. `Onboarding/OnboardingView+Handlers`
+/// writes the same `@AppStorage` keys for `name` + `pictureURL` so values
+/// land here on first open. The kernel-side `settings` projection
+/// (`model.snapshot?.settings`) owns `hasCompletedOnboarding`; profile
+/// fields move there at a future milestone (see `docs/BACKLOG.md`
+/// — "M3 — Settings projection").
 struct AgentIdentityView: View {
 
     private enum Layout {

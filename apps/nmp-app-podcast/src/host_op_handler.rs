@@ -372,6 +372,29 @@ impl PodcastHostOpHandler {
         serde_json::json!({"ok": true})
     }
 
+    fn handle_update_settings(&self, has_completed_onboarding: Option<bool>) -> serde_json::Value {
+        // The empty patch (every field `None`) is a no-op — still returns
+        // `{"ok": true}` so the Swift dispatch path doesn't need a branch
+        // for "patch with no fields."
+        let mut mutated = false;
+        match self.store.lock() {
+            Ok(mut s) => {
+                if let Some(value) = has_completed_onboarding {
+                    if s.has_completed_onboarding() != value {
+                        s.set_onboarding_complete(value);
+                        mutated = true;
+                    }
+                }
+            }
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        }
+        if mutated {
+            // Bump rev so iOS re-polls and sees the new `settings` projection.
+            self.rev.fetch_add(1, Ordering::Relaxed);
+        }
+        serde_json::json!({"ok": true})
+    }
+
     fn handle_delete_download(&self, episode_id_str: String) -> serde_json::Value {
         let removed_path = {
             match self.store.lock() {
@@ -406,6 +429,9 @@ impl HostOpHandler for PodcastHostOpHandler {
                 PodcastAction::FetchTranscript { episode_id } => handle_fetch_transcript(&self.store, &self.rev, episode_id, |req| self.dispatch_http(req, correlation_id)),
                 PodcastAction::FetchChapters { episode_id } => handle_fetch_chapters(&self.store, &self.rev, episode_id, |req| self.dispatch_http(req, correlation_id)),
                 PodcastAction::DiscoverNostr { query, relay_url } => discover_nostr::handle_discover_nostr(query, relay_url, &self.nostr_results, &self.rev, |req| self.dispatch_http(req, correlation_id)),
+                PodcastAction::UpdateSettings { has_completed_onboarding } => {
+                    self.handle_update_settings(has_completed_onboarding)
+                }
             };
         }
         if let Ok(action) = serde_json::from_str::<PlayerAction>(action_json) {

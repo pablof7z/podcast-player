@@ -77,27 +77,32 @@ migrated view re-wired) before the milestone it is anchored to closes.
   podcast / subscription projections land in `nmp-app-podcast`. Re-wire
   `KernelModel.podcast(feedURL:)` and `KernelModel.subscription(podcastID:)`
   in `Compat/KernelModelCompat.swift` to pure snapshot reads.
-- **M3 — `Settings` projection.** Delete `Compat/SettingsCompat.swift` and
-  the `state` / `updateSettings` extensions in `Compat/KernelModelCompat.swift`.
-  Settings should be a real kernel projection emitted by `nmp-app-podcast`.
-  Also delete the `OpenRouterCredentialStore` + `BYOKConnectService` shims
-  in `Compat/ServiceStubs.swift` and replace with the LLM-provider credential
-  capability. PR 11 moved the `nostrProfileName/About/Picture/PublicKeyHex/RelayURL`
-  fields off the compat struct into `@AppStorage("agent.profile.*")` keys
-  read by `AgentIdentityView` (and seeded by `OnboardingView+Handlers`); the
-  M3 projection should reclaim those keys (grep `agent.profile.` in the iOS
-  tree) and reroute writes through dispatch. After PR 11 the surviving
-  `Settings` struct holds exactly one field (`hasCompletedOnboarding: Bool`)
-  plus a no-op `markOpenRouterManual()` — a thin target for the projection swap.
-- **pr9-onboarding-settings-dispatch** — `OnboardingView+Handlers.swift` no
-  longer writes through to a `Settings` struct. Manual OpenRouter key save,
-  BYOK credential import, and `hasCompletedOnboarding` are TODO comments today;
-  their side-effecting Keychain / BYOK calls still run, but their settings
-  shadow does not. Identity name / picture now seed the temporary
-  `agent.profile.*` keys above. Wire each through the Rust kernel when the
-  settings action namespace lands. Until then, returning users may re-see the
-  onboarding flow if any callsite later checks `hasCompletedOnboarding` (no
-  caller does today). Blocked on M3 settings projection.
+- **M3 — `Settings` projection (in progress).** `hasCompletedOnboarding` is
+  now a real kernel projection: `PodcastStore::has_completed_onboarding` →
+  `SettingsSnapshot.has_completed_onboarding` on `PodcastUpdate.settings` →
+  `model.snapshot?.settings.hasCompletedOnboarding` on iOS. The
+  `podcast.update_settings` action writes the flag and persistence rides
+  on the existing `podcasts.json` envelope. `Compat/SettingsCompat.swift`
+  is deleted; `Compat/KernelModelCompat.swift` no longer exposes `Settings`
+  or `updateSettings(_:)`. Remaining work: surface OpenRouter mode /
+  BYOK-imported credentials on the kernel side and delete the
+  `OpenRouterCredentialStore` + `BYOKConnectService` shims in
+  `Compat/ServiceStubs.swift`. PR 11 moved
+  `nostrProfileName/About/Picture/PublicKeyHex/RelayURL` to
+  `@AppStorage("agent.profile.*")` keys read by `AgentIdentityView`
+  (seeded by `OnboardingView+Handlers`); a future M3 follow-up should
+  reclaim those keys and reroute writes through dispatch.
+- **pr9-onboarding-settings-dispatch (resolved for onboarding flag).**
+  `OnboardingView+Handlers.finishOnboarding()` now dispatches
+  `podcast.update_settings { has_completed_onboarding: true }` through
+  the Rust kernel; the flag survives launches. Manual OpenRouter key save
+  and BYOK credential import still write only to Keychain — the kernel
+  `settings` projection has no LLM-provider credential surface yet.
+  Identity name / picture continue to seed `agent.profile.*` UserDefaults
+  keys (see PR 11). The onboarding-gate UI itself is still future work:
+  no surface currently checks `model.snapshot?.settings.hasCompletedOnboarding`,
+  so returning users will not re-see onboarding until a presenter is
+  wired (see M3 follow-up above).
 - **M7 — Agent / Nostr conversation projections.** Delete the
   `NostrConversationRecord/Turn/ProfileMetadata/PendingApproval` stubs in
   `Compat/DomainStubs.swift`, plus the agent surface (`nostrConversations`,

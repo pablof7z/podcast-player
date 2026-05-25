@@ -301,3 +301,41 @@ fn store_without_data_dir_never_touches_disk() {
     assert_eq!(store.podcast_count(), 1);
     assert!(store.data_dir().is_none());
 }
+
+// ── Onboarding flag (settings projection) ───────────────────────────
+
+#[test]
+fn has_completed_onboarding_defaults_to_false() {
+    let store = PodcastStore::new();
+    assert!(!store.has_completed_onboarding());
+}
+
+#[test]
+fn set_onboarding_complete_updates_flag() {
+    let mut store = PodcastStore::new();
+    store.set_onboarding_complete(true);
+    assert!(store.has_completed_onboarding());
+    store.set_onboarding_complete(false);
+    assert!(!store.has_completed_onboarding());
+}
+
+#[test]
+fn onboarding_flag_persists_across_reload() {
+    let dir = TempDir::new();
+    {
+        let mut store = PodcastStore::new();
+        store.set_data_dir(dir.path.clone());
+        store.set_onboarding_complete(true);
+    }
+    let mut store2 = PodcastStore::new();
+    store2.set_data_dir(dir.path.clone());
+    assert!(store2.has_completed_onboarding());
+}
+
+#[test]
+fn fresh_data_dir_yields_false_onboarding_flag() {
+    let dir = TempDir::new();
+    let mut store = PodcastStore::new();
+    store.set_data_dir(dir.path.clone());
+    assert!(!store.has_completed_onboarding());
+}

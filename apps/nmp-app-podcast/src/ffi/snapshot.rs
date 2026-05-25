@@ -31,7 +31,7 @@ use std::sync::atomic::Ordering;
 
 use super::projections::{
     AccountSummary, BriefingSnapshot, ChapterSummary, ConversationsSnapshot, DownloadQueueSnapshot,
-    EpisodeSummary, NostrShowSummary, PodcastSummary, VoiceState, WidgetSnapshot,
+    EpisodeSummary, NostrShowSummary, PodcastSummary, SettingsSnapshot, VoiceState, WidgetSnapshot,
 };
 use crate::player::PlayerState;
 
@@ -137,6 +137,15 @@ pub struct PodcastUpdate {
     /// byte-identity with the legacy stub.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub queue: Vec<String>,
+    /// App-settings projection (onboarding completion, …).
+    ///
+    /// Defaults to the fresh-install `SettingsSnapshot` (`has_completed_onboarding
+    /// = false`). Always emitted by the snapshot builder so iOS can read
+    /// `snapshot.settings` directly without an `if let` dance; the
+    /// `skip_serializing_if = "SettingsSnapshot::is_default"` guard keeps the
+    /// no-op snapshot byte-identical to the legacy stub (D6).
+    #[serde(default, skip_serializing_if = "SettingsSnapshot::is_default")]
+    pub settings: SettingsSnapshot,
 }
 
 impl Default for PodcastUpdate {
@@ -157,6 +166,7 @@ impl Default for PodcastUpdate {
             search_results: Vec::new(),
             nostr_results: Vec::new(),
             queue: Vec::new(),
+            settings: SettingsSnapshot::default(),
         }
     }
 }
@@ -180,58 +190,75 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         (now_playing, a.queue().to_vec())
     }).unwrap_or((None, Vec::new()));
 
-    let library = handle.store.lock().ok().map(|s| {
-        s.all_podcasts()
-            .into_iter()
-            .map(|(podcast, episodes)| PodcastSummary {
-                id: podcast.id.0.to_string(),
-                title: podcast.title.clone(),
-                episode_count: episodes.len(),
-                unplayed_count: 0,
-                artwork_url: podcast.image_url.as_ref().map(|u| u.to_string()),
-                feed_url: podcast.feed_url.as_ref().map(|u| u.to_string()),
-                author: if podcast.author.is_empty() { None } else { Some(podcast.author.clone()) },
-                episodes: episodes
-                    .iter()
-                    .map(|ep| {
-                        let id_str = ep.id.0.to_string();
-                        let transcript = s.transcript_for(&id_str).map(str::to_owned);
-                        EpisodeSummary {
-                            title: ep.title.clone(),
-                            podcast_id: Some(podcast.id.0.to_string()),
-                            podcast_title: Some(podcast.title.clone()),
-                            duration_secs: ep.duration_secs,
-                            artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
-                            published_at: Some(ep.pub_date.timestamp()),
-                            download_path: s.local_path_for(&ep.id).map(str::to_owned),
-                            description: Some(ep.description.clone()).filter(|s| !s.is_empty()),
-                            transcript,
-                            chapters: ep
-                                .chapters
-                                .as_ref()
-                                .map(|cs| {
-                                    cs.iter()
-                                        .map(|c| ChapterSummary {
-                                            start_secs: c.start_secs,
-                                            end_secs: c.end_secs,
-                                            title: c.title.clone(),
-                                            image_url: c.image_url.as_ref().map(|u| u.to_string()),
-                                            url: c.link_url.as_ref().map(|u| u.to_string()),
-                                        })
-                                        .collect()
-                                })
-                                .unwrap_or_default(),
-                            // `position_for` already returns `None` when
-                            // position == 0.0, so the projection naturally
-                            // hides the field for untouched episodes.
-                            playback_position_secs: s.position_for(&id_str),
-                            id: id_str,
-                        }
-                    })
-                    .collect(),
-            })
-            .collect()
-    }).unwrap_or_default();
+    // Hold the store lock once to derive both library + settings — saves
+    // a second acquisition and guarantees both projections see the same
+    // store revision.
+    let (library, settings) = handle
+        .store
+        .lock()
+        .ok()
+        .map(|s| {
+            let library: Vec<PodcastSummary> = s
+                .all_podcasts()
+                .into_iter()
+                .map(|(podcast, episodes)| PodcastSummary {
+                    id: podcast.id.0.to_string(),
+                    title: podcast.title.clone(),
+                    episode_count: episodes.len(),
+                    unplayed_count: 0,
+                    artwork_url: podcast.image_url.as_ref().map(|u| u.to_string()),
+                    feed_url: podcast.feed_url.as_ref().map(|u| u.to_string()),
+                    author: if podcast.author.is_empty() {
+                        None
+                    } else {
+                        Some(podcast.author.clone())
+                    },
+                    episodes: episodes
+                        .iter()
+                        .map(|ep| {
+                            let id_str = ep.id.0.to_string();
+                            let transcript = s.transcript_for(&id_str).map(str::to_owned);
+                            EpisodeSummary {
+                                title: ep.title.clone(),
+                                podcast_id: Some(podcast.id.0.to_string()),
+                                podcast_title: Some(podcast.title.clone()),
+                                duration_secs: ep.duration_secs,
+                                artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
+                                published_at: Some(ep.pub_date.timestamp()),
+                                download_path: s.local_path_for(&ep.id).map(str::to_owned),
+                                description: Some(ep.description.clone()).filter(|s| !s.is_empty()),
+                                transcript,
+                                chapters: ep
+                                    .chapters
+                                    .as_ref()
+                                    .map(|cs| {
+                                        cs.iter()
+                                            .map(|c| ChapterSummary {
+                                                start_secs: c.start_secs,
+                                                end_secs: c.end_secs,
+                                                title: c.title.clone(),
+                                                image_url: c.image_url.as_ref().map(|u| u.to_string()),
+                                                url: c.link_url.as_ref().map(|u| u.to_string()),
+                                            })
+                                            .collect()
+                                    })
+                                    .unwrap_or_default(),
+                                // `position_for` already returns `None` when
+                                // position == 0.0, so the projection naturally
+                                // hides the field for untouched episodes.
+                                playback_position_secs: s.position_for(&id_str),
+                                id: id_str,
+                            }
+                        })
+                        .collect(),
+                })
+                .collect();
+            let settings = SettingsSnapshot {
+                has_completed_onboarding: s.has_completed_onboarding(),
+            };
+            (library, settings)
+        })
+        .unwrap_or_default();
 
     let search_results = handle.search_results.lock().ok()
         .map(|r| r.clone())
@@ -247,6 +274,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         search_results,
         nostr_results,
         queue,
+        settings,
         ..PodcastUpdate::default()
     };
     serde_json::to_string(&update)

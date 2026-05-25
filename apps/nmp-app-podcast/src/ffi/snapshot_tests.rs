@@ -6,7 +6,7 @@
 
 use super::projections::{
     BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot,
-    PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
+    PendingApprovalSnapshot, SettingsSnapshot, VoiceState, WidgetSnapshot,
 };
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
@@ -58,6 +58,31 @@ fn snapshot_decoder_tolerates_unknown_fields() {
     assert!(decoded.briefing.is_none());
     assert!(decoded.widget.is_none());
     assert!(decoded.toast.is_none());
+    // `settings` is non-Option but defaults to fresh-install state when
+    // omitted from the wire, so older binaries see "not onboarded yet".
+    assert_eq!(decoded.settings, SettingsSnapshot::default());
+}
+
+#[test]
+fn snapshot_with_settings_round_trips() {
+    let snap = PodcastUpdate {
+        settings: SettingsSnapshot { has_completed_onboarding: true },
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    assert!(json.contains("\"settings\""));
+    assert!(json.contains("\"has_completed_onboarding\":true"));
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert!(decoded.settings.has_completed_onboarding);
+}
+
+#[test]
+fn snapshot_omits_default_settings() {
+    // D6 byte-identity: a fresh-install snapshot must not emit the
+    // `settings` key at all so the empty payload stays identical to
+    // the legacy stub.
+    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    assert!(!json.contains("settings"));
 }
 
 #[test]

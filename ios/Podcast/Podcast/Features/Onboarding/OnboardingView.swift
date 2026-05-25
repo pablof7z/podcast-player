@@ -12,6 +12,11 @@ import SwiftUI
 // (not `private`) so the handler extension can mutate it without indirection.
 
 struct OnboardingView: View {
+    /// Kernel dispatcher — `finishOnboarding()` writes
+    /// `hasCompletedOnboarding` through the Rust `podcast.update_settings`
+    /// action so the flag survives launches.
+    @Environment(KernelModel.self) var model
+
     @State var step: OnboardingStep = .welcome
 
     // Provider setup state
