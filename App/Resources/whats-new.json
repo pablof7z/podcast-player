@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T00:40:00Z",
+      "lines": [
+        "Configure your NIP-65 relay list from Identity → Advanced → Relays — add or remove the relays where your Nostr posts get published."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T00:35:00Z",
       "lines": [
         "Fixed: the 2.5× and 3.0× playback-speed chips now actually apply — they were silently capped at 2.0× by the player kernel."

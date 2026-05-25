@@ -52,6 +52,15 @@ struct AdvancedView: View {
                         systemImage: "doc.text.magnifyingglass"
                     )
                 }
+                NavigationLink {
+                    RelayListView()
+                } label: {
+                    advancedRow(
+                        title: "Relays",
+                        subtitle: "Where your Nostr posts get published (NIP-65)",
+                        systemImage: "antenna.radiowaves.left.and.right"
+                    )
+                }
                 Button(role: .destructive) {
                     startNewConfirm = true
                 } label: {
