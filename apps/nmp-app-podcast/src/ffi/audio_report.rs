@@ -44,15 +44,19 @@ pub extern "C" fn nmp_app_podcast_audio_report(
         Err(_) => return std::ptr::null_mut(),
     };
 
+    let handle_ref = unsafe { &*handle };
     let follow_up_json = {
-        let handle = unsafe { &*handle };
-        let mut actor = match handle.player_actor.lock() {
+        let mut actor = match handle_ref.player_actor.lock() {
             Ok(a) => a,
             Err(_) => return std::ptr::null_mut(),
         };
         let outcome = dispatch_audio_report_json(&mut actor, report_str, SystemTime::now());
         match outcome {
-            DispatchOutcome::Ok { follow_up_json } => follow_up_json,
+            DispatchOutcome::Ok { follow_up_json } => {
+                drop(actor); // release lock before rev bump
+                handle_ref.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                follow_up_json
+            }
             DispatchOutcome::DecodeFailed { .. } => None,
         }
     }; // player_actor lock released

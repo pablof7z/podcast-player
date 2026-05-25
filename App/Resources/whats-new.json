@@ -2,6 +2,13 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-25T12:00:00Z",
+      "lines": [
+        "Play, pause, seek, and skip controls are now powered by the NMP Rust kernel — playback state updates reliably across the mini-player and anywhere else the player appears.",
+        "Mini-player: tap play/pause or skip forward 30 seconds directly from the bar above the tab bar."
+      ]
+    },
+    {
       "shipped_at": "2026-05-15T20:20:00Z",
       "lines": [
         "Sidebar no longer dims the rest of the app when open, and the mini-player has been streamlined — the thin progress strip at its bottom edge is gone."

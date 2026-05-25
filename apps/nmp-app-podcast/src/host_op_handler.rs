@@ -143,6 +143,7 @@ impl PodcastHostOpHandler {
                 actor.stage_load(&episode_id, Some(podcast_id), &url, position_secs);
             }
         }
+        self.rev.fetch_add(1, Ordering::Relaxed);
 
         // 3. Dispatch Load + Play commands to the iOS audio capability.
         let load_cmd = AudioCommand::load(&url, position_secs);
@@ -179,6 +180,7 @@ impl PodcastHostOpHandler {
                         actor.set_speed(speed);
                     }
                 }
+                self.rev.fetch_add(1, Ordering::Relaxed);
                 match self.dispatch_audio(&AudioCommand::SetSpeed { speed }, correlation_id) {
                     Ok(_) => serde_json::json!({"ok": true}),
                     Err(e) => serde_json::json!({"ok": false, "error": e}),
@@ -191,6 +193,7 @@ impl PodcastHostOpHandler {
                         actor.set_volume(volume);
                     }
                 }
+                self.rev.fetch_add(1, Ordering::Relaxed);
                 match self.dispatch_audio(&AudioCommand::SetVolume { volume }, correlation_id) {
                     Ok(_) => serde_json::json!({"ok": true}),
                     Err(e) => serde_json::json!({"ok": false, "error": e}),
@@ -208,6 +211,7 @@ impl PodcastHostOpHandler {
                         }
                     }
                 }
+                self.rev.fetch_add(1, Ordering::Relaxed);
                 match self.dispatch_audio(&AudioCommand::SetSleepTimer { secs }, correlation_id) {
                     Ok(_) => serde_json::json!({"ok": true}),
                     Err(e) => serde_json::json!({"ok": false, "error": e}),
