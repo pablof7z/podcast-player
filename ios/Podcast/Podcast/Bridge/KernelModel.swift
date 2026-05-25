@@ -154,16 +154,87 @@ final class KernelModel {
                     guard let self else { return }
                     let update = self.kernel.podcastSnapshot()
                     if update.rev > (self.podcastSnapshot?.rev ?? 0) {
+                        let previousNowPlaying = self.podcastSnapshot?.nowPlaying
                         self.podcastSnapshot = update
                         self.library = update.library
                         PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
                             SettingsKVSnapshot.from(podcastUpdate: update))
                         PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
+                        self.reconcileLiveActivity(
+                            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
                         kmLog.debug("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
                     }
                 }
             }
         }
+    }
+
+    /// Translate `PlayerState` transitions into Live Activity lifecycle
+    /// calls. Driven exclusively by `startSnapshotPoll` — every kernel
+    /// snapshot advance is the one place that can change the now-playing
+    /// surface, so this is the single funnel that mirrors that state out
+    /// to ActivityKit (D7 — kernel is the source of truth, executor only
+    /// translates).
+    ///
+    /// Transitions handled:
+    ///   - nil → non-nil: `start(...)` with episode metadata pulled from
+    ///     the embedded library (titles + artwork live on `EpisodeSummary`
+    ///     and `PodcastSummary`, not on `PlayerState`).
+    ///   - non-nil → non-nil (same episode): `update(positionSecs:isPlaying:)`,
+    ///     which the manager already throttles to ~1 Hz.
+    ///   - non-nil → non-nil (different episode): the manager's `start`
+    ///     handles the end → request roundtrip itself.
+    ///   - non-nil → nil: `stop()`.
+    private func reconcileLiveActivity(
+        previous: PlayerState?, next: PlayerState?, library: [PodcastSummary]
+    ) {
+        switch (previous, next) {
+        case (nil, nil):
+            return
+        case (_, nil):
+            LiveActivityManager.shared.stop()
+        case let (nil, .some(state)):
+            startLiveActivity(for: state, library: library)
+        case let (.some(prev), .some(state)):
+            if prev.episodeId != state.episodeId {
+                startLiveActivity(for: state, library: library)
+            } else {
+                LiveActivityManager.shared.update(
+                    positionSecs: state.positionSecs, isPlaying: state.isPlaying)
+            }
+        }
+    }
+
+    /// Resolve episode/podcast metadata from the library snapshot and
+    /// hand the manager a fully-populated start payload. The library is
+    /// the only place titles/artwork live — `PlayerState` itself is
+    /// metadata-poor by design (it carries only what the audio engine
+    /// needs).
+    private func startLiveActivity(for state: PlayerState, library: [PodcastSummary]) {
+        guard let episodeId = state.episodeId else { return }
+        var episodeTitle = ""
+        var podcastTitle = ""
+        var artworkURL: URL?
+
+        outer: for show in library {
+            for episode in show.episodes where episode.id == episodeId {
+                episodeTitle = episode.title
+                podcastTitle = episode.podcastTitle ?? show.title
+                let artworkString = episode.artworkUrl ?? show.artworkUrl
+                if let artworkString { artworkURL = URL(string: artworkString) }
+                break outer
+            }
+        }
+        if episodeTitle.isEmpty { episodeTitle = "Now Playing" }
+
+        LiveActivityManager.shared.start(
+            episodeID: episodeId,
+            episodeTitle: episodeTitle,
+            podcastTitle: podcastTitle,
+            positionSecs: state.positionSecs,
+            durationSecs: state.durationSecs ?? 0,
+            isPlaying: state.isPlaying,
+            artworkURL: artworkURL)
     }
 
     func applyConfiguration() {

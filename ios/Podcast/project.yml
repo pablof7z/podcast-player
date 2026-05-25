@@ -16,6 +16,12 @@ targets:
     platform: iOS
     sources:
       - path: Podcast
+      # Live Activity attributes are shared verbatim with the
+      # PodcastWidget extension (which renders the activity). The
+      # two targets cannot import each other, so we list the same
+      # Swift source file under both `sources:` entries — Apple's
+      # standard ActivityKit pattern.
+      - path: Shared/PodcastActivityAttributes.swift
     info:
       path: Podcast/Info.plist
       properties:
@@ -41,6 +47,12 @@ targets:
               - UISceneClassName: CPTemplateApplicationScene
                 UISceneConfigurationName: CarPlay
                 UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).CarPlaySceneDelegate
+        # Live Activity opt-in keys. The frequent-updates key lets
+        # the OS bill us against the higher budget tier so per-second
+        # position updates from the kernel snapshot loop reach the
+        # lock screen without being throttled.
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.f7z.podcast
@@ -62,12 +74,49 @@ targets:
         # Links the nmp-app-podcast Rust aggregate archive.
         OTHER_LDFLAGS: "$(inherited) -lnmp_app_podcast"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+    dependencies:
+      - target: PodcastWidget
+
+  # WidgetKit + ActivityKit extension. Hosts:
+  #   - the Live Activity (`PodcastLiveActivityWidget`) rendered on
+  #     the lock screen and Dynamic Island while audio is playing;
+  #   - (future) the home-screen now-playing widget that reads the
+  #     `WidgetSnapshot` JSON `PlatformCapability` already writes
+  #     to the shared App Group.
+  PodcastWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: PodcastWidget
+      # Same shared activity-attributes file the main app compiles —
+      # this is the contract that lets `Activity.update(...)` from the
+      # app reach `ActivityConfiguration<PodcastActivityAttributes>`
+      # in the extension.
+      - path: Shared/PodcastActivityAttributes.swift
+    info:
+      path: PodcastWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Pod0 Widgets
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.f7z.podcast.widget
+        PRODUCT_MODULE_NAME: PodcastWidget
+        PRODUCT_NAME: PodcastWidget
+        CODE_SIGN_ENTITLEMENTS: PodcastWidget/PodcastWidget.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
 
   PodcastTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: PodcastTests
+      # Pull the shared activity-attributes file into the test target
+      # so `PodcastLiveActivityAttributesTests` validates the same
+      # wire contract the main app + widget compile against.
+      - path: Shared/PodcastActivityAttributes.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -82,6 +131,7 @@ schemes:
     build:
       targets:
         Podcast: all
+        PodcastWidget: all
     test:
       targets:
         - PodcastTests
