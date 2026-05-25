@@ -131,6 +131,17 @@ final class KernelModel {
                     if update.rev > (self.podcastSnapshot?.rev ?? 0) {
                         self.podcastSnapshot = update
                         self.library = update.library
+                        // Outbound iCloud-settings writeback. The
+                        // capability holds its own "lastWritten" diff
+                        // cache so calling this on every snapshot tick
+                        // is cheap when nothing changed. The snapshot
+                        // is constructed via the bridge below so this
+                        // file does not have to know which fields the
+                        // settings projection currently exposes — the
+                        // bridge returns `nil` for any field the
+                        // projection has not yet adopted.
+                        PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
+                            SettingsKVSnapshot.from(podcastUpdate: update))
                         kmLog.info("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
                     }
                 }
@@ -164,6 +175,22 @@ final class KernelModel {
         if case let .failure(message) = result {
             kmLog.error("dispatch_action rejected: \(message, privacy: .public)")
             lastErrorToast = message
+        }
+        return result
+    }
+
+    /// Identical to `dispatch(namespace:body:)` but logs failures instead of
+    /// surfacing them as a user-visible toast. For callers that are
+    /// best-effort and where a transient rejection (e.g. an action the
+    /// kernel has not registered yet) is expected and should stay
+    /// developer-only. Today the only caller is `iCloudSyncCapability`,
+    /// which dispatches `podcast.settings.*` actions whose Rust handlers
+    /// land in a follow-up PR.
+    @discardableResult
+    func dispatchSilent(namespace: String, body: [String: Any]) -> DispatchResult {
+        let result = kernel.dispatchAction(namespace: namespace, body: body)
+        if case let .failure(message) = result {
+            kmLog.error("dispatch_action (silent) rejected: \(message, privacy: .public)")
         }
         return result
     }
