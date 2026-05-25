@@ -16,10 +16,6 @@ struct EpisodeRoute: Hashable {
 
 /// NMP-native episode detail screen. Backed entirely by `EpisodeSummary` from
 /// the kernel snapshot — no `AppStateStore`, no compat types.
-///
-/// Show notes are intentionally omitted: `EpisodeSummary` does not yet project
-/// a description field. Tracked in `docs/BACKLOG.md` as
-/// `pr10-episode-description-projection`.
 struct EpisodeDetailView: View {
     let episode: EpisodeSummary
     let podcast: PodcastSummary
@@ -45,6 +41,8 @@ struct EpisodeDetailView: View {
                 metaRow
 
                 playButton
+
+                showNotes
             }
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.lg)
@@ -164,8 +162,29 @@ struct EpisodeDetailView: View {
         .accessibilityLabel(isThisEpisodePlaying ? "Pause" : "Play \(episode.title)")
     }
 
-    // Show notes are intentionally omitted until `EpisodeSummary` projects a
-    // description field. See backlog item `pr10-episode-description-projection`.
+    // MARK: - Show notes
+
+    /// Renders `episode.description` when present. The Rust projection
+    /// drops empty strings to `None`, so a non-nil value here always
+    /// has content. System font only per AGENTS.md typography rules.
+    @ViewBuilder
+    private var showNotes: some View {
+        if let notes = episode.description, !notes.isEmpty {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                Text("Show notes")
+                    .font(AppTheme.Typography.headline)
+                    .foregroundStyle(.primary)
+
+                Text(notes)
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 
     // MARK: - Formatting
 

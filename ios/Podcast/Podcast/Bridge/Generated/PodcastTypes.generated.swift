@@ -55,6 +55,10 @@ struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     /// means the episode has not been downloaded yet. Populated by the
     /// Rust `PodcastStore::local_path_for` on each snapshot tick.
     var downloadPath: String? = nil
+    /// Show notes / episode description from the RSS feed. `nil` when
+    /// the underlying `Episode::description` is empty so the host can
+    /// hide the show-notes section without rendering an empty container.
+    var description: String? = nil
     /// Plain-text transcript. Populated after a successful
     /// `podcast.fetch_transcript` dispatch; `nil` when not yet fetched
     /// or when no publisher transcript is available for this episode.
