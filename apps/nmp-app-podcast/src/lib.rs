@@ -34,7 +34,9 @@
 pub mod capability;
 pub mod download;
 pub mod ffi;
+pub(crate) mod host_op_handler;
 pub mod player;
+pub mod store;
 
 // M2.F — Android JNI shim. Gated `target_os = "android"` so iOS/macOS builds
 // remain unaffected. The shim exports `Java_io_f7z_podcast_KernelBridge_*`

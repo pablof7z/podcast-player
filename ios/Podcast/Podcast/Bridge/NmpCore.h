@@ -44,6 +44,19 @@ void nmp_app_free_string(char *ptr);
 // non-NULL app.
 char *nmp_app_dispatch_action(void *app, const char *namespace, const char *action_json);
 
+// ── Capability callback ───────────────────────────────────────────────────
+//
+// `nmp_app_set_capability_callback` registers a native handler for all
+// kernel-issued `CapabilityRequest` JSON envelopes (HTTP, keyring, audio …).
+// The callback receives a JSON request string (caller-owned) and MUST return
+// a freshly malloc-allocated JSON `CapabilityEnvelope` string; Rust takes
+// ownership via `CString::from_raw`, so the Swift implementation MUST use
+// `strdup` (not a Swift `String` pointer). Passing `NULL` for `callback`
+// unregisters; unregistered requests come back as error envelopes (D6).
+
+typedef char *(*NmpCapabilityCallback)(void *context, const char *request_json);
+void nmp_app_set_capability_callback(void *app, void *context, NmpCapabilityCallback callback);
+
 // ── nmp-app-podcast per-app FFI ──────────────────────────────────────────
 //
 // `libnmp_app_podcast.a` is the Podcast Rust aggregate archive (D0: protocol

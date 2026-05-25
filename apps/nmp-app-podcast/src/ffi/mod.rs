@@ -37,18 +37,18 @@ mod snapshot;
 
 pub use actions::{
     CancelAllDownloadsAction, CancelDownloadAction, DownloadEpisodeAction, PauseAction,
-    PauseDownloadAction, PlayAction, ResumeDownloadAction, SeekAction, SetSleepTimerAction,
-    SetSpeedAction, SetVoiceAction, SetVolumeAction, SpeakAction, StopAction, StopVoiceAction,
-    ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD, ACTION_PLAYER_DOWNLOAD,
-    ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD, ACTION_PLAYER_PLAY,
-    ACTION_PLAYER_RESUME_DOWNLOAD, ACTION_PLAYER_SEEK, ACTION_PLAYER_SET_SLEEP_TIMER,
-    ACTION_PLAYER_SET_SPEED, ACTION_PLAYER_SET_VOLUME, ACTION_PLAYER_STOP, ACTION_VOICE_SET_VOICE,
-    ACTION_VOICE_SPEAK, ACTION_VOICE_STOP,
+    PauseDownloadAction, PlayAction, PodcastAction, PodcastActionModule, ResumeDownloadAction,
+    SeekAction, SetSleepTimerAction, SetSpeedAction, SetVoiceAction, SetVolumeAction, SpeakAction,
+    StopAction, StopVoiceAction, ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD,
+    ACTION_PLAYER_DOWNLOAD, ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD,
+    ACTION_PLAYER_PLAY, ACTION_PLAYER_RESUME_DOWNLOAD, ACTION_PLAYER_SEEK,
+    ACTION_PLAYER_SET_SLEEP_TIMER, ACTION_PLAYER_SET_SPEED, ACTION_PLAYER_SET_VOLUME,
+    ACTION_PLAYER_STOP, ACTION_VOICE_SET_VOICE, ACTION_VOICE_SPEAK, ACTION_VOICE_STOP,
 };
 pub use handle::PodcastHandle;
 pub use projections::{
-    BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot,
-    PendingApprovalSnapshot, VoiceState,
+    AccountSummary, BriefingSnapshot, ConversationsSnapshot, DownloadItemSnapshot,
+    DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot, PodcastSummary, VoiceState,
 };
 pub use register::nmp_app_podcast_register;
 pub use snapshot::{

@@ -1,13 +1,22 @@
 //! Opaque handle returned by `nmp_app_podcast_register` and consumed by
 //! `nmp_app_podcast_snapshot` / `nmp_app_podcast_unregister`.
 
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicU64;
+
 use nmp_ffi::NmpApp;
+
+use crate::player::PlayerActor;
+use crate::store::PodcastStore;
 
 /// Opaque handle returned by [`super::nmp_app_podcast_register`]. Boxed on the
 /// heap so the address is stable; the Swift consumer holds the raw pointer
 /// until it calls [`super::nmp_app_podcast_unregister`].
 pub struct PodcastHandle {
     pub(super) app: *mut NmpApp,
+    pub(super) player_actor: Arc<Mutex<PlayerActor>>,
+    pub(super) store: Arc<Mutex<PodcastStore>>,
+    pub(super) rev: Arc<AtomicU64>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

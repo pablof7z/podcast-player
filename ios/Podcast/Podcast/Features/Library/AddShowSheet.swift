@@ -105,9 +105,11 @@ struct AddByURLForm: View {
     /// Invoked on a successful subscribe so the parent can close the sheet.
     let onAdded: (Podcast) -> Void
 
+    @Environment(KernelModel.self) private var kernel
+
     @State private var feedURL: String = ""
     @State private var isWorking: Bool = false
-    @State private var error: SubscriptionService.AddError?
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
@@ -137,8 +139,8 @@ struct AddByURLForm: View {
                 .buttonStyle(.borderless)
             }
 
-            if let error {
-                Label(error.localizedDescription, systemImage: "exclamationmark.triangle.fill")
+            if let errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(AppTheme.Tint.error)
             }
@@ -168,31 +170,28 @@ struct AddByURLForm: View {
     private func submit() async {
         let trimmed = feedURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isWorking else { return }
-        isWorking = true
-        error = nil
-        let service = SubscriptionService(store: store)
-        do {
-            let added = try await service.addSubscription(feedURLString: trimmed)
-            isWorking = false
-            onAdded(added)
-        } catch let addError as SubscriptionService.AddError {
-            isWorking = false
-            // "Already subscribed" is success-like — the show the user
-            // wanted is already in their library. Mirror DiscoverSearchForm's
-            // behaviour: light haptic, dismiss the sheet via onAdded with
-            // the existing record; no angry red banner.
-            if case .alreadySubscribed = addError,
-               let url = URL(string: trimmed),
-               let existing = store.podcast(feedURL: url) {
-                Haptics.light()
-                onAdded(existing)
-                return
-            }
-            error = addError
+        guard URL(string: trimmed) != nil else {
+            errorMessage = "Invalid URL"
             Haptics.warning()
-        } catch {
-            isWorking = false
-            self.error = .transport(error.localizedDescription)
+            return
+        }
+        isWorking = true
+        errorMessage = nil
+
+        let result = kernel.dispatch(
+            namespace: "podcast",
+            body: ["op": "subscribe", "feed_url": trimmed])
+
+        isWorking = false
+        switch result {
+        case .accepted:
+            // Kernel accepted the action; the library will populate via the
+            // 500ms snapshot poll. Dismiss optimistically.
+            var synthetic = Podcast()
+            synthetic.feedURL = URL(string: trimmed)
+            onAdded(synthetic)
+        case .failure(let message):
+            errorMessage = message
             Haptics.warning()
         }
     }
