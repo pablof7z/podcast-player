@@ -1,4 +1,4 @@
-//! Parse a `kind:30075` Nostr event into a [`NIP74Episode`].
+//! Parse a `kind:54` Nostr event (NIP-F4) into a [`NIP74Episode`].
 //!
 //! Tag layout is captured in `App/Sources/Services/
 //! NostrPodcastDiscoveryService.parseEpisode(from:podcastID:)` and
@@ -149,7 +149,7 @@ mod tests {
             vec!["title".into(), "Pilot".into()],
             vec!["summary".into(), "First episode".into()],
             vec!["published_at".into(), "1700000123".into()],
-            vec!["a".into(), "30074:agent-pk:show-1".into()],
+            vec!["a".into(), "10154:agent-pk:show-1".into()],
             vec!["duration".into(), "1800".into()],
             vec!["image".into(), "https://img.example/ep-1.jpg".into()],
             vec![
@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(ep.audio_size_bytes, Some(12_345));
         assert_eq!(ep.image_url.as_deref(), Some("https://img.example/ep-1.jpg"));
         let show_ref = ep.show_a_tag.expect("a tag present");
-        assert_eq!(show_ref.kind, 30074);
+        assert_eq!(show_ref.kind, 10154);
         assert_eq!(show_ref.pubkey, "agent-pk");
         assert_eq!(show_ref.d_tag, "show-1");
         assert_eq!(ep.chapters_url.as_deref(), Some("https://chapters.example/ep-1.json"));

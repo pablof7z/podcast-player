@@ -1,4 +1,4 @@
-//! Raw NIP-74 tag-shaped views.
+//! Raw NIP-F4 tag-shaped views.
 //!
 //! These structs hold the values extracted from a Nostr event *before* any
 //! mapping into [`podcast_core::Podcast`] / [`podcast_core::Episode`].
@@ -8,11 +8,11 @@
 //!
 //! No `nostr` crate dependency: we work directly off `Vec<Vec<String>>`
 //! tags as delivered by the NMP kernel. The kernel owns the typed
-//! `Event` reconstruction; this crate owns the NIP-74 schema.
+//! `Event` reconstruction; this crate owns the NIP-F4 schema.
 
 use serde::{Deserialize, Serialize};
 
-/// Parsed `kind:30074` show event.
+/// Parsed `kind:10154` show event (NIP-F4).
 ///
 /// Pubkey and `created_at` come from the wrapping Nostr event header (not
 /// from tags) but are kept here so a parsed `NIP74Show` is self-contained
@@ -42,14 +42,14 @@ pub struct NIP74Show {
 }
 
 impl NIP74Show {
-    /// Stable NIP-33 coordinate string `"30074:<pubkey>:<d-tag>"`.
+    /// Stable NIP-F4 coordinate string `"10154:<pubkey>:<d-tag>"`.
     /// Mirrors `NostrPodcastDiscoveryService.ShowResult.coordinate`.
     pub fn coordinate(&self) -> String {
         format!("{}:{}:{}", super::kinds::KIND_SHOW, self.pubkey, self.d_tag)
     }
 }
 
-/// Parsed `kind:30075` episode event.
+/// Parsed `kind:54` episode event (NIP-F4).
 ///
 /// `PartialEq` only — `duration_secs` carries an `f64` (matching the
 /// `podcast_core::Episode.duration_secs` shape) which doesn't implement
@@ -81,8 +81,8 @@ pub struct NIP74Episode {
     pub audio_sha256_hex: Option<String>,
     /// File size in bytes, if the `imeta` block carries a `size <n>` field.
     pub audio_size_bytes: Option<u64>,
-    /// `["a", "30074:<pubkey>:<show-d>"]` — reference back to the
-    /// parent show event.
+    /// `["a", "10154:<pubkey>:<show-d>"]` — reference back to the
+    /// parent show event (NIP-F4 kind:10154).
     pub show_a_tag: Option<ShowReference>,
     /// `["chapters", <url>, <mime>]`.
     pub chapters_url: Option<String>,
@@ -163,28 +163,28 @@ mod tests {
             categories: vec![],
             created_at: 0,
         };
-        assert_eq!(show.coordinate(), "30074:abc123:podcast:guid:1234");
+        assert_eq!(show.coordinate(), "10154:abc123:podcast:guid:1234");
     }
 
     #[test]
     fn show_reference_round_trips_through_wire() {
         let r = ShowReference {
-            kind: 30074,
+            kind: 10154,
             pubkey: "abc".into(),
             d_tag: "podcast:guid:1".into(),
         };
-        assert_eq!(r.to_wire(), "30074:abc:podcast:guid:1");
+        assert_eq!(r.to_wire(), "10154:abc:podcast:guid:1");
     }
 
     #[test]
     fn parse_error_renders_human_message() {
         assert_eq!(
             ParseError::WrongKind {
-                expected: 30074,
+                expected: 10154,
                 got: 1,
             }
             .to_string(),
-            "wrong event kind: expected 30074, got 1"
+            "wrong event kind: expected 10154, got 1"
         );
         assert_eq!(
             ParseError::MissingTag("d").to_string(),

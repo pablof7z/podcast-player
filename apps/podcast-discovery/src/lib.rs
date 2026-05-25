@@ -1,19 +1,22 @@
-//! `podcast-discovery` — NIP-74 podcast discovery layer.
+//! `podcast-discovery` — NIP-F4 podcast discovery layer.
 //!
-//! Parses Nostr `kind:30074` / `kind:30075` events into raw NIP-74 views
+//! Parses Nostr `kind:10154` / `kind:54` events into raw NIP-F4 views
 //! ([`NIP74Show`], [`NIP74Episode`]) and the `podcast-core` domain rows
 //! they map onto. Also builds the tag sets the kernel-side publisher
 //! consumes when republishing or creating new shows/episodes.
 //!
+//! NIP-F4 uses per-podcast keypairs:
+//!   - kind:10154 — show metadata (replaceable per author)
+//!   - kind:54    — episode event (replaceable per author + d-tag)
+//!   - kind:10064 — author claim (agent key declares ownership of podcast keys)
+//!
 //! ## Scope (M10.A)
 //!
-//! * Schema constants in [`kinds`] — pinned per `Plans/nmp-migration/
-//!   milestones/M10-peer-nostr-blossom.md` and `Plans/nmp-migration/
-//!   02-crates.md` §B (`nmp-nip74`).
+//! * Schema constants in [`kinds`] — pinned per NIP-F4 protocol spec.
 //! * Parse layer ([`parse_show_event`], [`parse_episode_event`]) — total
 //!   functions that turn raw `Vec<Vec<String>>` tags into typed views.
 //! * Build layer ([`podcast_to_show_tags`], [`episode_to_episode_tags`])
-//!   — produce the tag list a NIP-74 publisher signs.
+//!   — produce the tag list a NIP-F4 publisher signs.
 //! * Domain mapping ([`show_to_podcast`], [`episode_to_episode`]) —
 //!   takes the parsed view onto the `podcast_core` domain types so the
 //!   discovery flow lands a usable `Podcast` row in `LibraryProjection`.
@@ -24,13 +27,9 @@
 //!
 //! * No relay I/O. Subscribing, REQ/EOSE handling, and outbox writes
 //!   land in M10.D (`podcast-discovery::nostr` orchestration on top of
-//!   the future `nmp-nip74` NMP crate).
+//!   the future `nmp-nip-f4` NMP crate).
 //! * No Blossom upload. `ImetaInfo` is the seam for the M10.B uploader
 //!   to thread post-upload metadata into the event builder.
-//! * No NIP-F4 cutover. `docs/plan/pod0-nostr-publishing.md` describes a
-//!   future schema change to per-podcast keypairs (kind:10154 /
-//!   kind:54); [`kinds::KIND_AUTHOR_CLAIM`] is the only NIP-F4 hook
-//!   exposed at M10.A.
 //!
 //! ## Doctrine
 //!
@@ -98,7 +97,7 @@ mod round_trip_tests {
         assert_eq!(p2.owner_pubkey_hex.as_deref(), Some("agent-pk"));
         assert_eq!(
             p2.nostr_coordinate.as_deref(),
-            Some("30074:agent-pk:podcast:guid:11111111222233334444555555555555")
+            Some("10154:agent-pk:podcast:guid:11111111222233334444555555555555")
         );
     }
 

@@ -1,7 +1,6 @@
 //! The `pub extern "C"` registration entry point Swift links against to wire
 //! Podcast projections and action namespaces into an [`NmpApp`].
 
-use std::ffi::c_char;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicU64;
 
@@ -10,7 +9,6 @@ use nmp_ffi::NmpApp;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::handle::PodcastHandle;
-use super::helpers::c_string_opt;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
@@ -19,16 +17,12 @@ use crate::store::PodcastStore;
 /// non-null `*mut PodcastHandle` on success; `null` on any failure (null
 /// pointer arguments, slot lock poisoning).
 ///
-/// `viewer_pubkey` is a hex-encoded pubkey (64 chars). NULL is permitted and
-/// treated as "no viewer" (pre-sign-in state).
-///
 /// `app` MUST outlive the returned handle. Call
 /// [`nmp_app_podcast_unregister`] before `nmp_app_free`.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn nmp_app_podcast_register(
     app: *mut NmpApp,
-    viewer_pubkey: *const c_char,
 ) -> *mut PodcastHandle {
     if app.is_null() {
         return std::ptr::null_mut();
@@ -67,9 +61,6 @@ pub extern "C" fn nmp_app_podcast_register(
         search_results.clone(),
         rev.clone(),
     )));
-
-    // Consume the viewer_pubkey argument (used in future projections).
-    let _viewer = c_string_opt(viewer_pubkey);
 
     Box::into_raw(Box::new(PodcastHandle {
         app,

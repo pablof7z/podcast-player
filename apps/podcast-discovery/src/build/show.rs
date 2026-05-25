@@ -1,4 +1,4 @@
-//! Build the tag set for a `kind:30074` show event from a [`Podcast`].
+//! Build the tag set for a `kind:10154` show event (NIP-F4) from a [`Podcast`].
 //!
 //! Port of `NostrPodcastPublisher.publishShow` — the iOS publisher sets
 //! the `["d", "podcast:guid:<uuid>"]` prefix and emits tags in a specific
@@ -28,7 +28,7 @@ pub fn show_content(podcast: &Podcast) -> String {
     podcast.description.clone()
 }
 
-/// Build the tag list for a `kind:30074` show event.
+/// Build the tag list for a `kind:10154` show event (NIP-F4).
 ///
 /// `agent_pubkey` is the hex pubkey of the signer (the agent key that
 /// publishes the show). It's threaded explicitly because this function

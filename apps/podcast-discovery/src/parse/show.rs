@@ -1,4 +1,4 @@
-//! Parse a `kind:30074` Nostr event into a [`NIP74Show`] and map it onto
+//! Parse a `kind:10154` Nostr event (NIP-F4) into a [`NIP74Show`] and map it onto
 //! a [`Podcast`].
 //!
 //! Behavior mirrors `App/Sources/Services/NostrPodcastDiscoveryService
@@ -111,9 +111,9 @@ pub fn show_to_podcast(show: &NIP74Show) -> Podcast {
 /// the cutover because the same Rust value is used everywhere going
 /// forward; the canonical id source becomes this function.
 fn podcast_id_from_coordinate(coordinate: &str) -> PodcastId {
-    // Namespace UUID: stable, chosen once for podcast-discovery NIP-74
+    // Namespace UUID: stable, chosen once for podcast-discovery NIP-F4
     // coordinates. Captured here rather than in podcast-core because the
-    // namespace is a NIP-74 schema concern.
+    // namespace is a NIP-F4 schema concern.
     const NS: Uuid = Uuid::from_bytes([
         0xd9, 0x7c, 0x4d, 0x7d, 0xa1, 0x12, 0x5b, 0x4f, 0x9a, 0x0b, 0x71, 0x12, 0xb6, 0x4c, 0xc3,
         0x2d,
@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(p.language.as_deref(), Some("en"));
         assert_eq!(p.categories, vec!["Tech".to_string()]);
         assert_eq!(p.owner_pubkey_hex.as_deref(), Some("pk"));
-        assert_eq!(p.nostr_coordinate.as_deref(), Some("30074:pk:d-1"));
+        assert_eq!(p.nostr_coordinate.as_deref(), Some("10154:pk:d-1"));
         assert_eq!(p.image_url.as_ref().map(Url::as_str), Some("https://img.example/c.png"));
     }
 

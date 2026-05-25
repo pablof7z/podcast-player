@@ -1,4 +1,4 @@
-//! NIP-74 action payloads.
+//! NIP-F4 action payloads.
 //!
 //! Stable string ids the iOS shell encodes alongside JSON payloads when
 //! it dispatches a discovery/publishing action through the kernel. The
@@ -18,13 +18,13 @@
 use serde::{Deserialize, Serialize};
 
 /// `podcast.nip74.publish_show` — re-publish the agent-owned podcast's
-/// `kind:30074` show event using the latest snapshot of the [`Podcast`]
+/// `kind:10154` show event (NIP-F4) using the latest snapshot of the [`Podcast`]
 /// row identified by `podcast_id`.
 ///
 /// [`Podcast`]: podcast_core::Podcast
 pub const ACTION_PUBLISH_SHOW: &str = "podcast.nip74.publish_show";
 
-/// `podcast.nip74.publish_episode` — publish a `kind:30075` event for an
+/// `podcast.nip74.publish_episode` — publish a `kind:54` event (NIP-F4) for an
 /// existing episode. The action module is expected to look up the parent
 /// podcast, upload audio/chapters/transcripts to Blossom (M10.B), then
 /// build the tag set via [`crate::build::episode_to_episode_tags`].

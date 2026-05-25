@@ -1,4 +1,4 @@
-//! Build the tag set for a `kind:30075` episode event from an [`Episode`].
+//! Build the tag set for a `kind:54` episode event (NIP-F4) from an [`Episode`].
 //!
 //! The Swift publisher composes the `imeta` block from the post-upload
 //! audio URL + raw audio bytes (for SHA-256). At the M10.A layer we don't
@@ -24,7 +24,7 @@ pub struct ImetaInfo {
     pub duration_secs: Option<u64>,
 }
 
-/// Build the canonical tags for a `kind:30075` event. Convenience wrapper
+/// Build the canonical tags for a `kind:54` event (NIP-F4). Convenience wrapper
 /// around [`episode_to_episode_tags_with_imeta`] for callers that do not
 /// have post-upload metadata in hand.
 pub fn episode_to_episode_tags(
@@ -35,7 +35,7 @@ pub fn episode_to_episode_tags(
     episode_to_episode_tags_with_imeta(episode, show_pubkey, show_d, &ImetaInfo::default())
 }
 
-/// Build the canonical tags for a `kind:30075` event with full `imeta`
+/// Build the canonical tags for a `kind:54` event (NIP-F4) with full `imeta`
 /// metadata. Mirrors the tag order in
 /// `App/Sources/Services/NostrPodcastPublisher.publishEpisode`.
 pub fn episode_to_episode_tags_with_imeta(
@@ -176,7 +176,7 @@ mod tests {
         );
         assert_eq!(
             tags[3],
-            vec!["a".to_string(), "30074:agent-pk:show-d".into()]
+            vec!["a".to_string(), "10154:agent-pk:show-d".into()]
         );
         assert_eq!(
             tags[2],
