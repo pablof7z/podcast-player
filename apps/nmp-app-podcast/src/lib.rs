@@ -35,6 +35,12 @@ pub mod capability;
 pub mod ffi;
 pub mod player;
 
+// M2.F — Android JNI shim. Gated `target_os = "android"` so iOS/macOS builds
+// remain unaffected. The shim exports `Java_io_f7z_podcast_KernelBridge_*`
+// symbols cargo-ndk packs into `libnmp_app_podcast.so`. Same crate, same logic.
+#[cfg(target_os = "android")]
+pub mod android;
+
 pub use capability::{AudioCommand, AudioReport, AUDIO_CAPABILITY_NAMESPACE};
 pub use ffi::{
     nmp_app_podcast_register, nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free,

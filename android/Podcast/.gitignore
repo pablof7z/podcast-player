@@ -1,0 +1,15 @@
+# Gradle outputs
+build/
+.gradle/
+
+# Local IDE / Android Studio
+local.properties
+.idea/
+*.iml
+
+# Compiled native libraries produced by cargo-ndk into jniLibs. These are
+# build artifacts of the `nmp-app-podcast` Rust crate (`apps/nmp-app-podcast/`)
+# and re-built every `./gradlew assembleDebug`. Committing them would lock the
+# git tree to a specific compiler/NDK version and bloat history with binary
+# blobs.
+app/src/main/jniLibs/*/*.so
