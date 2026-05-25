@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct PodcastApp: App {
@@ -8,6 +9,14 @@ struct PodcastApp: App {
     // Compat shim — bridges legacy Identity views' `@Environment(UserIdentityStore.self)`
     // injection. Replaced when functional sign-in lands at M1 exit.
     @State private var identityStore = UserIdentityStore()
+
+    // UIKit app delegate is the only surface that receives
+    // `application(_:handleEventsForBackgroundURLSession:completionHandler:)`,
+    // which the OS calls when it relaunches the app to drain a
+    // background download. The adaptor forwards that hook into
+    // `PodcastCapabilities.shared.download` — see
+    // `PodcastAppDelegate` below.
+    @UIApplicationDelegateAdaptor(PodcastAppDelegate.self) private var appDelegate
 
     // T118 / G3 — iOS scenePhase observer. Routes `.active` / `.background`
     // to the kernel; silently drops `.inactive` (app-switcher interstitial —
@@ -39,6 +48,40 @@ struct PodcastApp: App {
             @unknown default:
                 break
             }
+        }
+    }
+}
+
+// MARK: - Background URLSession handoff
+
+/// Minimal `UIApplicationDelegate` whose sole purpose is to forward the
+/// background-`URLSession` relaunch hook into `DownloadCapability`.
+///
+/// SwiftUI's `App` protocol does not expose
+/// `application(_:handleEventsForBackgroundURLSession:completionHandler:)`,
+/// so we add a tiny adaptor to receive it. The delegate stays empty
+/// otherwise — all other app-lifecycle wiring goes through SwiftUI's
+/// `scenePhase` observer above.
+final class PodcastAppDelegate: NSObject, UIApplicationDelegate {
+
+    /// Called when iOS relaunches the app in the background to deliver
+    /// accrued events for a background `URLSession`. We hand the
+    /// completion handler to the capability; it invokes the handler
+    /// after the session's
+    /// `urlSessionDidFinishEvents(forBackgroundURLSession:)` fires.
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        // `PodcastCapabilities.shared` is `@MainActor`-isolated. The OS
+        // calls this entry point on the main thread; the hop is
+        // synchronous via `MainActor.assumeIsolated` so the OS still has
+        // the completion handler stashed before any delegate event lands.
+        MainActor.assumeIsolated {
+            PodcastCapabilities.shared.download.handleEventsForBackgroundURLSession(
+                identifier: identifier,
+                completionHandler: completionHandler)
         }
     }
 }
