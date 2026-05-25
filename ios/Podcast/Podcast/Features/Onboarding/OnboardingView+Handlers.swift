@@ -6,10 +6,14 @@ import SwiftUI
 // layout and state management. Each handler advances the step after running
 // any side effects (Keychain writes, BYOK connect calls, etc.).
 //
-// NMP migration note: handlers no longer mutate a Swift-side `Settings`
-// struct. Identity fields temporarily seed `agent.profile.*` UserDefaults
-// keys read by `AgentIdentityView`; the remaining settings shadows are TODOs
-// until the Rust settings projection lands.
+// NMP migration note: `finishOnboarding()` now writes the
+// `hasCompletedOnboarding` flag through the Rust `podcast.update_settings`
+// action — the kernel `PodcastStore` is authoritative and persists across
+// launches. Identity name / picture still seed `agent.profile.*`
+// UserDefaults keys read by `AgentIdentityView` (PR 11); BYOK / manual
+// OpenRouter credential persistence still rides on `OpenRouterCredentialStore`
+// + Keychain until the LLM-provider capability lands (see
+// `docs/BACKLOG.md` — "M3 — Settings projection" for the remaining shadows).
 
 extension OnboardingView {
 
@@ -24,8 +28,11 @@ extension OnboardingView {
         apiKeyError = nil
         do {
             try OpenRouterCredentialStore.saveAPIKey(trimmed)
-            // TODO(NMP settings projection): dispatch `markOpenRouterManual`
-            // through the Rust kernel once a settings action namespace exists.
+            // The kernel `settings` projection has no `openRouterMode` field
+            // yet — `OpenRouterCredentialStore` (Keychain) is still the only
+            // persisted side-effect of saving a manual key. See
+            // `docs/BACKLOG.md` — "M3 — Settings projection" for the
+            // remaining LLM-provider credential surface.
             apiKeyDraft = ""
             apiKeySaving = false
             Haptics.success()
@@ -43,10 +50,10 @@ extension OnboardingView {
         defer { isConnectingBYOK = false }
         do {
             let tokens = try await byokConnect.connectPodcastProviders()
-            // TODO(NMP settings projection): persist imported BYOK credentials
-            // via a Rust-kernel action once the settings projection lands.
-            // Until then we still enforce "at least one provider returned" so
-            // the user sees an explicit error if BYOK comes back empty.
+            // BYOK tokens are still consumed by the Swift-side credential
+            // store (Keychain). The kernel `settings` projection has no
+            // BYOK-import surface yet — see `docs/BACKLOG.md`
+            // — "M3 — Settings projection" for the remaining shadow.
             guard !tokens.isEmpty else {
                 throw BYOKConnectError.noProviderKeysReturned
             }
@@ -82,11 +89,17 @@ extension OnboardingView {
     }
 
     func finishOnboarding() {
-        // TODO(NMP settings projection): dispatch `hasCompletedOnboarding`
-        // through the Rust kernel once a settings action namespace exists.
-        // The current shell does not gate any surface on this flag, so the
-        // missing persistence is invisible to the user beyond a repeated
-        // onboarding flow on next launch.
+        // Mark onboarding complete on the kernel side so the flag survives
+        // launches. The handler bumps `rev`; the next snapshot tick re-emits
+        // `settings.hasCompletedOnboarding = true` and any UI that reads
+        // `model.snapshot?.settings.hasCompletedOnboarding` flips accordingly.
+        model.dispatch(
+            namespace: "podcast",
+            body: [
+                "op": "update_settings",
+                "has_completed_onboarding": true,
+            ]
+        )
         Haptics.success()
     }
 }

@@ -58,6 +58,17 @@ pub enum PodcastAction {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         relay_url: Option<String>,
     },
+    /// Patch one or more fields on the kernel-side settings projection.
+    ///
+    /// All fields are `Option` so the iOS shell can patch a single setting
+    /// at a time (e.g. only `has_completed_onboarding`) without round-tripping
+    /// the full snapshot. `None` for a field means "leave existing value
+    /// untouched" — replaces the legacy `updateSettings(Settings)` pattern
+    /// which sent the full struct.
+    UpdateSettings {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        has_completed_onboarding: Option<bool>,
+    },
 }
 
 /// Single action module for the whole `"podcast"` namespace.
@@ -130,6 +141,30 @@ mod tests {
         assert!(json.contains(r#""episode_id":"ep-7""#));
         let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
         assert_eq!(decoded, action);
+    }
+
+    #[test]
+    fn update_settings_action_round_trips() {
+        let action = PodcastAction::UpdateSettings {
+            has_completed_onboarding: Some(true),
+        };
+        let json = serde_json::to_string(&action).expect("encode");
+        assert!(json.contains(r#""op":"update_settings""#));
+        assert!(json.contains(r#""has_completed_onboarding":true"#));
+        let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded, action);
+    }
+
+    #[test]
+    fn update_settings_action_omits_none_fields() {
+        // Empty patch — no field overrides. Useful as a future-proof shape
+        // for "ping with no-op settings update" if it ever becomes useful.
+        let action = PodcastAction::UpdateSettings {
+            has_completed_onboarding: None,
+        };
+        let json = serde_json::to_string(&action).expect("encode");
+        assert!(json.contains(r#""op":"update_settings""#));
+        assert!(!json.contains("has_completed_onboarding"));
     }
 
     #[test]

@@ -1,11 +1,19 @@
 // PodcastTypes.generated.swift
-// Generated — do not hand-edit. Regenerate via:
+// Generated — historically authored by the codegen pipeline below; that
+// pipeline does not exist in the tree yet (no `dump_projection_schemas`
+// binary), so this file is hand-maintained from
+// `apps/nmp-app-podcast/src/ffi/projections.rs` and
+// `apps/nmp-app-podcast/src/ffi/snapshot.rs` until the codegen lands.
+// Keep the camelCase shape in sync with the snake_case Rust source — the
+// runtime decoder uses `.convertFromSnakeCase` so the rename is implicit.
+//
+// Intended regeneration command (once the dumper exists):
 //
 //   cargo run -p nmp-app-podcast --features codegen-schema \
 //       --bin dump_projection_schemas \
 //     | cargo run -p nmp-codegen -- gen swift
 //
-// Source of truth: apps/podcast/nmp-app-podcast/src/ffi/snapshot.rs
+// Source of truth: apps/nmp-app-podcast/src/ffi/snapshot.rs
 
 import Foundation
 
@@ -26,6 +34,20 @@ struct PodcastUpdate: Codable {
     /// ("Up Next"). Mutated kernel-side via `podcast.player.enqueue`,
     /// `dequeue`, `clear_queue`, and `play_next`.
     var queue: [String] = []
+    /// App-settings projection. Defaults to the fresh-install state so the
+    /// iOS shell can read `snapshot.settings.hasCompletedOnboarding` directly
+    /// without an optional-chained `if let`. The Rust side omits the key when
+    /// it equals the default, so legacy payloads decode cleanly.
+    var settings: SettingsSnapshot = SettingsSnapshot()
+}
+
+/// App-settings projection emitted alongside `PodcastUpdate`.
+///
+/// The default value (`hasCompletedOnboarding == false`) is what the wire
+/// payload encodes when the Rust kernel skip-serializes an empty settings
+/// snapshot — older binaries on `Codable` decode see this as a fresh install.
+struct SettingsSnapshot: Codable, Equatable, Hashable {
+    var hasCompletedOnboarding: Bool = false
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).

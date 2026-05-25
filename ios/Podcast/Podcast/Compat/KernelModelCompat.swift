@@ -1,23 +1,23 @@
-// Compat shim — replaced when the kernel snapshot exposes podcast/subscription
-// state (M2) and settings projection (M3+).
+// Compat shim — surviving surface for Nostr conversation/profile projections
+// that have not yet landed on the Rust side. The `settings` projection has
+// been migrated: read `model.snapshot?.settings.hasCompletedOnboarding` and
+// write via `model.dispatch(namespace: "podcast", body: ["op": "update_settings", …])`.
 //
-// The migrated Onboarding + Settings/Agent views were authored against the
-// legacy `AppStateStore`, which surfaced `state.settings`, `updateSettings`,
-// `podcast(feedURL:)`, and `subscription(podcastID:)`. The new KernelModel
-// from M0.B has none of those yet.
-//
-// This file adds them as extension members backed by an in-memory
-// `KernelState` that lives outside the Rust snapshot. The store will be
-// authoritative once the matching projection modules land in `nmp-app-podcast`.
+// What remains: the in-memory `KernelState.nostrConversations` and
+// `KernelState.nostrProfileCache` are still surfaced as compat empty state
+// for Agent > Conversations (blocked on M7 — see `docs/BACKLOG.md`). The
+// agent-trust surface (`pendingNostrApprovals`, `allowNostrPubkey`,
+// `blockNostrPubkey`) is similarly still a no-op stub.
 
 import Foundation
 
 // MARK: - Kernel state (compat)
 
-/// In-memory legacy-shaped state. Replaced when the Rust kernel snapshot
-/// gains projection-level settings + podcast + subscription tables.
+/// In-memory legacy-shaped state. Holds compat empty-state for projections
+/// not yet migrated (Agent conversations + profile cache). The settings
+/// projection moved to the Rust snapshot; read it via
+/// `model.snapshot?.settings` and write via `podcast.update_settings`.
 struct KernelState {
-    var settings: Settings = Settings()
     /// Nostr conversation history surfaced by Agent > Conversations.
     /// Compat: always empty; populated when the Agent projection lands.
     var nostrConversations: [NostrConversationRecord] = []
@@ -50,16 +50,6 @@ extension KernelModel {
         set {
             Self.compatStates[ObjectIdentifier(self)] = newValue
         }
-    }
-
-    /// Legacy settings-update method. Compat: assigns to the in-memory
-    /// state. Persistence will be re-introduced when settings projection
-    /// lands in the Rust kernel.
-    @MainActor
-    func updateSettings(_ newSettings: Settings) {
-        var snapshot = state
-        snapshot.settings = newSettings
-        state = snapshot
     }
 
     /// Legacy podcast-lookup-by-feed. Compat: always returns nil. The
