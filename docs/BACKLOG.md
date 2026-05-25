@@ -38,6 +38,15 @@ These items are prerequisites or follow-up work for specific milestones in `Plan
 - **per-view-emit-rate** — extend `nmp-core` tick loop to support per-view emit rates so agent streaming tokens can hit 30 Hz. Required before M7. File NMP BACKLOG entry when M7 starts.
 - **threading-podcast-peer** — confirm `nmp-threading` exposes the API `podcast-peer` needs; extend if not. Pre-M10.
 
+## NMP Migration — M2.F Android proof follow-ups
+
+The M2.F PR landed a working Rust→JNI→Compose proof; the items below are downstream of that landing.
+
+- **m2f-gradle-wrapper** — vendor `gradlew` + `gradle/wrapper/gradle-wrapper.*` under `android/Podcast/` so first-time contributors don't need Android Studio just to compile. Pre-M3 (when Android picks up audio capability work).
+- **m2f-library-snapshot-payload** — wire `LibraryProjection` (already typed in `apps/podcast-core/`) through `nmp_app_podcast_snapshot` so the Compose `LazyColumn` renders real subscriptions. Blocked on the M2.A snapshot serializer landing. Then drop the README's "renders nothing yet" caveat.
+- **m2f-jni-shim-location** — once `apps/nmp-app-podcast/src/android.rs` grows beyond ~500 LOC or a sibling crate (e.g. a separate Android app) needs to consume the JNI, split it into `nmp-app-podcast-android-ffi` mirroring NMP's `nmp-android-ffi` pattern. Not blocking M3; defer until pain hits.
+- **m2f-real-signin-sheet** — replace the stub `signinNsec` button in `MainActivity.kt` with a real nsec entry sheet that routes through the Keychain capability (mirror of `ios/Podcast/Features/Identity/`). Blocked on Android Keychain capability impl.
+
 ## NMP Migration — M1.E compat shims to remove
 
 The M1.E build-compat layer at `ios/Podcast/Podcast/Compat/` is staging

@@ -14,7 +14,12 @@ name = "nmp_app_podcast"
 # their own archive (doctrine D0 forbids `nmp-core` from carrying
 # podcast-domain nouns, so they cannot be re-exported through
 # `libnmp_core.a`).
-crate-type = ["staticlib", "rlib"]
+#
+# `cdylib` is added for M2.F: cargo-ndk packs the same crate as a
+# `libnmp_app_podcast.so` for Android, exposing the JNI shim in
+# `src/android.rs` (gated `#[cfg(target_os = "android")]`). Same cargo
+# binary, second platform.
+crate-type = ["staticlib", "rlib", "cdylib"]
 
 [features]
 # Persistent local cache / publish-intent ledger for offline-first Podcast.
@@ -50,3 +55,11 @@ zeroize = { version = "1", features = ["derive"] }
 # can spin up a real `NmpApp` rather than mocking the slot.
 nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core", features = ["test-support"] }
 nmp-ffi = { path = "../../../nostrmultiplatform/crates/nmp-ffi", features = ["test-support"] }
+
+# ── Android JNI shim ──────────────────────────────────────────────────────
+#
+# M2.F second-platform proof. `jni` is only linked when cargo targets
+# `*-linux-android`, so iOS/macOS builds remain unaffected. cargo-ndk drives
+# the cross-compile (see `android/Podcast/app/build.gradle.kts`).
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "0.21", default-features = false }
