@@ -18,6 +18,9 @@ import Foundation
 ///   - `AudioCapability`       — AVPlayer-backed audio (`nmp.audio.capability`)
 ///   - `DownloadCapability`    — URLSession background downloads
 ///                                (`nmp.download.capability`)
+///   - `NotificationCapability` — UNUserNotificationCenter scheduler
+///                                (`nmp.notification.capability`). Feature
+///                                #20: new-episode local notifications.
 ///   - `PlatformCapability`    — passive platform-integration executor
 ///                                (widget App Group writes, NSUserActivity
 ///                                donations, …). Driven by snapshot ticks,
@@ -56,6 +59,7 @@ final class PodcastCapabilities {
     let legacyIO: LegacyIOCapability
     let audio: AudioCapability
     let download: DownloadCapability
+    let notification: NotificationCapability
     let platform: PlatformCapability
     /// iCloud settings sync (`pcst.icloud_sync.capability`). Passive —
     /// driven by KVS notifications and the snapshot poll, not by
@@ -71,6 +75,7 @@ final class PodcastCapabilities {
         legacyIO: LegacyIOCapability = LegacyIOCapability(),
         audio: AudioCapability = AudioCapability(),
         download: DownloadCapability = DownloadCapability(),
+        notification: NotificationCapability = NotificationCapability(),
         platform: PlatformCapability = PlatformCapability(),
         iCloudSync: iCloudSyncCapability = iCloudSyncCapability()
     ) {
@@ -80,6 +85,7 @@ final class PodcastCapabilities {
         self.legacyIO = legacyIO
         self.audio = audio
         self.download = download
+        self.notification = notification
         self.platform = platform
         self.iCloudSync = iCloudSync
     }
@@ -98,6 +104,7 @@ final class PodcastCapabilities {
         legacyIO.start()
         audio.start()
         download.start()
+        notification.start()
         platform.start()
     }
 
@@ -116,6 +123,7 @@ final class PodcastCapabilities {
         legacyIO.stop()
         audio.stop()
         download.stop()
+        notification.stop()
         platform.stop()
         iCloudSync.stop()
     }
@@ -152,6 +160,8 @@ final class PodcastCapabilities {
             return audio.handleJSON(requestJSON)
         case DownloadCapability.namespace:
             return download.handleJSON(requestJSON)
+        case NotificationCapability.namespace:
+            return notification.handleJSON(requestJSON)
         default:
             // D6 — an unknown namespace is data, not a crash. Echo the
             // correlation id so the issuing kernel module can still correlate.

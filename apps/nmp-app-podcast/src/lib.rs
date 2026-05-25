@@ -37,6 +37,7 @@ pub(crate) mod discover_nostr;
 pub mod download;
 pub mod ffi;
 pub(crate) mod host_op_handler;
+pub(crate) mod host_op_handler_helpers;
 pub(crate) mod itunes_search;
 pub mod player;
 pub mod store;
