@@ -57,6 +57,12 @@ use crate::memory_handler;
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
 use crate::tasks_handler;
+use crate::ffi::actions::tts_module::TtsEpisodeAction;
+use crate::ffi::projections::{EpisodeSummary, PodcastSummary, TtsEpisodeSummary};
+use crate::host_op_helpers::{merge_episodes, parse_itunes_results, url_encode};
+use crate::player::PlayerActor;
+use crate::store::PodcastStore;
+use crate::tts::TtsEpisodeHandler;
 
 pub struct PodcastHostOpHandler {
     app: *mut NmpApp,
@@ -71,6 +77,7 @@ pub struct PodcastHostOpHandler {
     picks: Arc<Mutex<Vec<AgentPickSummary>>>,
     agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
     knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
+    tts: TtsEpisodeHandler,
     rev: Arc<AtomicU64>,
 }
 
@@ -103,6 +110,18 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
     ) -> Self {
         Self { app, store, player_actor, search_results, agent_tasks, rev }
+        tts_episodes: Arc<Mutex<Vec<TtsEpisodeSummary>>>,
+        rev: Arc<AtomicU64>,
+    ) -> Self {
+        let tts = TtsEpisodeHandler::new(app, tts_episodes, rev.clone());
+        Self {
+            app,
+            store,
+            player_actor,
+            search_results,
+            tts,
+            rev,
+        }
     }
         knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
         rev: Arc<AtomicU64>,
@@ -753,6 +772,8 @@ impl HostOpHandler for PodcastHostOpHandler {
             return crate::knowledge::handle_knowledge_action(a, &self.store, &self.knowledge_search_results, &self.rev);
         if let Ok(action) = serde_json::from_str::<MemoryAction>(action_json) {
             return memory_handler::handle(action, &self.store, &self.rev);
+        if let Ok(action) = serde_json::from_str::<TtsEpisodeAction>(action_json) {
+            return self.tts.handle(action, correlation_id);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }

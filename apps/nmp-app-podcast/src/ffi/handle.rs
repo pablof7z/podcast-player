@@ -11,6 +11,7 @@ use crate::ffi::projections::{PodcastSummary, WikiArticle};
 use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
 use crate::ffi::projections::{AgentTaskSummary, PodcastSummary};
 use crate::ffi::projections::{KnowledgeSearchResult, PodcastSummary};
+use crate::ffi::projections::{PodcastSummary, TtsEpisodeSummary};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::PodcastStore;
@@ -68,6 +69,13 @@ pub struct PodcastHandle {
     /// `build_snapshot_payload` on the main thread. Mirrors the
     /// `search_results` shape so the snapshot reads stay symmetric.
     pub(super) knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
+    /// In-memory list of agent-generated TTS episodes (feature #43).
+    /// Written by the `podcast.tts.*` action handlers on the actor thread;
+    /// read by `build_snapshot_payload` on the main thread. Not persisted
+    /// across kernel lifetimes — disk-backed storage is a follow-up once
+    /// the LLM-script generator lands and these become user-visible
+    /// artefacts worth keeping.
+    pub(super) tts_episodes: Arc<Mutex<Vec<TtsEpisodeSummary>>>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

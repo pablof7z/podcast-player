@@ -103,6 +103,10 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     /// Agent-memory bag (feature #33). `nil` on the wire (the kernel
     /// omits empty `Vec` payloads); call sites read `memoryFacts ?? []`.
     var memoryFacts: [MemoryFact]? = nil
+    /// Agent-generated TTS episodes (feature #43). Empty when the user
+    /// hasn't generated any yet — the Rust kernel omits the field in
+    /// that case, so the optional decode degrades to `[]`.
+    var ttsEpisodes: [TtsEpisodeSummary]? = nil
 }
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
@@ -359,4 +363,17 @@ struct MemoryFact: Codable, Identifiable, Equatable, Hashable {
     var value: String
     var source: String
     var createdAt: Int
+/// One agent-generated TTS episode row surfaced via
+/// `PodcastUpdate.ttsEpisodes` (feature #43). The `script` is the
+/// plain-text body the voice executor will speak when the user taps
+/// play. `status` is one of `"generating_script"` | `"ready"` |
+/// `"played"`; the iOS list renders it as a chip beside the title.
+struct TtsEpisodeSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var title: String
+    var script: String
+    var durationEstimateSecs: Double
+    var createdAt: Int
+    var status: String
+    var voiceId: String? = nil
 }

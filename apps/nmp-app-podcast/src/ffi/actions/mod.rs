@@ -67,6 +67,7 @@ pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
 pub mod tasks_module;
+pub mod tts_module;
 pub mod voice;
 pub mod wiki_module;
 
@@ -82,6 +83,10 @@ pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};
 pub use wiki_module::{WikiAction, WikiActionModule};
 pub use tasks_module::{AgentTasksAction, AgentTasksModule};
+pub use tts_module::{
+    TtsEpisodeAction, TtsEpisodeModule, ACTION_TTS_DELETE, ACTION_TTS_GENERATE, ACTION_TTS_PLAY,
+    TTS_NAMESPACE,
+};
 
 use serde::{Deserialize, Serialize};
 

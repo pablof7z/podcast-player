@@ -58,6 +58,15 @@ struct AdvancedView: View {
                         systemImage: "brain"
                     )
                 }
+                    TtsEpisodesView()
+                } label: {
+                    advancedRow(
+                        title: "AI Episodes",
+                        subtitle: "Generate short narrated episodes about any topic",
+                        systemImage: "waveform"
+                    )
+                }
+                .accessibilityIdentifier("advanced-tts-episodes")
             }
             Section {
                 NavigationLink {

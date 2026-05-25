@@ -86,6 +86,7 @@ mod tests {
             picks: Arc::new(Mutex::new(Vec::<AgentPickSummary>::new())),
             agent_tasks: Arc::new(Mutex::new(Vec::new())),
             knowledge_search_results: Arc::new(Mutex::new(Vec::new())),
+            tts_episodes: Arc::new(Mutex::new(Vec::new())),
         })
     }
 

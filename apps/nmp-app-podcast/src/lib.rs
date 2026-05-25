@@ -48,6 +48,7 @@ pub(crate) mod picks_handler;
 pub mod knowledge;
 pub(crate) mod itunes_search;
 pub(crate) mod memory_handler;
+pub(crate) mod host_op_helpers;
 pub mod player;
 pub(crate) mod social_handler;
 pub(crate) mod host_op_handler_itunes;
@@ -57,6 +58,7 @@ pub mod store;
 pub(crate) mod transcript;
 pub(crate) mod wiki;
 pub(crate) mod tasks_handler;
+pub(crate) mod tts;
 
 // M2.F — Android JNI shim. Gated `target_os = "android"` so iOS/macOS builds
 // remain unaffected. The shim exports `Java_io_f7z_podcast_KernelBridge_*`
