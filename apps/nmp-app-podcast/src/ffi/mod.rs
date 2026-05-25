@@ -74,6 +74,12 @@ pub use actions::{
     StopVoiceAction, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
     ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD, ACTION_PLAYER_DOWNLOAD,
     ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD, ACTION_PLAYER_PLAY,
+    AgentActionModule, AgentChatAction, CancelAllDownloadsAction, CancelDownloadAction,
+    DownloadEpisodeAction, PauseAction, PauseDownloadAction, PlayAction, PlayerAction,
+    PlayerActionModule, PodcastAction, PodcastActionModule, ResumeDownloadAction, SeekAction,
+    SetSleepTimerAction, SetSpeedAction, SetVoiceAction, SetVolumeAction, SpeakAction, StopAction,
+    StopVoiceAction, ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, ACTION_PLAYER_CANCEL_DOWNLOAD,
+    ACTION_PLAYER_DOWNLOAD, ACTION_PLAYER_PAUSE, ACTION_PLAYER_PAUSE_DOWNLOAD, ACTION_PLAYER_PLAY,
     ACTION_PLAYER_RESUME_DOWNLOAD, ACTION_PLAYER_SEEK, ACTION_PLAYER_SET_SLEEP_TIMER,
     ACTION_PLAYER_SET_SPEED, ACTION_PLAYER_SET_VOLUME, ACTION_PLAYER_STOP, ACTION_TTS_DELETE,
     ACTION_TTS_GENERATE, ACTION_TTS_PLAY, ACTION_VOICE_SET_VOICE, ACTION_VOICE_SPEAK,
@@ -105,6 +111,9 @@ pub use projections::{
     TtsEpisodeSummary, VoiceState,
     DownloadQueueSnapshot, EpisodeSummary, InboxItem, PendingApprovalSnapshot, PodcastSummary,
     VoiceState,
+    AccountSummary, AgentMessageSummary, AgentSnapshot, BriefingSnapshot, ConversationsSnapshot,
+    DownloadItemSnapshot, DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot,
+    PodcastSummary, VoiceState,
 };
 pub use register::nmp_app_podcast_register;
 pub use snapshot::{

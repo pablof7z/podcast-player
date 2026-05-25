@@ -33,11 +33,13 @@
 
 pub(crate) mod briefings_handler;
 pub(crate) mod ai_chapters;
+pub(crate) mod agent_handler;
 pub mod capability;
 pub(crate) mod chapter;
 pub(crate) mod discover_nostr;
 pub(crate) mod comments_handler;
 pub mod download;
+pub(crate) mod episode_merge;
 pub mod ffi;
 pub(crate) mod host_op_handler;
 pub(crate) mod host_op_handler_helpers;

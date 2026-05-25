@@ -53,6 +53,9 @@ use super::projections::{
     BriefingSnapshot, ClipSummary, ConversationsSnapshot, DownloadItemSnapshot,
     DownloadQueueSnapshot, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
     InboxItem, PendingApprovalSnapshot, VoiceState, WidgetSnapshot,
+    AgentMessageSummary, AgentSnapshot, BriefingSnapshot, ConversationsSnapshot,
+    DownloadItemSnapshot, DownloadQueueSnapshot, PendingApprovalSnapshot, VoiceState,
+    WidgetSnapshot,
 };
 use super::snapshot::PodcastUpdate;
 use crate::player::PlayerState;
@@ -206,14 +209,24 @@ fn snapshot_with_widget_round_trips() {
 
 #[test]
 fn snapshot_with_agent_round_trips() {
-    let agent = ConversationsSnapshot {
-        active_count: 2,
-        pending_approvals: vec![PendingApprovalSnapshot {
-            id: "ap-1".into(),
-            description: "publish".into(),
-            requested_at: 1_700_000_000,
-        }],
-        latest_conversation_id: Some("conv-1".into()),
+    let agent = AgentSnapshot {
+        messages: vec![
+            AgentMessageSummary {
+                id: "m1".into(),
+                role: "user".into(),
+                content: "hello".into(),
+                created_at: 1_700_000_000,
+                is_generating: false,
+            },
+            AgentMessageSummary {
+                id: "m2".into(),
+                role: "assistant".into(),
+                content: "I'm thinking about your question…".into(),
+                created_at: 1_700_000_001,
+                is_generating: false,
+            },
+        ],
+        is_busy: false,
     };
     let snap = PodcastUpdate {
         agent: Some(agent.clone()),
@@ -225,18 +238,23 @@ fn snapshot_with_agent_round_trips() {
 }
 
 #[test]
-fn pending_approval_snapshot_omits_unset_fields() {
-    let agent = ConversationsSnapshot {
+fn conversations_snapshot_legacy_shape_still_round_trips() {
+    // `ConversationsSnapshot` is the legacy multi-conversation projection
+    // shape kept available for the future `ConversationActor`-backed
+    // surface (it is no longer wired into `PodcastUpdate.agent`).
+    // Lock its public Codable contract so the type isn't accidentally
+    // broken while the new `AgentSnapshot` projection lives in parallel.
+    let convo = ConversationsSnapshot {
         active_count: 0,
         pending_approvals: vec![],
         latest_conversation_id: None,
     };
-    let json = serde_json::to_string(&agent).expect("encode");
-    // `latest_conversation_id: None` should be skipped; the other
-    // fields are always present.
+    let json = serde_json::to_string(&convo).expect("encode");
     assert!(!json.contains("latest_conversation_id"));
     assert!(json.contains("\"active_count\":0"));
     assert!(json.contains("\"pending_approvals\":[]"));
+    let _: ConversationsSnapshot = serde_json::from_str(&json).expect("decode");
+    let _ = PendingApprovalSnapshot::default();
 }
 
 #[test]

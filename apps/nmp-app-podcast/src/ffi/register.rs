@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 
 use nmp_ffi::NmpApp;
 
@@ -14,6 +14,7 @@ use super::actions::knowledge_module::KnowledgeActionModule;
 use super::actions::memory_module::MemoryActionModule;
 use super::actions::clip_module::ClipActionModule;
 use super::actions::inbox_module::InboxActionModule;
+use super::actions::agent_module::AgentActionModule;
 use super::actions::player_module::PlayerActionModule;
 use super::actions::podcast_module::PodcastActionModule;
 use super::actions::queue_module::QueueActionModule;
@@ -30,6 +31,7 @@ use crate::store::PodcastStore;
 use crate::tasks_handler;
 use super::actions::publish_module::NipF4PublishModule;
 use super::handle::PodcastHandle;
+use crate::agent_handler::AgentChatHandler;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
 use crate::store::{PodcastKeyStore, PodcastStore};
@@ -106,6 +108,10 @@ pub extern "C" fn nmp_app_podcast_register(
     app_mut.register_action::<PodcastActionModule>();
     app_mut.register_action::<PlayerActionModule>();
     app_mut.register_action::<VoiceActionModule>();
+    // (playback), and "podcast.agent" (single-thread chat scaffold).
+    app_mut.register_action::<PodcastActionModule>();
+    app_mut.register_action::<PlayerActionModule>();
+    app_mut.register_action::<AgentActionModule>();
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -129,10 +135,20 @@ pub extern "C" fn nmp_app_podcast_register(
     let podcast_keys = Arc::new(Mutex::new(PodcastKeyStore::new()));
     let publish_state = Arc::new(Mutex::new(HashMap::new()));
     let voice_state = Arc::new(Mutex::new(VoiceState::default()));
+    let conversation = Arc::new(Mutex::new(Vec::new()));
+    let agent_busy = Arc::new(AtomicBool::new(false));
+    let agent_touched = Arc::new(AtomicBool::new(false));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
     // Subsequent increments happen in PodcastHostOpHandler on store writes.
     let rev = Arc::new(AtomicU64::new(1));
+
+    let agent_chat = AgentChatHandler::new(
+        conversation.clone(),
+        agent_busy.clone(),
+        agent_touched.clone(),
+        rev.clone(),
+    );
 
     // Install the host-op handler (requires &self, so take the ref AFTER the
     // &mut borrow above is released by the block end).
@@ -158,6 +174,7 @@ pub extern "C" fn nmp_app_podcast_register(
         rev.clone(),
         podcast_keys.clone(),
         publish_state.clone(),
+        agent_chat,
     )));
 
     Box::into_raw(Box::new(PodcastHandle {
@@ -182,5 +199,8 @@ pub extern "C" fn nmp_app_podcast_register(
         podcast_keys,
         publish_state,
         voice_state,
+        conversation,
+        agent_busy,
+        agent_touched,
     }))
 }

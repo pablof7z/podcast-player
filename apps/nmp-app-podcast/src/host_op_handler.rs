@@ -15,6 +15,7 @@ use podcast_feeds::client::{build_feed_request, handle_feed_response, FeedResult
 use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
 
 use crate::ai_chapters::handle_compile_chapters;
+use crate::agent_handler::AgentChatHandler;
 use crate::capability::{
     notification_command_json, AudioCommand, DownloadCommand, NotificationCommand,
     AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE, NOTIFICATION_CAPABILITY_NAMESPACE,
@@ -22,6 +23,8 @@ use crate::capability::{
 use crate::chapter::handle_fetch_chapters;
 use crate::discover_nostr;
 use crate::ffi::actions::chapters_module::ChaptersAction;
+use crate::episode_merge::merge_episodes;
+use crate::ffi::actions::agent_module::AgentChatAction;
 use crate::ffi::actions::player_module::PlayerAction;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::actions::queue_module::QueueAction;
@@ -120,6 +123,7 @@ pub struct PodcastHostOpHandler {
     search_results: Arc<Mutex<Vec<PodcastSummary>>>,
     pub(crate) voice_state: Arc<Mutex<VoiceState>>,
     pub(crate) rev: Arc<AtomicU64>,
+    agent_chat: AgentChatHandler,
 }
 
 unsafe impl Send for PodcastHostOpHandler {}
@@ -143,6 +147,7 @@ impl PodcastHostOpHandler {
         wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
         wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
         rev: Arc<AtomicU64>,
+        agent_chat: AgentChatHandler,
     ) -> Self {
         Self { app, store, player_actor, search_results, wiki_articles, wiki_search_results, rev }
         picks: Arc<Mutex<Vec<AgentPickSummary>>>,
@@ -186,6 +191,7 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
     ) -> Self {
         Self { app, store, player_actor, search_results, voice_state, rev }
+        Self { app, store, player_actor, search_results, nostr_results, rev, agent_chat }
     }
         knowledge_search_results: Arc<Mutex<Vec<KnowledgeSearchResult>>>,
         rev: Arc<AtomicU64>,
@@ -867,6 +873,9 @@ impl HostOpHandler for PodcastHostOpHandler {
         }
         if let Ok(action) = serde_json::from_str::<VoiceAction>(action_json) {
             return voice_handler::handle(self, action, correlation_id);
+        }
+        if let Ok(action) = serde_json::from_str::<AgentChatAction>(action_json) {
+            return self.agent_chat.handle(action);
         }
         serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }
