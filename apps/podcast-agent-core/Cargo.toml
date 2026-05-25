@@ -1,0 +1,26 @@
+[package]
+name = "podcast-agent-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Agent-chat domain types and conversation state machine for the podcast app. Pure data layer — no FFI, no kernel deps, no async."
+
+[lib]
+name = "podcast_agent_core"
+
+[dependencies]
+# Domain types the agent reasons over (episodes, transcripts, podcasts).
+# Pulled in so `AgentTask::Transcribe { episode_id }` etc. can later
+# tighten to `EpisodeId` without a Cargo churn. For M7.A the task ids
+# stay as `String` per the spec — `podcast-core` is the forward hook.
+podcast-core = { path = "../podcast-core" }
+# `podcast-transcripts` is intentionally NOT depended on at M7.A:
+# the agent-loop skeleton consumes no type from that crate yet. M7.B
+# wires the dep when the tool dispatcher needs `TranscriptChunk` for
+# RAG context assembly. Adding an unused dep now would violate Article
+# VII (Simplicity Gate) — start narrow, grow when a real call-site
+# appears.
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }

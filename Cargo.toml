@@ -1,9 +1,10 @@
 [workspace]
 members = [
     "apps/nmp-app-podcast",
+    "apps/podcast-agent-core",
     "apps/podcast-core",
     "apps/podcast-feeds",
-    "apps/podcast-transcripts",
     "apps/podcast-knowledge",
+    "apps/podcast-transcripts",
 ]
 resolver = "2"

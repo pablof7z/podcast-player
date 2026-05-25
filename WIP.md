@@ -19,6 +19,7 @@ Related files:
 - 2026-05-25 - M2.F: Android Compose stub + JNI shim as second-platform proof — branch `m2f/android-proof`, worktree `/Users/pablofernandez/Work/podcast-player-m2f`.
 - 2026-05-25 - M3.B/C: iOS `AudioCapability` executor — AVPlayer wiring + `MPNowPlayingInfoCenter` + `MPRemoteCommandCenter` + audio-session setup against the M3.A `AudioCommand`/`AudioReport` contract. Branch `m3b/ios-audio-capability` worktree `/Users/pablofernandez/Work/podcast-player-m3b`.
 - 2026-05-25 - M6.A: add `apps/podcast-transcripts/` + `apps/podcast-knowledge/` Rust crates (VTT/SRT/JSON parsers, chunker, in-memory knowledge store + cosine search) — branch `m6/transcripts-knowledge` worktree `/Users/pablofernandez/Work/podcast-player-m6`. Stacked on `m2a/podcast-core`.
+- 2026-05-25 - M7.A: `apps/podcast-agent-core/` Rust crate skeleton — agent-chat conversation + approval + task + memory domain types, conversation state machine projection, and agent action constants wired into `nmp-app-podcast`. Branch `m7a/podcast-agent` worktree `/Users/pablofernandez/Work/podcast-player-m7`.
 
 ## Recent History
 

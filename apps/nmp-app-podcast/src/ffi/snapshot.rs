@@ -56,6 +56,14 @@ pub struct PodcastUpdate {
     /// "no-op snapshot" intact.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub downloads: Option<DownloadQueueSnapshot>,
+    /// Agent-chat projection: active conversation count + pending
+    /// approvals queue + the most recently touched conversation id.
+    ///
+    /// `None` until the first agent turn lands during a kernel
+    /// lifetime — preserves byte-identity with the legacy stub.
+    /// The shape is defined alongside [`ConversationsSnapshot`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent: Option<ConversationsSnapshot>,
 }
 
 impl Default for PodcastUpdate {
@@ -66,6 +74,7 @@ impl Default for PodcastUpdate {
             schema_version: 1,
             now_playing: None,
             downloads: None,
+            agent: None,
         }
     }
 }
@@ -122,6 +131,46 @@ pub struct DownloadItemSnapshot {
     /// Most recent failure diagnostic, when `state == "failed"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+/// Snapshot of the agent-chat projection surfaced via
+/// [`PodcastUpdate::agent`].
+///
+/// Built by the future M7.B action-module wiring from a
+/// [`podcast_agent_core::ConversationActor`]. Kept narrow on purpose:
+/// the UI needs the active count + the pending-approvals queue + the
+/// id of the most recently touched conversation; the rest of the
+/// conversation rows are paged in by separate accessors.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct ConversationsSnapshot {
+    /// Number of conversations the actor is currently tracking.
+    pub active_count: usize,
+    /// Outstanding approvals the user still has to decide on.
+    ///
+    /// Sorted oldest-first by the projection layer
+    /// (`podcast_agent_core::sorted_active_approvals`) so the UI can
+    /// render the queue without re-sorting.
+    pub pending_approvals: Vec<PendingApprovalSnapshot>,
+    /// Most recently touched conversation id (UUID rendered as the
+    /// canonical hyphenated string), or `None` when the actor is
+    /// empty. Surfaced as `String` rather than typed `Uuid` so the
+    /// iOS shell's Codable decoder can treat it as a plain id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latest_conversation_id: Option<String>,
+}
+
+/// One row in [`ConversationsSnapshot::pending_approvals`].
+///
+/// `requested_at` is surfaced as a Unix timestamp (seconds since
+/// epoch) rather than ISO-8601 so the iOS view model can compare
+/// against `Date()` without a formatter round-trip — matches the
+/// pattern the legacy `NostrPendingApproval` view code already uses.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct PendingApprovalSnapshot {
+    pub id: String,
+    pub description: String,
+    /// Unix seconds — see struct-level comment.
+    pub requested_at: i64,
 }
 
 /// Build the JSON payload the FFI snapshot function returns. Extracted so
@@ -243,6 +292,42 @@ mod tests {
         assert_eq!(decoded.rev, 7);
         assert!(decoded.now_playing.is_none());
         assert!(decoded.downloads.is_none());
+        assert!(decoded.agent.is_none());
+    }
+
+    #[test]
+    fn snapshot_with_agent_round_trips() {
+        let agent = ConversationsSnapshot {
+            active_count: 2,
+            pending_approvals: vec![PendingApprovalSnapshot {
+                id: "ap-1".into(),
+                description: "publish".into(),
+                requested_at: 1_700_000_000,
+            }],
+            latest_conversation_id: Some("conv-1".into()),
+        };
+        let snap = PodcastUpdate {
+            agent: Some(agent.clone()),
+            ..PodcastUpdate::default()
+        };
+        let json = serde_json::to_string(&snap).expect("encode");
+        let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+        assert_eq!(decoded.agent, Some(agent));
+    }
+
+    #[test]
+    fn pending_approval_snapshot_omits_unset_fields() {
+        let agent = ConversationsSnapshot {
+            active_count: 0,
+            pending_approvals: vec![],
+            latest_conversation_id: None,
+        };
+        let json = serde_json::to_string(&agent).expect("encode");
+        // `latest_conversation_id: None` should be skipped; the other
+        // fields are always present.
+        assert!(!json.contains("latest_conversation_id"));
+        assert!(json.contains("\"active_count\":0"));
+        assert!(json.contains("\"pending_approvals\":[]"));
     }
 
     #[test]
