@@ -8,6 +8,7 @@ use nmp_ffi::NmpApp;
 
 use crate::ffi::projections::{BriefingSnapshot, NostrShowSummary, PodcastSummary};
 use crate::ffi::projections::{PodcastSummary, WikiArticle};
+use crate::ffi::projections::{AgentPickSummary, PodcastSummary};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::PodcastStore;
@@ -50,6 +51,11 @@ pub struct PodcastHandle {
     /// scaffold only mutates `wiki_articles` so search results may go
     /// stale; that's tracked as a follow-up alongside real LLM synthesis).
     pub(super) wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
+    /// AI agent picks, recomputed heuristically after every successful feed
+    /// refresh and on explicit `podcast.picks.refresh` dispatches. Read by
+    /// `build_snapshot_payload` on each tick. See `picks_handler` for the
+    /// compute path.
+    pub(super) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

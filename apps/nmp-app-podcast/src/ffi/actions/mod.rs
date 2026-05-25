@@ -60,6 +60,7 @@
 //! iOS shell links against.
 
 pub mod chapters_module;
+pub mod picks_module;
 pub mod player_module;
 pub mod podcast_module;
 pub mod queue_module;
@@ -67,6 +68,7 @@ pub mod voice;
 pub mod wiki_module;
 
 pub use chapters_module::{ChaptersAction, ChaptersActionModule};
+pub use picks_module::{AgentPicksModule, PicksAction, PICKS_LIMIT, PICKS_PER_SHOW_CAP};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
 pub use queue_module::{QueueAction, QueueActionModule};
