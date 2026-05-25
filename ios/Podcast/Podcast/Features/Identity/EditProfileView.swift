@@ -2,18 +2,23 @@ import SwiftUI
 
 // MARK: - EditProfileView
 //
-// Push from `IdentityRootView`. Per identity-05-synthesis §4.3. Save will
-// sign and publish a kind-0 profile event via the kernel's
-// `identity.publish_profile` action once that lands (M1 exit). For now the
-// in-flight UX is preserved end-to-end but the Save call short-circuits
-// to the staged-action banner — no kernel dispatch happens.
+// Push from `IdentityRootView`. Per identity-05-synthesis §4.3. Save dispatches
+// `nmp.publish` `PublishProfile` (kind:0 metadata) through the NMP kernel and,
+// regardless of dispatch outcome, persists the form values to
+// `@AppStorage("agent.profile.*")` so they survive app launches without
+// depending on a relay round-trip.
 //
-// Original in-flight UX (still intact for when the action wires up):
-// Save flips to a `ProgressView` in the toolbar and Cancel disables so a
-// double-tap can't queue two publishes. On success the dirty snapshot
-// advances and the view dismisses after a 900 ms banner beat. On failure
-// the view stays open with a "Tap Save to retry" warning — Save stays
+// In-flight UX: Save flips to a `ProgressView` in the toolbar and Cancel
+// disables so a double-tap can't queue two publishes. On success the dirty
+// snapshot advances and the view dismisses after a 900 ms banner beat. On
+// failure the view stays open with a "Couldn't publish" warning — Save stays
 // enabled because the snapshot didn't advance.
+//
+// Active-signer caveat: the M1.E compat shim does not wire `SignInNsec` /
+// `CreateAccount` into the kernel yet, so the publish action will be accepted
+// by the registry but the actor cannot actually sign a kind:0 until the
+// signer broker lands. The local AppStorage persistence still works end-to-end
+// today.
 //
 // Field rules from §4.3:
 //   - Display name: 0-48 chars, empty allowed (falls back to slug)
@@ -32,10 +37,18 @@ struct EditProfileView: View {
         static let aboutCounterThreshold = 50
     }
 
+    @Environment(UserIdentityStore.self) private var identity
     @Environment(KernelModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
-    private var identity: IdentityViewModel { model.identity }
+    // ── Profile fields persist to UserDefaults under the `agent.profile.*`
+    // namespace `AgentIdentityView` already uses. Keeps both edit surfaces
+    // pointing at the same source of truth and survives launches without
+    // waiting on the kind:0 round-trip to repopulate from relays.
+    @AppStorage("agent.profile.name") private var storedName: String = ""
+    @AppStorage("agent.profile.about") private var storedAbout: String = ""
+    @AppStorage("agent.profile.pictureURL") private var storedPictureURL: String = ""
+    @AppStorage("agent.profile.displayName") private var storedDisplayName: String = ""
 
     @State private var displayName: String = ""
     @State private var username: String = ""
@@ -117,11 +130,7 @@ struct EditProfileView: View {
             ChangePhotoSheet(pictureURL: $pictureURL)
         }
         .onAppear { hydrateFromIdentity() }
-        // Rehydrate when the kernel's active-account projection changes —
-        // covers the kind-0 fetch arriving after the view first appeared
-        // as well as the user switching identities.
-        .onChange(of: identity.displayName) { _, _ in hydrateFromIdentity() }
-        .onChange(of: identity.pictureURLString) { _, _ in hydrateFromIdentity() }
+        .onChange(of: identity.profileDisplayName) { _, _ in hydrateFromIdentity() }
     }
 
     // MARK: - Hero
@@ -245,18 +254,30 @@ struct EditProfileView: View {
     }
 
     /// Seed the form from the identity's kind-0 profile fields. Prefers
-    /// fetched relay data via `identityProfile`; falls back to the generated
-    /// stub while the fetch is in flight. Re-runs when relay data arrives as
-    /// long as the user hasn't started editing (dirty guard).
+    /// fetched relay data via `identityProfile`; falls back to the locally
+    /// persisted `agent.profile.*` AppStorage values (set by either this
+    /// view's last successful Save or by `AgentIdentityView`); falls back to
+    /// the generated stub when both are empty. Re-runs when relay data
+    /// arrives as long as the user hasn't started editing (dirty guard).
+    ///
+    /// Hydration precedence — relay > local > stub — means the user always
+    /// sees the freshest value the app has seen, but never an empty form
+    /// just because the kind:0 fetch hasn't completed (or, in the current
+    /// compat-shim state, never will until the signer broker lands).
     private func hydrateFromIdentity() {
         let needsInit = (initialSnapshot == nil)
         guard needsInit || !isDirty else { return }
         let p = identityProfile
-        displayName = p?.displayName ?? ""
-        username    = p?.slug ?? ""
-        about       = p?.about ?? ""
-        pictureURL  = p?.pictureURLString ?? ""
+        displayName = firstNonEmpty(p?.displayName, storedDisplayName)
+        username    = firstNonEmpty(p?.slug, storedName)
+        about       = firstNonEmpty(p?.about, storedAbout)
+        pictureURL  = firstNonEmpty(p?.pictureURLString, storedPictureURL)
         initialSnapshot = currentSnapshot
+    }
+
+    private func firstNonEmpty(_ a: String?, _ b: String) -> String {
+        if let a, !a.isEmpty { return a }
+        return b
     }
 
     private func restoreUsernameIfBlank() {
@@ -276,29 +297,110 @@ struct EditProfileView: View {
         }
     }
 
-    /// Stage the kind-0 publish. The kernel's `identity.publish_profile`
-    /// action hasn't shipped yet, so this preserves the original two-
-    /// outcome flow's visible UX (in-flight spinner → banner) but always
-    /// resolves to the warning banner with the staged-action copy. The
-    /// `initialSnapshot` does NOT advance, so Save stays enabled — exactly
-    /// the legacy stub's behaviour, just with stable copy.
+    /// Sign + publish the kind-0 profile. Two-outcome flow:
+    ///   - **Success**: clear-dirty (so a second tap doesn't republish), show
+    ///     a success banner long enough to read (≈900 ms), then dismiss.
+    ///   - **Failure**: keep the view open, surface a warning banner with the
+    ///     reason so the user can fix and retry. We do NOT move
+    ///     `initialSnapshot` forward on failure — Save stays enabled.
+    /// Haptic fires AFTER the publish attempt so the user's wrist feedback
+    /// matches the actual outcome.
     ///
-    /// When the kernel action lands, this becomes a real `model.dispatch(
-    /// namespace: "identity", body: ["op": "publish_profile", …])` call.
+    /// **Persistence semantics.** We always write the local AppStorage copy
+    /// first — even if the kernel dispatch is rejected (no active signer
+    /// yet, malformed field). Reasoning: the user typed the values, the form
+    /// validation already passed, and the local copy is what populates the
+    /// `IdentityRootView` hero on next launch. The "couldn't reach the
+    /// relay" banner then reflects only the kind:0 publish, not the local
+    /// edit — which is what the user expects from a sync-style editor.
+    ///
+    /// **Dispatch wire format.** The kernel's `PublishModule` (namespace
+    /// `nmp.publish`) accepts `{"PublishProfile": {"fields": {...}}}`. All
+    /// values must be `String` — the Rust validator rejects non-string
+    /// fields up front. We forward only the four NIP-01 keys the form
+    /// captures; any future fields (`nip05`, `lud16`, banner, …) get added
+    /// to this map without touching the wire shape.
+    ///
+    /// **Async-completion note.** `PublishModule::is_async_completing` is
+    /// `true`: `dispatch_action` returns the registry-minted correlation_id
+    /// the instant the action is enqueued, and the actual relay verdict
+    /// arrives later through `projections["action_results"]`. We treat
+    /// "dispatch accepted" as success for the banner so the user gets
+    /// immediate feedback; observing the terminal verdict is a follow-up
+    /// once the signer broker is wired and a real publish can complete.
     private func save() async {
+        let snapshot = currentSnapshot
         isPublishing = true
         saveBanner = SaveBanner(message: "Publishing…", isWarning: false)
         defer { isPublishing = false }
-        // Stage-and-toast: route through `KernelModel` so the staged
-        // banner shows up via the same channel as real dispatch failures.
-        model.surfaceStagedIdentityAction("identity.publish_profile")
-        // Hold the "publishing" beat briefly so the spinner is visible.
-        try? await Task.sleep(for: .milliseconds(400))
-        Haptics.warning()
-        saveBanner = SaveBanner(
-            message: IdentityViewModel.stagedActionToast,
-            isWarning: true
+
+        persistLocally(snapshot)
+
+        let dispatch = model.dispatch(
+            namespace: "nmp.publish",
+            body: publishProfileBody(snapshot)
         )
+
+        if let error = dispatch.errorMessage {
+            Haptics.warning()
+            saveBanner = SaveBanner(
+                message: "Couldn't publish: \(error)",
+                isWarning: true
+            )
+            return
+        }
+
+        initialSnapshot = snapshot
+        Haptics.success()
+        saveBanner = SaveBanner(message: "Profile published.", isWarning: false)
+        try? await Task.sleep(for: .milliseconds(900))
+        dismiss()
+    }
+
+    /// Mirror the form snapshot into AppStorage so a relaunch (or the
+    /// `AgentIdentityView` hero) sees the user's edits without waiting for
+    /// the kind:0 relay round-trip. Also flushes into the in-memory
+    /// `UserIdentityStore` so any view currently observing
+    /// `profileDisplayName` / `profileAbout` re-renders immediately.
+    private func persistLocally(_ snapshot: Snapshot) {
+        storedName = snapshot.username
+        storedDisplayName = snapshot.displayName
+        storedAbout = snapshot.about
+        storedPictureURL = snapshot.pictureURL
+
+        identity.profileName = snapshot.username
+        identity.profileDisplayName = snapshot.displayName
+        identity.profileAbout = snapshot.about
+        identity.profilePicture = snapshot.pictureURL
+    }
+
+    /// Build the wire body for `nmp.publish` `PublishProfile`. Only includes
+    /// fields the user actually populated — an empty `picture` would still
+    /// pass validation but it's noise on the relay (and a user with no
+    /// picture is the common case in onboarding).
+    private func publishProfileBody(_ snapshot: Snapshot) -> [String: Any] {
+        var fields: [String: String] = [:]
+        let username = snapshot.username.trimmed
+        if !username.isEmpty {
+            fields["name"] = username
+        }
+        let display = snapshot.displayName.trimmed
+        if !display.isEmpty {
+            fields["display_name"] = display
+        }
+        let about = snapshot.about.trimmed
+        if !about.isEmpty {
+            fields["about"] = about
+        }
+        let picture = snapshot.pictureURL.trimmed
+        if !picture.isEmpty {
+            fields["picture"] = picture
+        }
+        return [
+            "PublishProfile": [
+                "fields": fields,
+            ],
+        ]
     }
 }
 

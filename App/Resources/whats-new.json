@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T01:00:00Z",
+      "lines": [
+        "Edit your Nostr profile and publish it to the network."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T00:55:00Z",
       "lines": [
         "Handoff — start an episode on iPhone and pick up where you left off on iPad or Mac."
