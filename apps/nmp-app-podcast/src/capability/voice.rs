@@ -28,8 +28,8 @@
 //!
 //! The namespace string is `nmp.voice.capability` to match the existing
 //! `nmp.audio.capability` / `nmp.download.capability` convention and the
-//! canonical capability spec at `Plans/nmp-migration/03-capabilities.md`
-//! §5.5. (The canonical plan uses `nmp.tts.capability`; M8.A's local
+//! active NMP feature-parity plan. (The canonical plan uses
+//! `nmp.tts.capability`; M8.A's local
 //! contract uses `nmp.voice.capability` to align with the `podcast-voice`
 //! crate naming. M8.B/C will reconcile the namespace string against the
 //! upstream canonical spec in a follow-up migration. The split here is
@@ -39,8 +39,8 @@
 //! ## Schema stability
 //!
 //! This is the M8.A skeleton — a two-enum Command/Report shape. The
-//! canonical `nmp-core::capability::tts` per `03-capabilities.md` §5.5
-//! uses a multi-enum `Open`/`SendText`/`Cancel`/`Close` streaming-session
+//! canonical `nmp-core::capability::tts` uses a multi-enum
+//! `Open`/`SendText`/`Cancel`/`Close` streaming-session
 //! split (`AudioChunk{bytes}` events, etc.). When that lands in
 //! `nostrmultiplatform`, M8.B/C will widen this contract or reconcile
 //! against the canonical one in a follow-up migration. M8.A's shape

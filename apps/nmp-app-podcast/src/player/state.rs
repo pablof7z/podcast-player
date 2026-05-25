@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// `Default::default()` corresponds to "nothing loaded, not playing":
 /// every numeric field is zero; every `Option` is `None`. Per the
-/// snapshot doctrine (`Plans/nmp-migration/04-snapshot.md` §D5), the
+/// snapshot doctrine from the active NMP feature-parity plan, the
 /// kernel should serialize `None` for the whole struct when nothing is
 /// queued, not a struct full of zeros — but when an episode *is*
 /// loaded, every field is meaningful.

@@ -5,8 +5,8 @@
 //!
 //! [`PodcastUpdate`] is the typed root of the JSON the kernel emits on every
 //! tick. The iOS shell decodes it via `Codable`. Fields are added milestone by
-//! milestone (see `Plans/nmp-migration/04-snapshot.md` for the full target
-//! shape).
+//! milestone. The struct below is the source of truth for the emitted wire
+//! shape.
 //!
 //! For M3.A the only new field is `now_playing: Option<PlayerState>`. M4.A
 //! adds `downloads: Option<DownloadQueueSnapshot>`. M7.A adds
@@ -39,8 +39,8 @@ use crate::player::PlayerState;
 ///
 /// `running`, `rev`, and `schema_version` mirror the kernel's existing
 /// tick contract. `now_playing` lands at M3.A; subsequent milestones add
-/// more fields (`podcasts`, `today_queue`, `triage`, …) per
-/// `Plans/nmp-migration/04-snapshot.md`.
+/// more fields (`podcasts`, `today_queue`, `triage`, ...) as feature slices
+/// land.
 ///
 /// Forward compatibility: Swift's `Codable` round-trip tolerates unknown
 /// fields, so introducing a new field here only needs a matching Swift

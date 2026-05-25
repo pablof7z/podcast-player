@@ -37,7 +37,7 @@
 //!   parse + build path deterministically.
 //! * **No `nostr` crate dep** — we work directly off `Vec<Vec<String>>`
 //!   tags as delivered by the NMP kernel. The kernel owns typed event
-//!   reconstruction; this crate owns the NIP-74 schema.
+//!   reconstruction; this crate owns the NIP-F4 schema.
 //! * **300 LOC soft / 500 LOC hard** per file (matches AGENTS.md).
 
 pub mod actions;

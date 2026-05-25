@@ -9,8 +9,8 @@ import kotlinx.serialization.json.Json
  *
  * Every field on the Rust struct has a matching property here so the Compose
  * shell can render any state the kernel projects. New fields land on both
- * sides simultaneously — see `Plans/nmp-migration/04-snapshot.md` for the
- * canonical wire shape and `nmp-migration-m13.md` for the M13.A scope.
+ * sides simultaneously. The canonical wire shape lives in
+ * `apps/nmp-app-podcast/src/ffi/snapshot.rs`.
  *
  * Every field below this line is optional / defaulted so the existing payload
  * still decodes. As later milestones (M1, M2.A, M3.A, M9.A, …) extend

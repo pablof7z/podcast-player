@@ -26,13 +26,13 @@
 //!
 //! The namespace string is `nmp.download.capability` to match
 //! `HttpCapability::namespace` / `KeychainCapability` convention and the
-//! canonical capability spec at `Plans/nmp-migration/03-capabilities.md` §5.2.
+//! active NMP feature-parity plan.
 //!
 //! ## Schema stability
 //!
 //! This is the M4.A skeleton — a podcast-local two-enum Command/Report shape.
-//! The canonical `nmp-core::capability::download` per `03-capabilities.md`
-//! §5.2 uses a three-enum `Request`/`Response`/`Event` split with task ids,
+//! The canonical `nmp-core::capability::download` uses a three-enum
+//! `Request`/`Response`/`Event` split with task ids,
 //! `dest_path`, `etag`, and `if_modified_since` for conditional fetches.
 //! When that lands in `nostrmultiplatform`, M4.B/C will reconcile this
 //! contract against the canonical one in a follow-up migration. The split
