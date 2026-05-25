@@ -115,7 +115,10 @@ extension AudioCapability {
         // D7: capability reports, never decides. End-of-item is a
         // `Stopped` report; what happens next (auto-advance, mark as
         // played) is the player actor's call.
+        //
+        // `emitReport(.stopped)` folds through `updateNowPlayingForReport`
+        // which clears the lock-screen dictionary; no separate
+        // `clearNowPlaying()` call needed.
         emitReport(.stopped)
-        clearNowPlaying()
     }
 }

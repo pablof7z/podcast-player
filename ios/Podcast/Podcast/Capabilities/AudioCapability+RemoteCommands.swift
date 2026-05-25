@@ -6,31 +6,34 @@ import MediaPlayer
 // The lock-screen play button, AirPods double-tap, CarPlay buttons, and
 // any other system-driven remote command all route through
 // `MPRemoteCommandCenter.shared()`. The executor registers handlers that
-// translate each tap into an `AudioReport` (or, where the capability
-// already owns the immediate side effect, a direct command execution).
+// translate each tap into a direct `AudioCommand` execution — and
+// nothing more.
 //
-// D7 — *never* decide. Every tap is reported back to Rust as a report.
-// In particular: the lock-screen "skip forward 30 s" button does NOT
-// compute the new playhead in Swift. It emits a `Paused`-flavoured tap
-// report (or, in the canonical spec, a `RemoteCommand{kind: .skip(30)}`
-// report); Rust then decides where to seek and sends a `Seek` command
-// back.
+// D7 — *never* decide. The handlers here only cover taps where the
+// command-to-execute is unambiguous from the system event:
 //
-// **M3.B caveat.** The canonical spec §5.1 defines a `RemoteCommand`
-// report variant the M3.A skeleton does not yet ship. Until the
-// canonical shape lands we round-trip remote-command intents through
-// `AudioReport.paused` (for play/pause) so the kernel still sees the
-// transition, and we model skip/seek as a direct `Seek` *command*
-// execution that *also* emits a synthesised report — see
-// `applyRemoteSkip(_:)`. This is the smallest workable shape for M3.B;
-// the full RemoteCommand vocabulary lands when the canonical
-// capability migrates from `nostrmultiplatform`.
+//   - play             → `AudioCommand.play`
+//   - pause            → `AudioCommand.pause`
+//   - togglePlayPause  → `play` / `pause` based on `timeControlStatus`
+//   - changePlaybackPosition → `AudioCommand.seek(positionSecs: <event>)`
+//                              (the system event carries the absolute
+//                               target; the capability does *not*
+//                               compute it)
+//
+// Skip-forward / skip-backward are **deliberately omitted** at this
+// milestone. A skip interval is a Rust policy decision (chapter snap,
+// smart-skip, user-configurable forward/back, episode boundary). The
+// canonical spec §5.1 ships a `RemoteCommand{kind: .skipForward(secs)}`
+// report variant so the executor can forward the tap to Rust without
+// computing the new playhead in Swift; the M3.A skeleton does not yet
+// ship that variant. Skip wiring lands when the canonical
+// `RemoteCommand` shape migrates (BACKLOG entry: skip-remote-command).
 
 @MainActor
 extension AudioCapability {
 
-    /// Idempotent. Wires the play / pause / toggle / scrub / skip
-    /// handlers. Called from `AudioCapability.start()`.
+    /// Idempotent. Wires the play / pause / toggle / scrub handlers.
+    /// Called from `AudioCapability.start()`.
     func installRemoteCommands() {
         let center = MPRemoteCommandCenter.shared()
 
@@ -61,9 +64,11 @@ extension AudioCapability {
             }
         }
 
-        // Scrub — system supplies an absolute timestamp; we synthesise
-        // a `Seek` command. The kernel sees the new playhead via the
-        // follow-up `Playing`/`Paused` report.
+        // Scrub — the system event carries an absolute target position
+        // in seconds, so this is *not* a Swift-side decision. The
+        // executor forwards it as a `Seek` command and lets the
+        // follow-up `Playing` / `Paused` report tell Rust where the
+        // playhead actually landed.
         center.changePlaybackPositionCommand.removeTarget(nil)
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard
@@ -72,31 +77,6 @@ extension AudioCapability {
             else { return .commandFailed }
             return MainActor.assumeIsolated {
                 self.execute(.seek(positionSecs: positionEvent.positionTime))
-                return .success
-            }
-        }
-
-        // Skip forward / backward — defaults of 30 s / 15 s match the
-        // legacy engine. The user-configurable values live in Rust and
-        // arrive as `Seek` commands once that policy migrates; this is
-        // the placeholder until then.
-        center.skipForwardCommand.preferredIntervals = [30]
-        center.skipForwardCommand.removeTarget(nil)
-        center.skipForwardCommand.addTarget { [weak self] event in
-            guard let self else { return .commandFailed }
-            let interval = (event as? MPSkipIntervalCommandEvent)?.interval ?? 30
-            return MainActor.assumeIsolated {
-                self.applyRemoteSkip(interval)
-                return .success
-            }
-        }
-        center.skipBackwardCommand.preferredIntervals = [15]
-        center.skipBackwardCommand.removeTarget(nil)
-        center.skipBackwardCommand.addTarget { [weak self] event in
-            guard let self else { return .commandFailed }
-            let interval = (event as? MPSkipIntervalCommandEvent)?.interval ?? 15
-            return MainActor.assumeIsolated {
-                self.applyRemoteSkip(-interval)
                 return .success
             }
         }
@@ -110,25 +90,5 @@ extension AudioCapability {
         center.pauseCommand.removeTarget(nil)
         center.togglePlayPauseCommand.removeTarget(nil)
         center.changePlaybackPositionCommand.removeTarget(nil)
-        center.skipForwardCommand.removeTarget(nil)
-        center.skipBackwardCommand.removeTarget(nil)
-    }
-
-    // MARK: - Helpers
-
-    /// Translate a skip event into a `Seek` command relative to the
-    /// current playhead. The canonical capability spec models this as a
-    /// `RemoteCommand{kind: .skipForward(30)}` report so Rust applies
-    /// its policy (chapter snap, smart-skip) — that variant arrives
-    /// with the canonical migration. Until then we do the addition
-    /// here and emit a follow-up `Seek` to keep behaviour parity.
-    ///
-    /// D7 caveat: this is the only place in the executor that *computes*
-    /// a new playhead from a remote tap. It's flagged for replacement
-    /// by a pure `RemoteCommand` report the moment the canonical shape
-    /// lands; document in the PR description.
-    private func applyRemoteSkip(_ delta: TimeInterval) {
-        let target = currentPosition() + delta
-        execute(.seek(positionSecs: max(0, target)))
     }
 }

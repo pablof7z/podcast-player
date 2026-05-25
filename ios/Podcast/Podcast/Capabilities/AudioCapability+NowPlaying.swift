@@ -67,12 +67,6 @@ extension AudioCapability {
         center.nowPlayingInfo = info
     }
 
-    /// Wipe the dictionary so the lock screen returns to its default
-    /// state. Called from `playerStop()` and `onItemEnd()`.
-    func clearNowPlaying() {
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-    }
-
     // MARK: - Helpers
 
     /// Cheap title derived from the URL's last path component. A real

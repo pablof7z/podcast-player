@@ -220,8 +220,10 @@ final class AudioCapability: NSObject {
         player.replaceCurrentItem(with: nil)
         teardownItemObservers()
         currentURL = nil
+        // emit(.stopped) folds into `updateNowPlayingForReport(.stopped)`
+        // which clears the lock-screen dictionary; no separate
+        // clearNowPlaying() call needed.
         emit(.stopped)
-        clearNowPlaying()
     }
 
     // Observers live in `AudioCapability+Observers.swift` and reach into
