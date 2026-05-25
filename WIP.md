@@ -10,10 +10,11 @@ Related files:
 
 ## Active
 
-- 2026-05-25 - M13.A: Android shell — full snapshot types + action dispatch + audio stub — branch `m13a/android-shell` — worktree `/Users/pablofernandez/Work/podcast-player-m13a`.
-- 2026-05-25 - M13.C+D: Android Compose UI screens — Home, Library, Player, Identity, Settings + bottom-tab navigation — merged PR #27.
-
 ## Recent History
+
+- 2026-05-25 - M13.A: Android shell — full snapshot types + action dispatch + audio stub — merged PR #28.
+- 2026-05-25 - M13.C+D: Android Compose UI screens — Home, Library, Player, Identity, Settings + bottom-tab navigation — merged PR #27.
+- 2026-05-25 - M13 iOS: wire Library + Identity tabs into RootShell; compat stubs for all Library views; shared cargo target dir library search path fix — committed d943f82.
 
 - 2026-05-25 - M0.A: nmp-app-podcast Rust crate skeleton — merged PR #4.
 - 2026-05-25 - M0.B: ios/Podcast xcodegen skeleton + bridge + model — merged PR #6.
