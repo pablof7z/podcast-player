@@ -67,6 +67,7 @@ use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
 
 mod player_actions;
 mod podcast_actions;
+mod podcast_actions_feed;
 mod siri_actions;
 
 /// Kernel-side handler owning every `Arc`d state slot the snapshot reader
