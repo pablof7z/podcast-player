@@ -4,6 +4,7 @@ use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
 
 mod key_persistence;
+mod nipf4_publish;
 mod relay_smoke;
 mod rss_subscribe;
 
@@ -42,5 +43,6 @@ pub fn run_all(
             key_persistence::run(app, handle),
         ),
         ("relay_smoke", relay_smoke::run(app, handle)),
+        ("nipf4_publish", nipf4_publish::run(app, handle)),
     ]
 }
