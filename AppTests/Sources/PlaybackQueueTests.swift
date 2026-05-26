@@ -160,6 +160,81 @@ final class PlaybackQueueTests: XCTestCase {
         XCTAssertTrue(state.queue.isEmpty)
     }
 
+    // MARK: - isQueued
+
+    func testIsQueuedReturnsTrueWhenEpisodeIsInQueue() {
+        let state = PlaybackState()
+        let id = UUID()
+        XCTAssertFalse(state.isQueued(id))
+        state.enqueue(id)
+        XCTAssertTrue(state.isQueued(id))
+        state.removeFromQueue(id)
+        XCTAssertFalse(state.isQueued(id))
+    }
+
+    // MARK: - removeFromQueue(itemID:)
+
+    func testRemoveFromQueueByItemIDDropsMatchingSlot() {
+        let state = PlaybackState()
+        let a = UUID(), b = UUID()
+        state.enqueue(a)
+        state.enqueue(b)
+        let itemID = state.queue[0].id
+
+        state.removeFromQueue(itemID: itemID)
+
+        XCTAssertEqual(state.queue.map(\.episodeID), [b])
+    }
+
+    // MARK: - enqueueSegments
+
+    func testEnqueueSegmentsQueueOnlyAppendsAll() {
+        let state = PlaybackState()
+        let ep1 = makeEpisode(), ep2 = makeEpisode()
+        let items: [QueueItem] = [.episode(ep1.id), .episode(ep2.id)]
+
+        state.enqueueSegments(items, playNow: false) { id in
+            id == ep1.id ? ep1 : ep2
+        }
+
+        XCTAssertEqual(state.queue.map(\.episodeID), [ep1.id, ep2.id])
+        XCTAssertNil(state.episode, "playNow: false must not change the current episode")
+    }
+
+    func testEnqueueSegmentsCallsCallbackWhenFirstEpisodeIsUnavailable() {
+        let state = PlaybackState()
+        var callbackCount = 0
+        state.onQueueChanged = { _ in callbackCount += 1 }
+
+        let item = QueueItem.episode(UUID())
+        state.enqueueSegments([item], playNow: true) { _ in nil }
+
+        XCTAssertEqual(callbackCount, 1, "onQueueChanged must fire even when the first episode can't be resolved")
+        XCTAssertEqual(state.queue.count, 1, "items must be added to the queue when episode is unavailable")
+    }
+
+    // MARK: - onQueueChanged callback
+
+    func testOnQueueChangedFiresOnEnqueue() {
+        let state = PlaybackState()
+        var received: [[QueueItem]] = []
+        state.onQueueChanged = { received.append($0) }
+
+        state.enqueue(UUID())
+
+        XCTAssertEqual(received.count, 1)
+    }
+
+    func testOnQueueChangedNotFiredWhenRemoveIsNoOp() {
+        let state = PlaybackState()
+        var callbackCount = 0
+        state.onQueueChanged = { _ in callbackCount += 1 }
+
+        state.removeFromQueue(UUID())  // queue is empty — nothing to remove
+
+        XCTAssertEqual(callbackCount, 0, "removeFromQueue on empty queue must not fire onQueueChanged")
+    }
+
     // MARK: - Fixtures
 
     private func makeEpisode(id: UUID = UUID(), guid: String = UUID().uuidString) -> Episode {
