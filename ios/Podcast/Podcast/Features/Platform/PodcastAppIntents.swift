@@ -140,7 +140,7 @@ struct SkipForwardIntent: AppIntent {
             intentLog.error("SkipForwardIntent: KernelModel.shared is nil")
             return .result(dialog: "Podcastr isn't ready yet.")
         }
-        guard model.podcastSnapshot?.nowPlaying != nil else {
+        guard model.nowPlaying != nil else {
             intentLog.info("SkipForwardIntent: no active episode; dropping skip")
             return .result(dialog: "Nothing is playing.")
         }

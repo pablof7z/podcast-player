@@ -67,7 +67,7 @@ struct PodcastApp: App {
                 // user picks up where they left off. The observed key is
                 // `episodeId` (not the entire `PlayerState`) so we don't
                 // re-donate on every tick of position drift.
-                .onChange(of: model.podcastSnapshot?.nowPlaying?.episodeId,
+                .onChange(of: model.nowPlaying?.episodeId,
                           initial: true) { _, newID in
                     handleNowPlayingChange(episodeID: newID)
                 }
@@ -111,7 +111,7 @@ struct PodcastApp: App {
             platform.clearHandoff()
             return
         }
-        let player = model.podcastSnapshot?.nowPlaying
+        let player = model.nowPlaying
         let show = model.library.first { $0.episodes.contains { $0.id == episodeID } }
         let episode = show?.episodes.first { $0.id == episodeID }
         platform.donatePlayback(

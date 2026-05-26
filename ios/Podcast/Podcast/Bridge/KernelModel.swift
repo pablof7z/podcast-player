@@ -72,6 +72,11 @@ final class KernelModel {
     private(set) var library: [PodcastSummary] = []
     /// Latest full podcast snapshot (library, player, account …).
     private(set) var podcastSnapshot: PodcastUpdate?
+    /// Live player state — updated on every snapshot tick (4 Hz during playback).
+    /// Views that only need player position should observe this instead of
+    /// `podcastSnapshot?.nowPlaying` so they don't hold a reference to the
+    /// full snapshot struct. All other views should use `podcastSnapshot`.
+    private(set) var nowPlaying: PlayerState?
     /// Cancellable for the 500ms poll Task.
     private var snapshotPollTask: Task<Void, Never>?
     /// Hash of the library fields that matter to list views. Excludes
@@ -184,7 +189,9 @@ final class KernelModel {
         guard currentRev > UInt64(podcastSnapshot?.rev ?? 0) else { return }
         let update = kernel.podcastSnapshot()
         guard update.rev > (podcastSnapshot?.rev ?? 0) else { return }
-        let previousNowPlaying = podcastSnapshot?.nowPlaying
+        let previousNowPlaying = nowPlaying
+        // `nowPlaying` is always updated so the player views get live position.
+        nowPlaying = update.nowPlaying
         podcastSnapshot = update
         // Only reassign `library` when metadata the list views care about
         // actually changed. `playbackPositionSecs` updates at ~4 Hz during

@@ -25,7 +25,7 @@ struct EpisodeDetailView: View {
     @State private var isTranscriptPresented = false
 
     private var liveStarred: Bool {
-        model.podcastSnapshot?.library
+        model.library
             .flatMap { $0.episodes }
             .first { $0.id == episode.id }
             .map(\.starred)
@@ -36,7 +36,7 @@ struct EpisodeDetailView: View {
     /// toolbar button reflects fresh `transcriptUrl` / `transcriptEntries`
     /// fields without re-opening the screen.
     private var liveEpisode: EpisodeSummary {
-        model.podcastSnapshot?.library
+        model.library
             .flatMap { $0.episodes }
             .first { $0.id == episode.id }
             ?? episode
@@ -136,7 +136,7 @@ struct EpisodeDetailView: View {
     // MARK: - Live snapshot
 
     /// Re-read the player state so the play/pause label tracks transport.
-    private var nowPlaying: PlayerState? { model.podcastSnapshot?.nowPlaying }
+    private var nowPlaying: PlayerState? { model.nowPlaying }
 
     private var isThisEpisodePlaying: Bool {
         nowPlaying?.episodeId == episode.id && nowPlaying?.isPlaying == true

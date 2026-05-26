@@ -11,7 +11,7 @@ import SwiftUI
 //   - Center: square artwork card, episode title, podcast name
 //   - Bottom glass island (PlayerControls): scrubber, transport, speed/sleep/AirPlay
 //
-// Doctrine: every read comes from `model.podcastSnapshot?.nowPlaying`.
+// Doctrine: player state reads come from `model.nowPlaying`; episode + podcast
 // Episode + podcast metadata are resolved by scanning the library; no
 // derived state, no caches.
 
@@ -26,7 +26,7 @@ struct PlayerView: View {
     @State private var showClipComposer = false
 
     private var nowPlaying: PlayerState? {
-        model.podcastSnapshot?.nowPlaying
+        model.nowPlaying
     }
 
     private var episode: EpisodeSummary? {

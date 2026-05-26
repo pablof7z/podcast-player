@@ -175,7 +175,7 @@ struct HomeView: View {
     }
 
     private var libraryIsEmpty: Bool {
-        model.podcastSnapshot?.library.isEmpty ?? true
+        model.library.isEmpty
     }
 
     /// Resolve a pick's episode-id back to an `EpisodeRoute` by walking

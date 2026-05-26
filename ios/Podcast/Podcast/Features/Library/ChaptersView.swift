@@ -74,7 +74,7 @@ struct ChaptersView: View {
     }
 
     private var currentPositionSecs: Double {
-        guard let np = model.podcastSnapshot?.nowPlaying,
+        guard let np = model.nowPlaying,
               np.episodeId == episodeId else { return 0 }
         return np.positionSecs
     }
