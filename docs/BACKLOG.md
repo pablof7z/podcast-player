@@ -32,6 +32,12 @@ worktrees currently in flight.
   `git diff --check`, focused Rust tests for touched crates,
   focused Swift/iOS tests for touched targets, and full-suite validation before
   declaring feature parity.
+- **p0-ios-test-target-compile.** Fix the current Swift validation blockers so
+  focused iOS tests can run again. Known blockers from PR #95/#96 validation:
+  `AppTests/Sources/Nip46RemoteSignerTests.swift` passes optional `String?`
+  values to non-optional relay/session/bunker parameters, and the generated
+  project/AppIntents membership still needs reconciliation around
+  `PlaybackAppIntents.swift`, `StartVoiceModeIntent.swift`, and `KernelModel`.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
@@ -214,6 +220,19 @@ worktrees currently in flight.
   policy moved to Rust actions.
 - **episode-description-htmlstrip.** Done via PR #87; descriptions are stripped
   at Rust projection time.
+- **nipf4-wire-contract.** Done via PR #89; kind `10154`/`54` builders and
+  parsers no longer emit or require NIP-74-era `d`/`a`/`published_at`/`imeta`
+  tags.
+- **nipf4-real-pubkey-derivation.** Done via PR #93; `PodcastKeyStore` now uses
+  real secp256k1 key generation/public-key derivation. Persisted secret storage
+  remains tracked under `p0-nipf4-real-keys`.
+- **home-inbox-status-line.** Done via PR #94; the Home Inbox header reports
+  triage freshness and kept/archived counts.
+- **ollama-local-provider.** Done via PR #95; local/self-hosted Ollama
+  endpoints can omit API keys and model discovery uses the configured host.
+- **playback-restore-auto-download.** Done via PR #96; restoring the last
+  played episode no longer starts the background download pipeline until the
+  user presses play.
 - **file-size-initial-splits.** Done for the known projection/store/test/action
   overages identified before this pass; continue auditing new changes.
 - **wip-reconciliation.** Done for 2026-05-26; `WIP.md` now reflects zero open

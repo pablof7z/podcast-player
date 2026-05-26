@@ -8,7 +8,7 @@ This is the canonical project plan. Detailed implementation plans live under
 | Work | State | Source |
 |---|---|---|
 | NMP feature parity hardening and scaffold burn-down. | Active | `docs/plan/nmp-feature-parity.md` |
-| NIP-F4 protocol correction for owned publishing/discovery. | P0 | `docs/plan/pod0-nostr-publishing.md` |
+| NIP-F4 publishing/signing completion for owned publishing/discovery. | P0 | `docs/plan/pod0-nostr-publishing.md` |
 | Pod0 app rename. | Done | `docs/BACKLOG.md` |
 | Planning/WIP reconciliation after merged PR stack. | Done for current pass | `WIP.md`, `docs/BACKLOG.md` |
 
@@ -30,7 +30,7 @@ This is the canonical project plan. Detailed implementation plans live under
 | Feature parity | Not achieved | Many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked | `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Compat layer | Active debt | `ios/Podcast/Podcast/Compat/` still contains service/domain/identity/utility shims. |
-| NIP-F4 | Wire contract fixed; publishing partially scaffolded | PR #89 removed NIP-74-era tags from builders/parsers. PR #93 uses real secp256k1 keys. Signing and relay publishing still stubs. |
+| NIP-F4 | Wire contract fixed; publishing partially scaffolded | PR #89 removed NIP-74-era tags from builders/parsers. PR #93 uses real secp256k1 key derivation. Persisted Keychain storage, signing, relay publishing, relay-backed discovery, author claims, and legacy-data behavior remain open. |
 | Validation | Incomplete gate | Docs-only changes require `git diff --check`; code parity work must also run focused Rust/Swift tests plus the merge gate. |
 
 ## Pod0 / NIP-F4 Milestones
@@ -45,9 +45,8 @@ This is the canonical project plan. Detailed implementation plans live under
 
 ## Next Execution Order
 
-1. Fix NIP-F4 wire correctness before adding more Nostr features.
-2. Replace per-podcast key placeholder logic with real persistent secp256k1 keys.
-3. Wire signed relay publish and relay-backed episode discovery.
-4. Burn down `ios/Podcast/Podcast/Compat/` by replacing each shim with Rust-backed snapshot/action behavior.
-5. Replace AI/platform scaffolds with real logic feature by feature, keeping each PR tied to a backlog item.
-6. Re-run full validation and only then update the feature-parity status to done.
+1. Finish NIP-F4 key persistence, signed relay publish, relay-backed discovery, author claims, deletion cleanup, and legacy-data behavior.
+2. Fix the iOS validation gate so focused `xcodebuild test` runs are not blocked by unrelated compile errors.
+3. Burn down `ios/Podcast/Podcast/Compat/` by replacing each shim with Rust-backed snapshot/action behavior.
+4. Replace AI/platform scaffolds with real logic feature by feature, keeping each PR tied to a backlog item.
+5. Re-run full validation and only then update the feature-parity status to done.
