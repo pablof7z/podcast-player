@@ -81,9 +81,8 @@ fn create_owned_then_publish_show_round_trip() {
     assert_eq!(out2["ok"], true);
     assert_eq!(out2["status"], "relay_pending");
     let tags = out2["event_tags"].as_array().expect("event_tags array");
-    // First tag is always ["d", "podcast:guid:<lowercase-uuid>"].
-    assert_eq!(tags[0][0], "d");
-    assert!(tags[0][1].as_str().unwrap().starts_with("podcast:guid:"));
+    // NIP-F4 shows have no `d` tag — first tag is the title.
+    assert_eq!(tags[0][0], "title");
     // The signer pubkey is threaded into the show tags via the "p" tag.
     let event: serde_json::Value =
         serde_json::from_str(out2["event_json"].as_str().unwrap()).unwrap();
