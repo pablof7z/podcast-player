@@ -156,6 +156,9 @@ struct PodcastSummary: Codable, Identifiable, Equatable, Hashable {
     var artworkUrl: String? = nil
     var feedUrl: String? = nil
     var author: String? = nil
+    /// Podcast description, HTML-stripped by the Rust projection layer.
+    /// `nil` when the RSS feed provides no description.
+    var description: String? = nil
     /// Per-podcast auto-download policy state. `true` ⇒ the Rust kernel
     /// will auto-queue freshly-discovered episodes on the next feed
     /// refresh. The ShowDetailView toolbar reads this for the toggle's

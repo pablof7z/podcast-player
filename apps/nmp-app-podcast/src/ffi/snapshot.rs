@@ -289,6 +289,8 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                 } else {
                     Some(podcast.author.clone())
                 },
+                description: Some(strip_html(&podcast.description))
+                    .filter(|d| !d.is_empty()),
                 auto_download: s.is_auto_download_enabled(podcast.id),
                 episodes: episodes
                     .iter()

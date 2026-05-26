@@ -362,6 +362,7 @@ mod tests {
             artwork_url: None,
             feed_url: None,
             author: None,
+            description: None,
             auto_download: false,
             episodes: vec![EpisodeSummary {
                 id: ep_id.into(),

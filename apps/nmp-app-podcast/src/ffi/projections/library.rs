@@ -24,6 +24,10 @@ pub struct PodcastSummary {
     /// Podcast author / host name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
+    /// Podcast description, HTML-stripped and whitespace-collapsed.
+    /// Omitted when the RSS feed provides no description (`D5`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Per-podcast auto-download policy state. Mirrors
     /// `PodcastStore::is_auto_download_enabled`. The iOS toolbar toggle
     /// reads this to render its check mark; it dispatches
