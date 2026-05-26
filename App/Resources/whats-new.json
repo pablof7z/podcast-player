@@ -2,6 +2,24 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T05:34:00Z",
+      "lines": [
+        "Lock screen and Control Center now show the episode and podcast name while playing"
+      ]
+    },
+    {
+      "shipped_at": "2026-05-26T05:33:00Z",
+      "lines": [
+        "Podcast descriptions now display on the show page — rich show notes with HTML stripped clean"
+      ]
+    },
+    {
+      "shipped_at": "2026-05-26T05:32:00Z",
+      "lines": [
+        "All Episodes now supports search — filter by episode or podcast name"
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T05:31:00Z",
       "lines": [
         "Bookmark any episode — tap the bookmark icon or swipe to save it. Find all bookmarks from the Library toolbar."

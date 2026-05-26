@@ -134,9 +134,17 @@ private struct KernelEpisodeRow: View {
             thumbnail
 
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                Text(episode.title)
-                    .font(AppTheme.Typography.headline)
-                    .lineLimit(2)
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Text(episode.title)
+                        .font(AppTheme.Typography.headline)
+                        .lineLimit(2)
+                        .foregroundStyle(episode.played ? Color.secondary : Color.primary)
+                    if episode.starred {
+                        Image(systemName: "bookmark.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                }
 
                 metaRow
             }
