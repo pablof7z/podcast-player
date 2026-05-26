@@ -1,5 +1,3 @@
-use super::*;
-
 use super::strip_html;
 #[test]
 fn strips_basic_tags() {

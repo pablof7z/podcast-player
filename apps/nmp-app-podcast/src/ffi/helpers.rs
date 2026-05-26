@@ -99,8 +99,11 @@ fn decode_numeric_entities(input: &str) -> String {
                 }
             }
         }
-        out.push(input[i..].chars().next().unwrap());
-        i += input[i..].chars().next().map_or(1, |c| c.len_utf8());
+        // Safety: i < bytes.len() guarantees a non-empty slice; i is always
+        // at a char boundary (maintained by the loop advance below).
+        let c = input[i..].chars().next().unwrap();
+        out.push(c);
+        i += c.len_utf8();
     }
     out
 }
