@@ -32,13 +32,5 @@ pub const KIND_EPISODE: u32 = 54;
 pub const KIND_AUTHOR_CLAIM: u32 = 10064;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn kind_constants_are_nip_f4() {
-        assert_eq!(KIND_SHOW, 10154);
-        assert_eq!(KIND_EPISODE, 54);
-        assert_eq!(KIND_AUTHOR_CLAIM, 10064);
-    }
-}
+#[path = "kinds_tests.rs"]
+mod tests;
