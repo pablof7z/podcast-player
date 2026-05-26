@@ -283,6 +283,34 @@ fn load_tolerates_missing_auto_download_field() {
 }
 
 #[test]
+fn save_then_load_round_trips_queue() {
+    let dir = TempDir::new();
+    let payload = PersistedStore {
+        schema_version: PERSIST_SCHEMA_VERSION,
+        podcasts: vec![],
+        queue: vec!["ep-1".to_owned(), "ep-2".to_owned(), "ep-3".to_owned()],
+        ..PersistedStore::default()
+    };
+    save(&dir.path, &payload).unwrap();
+    let loaded = load(&dir.path).unwrap().expect("file present");
+    assert_eq!(loaded.queue, vec!["ep-1", "ep-2", "ep-3"]);
+}
+
+#[test]
+fn pre_queue_payload_loads_with_empty_queue() {
+    // A file written before queue persistence shipped has no `queue` field.
+    // `#[serde(default)]` must hydrate it as an empty vec — never panic.
+    let dir = TempDir::new();
+    let raw = serde_json::json!({
+        "schema_version": PERSIST_SCHEMA_VERSION,
+        "podcasts": []
+    });
+    std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
+    let loaded = load(&dir.path).unwrap().expect("file present");
+    assert!(loaded.queue.is_empty(), "queue must default to empty for old files");
+}
+
+#[test]
 fn skip_intervals_persist_and_reload() {
     let dir = TempDir::new();
     let persisted = PersistedStore {
