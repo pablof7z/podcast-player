@@ -14,7 +14,7 @@ struct OllamaSettingsView: View {
     @State private var byokConnect = BYOKConnectService()
     @State private var chatURLInput = ""
 
-    private let catalog = OllamaModelCatalogService()
+    private var catalog: OllamaModelCatalogService { OllamaModelCatalogService(chatURL: settings.ollamaChatURL) }
 
     var body: some View {
         Form {

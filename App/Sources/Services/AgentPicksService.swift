@@ -178,7 +178,7 @@ final class AgentPicksService {
             return
         }
 
-        if hasAPIKey(model: store.state.settings.agentInitialModel) {
+        if hasAPIKey(model: store.state.settings.agentInitialModel, store: store) {
             do {
                 let picks = try await runLLMPicks(
                     store: store,
@@ -215,8 +215,12 @@ final class AgentPicksService {
 
     // MARK: - LLM call
 
-    private func hasAPIKey(model: String) -> Bool {
+    private func hasAPIKey(model: String, store: AppStateStore) -> Bool {
         let reference = LLMModelReference(storedID: model)
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        if !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL) {
+            return true
+        }
         return LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
     }
 
@@ -247,6 +251,7 @@ final class AgentPicksService {
         bundles[key] = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
 
         let model = store.state.settings.agentInitialModel
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
 
         // Streaming task — does the actual network call and incremental parse.
         let streamingTask = Task<[HomeAgentPick], Error> { @MainActor [weak self] in
@@ -255,6 +260,7 @@ final class AgentPicksService {
                 tools: [],
                 model: model,
                 feature: CostFeature.agentChat,
+                ollamaChatURL: ollamaChatURL,
                 onPartialContent: { [weak self] partial in
                     guard let self else { return }
                     Task { await activity.bump(to: Date()) }

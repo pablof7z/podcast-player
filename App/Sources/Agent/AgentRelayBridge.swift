@@ -68,7 +68,9 @@ final class AgentRelayBridge {
     ) async -> String? {
         guard !history.isEmpty else { return nil }
         let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        guard !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL)
+                || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             logger.warning("No \(reference.provider.displayName, privacy: .public) key for Nostr peer reply")
             return nil
         }
@@ -115,7 +117,9 @@ final class AgentRelayBridge {
         guard !trimmed.isEmpty else { return nil }
 
         let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        guard !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL)
+                || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             logger.warning("No \(reference.provider.displayName, privacy: .public) key available for Nostr agent reply")
             return nil
         }
@@ -177,6 +181,7 @@ final class AgentRelayBridge {
                          + AgentSkillRegistry.schemas(for: enabledSkills),
                     model: modelForTurn,
                     feature: CostFeature.agentNostr,
+                    ollamaChatURL: URL(string: store.state.settings.ollamaChatURL),
                     onPartialContent: { _ in }
                 )
             } catch {

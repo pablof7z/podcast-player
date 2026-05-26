@@ -20,6 +20,12 @@
       ]
     },
     {
+      "shipped_at": "2026-05-26T07:27:00Z",
+      "lines": [
+        "Local Ollama endpoints now work without an API key, and model discovery uses your configured Ollama host."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T05:34:00Z",
       "lines": [
         "Lock screen and Control Center now show the episode and podcast name while playing"

@@ -370,6 +370,10 @@ extension AgentChatSession {
 
     func selectedProviderHasCredential() -> Bool {
         let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        if !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL) {
+            return true
+        }
         return LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
     }
 

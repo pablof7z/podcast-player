@@ -20,7 +20,9 @@ enum AgentOllamaClient {
         let resolvedURL = chatURL ?? NetworkConstants.chatURL
         var request = URLRequest(url: resolvedURL)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = NetworkConstants.requestTimeout
 

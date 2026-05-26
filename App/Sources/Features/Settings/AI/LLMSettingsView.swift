@@ -27,48 +27,51 @@ struct AIModelsSettingsView: View {
         .navigationTitle("Models")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            if catalog.models.isEmpty {
+                catalog = OpenRouterModelSelectorViewModel(ollamaChatURL: store.state.settings.ollamaChatURL)
+            }
             await catalog.loadIfNeeded()
             backfillModelNames()
         }
         .sheet(isPresented: $agentSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent (Initial)")
+                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent (Initial)", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $thinkingSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: thinkingModelBinding, selectedModelName: thinkingModelNameBinding, role: "Agent (Thinking)")
+                OpenRouterModelSelectorView(selectedModelID: thinkingModelBinding, selectedModelName: thinkingModelNameBinding, role: "Agent (Thinking)", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
+                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $wikiSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki")
+                OpenRouterModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $categorizationSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization")
+                OpenRouterModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $chapterSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: chapterModelBinding, selectedModelName: chapterModelNameBinding, role: "Chapter Compilation")
+                OpenRouterModelSelectorView(selectedModelID: chapterModelBinding, selectedModelName: chapterModelNameBinding, role: "Chapter Compilation", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $embeddingsSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: embeddingsModelBinding, selectedModelName: embeddingsModelNameBinding, role: "Embeddings")
+                OpenRouterModelSelectorView(selectedModelID: embeddingsModelBinding, selectedModelName: embeddingsModelNameBinding, role: "Embeddings", ollamaChatURL: store.state.settings.ollamaChatURL)
             }
             .presentationDragIndicator(.visible)
         }

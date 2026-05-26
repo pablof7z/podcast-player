@@ -14,8 +14,11 @@ enum AgentLLMClient {
         guard !reference.isEmpty else {
             throw AgentError.httpError("No model selected.")
         }
-        guard let apiKey = try LLMProviderCredentialResolver.apiKey(for: reference.provider),
-              !apiKey.isEmpty else {
+        let requiresKey = LLMProviderCredentialResolver.requiresAPIKey(
+            for: reference.provider, ollamaChatURL: ollamaChatURL
+        )
+        let apiKey = (try LLMProviderCredentialResolver.apiKey(for: reference.provider)) ?? ""
+        guard !requiresKey || !apiKey.isEmpty else {
             throw AgentError.httpError(
                 LLMProviderCredentialResolver.missingCredentialMessage(for: reference.provider)
             )

@@ -34,7 +34,9 @@ final class AgentScheduledTaskRunner {
 
     private func runTask(_ task: AgentScheduledTask) async {
         let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        guard !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL)
+                || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             logger.warning("Skipping scheduled task '\(task.label, privacy: .public)' — no API key configured")
             return
         }

@@ -16,6 +16,14 @@ struct OpenRouterModelCatalogService: Sendable {
         static let modelsDevTimeout: TimeInterval = 15
     }
 
+    /// The Ollama chat endpoint string, forwarded to `OllamaModelCatalogService`
+    /// so model discovery hits the same host as chat calls.
+    private let ollamaChatURL: String?
+
+    init(ollamaChatURL: String? = nil) {
+        self.ollamaChatURL = ollamaChatURL
+    }
+
     func fetchModels() async throws -> [OpenRouterModelOption] {
         async let openRouter = fetchOpenRouterModels()
         async let modelsDev = fetchModelsDevCatalogOptional()
@@ -70,7 +78,7 @@ struct OpenRouterModelCatalogService: Sendable {
 
     private func fetchOllamaModelsOptional() async -> [OllamaTagModel] {
         do {
-            return try await OllamaModelCatalogService().fetchModels()
+            return try await OllamaModelCatalogService(chatURL: ollamaChatURL).fetchModels()
         } catch {
             Self.logger.warning("Ollama model catalog fetch failed (non-fatal): \(error, privacy: .public)")
             return []

@@ -34,8 +34,12 @@ struct AgentMemoryCompiler {
 
         let model = store.state.settings.agentInitialModel
         let reference = LLMModelReference(storedID: model)
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        let needsKey = LLMProviderCredentialResolver.requiresAPIKey(
+            for: reference.provider, ollamaChatURL: ollamaChatURL
+        )
         guard !reference.isEmpty,
-              LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
+              !needsKey || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
             // No usable LLM credential yet — leave the previous compile in
             // place and try again after the next run. This is the same
             // policy as a failed LLM call: never blow away a good compile.
@@ -55,6 +59,7 @@ struct AgentMemoryCompiler {
                 tools: [],
                 model: model,
                 feature: CostFeature.agentChat,
+                ollamaChatURL: ollamaChatURL,
                 onPartialContent: { _ in }
             )
         } catch {

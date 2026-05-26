@@ -53,6 +53,24 @@ enum LLMProviderCredentialResolver {
         }
     }
 
+    /// Whether a non-nil API key is required for the given provider.
+    ///
+    /// Ollama running on-premises (localhost or any non-ollama.com host)
+    /// does not require an API key — the key is only mandatory for the
+    /// hosted cloud endpoint. All other providers always require a key.
+    static func requiresAPIKey(for provider: LLMProvider, ollamaChatURL: URL? = nil) -> Bool {
+        switch provider {
+        case .openRouter:
+            return true
+        case .ollama:
+            guard let host = ollamaChatURL?.host?.lowercased() else {
+                // No URL supplied — assume cloud (conservative default).
+                return true
+            }
+            return host == "ollama.com" || host == "www.ollama.com"
+        }
+    }
+
     static func missingCredentialMessage(for provider: LLMProvider) -> String {
         "\(provider.displayName) is not connected. Add a key in Settings."
     }
