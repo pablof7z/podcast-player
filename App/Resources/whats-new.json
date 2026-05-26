@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-27T08:01:00Z",
+      "lines": [
+        "Social tab now loads your real Nostr follow list — contacts and their profile photos pulled live from the relay."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T09:10:00Z",
       "lines": [
         "Play Latest is temporarily hidden from Siri and Shortcuts until its Rust-backed action is wired."
