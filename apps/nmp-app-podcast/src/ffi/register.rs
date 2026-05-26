@@ -119,12 +119,6 @@ pub extern "C" fn nmp_app_podcast_register(
 
     let inbox_triage_cache = Arc::new(Mutex::new(HashMap::new()));
 
-    let agent_chat = AgentChatHandler::new(
-        conversation.clone(),
-        agent_busy.clone(),
-        agent_touched.clone(),
-        rev.clone(),
-    );
 
     // Shared Tokio runtime — multi-thread scheduler so async LLM/relay
     // work in future PRs can `.spawn` without a per-handler executor.
@@ -134,6 +128,14 @@ pub extern "C" fn nmp_app_podcast_register(
             .enable_all()
             .build()
             .expect("tokio runtime"),
+    );
+
+    let agent_chat = AgentChatHandler::new(
+        conversation.clone(),
+        agent_busy.clone(),
+        agent_touched.clone(),
+        rev.clone(),
+        runtime.clone(),
     );
 
     // Install the host-op handler (requires &self, so take the ref AFTER the

@@ -3,6 +3,7 @@
 use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
 
+mod agent_chat;
 mod identity;
 mod inbox_triage;
 mod key_persistence;
@@ -54,5 +55,6 @@ pub fn run_all(
             wiki::run(app, handle),
         ),
         ("inbox_triage", inbox_triage::run(app, handle)),
+        ("agent_chat", agent_chat::run(app, handle)),
     ]
 }
