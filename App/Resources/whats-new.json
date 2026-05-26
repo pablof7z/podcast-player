@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T05:02:00Z",
+      "lines": [
+        "Siri Skip Forward now works even when the app is backgrounded — position arithmetic moved to the Rust kernel."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T05:01:00Z",
       "lines": [
         "Show notes no longer display raw HTML tags — the kernel now strips tags and decodes entities before delivering episode descriptions to the app."
