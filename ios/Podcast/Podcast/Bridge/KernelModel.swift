@@ -158,22 +158,29 @@ final class KernelModel {
                 try? await Task.sleep(for: .milliseconds(500))
                 guard !Task.isCancelled else { break }
                 await MainActor.run { [weak self] in
-                    guard let self else { return }
-                    let update = self.kernel.podcastSnapshot()
-                    if update.rev > (self.podcastSnapshot?.rev ?? 0) {
-                        let previousNowPlaying = self.podcastSnapshot?.nowPlaying
-                        self.podcastSnapshot = update
-                        self.library = update.library
-                        PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
-                            SettingsKVSnapshot.from(podcastUpdate: update))
-                        PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
-                        self.reconcileLiveActivity(
-                            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
-                        kmLog.debug("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
-                    }
+                    self?.pullPodcastSnapshotIfChanged()
                 }
             }
         }
+    }
+
+    /// Pull the podcast snapshot and apply it if the rev has advanced.
+    /// Called both by the 500ms background poll (for autonomous changes like
+    /// download progress and playback position) and immediately after every
+    /// `dispatch` / `dispatchSilent` call so user actions are reflected in
+    /// the UI within the same runloop pass rather than after up to 500ms.
+    private func pullPodcastSnapshotIfChanged() {
+        let update = kernel.podcastSnapshot()
+        guard update.rev > (podcastSnapshot?.rev ?? 0) else { return }
+        let previousNowPlaying = podcastSnapshot?.nowPlaying
+        podcastSnapshot = update
+        library = update.library
+        PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
+            SettingsKVSnapshot.from(podcastUpdate: update))
+        PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
+        reconcileLiveActivity(
+            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
+        kmLog.debug("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
     }
 
     /// Translate `PlayerState` transitions into Live Activity lifecycle
@@ -293,6 +300,7 @@ final class KernelModel {
             kmLog.error("dispatch_action rejected: \(message, privacy: .public)")
             lastErrorToast = message
         }
+        pullPodcastSnapshotIfChanged()
         return result
     }
 
@@ -309,7 +317,10 @@ final class KernelModel {
         if case let .failure(message) = result {
             kmLog.error("dispatch_action (silent) rejected: \(message, privacy: .public)")
         }
+        pullPodcastSnapshotIfChanged()
         return result
+    }
+
     // ── Identity / NIP-46 ────────────────────────────────────────────────
     //
     // Typed wrappers around the NMP-core identity FFI. `UserIdentityStore`
