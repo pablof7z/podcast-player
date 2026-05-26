@@ -107,9 +107,15 @@
       "shipped_at": "2026-05-26T00:35:00Z",
       "lines": [
         "Fixed: the 2.5× and 3.0× playback-speed chips now actually apply — they were silently capped at 2.0× by the player kernel."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T02:00:00Z",
       "lines": [
         "Episode transcripts: tap the speech-bubble in the episode detail toolbar to read a time-synced transcript, with the current segment highlighted and tap-to-seek on every row."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T00:30:00Z",
       "lines": [
         "Chat with the agent from the new Agent tab — ask a question and the agent replies in a chat thread (LLM coming soon)."
@@ -155,9 +161,15 @@
       "shipped_at": "2026-05-25T23:07:00Z",
       "lines": [
         "Experimental: the Add Show sheet can now search Nostr NIP-F4 podcast events and subscribe via their RSS feed tags."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:35:00Z",
       "lines": [
         "AI wiki: open any show and tap the new book icon to start building a topic-by-topic knowledge base — full LLM synthesis is a follow-up, but you can generate, browse, and delete articles today."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:55:00Z",
       "lines": [
         "Inbox tab: a new \"what to listen to next\" view ranks fresh episodes across every show you follow — swipe to dismiss, swipe right to mark listened."
@@ -197,15 +209,27 @@
       "shipped_at": "2026-05-26T00:16:00Z",
       "lines": [
         "Per-show auto-download — open any show, tap the ••• menu, and turn on Auto-download to have new episodes queued for offline listening automatically on the next feed refresh."
-      "shipped_at": "2026-05-26T01:35:00Z",
+      ]
+    },
+    {
+      "shipped_at": "2026-05-26T01:36:00Z",
       "lines": [
         "New Home tab with AI agent picks — newest episodes across your shows surfaced in a horizontal rail, plus a Continue Listening row and a fresh New Episodes list."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:30:00Z",
       "lines": [
         "Search across your podcast library — a new magnifying-glass button in Library lets you find episodes by topic, host, or any text in the show notes."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T03:00:00Z",
       "lines": [
         "AI Episodes — generate short narrated episodes about any topic from Identity → Advanced → Agent. Tap to listen via on-device speech."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T01:50:00Z",
       "lines": [
         "Capture and share clips from any episode — open the player and tap the scissors chip to set start/end manually or hit Auto Snip to grab the current ±30 seconds."
@@ -615,7 +639,7 @@
       ]
     },
     {
-      "shipped_at": "2026-05-13T12:00:00Z",
+      "shipped_at": "2026-05-13T12:01:00Z",
       "lines": [
         "Feedback grew up: tap the new mic button to dictate a feedback thread, switch the Mine/Everyone segment and other people's threads now show their display name, and inside a thread you'll see avatars, name headers, and properly rendered markdown — with image URLs in replies showing inline instead of as raw text."
       ]
@@ -742,7 +766,7 @@
       ]
     },
     {
-      "shipped_at": "2026-05-12T18:00:00Z",
+      "shipped_at": "2026-05-12T18:01:00Z",
       "lines": [
         "The Wiki tab now uses the same background and visual style as the rest of the app."
       ]
@@ -772,7 +796,7 @@
       ]
     },
     {
-      "shipped_at": "2026-05-12T12:00:00Z",
+      "shipped_at": "2026-05-12T12:01:00Z",
       "lines": [
         "Your profile now shows your real Nostr display name and picture after signing in with your nsec — no more auto-generated placeholders."
       ]
@@ -892,7 +916,7 @@
       ]
     },
     {
-      "shipped_at": "2026-05-12T00:00:00Z",
+      "shipped_at": "2026-05-12T00:01:00Z",
       "lines": [
         "New: Diagnostics sheet on every episode (••• → Diagnostics) shows the full audit log — what was downloaded, when, whether transcription was attempted, which provider, why it was skipped, and the exact error if it failed. Retry buttons let you re-run the pipeline and watch fresh events stream in."
       ]
@@ -904,25 +928,25 @@
       ]
     },
     {
-      "shipped_at": "2026-05-11T23:30:00Z",
+      "shipped_at": "2026-05-11T23:31:00Z",
       "lines": [
         "Player redesigned — compact artwork and episode info at the top, AirPlay and share in the toolbar, sleep timer in the ••• menu."
       ]
     },
     {
-      "shipped_at": "2026-05-11T23:00:00Z",
+      "shipped_at": "2026-05-11T23:01:00Z",
       "lines": [
         "Search is now snappier — results only update after you pause typing, so fast keystrokes no longer cause lag."
       ]
     },
     {
-      "shipped_at": "2026-05-11T22:30:00Z",
+      "shipped_at": "2026-05-11T22:31:00Z",
       "lines": [
         "What's New now stays out of the way — once you've seen an entry, you won't see it again, even after reinstalling. Fresh installs start silent; only entries shipped from now on will pop the sheet."
       ]
     },
     {
-      "shipped_at": "2026-05-11T22:00:00Z",
+      "shipped_at": "2026-05-11T22:01:00Z",
       "lines": [
         "Fixed a bug where tapping any text field would immediately dismiss the keyboard — nothing was typeable."
       ]
@@ -934,7 +958,7 @@
       ]
     },
     {
-      "shipped_at": "2026-05-11T21:00:00Z",
+      "shipped_at": "2026-05-11T21:01:00Z",
       "lines": [
         "Fixed a hard crash when Apple's on-device transcription kicked off — the analyzer was being driven twice through different init paths."
       ]
@@ -946,13 +970,13 @@
       ]
     },
     {
-      "shipped_at": "2026-05-11T20:00:00Z",
+      "shipped_at": "2026-05-11T20:01:00Z",
       "lines": [
         "Apple on-device transcription is now available — uses iOS 26 SpeechTranscriber on Apple Silicon with no API key required. Switch to it under Settings → Intelligence → Models → Speech."
       ]
     },
     {
-      "shipped_at": "2026-05-11T19:00:00Z",
+      "shipped_at": "2026-05-11T19:01:00Z",
       "lines": [
         "Transcription now supports OpenRouter Whisper in addition to ElevenLabs Scribe — switch providers under Settings → Intelligence → Models → Speech."
       ]
@@ -982,31 +1006,31 @@
       ]
     },
     {
-      "shipped_at": "2026-05-11T15:00:00Z",
+      "shipped_at": "2026-05-11T15:01:00Z",
       "lines": [
         "Home screen is cleaner — removed unplayed count badges on artwork, the date header, and filter chips."
       ]
     },
     {
-      "shipped_at": "2026-05-11T15:00:00Z",
+      "shipped_at": "2026-05-11T15:02:00Z",
       "lines": [
         "Perplexity online search now works with just your OpenRouter key — no separate Perplexity account required."
       ]
     },
     {
-      "shipped_at": "2026-05-11T15:00:00Z",
+      "shipped_at": "2026-05-11T15:03:00Z",
       "lines": [
         "What's New now actually shows you what's new — the modal was always marking everything as seen before you could read it."
       ]
     },
     {
-      "shipped_at": "2026-05-11T14:00:00Z",
+      "shipped_at": "2026-05-11T14:01:00Z",
       "lines": [
         "Removed the filter and layout menu from the home toolbar for a cleaner look."
       ]
     },
     {
-      "shipped_at": "2026-05-11T14:00:00Z",
+      "shipped_at": "2026-05-11T14:02:00Z",
       "lines": [
         "The full-screen player now shows clearly readable elapsed and remaining times (e.g. 12:34 / -47:26) under the waveform scrubber."
       ]
@@ -1018,13 +1042,13 @@
       ]
     },
     {
-      "shipped_at": "2026-05-11T13:00:00Z",
+      "shipped_at": "2026-05-11T13:01:00Z",
       "lines": [
         "Episode rows now use a slim 2 px progress bar instead of text pills: primary-colored while downloading, accent-colored while transcribing. Not-yet-downloaded episodes are subtly dimmed so you can tell at a glance which ones are ready offline."
       ]
     },
     {
-      "shipped_at": "2026-05-11T12:00:00Z",
+      "shipped_at": "2026-05-11T12:01:00Z",
       "lines": [
         "Tap the Home title to browse categories — each category shows podcast artwork, a description, and your unplayed count. Tap the gear on any category to set its transcription, wiki, and briefings preferences independently. Selecting a category scopes the whole feed to that section."
       ]

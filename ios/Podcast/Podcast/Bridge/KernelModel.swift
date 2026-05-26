@@ -177,11 +177,10 @@ final class KernelModel {
     private func startSnapshotPoll() {
         snapshotPollTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
-                guard !Task.isCancelled else { break }
                 await MainActor.run { [weak self] in
                     self?.pullPodcastSnapshotIfChanged()
                 }
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
