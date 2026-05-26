@@ -87,6 +87,11 @@ final class KernelModel {
     /// `nowPlaying.positionSecs` and `nowPlaying.bufferingFraction` so
     /// views like HomeView, InboxView, etc. don't re-render at 4 Hz.
     private var lastSnapshotContentHash: Int = 0
+    /// Rev of the last snapshot we decoded from the kernel. Unlike
+    /// `podcastSnapshot?.rev` (which only advances on content changes),
+    /// this tracks every processed tick so the short-circuit guards stay
+    /// accurate.
+    private var lastProcessedRev: UInt64 = 0
 
     // ── Computed projections ───────────────────────────────────────────────
 
@@ -190,9 +195,10 @@ final class KernelModel {
         // Cheap rev-check before the full JSON decode. nmp_app_podcast_snapshot_rev
         // reads a single atomic u64 — no serialization cost.
         let currentRev = kernel.podcastSnapshotRev()
-        guard currentRev > UInt64(podcastSnapshot?.rev ?? 0) else { return }
+        guard currentRev > lastProcessedRev else { return }
         let update = kernel.podcastSnapshot()
-        guard update.rev > (podcastSnapshot?.rev ?? 0) else { return }
+        guard update.rev > lastProcessedRev else { return }
+        lastProcessedRev = UInt64(update.rev)
         let previousNowPlaying = nowPlaying
         // `nowPlaying` is always updated so the player views get live position.
         nowPlaying = update.nowPlaying
