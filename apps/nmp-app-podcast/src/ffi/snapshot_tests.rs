@@ -285,3 +285,36 @@ fn voice_state_omits_none_fields() {
     assert_eq!(decoded, v);
 }
 
+#[test]
+fn settings_snapshot_defaults_are_30_and_15() {
+    let s = SettingsSnapshot::default();
+    assert!((s.skip_forward_secs - 30.0).abs() < f64::EPSILON);
+    assert!((s.skip_backward_secs - 15.0).abs() < f64::EPSILON);
+}
+
+#[test]
+fn settings_snapshot_skip_intervals_round_trip() {
+    let snap = PodcastUpdate {
+        settings: SettingsSnapshot {
+            skip_forward_secs: 45.0,
+            skip_backward_secs: 10.0,
+            ..SettingsSnapshot::default()
+        },
+        ..PodcastUpdate::default()
+    };
+    let json = serde_json::to_string(&snap).expect("encode");
+    assert!(json.contains("\"skip_forward_secs\":45.0") || json.contains("\"skip_forward_secs\":45"));
+    let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
+    assert!((decoded.settings.skip_forward_secs - 45.0).abs() < f64::EPSILON);
+    assert!((decoded.settings.skip_backward_secs - 10.0).abs() < f64::EPSILON);
+}
+
+#[test]
+fn settings_snapshot_missing_skip_fields_use_defaults() {
+    // Simulate an old on-disk JSON without skip fields
+    let json = r#"{"has_completed_onboarding":false,"auto_skip_ads_enabled":false}"#;
+    let s: SettingsSnapshot = serde_json::from_str(json).expect("decode");
+    assert!((s.skip_forward_secs - 30.0).abs() < f64::EPSILON);
+    assert!((s.skip_backward_secs - 15.0).abs() < f64::EPSILON);
+}
+
