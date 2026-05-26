@@ -99,8 +99,10 @@ fn decode_numeric_entities(input: &str) -> String {
                 }
             }
         }
-        out.push(input[i..].chars().next().unwrap());
-        i += input[i..].chars().next().map_or(1, |c| c.len_utf8());
+        // SAFETY: loop guard guarantees i < bytes.len(), so input[i..] is non-empty.
+        let c = input[i..].chars().next().unwrap();
+        out.push(c);
+        i += c.len_utf8();
     }
     out
 }
@@ -178,5 +180,20 @@ mod tests {
     fn newlines_and_tabs_collapsed() {
         let input = "Line 1\n\nLine 2\t\tLine 3";
         assert_eq!(strip_html(input), "Line 1 Line 2 Line 3");
+    }
+
+    #[test]
+    fn tags_only_produces_empty_string() {
+        // RSS descriptions that are purely structural tags with no visible text
+        // must produce "" so callers can filter → None rather than store empty.
+        assert_eq!(strip_html("<br/><br/>"), "");
+        assert_eq!(strip_html("<p></p>"), "");
+        assert_eq!(strip_html("<div><span></span></div>"), "");
+    }
+
+    #[test]
+    fn multibyte_chars_pass_through() {
+        assert_eq!(strip_html("café & résumé"), "café & résumé");
+        assert_eq!(strip_html("<p>日本語</p>"), "日本語");
     }
 }
