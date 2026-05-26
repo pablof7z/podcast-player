@@ -91,7 +91,7 @@ final class SpotlightCapability {
 
     // MARK: - State
 
-    private static let logger = Logger(subsystem: "io.f7z.podcast", category: "Spotlight")
+    nonisolated private static let logger = Logger(subsystem: "io.f7z.podcast", category: "Spotlight")
 
     /// Cached copy of the library the index was last built against.
     /// Used by `indexLibrary(_:)` to skip work when the caller hands
