@@ -186,6 +186,34 @@ final class PlaybackQueueTests: XCTestCase {
         XCTAssertEqual(state.queue.map(\.episodeID), [b])
     }
 
+    // MARK: - enqueueItem / insertNext
+
+    func testEnqueueItemAppendsAndFiresCallback() {
+        let state = PlaybackState()
+        var callbackCount = 0
+        state.onQueueChanged = { _ in callbackCount += 1 }
+        let item = QueueItem(episodeID: UUID(), startSeconds: 10, endSeconds: 60, label: "Intro")
+
+        state.enqueueItem(item)
+
+        XCTAssertEqual(state.queue.count, 1)
+        XCTAssertEqual(state.queue[0].startSeconds, 10)
+        XCTAssertEqual(callbackCount, 1)
+    }
+
+    func testInsertNextPushesToFrontAndFiresCallback() {
+        let state = PlaybackState()
+        var received: [[QueueItem]] = []
+        state.onQueueChanged = { received.append($0) }
+        let a = UUID(), b = UUID()
+        state.enqueue(a)
+
+        state.insertNext(.episode(b))
+
+        XCTAssertEqual(state.queue.map(\.episodeID), [b, a], "insertNext must place b before a")
+        XCTAssertEqual(received.count, 2, "each mutation fires onQueueChanged once")
+    }
+
     // MARK: - enqueueSegments
 
     func testEnqueueSegmentsQueueOnlyAppendsAll() {
