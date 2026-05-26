@@ -406,6 +406,7 @@ struct BriefingSegmentSummary: Codable, Equatable, Hashable, Identifiable {
     var id: String {
         "\(kind)|\(text.prefix(40))"
     }
+}
 /// One NIP-22 (kind 1111) comment row in `PodcastUpdate.comments`.
 /// Mirrors the Rust-side `CommentSummary` projection. `id` is the
 /// Nostr event id (hex). `authorNpub` is the bech32-encoded author
@@ -420,6 +421,7 @@ struct CommentSummary: Codable, Identifiable, Equatable, Hashable {
     var authorName: String? = nil
     var content: String
     var createdAt: Int
+}
 /// One contact in the active account's NIP-02 (kind:3) follow list, surfaced
 /// via `SocialSnapshot.following` for the iOS "Social" tab.
 struct ContactSummary: Codable, Identifiable, Equatable, Hashable {
@@ -446,6 +448,7 @@ struct SocialSnapshot: Codable, Equatable, Hashable {
     /// today; surfaced separately so paged variants of `following` keep
     /// working without a second snapshot field.
     var followingCount: Int = 0
+}
 /// One row in `PodcastUpdate.wikiArticles` — an AI-synthesised, per-podcast
 /// knowledge entry. The scaffold ships with a placeholder `summary`; the
 /// LLM-backed follow-up swaps the body in without renegotiating the shape.
@@ -458,6 +461,7 @@ struct WikiArticle: Codable, Identifiable, Equatable, Hashable {
     /// Unix seconds. Mirrors `WikiArticle::last_updated_at` in Rust.
     var lastUpdatedAt: Int = 0
     var isGenerating: Bool = false
+}
 /// One AI agent pick row surfaced via `PodcastUpdate.picks`. Built by the
 /// Rust `picks_handler` from a heuristic walk over the library (newest
 /// episodes across all shows, capped per show, top-10).
@@ -484,6 +488,7 @@ struct AgentPickSummary: Codable, Identifiable, Equatable, Hashable {
     /// across refreshes — the SwiftUI `ForEach` keeps row identity even
     /// when the rank shuffles.
     var id: String { episodeId }
+}
 /// One row in the RAG / vector-search projection. The Rust
 /// `podcast.knowledge.search` action populates an array of these on the
 /// snapshot; the iOS shell renders them in `KnowledgeSearchView`.
@@ -506,6 +511,7 @@ struct KnowledgeSearchResult: Codable, Identifiable, Equatable, Hashable {
     /// when M6.B starts returning chunk-level hits, so we mix in the
     /// snippet hash to keep `ForEach` happy).
     var id: String { "\(episodeId)|\(snippet.hashValue)" }
+}
 /// One row in `PodcastUpdate.memoryFacts` — a single key→value fact the
 /// agent or the user wrote so the assistant remembers it across sessions
 /// (feature #33). `source` is `"user"` or `"agent"`. `createdAt` is Unix
@@ -516,6 +522,7 @@ struct MemoryFact: Codable, Identifiable, Equatable, Hashable {
     var value: String
     var source: String
     var createdAt: Int
+}
 /// One agent-generated TTS episode row surfaced via
 /// `PodcastUpdate.ttsEpisodes` (feature #43). The `script` is the
 /// plain-text body the voice executor will speak when the user taps
@@ -529,6 +536,7 @@ struct TtsEpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     var createdAt: Int
     var status: String
     var voiceId: String? = nil
+}
 /// User-saved audio clip from an episode. One row per saved clip.
 /// `start_secs` / `end_secs` are absolute positions inside the episode.
 /// `episode_title` / `podcast_title` are re-joined against the live

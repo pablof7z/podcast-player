@@ -116,6 +116,7 @@ struct PlayerView: View {
             .task { dispatchFetchChaptersIfNeeded(for: player.episodeId) }
             .onChange(of: player.episodeId) { _, newId in
                 dispatchFetchChaptersIfNeeded(for: newId)
+            }
             .sheet(isPresented: $showClipComposer) {
                 ClipComposerView(
                     player: player,
