@@ -15,11 +15,12 @@ use crate::types::{NIP74Show, ParseError};
 
 /// Parse a Nostr event's header + tags into a raw [`NIP74Show`].
 ///
-/// `kind` is checked against [`KIND_SHOW`]. The `pubkey` is the event
-/// author's hex pubkey. `created_at` is the event header timestamp
-/// (unix seconds). `content` is the event content string — used as a
-/// fallback for the summary when no `["summary", ...]` tag is present
-/// (matches the Swift discovery service).
+/// `kind` is checked against [`KIND_SHOW`]. The `pubkey` is the podcast's own
+/// hex pubkey (NIP-F4 per-podcast key). `created_at` is the event header
+/// timestamp (unix seconds). `content` is the event content string — used as a
+/// fallback for `description` when no `["description", ...]` tag is present.
+///
+/// NIP-F4 shows have no `d` tag; the show is identified by pubkey alone.
 pub fn parse_show_event(
     kind: u32,
     pubkey: &str,
@@ -33,9 +34,6 @@ pub fn parse_show_event(
             got: kind,
         });
     }
-    let d_tag = first_tag_value(tags, "d")
-        .ok_or(ParseError::MissingTag("d"))?
-        .to_string();
 
     // Title falls back to a prefix of `content` (mirrors Swift parseShow).
     let title = first_tag_value(tags, "title")
@@ -52,15 +50,14 @@ pub fn parse_show_event(
         return Err(ParseError::EmptyTag("title"));
     }
 
-    let summary = first_tag_value(tags, "summary")
+    let description = first_tag_value(tags, "description")
         .map(str::to_string)
         .unwrap_or_else(|| content.to_string());
 
     Ok(NIP74Show {
         pubkey: pubkey.to_string(),
-        d_tag,
         title,
-        summary,
+        description,
         image_url: first_tag_value(tags, "image").map(str::to_string),
         language: first_tag_value(tags, "language").map(str::to_string),
         author_pubkey: first_tag_value(tags, "p").map(str::to_string),
@@ -75,7 +72,7 @@ pub fn parse_show_event(
 /// silently dropped (matches Swift `URL(string:)` semantics, which is the
 /// existing wire contract).
 ///
-/// `Podcast::id` is a UUIDv5 derived from the NIP-33 coordinate so the
+/// `Podcast::id` is a UUIDv5 derived from the NIP-F4 coordinate so the
 /// row is stable across rediscoveries — `subscribe(to:)` in Swift uses
 /// the same scheme via `NostrPodcastDiscoveryService.podcastID(for:)`.
 pub fn show_to_podcast(show: &NIP74Show) -> Podcast {
@@ -87,7 +84,7 @@ pub fn show_to_podcast(show: &NIP74Show) -> Podcast {
         title: show.title.clone(),
         author: show.author_pubkey.clone().unwrap_or_default(),
         image_url: show.image_url.as_deref().and_then(|s| Url::parse(s).ok()),
-        description: show.summary.clone(),
+        description: show.description.clone(),
         language: show.language.clone(),
         categories: show.categories.clone(),
         discovered_at: chrono::Utc::now(),
@@ -101,19 +98,9 @@ pub fn show_to_podcast(show: &NIP74Show) -> Podcast {
     }
 }
 
-/// UUIDv5 of the NIP-33 coordinate string, using a project-scoped
+/// UUIDv5 of the NIP-F4 coordinate string, using a project-scoped
 /// namespace UUID so values can be replayed deterministically.
-///
-/// `Uuid::new_v5` is SHA-1 based, which matches the Swift implementation's
-/// shape (16 bytes derived from a hash of the coordinate) closely enough
-/// for our cross-host needs. The Swift side computes from SHA-256 with
-/// bit-fiddling for version 5 — we accept a one-time host-side rebuild on
-/// the cutover because the same Rust value is used everywhere going
-/// forward; the canonical id source becomes this function.
 fn podcast_id_from_coordinate(coordinate: &str) -> PodcastId {
-    // Namespace UUID: stable, chosen once for podcast-discovery NIP-F4
-    // coordinates. Captured here rather than in podcast-core because the
-    // namespace is a NIP-F4 schema concern.
     const NS: Uuid = Uuid::from_bytes([
         0xd9, 0x7c, 0x4d, 0x7d, 0xa1, 0x12, 0x5b, 0x4f, 0x9a, 0x0b, 0x71, 0x12, 0xb6, 0x4c, 0xc3,
         0x2d,
@@ -126,20 +113,16 @@ mod tests {
     use super::*;
 
     fn minimal_tags() -> Vec<Vec<String>> {
-        vec![
-            vec!["d".into(), "podcast:guid:show-1".into()],
-            vec!["title".into(), "My Show".into()],
-        ]
+        vec![vec!["title".into(), "My Show".into()]]
     }
 
     #[test]
     fn parse_minimal_show_succeeds() {
-        let show = parse_show_event(KIND_SHOW, "agent-pk", 1_700_000_000, "", &minimal_tags())
+        let show = parse_show_event(KIND_SHOW, "podcast-pk", 1_700_000_000, "", &minimal_tags())
             .expect("parse");
-        assert_eq!(show.d_tag, "podcast:guid:show-1");
         assert_eq!(show.title, "My Show");
-        assert_eq!(show.pubkey, "agent-pk");
-        assert_eq!(show.summary, ""); // no summary tag, no content
+        assert_eq!(show.pubkey, "podcast-pk");
+        assert_eq!(show.description, ""); // no description tag, no content
         assert!(show.image_url.is_none());
         assert!(show.author_pubkey.is_none());
         assert!(show.categories.is_empty());
@@ -149,20 +132,19 @@ mod tests {
     #[test]
     fn parse_full_show_collects_every_field() {
         let tags = vec![
-            vec!["d".into(), "show-1".into()],
             vec!["title".into(), "Full Show".into()],
-            vec!["summary".into(), "A great show".into()],
+            vec!["description".into(), "A great show".into()],
             vec!["image".into(), "https://img.example/cover.jpg".into()],
             vec!["language".into(), "en".into()],
-            vec!["p".into(), "agent-pk".into()],
+            vec!["p".into(), "podcast-pk".into()],
             vec!["t".into(), "Technology".into()],
             vec!["t".into(), "News".into()],
         ];
-        let show = parse_show_event(KIND_SHOW, "agent-pk", 100, "", &tags).expect("parse");
-        assert_eq!(show.summary, "A great show");
+        let show = parse_show_event(KIND_SHOW, "podcast-pk", 100, "", &tags).expect("parse");
+        assert_eq!(show.description, "A great show");
         assert_eq!(show.image_url.as_deref(), Some("https://img.example/cover.jpg"));
         assert_eq!(show.language.as_deref(), Some("en"));
-        assert_eq!(show.author_pubkey.as_deref(), Some("agent-pk"));
+        assert_eq!(show.author_pubkey.as_deref(), Some("podcast-pk"));
         assert_eq!(show.categories, vec!["Technology".to_string(), "News".into()]);
     }
 
@@ -179,34 +161,32 @@ mod tests {
     }
 
     #[test]
-    fn parse_requires_d_tag() {
-        let tags = vec![vec!["title".into(), "X".into()]];
-        let err = parse_show_event(KIND_SHOW, "pk", 0, "", &tags).unwrap_err();
-        assert_eq!(err, ParseError::MissingTag("d"));
-    }
-
-    #[test]
     fn parse_falls_back_title_to_content_prefix() {
-        let tags = vec![vec!["d".into(), "s-1".into()]];
         let show =
-            parse_show_event(KIND_SHOW, "pk", 0, "Content as title fallback", &tags).expect("parse");
+            parse_show_event(KIND_SHOW, "pk", 0, "Content as title fallback", &[]).expect("parse");
         assert_eq!(show.title, "Content as title fallback");
     }
 
     #[test]
     fn parse_rejects_when_no_title_and_no_content() {
-        let tags = vec![vec!["d".into(), "s-1".into()]];
-        let err = parse_show_event(KIND_SHOW, "pk", 0, "", &tags).unwrap_err();
+        let err = parse_show_event(KIND_SHOW, "pk", 0, "", &[]).unwrap_err();
         assert_eq!(err, ParseError::MissingTag("title"));
+    }
+
+    #[test]
+    fn description_falls_back_to_content() {
+        let tags = vec![vec!["title".into(), "My Show".into()]];
+        let show =
+            parse_show_event(KIND_SHOW, "pk", 0, "Content description", &tags).expect("parse");
+        assert_eq!(show.description, "Content description");
     }
 
     #[test]
     fn show_to_podcast_maps_fields() {
         let show = NIP74Show {
             pubkey: "pk".into(),
-            d_tag: "d-1".into(),
             title: "T".into(),
-            summary: "S".into(),
+            description: "S".into(),
             image_url: Some("https://img.example/c.png".into()),
             language: Some("en".into()),
             author_pubkey: Some("pk".into()),
@@ -219,27 +199,26 @@ mod tests {
         assert_eq!(p.language.as_deref(), Some("en"));
         assert_eq!(p.categories, vec!["Tech".to_string()]);
         assert_eq!(p.owner_pubkey_hex.as_deref(), Some("pk"));
-        assert_eq!(p.nostr_coordinate.as_deref(), Some("10154:pk:d-1"));
+        assert_eq!(p.nostr_coordinate.as_deref(), Some("10154:pk"));
         assert_eq!(p.image_url.as_ref().map(Url::as_str), Some("https://img.example/c.png"));
     }
 
     #[test]
-    fn show_to_podcast_id_is_stable_per_coordinate() {
-        let make = |d: &str| NIP74Show {
-            pubkey: "pk".into(),
-            d_tag: d.into(),
+    fn show_to_podcast_id_is_stable_per_pubkey() {
+        let make = |pk: &str| NIP74Show {
+            pubkey: pk.into(),
             title: "T".into(),
-            summary: String::new(),
+            description: String::new(),
             image_url: None,
             language: None,
             author_pubkey: None,
             categories: vec![],
             created_at: 0,
         };
-        let a = show_to_podcast(&make("d-1"));
-        let b = show_to_podcast(&make("d-1"));
-        let c = show_to_podcast(&make("d-2"));
-        assert_eq!(a.id, b.id, "same coordinate → same id");
-        assert_ne!(a.id, c.id, "different coordinate → different id");
+        let a = show_to_podcast(&make("pk-1"));
+        let b = show_to_podcast(&make("pk-1"));
+        let c = show_to_podcast(&make("pk-2"));
+        assert_eq!(a.id, b.id, "same pubkey → same id");
+        assert_ne!(a.id, c.id, "different pubkey → different id");
     }
 }

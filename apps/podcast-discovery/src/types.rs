@@ -17,23 +17,22 @@ use serde::{Deserialize, Serialize};
 /// Pubkey and `created_at` come from the wrapping Nostr event header (not
 /// from tags) but are kept here so a parsed `NIP74Show` is self-contained
 /// and can be re-mapped to a `Podcast` without re-threading the event.
+///
+/// NIP-F4 shows have no `d` tag; the show is identified by pubkey alone.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NIP74Show {
-    /// Author pubkey (hex). Identifies the agent that signed the event.
+    /// Author pubkey (hex). Identifies the podcast key that signed the event.
     pub pubkey: String,
-    /// Value of the `["d", ...]` tag — stable per-author identifier.
-    pub d_tag: String,
     /// `["title", ...]`.
     pub title: String,
-    /// `["summary", ...]` — falls back to `Event.content` during parse.
-    pub summary: String,
+    /// `["description", ...]` — falls back to `Event.content` during parse.
+    pub description: String,
     /// `["image", <url>]`.
     pub image_url: Option<String>,
     /// `["language", <bcp47>]`.
     pub language: Option<String>,
-    /// `["p", <pubkey>]` — set by the publisher to the author pubkey
-    /// (mirrors the Swift code) so other Nostr clients can pick the show
-    /// up as a profile-tagged event.
+    /// `["p", <pubkey>]` — set by the publisher to the podcast pubkey
+    /// so other Nostr clients can pick the show up as a profile-tagged event.
     pub author_pubkey: Option<String>,
     /// Every `["t", <category>]` tag, in event order.
     pub categories: Vec<String>,
@@ -42,10 +41,10 @@ pub struct NIP74Show {
 }
 
 impl NIP74Show {
-    /// Stable NIP-F4 coordinate string `"10154:<pubkey>:<d-tag>"`.
-    /// Mirrors `NostrPodcastDiscoveryService.ShowResult.coordinate`.
+    /// NIP-F4 coordinate string `"10154:<pubkey>"`.
+    /// Shows are identified by pubkey alone — no d-tag.
     pub fn coordinate(&self) -> String {
-        format!("{}:{}:{}", super::kinds::KIND_SHOW, self.pubkey, self.d_tag)
+        format!("{}:{}", super::kinds::KIND_SHOW, self.pubkey)
     }
 }
 
@@ -151,19 +150,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn show_coordinate_matches_swift_format() {
+    fn show_coordinate_is_pubkey_only() {
         let show = NIP74Show {
             pubkey: "abc123".into(),
-            d_tag: "podcast:guid:1234".into(),
             title: "X".into(),
-            summary: String::new(),
+            description: String::new(),
             image_url: None,
             language: None,
             author_pubkey: None,
             categories: vec![],
             created_at: 0,
         };
-        assert_eq!(show.coordinate(), "10154:abc123:podcast:guid:1234");
+        assert_eq!(show.coordinate(), "10154:abc123");
     }
 
     #[test]
