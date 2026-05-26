@@ -6,8 +6,8 @@
 //! consumes when republishing or creating new shows/episodes.
 //!
 //! NIP-F4 uses per-podcast keypairs:
-//!   - kind:10154 — show metadata (replaceable per author)
-//!   - kind:54    — episode event (replaceable per author + d-tag)
+//!   - kind:10154 — show metadata (replaceable per podcast pubkey, no d-tag)
+//!   - kind:54    — episode events (regular events, no d-tag, no a-tag)
 //!   - kind:10064 — author claim (agent key declares ownership of podcast keys)
 //!
 //! ## Scope (M10.A)
@@ -67,9 +67,9 @@ mod round_trip_tests {
     use url::Url;
     use uuid::Uuid;
 
-    /// Build → parse → re-build round trip preserves the load-bearing
-    /// fields a discovery client cares about (title, summary, image,
-    /// language, categories, owner pubkey).
+    /// Build → parse → re-map round trip preserves the load-bearing fields a
+    /// discovery client cares about (title, description, image, language,
+    /// categories, owner pubkey, coordinate).
     #[test]
     fn show_round_trip_preserves_load_bearing_fields() {
         let mut p = Podcast::new("Round-Trip Show");
@@ -80,17 +80,18 @@ mod round_trip_tests {
         p.language = Some("en".into());
         p.categories = vec!["Technology".into(), "News".into()];
 
-        let tags = podcast_to_show_tags(&p, "agent-pk");
+        let podcast_pk = "podcast-pubkey-hex";
+        let tags = podcast_to_show_tags(&p, podcast_pk);
         let content = show_content(&p);
 
         let parsed =
-            parse_show_event(KIND_SHOW, "agent-pk", 1_700_000_000, &content, &tags).expect("parse");
+            parse_show_event(KIND_SHOW, podcast_pk, 1_700_000_000, &content, &tags).expect("parse");
         assert_eq!(parsed.title, "Round-Trip Show");
-        assert_eq!(parsed.summary, "Show description");
+        assert_eq!(parsed.description, "Show description");
         assert_eq!(parsed.image_url.as_deref(), Some("https://img.example/cover.jpg"));
         assert_eq!(parsed.language.as_deref(), Some("en"));
         assert_eq!(parsed.categories, vec!["Technology".to_string(), "News".into()]);
-        assert_eq!(parsed.author_pubkey.as_deref(), Some("agent-pk"));
+        assert_eq!(parsed.author_pubkey.as_deref(), Some(podcast_pk));
 
         // Re-mapping back to a `Podcast` keeps everything that matters.
         let p2 = show_to_podcast(&parsed);
@@ -99,22 +100,22 @@ mod round_trip_tests {
         assert_eq!(p2.language, p.language);
         assert_eq!(p2.categories, p.categories);
         assert_eq!(p2.image_url, p.image_url);
-        assert_eq!(p2.owner_pubkey_hex.as_deref(), Some("agent-pk"));
+        assert_eq!(p2.owner_pubkey_hex.as_deref(), Some(podcast_pk));
+        // NIP-F4: coordinate is "10154:<podcast-pubkey>" — no d-tag.
         assert_eq!(
             p2.nostr_coordinate.as_deref(),
-            Some("10154:agent-pk:podcast:guid:11111111222233334444555555555555")
+            Some("10154:podcast-pubkey-hex")
         );
     }
 
-    /// The `d` tag the build layer emits is the value the parse layer
-    /// recovers verbatim — guards against case/format drift between the
-    /// two sides.
+    /// Coordinate is stable for the same pubkey across builds.
     #[test]
-    fn show_d_tag_round_trips_lowercase() {
-        let mut p = Podcast::new("X");
-        p.id = PodcastId::new(Uuid::parse_str("ABCDEF12-3456-7890-ABCD-EF1234567890").unwrap());
-        let tags = podcast_to_show_tags(&p, "pk");
-        let parsed = parse_show_event(KIND_SHOW, "pk", 0, "", &tags).expect("parse");
-        assert_eq!(parsed.d_tag, "podcast:guid:abcdef1234567890abcdef1234567890");
+    fn show_coordinate_is_stable_per_pubkey() {
+        let p = Podcast::new("X");
+        let tags = podcast_to_show_tags(&p, "stable-pk");
+        let parsed_a = parse_show_event(KIND_SHOW, "stable-pk", 0, "", &tags).expect("parse a");
+        let parsed_b = parse_show_event(KIND_SHOW, "stable-pk", 99, "", &tags).expect("parse b");
+        assert_eq!(parsed_a.coordinate(), parsed_b.coordinate());
+        assert_eq!(parsed_a.coordinate(), "10154:stable-pk");
     }
 }
