@@ -3,16 +3,15 @@ use super::*;
 fn show_coordinate_matches_swift_format() {
     let show = NIP74Show {
         pubkey: "abc123".into(),
-        d_tag: "podcast:guid:1234".into(),
         title: "X".into(),
-        summary: String::new(),
+        description: String::new(),
         image_url: None,
         language: None,
         author_pubkey: None,
         categories: vec![],
         created_at: 0,
     };
-    assert_eq!(show.coordinate(), "10154:abc123:podcast:guid:1234");
+    assert_eq!(show.coordinate(), "10154:abc123");
 }
 #[test]
 fn show_reference_round_trips_through_wire() {
@@ -34,8 +33,7 @@ fn parse_error_renders_human_message() {
         "wrong event kind: expected 10154, got 1"
     );
     assert_eq!(
-        ParseError::MissingTag("d").to_string(),
-        "missing required tag `d`"
+        ParseError::MissingTag("title").to_string(),
+        "missing required tag `title`"
     );
 }
-
