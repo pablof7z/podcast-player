@@ -164,7 +164,8 @@ worktrees currently in flight.
 - **appintents-validation.** Validate Siri/Spotlight phrases, unavailable
   playback state behavior, localized phrases, background execution, and
   reconcile the active App target's Notification bridge with Rust-owned
-  playback policy.
+  playback policy. Reintroduce Play Latest only after the active app can route
+  it through `podcast.siri.play_latest` instead of selecting episodes in Swift.
 - **spotlight-hardening.** Validate indexing throttles, deletion/update,
   deep links, and no reindex churn from playback-position ticks.
 - **handoff-hardening.** Validate NSUserActivity donation/invalidation,

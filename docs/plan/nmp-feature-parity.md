@@ -137,7 +137,7 @@ completion, not absence of all infrastructure.
 |---|---|---|---|
 | 47 | CarPlay | Partial | Library/playback templates exist; validate on simulator/head unit, now-playing sync, entitlement behavior, and cold-connect placeholder. |
 | 48 | Widgets/Live Activity | Partial | Live Activity exists; wire durable widget snapshot from kernel/codegen, validate activity lifecycle and App Group data. |
-| 49 | AppIntents/Siri | Partial | Active App target now compiles voice plus playback shortcuts through `NotificationCenter`; validate Siri/Spotlight phrases, background behavior, unavailable playback state, localized phrases, and reconcile this Swift bridge with the Rust-owned policy path before marking done. |
+| 49 | AppIntents/Siri | Partial | Active App target now compiles voice plus Pause/Resume/Skip shortcuts through `NotificationCenter`; Play Latest is intentionally hidden until it can route through the Rust-owned `podcast.siri.play_latest` action. Validate Siri/Spotlight phrases, background behavior, unavailable playback state, localized phrases, and reconcile the Swift bridge with the Rust-owned policy path before marking done. |
 | 50 | Spotlight indexing | Partial | Indexing exists; validate throttling, deletion/update behavior, deep links, and no playback-position reindex churn. |
 | 51 | Handoff | Partial | NSUserActivity donation exists; validate continue path, stale activity invalidation, and cross-device behavior. |
 | 52 | iCloud settings sync | Partial | KVS bridge exists; confirm Rust owns settings policy, conflict handling, opt-in/availability, and echo suppression. |
