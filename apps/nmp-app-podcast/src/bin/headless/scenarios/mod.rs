@@ -5,6 +5,7 @@ use nmp_ffi::NmpApp;
 
 mod identity;
 mod key_persistence;
+mod relay_smoke;
 mod rss_subscribe;
 
 /// Per-scenario outcome.
@@ -45,5 +46,6 @@ pub fn run_all(
             "identity_import",
             identity::run(app, handle),
         ),
+        ("relay_smoke", relay_smoke::run(app, handle)),
     ]
 }
