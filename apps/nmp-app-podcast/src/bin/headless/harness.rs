@@ -4,11 +4,11 @@
 //! and justified by caller contract comments.
 
 use std::ffi::{CStr, CString};
-use std::net::TcpStream;
 use std::time::{Duration, Instant};
 
 use nmp_app_podcast::{
-    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, PodcastHandle,
+    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free,
+    nmp_app_podcast_snapshot_rev, PodcastHandle,
 };
 use nmp_app_podcast::ffi::PodcastUpdate;
 use nmp_ffi::{nmp_app_dispatch_action, nmp_app_free_string, nmp_app_new};
@@ -84,6 +84,11 @@ pub fn snapshot(handle: *mut PodcastHandle) -> Option<PodcastUpdate> {
 
 /// Poll the snapshot every 100 ms until `pred` returns `true` or `timeout_ms`
 /// elapses. Returns `Ok(update)` on success, `Err(msg)` on timeout.
+///
+/// Uses `nmp_app_podcast_snapshot_rev` (atomic read, no lock) to detect
+/// when the store has changed, then reads the full snapshot. This avoids
+/// blocking indefinitely on the store mutex while the actor thread is
+/// doing a long-running subscribe write.
 pub fn wait_for<F>(
     handle: *mut PodcastHandle,
     timeout_ms: u64,
@@ -93,27 +98,23 @@ where
     F: Fn(&PodcastUpdate) -> bool,
 {
     let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+    let mut last_rev = nmp_app_podcast_snapshot_rev(handle);
     loop {
-        if let Some(update) = snapshot(handle) {
-            if pred(&update) {
-                return Ok(update);
-            }
-        }
+        // Check deadline first so we don't do extra work past it.
         if Instant::now() >= deadline {
             break;
         }
         std::thread::sleep(Duration::from_millis(100));
+        let rev = nmp_app_podcast_snapshot_rev(handle);
+        if rev != last_rev {
+            last_rev = rev;
+            if let Some(update) = snapshot(handle) {
+                if pred(&update) {
+                    return Ok(update);
+                }
+            }
+        }
     }
     Err(format!("wait_for timed out after {timeout_ms} ms"))
 }
 
-/// TCP reachability probe. Returns `true` if a connection to `host:port`
-/// succeeds within 3 seconds.
-pub fn probe_tcp(host: &str, port: u16) -> bool {
-    let addr = format!("{host}:{port}");
-    TcpStream::connect_timeout(
-        &addr.parse().unwrap_or_else(|_| "0.0.0.0:0".parse().unwrap()),
-        Duration::from_secs(3),
-    )
-    .is_ok()
-}

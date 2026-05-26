@@ -36,6 +36,7 @@ required-features = ["headless"]
 [dependencies]
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"], optional = true }
 tempfile = { version = "3", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core" }
 # `nmp-ffi` owns the `NmpApp` C-ABI handle. Podcast's
 # `nmp_app_podcast_register` takes `*mut NmpApp`; the per-app crate names

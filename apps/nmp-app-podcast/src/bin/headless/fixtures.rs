@@ -13,6 +13,3 @@ pub const HEADLESS_TEST_SECRET_HEX: &str =
 #[allow(dead_code)]
 pub const HEADLESS_TEST_PUBKEY_HEX: &str =
     "c7f5c9fc41894086a2fd8c3e542c1d6e6beeb2175ba41813de38bd02936bd4ff";
-
-/// Darknet Diaries — small, reliable public RSS feed used by `rss_subscribe`.
-pub const RSS_FEED_URL: &str = "https://feeds.megaphone.fm/ADL9840290619";

@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
 
+
 use nmp_ffi::NmpApp;
 
 use super::actions::agent_module::AgentActionModule;
@@ -119,6 +120,16 @@ pub extern "C" fn nmp_app_podcast_register(
         rev.clone(),
     );
 
+    // Shared Tokio runtime — multi-thread scheduler so async LLM/relay
+    // work in future PRs can `.spawn` without a per-handler executor.
+    let runtime = Arc::new(
+        tokio::runtime::Builder::new_multi_thread()
+            .thread_name("podcast-tokio")
+            .enable_all()
+            .build()
+            .expect("tokio runtime"),
+    );
+
     // Install the host-op handler (requires &self, so take the ref AFTER the
     // &mut borrow above is released by the block end).
     let app_ref = unsafe { &*app };
@@ -146,6 +157,7 @@ pub extern "C" fn nmp_app_podcast_register(
         podcast_keys.clone(),
         publish_state.clone(),
         agent_chat,
+        runtime,
     )));
 
     Box::into_raw(Box::new(PodcastHandle {

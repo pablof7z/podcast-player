@@ -9,6 +9,8 @@ mod rss_subscribe;
 #[derive(Debug)]
 pub enum ScenarioResult {
     Pass,
+    /// Scenario was skipped (e.g. required resource not available).
+    #[allow(dead_code)]
     Skip(String),
     Fail(String),
 }

@@ -16,6 +16,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 
+use tokio::runtime::Runtime;
+
 use nmp_core::substrate::{CapabilityRequest, HostOpHandler};
 use nmp_ffi::NmpApp;
 
@@ -113,6 +115,11 @@ pub struct PodcastHostOpHandler {
     /// last-published timestamp). Shared with `PodcastHandle.publish_state`.
     pub(crate) publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
     pub(crate) agent_chat: AgentChatHandler,
+    /// Shared Tokio runtime for async LLM / relay work. Seeded in
+    /// `ffi::register` so all host-op handlers in future PRs share one
+    /// multi-thread scheduler.
+    #[allow(dead_code)]
+    pub(crate) runtime: Arc<Runtime>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the
@@ -149,6 +156,7 @@ impl PodcastHostOpHandler {
         podcast_keys: Arc<Mutex<PodcastKeyStore>>,
         publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
         agent_chat: AgentChatHandler,
+        runtime: Arc<Runtime>,
     ) -> Self {
         let tts = TtsEpisodeHandler::new(app, tts_episodes, rev.clone());
         Self {
@@ -175,6 +183,7 @@ impl PodcastHostOpHandler {
             podcast_keys,
             publish_state,
             agent_chat,
+            runtime,
         }
     }
 

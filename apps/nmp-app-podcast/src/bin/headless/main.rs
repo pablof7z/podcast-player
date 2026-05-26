@@ -10,6 +10,7 @@
 mod capability_host;
 mod fixtures;
 mod harness;
+mod mock_feed;
 mod scenarios;
 
 use std::ffi::CString;
@@ -31,7 +32,6 @@ fn main() -> ExitCode {
     // 3. Register Podcast projections and action modules.
     let handle = nmp_app_podcast_register(app);
     if handle.is_null() {
-        eprintln!("[headless] nmp_app_podcast_register returned null");
         unsafe { harness::app_free(app) };
         return ExitCode::FAILURE;
     }
@@ -48,10 +48,10 @@ fn main() -> ExitCode {
     //    nmp-ffi/src/lib.rs).
     nmp_app_start(app, 0, 500, 10);
 
-    // 7. Run all scenarios.
+    // 6. Run all scenarios.
     let results = scenarios::run_all(app, handle);
 
-    // 8. Print results.
+    // 7. Print results.
     let mut any_fail = false;
     for (name, result) in &results {
         let label = result.label();
@@ -69,7 +69,7 @@ fn main() -> ExitCode {
         }
     }
 
-    // 9. Tear down.
+    // 8. Tear down.
     nmp_app_podcast_unregister(handle);
     unsafe { harness::app_free(app) };
 
