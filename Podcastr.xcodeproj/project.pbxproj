@@ -212,6 +212,7 @@
 		4AD5BA0515D2F248FA730B99 /* LiveBriefingComposerAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468FCCF62EF745828732CD74 /* LiveBriefingComposerAdapter.swift */; };
 		4B15EA4B704F04745427649A /* CarPlayNowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C90EC17DBCEFF40FBCD9497 /* CarPlayNowPlaying.swift */; };
 		4BDBBB305AE94E07BCDC1F97 /* BlossomUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92CA53594D5B5B3AC527ABCC /* BlossomUploader.swift */; };
+		4BF109F47145F707D7C9B5BC /* PlaybackAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC525674EA339285E1E0BC9 /* PlaybackAppIntents.swift */; };
 		4C393466478D6C48F228242D /* StartVoiceModeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A44B416299A474FC718E2C5 /* StartVoiceModeIntent.swift */; };
 		4C6E9615B7981D8440C3FD78 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB415E5A627F3BCFD24327F1 /* PlayerView.swift */; };
 		4C6FE20F296DCB1A59122261 /* AppStateStore+MutationBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1515885CA9224B4A37B3C665 /* AppStateStore+MutationBatch.swift */; };
@@ -1327,6 +1328,7 @@
 		DBF09467D79A833AA7FE56AB /* ChunkBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkBuilder.swift; sourceTree = "<group>"; };
 		DC163DF4C72FD7E91A69A486 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
 		DC5A32C0AE5250A9EFB48503 /* PlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsView.swift; sourceTree = "<group>"; };
+		DCC525674EA339285E1E0BC9 /* PlaybackAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackAppIntents.swift; sourceTree = "<group>"; };
 		DDA14D090E457B5A5FD98E6B /* AudioConversationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConversationManager.swift; sourceTree = "<group>"; };
 		DE2405B0025D1B1C6C78A6D6 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		DE3FED42AA395BDE3B95D518 /* AgentIdentityQRView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentIdentityQRView.swift; sourceTree = "<group>"; };
@@ -2032,6 +2034,7 @@
 		84222261D27370DCD01B7ABE /* AppIntents */ = {
 			isa = PBXGroup;
 			children = (
+				DCC525674EA339285E1E0BC9 /* PlaybackAppIntents.swift */,
 				5A44B416299A474FC718E2C5 /* StartVoiceModeIntent.swift */,
 			);
 			path = AppIntents;
@@ -2803,6 +2806,7 @@
 				8483922E435FD8629CF2B14C /* RootView+DeepLink.swift in Sources */,
 				1DA6686DF32F7D132CB0B817 /* RootView+Setup.swift in Sources */,
 				0CA986CD08F53BDBAC3BFD4C /* RootView.swift in Sources */,
+				4BF109F47145F707D7C9B5BC /* PlaybackAppIntents.swift in Sources */,
 				4C393466478D6C48F228242D /* StartVoiceModeIntent.swift in Sources */,
 				0716802610715451D1A8E22E /* AppMain.swift in Sources */,
 				7640AF1D5A7783026714F396 /* AudioEngine+Observers.swift in Sources */,

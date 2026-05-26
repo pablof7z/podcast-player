@@ -116,3 +116,25 @@ extension RootView {
         return renderer.image { ctx in window.layer.render(in: ctx.cgContext) }
     }
 }
+
+// MARK: - PlaybackIntentObserver
+
+/// Handles `NotificationCenter` posts from `PlaybackAppIntents` (Siri /
+/// Shortcuts / CarPlay). Extracted into a `ViewModifier` so the main
+/// `RootView` body stays below the Swift type-checker expression limit.
+struct PlaybackIntentObserver: ViewModifier {
+    let playbackState: PlaybackState
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .pausePlaybackRequested)) { _ in
+                playbackState.pause()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .resumePlaybackRequested)) { _ in
+                playbackState.play()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .skipForwardRequested)) { _ in
+                playbackState.skipForward()
+            }
+    }
+}

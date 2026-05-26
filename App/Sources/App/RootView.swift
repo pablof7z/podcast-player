@@ -170,6 +170,7 @@ struct RootView: View {
                 .onReceive(NotificationCenter.default.publisher(for: .openPlayerRequested)) { _ in
                     showFullPlayer = true
                 }
+                .modifier(PlaybackIntentObserver(playbackState: playbackState))
                 .onReceive(NotificationCenter.default.publisher(for: .openSubscriptionDetailRequested)) { note in
                     guard let idString = note.userInfo?["subscriptionID"] as? String,
                           let uuid = UUID(uuidString: idString) else { return }

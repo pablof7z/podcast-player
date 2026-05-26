@@ -28,7 +28,9 @@ Recent corrective PRs changed the status, but not the final exit criteria:
 PR #89 fixed the current NIP-F4 wire builders/parsers, PR #93 replaced fake
 pubkey derivation with real secp256k1 derivation, PR #95 landed local Ollama
 provider support, and PR #96 fixed restored-playback auto-download behavior.
-The remaining NIP-F4 work is persistence, signing, relay publication,
+PR #101 finished the Rust download queue projection/report loop, and PR #102
+restored the active App target's playback AppIntents through a Notification
+bridge. The remaining NIP-F4 work is persistence, signing, relay publication,
 relay-backed discovery, author claims, deletion cleanup, and legacy data.
 
 The stale PR-1 status from the original plan is no longer true: `PodcastHandle`
@@ -135,7 +137,7 @@ completion, not absence of all infrastructure.
 |---|---|---|---|
 | 47 | CarPlay | Partial | Library/playback templates exist; validate on simulator/head unit, now-playing sync, entitlement behavior, and cold-connect placeholder. |
 | 48 | Widgets/Live Activity | Partial | Live Activity exists; wire durable widget snapshot from kernel/codegen, validate activity lifecycle and App Group data. |
-| 49 | AppIntents/Siri | Partial | Legacy App target now compiles with only the voice shortcut; decide target ownership for the `KernelModel`-backed playback intents under `ios/Podcast/Podcast/Features/Platform`, then add full shortcut validation, missing-model errors, localized phrases, and no iOS policy. |
+| 49 | AppIntents/Siri | Partial | Active App target now compiles voice plus playback shortcuts through `NotificationCenter`; validate Siri/Spotlight phrases, background behavior, unavailable playback state, localized phrases, and reconcile this Swift bridge with the Rust-owned policy path before marking done. |
 | 50 | Spotlight indexing | Partial | Indexing exists; validate throttling, deletion/update behavior, deep links, and no playback-position reindex churn. |
 | 51 | Handoff | Partial | NSUserActivity donation exists; validate continue path, stale activity invalidation, and cross-device behavior. |
 | 52 | iCloud settings sync | Partial | KVS bridge exists; confirm Rust owns settings policy, conflict handling, opt-in/availability, and echo suppression. |
@@ -153,7 +155,7 @@ completion, not absence of all infrastructure.
 ## Immediate Priority Order
 
 1. NIP-F4 secret persistence, signing, relay publish/discovery, author claims, and legacy-data behavior.
-2. iOS validation gate: broaden Swift test coverage now that the focused NIP-46 test and legacy AppIntents compile blockers are cleared.
+2. iOS validation gate: broaden Swift test coverage now that the focused NIP-46 test and AppIntents compile blockers are cleared.
 3. Remaining compat shims and identity/settings ownership.
 4. Capability push/routing cleanup and validation gate.
 5. Tier 1 device-level usability validation.
