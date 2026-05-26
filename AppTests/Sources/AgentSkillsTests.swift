@@ -87,14 +87,22 @@ final class AgentSkillsTests: XCTestCase {
         }
     }
 
-    func testSkillToolNamesAreAllRoutedByDispatchPodcast() {
-        // Every skill-gated tool must be in PodcastNames.all so dispatch can
-        // route to dispatchPodcast (the only place that knows how to handle
-        // them). Without this, the skill-enabled happy path would 404.
-        let routed = Set(AgentTools.PodcastNames.all)
+    func testSkillToolNamesAreAllRoutedByDispatch() {
+        // Every skill-gated tool must be handled by some dispatch path so the
+        // skill-enabled happy path never 404s. Two routing paths exist:
+        //   1. PodcastNames.all  → dispatchPodcast (podcast-domain tools)
+        //   2. AgentTools.Names  → direct cases in AgentTools.dispatch
+        //      (e.g. list_conversations / search_conversations which need
+        //       AppStateStore but not PodcastAgentToolDeps)
+        let viaPodcastDispatch = Set(AgentTools.PodcastNames.all)
+        let viaMainDispatch: Set<String> = [
+            AgentTools.Names.listConversations,
+            AgentTools.Names.searchConversations,
+        ]
+        let allRouted = viaPodcastDispatch.union(viaMainDispatch)
         for skill in AgentSkillRegistry.all {
             for name in skill.toolNames {
-                XCTAssertTrue(routed.contains(name), "\(name) missing from PodcastNames.all")
+                XCTAssertTrue(allRouted.contains(name), "\(name) not handled by any dispatch path")
             }
         }
     }
