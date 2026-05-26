@@ -44,6 +44,7 @@ pub(crate) mod snapshot;
 mod snapshot_categories;
 mod snapshot_owned;
 mod snapshot_queue;
+mod snapshot_update;
 #[cfg(test)]
 mod snapshot_tests;
 #[cfg(test)]
