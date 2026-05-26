@@ -71,7 +71,7 @@ extension AppTests {
         // After the trailing flush the on-disk position must match the
         // last cached value — otherwise a crash would silently rewind the
         // user to whatever the eager-first call wrote.
-        let reopened = await AppStateTestSupport.makeIsolatedStore(
+        let reopened = AppStateTestSupport.makeIsolatedStore(
             fileURL: storeFileURL,
             reset: false
         )
@@ -156,7 +156,7 @@ extension AppTests {
             "didEnterBackgroundNotification did not trigger an immediate flush."
         )
 
-        let reopened = await AppStateTestSupport.makeIsolatedStore(
+        let reopened = AppStateTestSupport.makeIsolatedStore(
             fileURL: storeFileURL,
             reset: false
         )
@@ -200,7 +200,7 @@ extension AppTests {
         // sequence is flush(999) → mutate(played=true, position=0) →
         // didSet → save. So the persisted record is played=true,
         // position=0, never 999.
-        let reopened = await AppStateTestSupport.makeIsolatedStore(
+        let reopened = AppStateTestSupport.makeIsolatedStore(
             fileURL: storeFileURL,
             reset: false
         )

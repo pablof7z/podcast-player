@@ -25,7 +25,7 @@ final class UserIdentityWiringTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        let made = await AppStateTestSupport.makeIsolatedStore()
+        let made = AppStateTestSupport.makeIsolatedStore()
         storeFileURL = made.fileURL
         store = made.store
         signer = RecordingSigner()
