@@ -1,0 +1,86 @@
+use super::*;
+#[test]
+fn action_ids_match_documented_strings() {
+    assert_eq!(ACTION_PUBLISH_CREATE_OWNED, "podcast.publish.create_owned_podcast");
+    assert_eq!(ACTION_PUBLISH_PUBLISH_SHOW, "podcast.publish.publish_show");
+    assert_eq!(ACTION_PUBLISH_PUBLISH_EPISODE, "podcast.publish.publish_episode");
+    assert_eq!(
+        ACTION_PUBLISH_PUBLISH_AUTHOR_CLAIM,
+        "podcast.publish.publish_author_claim"
+    );
+    assert_eq!(ACTION_PUBLISH_REMOVE_OWNED, "podcast.publish.remove_owned_podcast");
+}
+#[test]
+fn create_owned_podcast_round_trips() {
+    let a = PublishAction::CreateOwnedPodcast {
+        podcast_id: "pod-7".into(),
+    };
+    let json = serde_json::to_string(&a).expect("encode");
+    assert!(json.contains(r#""op":"create_owned_podcast""#));
+    assert!(json.contains(r#""podcast_id":"pod-7""#));
+    let decoded: PublishAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, a);
+}
+#[test]
+fn publish_show_round_trips() {
+    let a = PublishAction::PublishShow {
+        podcast_id: "pod-7".into(),
+    };
+    let json = serde_json::to_string(&a).expect("encode");
+    assert!(json.contains(r#""op":"publish_show""#));
+    let decoded: PublishAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, a);
+}
+#[test]
+fn publish_episode_round_trips() {
+    let a = PublishAction::PublishEpisode {
+        episode_id: "ep-7".into(),
+    };
+    let json = serde_json::to_string(&a).expect("encode");
+    assert!(json.contains(r#""op":"publish_episode""#));
+    assert!(json.contains(r#""episode_id":"ep-7""#));
+    let decoded: PublishAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, a);
+}
+#[test]
+fn publish_author_claim_round_trips() {
+    let a = PublishAction::PublishAuthorClaim {
+        agent_pubkey_hex: "deadbeef".into(),
+    };
+    let json = serde_json::to_string(&a).expect("encode");
+    assert!(json.contains(r#""op":"publish_author_claim""#));
+    assert!(json.contains(r#""agent_pubkey_hex":"deadbeef""#));
+    let decoded: PublishAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, a);
+}
+#[test]
+fn remove_owned_podcast_round_trips() {
+    let a = PublishAction::RemoveOwnedPodcast {
+        podcast_id: "pod-7".into(),
+    };
+    let json = serde_json::to_string(&a).expect("encode");
+    assert!(json.contains(r#""op":"remove_owned_podcast""#));
+    let decoded: PublishAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, a);
+}
+#[test]
+fn execute_emits_dispatch_host_op() {
+    let action = PublishAction::CreateOwnedPodcast {
+        podcast_id: "pod-1".into(),
+    };
+    let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
+    NipF4PublishModule::execute(action, "corr-1", &|cmd| {
+        commands.lock().unwrap().push(cmd);
+    })
+    .expect("execute ok");
+    let commands = commands.into_inner().unwrap();
+    assert_eq!(commands.len(), 1);
+    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+        panic!("expected DispatchHostOp");
+    };
+    assert_eq!(correlation_id, "corr-1");
+    let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
+    assert_eq!(v["op"], "create_owned_podcast");
+    assert_eq!(v["podcast_id"], "pod-1");
+}
+
