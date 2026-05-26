@@ -35,7 +35,7 @@ struct PlaybackSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Skip Intervals") {
+            Section {
                 Picker("Skip Forward", selection: skipForwardBinding) {
                     ForEach(Self.skipOptions, id: \.self) { sec in
                         Text("\(sec)s").tag(sec)
@@ -46,6 +46,8 @@ struct PlaybackSettingsView: View {
                         Text("\(sec)s").tag(sec)
                     }
                 }
+            } header: {
+                Text("Skip Intervals")
             } footer: {
                 Text("Sets the duration for the skip-forward and skip-backward buttons in the player.")
                     .font(PodcastFont.caption)
