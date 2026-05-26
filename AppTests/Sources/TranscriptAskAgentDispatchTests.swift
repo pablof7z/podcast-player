@@ -20,10 +20,10 @@ final class TranscriptAskAgentDispatchTests: XCTestCase {
 
     private var fileURL: URL!
 
-    override func tearDown() {
+    override func tearDown() async throws {
         if let fileURL { AppStateTestSupport.disposeIsolatedStore(at: fileURL) }
         fileURL = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Prefill formatter

@@ -15,20 +15,20 @@ final class EpisodeDetailTranscriptTests: XCTestCase {
     private var tempDir: URL!
     private var store: TranscriptStore!
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override func setUp() async throws {
+        try await super.setUp()
         tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("readyTranscriptTests-\(UUID().uuidString)", isDirectory: true)
         store = try TranscriptStore(rootDirectory: tempDir)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         if let tempDir {
             try? FileManager.default.removeItem(at: tempDir)
         }
         store = nil
         tempDir = nil
-        try super.tearDownWithError()
+        try await super.tearDown()
     }
 
     // MARK: - Tests
