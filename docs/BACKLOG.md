@@ -14,7 +14,7 @@ worktrees currently in flight.
 
 - ~~**projections-rs-split**~~ — Done: `ffi/projections.rs` split into 13 focused files under `ffi/projections/` with a thin re-exporting `mod.rs` facade. All existing import paths preserved.
 - ~~**store-mod-split**~~ — Done: `store/mod.rs` (610 LOC) split: playback → `playback.rs`, memory → `memory.rs`, settings → `settings.rs`. Now 388 LOC.
-- ~~**test-file-ceiling**~~ — Done: `projections_tests.rs` (758 LOC) → 371+399, `snapshot_tests.rs` (571 LOC) → 287+295, `store/tests.rs` trimmed to 500. All 639 tests pass.
+- ~~**test-file-ceiling**~~ — Done: `projections_tests.rs` (758 LOC) → 371+399, `snapshot_tests.rs` (571 LOC) → 287+295, `store/tests.rs` (500 LOC) → 266+246 (`tests.rs` + `tests_ext.rs`). `podcast_actions.rs` (496 LOC) split to 206+305 (`podcast_actions.rs` + `podcast_actions_feed.rs`). `snapshot.rs` (499 LOC) → `snapshot.rs` + `snapshot_update.rs`. All 654 tests pass.
 
 ## AppIntents / Siri follow-ups
 
