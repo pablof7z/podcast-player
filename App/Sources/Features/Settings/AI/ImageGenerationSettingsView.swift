@@ -21,14 +21,20 @@ struct ImageGenerationSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { settings = store.state.settings }
         .onChange(of: settings) { _, new in store.updateSettings(new) }
-        .task { await catalog.loadIfNeeded() }
+        .task {
+            if catalog.models.isEmpty {
+                catalog = OpenRouterModelSelectorViewModel(ollamaChatURL: store.state.settings.ollamaChatURL)
+            }
+            await catalog.loadIfNeeded()
+        }
         .sheet(isPresented: $selectorPresented) {
             NavigationStack {
                 OpenRouterModelSelectorView(
                     selectedModelID: modelIDBinding,
                     selectedModelName: modelNameBinding,
                     role: "Image Generation",
-                    initialCapabilityFilter: .imageOutput
+                    initialCapabilityFilter: .imageOutput,
+                    ollamaChatURL: store.state.settings.ollamaChatURL
                 )
             }
             .presentationDragIndicator(.visible)

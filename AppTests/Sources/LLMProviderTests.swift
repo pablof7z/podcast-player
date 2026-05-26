@@ -37,4 +37,45 @@ final class LLMProviderTests: XCTestCase {
         XCTAssertEqual(decoded.embeddingsModel, "ollama:qwen3-embedding")
         XCTAssertEqual(decoded.embeddingsModelName, "qwen3-embedding")
     }
+
+    func testOllamaAPIKeyRequirementDependsOnConfiguredHost() {
+        XCTAssertTrue(LLMProviderCredentialResolver.requiresAPIKey(for: .openRouter))
+        XCTAssertTrue(LLMProviderCredentialResolver.requiresAPIKey(for: .ollama))
+        XCTAssertTrue(LLMProviderCredentialResolver.requiresAPIKey(
+            for: .ollama,
+            ollamaChatURL: URL(string: "https://ollama.com/api/chat")
+        ))
+        XCTAssertTrue(LLMProviderCredentialResolver.requiresAPIKey(
+            for: .ollama,
+            ollamaChatURL: URL(string: "https://www.ollama.com/api/chat")
+        ))
+
+        XCTAssertFalse(LLMProviderCredentialResolver.requiresAPIKey(
+            for: .ollama,
+            ollamaChatURL: URL(string: "http://localhost:11434/api/chat")
+        ))
+        XCTAssertFalse(LLMProviderCredentialResolver.requiresAPIKey(
+            for: .ollama,
+            ollamaChatURL: URL(string: "https://ollama.home.arpa/api/chat")
+        ))
+    }
+
+    func testOllamaTagsURLUsesConfiguredChatHost() {
+        XCTAssertEqual(
+            OllamaModelCatalogService.tagsURL(from: nil).absoluteString,
+            "https://ollama.com/api/tags"
+        )
+        XCTAssertEqual(
+            OllamaModelCatalogService.tagsURL(from: "http://localhost:11434/api/chat").absoluteString,
+            "http://localhost:11434/api/tags"
+        )
+        XCTAssertEqual(
+            OllamaModelCatalogService.tagsURL(from: "https://ollama.home.arpa/custom/chat").absoluteString,
+            "https://ollama.home.arpa/custom/tags"
+        )
+        XCTAssertEqual(
+            OllamaModelCatalogService.tagsURL(from: "https://ollama.home.arpa/not-chat").absoluteString,
+            "https://ollama.home.arpa/api/tags"
+        )
+    }
 }

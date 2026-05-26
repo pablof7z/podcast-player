@@ -25,7 +25,7 @@ struct OpenRouterModelSelectorView: View {
     var initialCapabilityFilter: ModelCapabilityFilter = .compatible
     @Environment(\.dismiss) private var dismiss
 
-    @State private var viewModel = OpenRouterModelSelectorViewModel()
+    @State private var viewModel: OpenRouterModelSelectorViewModel
     @State private var searchText = ""
     @State private var capabilityFilter: ModelCapabilityFilter
     @State private var sort: ModelSort = .recommended
@@ -36,13 +36,15 @@ struct OpenRouterModelSelectorView: View {
         selectedModelID: Binding<String>,
         selectedModelName: Binding<String>,
         role: String = "Model",
-        initialCapabilityFilter: ModelCapabilityFilter = .compatible
+        initialCapabilityFilter: ModelCapabilityFilter = .compatible,
+        ollamaChatURL: String? = nil
     ) {
         self._selectedModelID = selectedModelID
         self._selectedModelName = selectedModelName
         self.role = role
         self.initialCapabilityFilter = initialCapabilityFilter
         self._capabilityFilter = State(initialValue: initialCapabilityFilter)
+        self._viewModel = State(initialValue: OpenRouterModelSelectorViewModel(ollamaChatURL: ollamaChatURL))
     }
 
     var body: some View {
@@ -299,7 +301,11 @@ final class OpenRouterModelSelectorViewModel {
     private(set) var isLoading = false
     var errorMessage: String?
 
-    private let service = OpenRouterModelCatalogService()
+    private let ollamaChatURL: String?
+
+    init(ollamaChatURL: String? = nil) {
+        self.ollamaChatURL = ollamaChatURL
+    }
 
     func loadIfNeeded() async {
         guard models.isEmpty else { return }
@@ -311,7 +317,7 @@ final class OpenRouterModelSelectorViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            models = try await service.fetchModels()
+            models = try await OpenRouterModelCatalogService(ollamaChatURL: ollamaChatURL).fetchModels()
         } catch {
             errorMessage = error.localizedDescription
         }

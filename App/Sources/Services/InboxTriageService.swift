@@ -122,7 +122,7 @@ final class InboxTriageService {
         // heuristic rationale. Matches the safety-net the previous
         // featured surface offered so installs without credentials
         // still have something on the Inbox rail.
-        guard hasAPIKey(model: store.state.settings.agentInitialModel) else {
+        guard hasAPIKey(model: store.state.settings.agentInitialModel, store: store) else {
             let patches = heuristicPatches(from: candidates)
             if !patches.isEmpty {
                 store.applyTriageDecisions(patches)
@@ -232,8 +232,12 @@ final class InboxTriageService {
 
     // MARK: - LLM call
 
-    private func hasAPIKey(model: String) -> Bool {
+    private func hasAPIKey(model: String, store: AppStateStore) -> Bool {
         let reference = LLMModelReference(storedID: model)
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
+        if !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL) {
+            return true
+        }
         return LLMProviderCredentialResolver.hasAPIKey(for: reference.provider)
     }
 
@@ -250,12 +254,14 @@ final class InboxTriageService {
         ]
         let knownIDs = Set(candidates.map { $0.id })
         let model = store.state.settings.agentInitialModel
+        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
 
         let result = try await AgentLLMClient.streamCompletion(
             messages: messages,
             tools: [],
             model: model,
             feature: CostFeature.agentChat,
+            ollamaChatURL: ollamaChatURL,
             onPartialContent: { _ in }
         )
         let text = (result.assistantMessage["content"] as? String) ?? ""

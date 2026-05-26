@@ -6,22 +6,49 @@ struct OllamaModelCatalogService: Sendable {
     private static let decoder = JSONDecoder()
 
     private enum Constants {
-        static let tagsURL = "https://ollama.com/api/tags"
+        static let defaultTagsURL = "https://ollama.com/api/tags"
         static let timeout: TimeInterval = 30
     }
 
     private let apiKeyProvider: @Sendable () throws -> String?
+    /// Tags URL derived from the configured chat URL. Defaults to the
+    /// public Ollama Cloud endpoint when no override is supplied.
+    private let tagsURL: URL
 
-    init(apiKeyProvider: @Sendable @escaping () throws -> String? = { try OllamaCredentialStore.apiKey() }) {
+    init(
+        chatURL: String? = nil,
+        apiKeyProvider: @Sendable @escaping () throws -> String? = { try OllamaCredentialStore.apiKey() }
+    ) {
         self.apiKeyProvider = apiKeyProvider
+        self.tagsURL = OllamaModelCatalogService.tagsURL(from: chatURL)
+    }
+
+    /// Derive the /api/tags discovery URL from a /api/chat endpoint string.
+    ///
+    /// If the path ends in "/chat", strip it and replace with "/tags".
+    /// Otherwise use `<scheme>://<host>/api/tags` as a safe fallback.
+    /// Malformed or nil input falls back to the public cloud URL.
+    static func tagsURL(from chatURLString: String?) -> URL {
+        guard let str = chatURLString,
+              let chatURL = URL(string: str),
+              let host = chatURL.host else {
+            return URL(string: Constants.defaultTagsURL)!
+        }
+        var components = URLComponents()
+        components.scheme = chatURL.scheme ?? "https"
+        components.host = host
+        components.port = chatURL.port
+        let path = chatURL.path
+        if path.hasSuffix("/chat") {
+            components.path = String(path.dropLast("/chat".count)) + "/tags"
+        } else {
+            components.path = "/api/tags"
+        }
+        return components.url ?? URL(string: Constants.defaultTagsURL)!
     }
 
     func fetchModels() async throws -> [OllamaTagModel] {
-        guard let url = URL(string: Constants.tagsURL) else {
-            throw CatalogError.decoding("Invalid Ollama tags URL")
-        }
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: tagsURL)
         if let apiKey = try apiKeyProvider(), !apiKey.isEmpty {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
