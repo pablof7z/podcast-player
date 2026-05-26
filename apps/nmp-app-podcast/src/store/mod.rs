@@ -27,9 +27,12 @@ use podcast_core::{Episode, EpisodeId, Podcast, PodcastId};
 mod ad_segments;
 mod chapters;
 pub mod auto_download;
+mod memory;
 mod owned_ext;
+mod playback;
 mod persistence;
 pub mod podcast_keys;
+mod settings;
 #[cfg(test)]
 mod tests;
 mod transcripts;
@@ -364,236 +367,11 @@ impl PodcastStore {
         self.local_paths.remove(episode_id)
     }
 
-    /// Read the persisted playback position for an episode keyed by the string
-    /// form of its UUID. Returns `None` when no episode with that id is found
-    /// or when its position is at the start (`0.0`).
-    ///
-    /// Used by the snapshot projection so iOS can render a "Resume at X:XX"
-    /// indicator without having to keep its own copy of the position. The Play
-    /// path itself reads position directly via [`episode_playback_info`].
-    pub fn position_for(&self, id_str: &str) -> Option<f64> {
-        for episodes in self.episodes.values() {
-            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
-                return if ep.position_secs > 0.0 {
-                    Some(ep.position_secs)
-                } else {
-                    None
-                };
-            }
-        }
-        None
-    }
-
-    /// Update an episode's playback position in memory. **Does not** persist;
-    /// call [`flush_positions`] (or any other persisting mutation) to write
-    /// through to disk.
-    ///
-    /// Returns `true` when the episode was found and updated, `false`
-    /// otherwise. `Playing` reports arrive at ≤4 Hz (`AudioReport` D8); writing
-    /// the entire `podcasts.json` on every tick would burn disk bandwidth and
-    /// shorten flash life, so the writeback path stays in-memory and the FFI
-    /// layer batches disk flushes on terminal events (pause / stop) and on a
-    /// coarse interval. The "every durable concept has one canonical
-    /// representation" rule (AGENTS.md) keeps position on `Episode.position_secs`
-    /// rather than a parallel side-map.
-    pub fn set_episode_position(&mut self, id_str: &str, position_secs: f64) -> bool {
-        let pos = position_secs.max(0.0);
-        for episodes in self.episodes.values_mut() {
-            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
-                ep.position_secs = pos;
-                return true;
-            }
-        }
-        false
-    }
-
-    /// Mark an episode (by stringified `EpisodeId`) as listened. Returns
-    /// `true` only when the flag actually flipped (unknown id and
-    /// already-played both return `false`). Flushes to disk when bound.
-    pub fn mark_episode_played(&mut self, id_str: &str) -> bool {
-        for episodes in self.episodes.values_mut() {
-            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
-                if ep.played {
-                    return false;
-                }
-                ep.played = true;
-                self.persist();
-                return true;
-            }
-        }
-        false
-    }
-
-    /// Set or toggle the `is_starred` flag for an episode.
-    ///
-    /// When `starred` is `Some(value)` the flag is set explicitly; when `None`
-    /// the current value is flipped. Returns the new value, or `None` when the
-    /// episode id is unknown. Persists immediately.
-    pub fn set_episode_starred(&mut self, id_str: &str, starred: Option<bool>) -> Option<bool> {
-        for episodes in self.episodes.values_mut() {
-            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
-                let new_value = starred.unwrap_or(!ep.is_starred);
-                ep.is_starred = new_value;
-                self.persist();
-                return Some(new_value);
-            }
-        }
-        None
-    }
-
-    /// Force-flush the in-memory state to disk. Companion to
-    /// [`set_episode_position`] — call when a natural checkpoint is reached
-    /// (pause, stop, app background, periodic interval) so the in-memory
-    /// position deltas survive a hard kill.
-    ///
-    /// Side-effect: snapshots the current `Episode.position_secs` for every
-    /// known episode into the in-memory "last flushed" marker so subsequent
-    /// `Playing` ticks can throttle off the on-disk state, not the previous
-    /// in-memory tick. Silent no-op when no data dir has been bound (D6).
-    pub fn flush_positions(&mut self) {
-        // Take the snapshot of what we're about to persist before the rename
-        // races, so the marker is consistent with what is now on disk.
-        for episodes in self.episodes.values() {
-            for ep in episodes {
-                let key = ep.id.0.to_string();
-                if ep.position_secs > 0.0 {
-                    self.last_flushed_positions.insert(key, ep.position_secs);
-                } else {
-                    // A reset to 0 should clear the marker so the next
-                    // forward-playing tick is treated as fresh.
-                    self.last_flushed_positions.remove(&key);
-                }
-            }
-        }
-        self.persist();
-    }
-
-    /// Look up the most recently persisted position for an episode, or
-    /// `None` when nothing has been flushed for it this session (and the
-    /// initial hydration didn't seed a value). Used by the FFI writeback
-    /// layer to decide whether the live playhead has drifted enough from
-    /// the on-disk checkpoint to warrant another flush — the throttling
-    /// MUST compare against the last *flushed* position rather than the
-    /// previous tick's in-memory value, otherwise an uninterrupted stream
-    /// of small ≤4 Hz `Playing` deltas never crosses the threshold.
-    pub fn last_flushed_position(&self, id_str: &str) -> Option<f64> {
-        self.last_flushed_positions.get(id_str).copied()
-    }
-
-    /// Whether the user has finished iOS onboarding. The iOS shell reads this
-    /// from the `settings` snapshot to gate `OnboardingView`. Defaults to
-    /// `false` for fresh installs.
-    pub fn has_completed_onboarding(&self) -> bool {
-        self.has_completed_onboarding
-    }
-
-    /// Update the onboarding-complete flag and flush to disk when a data dir
-    /// is registered. Idempotent: writing the same value is a no-op for the
-    /// disk file (the bytes are unchanged) and for the in-memory flag.
-    pub fn set_onboarding_complete(&mut self, value: bool) {
-        if self.has_completed_onboarding == value {
-            return;
-        }
-        self.has_completed_onboarding = value;
-        self.persist();
-    }
-
-
-    /// Set the auto-download opt-in flag for a podcast. Idempotent and
-    /// silent when the podcast isn't subscribed (the flag will just
-    /// hang around in the set; `unsubscribe` clears it). Flushes to
-    /// disk when a data dir is bound so the preference survives
-    /// app relaunches.
-    pub fn set_auto_download(&mut self, podcast_id: PodcastId, enabled: bool) {
-        let changed = if enabled {
-            self.auto_download_enabled.insert(podcast_id)
-        } else {
-            self.auto_download_enabled.remove(&podcast_id)
-        };
-        if changed {
-            self.persist();
-        }
-    }
-
-    /// Read the auto-download opt-in flag for a podcast. Defaults to
-    /// `false` for unknown / never-toggled podcasts.
-    pub fn is_auto_download_enabled(&self, podcast_id: PodcastId) -> bool {
-        self.auto_download_enabled.contains(&podcast_id)
-    }
-
-    /// Look up the auto-download flag by the string form of a podcast id.
-    /// Helper for the FFI action handlers, which receive UUIDs as strings.
-    pub fn is_auto_download_enabled_str(&self, id_str: &str) -> bool {
-        match id_str.parse::<uuid::Uuid>() {
-            Ok(uuid) => self.is_auto_download_enabled(PodcastId::new(uuid)),
-            Err(_) => false,
-        }
-    }
-
     /// Read-only access to the on-disk path side-map. Used by the
     /// auto-download policy helper so a "freshly discovered" episode
     /// already known to be on disk is not re-queued.
     pub fn local_paths(&self) -> &HashMap<EpisodeId, String> {
         &self.local_paths
-    }
-
-    // ── Agent memory (feature #33) ────────────────────────────────────────
-
-    /// Upsert a memory fact keyed on `key`. When a fact with the same key
-    /// already exists, only the value and source change — the original
-    /// `created_at` and `id` are preserved so the UI sees stable identity
-    /// across edits.
-    ///
-    /// `source` is taken verbatim; the action handler is responsible for
-    /// defaulting it (typically to `"user"`).
-    pub fn set_memory_fact(&mut self, key: String, value: String, source: String, now_unix: i64) {
-        let fact = match self.memory_facts.get(&key) {
-            Some(existing) => MemoryFact {
-                id: existing.id.clone(),
-                key: existing.key.clone(),
-                value,
-                source,
-                created_at: existing.created_at,
-            },
-            None => MemoryFact {
-                id: key.clone(),
-                key: key.clone(),
-                value,
-                source,
-                created_at: now_unix,
-            },
-        };
-        self.memory_facts.insert(key, fact);
-        self.persist();
-    }
-
-    /// Delete a memory fact by key. Returns `true` when a row was removed
-    /// so the caller can decide whether to bump `rev`.
-    pub fn remove_memory_fact(&mut self, key: &str) -> bool {
-        let removed = self.memory_facts.remove(key).is_some();
-        if removed {
-            self.persist();
-        }
-        removed
-    }
-
-    /// Wipe the entire memory bag. Returns the number of facts that were
-    /// removed so the caller can decide whether to bump `rev`.
-    pub fn clear_memory(&mut self) -> usize {
-        let n = self.memory_facts.len();
-        if n > 0 {
-            self.memory_facts.clear();
-            self.persist();
-        }
-        n
-    }
-
-    /// Snapshot of every memory fact, sorted by `key` so the iOS list is
-    /// stable across re-renders without a client-side sort.
-    pub fn all_memory_facts(&self) -> Vec<MemoryFact> {
-        let mut facts: Vec<MemoryFact> = self.memory_facts.values().cloned().collect();
-        facts.sort_by(|a, b| a.key.cmp(&b.key));
-        facts
     }
 
     /// Test-only accessor for the currently-bound data dir.
