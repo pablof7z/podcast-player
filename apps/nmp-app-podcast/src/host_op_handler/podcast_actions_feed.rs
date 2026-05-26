@@ -268,8 +268,14 @@ impl PodcastHostOpHandler {
                 let lm_out = http_result.header("last-modified").map(str::to_owned);
                 let write_ok = match self.store.lock() {
                     Ok(mut s) => {
-                        s.subscribe(parsed.podcast, episodes);
-                        s.update_refresh_metadata(podcast_id, etag_out, lm_out);
+                        // subscribe_with_refresh_metadata collapses subscribe +
+                        // update_refresh_metadata into a single persist() call.
+                        s.subscribe_with_refresh_metadata(
+                            parsed.podcast,
+                            episodes,
+                            etag_out,
+                            lm_out,
+                        );
                         self.rev.fetch_add(1, Ordering::Relaxed);
                         true
                     }

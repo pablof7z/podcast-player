@@ -23,6 +23,30 @@ impl PodcastStore {
         self.persist();
     }
 
+    /// Subscribe (or re-subscribe) and immediately apply the HTTP cache headers
+    /// from the feed response, persisting exactly once.
+    ///
+    /// Calling `subscribe` + `update_refresh_metadata` separately triggers two
+    /// `persist()` calls. This method collapses them into one disk write, which
+    /// is significant when the library is large (full episode list serialized).
+    pub fn subscribe_with_refresh_metadata(
+        &mut self,
+        podcast: Podcast,
+        episodes: Vec<Episode>,
+        etag: Option<String>,
+        last_modified: Option<String>,
+    ) {
+        let id = podcast.id;
+        self.podcasts.insert(id, podcast);
+        self.episodes.insert(id, episodes);
+        if let Some(p) = self.podcasts.get_mut(&id) {
+            p.etag = etag;
+            p.last_modified = last_modified;
+            p.last_refreshed_at = Some(chrono::Utc::now());
+        }
+        self.persist();
+    }
+
     /// Remove a podcast and all its episodes, flushing to disk if a data dir
     /// is registered. Silent no-op when not found.
     ///

@@ -244,3 +244,33 @@ fn fresh_data_dir_yields_false_onboarding_flag() {
     store.set_data_dir(dir.path.clone());
     assert!(!store.has_completed_onboarding());
 }
+
+// ── subscribe_with_refresh_metadata ────────────────────────────────────────
+
+#[test]
+fn subscribe_with_refresh_metadata_persists_etag_and_episodes() {
+    // Verifies the combined method saves etag+episodes in a single pass
+    // (no double-persist like subscribe + update_refresh_metadata would do).
+    let dir = TempDir::new();
+    let mut store = PodcastStore::new();
+    store.set_data_dir(dir.path.clone());
+
+    let podcast = make_podcast("Combined Show");
+    let id = podcast.id;
+    let ep = make_episode(id, "Episode 1");
+    store.subscribe_with_refresh_metadata(
+        podcast,
+        vec![ep],
+        Some("W/\"combined\"".into()),
+        Some("Tue, 26 May 2026".into()),
+    );
+
+    // Reload from disk and verify both episodes and metadata survived.
+    let mut store2 = PodcastStore::new();
+    store2.set_data_dir(dir.path.clone());
+    let restored = store2.podcast(id).expect("podcast present");
+    assert_eq!(restored.etag.as_deref(), Some("W/\"combined\""));
+    assert_eq!(restored.last_modified.as_deref(), Some("Tue, 26 May 2026"));
+    assert!(restored.last_refreshed_at.is_some());
+    assert_eq!(store2.episodes_for(id).len(), 1);
+}
