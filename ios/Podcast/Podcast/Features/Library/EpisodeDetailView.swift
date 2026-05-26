@@ -22,6 +22,7 @@ struct EpisodeDetailView: View {
 
     @Environment(KernelModel.self) private var model
     @State private var isCommentsSheetPresented: Bool = false
+    @State private var showNotesExpanded: Bool = false
 
     private var liveStarred: Bool {
         model.podcastSnapshot?.library
@@ -291,8 +292,22 @@ struct EpisodeDetailView: View {
                     .font(AppTheme.Typography.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
+                    .lineLimit(showNotesExpanded ? nil : 6)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
+
+                if notes.count > 300 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showNotesExpanded.toggle()
+                        }
+                    } label: {
+                        Text(showNotesExpanded ? "Show less" : "Show more")
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
