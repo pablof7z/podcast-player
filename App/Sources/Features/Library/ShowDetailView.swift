@@ -27,6 +27,7 @@ struct ShowDetailView: View {
     @State private var searchText: String = ""
     @State private var isSearchActive: Bool = false
     @State private var isFetchingEpisodes: Bool = false
+    @State private var followError: String?
     /// Drives the VoiceOver "Open episode details" custom action — bound into
     /// `ShowDetailEpisodeList` and consumed via `.navigationDestination(item:)`
     /// so the same `EpisodeDetailView` opens regardless of how the user got there.
@@ -134,6 +135,17 @@ struct ShowDetailView: View {
             Button("Download \(notDownloadedCount)") { downloadAllEpisodes() }
         } message: {
             Text("This will download \(notDownloadedCount) episode\(notDownloadedCount == 1 ? "" : "s") (\(liveSubscription.title)). Transcripts will be generated automatically after each download.")
+        }
+        .alert(
+            "Could Not Follow",
+            isPresented: Binding(
+                get: { followError != nil },
+                set: { if !$0 { followError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { followError = nil }
+        } message: {
+            Text(followError ?? "")
         }
         .navigationDestination(for: LibraryEpisodeRoute.self) { route in
             LibraryEpisodePlaceholder(route: route)
@@ -308,10 +320,12 @@ struct ShowDetailView: View {
 
     private func follow() async {
         guard let feedURL = liveSubscription.feedURL else { return }
+        followError = nil
         do {
             try await SubscriptionService(store: store).addSubscription(feedURLString: feedURL.absoluteString)
             Haptics.success()
         } catch {
+            followError = error.localizedDescription
             Haptics.warning()
         }
     }
