@@ -75,6 +75,9 @@ struct AppState: Codable, Sendable {
     /// mini-player can be restored after an app restart without requiring the
     /// user to navigate back to the episode.
     var lastPlayedEpisodeID: UUID?
+    /// Persisted "Up Next" queue. Restored into `PlaybackState.queue` at
+    /// launch so the user's queued list survives app restarts.
+    var queue: [QueueItem] = []
 
     init() {}
 
@@ -91,6 +94,7 @@ struct AppState: Codable, Sendable {
         case agentScheduledTasks
         case pendingFriendMessages
         case lastPlayedEpisodeID
+        case queue
     }
 
     // Forward-compat: every field decoded with `decodeIfPresent` so adding new
@@ -136,6 +140,7 @@ struct AppState: Codable, Sendable {
         agentScheduledTasks = try c.decodeIfPresent([AgentScheduledTask].self, forKey: .agentScheduledTasks) ?? []
         pendingFriendMessages = try c.decodeIfPresent([PendingFriendMessage].self, forKey: .pendingFriendMessages) ?? []
         lastPlayedEpisodeID = try c.decodeIfPresent(UUID.self, forKey: .lastPlayedEpisodeID)
+        queue = try c.decodeIfPresent([QueueItem].self, forKey: .queue) ?? []
     }
 
     /// Decodes the `subscriptions` array, handling both the new slim shape

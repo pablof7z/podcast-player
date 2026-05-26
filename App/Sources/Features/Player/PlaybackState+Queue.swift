@@ -18,6 +18,7 @@ extension PlaybackState {
         let alreadyWhole = queue.contains { $0.episodeID == episodeID && $0.startSeconds == nil }
         guard !alreadyWhole else { return }
         queue.append(.episode(episodeID))
+        onQueueChanged(queue)
     }
 
     /// Append a `QueueItem` (possibly bounded) to the end of the queue.
@@ -25,6 +26,7 @@ extension PlaybackState {
     /// the same episode.
     func enqueueItem(_ item: QueueItem) {
         queue.append(item)
+        onQueueChanged(queue)
     }
 
     /// Insert a `QueueItem` at the head of Up Next so it plays after the
@@ -32,6 +34,7 @@ extension PlaybackState {
     /// the agent's `play_episode` tool with `queue_position: "next"`.
     func insertNext(_ item: QueueItem) {
         queue.insert(item, at: 0)
+        onQueueChanged(queue)
     }
 
     /// Replace the current queue with an ordered list of `QueueItem`s and,
@@ -45,8 +48,9 @@ extension PlaybackState {
             // Start the first segment immediately, push the rest into the queue.
             let first = items[0]
             guard let episode = resolve(first.episodeID) else {
-                // First segment's episode is unavailable — fall through to queue-only.
+                // First segment's episode is unavailable — queue all items without playing.
                 queue.append(contentsOf: items)
+                onQueueChanged(queue)
                 return
             }
             currentSegmentEndTime = first.endSeconds
@@ -60,41 +64,51 @@ extension PlaybackState {
         } else {
             queue.append(contentsOf: items)
         }
+        onQueueChanged(queue)
     }
 
     // MARK: - Removal
 
     /// Remove all queue items whose `episodeID` matches. Idempotent.
     func removeFromQueue(_ episodeID: UUID) {
+        let before = queue.count
         queue.removeAll { $0.episodeID == episodeID }
+        if queue.count != before { onQueueChanged(queue) }
     }
 
     /// Remove a single queue item by its stable slot identity.
     func removeFromQueue(itemID: UUID) {
+        let before = queue.count
         queue.removeAll { $0.id == itemID }
+        if queue.count != before { onQueueChanged(queue) }
     }
 
     // MARK: - Reordering / pruning
 
     func moveQueue(from source: IndexSet, to destination: Int) {
         queue.move(fromOffsets: source, toOffset: destination)
+        onQueueChanged(queue)
     }
 
     func moveQueue(from source: IndexSet, to destination: Int, resolve: (UUID) -> Episode?) {
         pruneQueue(resolve: resolve)
         queue.move(fromOffsets: source, toOffset: min(destination, queue.count))
+        onQueueChanged(queue)
     }
 
     func clearQueue() {
         queue.removeAll()
         currentSegmentEndTime = nil
+        onQueueChanged(queue)
     }
 
     @discardableResult
     func pruneQueue(resolve: (UUID) -> Episode?) -> Int {
         let oldCount = queue.count
         queue.removeAll { resolve($0.episodeID) == nil }
-        return oldCount - queue.count
+        let removed = oldCount - queue.count
+        if removed > 0 { onQueueChanged(queue) }
+        return removed
     }
 
     // MARK: - Convenience
@@ -125,6 +139,7 @@ extension PlaybackState {
                 engine.seek(to: start)
             }
             play()
+            onQueueChanged(queue)
             playQueueTransitionCue()
             return true
         }

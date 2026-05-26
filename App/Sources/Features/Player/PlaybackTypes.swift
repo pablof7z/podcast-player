@@ -8,7 +8,7 @@ import Foundation
 /// Segment items drive automatic end detection: `PlaybackState.tickPersistence`
 /// watches `endSeconds` and calls `onSegmentFinished` when the playhead crosses
 /// the boundary, then dequeues the next item.
-struct QueueItem: Identifiable, Equatable, Sendable {
+struct QueueItem: Identifiable, Equatable, Sendable, Codable {
     /// Stable identity for this queue slot — separate from `episodeID` so
     /// the same episode can appear more than once (e.g. two non-adjacent
     /// chapters from the same episode).

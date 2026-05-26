@@ -30,37 +30,6 @@ final class PlaybackState {
 
     var sleepTimer: PlaybackSleepTimer = .off
 
-    /// Live label for the sleep-timer action chip. Renders the live countdown
-    /// when armed in duration mode so the chip reads "29:42" and ticks down
-    /// — was previously stuck on the static preset string ("30 min") for the
-    /// entire armed window. Read from a SwiftUI view body so @Observable
-    /// dependency tracking picks up the engine's per-tick phase changes.
-    var sleepTimerChipLabel: String {
-        switch engine.sleepTimer.phase {
-        case .idle:
-            return "Sleep"
-        case .armed(let remaining), .fading(let remaining):
-            return Self.formatRemaining(remaining)
-        case .armedEndOfEpisode:
-            return "End"
-        case .fired:
-            return "Sleep"
-        }
-    }
-
-    /// `mm:ss` for under an hour, `h:mm:ss` otherwise. Negative / zero values
-    /// floor to "0:00" so a brief race during the fade-to-fire transition
-    /// doesn't print "-1".
-    private static func formatRemaining(_ seconds: TimeInterval) -> String {
-        let total = max(0, Int(seconds.rounded(.up)))
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        return h > 0
-            ? String(format: "%d:%02d:%02d", h, m, s)
-            : String(format: "%d:%02d", m, s)
-    }
-
     /// Up Next queue — ordered list of `QueueItem` values. Each item may carry
     /// optional `startSeconds`/`endSeconds` bounds for agent-curated segment
     /// playback. Full-episode items use `nil` for both fields.
@@ -138,6 +107,11 @@ final class PlaybackState {
     /// independently, so this closure is for the in-app transitions the
     /// store can't observe directly.
     var onFlushPositions: () -> Void = { }
+
+    /// Called after every queue mutation (enqueue, remove, reorder, clear,
+    /// advance). Receivers should persist the new list so the queue survives
+    /// app restarts. Wired by `RootView` to `AppStateStore.setPersistedQueue`.
+    var onQueueChanged: ([QueueItem]) -> Void = { _ in }
 
     /// Called when `setEpisode` loads a *new* episode (`!isSameEpisode`)
     /// whose `downloadState` is `.notDownloaded` or `.failed`. Receivers
@@ -437,12 +411,6 @@ final class PlaybackState {
         autoSkipAdsEnabled = settings.autoSkipAds
         headphoneDoubleTapAction = settings.headphoneDoubleTapAction
         headphoneTripleTapAction = settings.headphoneTripleTapAction
-    }
-
-    func setSleepTimer(_ timer: PlaybackSleepTimer) {
-        sleepTimer = timer
-        engine.setSleepTimer(timer.engineMode)
-        Haptics.selection()
     }
 
     // MARK: - Persistence loop

@@ -345,6 +345,14 @@ extension AppStateStore {
         state.lastPlayedEpisodeID = id
     }
 
+    /// Persist the current "Up Next" queue so it survives app restarts.
+    /// Called by `PlaybackState` after every queue mutation. Skips the
+    /// write when the content hasn't changed to avoid spurious disk flushes.
+    func setPersistedQueue(_ items: [QueueItem]) {
+        guard state.queue != items else { return }
+        state.queue = items
+    }
+
     /// Persist hydrated chapters for an episode. Used by
     /// `ChaptersHydrationService` after asynchronously fetching the JSON
     /// referenced by `episode.chaptersURL`. No-op when `chapters` is empty

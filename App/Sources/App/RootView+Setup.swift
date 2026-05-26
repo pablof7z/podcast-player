@@ -32,6 +32,9 @@ extension RootView {
         playbackState.onClearTriageDecision = { [store] id in
             store.clearTriageDecision(id)
         }
+        playbackState.onQueueChanged = { [store] items in
+            store.setPersistedQueue(items)
+        }
         playbackState.onSegmentFinished = { [store, playbackState] in
             let advanced = playbackState.playNext { store.episode(id: $0) }
             if !advanced {
@@ -86,6 +89,18 @@ extension RootView {
            let lastID = store.state.lastPlayedEpisodeID,
            let episode = store.episode(id: lastID) {
             playbackState.setEpisode(episode, enqueueDownloadIfNeeded: false)
+        }
+        // Restore the "Up Next" queue from persisted state, pruning any items
+        // whose episodes have since been removed from the library.
+        let restoredQueue = store.state.queue
+        if !restoredQueue.isEmpty {
+            let filtered = restoredQueue.filter { store.episode(id: $0.episodeID) != nil }
+            playbackState.queue = filtered
+            if filtered.count < restoredQueue.count {
+                // Orphaned episodes were dropped — persist the clean list now so
+                // the stale ids don't re-appear on the next cold launch.
+                store.setPersistedQueue(filtered)
+            }
         }
     }
 
