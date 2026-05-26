@@ -16,16 +16,11 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 
-use nmp_core::substrate::{CapabilityRequest, HostOpHandler};
+use nmp_core::substrate::HostOpHandler;
 use nmp_ffi::NmpApp;
 
-use crate::ad_skip_handler::handle_set_auto_skip_ads;
 use crate::agent_handler::AgentChatHandler;
 use crate::ai_chapters::handle_compile_chapters;
-use crate::capability::{
-    notification_command_json, AudioCommand, DownloadCommand, NotificationCommand,
-    AUDIO_CAPABILITY_NAMESPACE, DOWNLOAD_CAPABILITY_NAMESPACE, NOTIFICATION_CAPABILITY_NAMESPACE,
-};
 use crate::categorization::{handle_categorize_episode, handle_run as categorization_run};
 use crate::clip_handler::{ClipHandler, ClipRecord};
 use crate::ffi::actions::agent_module::AgentChatAction;
@@ -40,7 +35,6 @@ use crate::ffi::actions::player_module::PlayerAction;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::actions::publish_module::PublishAction;
 use crate::ffi::actions::queue_module::QueueAction;
-use crate::ffi::actions::settings_module::SettingsAction;
 use crate::ffi::actions::tasks_module::AgentTasksAction;
 use crate::ffi::actions::tts_module::TtsEpisodeAction;
 use crate::ffi::actions::voice_module::VoiceAction;
@@ -64,8 +58,9 @@ use crate::tasks_handler;
 use crate::tts::TtsEpisodeHandler;
 use crate::voice_handler;
 use crate::wiki::handle_wiki_action;
-use podcast_feeds::http::{HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
+use crate::ffi::actions::settings_module::SettingsAction;
 
+mod capabilities;
 mod player_actions;
 mod podcast_actions;
 mod podcast_actions_feed;
@@ -184,84 +179,6 @@ impl PodcastHostOpHandler {
         let _ = categorization_run(&self.store, &self.categories, &self.rev);
     }
 
-    pub(crate) fn dispatch_http(
-        &self,
-        req: &HttpRequest,
-        correlation_id: &str,
-    ) -> Result<HttpResult, String> {
-        let payload_json = serde_json::to_string(req).map_err(|e| e.to_string())?;
-        let cap_req = CapabilityRequest {
-            namespace: HTTP_CAPABILITY_NAMESPACE.to_owned(),
-            correlation_id: correlation_id.to_owned(),
-            payload_json,
-        };
-        let envelope = unsafe { &*self.app }.dispatch_capability(&cap_req);
-        serde_json::from_str::<HttpResult>(&envelope.result_json)
-            .map_err(|e| format!("decode http result: {e}"))
-    }
-
-    pub(crate) fn dispatch_audio(
-        &self,
-        cmd: &AudioCommand,
-        correlation_id: &str,
-    ) -> Result<(), String> {
-        let payload_json = serde_json::to_string(cmd).map_err(|e| e.to_string())?;
-        let req = CapabilityRequest {
-            namespace: AUDIO_CAPABILITY_NAMESPACE.to_owned(),
-            correlation_id: correlation_id.to_owned(),
-            payload_json,
-        };
-        let _ = unsafe { &*self.app }.dispatch_capability(&req);
-        Ok(())
-    }
-
-    pub(super) fn dispatch_download(
-        &self,
-        cmd: &DownloadCommand,
-        correlation_id: &str,
-    ) -> Result<(), String> {
-        let payload_json = serde_json::to_string(cmd).map_err(|e| e.to_string())?;
-        let req = CapabilityRequest {
-            namespace: DOWNLOAD_CAPABILITY_NAMESPACE.to_owned(),
-            correlation_id: correlation_id.to_owned(),
-            payload_json,
-        };
-        let _ = unsafe { &*self.app }.dispatch_capability(&req);
-        Ok(())
-    }
-
-    /// Fire-and-forget notification dispatch. Mirrors the audio/download
-    /// envelope shape so the iOS-side router can fan out by namespace
-    /// without special-casing.
-    pub(super) fn dispatch_notification(
-        &self,
-        cmd: &NotificationCommand,
-        correlation_id: &str,
-    ) -> Result<(), String> {
-        let payload_json = notification_command_json(cmd);
-        let req = CapabilityRequest {
-            namespace: NOTIFICATION_CAPABILITY_NAMESPACE.to_owned(),
-            correlation_id: correlation_id.to_owned(),
-            payload_json,
-        };
-        let _ = unsafe { &*self.app }.dispatch_capability(&req);
-        Ok(())
-    }
-
-    pub(crate) fn handle_settings_action(&self, action: SettingsAction) -> serde_json::Value {
-        match action {
-            SettingsAction::SetAutoSkipAds { enabled } => {
-                handle_set_auto_skip_ads(&self.store, &self.player_actor, &self.rev, enabled)
-            }
-            SettingsAction::SetSkipIntervals { forward_secs, backward_secs } => {
-                if let Ok(mut s) = self.store.lock() {
-                    s.set_skip_intervals(forward_secs, backward_secs);
-                }
-                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-        }
-    }
 }
 
 impl HostOpHandler for PodcastHostOpHandler {
