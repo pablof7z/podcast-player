@@ -65,7 +65,14 @@ struct ShowDetailEpisodeList: View {
                 trailing: AppTheme.Spacing.lg
             ))
             .listRowBackground(Color(.systemBackground))
-            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    toggleStar(ep)
+                } label: {
+                    Label(ep.starred ? "Unbookmark" : "Bookmark",
+                          systemImage: ep.starred ? "bookmark.slash" : "bookmark")
+                }
+                .tint(ep.starred ? .gray : .orange)
                 Button {
                     enqueue(ep)
                 } label: {
@@ -79,6 +86,12 @@ struct ShowDetailEpisodeList: View {
                 } label: {
                     Label("Add to Up Next", systemImage: "text.line.first.and.arrowtriangle.forward")
                 }
+                Button {
+                    toggleStar(ep)
+                } label: {
+                    Label(ep.starred ? "Remove Bookmark" : "Bookmark",
+                          systemImage: ep.starred ? "bookmark.slash" : "bookmark")
+                }
             }
         }
     }
@@ -91,6 +104,14 @@ struct ShowDetailEpisodeList: View {
         model.dispatch(
             namespace: "podcast.player",
             body: ["op": "enqueue", "episode_id": ep.id]
+        )
+    }
+
+    private func toggleStar(_ ep: EpisodeSummary) {
+        Haptics.selection()
+        model.dispatch(
+            namespace: "podcast",
+            body: ["op": "star_episode", "episode_id": ep.id]
         )
     }
 }

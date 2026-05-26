@@ -23,6 +23,14 @@ struct EpisodeDetailView: View {
     @Environment(KernelModel.self) private var model
     @State private var isCommentsSheetPresented: Bool = false
 
+    private var liveStarred: Bool {
+        model.podcastSnapshot?.library
+            .flatMap { $0.episodes }
+            .first { $0.id == episode.id }
+            .map(\.starred)
+            ?? episode.starred
+    }
+
     /// `true` between the moment the user taps "Generate Chapters" and the
     /// first snapshot tick that surfaces non-empty `chapters` for this
     /// episode. The Rust handler is synchronous (returns immediately after
@@ -90,6 +98,18 @@ struct EpisodeDetailView: View {
         .navigationTitle("Episode")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.light()
+                    model.dispatch(
+                        namespace: "podcast",
+                        body: ["op": "star_episode", "episode_id": episode.id]
+                    )
+                } label: {
+                    Image(systemName: liveStarred ? "bookmark.fill" : "bookmark")
+                }
+                .accessibilityLabel(liveStarred ? "Remove bookmark" : "Bookmark episode")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptics.light()

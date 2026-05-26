@@ -49,6 +49,12 @@ struct LibraryView: View {
                             Image(systemName: "square.grid.2x2")
                         }
                         .accessibilityLabel("Browse by Topic")
+                        NavigationLink {
+                            StarredEpisodesView()
+                        } label: {
+                            Image(systemName: "bookmark")
+                        }
+                        .accessibilityLabel("Bookmarks")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {

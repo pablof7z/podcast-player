@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-26T05:31:00Z",
+      "lines": [
+        "Bookmark any episode — tap the bookmark icon or swipe to save it. Find all bookmarks from the Library toolbar."
+      ]
+    },
+    {
       "shipped_at": "2026-05-26T05:30:00Z",
       "lines": [
         "Skip intervals are now user-configurable — set your preferred skip-forward and skip-back durations from Settings"
