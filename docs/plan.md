@@ -30,7 +30,7 @@ This is the canonical project plan. Detailed implementation plans live under
 | Feature parity | Not achieved | Many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked | `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Compat layer | Active debt | `ios/Podcast/Podcast/Compat/` still contains service/domain/identity/utility shims. |
-| NIP-F4 | Incorrect/partial | Some current tag builders still emit NIP-74-era `d`, `a`, `summary`, `published_at`, and `imeta` shapes. |
+| NIP-F4 | Wire contract fixed; publishing partially scaffolded | PR #89 removed NIP-74-era tags from builders/parsers. PR #93 uses real secp256k1 keys. Signing and relay publishing still stubs. |
 | Validation | Incomplete gate | Docs-only changes require `git diff --check`; code parity work must also run focused Rust/Swift tests plus the merge gate. |
 
 ## Pod0 / NIP-F4 Milestones

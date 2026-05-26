@@ -6,13 +6,12 @@ worktrees currently in flight.
 
 ## Active P0 - Correctness Before More Features
 
-- **p0-nipf4-wire-contract.** Fix the NIP-F4 publish/discovery schema so it
-  matches `docs/plan/pod0-nostr-publishing.md`. Remove NIP-74-era `d` tags,
-  `a` tags, `summary`, `published_at`, and `imeta` from kind `10154`/`54`
-  builders/parsers. Add tests that assert those tags are absent.
-- **p0-nipf4-real-keys.** Replace `PodcastKeyStore` placeholder/in-memory key
-  handling with persisted per-podcast secp256k1 keys. Derive real pubkeys,
-  store secrets securely, survive restart, and clean up on owned-podcast delete.
+- ~~**p0-nipf4-wire-contract.**~~ Done in PR #89: removed NIP-74-era `d`/`a`/
+  `published_at`/`imeta` from kind `10154`/`54` builders; parsers updated;
+  round-trip tests verify absence.
+- **p0-nipf4-real-keys.** ~~Real pubkey derivation~~ done in PR #93
+  (`nostr::Keys::generate()` + real secp256k1). Remaining: persisted storage,
+  Keychain-backed secret, survive restart, cleanup on owned-podcast delete.
 - **p0-nipf4-sign-and-publish.** Replace unsigned `event_json` plus
   `relay_pending` diagnostics with signed events published to configured
   relays. If publish is async, implement a durable queue with retry/error
