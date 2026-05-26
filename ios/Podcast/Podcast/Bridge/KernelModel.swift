@@ -188,6 +188,8 @@ final class KernelModel {
         PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
         reconcileLiveActivity(
             previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
+        reconcileNowPlayingMetadata(
+            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
         kmLog.debug("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
     }
 
@@ -257,6 +259,35 @@ final class KernelModel {
             durationSecs: state.durationSecs ?? 0,
             isPlaying: state.isPlaying,
             artworkURL: artworkURL)
+    }
+
+    /// Mirror episode/podcast metadata into `MPNowPlayingInfoCenter` when the
+    /// playing episode changes. Fires only on episode transitions so the
+    /// lock-screen title reflects the kernel snapshot rather than the URL stem.
+    private func reconcileNowPlayingMetadata(
+        previous: PlayerState?, next: PlayerState?, library: [PodcastSummary]
+    ) {
+        guard let next, let episodeId = next.episodeId else { return }
+        let previousId = previous?.episodeId
+        guard previousId != episodeId else { return }
+
+        var episodeTitle = "Now Playing"
+        var podcastTitle = ""
+        var artworkURL: URL?
+        outer: for show in library {
+            for ep in show.episodes where ep.id == episodeId {
+                episodeTitle = ep.title
+                podcastTitle = ep.podcastTitle ?? show.title
+                let urlStr = ep.artworkUrl ?? show.artworkUrl
+                if let urlStr { artworkURL = URL(string: urlStr) }
+                break outer
+            }
+        }
+        PodcastCapabilities.shared.audio.updateNowPlayingMetadata(
+            episodeTitle: episodeTitle,
+            podcastTitle: podcastTitle,
+            artworkURL: artworkURL
+        )
     }
 
     func applyConfiguration() {
