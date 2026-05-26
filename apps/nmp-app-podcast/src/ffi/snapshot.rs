@@ -3,34 +3,14 @@
 //!
 //! [`PodcastUpdate`] is the typed root of the JSON the kernel emits on every
 //! tick. The iOS shell decodes it via `Codable`. Fields are added milestone by
-//! milestone. The struct below is the source of truth for the emitted wire
-//! shape.
-//!
-//! For M3.A the only new field is `now_playing: Option<PlayerState>`. M4.A
-//! adds `downloads: Option<DownloadQueueSnapshot>`. Feature #32 wires
-//! `agent: Option<AgentSnapshot>` (single-thread chat). M8.A adds
-//! `voice: Option<VoiceState>`. M9.A adds
-//! `briefing: Option<BriefingSnapshot>`. M11 adds
-//! `widget: Option<WidgetSnapshot>`. Every other field stays unset until
-//! its milestone lands — the empty defaults are deliberately byte-compatible
-//! with the legacy stub payload (`{"running":true,"rev":0,"schema_version":1}`)
-//! so existing decoders don't break before each projection's milestone wires
-//! it up.
+//! milestone; the empty defaults are byte-compatible with the legacy stub
+//! payload (`{"running":true,"rev":0,"schema_version":1}`) so existing
+//! decoders don't break before each projection's milestone wires it up.
 //!
 //! Per-projection field definitions live in [`super::projections`] to keep
-//! this file focused on the typed root + the C-ABI entry points.
-//! [`PodcastUpdate`] is the typed root of the JSON the kernel emits on
-//! every tick. The iOS shell decodes it via `Codable`. Fields are added
-//! milestone by milestone; the empty defaults are byte-compatible with
-//! the legacy stub `{"running":true,"rev":0,"schema_version":1}` so
-//! existing decoders don't break before each projection's milestone
-//! wires it up. Per-projection field definitions live in
-//! [`super::projections`].
-//! tick. Per-milestone fields (`now_playing`, `downloads`, `agent`, `voice`,
-//! `briefing`, `widget`, `owned_podcasts`, …) stay `Option`/`Vec`-default so
-//! empty payloads remain byte-compatible with the legacy stub
-//! `{"running":true,"rev":0,"schema_version":1}`. Per-projection field
-//! definitions live in [`super::projections`].
+//! this file focused on the typed root + the C-ABI entry points. Build helpers
+//! for the queue, owned-podcast list, and category aggregate live in the
+//! `snapshot_queue`, `snapshot_owned`, and `snapshot_categories` siblings.
 
 use std::ffi::{c_char, CString};
 use std::sync::atomic::Ordering;
@@ -46,6 +26,7 @@ use super::projections::{
     NostrShowSummary, OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot,
     TtsEpisodeSummary, VoiceState, WidgetSnapshot, WikiArticle,
 };
+use super::snapshot_categories::build_category_aggregate;
 use super::snapshot_owned::collect_owned_podcasts;
 use super::snapshot_queue::resolve_queue_rows;
 use crate::inbox_handler::build_inbox;
@@ -446,74 +427,6 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         *cache = Some((rev, json.clone()));
     }
     json
-}
-
-/// Roll the per-episode `ai_categories` labels up into one
-/// [`CategoryBrowseItem`] per category, ordered by the most recent
-/// contribution (so the category whose newest episode is freshest
-/// renders first in the iOS grid).
-///
-/// `top_episode_ids` holds the three most recently-published episode ids
-/// for the category, newest-first by `published_at`. Tied timestamps
-/// fall back to library iteration order, which is stable across ticks
-/// for the same store contents.
-fn build_category_aggregate(library: &[PodcastSummary]) -> Vec<CategoryBrowseItem> {
-    use std::collections::{BTreeSet, HashMap};
-
-    struct Bucket {
-        episode_ids_by_recency: Vec<(i64, String)>,
-        podcast_ids: BTreeSet<String>,
-        latest: i64,
-    }
-    let mut buckets: HashMap<String, Bucket> = HashMap::new();
-
-    for podcast in library {
-        for ep in &podcast.episodes {
-            let published = ep.published_at.unwrap_or(0);
-            for cat in &ep.ai_categories {
-                let entry = buckets.entry(cat.clone()).or_insert_with(|| Bucket {
-                    episode_ids_by_recency: Vec::new(),
-                    podcast_ids: BTreeSet::new(),
-                    latest: i64::MIN,
-                });
-                entry.episode_ids_by_recency.push((published, ep.id.clone()));
-                entry.podcast_ids.insert(podcast.id.clone());
-                if published > entry.latest {
-                    entry.latest = published;
-                }
-            }
-        }
-    }
-
-    let mut items: Vec<(i64, CategoryBrowseItem)> = buckets
-        .into_iter()
-        .map(|(category, mut bucket)| {
-            // Newest-first; tie-break by insertion order via stable sort.
-            bucket
-                .episode_ids_by_recency
-                .sort_by(|a, b| b.0.cmp(&a.0));
-            let top_episode_ids = bucket
-                .episode_ids_by_recency
-                .iter()
-                .take(3)
-                .map(|(_, id)| id.clone())
-                .collect();
-            let item = CategoryBrowseItem {
-                category,
-                episode_count: bucket.episode_ids_by_recency.len(),
-                podcast_count: bucket.podcast_ids.len(),
-                top_episode_ids,
-                ad_segments: vec![],
-            };
-            (bucket.latest, item)
-        })
-        .collect();
-
-    // Category-level order: newest contributing episode first; ties by
-    // category name so the snapshot is deterministic for the same store.
-    items.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.category.cmp(&b.1.category)));
-
-    items.into_iter().map(|(_, item)| item).collect()
 }
 
 /// Serialize the current app state into a JSON C string.

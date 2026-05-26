@@ -39,6 +39,7 @@ pub mod projections;
 mod projections_tests;
 mod register;
 pub(crate) mod snapshot;
+mod snapshot_categories;
 mod snapshot_owned;
 mod snapshot_queue;
 #[cfg(test)]
