@@ -20,9 +20,16 @@ delete it until all exit criteria at the bottom of this file pass.
 ## Current Snapshot - 2026-05-26
 
 The large PR stack has merged, but it does not equal feature parity. GitHub
-reported zero open PRs after PR #87. Many branches created screens,
+reported zero open PRs after PR #96. Many branches created screens,
 projections, action namespaces, and local heuristics; several still need real
 logic, relay/provider integration, or removal of compat shims.
+
+Recent corrective PRs changed the status, but not the final exit criteria:
+PR #89 fixed the current NIP-F4 wire builders/parsers, PR #93 replaced fake
+pubkey derivation with real secp256k1 derivation, PR #95 landed local Ollama
+provider support, and PR #96 fixed restored-playback auto-download behavior.
+The remaining NIP-F4 work is persistence, signing, relay publication,
+relay-backed discovery, author claims, deletion cleanup, and legacy data.
 
 The stale PR-1 status from the original plan is no longer true: `PodcastHandle`
 has state, snapshot fields exist, actions are registered, and iOS generated
@@ -42,8 +49,10 @@ completion, not absence of all infrastructure.
   Live Activity, voice, and HTTP provider integration.
 - **D8 reactivity <= 60 Hz:** current polling/content-hash improvements reduce
   churn, but full push delivery through the NMP update sink remains open.
-- **No NIP-74:** not satisfied. NIP-F4 kinds exist, but some builders/parsers
-  still carry NIP-74-era tags and terminology.
+- **No NIP-74:** improved but not fully exited. PR #89 removed the known
+  NIP-74-era tags from the active NIP-F4 builders/parsers, but relay
+  publish/discovery, author claims, legacy data, and terminology still need
+  validation before this doctrine can be marked satisfied.
 
 ## Core PR Sequence Status
 
@@ -54,7 +63,7 @@ completion, not absence of all infrastructure.
 | PR 3 - Full player | Partial | Validate lock-screen metadata, remote commands, queue transitions, sleep timer, speed, position persistence, download-local playback, and AirPlay/route behavior. Fix any remaining iOS-side policy decisions. |
 | PR 4 - Identity | Partial | Finish Rust-owned identity actions, raw pubkey projection, Keychain-backed credential replacement, NIP-46 pairing state, profile publishing, and removal of `UserIdentityStore` compat surfaces. |
 | PR 5 - Downloads/auto-download | Partial | Project progress/failed/paused queue state, make offline-first playback explicit, validate background URLSession restore, and add deletion/auto-download regression coverage. |
-| PR 6 - NIP-F4 | Wrong/Scaffold | Correct protocol tags, real per-podcast keys, signing, relay publish, relay-backed episode fetch, author claims, and deletion cleanup. See `docs/plan/pod0-nostr-publishing.md`. |
+| PR 6 - NIP-F4 | Partial/Scaffold | Wire tags and real pubkey derivation are corrected. Still implement persisted per-podcast secrets, signing, relay publish, relay-backed episode fetch, author claims, legacy-data behavior, and deletion cleanup. See `docs/plan/pod0-nostr-publishing.md`. |
 | PRs 7-N - AI/platform | Scaffold/Partial | Treat each merged surface as a starting point. Replace heuristics/placeholders with real provider, knowledge, relay, scheduling, and platform logic before marking any feature done. |
 
 ## Feature Parity Matrix
@@ -93,9 +102,9 @@ completion, not absence of all infrastructure.
 | 23 | NIP-46 remote signer | Partial | Broker wiring exists; finish live handshake, nostrconnect URI lifecycle, cancellation, error states, and account projection. |
 | 24 | Profile editing + kind:0 publish | Partial | Current local `@AppStorage` fallback must become Rust/Nostr-owned profile publish plus relay confirmation/profile cache hydration. |
 | 25 | NIP-65 relay list | Partial | UI exists; persist/read via NMP substrate relay-list store, publish real list, and remove `@AppStorage` seed fallback. |
-| 26 | NIP-F4 discovery | Wrong/Partial | Show search exists via HTTP gateway; finish relay subscription path, episode fetch by podcast pubkey, pure-Nostr subscribe, and no NIP-74 tags. |
-| 27 | NIP-F4 publish owned shows | Wrong/Scaffold | Replace placeholder keys, remove `d`/`summary`, sign kind `10154`, publish to relays, update author claim. |
-| 28 | NIP-F4 publish episodes | Wrong/Scaffold | Upload audio to Blossom, emit `audio` tag, no `d`/`a`/`published_at`/`imeta`, sign kind `54`, publish to relays. |
+| 26 | NIP-F4 discovery | Partial | Show search exists via HTTP gateway and parser tags are corrected; finish relay subscription path, episode fetch by podcast pubkey, pure-Nostr subscribe, and legacy-data behavior. |
+| 27 | NIP-F4 publish owned shows | Scaffold | Kind `10154` wire tags and pubkey derivation are corrected; persist the secret, sign the event, publish to relays, update author claims, and delete/cleanup owned-show state. |
+| 28 | NIP-F4 publish episodes | Scaffold | Kind `54` wire tags are corrected; upload audio to Blossom, emit the canonical `audio` tag, sign the event, publish to relays, and project publish/queue errors. |
 | 29 | Nostr episode comments | Scaffold | Replace `nostr_relay_pending` stubs with kind-1111 relay subscribe/publish and map local `EpisodeId` to NIP-73 podcast item anchors. |
 | 30 | Friends/social graph | Scaffold | Replace `nostr_pending` stub with kind:3 contact-list store, metadata hydration, subscription refresh, and snapshot projection. |
 
@@ -143,14 +152,15 @@ completion, not absence of all infrastructure.
 
 ## Immediate Priority Order
 
-1. NIP-F4 wire contract and signing/publish path.
-2. Remaining compat shims and identity/settings ownership.
-3. Capability push/routing cleanup and validation gate.
-4. Tier 1 device-level usability validation.
-5. AI scaffolds: agent chat, RAG, wiki, briefings, voice, TTS, inbox, tasks.
-6. Platform hardening: CarPlay, Live Activity/widget, AppIntents, Spotlight, Handoff, iCloud, notifications.
-7. Android Tier 1 parity and contributor build setup.
-8. Delete `App/Sources/` only after all exit criteria pass.
+1. NIP-F4 secret persistence, signing, relay publish/discovery, author claims, and legacy-data behavior.
+2. iOS validation gate: fix current `Nip46RemoteSignerTests` optional-string compile failures and AppIntents/project membership drift.
+3. Remaining compat shims and identity/settings ownership.
+4. Capability push/routing cleanup and validation gate.
+5. Tier 1 device-level usability validation.
+6. AI scaffolds: agent chat, RAG, wiki, briefings, voice, TTS, inbox, tasks.
+7. Platform hardening: CarPlay, Live Activity/widget, AppIntents, Spotlight, Handoff, iCloud, notifications.
+8. Android Tier 1 parity and contributor build setup.
+9. Delete `App/Sources/` only after all exit criteria pass.
 
 ## Exit Criteria For Feature Parity
 
