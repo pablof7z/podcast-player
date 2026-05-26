@@ -20,7 +20,6 @@
 use std::sync::atomic::Ordering;
 
 use chrono::Utc;
-use podcast_discovery::build::show::show_d_tag;
 use podcast_discovery::{
     episode_to_episode_tags, podcast_to_show_tags, show_content, KIND_AUTHOR_CLAIM, KIND_EPISODE,
     KIND_SHOW,
@@ -153,8 +152,7 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
         Err(_) => return serde_json::json!({"ok": false, "error": "podcast_keys poisoned"}),
     };
 
-    let show_d = show_d_tag(&podcast);
-    let tags = episode_to_episode_tags(&episode, &pubkey_hex, &show_d);
+    let tags = episode_to_episode_tags(&episode);
     let content = episode.description.clone();
     let created_at = Utc::now().timestamp();
     let event_json =

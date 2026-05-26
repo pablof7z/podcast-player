@@ -37,13 +37,5 @@ pub fn handle_fetch_contacts() -> serde_json::Value {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fetch_contacts_returns_nostr_pending_envelope() {
-        let v = handle_fetch_contacts();
-        assert_eq!(v["ok"], true);
-        assert_eq!(v["status"], "nostr_pending");
-    }
-}
+#[path = "social_handler_tests.rs"]
+mod tests;
