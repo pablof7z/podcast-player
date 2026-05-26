@@ -1,6 +1,7 @@
 use super::*;
 use crate::ffi::handle::PodcastHandle;
 use crate::ffi::projections::{AgentPickSummary, NostrShowSummary, PodcastSummary, VoiceState};
+use crate::download::DownloadQueue;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::{PodcastKeyStore, PodcastStore};
@@ -22,6 +23,7 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         snapshot_cache: Arc::new(Mutex::new(None)),
         briefing: Arc::new(Mutex::new(None)),
         queue: Arc::new(Mutex::new(PlaybackQueue::new())),
+        download_queue: Arc::new(Mutex::new(DownloadQueue::new())),
         wiki_articles: Arc::new(Mutex::new(Vec::new())),
         wiki_search_results: Arc::new(Mutex::new(Vec::new())),
         picks: Arc::new(Mutex::new(Vec::<AgentPickSummary>::new())),

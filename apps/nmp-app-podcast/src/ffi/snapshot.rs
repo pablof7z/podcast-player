@@ -12,12 +12,13 @@ use std::sync::atomic::Ordering;
 use super::handle::PodcastHandle;
 use super::helpers::strip_html;
 use super::projections::{
-    AgentSnapshot, ChapterSummary, EpisodeSummary, PodcastSummary,
-    SettingsSnapshot, VoiceState,
+    AgentSnapshot, ChapterSummary, DownloadItemSnapshot, DownloadQueueSnapshot, EpisodeSummary,
+    PodcastSummary, SettingsSnapshot, VoiceState,
 };
 use super::snapshot_categories::build_category_aggregate;
 use super::snapshot_owned::collect_owned_podcasts;
 use super::snapshot_queue::resolve_queue_rows;
+use crate::download::DownloadItemState;
 use crate::inbox_handler::build_inbox;
 
 /// Build the JSON payload for one snapshot tick.
@@ -152,6 +153,25 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
     let inbox = build_inbox(&handle.store, &handle.dismissed_episode_ids);
     let owned_podcasts = collect_owned_podcasts(handle);
 
+    let downloads = handle.download_queue.lock().ok().map(|q| {
+        let mut active: Vec<DownloadItemSnapshot> = q.items.values()
+            .filter(|i| !i.state.is_terminal() || i.state == DownloadItemState::Failed)
+            .map(|i| DownloadItemSnapshot {
+                episode_id: i.episode_id.clone(),
+                progress: i.progress_fraction(),
+                state: serde_json::to_value(&i.state)
+                    .ok()
+                    .and_then(|v| v.as_str().map(str::to_owned))
+                    .unwrap_or_default(),
+                error: i.error.clone(),
+            })
+            .collect();
+        active.sort_by_key(|i| match i.state.as_str() {
+            "active" => 0u8, "paused" => 1, "queued" => 2, _ => 3,
+        });
+        DownloadQueueSnapshot { queued_count: q.queued_count(), active, completed_today: 0 }
+    });
+
     let voice = handle.voice_state.lock().ok().and_then(|v| {
         let snap = v.clone();
         (snap != VoiceState::default()).then_some(snap)
@@ -186,6 +206,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
         clips,
         inbox,
         owned_podcasts,
+        downloads,
         voice,
         agent,
         categories,
