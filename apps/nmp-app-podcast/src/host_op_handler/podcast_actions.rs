@@ -13,7 +13,6 @@ use std::sync::atomic::Ordering;
 use podcast_feeds::http::{HttpRequest, HttpResult};
 use uuid::Uuid;
 
-use crate::capability::DownloadCommand;
 use crate::chapter::handle_fetch_chapters;
 use crate::discover_nostr;
 use crate::ffi::actions::podcast_module::PodcastAction;
@@ -141,10 +140,19 @@ impl PodcastHostOpHandler {
                 Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
             }
         };
-        let cmd = DownloadCommand::start(url, episode_id_str, None);
-        if let Err(e) = self.dispatch_download(&cmd, correlation_id) {
-            return serde_json::json!({"ok": false, "error": e});
+        // Route through the queue state machine so progress/state is tracked.
+        // enqueue() returns Some(StartDownload) when a slot is free, None when
+        // the item is queued (slot full). Only dispatch if a slot opened up.
+        let cmd = match self.download_queue.lock() {
+            Ok(mut q) => q.enqueue(&episode_id_str, &url),
+            Err(_) => return serde_json::json!({"ok": false, "error": "download queue poisoned"}),
+        };
+        if let Some(cmd) = cmd {
+            if let Err(e) = self.dispatch_download(&cmd, correlation_id) {
+                return serde_json::json!({"ok": false, "error": e});
+            }
         }
+        self.rev.fetch_add(1, Ordering::Relaxed);
         serde_json::json!({"ok": true})
     }
 

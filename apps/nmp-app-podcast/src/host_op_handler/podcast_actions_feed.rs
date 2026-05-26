@@ -15,7 +15,7 @@ use podcast_core::{Episode, EpisodeId, PodcastId};
 use podcast_feeds::client::{build_feed_request, handle_feed_response, FeedResult};
 use uuid::Uuid;
 
-use crate::capability::{DownloadCommand, NotificationCommand};
+use crate::capability::NotificationCommand;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::host_op_handler_helpers::merge_episodes;
 use crate::picks_handler::refresh_picks_into_slot;
@@ -302,9 +302,21 @@ impl PodcastHostOpHandler {
         items: &[(EpisodeId, String)],
         correlation_id: &str,
     ) {
+        // Route each item through the queue so the concurrency cap is honoured.
+        // Items beyond max_concurrent enter Queued state; the queue state machine
+        // promotes them when a slot frees up via handle_report.
+        let Ok(mut q) = self.download_queue.lock() else { return };
         for (episode_id, url) in items {
-            let cmd = DownloadCommand::start(url.clone(), episode_id.0.to_string(), None);
-            let _ = self.dispatch_download(&cmd, correlation_id);
+            let id_str = episode_id.0.to_string();
+            if let Some(cmd) = q.enqueue(&id_str, url) {
+                // Release queue lock before capability dispatch (lock discipline).
+                drop(q);
+                let _ = self.dispatch_download(&cmd, correlation_id);
+                q = match self.download_queue.lock() {
+                    Ok(q) => q,
+                    Err(_) => return,
+                };
+            }
         }
     }
 }

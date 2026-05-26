@@ -112,29 +112,25 @@ pub fn dispatch_download_report_json(
     DispatchOutcome::Ok { follow_up_json: None }
 }
 
-/// Pure projection of a typed [`DownloadReport`] onto `store`. Split out
-/// so unit tests don't have to round-trip through JSON.
-fn apply_download_report(store: &mut PodcastStore, report: DownloadReport) {
+/// Pure projection of a typed [`DownloadReport`] onto `store`. Exposed so
+/// `ffi::download_report` can call it directly alongside the queue projection.
+pub(crate) fn apply_download_report(store: &mut PodcastStore, report: DownloadReport) {
     match report {
         DownloadReport::Completed { episode_id, local_path } => {
             if let Some((typed_id, _url)) = store.episode_enclosure_url(&episode_id) {
                 store.set_local_path(typed_id, local_path);
             }
-            // Episode not in the store (e.g. unsubscribed mid-flight):
-            // drop the report on the floor. D6 — data, not exception.
         }
         DownloadReport::Cancelled { episode_id } => {
             if let Some((typed_id, _url)) = store.episode_enclosure_url(&episode_id) {
                 let _ = store.clear_local_path(&typed_id);
             }
         }
+        // Progress, Failed, Paused — store projection has no per-episode
+        // state for these; the queue projection in download_report.rs handles them.
         DownloadReport::Failed { .. }
         | DownloadReport::Paused { .. }
-        | DownloadReport::Progress { .. } => {
-            // M4.C scope: queue projection lands in a follow-up PR.
-            // We decode cleanly so future schema additions (new variants)
-            // don't drop reports silently before the queue is wired.
-        }
+        | DownloadReport::Progress { .. } => {}
     }
 }
 
