@@ -76,6 +76,15 @@ impl ActionModule for InboxActionModule {
     }
 }
 
+// Inbox action id constants (kernel ↔ shell contract — feature #31)
+
+/// `podcast.inbox.triage` — recompute the inbox projection.
+pub const ACTION_INBOX_TRIAGE: &str = "podcast.inbox.triage";
+/// `podcast.inbox.dismiss` — remove an episode from the inbox.
+pub const ACTION_INBOX_DISMISS: &str = "podcast.inbox.dismiss";
+/// `podcast.inbox.mark_listened` — mark an episode as played.
+pub const ACTION_INBOX_MARK_LISTENED: &str = "podcast.inbox.mark_listened";
+
 #[cfg(test)]
 #[path = "inbox_module_tests.rs"]
 mod tests;

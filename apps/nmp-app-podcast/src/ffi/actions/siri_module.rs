@@ -50,6 +50,38 @@ impl ActionModule for SiriActionModule {
     }
 }
 
+// Siri action id constants (M11 platform-integration contract)
+//
+// These ids are dispatched by iOS `AppIntents` performers and by Siri shortcut
+// donations. Per D7 the iOS side only dispatches the intent; the kernel decides
+// what "play latest" means (which podcast, which episode, what to do if nothing
+// is queued). The intent performers carry no policy.
+
+/// `podcast.siri.play_latest` — play the latest episode for the
+/// optionally-supplied podcast (or across the whole library when omitted).
+pub const ACTION_SIRI_PLAY_LATEST: &str = "podcast.siri.play_latest";
+/// `podcast.siri.resume` — resume whatever was last playing.
+pub const ACTION_SIRI_RESUME: &str = "podcast.siri.resume";
+
+// ---------------------------------------------------------------------------
+// Siri standalone payload structs
+// ---------------------------------------------------------------------------
+
+/// Payload for [`ACTION_SIRI_PLAY_LATEST`].
+///
+/// `podcast_id` is optional: when set, plays the latest episode for that
+/// podcast; when omitted, picks across the whole library.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SiriPlayLatestAction {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub podcast_id: Option<String>,
+}
+
+/// Payload for [`ACTION_SIRI_RESUME`]. Empty — resume always targets the
+/// most-recently-active episode.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SiriResumeAction;
+
 #[cfg(test)]
 #[path = "siri_module_tests.rs"]
 mod tests;
