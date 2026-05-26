@@ -32,14 +32,12 @@ worktrees currently in flight.
   `git diff --check`, focused Rust tests for touched crates,
   focused Swift/iOS tests for touched targets, and full-suite validation before
   declaring feature parity.
-- **p0-ios-test-target-compile.** Fix the current Swift validation blockers so
-  focused iOS tests can run again. The `Nip46RemoteSignerTests` optional
-  bunker-pubkey mismatch is fixed, and the legacy App target no longer
-  references the dead duplicate `App/Sources/AppIntents/PlaybackAppIntents.swift`.
-  Remaining: decide where the real `KernelModel`-backed playback intents in
-  `ios/Podcast/Podcast/Features/Platform/PodcastAppIntents.swift` belong,
-  then run broader Swift test slices and clean up the remaining strict
-  concurrency warnings surfaced by Xcode.
+- ~~**p0-ios-test-target-compile.**~~ Fixed across PR #101 and PR #102:
+  `Nip46RemoteSignerTests.swift` now accepts an optional bunker pubkey, the
+  active Tuist target no longer references the dead `KernelModel` duplicate,
+  and `App/Sources/AppIntents/PlaybackAppIntents.swift` uses a Notification
+  bridge that compiles in the `Podcastr` target. Remaining shortcut hardening
+  stays tracked under `appintents-validation`.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
@@ -164,7 +162,9 @@ worktrees currently in flight.
   behavior, cold-connect placeholder, and playback dispatch on CarPlay
   simulator/head unit.
 - **appintents-validation.** Validate Siri/Spotlight phrases, unavailable
-  model behavior, localized phrases, and policy remaining in Rust actions.
+  playback state behavior, localized phrases, background execution, and
+  reconcile the active App target's Notification bridge with Rust-owned
+  playback policy.
 - **spotlight-hardening.** Validate indexing throttles, deletion/update,
   deep links, and no reindex churn from playback-position ticks.
 - **handoff-hardening.** Validate NSUserActivity donation/invalidation,
