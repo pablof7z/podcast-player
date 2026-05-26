@@ -20,7 +20,7 @@ pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec
                 ep.position_secs = prev.position_secs;
                 ep.played = prev.played;
                 ep.is_starred = prev.is_starred;
-                ep.triage_decision = prev.triage_decision.clone();
+                ep.triage_decision = prev.triage_decision;
                 ep.triage_rationale = prev.triage_rationale.clone();
                 ep.triage_is_hero = prev.triage_is_hero;
                 ep.download_state = prev.download_state.clone();

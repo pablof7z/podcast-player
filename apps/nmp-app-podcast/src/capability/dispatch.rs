@@ -145,14 +145,14 @@ fn apply_download_report(store: &mut PodcastStore, report: &DownloadReport) {
             episode_id,
             local_path,
         } => {
-            if let Some((typed_id, _url)) = store.episode_enclosure_url(&episode_id) {
+            if let Some((typed_id, _url)) = store.episode_enclosure_url(episode_id) {
                 store.set_local_path(typed_id, local_path.clone());
             }
             // Episode not in the store (e.g. unsubscribed mid-flight):
             // drop the report on the floor. D6 — data, not exception.
         }
         DownloadReport::Cancelled { episode_id } => {
-            if let Some((typed_id, _url)) = store.episode_enclosure_url(&episode_id) {
+            if let Some((typed_id, _url)) = store.episode_enclosure_url(episode_id) {
                 let _ = store.clear_local_path(&typed_id);
             }
         }
