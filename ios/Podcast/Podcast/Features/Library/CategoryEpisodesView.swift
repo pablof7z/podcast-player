@@ -166,24 +166,11 @@ private struct CategoryEpisodeRow: View {
                 Text("·").font(AppTheme.Typography.caption).foregroundStyle(.tertiary)
             }
             if let ts = episode.publishedAt {
-                Text(Self.relativeFormatter.localizedString(
-                    for: Date(timeIntervalSince1970: TimeInterval(ts)),
-                    relativeTo: Date()))
+                Text(relativeDate(from: ts))
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
             }
         }
     }
 
-    private func formatDuration(_ secs: Double) -> String {
-        let total = Int(secs)
-        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
-        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
-    }
-
-    private static let relativeFormatter: RelativeDateTimeFormatter = {
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .abbreviated
-        return f
-    }()
 }

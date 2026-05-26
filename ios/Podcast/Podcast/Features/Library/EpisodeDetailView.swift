@@ -252,17 +252,6 @@ struct EpisodeDetailView: View {
         return episode.playbackPositionSecs != nil ? "Resume" : "Play episode"
     }
 
-    // MARK: - Formatting
-
-    private func formatDuration(_ secs: Double) -> String {
-        let total = Int(secs)
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
-        return String(format: "%d:%02d", m, s)
-    }
-
     private func absoluteDate(from unixSeconds: Int) -> String {
         let date = Date(timeIntervalSince1970: TimeInterval(unixSeconds))
         return Self.dateFormatter.string(from: date)
