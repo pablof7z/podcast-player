@@ -192,10 +192,8 @@ pub fn handle_post_comment(
     };
 
     let tags = vec![
-        Tag::parse(["i", &anchor]).unwrap_or_else(|_| Tag::parse(["i", &anchor]).unwrap()),
-        Tag::parse(["k", "podcast:item:guid"]).unwrap_or_else(|_| {
-            Tag::parse(["k", "podcast:item:guid"]).unwrap()
-        }),
+        Tag::parse(["i", &anchor]).expect("static tag i anchor"),
+        Tag::parse(["k", "podcast:item:guid"]).expect("static tag k anchor"),
     ];
 
     let event = match EventBuilder::new(Kind::Comment, content)
