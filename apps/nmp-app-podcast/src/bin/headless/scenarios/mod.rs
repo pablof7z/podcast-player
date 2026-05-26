@@ -3,6 +3,7 @@
 use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
 
+mod discover_nostr;
 mod relay_smoke;
 mod rss_subscribe;
 
@@ -34,5 +35,6 @@ pub fn run_all(
     vec![
         ("rss_subscribe", rss_subscribe::run(app, handle)),
         ("relay_smoke", relay_smoke::run(app, handle)),
+        ("discover_nostr", discover_nostr::run(app, handle)),
     ]
 }
