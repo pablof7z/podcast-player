@@ -3,6 +3,7 @@
 use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
 
+mod identity;
 mod key_persistence;
 mod rss_subscribe;
 
@@ -39,6 +40,10 @@ pub fn run_all(
         (
             "key_persistence",
             key_persistence::run(app, handle),
+        ),
+        (
+            "identity_import",
+            identity::run(app, handle),
         ),
     ]
 }
