@@ -262,11 +262,6 @@ final class AppStateStore {
         // Feed refresh is driven by the Rust kernel (lifecycle foreground
         // triggers `refresh_all`). The legacy Swift refresh loop is skipped
         // when `kernel` is non-nil (set by `attachKernel`). We start it here
-        // only as a fallback for tests / environments where the kernel is
-        // absent.  The actual kernel attach happens asynchronously in AppMain,
-        // so the flag check lives inside the service's own start logic — for
-        // now, defer start until attachKernel is called.
-        // SubscriptionRefreshService.shared.startPeriodicRefresh(store: self)
         // Subscribe to app-backgrounding so the position cache is flushed
         // to disk before iOS can suspend or kill the process. Token is
         // retained on `self` so the observer outlives the init call but
