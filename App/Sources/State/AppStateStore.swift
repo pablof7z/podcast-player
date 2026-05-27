@@ -333,6 +333,13 @@ final class AppStateStore {
                                  "backward_secs": Double(settings.skipBackwardSeconds)
                              ])
         }
+        if settings.hasCompletedOnboarding != prior.hasCompletedOnboarding {
+            kernel?.dispatch(namespace: "podcast",
+                             body: [
+                                 "op": "update_settings",
+                                 "has_completed_onboarding": settings.hasCompletedOnboarding
+                             ])
+        }
     }
 
     /// Wipes all user data while preserving API credentials and Nostr identity.

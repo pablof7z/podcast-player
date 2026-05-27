@@ -181,6 +181,11 @@ final class PlaybackState {
     /// persists the queue for the next app launch.
     var onKernelEnqueueLast: (UUID) -> Void = { _ in }
 
+    /// Called when a whole-episode item is inserted at the head of Up Next.
+    /// Wired by `RootView` to `AppStateStore.kernelEnqueueNext` so Rust
+    /// persists the queue for the next app launch.
+    var onKernelEnqueueNext: (UUID) -> Void = { _ in }
+
     /// Called when an episode is removed from Up Next (any position).
     /// Wired by `RootView` to `AppStateStore.kernelDequeueEpisode`.
     var onKernelDequeueEpisode: (UUID) -> Void = { _ in }

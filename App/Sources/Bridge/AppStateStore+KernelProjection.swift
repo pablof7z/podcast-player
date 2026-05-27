@@ -122,7 +122,11 @@ extension AppStateStore {
 
         // ── Settings ─────────────────────────────────────────────────────
         let ks = snapshot?.settings ?? SettingsSnapshot()
-        next.settings.hasCompletedOnboarding = ks.hasCompletedOnboarding
+        // OR: preserve Swift-persisted `true` until Rust learns about it
+        // via the `update_settings` dispatch that fires on the same change.
+        // Without this, a first launch after a code update would reset the
+        // onboarding gate because Rust hasn't received the flag yet.
+        next.settings.hasCompletedOnboarding = ks.hasCompletedOnboarding || state.settings.hasCompletedOnboarding
         next.settings.autoSkipAds = ks.autoSkipAdsEnabled
         next.settings.skipForwardSeconds = Int(ks.skipForwardSecs)
         next.settings.skipBackwardSeconds = Int(ks.skipBackwardSecs)

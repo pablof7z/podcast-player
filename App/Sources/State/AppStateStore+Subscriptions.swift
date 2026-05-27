@@ -175,6 +175,7 @@ extension AppStateStore {
     func setSubscriptionAutoDownload(_ podcastID: UUID, policy: AutoDownloadPolicy) {
         guard let idx = state.subscriptions.firstIndex(where: { $0.podcastID == podcastID }) else { return }
         state.subscriptions[idx].autoDownload = policy
+        kernelSetAutoDownload(podcastID: podcastID, enabled: policy.mode != .off)
     }
 
     static func feedURLKey(_ url: URL) -> String {

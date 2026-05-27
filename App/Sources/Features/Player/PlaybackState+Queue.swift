@@ -33,6 +33,11 @@ extension PlaybackState {
     /// the agent's `play_episode` tool with `queue_position: "next"`.
     func insertNext(_ item: QueueItem) {
         queue.insert(item, at: 0)
+        // Mirror to Rust for whole-episode items only; bounded segments
+        // (startSeconds != nil) have no Rust representation.
+        if item.startSeconds == nil {
+            onKernelEnqueueNext(item.episodeID)
+        }
     }
 
     /// Replace the current queue with an ordered list of `QueueItem`s and,

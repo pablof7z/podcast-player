@@ -109,6 +109,20 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast.queue", body: ["op": "clear"])
     }
 
+    // MARK: - Subscription settings
+
+    /// Update the auto-download policy for a single podcast (namespace: podcast).
+    /// Rust treats this as a simple boolean; iOS `.latestN` and `.allNew`
+    /// both map to `enabled: true` since the Rust store records only on/off.
+    func kernelSetAutoDownload(podcastID: UUID, enabled: Bool) {
+        kernel?.dispatch(namespace: "podcast",
+                         body: [
+                             "op": "set_auto_download",
+                             "podcast_id": podcastID.uuidString,
+                             "enabled": enabled
+                         ])
+    }
+
     // MARK: - Downloads
 
     /// Queue a download (namespace: podcast).

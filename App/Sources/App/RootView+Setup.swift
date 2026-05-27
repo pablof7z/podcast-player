@@ -31,6 +31,9 @@ extension RootView {
         playbackState.onKernelEnqueueLast = { [store] id in
             store.kernelEnqueueLast(episodeID: id)
         }
+        playbackState.onKernelEnqueueNext = { [store] id in
+            store.kernelEnqueueNext(episodeID: id)
+        }
         playbackState.onKernelDequeueEpisode = { [store] id in
             store.kernelDequeueEpisode(episodeID: id)
         }
