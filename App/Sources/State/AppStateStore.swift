@@ -238,11 +238,6 @@ final class AppStateStore {
         // Hand `self` to the service so the briefing adapter and transcript
         // ingester can resolve episode/subscription metadata.
         RAGService.shared.attach(appStore: self)
-        // Downloads and feed refresh are owned by the Rust kernel when it is
-        // attached. We still call attach here so the legacy URLSession delegate
-        // path (background download rehydration) stays wired; the kernel owns
-        // queueing policy and trigger decisions.
-        EpisodeDownloadService.shared.attach(appStore: self)
         // Prune agent-activity entries older than 30 days so the persisted log
         // doesn't grow unboundedly across many months of use. This fires one
         // Persistence.save only when stale entries are actually found.

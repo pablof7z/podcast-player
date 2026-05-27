@@ -208,8 +208,7 @@ final class SubscriptionRefreshService {
                 let firstEverFetch = priorGUIDs.isEmpty
                 let newlyInsertedIDs = store.upsertEpisodes(
                     episodes,
-                    forPodcast: updatedPodcast.id,
-                    evaluateAutoDownload: false
+                    forPodcast: updatedPodcast.id
                 )
                 store.updatePodcast(updatedPodcast)
                 guard !newlyInsertedIDs.isEmpty else { return nil }
@@ -238,11 +237,6 @@ final class SubscriptionRefreshService {
         }
         guard !survivors.isEmpty else { return }
 
-        EpisodeDownloadService.shared.attach(appStore: store)
-        EpisodeDownloadService.shared.evaluateAutoDownload(
-            forPodcast: pending.podcast.id,
-            newEpisodeIDs: survivors
-        )
         TranscriptIngestService.shared.evaluateAutoIngest(
             newEpisodeIDs: survivors
         )
