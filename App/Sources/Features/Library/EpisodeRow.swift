@@ -12,6 +12,7 @@ import SwiftUI
 ///   - Transcribing: 2 px progress bar (accent color) pinned to bottom edge.
 ///   - Downloaded:   title at full opacity; not-yet-downloaded titles are muted.
 struct EpisodeRow: View {
+    @Environment(AppStateStore.self) private var store
     let episode: Episode
     let showAccent: Color
     /// Fallback artwork URL when the episode has no per-item `<itunes:image>`.
@@ -192,7 +193,9 @@ struct EpisodeRow: View {
     @ViewBuilder
     private var downloadProgressBar: some View {
         if case .downloading(let persisted, _) = episode.downloadState {
-            let p = persisted.clamped01
+            let live = store.podcastSnapshot?.downloads?.active
+                .first(where: { $0.episodeID == episode.id.uuidString })?.progress
+            let p = (live ?? persisted).clamped01
             thinProgressBar(progress: p, color: Color.primary)
         } else if case .downloaded = episode.downloadState,
                   case .transcribing(let p) = episode.transcriptState {
@@ -235,7 +238,9 @@ struct EpisodeRow: View {
         }
         switch episode.downloadState {
         case .downloading(let persisted, _):
-            let pct = Int((persisted.clamped01 * 100).rounded())
+            let live = store.podcastSnapshot?.downloads?.active
+                .first(where: { $0.episodeID == episode.id.uuidString })?.progress
+            let pct = Int(((live ?? persisted).clamped01 * 100).rounded())
             parts.append("downloading \(pct) percent")
         case .downloaded:
             switch episode.transcriptState {
