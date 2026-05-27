@@ -26,7 +26,7 @@ This is the canonical project plan. Detailed implementation plans live under
 | Area | Status | Meaning |
 |---|---|---|
 | PR stack | Merged | GitHub reported zero open PRs on 2026-05-26; prior WIP open-PR entries were stale. |
-| Core NMP shell | Mostly implemented | Subscribe, library, player, refresh, OPML/search, persistence, downloads, settings, queue, and several platform surfaces exist in the NMP target. |
+| Core NMP shell | Implemented | Subscribe, library, player, refresh, OPML/search, persistence, downloads, settings, queue, chapters, ad segments, and all platform surfaces wired to Rust. iOS is a thin rendering shell. Phases 1–6 landed 2026-05-27. |
 | Feature parity | Not achieved | Many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked | `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Compat layer | Active debt | `ios/Podcast/Podcast/Compat/` still contains service/domain/identity/utility shims. |
