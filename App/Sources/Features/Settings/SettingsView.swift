@@ -158,6 +158,17 @@ struct SettingsView: View {
             }
 
             NavigationLink {
+                NetworkingSettingsView()
+            } label: {
+                SettingsRow(
+                    icon: "network",
+                    tint: .blue,
+                    title: "Networking",
+                    value: networkingRowValue
+                )
+            }
+
+            NavigationLink {
                 DataStorageSettingsView()
             } label: {
                 SettingsRow(
@@ -168,6 +179,12 @@ struct SettingsView: View {
                 )
             }
         }
+    }
+
+    private var networkingRowValue: String {
+        let s = store.state.settings
+        guard s.nostrEnabled, !s.nostrRelayURL.isEmpty else { return "Disabled" }
+        return URL(string: s.nostrRelayURL)?.host ?? s.nostrRelayURL
     }
 
     static func formatSize(_ bytes: Int64) -> String {

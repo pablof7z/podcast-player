@@ -79,7 +79,8 @@ struct EpisodeDetailView: View {
                 playback.enqueue(episode.id)
             },
             activeChapterID: liveActiveChapterID(for: episode),
-            downloadProgress: nil,
+            downloadProgress: store.podcastSnapshot?.downloads?.active
+                .first(where: { $0.episodeID == episode.id.uuidString })?.progress,
             onToggleDownload: { toggleDownload(episode: episode) }
         )
         .navigationTitle(showName)
@@ -184,6 +185,16 @@ struct EpisodeDetailView: View {
 
     @ToolbarContentBuilder
     private func actionsToolbar(episode: Episode) -> some ToolbarContent {
+        if case .downloading = episode.downloadState {
+            ToolbarItem(placement: .topBarTrailing) {
+                let live = store.podcastSnapshot?.downloads?.active
+                    .first(where: { $0.episodeID == episode.id.uuidString })?.progress ?? 0
+                ProgressView(value: live)
+                    .progressViewStyle(.circular)
+                    .controlSize(.small)
+                    .accessibilityLabel("Downloading \(Int(live * 100)) percent")
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             EpisodeDetailActionsMenu(episode: episode, store: store)
         }

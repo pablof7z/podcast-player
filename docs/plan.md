@@ -8,6 +8,7 @@ This is the canonical project plan. Detailed implementation plans live under
 | Work | State | Source |
 |---|---|---|
 | NMP feature parity hardening and scaffold burn-down. | Active | `docs/plan/nmp-feature-parity.md` |
+| Rust-kernel migration v2 (PlaybackState pure renderer → Compat dir deletion). | Active | `docs/plan/migration-v2.md` |
 | NIP-F4 publishing/signing completion for owned publishing/discovery. | P0 | `docs/plan/pod0-nostr-publishing.md` |
 | Pod0 app rename. | Done | `docs/BACKLOG.md` |
 | Planning/WIP reconciliation after merged PR stack. | Done for current pass | `WIP.md`, `docs/BACKLOG.md` |
@@ -19,6 +20,7 @@ This is the canonical project plan. Detailed implementation plans live under
 - `WIP.md` - active branches/worktrees only; it must not duplicate backlog state.
 - `docs/plan/` - detailed implementation plans linked from this file.
   - `docs/plan/nmp-feature-parity.md` - canonical feature-parity execution status and scaffold burn-down instructions.
+  - `docs/plan/migration-v2.md` - ordered milestone plan (M0–M8) for completing the Rust-kernel migration.
   - `docs/plan/pod0-nostr-publishing.md` - NIP-F4 protocol correction and publishing/discovery plan.
 
 ## Migration State

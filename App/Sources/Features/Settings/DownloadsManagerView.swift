@@ -185,8 +185,10 @@ struct DownloadsManagerView: View {
         case .queued:
             return .queued
         case .downloading(let storedProgress, let bytesWritten):
+            let liveItem = store.podcastSnapshot?.downloads?.active
+                .first(where: { $0.episodeID == episode.id.uuidString })
             return .downloading(
-                progress: storedProgress.clampedDownloadProgress,
+                progress: (liveItem?.progress ?? storedProgress).clampedDownloadProgress,
                 bytesWritten: bytesWritten,
                 expectedBytes: nil
             )
