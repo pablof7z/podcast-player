@@ -154,3 +154,12 @@ fn cancel_all_downloads_is_unit_variant() {
     let decoded: PlayerAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, PlayerAction::CancelAllDownloads);
 }
+#[test]
+fn reset_progress_round_trips() {
+    let action = PlayerAction::ResetProgress { episode_id: "ep-1".into() };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""op":"reset_progress""#));
+    assert!(json.contains(r#""episode_id":"ep-1""#));
+    let decoded: PlayerAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}

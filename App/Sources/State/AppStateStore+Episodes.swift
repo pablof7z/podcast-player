@@ -200,6 +200,7 @@ extension AppStateStore {
     /// Listening" list without marking it played. The episode stays in the
     /// library and can be started fresh from the show detail page.
     func resetEpisodeProgress(_ id: UUID) {
+        kernelResetEpisodeProgress(id)
         flushPendingPositions()
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         var episodes = state.episodes
@@ -213,6 +214,7 @@ extension AppStateStore {
 
     /// Reverts an accidental "mark played".
     func markEpisodeUnplayed(_ id: UUID) {
+        kernelMarkUnplayed(id)
         guard let idx = state.episodes.firstIndex(where: { $0.id == id }) else { return }
         var episodes = state.episodes
         episodes[idx].played = false

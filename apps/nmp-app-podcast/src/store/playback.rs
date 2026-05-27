@@ -71,6 +71,36 @@ impl PodcastStore {
         false
     }
 
+    /// Mark an episode (by stringified `EpisodeId`) as unlistened. Returns
+    /// `true` only when the flag actually flipped. Flushes to disk when bound.
+    pub fn mark_episode_unplayed(&mut self, id_str: &str) -> bool {
+        for episodes in self.episodes.values_mut() {
+            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
+                if !ep.played {
+                    return false;
+                }
+                ep.played = false;
+                self.persist();
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Reset the playback position of an episode to zero and persist. Distinct
+    /// from `mark_episode_unplayed` — the episode remains in the inbox but
+    /// the "Continue Listening" resume point is cleared.
+    pub fn reset_episode_progress(&mut self, id_str: &str) -> bool {
+        for episodes in self.episodes.values_mut() {
+            if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
+                ep.position_secs = 0.0;
+                self.flush_positions();
+                return true;
+            }
+        }
+        false
+    }
+
     /// Set or toggle the `is_starred` flag for an episode.
     ///
     /// When `starred` is `Some(value)` the flag is set explicitly; when `None`

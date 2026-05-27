@@ -30,6 +30,17 @@ fn mark_listened_action_round_trips() {
     assert_eq!(decoded, action);
 }
 #[test]
+fn mark_unlistened_action_round_trips() {
+    let action = InboxAction::MarkUnlistened {
+        episode_id: "ep-7".into(),
+    };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""op":"mark_unlistened""#));
+    assert!(json.contains(r#""episode_id":"ep-7""#));
+    let decoded: InboxAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+#[test]
 fn execute_emits_dispatch_host_op() {
     let action = InboxAction::Dismiss {
         episode_id: "ep-7".into(),

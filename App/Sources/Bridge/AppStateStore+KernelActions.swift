@@ -72,6 +72,18 @@ extension AppStateStore {
                          body: ["op": "mark_listened", "episode_id": id.uuidString])
     }
 
+    /// Revert an accidental mark-played (namespace: podcast.inbox).
+    func kernelMarkUnplayed(_ id: UUID) {
+        kernel?.dispatch(namespace: "podcast.inbox",
+                         body: ["op": "mark_unlistened", "episode_id": id.uuidString])
+    }
+
+    /// Reset the playback position to zero without marking the episode played (namespace: podcast.player).
+    func kernelResetEpisodeProgress(_ id: UUID) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "reset_progress", "episode_id": id.uuidString])
+    }
+
     /// Toggle the starred flag for an episode (namespace: podcast).
     /// Pass the current starred state so Rust sets it explicitly rather than
     /// toggling from potentially-stale kernel state.

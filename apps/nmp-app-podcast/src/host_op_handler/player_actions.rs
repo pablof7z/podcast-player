@@ -99,6 +99,14 @@ impl PodcastHostOpHandler {
             PlayerAction::CancelAllDownloads => {
                 self.handle_download_command(|q| q.cancel_all(), correlation_id)
             }
+            PlayerAction::ResetProgress { episode_id } => match self.store.lock() {
+                Ok(mut s) => {
+                    s.reset_episode_progress(&episode_id);
+                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    serde_json::json!({"ok": true})
+                }
+                Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
+            },
         }
     }
 

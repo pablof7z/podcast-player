@@ -193,6 +193,14 @@ pub fn handle_inbox_action(
             }
             Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
         },
+        InboxAction::MarkUnlistened { episode_id } => match store.lock() {
+            Ok(mut s) => {
+                let _flipped = s.mark_episode_unplayed(&episode_id);
+                rev.fetch_add(1, Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
+        },
     }
 }
 

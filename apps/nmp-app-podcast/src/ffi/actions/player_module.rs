@@ -72,6 +72,9 @@ pub enum PlayerAction {
     ResumeDownload { episode_id: String },
     /// Cancel every active, paused, and queued download.
     CancelAllDownloads,
+    /// Reset the playback position of an episode to zero. Clears the
+    /// "Continue Listening" resume point without marking the episode played.
+    ResetProgress { episode_id: String },
 }
 
 /// Action module for the `"podcast.player"` namespace.

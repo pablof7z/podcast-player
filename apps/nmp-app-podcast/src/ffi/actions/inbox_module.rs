@@ -43,6 +43,9 @@ pub enum InboxAction {
     /// through the store, so the row falls out of the inbox on the next
     /// tick.
     MarkListened { episode_id: String },
+    /// Revert an accidental mark-played (`Episode.played = false`). Persists
+    /// through the store, so the row re-enters the inbox on the next tick.
+    MarkUnlistened { episode_id: String },
 }
 
 /// `ActionModule` for the `"podcast.inbox"` namespace.
