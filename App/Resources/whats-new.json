@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-28T02:45:00Z",
+      "lines": [
+        "Now Playing widget now updates immediately when a show's artwork or title loads — no more showing a blank image until the next chapter change."
+      ]
+    },
+    {
       "shipped_at": "2026-05-27T18:30:00Z",
       "lines": [
         "Detected ad segments now persist across app restarts — auto-skip works immediately on replay without re-analyzing the transcript."
