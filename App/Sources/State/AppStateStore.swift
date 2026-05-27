@@ -323,6 +323,23 @@ final class AppStateStore {
                                  "backward_secs": Double(settings.skipBackwardSeconds)
                              ])
         }
+        if settings.autoPlayNext != prior.autoPlayNext {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_auto_play_next", "enabled": settings.autoPlayNext])
+        }
+        if settings.autoMarkPlayedAtEnd != prior.autoMarkPlayedAtEnd {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_auto_mark_played_at_end", "enabled": settings.autoMarkPlayedAtEnd])
+        }
+        if settings.headphoneDoubleTapAction != prior.headphoneDoubleTapAction
+            || settings.headphoneTripleTapAction != prior.headphoneTripleTapAction {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: [
+                                 "op": "set_headphone_gesture_actions",
+                                 "double_tap": settings.headphoneDoubleTapAction.rawValue,
+                                 "triple_tap": settings.headphoneTripleTapAction.rawValue
+                             ])
+        }
         if settings.hasCompletedOnboarding != prior.hasCompletedOnboarding {
             kernel?.dispatch(namespace: "podcast",
                              body: [
