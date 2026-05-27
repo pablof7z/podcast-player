@@ -14,7 +14,7 @@ import SwiftUI
 ///
 /// `liveProgress` overrides the persisted `.downloading(progress, _)` value
 /// so the percentage updates smoothly from the kernel snapshot
-/// (`store.podcastSnapshot?.downloads?.active`) without each tick going
+/// (`store.kernel?.podcastSnapshot?.downloads?.active`) without each tick going
 /// through `AppStateStore`. Mirrors the pattern used by `EpisodeRow`.
 ///
 /// **Glass usage:** plain `.regular` glass in a capsule. State distinction
