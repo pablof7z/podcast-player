@@ -90,16 +90,19 @@ final class PlatformCapability {
     /// `becomeCurrent()`).
     private var currentActivity: NSUserActivity?
 
-    // Dedup keys for `applyNowPlayingSnapshot`. Includes `episodeTitle` and
-    // `imageURLString` so a library-hydration pass (which replaces the UUID
-    // fallback title with the real title) always writes through — without
-    // these two keys the first write wins and the widget is stuck on the
-    // episode ID string.
+    // Dedup keys for `applyNowPlayingSnapshot`. All fields written to
+    // `NowPlayingSnapshot` are compared except `positionSecs` (excluded
+    // intentionally — position-only ticks are handled by
+    // `PlaybackState.writeNowPlayingSnapshot`). Comparing every written field
+    // ensures library-hydration passes (showName, episodeTitle, imageURL,
+    // duration) always write through instead of being blocked by stale state.
     private var lastNowPlayingEpisodeId: String? = nil
     private var lastNowPlayingIsPlaying: Bool = false
     private var lastNowPlayingChapterTitle: String? = nil
     private var lastNowPlayingEpisodeTitle: String = ""
+    private var lastNowPlayingShowName: String = ""
     private var lastNowPlayingImageURLString: String? = nil
+    private var lastNowPlayingDurationSecs: Double = 0
 
     /// Idempotent. Marks the capability active. Today this is a
     /// no-op besides flipping the flag — the OS resources
@@ -128,11 +131,11 @@ final class PlatformCapability {
     /// write it to the App Group so the widget picks it up. Called by the
     /// kernel-projection observer on every `onNowPlayingSnapshot` tick.
     ///
-    /// Deduplicates on `(episodeId, isPlaying, chapterTitle)` — the most
-    /// common ticks during live playback change only `positionSecs`, which
-    /// is excluded from the dedup keys; those ticks never reach here.
-    /// Position is kept fresh by `PlaybackState.writeNowPlayingSnapshot`
-    /// which writes the full snapshot (throttled to 5 s) on every tick.
+    /// Deduplicates on all written fields except `positionSecs` — the most
+    /// common ticks during live playback change only position, which is
+    /// excluded so those ticks don't waste App Group writes. Position is kept
+    /// fresh by `PlaybackState.writeNowPlayingSnapshot` (throttled to 5 s).
+    /// All other fields are compared so library-hydration passes always win.
     func applyNowPlayingSnapshot(_ snapshot: PodcastUpdate?, library: [PodcastSummary]) {
         guard let nowPlaying = snapshot?.nowPlaying,
               let episodeIdStr = nowPlaying.episodeId else { return }
@@ -149,16 +152,21 @@ final class PlatformCapability {
                 break outer
             }
         }
+        let durationSecs = nowPlaying.durationSecs
         if episodeIdStr == lastNowPlayingEpisodeId,
            isPlaying == lastNowPlayingIsPlaying,
            chapterTitle == lastNowPlayingChapterTitle,
            episodeTitle == lastNowPlayingEpisodeTitle,
-           imageURLString == lastNowPlayingImageURLString { return }
+           showName == lastNowPlayingShowName,
+           imageURLString == lastNowPlayingImageURLString,
+           durationSecs == lastNowPlayingDurationSecs { return }
         lastNowPlayingEpisodeId = episodeIdStr
         lastNowPlayingIsPlaying = isPlaying
         lastNowPlayingChapterTitle = chapterTitle
         lastNowPlayingEpisodeTitle = episodeTitle
+        lastNowPlayingShowName = showName
         lastNowPlayingImageURLString = imageURLString
+        lastNowPlayingDurationSecs = durationSecs
         NowPlayingSnapshotStore.write(NowPlayingSnapshot(
             episodeTitle: episodeTitle,
             showName: showName,
