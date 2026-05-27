@@ -373,43 +373,26 @@ struct OPMLImportContent: View {
         var errors: [OPMLImportRowError] = []
         var imported = 0
         var skipped = 0
-        var fetched: [SubscriptionImportPayload] = []
-        let service = SubscriptionService(store: store)
         withAnimation { phase = .progress(completed: 0, total: total, errors: errors) }
         for (index, entry) in entries.enumerated() {
             guard let feedURL = entry.feedURL else {
                 skipped += 1
+                withAnimation { phase = .progress(completed: index + 1, total: total, errors: errors) }
                 continue
             }
             do {
-                if let payload = try await service.fetchForAdoption(opmlEntry: entry) {
-                    fetched.append(payload)
-                } else {
-                    skipped += 1
-                }
+                _ = try await store.kernelSubscribe(feedURL: feedURL.absoluteString)
+                imported += 1
+            } catch SubscriptionService.AddError.alreadySubscribed(_) {
+                skipped += 1
             } catch let addError as SubscriptionService.AddError {
-                errors.append(.init(
-                    feedURL: feedURL,
-                    title: entry.title,
-                    message: addError.localizedDescription
-                ))
+                errors.append(.init(feedURL: feedURL, title: entry.title, message: addError.localizedDescription))
             } catch {
-                errors.append(.init(
-                    feedURL: feedURL,
-                    title: entry.title,
-                    message: error.localizedDescription
-                ))
+                errors.append(.init(feedURL: feedURL, title: entry.title, message: error.localizedDescription))
             }
-            withAnimation {
-                phase = .progress(completed: index + 1, total: total, errors: errors)
-            }
+            withAnimation { phase = .progress(completed: index + 1, total: total, errors: errors) }
         }
-        let result = store.addSubscriptions(fetched)
-        imported = result.imported
-        skipped += result.skipped
         Haptics.success()
-        withAnimation {
-            phase = .done(imported: imported, skipped: skipped, errors: errors)
-        }
+        withAnimation { phase = .done(imported: imported, skipped: skipped, errors: errors) }
     }
 }
