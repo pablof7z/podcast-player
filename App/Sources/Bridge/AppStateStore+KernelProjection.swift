@@ -3,9 +3,17 @@ import Observation
 
 // MARK: - KernelModel → AppState projection
 //
-// Observes `KernelModel.podcastSnapshot` on every tick and updates
-// `AppStateStore.state` so all existing views read real Rust-backed data
-// without any changes to the view layer.
+// Observes both `KernelModel.library` (library-hash-gated: updates on
+// subscribe/unsubscribe/mark-played/starred/download changes) and
+// `KernelModel.podcastSnapshot` (content-hash-gated: updates on queue/
+// settings/nowPlaying changes) using `withObservationTracking` so a single
+// property change in either triggers a full projection pass — no fixed polling.
+//
+// Why two observables: `KernelModel` keeps them separate to avoid re-rendering
+// list views at 4 Hz during playback.  The content hash that gates
+// `podcastSnapshot` intentionally excludes library fields, so starred/played/
+// download mutations only advance `library`, not `podcastSnapshot`.  If we
+// watched only `podcastSnapshot` we would miss all library-only mutations.
 //
 // ID stability: Rust emits UUIDv5 strings for both PodcastId and EpisodeId
 // (derived from feedURL|guid). `UUID(uuidString:)` parses them reliably,
@@ -14,33 +22,45 @@ import Observation
 extension AppStateStore {
 
     /// Call once from `AppMain` after both `store` and `kernelModel` exist.
-    /// Polls the kernel snapshot at 500ms intervals (matching the kernel's
-    /// own poll cadence) and projects changes into `AppState`.
+    /// Uses `withObservationTracking` to drive the projection on every change
+    /// to either `kernel.library` or `kernel.podcastSnapshot` — no fixed poll.
     @MainActor
     func attachKernel(_ kernel: KernelModel) {
-        snapshotObservationTask?.cancel()
-        snapshotObservationTask = Task { @MainActor [weak self, weak kernel] in
-            guard let self, let kernel else { return }
-            var lastRev = 0
+        self.kernel = kernel
+        kernelObservationTask?.cancel()
+        // Apply immediately so the first render sees real data even before the
+        // first observation-change fires.
+        applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
+        kernelObservationTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
+                // Suspend until either kernel.library or kernel.podcastSnapshot changes.
+                // withObservationTracking fires onChange once and returns; we loop
+                // to re-arm continuously.
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    withObservationTracking {
+                        _ = kernel.library
+                        _ = kernel.podcastSnapshot
+                    } onChange: {
+                        continuation.resume()
+                    }
+                }
                 guard !Task.isCancelled else { break }
-                guard let snap = kernel.podcastSnapshot, snap.rev != lastRev else { continue }
-                lastRev = snap.rev
-                self.applyKernelSnapshot(snap)
+                self?.applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
             }
         }
     }
 
-    /// Project a full `PodcastUpdate` snapshot into `AppState`.
-    private func applyKernelSnapshot(_ snap: PodcastUpdate) {
+    /// Project the current kernel state into `AppState`.
+    /// Takes `library` and `snapshot` separately because `KernelModel` gates
+    /// them on different content hashes.
+    private func applyKernelState(library: [PodcastSummary], snapshot: PodcastUpdate?) {
         var next = state
 
         // ── Podcasts + subscriptions ──────────────────────────────────────
         var podcasts: [Podcast] = []
         var subscriptions: [PodcastSubscription] = []
 
-        for summary in snap.library {
+        for summary in library {
             guard let uuid = UUID(uuidString: summary.id) else { continue }
             let feedURL = summary.feedUrl.flatMap { URL(string: $0) }
             podcasts.append(Podcast(
@@ -69,15 +89,16 @@ extension AppStateStore {
 
         // ── Episodes ──────────────────────────────────────────────────────
         var episodes: [Episode] = []
-        for summary in snap.library {
+        for summary in library {
             for ep in summary.episodes {
                 if let episode = ep.toEpisode(podcastIdString: summary.id) {
                     episodes.append(episode)
                 }
             }
         }
-        // Also include episodes from the active queue.
-        for ep in snap.queue {
+        // Also include episodes from the active queue (snapshot may lag library
+        // if only library changed, but queue episodes still need to resolve).
+        for ep in snapshot?.queue ?? [] {
             let podcastIdString = ep.podcastId ?? Podcast.unknownID.uuidString
             if let episode = ep.toEpisode(podcastIdString: podcastIdString),
                !episodes.contains(where: { $0.id == episode.id }) {
@@ -87,29 +108,20 @@ extension AppStateStore {
         next.episodes = episodes
 
         // ── Settings ─────────────────────────────────────────────────────
-        let ks = snap.settings
+        let ks = snapshot?.settings ?? SettingsSnapshot()
         next.settings.hasCompletedOnboarding = ks.hasCompletedOnboarding
         next.settings.autoSkipAds = ks.autoSkipAdsEnabled
         next.settings.skipForwardSeconds = Int(ks.skipForwardSecs)
         next.settings.skipBackwardSeconds = Int(ks.skipBackwardSecs)
 
         // ── Last-played episode ───────────────────────────────────────────
-        if let episodeIdStr = snap.nowPlaying?.episodeId,
+        if let episodeIdStr = snapshot?.nowPlaying?.episodeId,
            let uuid = UUID(uuidString: episodeIdStr) {
             next.lastPlayedEpisodeID = uuid
         }
 
         state = next
     }
-
-    // MARK: - Stored observation task
-
-    var snapshotObservationTask: Task<Void, Never>? {
-        get { objc_getAssociatedObject(self, AppStateStore.observationTaskKey) as? Task<Void, Never> }
-        set { objc_setAssociatedObject(self, AppStateStore.observationTaskKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-
-    private static let observationTaskKey = UnsafeMutableRawPointer.allocate(byteCount: 1, alignment: 1)
 }
 
 // MARK: - EpisodeSummary → Episode mapping
@@ -122,10 +134,11 @@ private extension EpisodeSummary {
 
         let pubDate: Date = publishedAt.map { Date(timeIntervalSince1970: Double($0)) } ?? Date.distantPast
 
-        // For display purposes, use the download path as a file URL when
-        // available. Playback will be handled by the Rust kernel (Phase 2);
-        // this URL only needs to be non-nil for Episode to be created.
-        let enclosureURL: URL = downloadPath.flatMap { URL(fileURLWithPath: $0) as URL? }
+        // Use the local file URL when the episode is downloaded; otherwise a
+        // stable placeholder. Downloads are triggered through the Rust kernel
+        // (dispatch "download"), not directly by iOS code, so the remote URL
+        // is not needed in the projection — Rust fetches and reports the path.
+        let enclosureURL: URL = downloadPath.flatMap { URL(fileURLWithPath: $0) }
             ?? URL(string: "https://placeholder.invalid/\(id)")!
 
         let downloadState: DownloadState

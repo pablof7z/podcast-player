@@ -97,11 +97,11 @@ actor MockBriefing: BriefingComposerProtocol {
 }
 
 actor MockSummarizer: EpisodeSummarizerProtocol {
-    private let result: EpisodeSummary?
-    init(result: EpisodeSummary? = nil) { self.result = result }
+    private let result: AgentEpisodeSummary?
+    init(result: AgentEpisodeSummary? = nil) { self.result = result }
 
-    func summarizeEpisode(episodeID: EpisodeID, length: String?) async throws -> EpisodeSummary {
-        return result ?? EpisodeSummary(episodeID: episodeID, summary: "")
+    func summarizeEpisode(episodeID: EpisodeID, length: String?) async throws -> AgentEpisodeSummary {
+        return result ?? AgentEpisodeSummary(episodeID: episodeID, summary: "")
     }
 }
 

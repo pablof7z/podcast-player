@@ -191,7 +191,7 @@ final class AgentToolsPodcastSearchTests: XCTestCase {
 
     func testSummarizeEpisodeSuccess() async throws {
         let deps = makeDeps(
-            summarizer: MockSummarizer(result: EpisodeSummary(
+            summarizer: MockSummarizer(result: AgentEpisodeSummary(
                 episodeID: "ep1", summary: "Quick TLDR.", bulletPoints: ["A", "B"]
             )),
             fetcher: MockFetcher(known: ["ep1"])

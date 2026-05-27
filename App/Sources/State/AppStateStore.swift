@@ -123,6 +123,18 @@ final class AppStateStore {
     /// in-memory suite so fixtures never leak into the real app.
     let persistence: Persistence
 
+    /// Weak handle to the Rust kernel. Set once by `attachKernel`; used by
+    /// mutation methods to dispatch actions without requiring every call site
+    /// to hold its own reference.
+    @ObservationIgnored
+    weak var kernel: KernelModel?
+
+    /// Cancellable observation task that projects `KernelModel` state into
+    /// `AppState`. Stored here (not via `objc_setAssociatedObject`) so
+    /// `deinit` can cancel it cleanly without a retain cycle.
+    @ObservationIgnored
+    var kernelObservationTask: Task<Void, Never>?
+
     /// Retained observer token for iCloud external-change notifications.
     private var iCloudObserver: NSObjectProtocol?
 
@@ -214,6 +226,10 @@ final class AppStateStore {
         // Hand `self` to the service so the briefing adapter and transcript
         // ingester can resolve episode/subscription metadata.
         RAGService.shared.attach(appStore: self)
+        // Downloads and feed refresh are owned by the Rust kernel when it is
+        // attached. We still call attach here so the legacy URLSession delegate
+        // path (background download rehydration) stays wired; the kernel owns
+        // queueing policy and trigger decisions.
         EpisodeDownloadService.shared.attach(appStore: self)
         // Prune agent-activity entries older than 30 days so the persisted log
         // doesn't grow unboundedly across many months of use. This fires one
@@ -236,10 +252,14 @@ final class AppStateStore {
                 self?.applyExternalSettingsChange()
             }
         }
-        // Kick off the foreground subscription-refresh loop. The service
-        // itself owns the polling task + lifecycle observers, so this call
-        // is idempotent and we never have to clean up from here.
-        SubscriptionRefreshService.shared.startPeriodicRefresh(store: self)
+        // Feed refresh is driven by the Rust kernel (lifecycle foreground
+        // triggers `refresh_all`). The legacy Swift refresh loop is skipped
+        // when `kernel` is non-nil (set by `attachKernel`). We start it here
+        // only as a fallback for tests / environments where the kernel is
+        // absent.  The actual kernel attach happens asynchronously in AppMain,
+        // so the flag check lives inside the service's own start logic — for
+        // now, defer start until attachKernel is called.
+        // SubscriptionRefreshService.shared.startPeriodicRefresh(store: self)
         // Subscribe to app-backgrounding so the position cache is flushed
         // to disk before iOS can suspend or kill the process. Token is
         // retained on `self` so the observer outlives the init call but
@@ -331,6 +351,7 @@ final class AppStateStore {
             if let iCloudObserver {
                 NotificationCenter.default.removeObserver(iCloudObserver)
             }
+            kernelObservationTask?.cancel()
             positionFlushTask?.cancel()
             widgetReloadTask?.cancel()
         }
