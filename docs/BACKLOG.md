@@ -75,6 +75,11 @@ worktrees currently in flight.
 
 ## Active P1 - Tier 1 Usability Hardening
 
+- **bunker-isconnecting-reactive.** `RemoteSignerView.connect()` sets
+  `isConnecting = false` immediately after dispatching `signInBunker` (fire-
+  and-forget). Should clear when `activeAccount` appears in snapshot (or on a
+  timeout), so the spinner stays up while the NIP-46 handshake is in flight.
+  Requires `bunkerHandshake` state surfaced in `IdentityViewModel`.
 - **rss-subscribe-validation.** Validate malformed URLs, duplicate feeds,
   provider errors, restart persistence, Android behavior, and empty/error UI.
 - **opml-import-export-hardening.** Validate large OPML files, partial
