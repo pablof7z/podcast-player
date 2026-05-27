@@ -103,7 +103,7 @@ extension RootView {
                 showName: showName,
                 imageURLString: imageURLString,
                 position: episode.playbackPosition,
-                duration: episode.duration,
+                duration: episode.duration ?? 0,
                 chapterTitle: nil,
                 isPlaying: false
             ))
