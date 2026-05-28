@@ -138,6 +138,9 @@ extension AudioEngine {
             // without triggering maybe_auto_advance.
             onPauseEvent?(url, duration)
         } else {
+            // Flush exact final position before itemEnd so Rust stores
+            // `duration` (not the last 1 Hz tick) when writeback runs.
+            onPauseEvent?(url, duration)
             onItemEnd?(url)
         }
     }
