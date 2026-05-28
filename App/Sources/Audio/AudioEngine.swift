@@ -91,6 +91,10 @@ final class AudioEngine {
     var onPauseEvent: ((String, Double) -> Void)?
     // url — fires on natural end of item.
     var onItemEnd: ((String) -> Void)?
+    // fires when the sleep timer stops playback at the natural end of an episode.
+    // Position is already flushed via onPauseEvent; this signals the caller to
+    // mark the episode played without triggering auto-advance.
+    var onSleepTimerEpisodeEnd: (() -> Void)?
 
     /// NowPlaying surface — exposed so the player can push artwork mid-playback
     /// once Lane 4 has it loaded (artwork isn't on `Episode` yet — Lane 2 owns).

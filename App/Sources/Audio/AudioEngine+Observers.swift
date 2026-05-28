@@ -137,6 +137,10 @@ extension AudioEngine {
             // Emit paused (not itemEnd) so Rust persists the final position
             // without triggering maybe_auto_advance.
             onPauseEvent?(url, duration)
+            // Caller marks the episode played via the iOS store path so that
+            // delete-after-played side effects still run, but without the auto-
+            // advance that itemEnd would trigger via Rust's maybe_auto_advance.
+            onSleepTimerEpisodeEnd?()
         } else {
             // Flush exact final position before itemEnd so Rust stores
             // `duration` (not the last 1 Hz tick) when writeback runs.

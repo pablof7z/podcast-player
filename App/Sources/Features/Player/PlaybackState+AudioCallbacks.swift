@@ -35,8 +35,13 @@ extension PlaybackState {
         let audio = PodcastCapabilities.shared.audio
         engine.onPlayingTick = { [weak self, weak audio] url, position, duration in
             audio?.emitReport(.playing(url: url, positionSecs: position, durationSecs: duration))
-            NowPlayingSnapshotStore.updatePosition(position, isPlaying: true)
             guard let self else { return }
+            // Throttle WidgetKit reloads to ~1 per 5 ticks (~5 s at 1 Hz).
+            self.widgetPositionTickCount += 1
+            if self.widgetPositionTickCount >= 5 {
+                self.widgetPositionTickCount = 0
+                NowPlayingSnapshotStore.updatePosition(position, isPlaying: true)
+            }
             // Advance bounded-segment queue items (clips, agent segments) that
             // are not in the Rust queue. Rust handles whole-episode auto-advance
             // via maybe_auto_advance; this path covers start/end-bounded items.
@@ -53,8 +58,20 @@ extension PlaybackState {
         engine.onPauseEvent = { [weak audio] url, position in
             audio?.emitReport(.paused(url: url, positionSecs: position))
         }
-        engine.onItemEnd = { [weak audio] url in
+        engine.onItemEnd = { [weak self, weak audio] url in
             audio?.emitReport(.itemEnd(url: url))
+            // Run the iOS-side mark-played path so side effects (delete-after-
+            // played, position cache flush, projection invalidation) fire in
+            // addition to Rust's own apply_writeback mark.
+            guard let self, let episodeID = self.episode?.id else { return }
+            self.store?.markEpisodePlayed(episodeID)
+        }
+        engine.onSleepTimerEpisodeEnd = { [weak self] in
+            // Sleep timer stopped at end of episode: position was already flushed
+            // via onPauseEvent. Mark played here (without emitting itemEnd so
+            // Rust's maybe_auto_advance doesn't fire) and run iOS side effects.
+            guard let self, let episodeID = self.episode?.id else { return }
+            self.store?.markEpisodePlayed(episodeID)
         }
 
         // ── Kernel bridge: Rust AudioCommand → AudioEngine ───────────────
