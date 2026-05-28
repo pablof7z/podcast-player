@@ -49,12 +49,20 @@ final class SyncCapabilityBridge: @unchecked Sendable {
         case HttpCapability.namespace:
             return http.handleJSON(requestJSON)
         case AudioCapability.namespace:
-            // AudioCapability is @MainActor; hop to main thread synchronously.
-            // Safe: the actor thread is not the main thread, and the main thread
-            // is never blocked waiting on the actor thread at this call site.
+            // @MainActor; hop to main thread synchronously. Safe: the actor
+            // thread is never the main thread, and the main thread is never
+            // blocked waiting on the actor thread at this call site.
             return DispatchQueue.main.sync {
                 MainActor.assumeIsolated {
                     PodcastCapabilities.shared.audio.handleJSON(requestJSON)
+                }
+            }
+        case DownloadCapability.namespace:
+            // Same main-actor hop as AudioCapability — DownloadCapability is
+            // also @MainActor (URLSession delegate state lives there).
+            return DispatchQueue.main.sync {
+                MainActor.assumeIsolated {
+                    PodcastCapabilities.shared.download.handleJSON(requestJSON)
                 }
             }
         default:

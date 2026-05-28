@@ -109,23 +109,10 @@ extension RootView {
         if playbackState.episode == nil,
            let lastID = store.state.lastPlayedEpisodeID,
            let episode = store.episode(id: lastID) {
+            // setEpisode calls writeNowPlayingSnapshot(force: true) with the
+            // correct show image, chapter title, and position, so no second
+            // write is needed here.
             playbackState.setEpisode(episode, enqueueDownloadIfNeeded: false)
-            // On cold launch the Rust kernel starts with nowPlaying == nil
-            // (position is not persisted in PersistedStore). Write the widget
-            // snapshot here so it shows the restored episode immediately —
-            // onNowPlayingSnapshot won't fire until the kernel snapshot advances
-            // with a live nowPlaying, which only happens once the user taps play.
-            let showName = store.podcast(id: episode.podcastID)?.title ?? ""
-            let imageURLString = (episode.imageURL ?? store.podcast(id: episode.podcastID)?.imageURL)?.absoluteString
-            NowPlayingSnapshotStore.write(NowPlayingSnapshot(
-                episodeTitle: episode.title,
-                showName: showName,
-                imageURLString: imageURLString,
-                position: episode.playbackPosition,
-                duration: episode.duration ?? 0,
-                chapterTitle: nil,
-                isPlaying: false
-            ))
         }
     }
 
