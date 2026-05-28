@@ -150,9 +150,12 @@ final class PlaybackState {
         engine.seek(to: time)
         Haptics.selection()
         // When paused, Playing reports aren't flowing so Rust's saved position
-        // would be stale; sync it now so the next play() → kernelLoad returns
-        // the correct position and doesn't snap the engine back.
-        if !isPlaying { store?.kernelSeek(positionSecs: time) }
+        // would be stale. PersistPosition writes directly to the store (no
+        // audio command returned) so the next play() → kernelLoad returns the
+        // correct resume point and doesn't snap the engine back.
+        if !isPlaying, let episodeID = episode?.id {
+            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: time)
+        }
     }
 
     func seekSnapping(to time: TimeInterval) { seek(to: time) }

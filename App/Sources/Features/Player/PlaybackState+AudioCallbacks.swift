@@ -33,9 +33,22 @@ extension PlaybackState {
 
         // ── Kernel bridge: AudioEngine → AudioCapability → Rust ──────────
         let audio = PodcastCapabilities.shared.audio
-        engine.onPlayingTick = { [weak audio] url, position, duration in
+        engine.onPlayingTick = { [weak self, weak audio] url, position, duration in
             audio?.emitReport(.playing(url: url, positionSecs: position, durationSecs: duration))
             NowPlayingSnapshotStore.updatePosition(position, isPlaying: true)
+            guard let self else { return }
+            // Advance bounded-segment queue items (clips, agent segments) that
+            // are not in the Rust queue. Rust handles whole-episode auto-advance
+            // via maybe_auto_advance; this path covers start/end-bounded items.
+            if let end = self.currentSegmentEndTime, position >= end {
+                self.currentSegmentEndTime = nil
+                let store = self.store
+                if !self.queue.isEmpty {
+                    _ = self.playNext(resolve: { store?.episode(id: $0) })
+                } else {
+                    self.engine.pause()
+                }
+            }
         }
         engine.onPauseEvent = { [weak audio] url, position in
             audio?.emitReport(.paused(url: url, positionSecs: position))
