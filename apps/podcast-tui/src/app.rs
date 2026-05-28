@@ -99,6 +99,14 @@ pub struct SearchResult {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct DownloadRow {
+    pub episode_id: String,
+    pub progress: f32,
+    pub state: String,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct AppState {
     pub focused: Pane,
     pub tab: Tab,
@@ -117,6 +125,7 @@ pub struct AppState {
     pub subscribe_input: String,
     pub status: String,
     pub toasts: Vec<Toast>,
+    pub downloads: Vec<DownloadRow>,
     pub playback_error: Option<String>,
 }
 
@@ -139,6 +148,7 @@ impl Default for AppState {
             search_input: String::new(),
             subscribe_input: String::new(),
             status: "starting kernel".to_string(),
+            downloads: Vec::new(),
             toasts: Vec::new(),
             playback_error: None,
         }
@@ -242,6 +252,21 @@ impl AppState {
             }
         }
 
+        // Downloads
+        if let Some(downloads) = value.get("downloads") {
+            if let Some(active) = downloads.get("active").and_then(Value::as_array) {
+                let prev_ids: std::collections::HashSet<String> =
+                    self.downloads.iter().map(|d| d.episode_id.clone()).collect();
+                self.downloads = active.iter().filter_map(parse_download_row).collect();
+                // Toast on completion: item was present before but gone now = done
+                for prev_id in &prev_ids {
+                    if !self.downloads.iter().any(|d| &d.episode_id == prev_id) {
+                        self.push_toast(&format!("download complete: {prev_id}"));
+                    }
+                }
+            }
+        }
+
         // Toast
         if let Some(toast) = value.get("toast").and_then(Value::as_str) {
             self.push_toast(toast);
@@ -249,6 +274,28 @@ impl AppState {
 
         self.status =
             format!("update #{} ({} podcasts)", self.update_count, self.library.len());
+    }
+
+    pub fn download_status_line(&self) -> Option<String> {
+        if self.downloads.is_empty() {
+            return None;
+        }
+        let active_count = self
+            .downloads
+            .iter()
+            .filter(|d| d.state == "active" || d.state == "queued")
+            .count();
+        if active_count == 0 {
+            return None;
+        }
+        let avg_progress = self
+            .downloads
+            .iter()
+            .filter(|d| d.state == "active")
+            .map(|d| d.progress)
+            .sum::<f32>()
+            / self.downloads.iter().filter(|d| d.state == "active").count().max(1) as f32;
+        Some(format!("↓ {active_count}  {:.0}%", avg_progress * 100.0))
     }
 
     pub fn selected_podcast_id(&self) -> Option<String> {
@@ -396,5 +443,18 @@ fn parse_search_result(value: &Value) -> Option<SearchResult> {
         author,
         artwork_url,
         feed_url,
+    })
+}
+
+fn parse_download_row(value: &Value) -> Option<DownloadRow> {
+    let episode_id = value.get("episode_id")?.as_str()?.to_string();
+    let progress = value.get("progress").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+    let state = value.get("state").and_then(Value::as_str).unwrap_or("unknown").to_string();
+    let error = value.get("error").and_then(Value::as_str).map(String::from);
+    Some(DownloadRow {
+        episode_id,
+        progress,
+        state,
+        error,
     })
 }

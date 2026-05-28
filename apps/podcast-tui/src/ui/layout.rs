@@ -79,10 +79,19 @@ fn render_library_body(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_status(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let mut spans = vec![
-        Span::styled(" | ", Style::default().fg(Color::DarkGray)),
-        Span::styled(&state.status, Style::default().fg(Color::Gray)),
-    ];
+    let mut spans = vec![];
+
+    // Download progress indicator (tasteful, only when active)
+    let dl_status = state.download_status_line();
+    if let Some(ref dl_status) = dl_status {
+        spans.push(Span::styled(
+            dl_status,
+            Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled(" | ", Style::default().fg(Color::DarkGray)));
+    }
+
+    spans.push(Span::styled(&state.status, Style::default().fg(Color::Gray)));
 
     if let Some(ref toast) = state.toasts.last() {
         spans.push(Span::styled(" | ", Style::default().fg(Color::DarkGray)));
