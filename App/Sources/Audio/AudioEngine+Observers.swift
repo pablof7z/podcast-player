@@ -133,10 +133,11 @@ extension AudioEngine {
         publishNowPlayingElapsed()
         let url = episode?.enclosureURL.absoluteString ?? ""
         setState(.paused)
-        // Sleep timer "end of episode" mode: stop without emitting itemEnd so
-        // Rust's maybe_auto_advance is not triggered. The paused report from
-        // setState(.paused) is sufficient to persist the final position.
-        if !sleepTimer.shouldStopAtEpisodeEnd() {
+        if sleepTimer.shouldStopAtEpisodeEnd() {
+            // Emit paused (not itemEnd) so Rust persists the final position
+            // without triggering maybe_auto_advance.
+            onPauseEvent?(url, duration)
+        } else {
             onItemEnd?(url)
         }
     }

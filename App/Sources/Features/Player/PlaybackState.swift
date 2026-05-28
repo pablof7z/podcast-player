@@ -161,11 +161,21 @@ final class PlaybackState {
     func seekSnapping(to time: TimeInterval) { seek(to: time) }
 
     func skipBackward(_ seconds: TimeInterval? = nil) {
+        let delta = seconds ?? engine.skipBackwardSeconds
+        let target = max(engine.currentTime - delta, 0)
         engine.skip(back: seconds)
+        if !isPlaying, let episodeID = episode?.id {
+            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: target)
+        }
     }
 
     func skipForward(_ seconds: TimeInterval? = nil) {
+        let delta = seconds ?? engine.skipForwardSeconds
+        let target = min(engine.currentTime + delta, duration)
         engine.skip(forward: seconds)
+        if !isPlaying, let episodeID = episode?.id {
+            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: target)
+        }
     }
 
     func setRate(_ newRate: PlaybackRate) {

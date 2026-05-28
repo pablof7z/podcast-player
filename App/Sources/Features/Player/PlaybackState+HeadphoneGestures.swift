@@ -11,10 +11,12 @@ extension PlaybackState {
         case .skipBackward:
             skipBackward()
         case .nextChapter:
-            let navigable = episode?.chapters?.filter(\.includeInTableOfContents) ?? []
+            let live = episode.flatMap { store?.episode(id: $0.id) } ?? episode
+            let navigable = live?.chapters?.filter(\.includeInTableOfContents) ?? []
             if navigable.isEmpty { skipForward() } else { seekToNextChapter(in: navigable) }
         case .previousChapter:
-            let navigable = episode?.chapters?.filter(\.includeInTableOfContents) ?? []
+            let live = episode.flatMap { store?.episode(id: $0.id) } ?? episode
+            let navigable = live?.chapters?.filter(\.includeInTableOfContents) ?? []
             if navigable.isEmpty { skipBackward() } else { seekToPreviousChapter(in: navigable) }
         case .clipNow:
             AutoSnipController.shared.captureSnip(source: .headphone)
