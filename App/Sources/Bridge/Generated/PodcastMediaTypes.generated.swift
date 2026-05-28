@@ -5,7 +5,7 @@
 import Foundation
 
 /// Voice-mode projection mirroring Rust `VoiceState`.
-struct VoiceSnapshot: Codable, Equatable {
+struct VoiceSnapshot: Equatable {
     var isSpeaking: Bool = false
     var isListening: Bool = false
     var currentRequestId: String? = nil
@@ -15,14 +15,14 @@ struct VoiceSnapshot: Codable, Equatable {
 }
 
 /// Agent-chat conversation surfaced via `PodcastUpdate.agent`.
-struct AgentSnapshot: Codable, Equatable {
+struct AgentSnapshot: Equatable {
     var messages: [AgentMessageSummary] = []
     /// `true` while the kernel is composing an assistant reply.
     var isBusy: Bool = false
 }
 
 /// One row in `AgentSnapshot.messages`.
-struct AgentMessageSummary: Codable, Identifiable, Equatable, Hashable {
+struct AgentMessageSummary: Identifiable, Equatable, Hashable {
     var id: String
     /// `"user"` or `"assistant"`.
     var role: String
@@ -47,7 +47,7 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// One AI agent pick row surfaced via `PodcastUpdate.picks`.
-struct AgentPickSummary: Codable, Identifiable, Equatable, Hashable {
+struct AgentPickSummary: Identifiable, Equatable, Hashable {
     var episodeId: String
     var episodeTitle: String
     var podcastId: String
@@ -62,7 +62,7 @@ struct AgentPickSummary: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// Daily briefing projection — mirrors `BriefingSnapshot` in Rust.
-struct BriefingSnapshot: Codable, Equatable, Hashable {
+struct BriefingSnapshot: Equatable, Hashable {
     /// One of `"pending"`, `"generating"`, `"ready"`, `"delivered"`, `"failed"`.
     var status: String = "pending"
     var isGenerating: Bool = false
@@ -103,4 +103,68 @@ struct ClipSummary: Codable, Identifiable, Equatable, Hashable {
     var endSecs: Double
     var title: String? = nil
     var createdAt: Int
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false) and Vec fields (omit when empty). Conformance is declared in extensions
+// (not struct bodies) so the synthesized memberwise init is preserved.
+
+extension VoiceSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isSpeaking = try c.decodeIfPresent(Bool.self, forKey: .isSpeaking) ?? false
+        isListening = try c.decodeIfPresent(Bool.self, forKey: .isListening) ?? false
+        currentRequestId = try c.decodeIfPresent(String.self, forKey: .currentRequestId)
+        currentVoiceId = try c.decodeIfPresent(String.self, forKey: .currentVoiceId)
+        partialTranscript = try c.decodeIfPresent(String.self, forKey: .partialTranscript)
+        lastResponse = try c.decodeIfPresent(String.self, forKey: .lastResponse)
+    }
+}
+
+extension AgentSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        messages = try c.decodeIfPresent([AgentMessageSummary].self, forKey: .messages) ?? []
+        isBusy = try c.decodeIfPresent(Bool.self, forKey: .isBusy) ?? false
+    }
+}
+
+extension AgentMessageSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        role = try c.decode(String.self, forKey: .role)
+        content = try c.decode(String.self, forKey: .content)
+        createdAt = try c.decode(Int.self, forKey: .createdAt)
+        isGenerating = try c.decodeIfPresent(Bool.self, forKey: .isGenerating) ?? false
+    }
+}
+
+extension AgentPickSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        episodeTitle = try c.decode(String.self, forKey: .episodeTitle)
+        podcastId = try c.decode(String.self, forKey: .podcastId)
+        podcastTitle = try c.decode(String.self, forKey: .podcastTitle)
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        publishedAt = try c.decodeIfPresent(Int.self, forKey: .publishedAt) ?? 0
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs)
+        pickReason = try c.decodeIfPresent(String.self, forKey: .pickReason) ?? ""
+        pickScore = try c.decodeIfPresent(Double.self, forKey: .pickScore) ?? 0
+    }
+}
+
+extension BriefingSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "pending"
+        isGenerating = try c.decodeIfPresent(Bool.self, forKey: .isGenerating) ?? false
+        segmentCount = try c.decodeIfPresent(Int.self, forKey: .segmentCount) ?? 0
+        segments = try c.decodeIfPresent([BriefingSegmentSummary].self, forKey: .segments) ?? []
+        lastGeneratedAt = try c.decodeIfPresent(Int.self, forKey: .lastGeneratedAt)
+        nextScheduledMinutes = try c.decodeIfPresent(Int.self, forKey: .nextScheduledMinutes)
+    }
 }

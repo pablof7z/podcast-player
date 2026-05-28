@@ -33,7 +33,10 @@ impl PodcastHostOpHandler {
         // `Playing` report (no extra round-trip via iOS).
         hydrate_actor_for_play(&self.store, &self.player_actor, &episode_id);
         self.rev.fetch_add(1, Ordering::Relaxed);
-        if let Err(e) = self.dispatch_audio(&AudioCommand::load(&url, position_secs), correlation_id) {
+        if let Err(e) = self.dispatch_audio(
+            &AudioCommand::load_with_id(&url, position_secs, &episode_id),
+            correlation_id,
+        ) {
             return serde_json::json!({"ok": false, "error": e});
         }
         if let Err(e) = self.dispatch_audio(&AudioCommand::Play, correlation_id) {
@@ -50,6 +53,36 @@ impl PodcastHostOpHandler {
         serde_json::json!({"ok": true})
     }
 
+    fn handle_load(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
+        let (podcast_id, url, position_secs) = {
+            match self.store.lock() {
+                Ok(s) => match s.episode_playback_info(&episode_id) {
+                    Some((pod_id, ep_url, pos)) => (pod_id, ep_url, pos),
+                    None => {
+                        return serde_json::json!({
+                            "ok": false,
+                            "error": format!("episode not found: {episode_id}")
+                        })
+                    }
+                },
+                Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+            }
+        };
+        if let Ok(mut actor) = self.player_actor.lock() {
+            actor.stage_load(&episode_id, Some(podcast_id), &url, position_secs);
+        }
+        hydrate_actor_for_play(&self.store, &self.player_actor, &episode_id);
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        // Dispatch Load only — no Play. iOS calls Resume when the user taps play.
+        match self.dispatch_audio(
+            &AudioCommand::load_with_id(&url, position_secs, &episode_id),
+            correlation_id,
+        ) {
+            Ok(_) => serde_json::json!({"ok": true}),
+            Err(e) => serde_json::json!({"ok": false, "error": e}),
+        }
+    }
+
     pub(super) fn handle_player_action(
         &self,
         action: PlayerAction,
@@ -57,6 +90,8 @@ impl PodcastHostOpHandler {
     ) -> serde_json::Value {
         match action {
             PlayerAction::Play { episode_id } => self.handle_play(episode_id, correlation_id),
+            PlayerAction::Load { episode_id } => self.handle_load(episode_id, correlation_id),
+            PlayerAction::Resume => self.dispatch_audio_json(AudioCommand::Play, correlation_id),
             PlayerAction::Pause => self.dispatch_audio_json(AudioCommand::Pause, correlation_id),
             PlayerAction::Seek { position_secs } => {
                 self.dispatch_audio_json(AudioCommand::seek(position_secs), correlation_id)

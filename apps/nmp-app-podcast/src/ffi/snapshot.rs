@@ -88,6 +88,7 @@ fn build_snapshot_payload(handle: &PodcastHandle) -> String {
                             artwork_url: ep.image_url.as_ref().map(|u| u.to_string()),
                             published_at: Some(ep.pub_date.timestamp()),
                             download_path: s.local_path_for(&ep.id).map(str::to_owned),
+                            enclosure_url: Some(ep.enclosure_url.to_string()),
                             description: Some(strip_html(&ep.description))
                                 .filter(|d| !d.is_empty()),
                             transcript,

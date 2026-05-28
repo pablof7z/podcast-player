@@ -27,6 +27,13 @@ extension AudioEngine {
                 self.setCurrentTime(seconds)
                 self.publishNowPlayingElapsed()
                 self.republishIfChapterChanged()
+                // Forward to kernel bridge at ≤1 Hz while actually playing.
+                guard self.state == .playing else { return }
+                let currentSecond = Int(seconds)
+                guard currentSecond != self.lastReportedSecond else { return }
+                self.lastReportedSecond = currentSecond
+                let url = self.episode?.enclosureURL.absoluteString ?? ""
+                self.onPlayingTick?(url, seconds, self.duration)
             }
         }
     }
@@ -124,12 +131,15 @@ extension AudioEngine {
         setCurrentTime(duration)
         didReachNaturalEnd = true
         publishNowPlayingElapsed()
+        let url = episode?.enclosureURL.absoluteString ?? ""
         // Sleep timer "end of episode" mode wins if armed.
         if sleepTimer.shouldStopAtEpisodeEnd() {
             setState(.paused)
+            onItemEnd?(url)
             return
         }
         setState(.paused)
+        onItemEnd?(url)
         // Lane 2 / Lane 4 will hook autoplay-next here; the engine stays neutral.
     }
 }

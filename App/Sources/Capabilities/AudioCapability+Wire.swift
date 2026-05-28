@@ -13,7 +13,11 @@ import Foundation
 
 /// Commands Rust dispatches to the iOS audio executor.
 enum AudioCommand: Decodable, Equatable {
-    case load(url: String, positionSecs: Double)
+    /// `episodeID` is present when dispatched by `handle_play` / `handle_load`
+    /// / `maybe_auto_advance` so the iOS executor can resolve the full
+    /// `Episode` model for `AudioEngine.load(_:)` rather than relying on
+    /// a potentially-stale `file://` URL from the Rust store.
+    case load(url: String, positionSecs: Double, episodeID: String?)
     case play
     case pause
     case seek(positionSecs: Double)
@@ -26,6 +30,7 @@ enum AudioCommand: Decodable, Equatable {
         case type
         case url
         case positionSecs = "position_secs"
+        case episodeID = "episode_id"
         case volume
         case speed
         case secs
@@ -38,7 +43,8 @@ enum AudioCommand: Decodable, Equatable {
         case "load":
             self = .load(
                 url: try c.decode(String.self, forKey: .url),
-                positionSecs: try c.decode(Double.self, forKey: .positionSecs))
+                positionSecs: try c.decode(Double.self, forKey: .positionSecs),
+                episodeID: try c.decodeIfPresent(String.self, forKey: .episodeID))
         case "play":
             self = .play
         case "pause":
@@ -68,6 +74,11 @@ enum AudioReport: Encodable, Equatable {
     case failed(url: String, error: String)
     case bufferingProgress(fraction: Float)
     case sleepTimerFired
+    /// AVPlayer played the current item to its natural end
+    /// (`AVPlayerItemDidPlayToEndTime`). Distinct from `stopped`
+    /// (user/command-initiated). The kernel uses this to mark the
+    /// episode `played = true` and to auto-advance the queue.
+    case itemEnd(url: String)
 
     private enum CodingKeys: String, CodingKey {
         case type
@@ -101,6 +112,9 @@ enum AudioReport: Encodable, Equatable {
             try c.encode(fraction, forKey: .fraction)
         case .sleepTimerFired:
             try c.encode("sleep_timer_fired", forKey: .type)
+        case let .itemEnd(url):
+            try c.encode("item_end", forKey: .type)
+            try c.encode(url, forKey: .url)
         }
     }
 

@@ -156,14 +156,11 @@ struct PlayerView: View {
 
     // MARK: - Episode header (compact: artwork left, text right)
 
-    /// Resolved artwork URL with per-chapter override. Priority:
-    ///   1. Active chapter's `imageURL`
-    ///   2. Per-episode artwork (`<itunes:image>` override)
-    ///   3. Show-level cover art via `PlaybackState.resolveShowImage`
     private var artworkURL: URL? {
         guard let episode = state.episode else { return nil }
         if let chapterImage = activeChapterImageURL { return chapterImage }
-        return episode.imageURL ?? state.resolveShowImage(episode)
+        return state.engine.resolveArtworkURL(episode, state.currentTime)
+            ?? episode.imageURL
     }
 
     private var activeChapterImageURL: URL? {

@@ -23,6 +23,14 @@ use crate::player::AdSegment;
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum PlayerAction {
     Play { episode_id: String },
+    /// Stage an episode for playback without starting audio. Rust looks up
+    /// the URL and position, calls `actor.stage_load`, and dispatches
+    /// `AudioCommand::Load` — but NOT `AudioCommand::Play`. iOS follows
+    /// with a `Resume` action (or a `Play { episode_id }` to restart).
+    Load { episode_id: String },
+    /// Resume playback of the currently-staged episode. Dispatches
+    /// `AudioCommand::Play` only — no reload, no position reset.
+    Resume,
     Pause,
     Seek { position_secs: f64 },
     SetSpeed { speed: f32 },
