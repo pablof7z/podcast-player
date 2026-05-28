@@ -44,19 +44,19 @@ tempfile = { version = "3", optional = true }
 tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 futures-util = { version = "0.3" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
-nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core" }
+nmp-core = { workspace = true }
 # `nmp-ffi` owns the `NmpApp` C-ABI handle. Podcast's
 # `nmp_app_podcast_register` takes `*mut NmpApp`; the per-app crate names
 # the handle + FFI symbols (`nmp_app_dispatch_action`, etc.) through this
 # dep.
-nmp-ffi = { path = "../../../nostrmultiplatform/crates/nmp-ffi", features = ["signer-broker"] }
-nmp-signer-broker = { path = "../../../nostrmultiplatform/crates/nmp-signer-broker" }
+nmp-ffi = { workspace = true, features = ["signer-broker"] }
+nmp-signer-broker = { workspace = true }
 # Canonical NMP composition root. One call wires the default action modules
 # (NIP-02 / NIP-17 / NIP-57 / NIP-65), the kind:10050 ingest parser, the
 # production routing substrate, and the DM-inbox + zap-receipts runtime
 # controllers. Podcast's `nmp_app_podcast_register` calls `register_defaults`
 # once at app init instead of duplicating the boilerplate.
-nmp-app-template = { path = "../../../nostrmultiplatform/crates/nmp-app-template" }
+nmp-app-template = { workspace = true }
 # `nostr` reconstructs typed `Event` / `Keys` / `PublicKey` / `RelayUrl`
 # values from C-ABI JSON. Pinned to 0.44.
 nostr = { version = "0.44", default-features = false, features = ["std"] }
@@ -103,8 +103,8 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 [dev-dependencies]
 # Test-support gates expose `nmp_app_new` / `nmp_app_free` so FFI smoke tests
 # can spin up a real `NmpApp` rather than mocking the slot.
-nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core", features = ["test-support"] }
-nmp-ffi = { path = "../../../nostrmultiplatform/crates/nmp-ffi", features = ["test-support"] }
+nmp-core = { workspace = true, features = ["test-support"] }
+nmp-ffi = { workspace = true, features = ["test-support"] }
 # Temporary directory support for PodcastKeyStore and identity store round-trip tests.
 tempfile = "3"
 

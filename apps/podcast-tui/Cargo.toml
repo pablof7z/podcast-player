@@ -11,8 +11,8 @@ path = "src/main.rs"
 
 [dependencies]
 nmp-app-podcast = { path = "../nmp-app-podcast", default-features = false }
-nmp-core = { path = "../../../nostrmultiplatform/crates/nmp-core", features = ["test-support"] }
-nmp-ffi = { path = "../../../nostrmultiplatform/crates/nmp-ffi", features = ["test-support"] }
+nmp-core = { workspace = true, features = ["test-support"] }
+nmp-ffi = { workspace = true, features = ["test-support"] }
 podcast-core = { path = "../podcast-core" }
 podcast-feeds = { path = "../podcast-feeds" }
 clap = { version = "4", features = ["derive"] }
