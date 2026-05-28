@@ -11,3 +11,9 @@ members = [
     "apps/podcast-tui",
 ]
 resolver = "2"
+
+[workspace.dependencies]
+nmp-app-template = { version = "0.1.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "2f06cc66a4126e6b71a9c5d818cdb3bfd286fd49" }
+nmp-core = { version = "0.1.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "2f06cc66a4126e6b71a9c5d818cdb3bfd286fd49" }
+nmp-ffi = { version = "0.1.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "2f06cc66a4126e6b71a9c5d818cdb3bfd286fd49" }
+nmp-signer-broker = { version = "0.1.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "2f06cc66a4126e6b71a9c5d818cdb3bfd286fd49" }
