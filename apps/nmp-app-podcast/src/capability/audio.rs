@@ -81,6 +81,12 @@ pub enum AudioCommand {
         url: String,
         /// Initial playhead, in seconds from the start of the track.
         position_secs: f64,
+        /// Podcast-store episode id. When present, the iOS executor can
+        /// look up the full `Episode` model so `AudioEngine.load(_:)` can
+        /// resolve the local-file path instead of trusting a potentially-
+        /// stale `file://` URL from the Rust store.
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        episode_id: Option<String>,
     },
     /// Begin playback at the current rate and volume.
     Play,
@@ -112,12 +118,28 @@ pub enum AudioCommand {
 }
 
 impl AudioCommand {
-    /// Convenience: construct a `Load` command from owned strings.
+    /// Convenience: construct a `Load` command (no episode_id).
     #[must_use]
     pub fn load(url: impl Into<String>, position_secs: f64) -> Self {
         Self::Load {
             url: url.into(),
             position_secs,
+            episode_id: None,
+        }
+    }
+
+    /// Convenience: construct a `Load` command with an episode_id so the iOS
+    /// executor can resolve the full `Episode` model for `AudioEngine.load`.
+    #[must_use]
+    pub fn load_with_id(
+        url: impl Into<String>,
+        position_secs: f64,
+        episode_id: impl Into<String>,
+    ) -> Self {
+        Self::Load {
+            url: url.into(),
+            position_secs,
+            episode_id: Some(episode_id.into()),
         }
     }
 

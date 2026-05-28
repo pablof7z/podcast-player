@@ -49,7 +49,7 @@ extension AudioCapability {
             center.nowPlayingInfo = info
         case .stopped, .failed:
             center.nowPlayingInfo = nil
-        case .bufferingProgress, .sleepTimerFired:
+        case .bufferingProgress, .sleepTimerFired, .itemEnd:
             break
         }
     }

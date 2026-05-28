@@ -227,12 +227,9 @@ struct MiniPlayerView: View {
         )
     }
 
-    /// Resolved artwork URL — episode override first, then the show-level
-    /// fallback via `PlaybackState.resolveShowImage` (the same closure the
-    /// full Player uses, wired in `RootView`).
     private var artworkURL: URL? {
         guard let episode = state.episode else { return nil }
-        return episode.imageURL ?? state.resolveShowImage(episode)
+        return state.engine.resolveArtworkURL(episode, state.currentTime) ?? episode.imageURL
     }
 
     /// Shared artwork rendering for both the expanded (44pt) and inline

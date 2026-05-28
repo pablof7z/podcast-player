@@ -201,7 +201,7 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
     }
 
     // Dispatch Load + Play. Failures degrade silently per D6.
-    dispatch_audio_cmd(handle, &AudioCommand::load(&url, position_secs));
+    dispatch_audio_cmd(handle, &AudioCommand::load_with_id(&url, position_secs, &episode_id));
     dispatch_audio_cmd(handle, &AudioCommand::Play);
 
     // Enqueue a background download for un-downloaded episodes (mirrors

@@ -355,5 +355,9 @@ final class KernelModel {
         snapshotCount &+= 1
         lastSnapshotAt = Date()
         kmLog.debug("apply rev=\(update.rev) running=\(update.running)")
+        // Piggyback podcast projection pull on the NMP kernel push tick.
+        // During playback the kernel fires at emitHz (4 Hz), making this
+        // effectively push-driven for position updates.
+        pullPodcastSnapshotIfChanged()
     }
 }

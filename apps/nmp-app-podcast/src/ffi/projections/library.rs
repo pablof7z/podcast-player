@@ -66,6 +66,11 @@ pub struct EpisodeSummary {
     /// `PodcastStore::local_path_for`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub download_path: Option<String>,
+    /// The original RSS enclosure URL for streaming. Always present for
+    /// library episodes; used by the host player when `download_path` is
+    /// absent so it can stream without needing a separate Rust round-trip.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enclosure_url: Option<String>,
     /// Episode description / show notes from the RSS feed.
     ///
     /// `None` when the underlying `Episode::description` is empty so the host

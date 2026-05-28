@@ -185,6 +185,11 @@ extension PodcastHandle {
         guard let data = json.data(using: .utf8) else { return PodcastUpdate() }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return (try? decoder.decode(PodcastUpdate.self, from: data)) ?? PodcastUpdate()
+        do {
+            return try decoder.decode(PodcastUpdate.self, from: data)
+        } catch {
+            kbLog.error("podcastSnapshot decode: \(error, privacy: .public)")
+            return PodcastUpdate()
+        }
     }
 }

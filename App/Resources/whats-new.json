@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-28T07:56:00Z",
+      "lines": [
+        "Playback engine refactored: the Rust kernel now drives position tracking, ad-skip decisions, and auto-advance for more reliable playback state across sessions."
+      ]
+    },
+    {
       "shipped_at": "2026-05-28T00:50:00Z",
       "lines": [
         "Now Playing widget now updates immediately when a show's artwork or title loads — no more showing a blank image until the next chapter change."

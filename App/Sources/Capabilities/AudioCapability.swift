@@ -78,6 +78,13 @@ final class AudioCapability: NSObject {
     /// `dispatch_audio_report_json` plumbing lands (M3.B kernel side).
     private var sendReport: (String) -> Void = { _ in }
 
+    // ── Engine bridge (M1 Part 3) ────────────────────────────────────────
+    /// When set, `execute(_:)` forwards every command here instead of
+    /// acting on the own `AVPlayer`. Used to bridge Rust-originated
+    /// `AudioCommand`s to `AudioEngine` while the two-player architecture
+    /// is in place. `nil` = standalone mode (own `AVPlayer`, unit tests).
+    var commandHandler: ((AudioCommand) -> Void)?
+
     private var started: Bool = false
     private var hasConfiguredAudioSession: Bool = false
 
@@ -135,9 +142,17 @@ final class AudioCapability: NSObject {
     /// Direct command entry — used by remote-command handlers and the
     /// dispatch tests. The capability does not "decide" anything;
     /// `execute(_:)` is a pure AVFoundation translation of the command.
+    ///
+    /// When `commandHandler` is installed (M1 bridge mode), ALL commands
+    /// are forwarded there and this method returns early — the own
+    /// `AVPlayer` is bypassed.
     func execute(_ command: AudioCommand) {
+        if let handler = commandHandler {
+            handler(command)
+            return
+        }
         switch command {
-        case let .load(url, positionSecs):
+        case let .load(url, positionSecs, _):
             loadAndSeek(url: url, positionSecs: positionSecs)
         case .play:
             playerPlay()

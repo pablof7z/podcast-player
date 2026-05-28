@@ -8,7 +8,7 @@ import Foundation
 
 /// Top-level snapshot emitted by the Rust podcast kernel on every podcast
 /// projection tick (pulled via `nmp_app_podcast_snapshot`).
-struct PodcastUpdate: Codable {
+struct PodcastUpdate {
     var running: Bool = false
     var rev: Int = 0
     var schemaVersion: Int = 0
@@ -41,7 +41,7 @@ struct PodcastUpdate: Codable {
 }
 
 /// Active player state (present only when an episode is loaded).
-struct PlayerState: Codable {
+struct PlayerState {
     var episodeId: String? = nil
     var podcastId: String? = nil
     var url: String? = nil
@@ -75,7 +75,7 @@ struct AccountSummary: Codable {
 }
 
 /// App-settings projection. Mirrors `ffi::projections::SettingsSnapshot`.
-struct SettingsSnapshot: Codable, Equatable {
+struct SettingsSnapshot: Equatable {
     var hasCompletedOnboarding: Bool = false
     var autoSkipAdsEnabled: Bool = false
     /// When `true`, the kernel auto-advances to the next queued episode on
@@ -96,18 +96,119 @@ struct SettingsSnapshot: Codable, Equatable {
 }
 
 /// Active download-queue projection surfaced via `PodcastUpdate.downloads`.
-struct DownloadQueueSnapshot: Codable, Equatable {
+struct DownloadQueueSnapshot: Equatable {
     var active: [DownloadItemSnapshot] = []
     var queuedCount: Int = 0
     var completedToday: Int = 0
 }
 
 /// One row in `DownloadQueueSnapshot.active`.
-struct DownloadItemSnapshot: Codable, Identifiable, Equatable {
+struct DownloadItemSnapshot: Identifiable, Equatable {
     var episodeId: String
     var progress: Double = 0
     var state: String
     var error: String? = nil
 
     var id: String { episodeId }
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false), Vec fields (omit when empty), and `settings` (omit when default).
+// Swift's synthesized Decodable requires every non-optional key to be present,
+// but these keys are legitimately absent from snapshots where the value is the
+// zero/default. Custom `init(from:)` in extensions uses `decodeIfPresent` with
+// explicit fallbacks so the decoder is forward- and backward-compatible.
+//
+// WHY extensions, not struct bodies: putting `init(from:)` inside the struct
+// body suppresses the synthesized memberwise init. Extensions preserve it.
+
+extension PodcastUpdate: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        running = try c.decodeIfPresent(Bool.self, forKey: .running) ?? false
+        rev = try c.decodeIfPresent(Int.self, forKey: .rev) ?? 0
+        schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        nowPlaying = try c.decodeIfPresent(PlayerState.self, forKey: .nowPlaying)
+        downloads = try c.decodeIfPresent(DownloadQueueSnapshot.self, forKey: .downloads)
+        agent = try c.decodeIfPresent(AgentSnapshot.self, forKey: .agent)
+        voice = try c.decodeIfPresent(VoiceSnapshot.self, forKey: .voice)
+        briefing = try c.decodeIfPresent(BriefingSnapshot.self, forKey: .briefing)
+        social = try c.decodeIfPresent(SocialSnapshot.self, forKey: .social)
+        library = try c.decodeIfPresent([PodcastSummary].self, forKey: .library) ?? []
+        activeAccount = try c.decodeIfPresent(AccountSummary.self, forKey: .activeAccount)
+        widget = try c.decodeIfPresent(WidgetSnapshot.self, forKey: .widget)
+        toast = try c.decodeIfPresent(String.self, forKey: .toast)
+        searchResults = try c.decodeIfPresent([PodcastSummary].self, forKey: .searchResults) ?? []
+        nostrResults = try c.decodeIfPresent([NostrShowSummary].self, forKey: .nostrResults) ?? []
+        settings = try c.decodeIfPresent(SettingsSnapshot.self, forKey: .settings) ?? SettingsSnapshot()
+        comments = try c.decodeIfPresent([CommentSummary].self, forKey: .comments) ?? []
+        queue = try c.decodeIfPresent([EpisodeSummary].self, forKey: .queue) ?? []
+        wikiArticles = try c.decodeIfPresent([WikiArticle].self, forKey: .wikiArticles) ?? []
+        wikiSearchResults = try c.decodeIfPresent([WikiArticle].self, forKey: .wikiSearchResults) ?? []
+        picks = try c.decodeIfPresent([AgentPickSummary].self, forKey: .picks) ?? []
+        agentTasks = try c.decodeIfPresent([AgentTaskSummary].self, forKey: .agentTasks) ?? []
+        knowledgeSearchResults = try c.decodeIfPresent([KnowledgeSearchResult].self, forKey: .knowledgeSearchResults) ?? []
+        memoryFacts = try c.decodeIfPresent([MemoryFact].self, forKey: .memoryFacts) ?? []
+        ttsEpisodes = try c.decodeIfPresent([TtsEpisodeSummary].self, forKey: .ttsEpisodes) ?? []
+        clips = try c.decodeIfPresent([ClipSummary].self, forKey: .clips) ?? []
+        inbox = try c.decodeIfPresent([InboxItem].self, forKey: .inbox) ?? []
+        ownedPodcasts = try c.decodeIfPresent([OwnedPodcastInfo].self, forKey: .ownedPodcasts) ?? []
+        categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
+    }
+}
+
+extension PlayerState: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decodeIfPresent(String.self, forKey: .episodeId)
+        podcastId = try c.decodeIfPresent(String.self, forKey: .podcastId)
+        url = try c.decodeIfPresent(String.self, forKey: .url)
+        positionSecs = try c.decodeIfPresent(Double.self, forKey: .positionSecs) ?? 0
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs) ?? 0
+        isPlaying = try c.decodeIfPresent(Bool.self, forKey: .isPlaying) ?? false
+        bufferingFraction = try c.decodeIfPresent(Double.self, forKey: .bufferingFraction)
+        speed = try c.decodeIfPresent(Float.self, forKey: .speed) ?? 1
+        volume = try c.decodeIfPresent(Float.self, forKey: .volume) ?? 1
+        sleepTimerRemainingSecs = try c.decodeIfPresent(Int.self, forKey: .sleepTimerRemainingSecs)
+        lastError = try c.decodeIfPresent(String.self, forKey: .lastError)
+        didReachNaturalEnd = try c.decodeIfPresent(Bool.self, forKey: .didReachNaturalEnd) ?? false
+        segmentEndSecs = try c.decodeIfPresent(Double.self, forKey: .segmentEndSecs)
+        currentChapterTitle = try c.decodeIfPresent(String.self, forKey: .currentChapterTitle)
+        currentChapterArtworkUrl = try c.decodeIfPresent(String.self, forKey: .currentChapterArtworkUrl)
+    }
+}
+
+extension SettingsSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
+        autoSkipAdsEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAdsEnabled) ?? false
+        autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
+        autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
+        headphoneDoubleTapAction = try c.decodeIfPresent(String.self, forKey: .headphoneDoubleTapAction) ?? "skipForward"
+        headphoneTripleTapAction = try c.decodeIfPresent(String.self, forKey: .headphoneTripleTapAction) ?? "clipNow"
+        skipForwardSecs = try c.decodeIfPresent(Double.self, forKey: .skipForwardSecs) ?? 30
+        skipBackwardSecs = try c.decodeIfPresent(Double.self, forKey: .skipBackwardSecs) ?? 15
+    }
+}
+
+extension DownloadQueueSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        active = try c.decodeIfPresent([DownloadItemSnapshot].self, forKey: .active) ?? []
+        queuedCount = try c.decodeIfPresent(Int.self, forKey: .queuedCount) ?? 0
+        completedToday = try c.decodeIfPresent(Int.self, forKey: .completedToday) ?? 0
+    }
+}
+
+extension DownloadItemSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        progress = try c.decodeIfPresent(Double.self, forKey: .progress) ?? 0
+        state = try c.decode(String.self, forKey: .state)
+        error = try c.decodeIfPresent(String.self, forKey: .error)
+    }
 }

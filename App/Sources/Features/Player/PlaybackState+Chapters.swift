@@ -17,7 +17,6 @@ extension PlaybackState {
         guard let next = Self.nextChapter(after: currentTime, in: navigable) else { return }
         engine.seek(to: next.startTime)
         Haptics.selection()
-        persistAndFlushAfterUserSeek()
     }
 
     /// Jump to the previous chapter's `startTime`, applying the iOS Music
@@ -33,7 +32,6 @@ extension PlaybackState {
         ) else { return }
         engine.seek(to: target.startTime)
         Haptics.selection()
-        persistAndFlushAfterUserSeek()
     }
 
     /// Pure helper: chapter strictly after `playhead`, or nil when there
