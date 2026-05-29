@@ -52,6 +52,13 @@ final class KernelModel {
     /// rejections.
     private(set) var lastErrorToast: String?
 
+    /// Mandatory NMP v0.1.0 surface (V-67). Non-nil when the kernel could not
+    /// open its on-disk LMDB store and fell back to in-memory — this session's
+    /// data will not persist. Carried on every accepted tick (set on failure,
+    /// cleared back to `nil` once the store recovers). RootView presents a
+    /// user-facing alert; the kernel actor is the sole writer.
+    private(set) var storeOpenFailure: String?
+
     /// Identity projection slice (`active_account` / `accounts` /
     /// `bunker_handshake`) pulled out of the NMP-core kernel snapshot on
     /// every tick. Read-only — the kernel actor is the sole writer.
@@ -168,6 +175,7 @@ final class KernelModel {
         library = []
         kernel.reregisterPodcastProjection()
         lastErrorToast = nil
+        storeOpenFailure = nil
         kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
         startedKernel = true
         startSnapshotPoll()
@@ -352,6 +360,9 @@ final class KernelModel {
         // delta may carry fresh identity state (e.g. handshake stage
         // transitions are emitted via the same kernel update loop).
         kernelIdentity = result.identity
+        // Assign on every accepted tick so a recovered store (field returns to
+        // nil) clears the alert condition; a fresh failure re-raises it.
+        storeOpenFailure = result.storeOpenFailure
         snapshotCount &+= 1
         lastSnapshotAt = Date()
         kmLog.debug("apply rev=\(update.rev) running=\(update.running)")

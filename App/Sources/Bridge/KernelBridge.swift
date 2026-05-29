@@ -140,11 +140,18 @@ final class PodcastHandle {
             // `projections` — see `KernelIdentityProjection`'s module
             // doc-comment for the rationale.
             let identity = KernelIdentityProjection.decode(envelopePayload: data)
+            // Mandatory NMP v0.1.0 surface (V-67): the kernel sets the
+            // top-level `store_open_failure` string when the configured LMDB
+            // store failed to open and it fell back to in-memory. It rides the
+            // generic snapshot (sibling of `projections`), which `PodcastUpdate`
+            // does not model — so read it raw, mirroring the identity decode.
+            let storeOpenFailure = KernelUpdateResult.extractStoreOpenFailure(envelopePayload: data)
             let duration = start.duration(to: .now)
             kbLog.info("decoded ok rev=\(update.rev)")
             return KernelUpdateResult(
                 update: update,
                 identity: identity,
+                storeOpenFailure: storeOpenFailure,
                 payloadBytes: data.count,
                 callbackReceivedAt: start,
                 decodeMicros: duration.microseconds)
@@ -196,9 +203,29 @@ struct KernelUpdateResult {
     /// `accounts` / `bunker_handshake` per
     /// `KernelIdentityProjection.decode`.
     let identity: KernelIdentityProjection
+    /// Top-level `store_open_failure` diagnostic (V-67). `nil` in healthy
+    /// sessions; `Some(reason)` when the kernel could not open its on-disk
+    /// LMDB store and fell back to in-memory (this session's data will not
+    /// persist). The host MUST surface this to the user.
+    let storeOpenFailure: String?
     let payloadBytes: Int
     let callbackReceivedAt: ContinuousClock.Instant
     let decodeMicros: Int
+}
+
+extension KernelUpdateResult {
+    /// Extract the top-level `store_open_failure` string from a kernel snapshot
+    /// wire envelope (`{"t":"snapshot","v":{...}}`). Mirrors the raw second-pass
+    /// read in `KernelIdentityProjection.decode` — the typed `PodcastUpdate`
+    /// decode intentionally drops this generic-snapshot key. Returns `nil` when
+    /// the key is absent (healthy session) or the payload is unparseable.
+    static func extractStoreOpenFailure(envelopePayload data: Data) -> String? {
+        guard let raw = try? JSONSerialization.jsonObject(with: data),
+              let outer = raw as? [String: Any],
+              let value = outer["v"] as? [String: Any]
+        else { return nil }
+        return value["store_open_failure"] as? String
+    }
 }
 
 // ─── Duration microseconds helper ────────────────────────────────────────
