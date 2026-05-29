@@ -84,8 +84,6 @@ final class KernelModel {
     /// `podcastSnapshot?.nowPlaying` so they don't hold a reference to the
     /// full snapshot struct. All other views should use `podcastSnapshot`.
     private(set) var nowPlaying: PlayerState?
-    /// Cancellable for the 500ms poll Task.
-    private var snapshotPollTask: Task<Void, Never>?
     /// Hash of the library fields that matter to list views. Excludes
     /// `playbackPositionSecs` so list views don't re-render at 4 Hz
     /// during playback (the position is only needed by the player row).
@@ -156,62 +154,52 @@ final class KernelModel {
         guard !startedKernel else { return }
         startedKernel = true
         kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
-        startSnapshotPoll()
     }
 
     func stop() {
-        snapshotPollTask?.cancel()
-        snapshotPollTask = nil
         kernel.stop()
         startedKernel = false
     }
 
     func resetAndRestart() {
-        snapshotPollTask?.cancel()
-        snapshotPollTask = nil
         kernel.reset()
         snapshot = nil
         podcastSnapshot = nil
         library = []
+        lastProcessedRev = 0
         kernel.reregisterPodcastProjection()
         lastErrorToast = nil
         storeOpenFailure = nil
         kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
         startedKernel = true
-        startSnapshotPoll()
     }
 
-    private func startSnapshotPoll() {
-        snapshotPollTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
-                guard !Task.isCancelled else { break }
-                await MainActor.run { [weak self] in
-                    self?.pullPodcastSnapshotIfChanged()
-                }
-            }
-        }
-    }
-
-    /// Pull the podcast snapshot and apply it if the rev has advanced.
-    /// Called both by the 500ms background poll (for autonomous changes like
-    /// download progress and playback position) and immediately after every
-    /// `dispatch` / `dispatchSilent` call so user actions are reflected in
-    /// the UI within the same runloop pass rather than after up to 500ms.
+    /// One-shot synchronous pull, used only immediately after a `dispatch` /
+    /// `dispatchSilent` so a user action is reflected in the same runloop pass
+    /// rather than waiting for the next reactive push frame. This is NOT a poll
+    /// — there is no timer; the 500ms background poll has been removed in favor
+    /// of the reactive push (`apply(result:)`).
     private func pullPodcastSnapshotIfChanged() {
-        // Cheap rev-check before the full JSON decode. nmp_app_podcast_snapshot_rev
-        // reads a single atomic u64 — no serialization cost.
         let currentRev = kernel.podcastSnapshotRev()
         guard currentRev > lastProcessedRev else { return }
-        let update = kernel.podcastSnapshot()
+        applyPodcastUpdate(kernel.podcastSnapshot())
+    }
+
+    /// Apply one `PodcastUpdate` to the observable surface. Shared by the
+    /// reactive push path (`apply(result:)`) and the one-shot post-dispatch
+    /// pull. Rev-gated so redundant frames (push at emit-Hz, or a pull racing a
+    /// push) are dropped cheaply.
+    private func applyPodcastUpdate(_ update: PodcastUpdate) {
         guard update.rev > lastProcessedRev else { return }
         lastProcessedRev = UInt64(update.rev)
+        snapshot = update
         let previousNowPlaying = nowPlaying
-        // `nowPlaying` is always updated so the player views get live position.
+        // `nowPlaying` carries live playback position; refresh on every accepted
+        // frame so player views stay current.
         nowPlaying = update.nowPlaying
         // Gate `podcastSnapshot` (and `library`) on content hashes that exclude
-        // volatile position/buffering fields. `podcastSnapshot` feeds views like
-        // HomeView (picks) and InboxView — they must not re-render at 4 Hz.
+        // volatile position/buffering fields so list views don't re-render at
+        // the emit rate.
         let newSnapHash = snapshotContentHash(for: update)
         if newSnapHash != lastSnapshotContentHash {
             lastSnapshotContentHash = newSnapHash
@@ -229,7 +217,7 @@ final class KernelModel {
             previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
         reconcileNowPlayingMetadata(
             previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
-        kmLog.debug("podcast snapshot updated rev=\(update.rev) library=\(update.library.count)")
+        kmLog.debug("podcast update rev=\(update.rev) library=\(update.library.count)")
     }
 
     func applyConfiguration() {
@@ -352,19 +340,16 @@ final class KernelModel {
     // ── Snapshot apply ─────────────────────────────────────────────────────
 
     private func apply(result: KernelUpdateResult) {
-        let update = result.update
-        guard update.rev > rev else { return }
-        snapshot = update
-        // Mirror the identity slice on every accepted tick — the actor is
-        // the single writer, and even a tick with no podcast-projection
-        // delta may carry fresh identity state (e.g. handshake stage
-        // transitions are emitted via the same kernel update loop).
-        kernelIdentity = result.identity
-        // Assign on every accepted tick so a recovered store (field returns to
-        // nil) clears the alert condition; a fresh failure re-raises it.
+        // The store-open-failure health flag and the identity slice are
+        // independent of the podcast projection rev — assign them on every
+        // accepted push frame (before the rev-gated podcast-state apply) so the
+        // mandatory store alert fires on the first frame and identity stays live
+        // even on ticks where the podcast projection didn't change.
         storeOpenFailure = result.storeOpenFailure
+        kernelIdentity = result.identity
         snapshotCount &+= 1
         lastSnapshotAt = Date()
-        kmLog.debug("apply rev=\(update.rev) running=\(update.running)")
+        // Drive the podcast observable surface from the pushed projection.
+        applyPodcastUpdate(result.update)
     }
 }

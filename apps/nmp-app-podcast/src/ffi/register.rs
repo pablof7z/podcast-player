@@ -2,11 +2,13 @@
 //! Podcast projections and action namespaces into an [`NmpApp`].
 
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 
 use nmp_ffi::NmpApp;
+
+use super::snapshot::build_podcast_update;
 
 use super::actions::agent_module::AgentActionModule;
 use super::actions::categorization_module::CategorizationModule;
@@ -175,7 +177,7 @@ pub extern "C" fn nmp_app_podcast_register(
         social.clone(),
     )));
 
-    Box::into_raw(Box::new(PodcastHandle {
+    let handle = Arc::new(PodcastHandle {
         app,
         player_actor,
         store,
@@ -206,5 +208,46 @@ pub extern "C" fn nmp_app_podcast_register(
         inbox_triage_cache,
         comments_cache,
         social,
-    }))
+    });
+
+    // Reactive push projection — the canonical snapshot-output seam
+    // (`NmpApp::register_snapshot_projection`). Podcast state now rides the
+    // generic push frame under `projections["podcast.snapshot"]`, delivered to
+    // the shell on every tick through the same update callback it already
+    // listens on — replacing the bespoke `nmp_app_podcast_snapshot` pull symbol
+    // and the shell's 500ms poll (a D8 violation / reborn deprecated
+    // `chirp_snapshot` pattern).
+    //
+    // Rev-gated: the closure runs on the actor thread inside `make_update`
+    // (D8 — must be cheap, non-blocking). The full library rebuild only runs
+    // when `rev` advanced since the last projection; otherwise the cached value
+    // is cloned. `rev` is bumped by `PodcastHostOpHandler` on every store write.
+    {
+        let proj = Arc::clone(&handle);
+        let cache: Arc<Mutex<Option<(u64, serde_json::Value)>>> = Arc::new(Mutex::new(None));
+        app_ref.register_snapshot_projection("podcast.snapshot", move || {
+            let rev = proj.rev.load(Ordering::Relaxed);
+            if let Ok(guard) = cache.lock() {
+                if let Some((cached_rev, val)) = guard.as_ref() {
+                    if *cached_rev == rev {
+                        return val.clone();
+                    }
+                }
+            }
+            let val = serde_json::to_value(build_podcast_update(&proj))
+                .unwrap_or(serde_json::Value::Null);
+            if let Ok(mut guard) = cache.lock() {
+                *guard = Some((rev, val.clone()));
+            }
+            val
+        });
+    }
+
+    // Ownership: one strong ref is returned to the shell as the opaque handle
+    // pointer; the projection closure above holds a second strong ref for the
+    // app's lifetime. `nmp_app_podcast_unregister` reclaims the shell's ref via
+    // `Arc::from_raw`. `nmp_app_free` joins the actor thread before dropping, so
+    // no projector call is in flight after teardown. The handle is only ever
+    // borrowed shared across the FFI (no `&mut`), so `Arc` aliasing is sound.
+    Arc::into_raw(handle) as *mut PodcastHandle
 }

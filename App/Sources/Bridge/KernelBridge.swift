@@ -120,6 +120,23 @@ final class PodcastHandle {
         return DispatchResult.parse(envelope: envelope)
     }
 
+    /// Decode the `PodcastUpdate` from the push frame's
+    /// `projections["podcast.snapshot"]` slice (registered via the canonical
+    /// snapshot-projection seam). Returns `nil` when the projection is absent or
+    /// malformed. Mirrors `KernelIdentityProjection.decode`'s raw-read approach.
+    fileprivate static func decodePodcastUpdate(envelopePayload data: Data) -> PodcastUpdate? {
+        guard
+            let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let value = raw["v"] as? [String: Any],
+            let projections = value["projections"] as? [String: Any],
+            let podcast = projections["podcast.snapshot"],
+            let podcastData = try? JSONSerialization.data(withJSONObject: podcast)
+        else { return nil }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try? decoder.decode(PodcastUpdate.self, from: podcastData)
+    }
+
     fileprivate static func decode(pointer: UnsafePointer<CChar>) -> KernelUpdateResult? {
         let start = ContinuousClock.now
         let payload = String(cString: pointer)
@@ -132,13 +149,17 @@ final class PodcastHandle {
                 kbLog.error("unknown envelope tag=\(envelope.t) bytes=\(data.count)")
                 return nil
             }
-            let update = envelope.v
-            // Second decode pass: extract the identity projection slice
-            // (`projections.active_account`, `projections.accounts`,
-            // `projections.bunker_handshake`) from the raw envelope. The
-            // `PodcastUpdate` typed decode above intentionally ignores
-            // `projections` — see `KernelIdentityProjection`'s module
-            // doc-comment for the rationale.
+            // The podcast projection rides the generic push frame under
+            // `projections["podcast.snapshot"]` (registered via the canonical
+            // `register_snapshot_projection` seam). Decode the `PodcastUpdate`
+            // out of it — the envelope's `v` is the generic kernel snapshot, not
+            // the podcast shape.
+            guard let update = Self.decodePodcastUpdate(envelopePayload: data) else {
+                kbLog.error("snapshot frame missing podcast.snapshot projection bytes=\(data.count)")
+                return nil
+            }
+            // Identity projection slice (`projections.active_account` / `accounts`
+            // / `bunker_handshake`) from the same raw envelope.
             let identity = KernelIdentityProjection.decode(envelopePayload: data)
             // Mandatory NMP v0.1.0 surface (V-67): the kernel sets the
             // top-level `store_open_failure` string when the configured LMDB
@@ -167,7 +188,6 @@ final class PodcastHandle {
 
 private struct SnapshotEnvelope: Decodable {
     let t: String
-    let v: PodcastUpdate
 }
 
 // ─── C callback objects ───────────────────────────────────────────────────
@@ -182,16 +202,21 @@ private final class KernelUpdateSink {
     }
 }
 
-private let nmpUpdateCallback: NmpUpdateCallback = { context, pointer in
-    guard let context, let pointer else { return }
-    let payload = String(cString: pointer)
+private let nmpUpdateCallback: NmpUpdateCallback = { context, bytes, len in
+    guard let context, let bytes, len > 0 else { return }
+    // The kernel's update transport is binary FlatBuffers (NMP commit "Replace
+    // update transport with FlatBuffers"). Decode the `(bytes, len)` frame to the
+    // JSON envelope the shell consumes; `nmp_app_free_string` reclaims it.
+    guard let jsonPtr = nmp_app_podcast_decode_update_frame(bytes, len) else { return }
+    defer { nmp_app_free_string(jsonPtr) }
+    let payload = String(cString: jsonPtr)
     let sink = Unmanaged<KernelUpdateSink>.fromOpaque(context).takeUnretainedValue()
     if payload.contains("\"t\":\"panic\"") {
-        kbLog.fault("NMP_ACTOR_PANIC detected bytes=\(payload.utf8.count)")
+        kbLog.fault("NMP_ACTOR_PANIC detected bytes=\(len)")
         sink.onPanic()
         return
     }
-    guard let result = PodcastHandle.decode(pointer: pointer) else { return }
+    guard let result = PodcastHandle.decode(pointer: jsonPtr) else { return }
     sink.handler(result)
 }
 
