@@ -122,6 +122,15 @@ worktrees currently in flight.
   gate, provider settings, and persistence migration.
 - **notification-hardening.** Validate authorization, schedule/update/cancel,
   deep links, duplicate prevention, and quiet failure behavior.
+- **stale-subscription-refresh-test.** `SubscriptionRefreshServiceTests`
+  (`testSubscriptionServiceRefreshUsesSharedRefreshSemantics`) injects a Swift
+  `FeedClient(session:)` stub, but `SubscriptionService.refresh` now delegates to
+  `store.kernelRefresh` (Rust), which fetches via its own HTTP capability and
+  ignores the injected client — so the stubbed feed never reaches the kernel and
+  the assertions (Fresh Title / etag / episode-1) fail. Pre-existing on main
+  (test last touched by PR #131, before refresh moved to the kernel). Rewrite to
+  stub the Rust HTTP capability (or move to a headless scenario) or delete; it no
+  longer exercises the live path.
 
 ## Active P1 - Social/Nostr Real Logic
 
