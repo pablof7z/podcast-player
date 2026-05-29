@@ -154,11 +154,18 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
         }
         AudioReport::ItemEnd { .. } => {
             // Natural play-to-completion. Gate the "mark listened" write on
-            // the store's `auto_mark_played_at_end` flag (M1.3). The
-            // position is already up-to-date from the last `Playing` tick.
+            // the store's `auto_mark_played_at_end` flag (M1.3).
             if store.auto_mark_played_at_end() {
                 store.mark_episode_played(episode_id);
             }
+            // Rewind to the start on natural completion so the next play begins
+            // from 0 instead of resuming at the end. `mark_episode_played` only
+            // flips the played flag, and the engine emits a `Paused` at
+            // `duration` just before `ItemEnd`, so without this the stored
+            // position is the duration and replay lands at the end. Runs
+            // regardless of `auto_mark_played_at_end` — a finished episode should
+            // always restart cleanly.
+            store.set_episode_position(episode_id, 0.0);
             store.flush_positions();
         }
         AudioReport::Failed { .. } | AudioReport::BufferingProgress { .. } => {}

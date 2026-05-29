@@ -50,8 +50,11 @@ extension PlaybackState {
                 queue.append(contentsOf: items)
                 return
             }
-            currentSegmentEndTime = first.endSeconds
+            // Set the segment boundary AFTER `setEpisode`: loading a different
+            // episode clears `currentSegmentEndTime`, so setting it first would
+            // be wiped and the clip would play through the whole episode.
             setEpisode(episode)
+            currentSegmentEndTime = first.endSeconds
             if let start = first.startSeconds {
                 engine.seek(to: start)
             }
@@ -119,8 +122,10 @@ extension PlaybackState {
         while !queue.isEmpty {
             let item = queue.removeFirst()
             guard let next = resolve(item.episodeID) else { continue }
-            currentSegmentEndTime = item.endSeconds
+            // Boundary set AFTER `setEpisode` (which clears it on episode change),
+            // otherwise the segment end is wiped and the clip plays through.
             setEpisode(next)
+            currentSegmentEndTime = item.endSeconds
             if let start = item.startSeconds {
                 engine.seek(to: start)
             }

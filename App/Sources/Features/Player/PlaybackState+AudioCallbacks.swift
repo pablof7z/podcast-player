@@ -62,15 +62,22 @@ extension PlaybackState {
             audio?.emitReport(.itemEnd(url: url))
             // Run the iOS-side mark-played path so side effects (delete-after-
             // played, position cache flush, projection invalidation) fire in
-            // addition to Rust's own apply_writeback mark.
+            // addition to Rust's own apply_writeback mark — but only when the
+            // user's "mark played at end" setting is on. Rust's apply_writeback
+            // gates the same way, so leaving this ungated would mark episodes
+            // played (and delete-after-played) against the user's preference.
             guard let self, let episodeID = self.episode?.id else { return }
+            guard self.store?.state.settings.autoMarkPlayedAtEnd == true else { return }
             self.store?.markEpisodePlayed(episodeID)
         }
         engine.onSleepTimerEpisodeEnd = { [weak self] in
             // Sleep timer stopped at end of episode: position was already flushed
             // via onPauseEvent. Mark played here (without emitting itemEnd so
-            // Rust's maybe_auto_advance doesn't fire) and run iOS side effects.
+            // Rust's maybe_auto_advance doesn't fire) and run iOS side effects —
+            // honouring the same "mark played at end" setting as the natural-end
+            // path above.
             guard let self, let episodeID = self.episode?.id else { return }
+            guard self.store?.state.settings.autoMarkPlayedAtEnd == true else { return }
             self.store?.markEpisodePlayed(episodeID)
         }
 

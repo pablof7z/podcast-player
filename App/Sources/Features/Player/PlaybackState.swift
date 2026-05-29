@@ -124,7 +124,15 @@ final class PlaybackState {
             }
         }
         if !isSameEpisode, enqueueDownloadIfNeeded {
-            store?.kernelDownload(newEpisode.id)
+            // Only enqueue when the episode isn't already local or in flight —
+            // the Rust `podcast.download` handler enqueues on existence alone,
+            // so an unguarded dispatch would re-download a completed file.
+            switch newEpisode.downloadState {
+            case .notDownloaded, .failed:
+                store?.kernelDownload(newEpisode.id)
+            case .queued, .downloading, .downloaded:
+                break
+            }
         }
         if playAfterLoad { play() }
     }
