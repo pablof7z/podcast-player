@@ -174,21 +174,29 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
 
 /// M1.3 — auto-advance on natural end.
 ///
-/// Called only on `ItemEnd`. Reads the actor's `auto_play_next` flag and
-/// queue. If conditions are met, pops the next episode, stages a load in
-/// the actor, and dispatches `Load` + `Play` back to iOS via the
-/// capability channel. Does nothing (silently) on any lock failure.
+/// Called only on `ItemEnd`. Reads the actor's `auto_play_next` flag, pops the
+/// next episode from the canonical playback queue, stages a load in the actor,
+/// and dispatches `Load` + `Play` back to iOS via the capability channel. Does
+/// nothing (silently) on any lock failure.
 fn maybe_auto_advance(handle: &PodcastHandle) {
-    // Read the flag + pop atomically under the actor lock.
-    let next_episode_id = {
-        let mut actor = match handle.player_actor.lock() {
-            Ok(a) => a,
-            Err(_) => return,
-        };
-        if !actor.auto_play_next || actor.queue().is_empty() {
-            return;
-        }
-        actor.pop_next()
+    // The `auto_play_next` flag lives on the actor (mirrored from settings).
+    let auto_play_next = match handle.player_actor.lock() {
+        Ok(a) => a.auto_play_next,
+        Err(_) => return,
+    };
+    if !auto_play_next {
+        return;
+    }
+
+    // Pop the next episode from the CANONICAL `PlaybackQueue` (`handle.queue`)
+    // — the same queue the UI enqueues into via the `podcast.queue` namespace
+    // and the one the snapshot renders as Up Next (`build_snapshot` reads
+    // `handle.queue`). The actor's own queue is NOT populated by the UI enqueue
+    // path, so advancing off it would silently skip UI-queued episodes. (The
+    // vestigial `PlayerActor` queue is tracked for removal in BACKLOG.md.)
+    let next_episode_id = match handle.queue.lock() {
+        Ok(mut q) => q.next(),
+        Err(_) => return,
     };
 
     let Some(episode_id) = next_episode_id else { return; };

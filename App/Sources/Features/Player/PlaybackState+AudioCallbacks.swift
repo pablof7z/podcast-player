@@ -72,13 +72,19 @@ extension PlaybackState {
         }
         engine.onSleepTimerEpisodeEnd = { [weak self] in
             // Sleep timer stopped at end of episode: position was already flushed
-            // via onPauseEvent. Mark played here (without emitting itemEnd so
-            // Rust's maybe_auto_advance doesn't fire) and run iOS side effects —
-            // honouring the same "mark played at end" setting as the natural-end
-            // path above.
+            // via onPauseEvent. This path deliberately skips emitting `itemEnd`
+            // so Rust's `maybe_auto_advance` doesn't fire.
             guard let self, let episodeID = self.episode?.id else { return }
-            guard self.store?.state.settings.autoMarkPlayedAtEnd == true else { return }
-            self.store?.markEpisodePlayed(episodeID)
+            // Mark played + run iOS side effects only if the user setting allows
+            // (matches the natural-end path and Rust's apply_writeback gate).
+            if self.store?.state.settings.autoMarkPlayedAtEnd == true {
+                self.store?.markEpisodePlayed(episodeID)
+            }
+            // The episode completed, so rewind Rust's stored position to 0 — the
+            // `itemEnd` writeback normally does this, but we skip `itemEnd` here.
+            // Runs regardless of auto-mark: a finished episode must replay from
+            // the start, not resume at its end.
+            self.store?.kernelPersistPosition(episodeID: episodeID, positionSecs: 0)
         }
 
         // ── Kernel bridge: Rust AudioCommand → AudioEngine ───────────────
