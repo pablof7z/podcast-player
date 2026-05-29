@@ -87,16 +87,22 @@ extension PodcastHandle {
     func attachAudioReportChannel() {
         PodcastCapabilities.shared.audio.attach { [weak self] reportJSON in
             MainActor.assumeIsolated {
-                guard let handle = self?.podcastHandle else { return }
-                guard let result = nmp_app_podcast_audio_report(handle, reportJSON)
-                else { return }
+                guard let self, let handle = self.podcastHandle else { return }
+                guard let result = nmp_app_podcast_audio_report(handle, reportJSON) else {
+                    // No follow-up command, but the report still bumped `rev`
+                    // (e.g. position/now-playing) — pull it through reactively.
+                    self.onSnapshotMaybeChanged?()
+                    return
+                }
                 defer { nmp_app_free_string(result) }
                 let followUpJSON = String(cString: result)
-                guard
-                    let data = followUpJSON.data(using: .utf8),
-                    let command = try? JSONDecoder().decode(AudioCommand.self, from: data)
-                else { return }
-                PodcastCapabilities.shared.audio.execute(command)
+                if let data = followUpJSON.data(using: .utf8),
+                   let command = try? JSONDecoder().decode(AudioCommand.self, from: data) {
+                    PodcastCapabilities.shared.audio.execute(command)
+                }
+                // The report bumped the podcast `rev`; surface it reactively
+                // (event-driven, not polled).
+                self.onSnapshotMaybeChanged?()
             }
         }
     }
@@ -117,16 +123,21 @@ extension PodcastHandle {
     func attachDownloadReportChannel() {
         PodcastCapabilities.shared.download.attach { [weak self] reportJSON in
             MainActor.assumeIsolated {
-                guard let handle = self?.podcastHandle else { return }
-                guard let result = nmp_app_podcast_download_report(handle, reportJSON)
-                else { return }
+                guard let self, let handle = self.podcastHandle else { return }
+                guard let result = nmp_app_podcast_download_report(handle, reportJSON) else {
+                    // No follow-up command, but the report bumped `rev`
+                    // (download progress/state) — pull it through reactively.
+                    self.onSnapshotMaybeChanged?()
+                    return
+                }
                 defer { nmp_app_free_string(result) }
                 let followUpJSON = String(cString: result)
-                guard
-                    let data = followUpJSON.data(using: .utf8),
-                    let command = try? JSONDecoder().decode(DownloadCommand.self, from: data)
-                else { return }
-                PodcastCapabilities.shared.download.execute(command)
+                if let data = followUpJSON.data(using: .utf8),
+                   let command = try? JSONDecoder().decode(DownloadCommand.self, from: data) {
+                    PodcastCapabilities.shared.download.execute(command)
+                }
+                // The report bumped the podcast `rev`; surface it reactively.
+                self.onSnapshotMaybeChanged?()
             }
         }
     }

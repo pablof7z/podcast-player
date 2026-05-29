@@ -16,6 +16,12 @@ final class PodcastHandle {
     var podcastHandle: UnsafeMutableRawPointer?
     /// Retained bridge passed as `context` to `nmp_app_set_capability_callback`.
     var syncBridge: SyncCapabilityBridge?
+    /// Fired (on the main actor) immediately after a shell-initiated FFI report
+    /// (`nmp_app_podcast_audio_report` / `_download_report`) bumps the podcast
+    /// `rev`. `KernelModel` wires this to a one-shot rev-gated pull so those
+    /// changes reach the UI reactively — replacing the old 500ms snapshot poll.
+    /// (Dispatched host-ops already arrive via the kernel push frame.)
+    var onSnapshotMaybeChanged: (() -> Void)?
 
     init() {
         raw = nmp_app_new()

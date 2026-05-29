@@ -84,16 +84,6 @@ final class KernelModel {
     /// `podcastSnapshot?.nowPlaying` so they don't hold a reference to the
     /// full snapshot struct. All other views should use `podcastSnapshot`.
     private(set) var nowPlaying: PlayerState?
-    /// Cancellable for the snapshot poll. NECESSARY (not just a fallback): the
-    /// podcast projection's `rev` advances on AUTONOMOUS, non-dispatched events
-    /// — the kernel loading the persisted store from LMDB on launch, async feed
-    /// refresh completion, download progress — and the kernel only emits a push
-    /// frame on dispatched actions (`maybe_emit_after_dispatch`), NOT when the
-    /// podcast handle's `rev` changes out-of-band. So the reactive push delivers
-    /// dispatched changes; this poll bridges autonomous ones (verified: with it
-    /// removed, the persisted library does not load on launch). Removing it for
-    /// good requires an emit-on-podcast-rev-change trigger in the kernel/FFI.
-    private var snapshotPollTask: Task<Void, Never>?
     /// Hash of the library fields that matter to list views. Excludes
     /// `playbackPositionSecs` so list views don't re-render at 4 Hz
     /// during playback (the position is only needed by the player row).
@@ -136,6 +126,14 @@ final class KernelModel {
         })
         kernel.attachAudioReportChannel()
         kernel.attachDownloadReportChannel()
+        // Reactive replacement for the old 500ms poll: shell-initiated FFI
+        // reports (audio/download) bump the podcast `rev` without emitting a
+        // kernel push frame, so surface them with a one-shot rev-gated pull at
+        // the moment they happen. Dispatched host-ops already arrive via the
+        // push frame (`apply`) and `dispatch`/`dispatchSilent`'s own pull.
+        kernel.onSnapshotMaybeChanged = { [weak self] in
+            self?.pullPodcastSnapshotIfChanged()
+        }
         // Publish to the shared handle for external scenes (CarPlay, AppIntents,
         // …). The static is `weak`, so the model still deallocates on scene
         // teardown; the next instance re-publishes from its own `init`.
@@ -164,19 +162,19 @@ final class KernelModel {
         guard !startedKernel else { return }
         startedKernel = true
         kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
-        startSnapshotPoll()
+        // One-shot startup pull: the persisted library is loaded synchronously
+        // during register, so it's already in the projection — surface it once.
+        // Everything after this is event-driven (push frame + report hooks); no
+        // timer/poll.
+        pullPodcastSnapshotIfChanged()
     }
 
     func stop() {
-        snapshotPollTask?.cancel()
-        snapshotPollTask = nil
         kernel.stop()
         startedKernel = false
     }
 
     func resetAndRestart() {
-        snapshotPollTask?.cancel()
-        snapshotPollTask = nil
         kernel.reset()
         snapshot = nil
         podcastSnapshot = nil
@@ -187,21 +185,7 @@ final class KernelModel {
         storeOpenFailure = nil
         kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
         startedKernel = true
-        startSnapshotPoll()
-    }
-
-    /// Poll the podcast snapshot rev and apply on change. See `snapshotPollTask`
-    /// for why this is necessary (autonomous rev changes the push doesn't emit).
-    private func startSnapshotPoll() {
-        snapshotPollTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(500))
-                guard !Task.isCancelled else { break }
-                await MainActor.run { [weak self] in
-                    self?.pullPodcastSnapshotIfChanged()
-                }
-            }
-        }
+        pullPodcastSnapshotIfChanged()
     }
 
     /// One-shot synchronous pull, used only immediately after a `dispatch` /
