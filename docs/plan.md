@@ -22,6 +22,7 @@ This is the canonical project plan. Detailed implementation plans live under
   - `docs/plan/nmp-feature-parity.md` - canonical feature-parity execution status and scaffold burn-down instructions.
   - `docs/plan/migration-v2.md` - ordered milestone plan (M0–M8) for completing the Rust-kernel migration.
   - `docs/plan/pod0-nostr-publishing.md` - NIP-F4 protocol correction and publishing/discovery plan.
+  - `docs/plan/nmp-v0.1.0-upgrade.md` - NMP dependency upgrade from old pin to `nmp-v0.1.0` tag: changelog, breakage analysis, and follow-up items.
 
 ## Migration State
 
