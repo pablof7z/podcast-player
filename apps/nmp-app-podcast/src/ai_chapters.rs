@@ -31,7 +31,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use podcast_core::Chapter;
+use tokio::runtime::Runtime;
 
+use crate::ai_chapters_llm::{self, SynthesizedChapter};
 use crate::store::PodcastStore;
 
 /// Number of equally-spaced chapters the stub LLM emits.
@@ -63,9 +65,10 @@ pub(crate) enum CompileOutcome {
 pub(crate) fn handle_compile_chapters(
     store: &Arc<Mutex<PodcastStore>>,
     rev: &AtomicU64,
+    runtime: &Runtime,
     episode_id: String,
 ) -> serde_json::Value {
-    match compile(store, &episode_id) {
+    match compile(store, runtime, &episode_id) {
         Ok(CompileOutcome::Compiled { chapter_count }) => {
             rev.fetch_add(1, Ordering::Relaxed);
             serde_json::json!({
@@ -92,27 +95,37 @@ pub(crate) fn handle_compile_chapters(
 
 fn compile(
     store: &Arc<Mutex<PodcastStore>>,
+    runtime: &Runtime,
     episode_id: &str,
 ) -> Result<CompileOutcome, String> {
     let snapshot = {
         let store = store.lock().map_err(|_| "store poisoned".to_owned())?;
         read_episode_inputs(&store, episode_id)
     };
-    let inputs = match snapshot {
+    let (duration_secs, transcript, episode_title) = match snapshot {
         EpisodeInputs::Missing => return Ok(CompileOutcome::EpisodeNotFound),
         EpisodeInputs::HasChapters => return Ok(CompileOutcome::AlreadyHasChapters),
-        EpisodeInputs::Ready { duration_secs, transcript_present } => {
-            if !transcript_present {
+        EpisodeInputs::Ready { duration_secs, transcript, episode_title } => {
+            let Some(transcript) = transcript else {
                 return Ok(CompileOutcome::NoTranscript);
-            }
-            match duration_secs {
+            };
+            let duration_secs = match duration_secs {
                 Some(d) if d > 0.0 => d,
                 _ => return Ok(CompileOutcome::NoDuration),
-            }
+            };
+            (duration_secs, transcript, episode_title)
         }
     };
 
-    let chapters = build_stub_chapters(inputs, STUB_CHAPTER_COUNT);
+    // Try real LLM synthesis first (M5.5): feed the first 3000 chars of the
+    // cached transcript to the model and use its titles + offsets. Fall back
+    // to the equal-length stub if Ollama is offline or the reply is unusable.
+    let chapters = synthesize_or_stub(
+        &episode_title,
+        &transcript,
+        duration_secs,
+        runtime,
+    );
     let chapter_count = chapters.len();
 
     let mut store = store.lock().map_err(|_| "store poisoned".to_owned())?;
@@ -122,12 +135,45 @@ fn compile(
     Ok(CompileOutcome::Compiled { chapter_count })
 }
 
+/// Synthesize chapters via the LLM, degrading to the equal-length stub on any
+/// error so the feature stays usable offline.
+fn synthesize_or_stub(
+    episode_title: &str,
+    transcript: &str,
+    duration_secs: f64,
+    runtime: &Runtime,
+) -> Vec<Chapter> {
+    let transcript_excerpt: String = transcript.chars().take(3000).collect();
+    match ai_chapters_llm::synthesize_chapters(
+        episode_title,
+        &transcript_excerpt,
+        duration_secs,
+        STUB_CHAPTER_COUNT,
+        runtime,
+    ) {
+        Ok(synthesized) if !synthesized.is_empty() => {
+            synthesized.iter().map(chapter_from_synthesized).collect()
+        }
+        _ => build_stub_chapters(duration_secs, STUB_CHAPTER_COUNT),
+    }
+}
+
+/// Convert one [`SynthesizedChapter`] into a `podcast_core::Chapter`, stamping
+/// the `is_ai_generated` flag (the constructor defaults it to `false`).
+fn chapter_from_synthesized(c: &SynthesizedChapter) -> Chapter {
+    let mut chapter = Chapter::new(c.title.clone(), c.start_secs);
+    chapter.is_ai_generated = true;
+    chapter
+}
+
 enum EpisodeInputs {
     Missing,
     HasChapters,
     Ready {
         duration_secs: Option<f64>,
-        transcript_present: bool,
+        /// The cached transcript text, or `None` when absent / whitespace-only.
+        transcript: Option<String>,
+        episode_title: String,
     },
 }
 
@@ -140,11 +186,15 @@ fn read_episode_inputs(store: &PodcastStore, episode_id: &str) -> EpisodeInputs 
         return EpisodeInputs::HasChapters;
     }
     let duration_secs = store.episode_duration_secs(episode_id);
-    let transcript_present = store
+    let transcript = store
         .transcript_for(episode_id)
-        .map(|t| !t.trim().is_empty())
-        .unwrap_or(false);
-    EpisodeInputs::Ready { duration_secs, transcript_present }
+        .filter(|t| !t.trim().is_empty())
+        .map(str::to_owned);
+    let episode_title = store
+        .episode_titles_and_duration(episode_id)
+        .map(|(ep_title, _pod_title, _dur)| ep_title)
+        .unwrap_or_default();
+    EpisodeInputs::Ready { duration_secs, transcript, episode_title }
 }
 
 /// Slice the episode duration into `count` evenly-spaced AI chapters.

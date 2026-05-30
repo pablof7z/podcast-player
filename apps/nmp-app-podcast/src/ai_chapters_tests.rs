@@ -4,6 +4,19 @@
 
 use super::*;
 use podcast_core::{Episode, Podcast};
+use tokio::runtime::Runtime;
+
+/// Single-threaded runtime for the gating tests. The LLM-first `compile` path
+/// only reaches the network when an episode passes every gate AND a transcript
+/// is present; the gating tests below stop short of that, so this runtime is
+/// inert for them. The one happy-path test that does pass all gates
+/// (`compile_emits_compiling_status_and_persists_chapters`) asserts only the
+/// behaviour that holds for both the LLM and stub branches (status, rev bump,
+/// persistence, chapter_count >= 1) so it stays deterministic regardless of
+/// whether Ollama is reachable.
+fn test_runtime() -> Runtime {
+    Runtime::new().expect("runtime")
+}
 
 fn make_episode_with_duration(duration: Option<f64>) -> (Podcast, Episode) {
     let podcast = Podcast::new("Show");
@@ -55,11 +68,19 @@ fn compile_emits_compiling_status_and_persists_chapters() {
     store.lock().unwrap().subscribe(podcast, vec![episode]);
     store.lock().unwrap().set_transcript(ep_id.clone(), "hello world".to_owned());
 
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, ep_id.clone());
+    let result = handle_compile_chapters(&store, &rev, &rt, ep_id.clone());
     assert_eq!(result["ok"], true);
     assert_eq!(result["status"], "compiling");
-    assert_eq!(result["chapter_count"], STUB_CHAPTER_COUNT);
+    // Count comes from the LLM when Ollama is reachable, else the stub; both
+    // branches yield at least one chapter. The exact stub count is asserted
+    // deterministically in the `build_stub_chapters_*` unit tests above.
+    assert!(
+        result["chapter_count"].as_u64().unwrap_or(0) >= 1,
+        "got: {}",
+        result["chapter_count"]
+    );
     assert_eq!(rev.load(Ordering::Relaxed), 1);
 
     let (_url, loaded) = store
@@ -79,8 +100,9 @@ fn compile_is_idempotent_when_episode_has_chapters() {
     store.lock().unwrap().subscribe(podcast, vec![episode]);
     store.lock().unwrap().set_transcript(ep_id.clone(), "hi".to_owned());
 
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, ep_id);
+    let result = handle_compile_chapters(&store, &rev, &rt, ep_id);
     assert_eq!(result["ok"], true);
     assert_eq!(result["status"], "already_has_chapters");
     // No mutation, no rev bump.
@@ -94,8 +116,9 @@ fn compile_refuses_when_no_transcript() {
     let ep_id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
 
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, ep_id);
+    let result = handle_compile_chapters(&store, &rev, &rt, ep_id);
     assert_eq!(result["ok"], false);
     assert_eq!(result["error"], "no_transcript");
     assert_eq!(rev.load(Ordering::Relaxed), 0);
@@ -109,8 +132,9 @@ fn compile_refuses_when_transcript_is_whitespace_only() {
     store.lock().unwrap().subscribe(podcast, vec![episode]);
     store.lock().unwrap().set_transcript(ep_id.clone(), "   \n  ".to_owned());
 
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, ep_id);
+    let result = handle_compile_chapters(&store, &rev, &rt, ep_id);
     assert_eq!(result["ok"], false);
     assert_eq!(result["error"], "no_transcript");
 }
@@ -123,8 +147,9 @@ fn compile_refuses_when_no_duration() {
     store.lock().unwrap().subscribe(podcast, vec![episode]);
     store.lock().unwrap().set_transcript(ep_id.clone(), "hi".to_owned());
 
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, ep_id);
+    let result = handle_compile_chapters(&store, &rev, &rt, ep_id);
     assert_eq!(result["ok"], false);
     assert_eq!(result["error"], "no_duration");
 }
@@ -132,8 +157,9 @@ fn compile_refuses_when_no_duration() {
 #[test]
 fn compile_reports_episode_not_found() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let rt = test_runtime();
     let rev = AtomicU64::new(0);
-    let result = handle_compile_chapters(&store, &rev, "missing-episode".to_owned());
+    let result = handle_compile_chapters(&store, &rev, &rt, "missing-episode".to_owned());
     assert_eq!(result["ok"], false);
     assert!(
         result["error"].as_str().unwrap_or_default().contains("episode not found"),
