@@ -179,6 +179,13 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
             auto_fallback_to_scribe: s.auto_fallback_to_scribe(),
             notify_on_new_episodes: s.notify_on_new_episodes(),
             notify_on_briefing_ready: s.notify_on_briefing_ready(),
+            nostr_enabled: s.nostr_enabled(),
+            nostr_relay_url: s.nostr_relay_url().to_owned(),
+            nostr_public_relays: s.nostr_public_relays().to_vec(),
+            nostr_profile_name: s.nostr_profile_name().to_owned(),
+            nostr_profile_about: s.nostr_profile_about().to_owned(),
+            nostr_profile_picture: s.nostr_profile_picture().to_owned(),
+            nostr_public_key_hex: s.nostr_public_key_hex().map(|s| s.to_owned()),
         };
         (library, s.all_memory_facts(), settings)
     })

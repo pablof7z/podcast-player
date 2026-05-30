@@ -24,6 +24,7 @@ fn default_image_generation_model() -> String { "google/gemini-2.5-flash-image".
 fn default_image_generation_model_name() -> String { "Gemini 2.5 Flash".to_owned() }
 fn default_false() -> bool { false }
 fn default_empty_string() -> String { String::new() }
+fn default_empty_array() -> Vec<String> { Vec::new() }
 fn default_stt_provider() -> String { "elevenlabs_scribe".to_owned() }
 fn default_open_router_whisper_model() -> String { "openai/whisper-1".to_owned() }
 fn default_assembly_ai_stt_model() -> String { "universal-3-pro,universal-2".to_owned() }
@@ -205,6 +206,27 @@ pub struct SettingsSnapshot {
     /// Whether to send local notifications when briefing/AI processing is ready. Default `true`.
     #[serde(default = "default_true")]
     pub notify_on_briefing_ready: bool,
+    /// Whether Nostr publishing and identity features are enabled. Default `false`.
+    #[serde(default = "default_false")]
+    pub nostr_enabled: bool,
+    /// Primary Nostr relay URL for publishing and event distribution. Default empty.
+    #[serde(default = "default_empty_string")]
+    pub nostr_relay_url: String,
+    /// List of public Nostr relay URLs for broadcast and subscription. Default empty.
+    #[serde(default = "default_empty_array")]
+    pub nostr_public_relays: Vec<String>,
+    /// User's display name in Nostr profile metadata. Default empty.
+    #[serde(default = "default_empty_string")]
+    pub nostr_profile_name: String,
+    /// User's about/bio text in Nostr profile metadata. Default empty.
+    #[serde(default = "default_empty_string")]
+    pub nostr_profile_about: String,
+    /// User's picture URL in Nostr profile metadata. Default empty.
+    #[serde(default = "default_empty_string")]
+    pub nostr_profile_picture: String,
+    /// Nostr public key hex (read-only, derived from Keychain). Not persisted.
+    #[serde(default)]
+    pub nostr_public_key_hex: Option<String>,
 }
 
 impl Default for SettingsSnapshot {
@@ -264,6 +286,13 @@ impl Default for SettingsSnapshot {
             auto_fallback_to_scribe: true,
             notify_on_new_episodes: true,
             notify_on_briefing_ready: true,
+            nostr_enabled: false,
+            nostr_relay_url: String::new(),
+            nostr_public_relays: Vec::new(),
+            nostr_profile_name: String::new(),
+            nostr_profile_about: String::new(),
+            nostr_profile_picture: String::new(),
+            nostr_public_key_hex: None,
         }
     }
 }
