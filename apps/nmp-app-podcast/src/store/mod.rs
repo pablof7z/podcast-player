@@ -534,6 +534,11 @@ impl PodcastStore {
             "https://blossom.primal.net".to_owned()
         };
         self.youtube_extractor_url = loaded.settings.youtube_extractor_url;
+        self.wiki_auto_generate_on_transcript_ingest = loaded.settings.wiki_auto_generate_on_transcript_ingest;
+        self.auto_ingest_publisher_transcripts = loaded.settings.auto_ingest_publisher_transcripts;
+        self.auto_fallback_to_scribe = loaded.settings.auto_fallback_to_scribe;
+        self.notify_on_new_episodes = loaded.settings.notify_on_new_episodes;
+        self.notify_on_briefing_ready = loaded.settings.notify_on_briefing_ready;
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
         // Restore deferred Wi-Fi downloads that were pending when the app was
