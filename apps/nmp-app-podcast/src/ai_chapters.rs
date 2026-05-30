@@ -64,84 +64,66 @@ pub(crate) enum CompileOutcome {
 /// dispatch both with the same call shape.
 pub(crate) fn handle_compile_chapters(
     store: &Arc<Mutex<PodcastStore>>,
-    rev: &AtomicU64,
-    runtime: &Runtime,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
     episode_id: String,
 ) -> serde_json::Value {
-    match compile(store, runtime, &episode_id) {
-        Ok(CompileOutcome::Compiled { chapter_count }) => {
-            rev.fetch_add(1, Ordering::Relaxed);
-            serde_json::json!({
-                "ok": true,
-                "status": "compiling",
-                "chapter_count": chapter_count,
-            })
-        }
-        Ok(CompileOutcome::AlreadyHasChapters) => {
-            serde_json::json!({"ok": true, "status": "already_has_chapters"})
-        }
-        Ok(CompileOutcome::NoTranscript) => {
-            serde_json::json!({"ok": false, "error": "no_transcript"})
-        }
-        Ok(CompileOutcome::NoDuration) => {
-            serde_json::json!({"ok": false, "error": "no_duration"})
-        }
-        Ok(CompileOutcome::EpisodeNotFound) => {
-            serde_json::json!({"ok": false, "error": format!("episode not found: {episode_id}")})
-        }
-        Err(e) => serde_json::json!({"ok": false, "error": e}),
-    }
-}
-
-fn compile(
-    store: &Arc<Mutex<PodcastStore>>,
-    runtime: &Runtime,
-    episode_id: &str,
-) -> Result<CompileOutcome, String> {
-    let snapshot = {
-        let store = store.lock().map_err(|_| "store poisoned".to_owned())?;
-        read_episode_inputs(&store, episode_id)
+    // Gate checks run synchronously (fast, no I/O) so errors surface immediately.
+    let snapshot = match store.lock() {
+        Ok(s) => read_episode_inputs(&s, &episode_id),
+        Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
     };
     let (duration_secs, transcript, episode_title) = match snapshot {
-        EpisodeInputs::Missing => return Ok(CompileOutcome::EpisodeNotFound),
-        EpisodeInputs::HasChapters => return Ok(CompileOutcome::AlreadyHasChapters),
+        EpisodeInputs::Missing => {
+            return serde_json::json!({"ok": false, "error": format!("episode not found: {episode_id}")})
+        }
+        EpisodeInputs::HasChapters => {
+            return serde_json::json!({"ok": true, "status": "already_has_chapters"})
+        }
         EpisodeInputs::Ready { duration_secs, transcript, episode_title } => {
             let Some(transcript) = transcript else {
-                return Ok(CompileOutcome::NoTranscript);
+                return serde_json::json!({"ok": false, "error": "no_transcript"});
             };
             let duration_secs = match duration_secs {
                 Some(d) if d > 0.0 => d,
-                _ => return Ok(CompileOutcome::NoDuration),
+                _ => return serde_json::json!({"ok": false, "error": "no_duration"}),
             };
             (duration_secs, transcript, episode_title)
         }
     };
 
-    // Try real LLM synthesis first (M5.5): feed the first 3000 chars of the
-    // cached transcript to the model and use its titles + offsets. Fall back
-    // to the equal-length stub if Ollama is offline or the reply is unusable.
-    let chapters = synthesize_or_stub(
-        &episode_title,
-        &transcript,
-        duration_secs,
-        runtime,
-    );
-    let chapter_count = chapters.len();
+    // M5.5 fix: spawn LLM synthesis off the actor thread (same pattern as M5.1
+    // inbox triage). The actor returns immediately; chapters land in the store
+    // when the background task completes and bump rev for the next snapshot.
+    let store_c = Arc::clone(store);
+    let rev_c = Arc::clone(rev);
+    let runtime_c = Arc::clone(runtime);
+    let episode_id_c = episode_id.clone();
 
-    let mut store = store.lock().map_err(|_| "store poisoned".to_owned())?;
-    if !store.set_episode_chapters(episode_id, chapters) {
-        return Ok(CompileOutcome::EpisodeNotFound);
-    }
-    Ok(CompileOutcome::Compiled { chapter_count })
+    runtime.spawn(async move {
+        let chapters = tokio::task::spawn_blocking(move || {
+            synthesize_or_stub(&episode_title, &transcript, duration_secs, &runtime_c)
+        })
+        .await
+        .unwrap_or_else(|_| build_stub_chapters(duration_secs, STUB_CHAPTER_COUNT));
+
+        if let Ok(mut s) = store_c.lock() {
+            s.set_episode_chapters(&episode_id_c, chapters);
+        }
+        rev_c.fetch_add(1, Ordering::Relaxed);
+    });
+
+    serde_json::json!({"ok": true, "status": "compiling", "episode_id": episode_id})
 }
 
 /// Synthesize chapters via the LLM, degrading to the equal-length stub on any
-/// error so the feature stays usable offline.
+/// error so the feature stays usable offline. Called from `spawn_blocking` so
+/// the `runtime.block_on` inside `synthesize_chapters` is safe.
 fn synthesize_or_stub(
     episode_title: &str,
     transcript: &str,
     duration_secs: f64,
-    runtime: &Runtime,
+    runtime: &Arc<Runtime>,
 ) -> Vec<Chapter> {
     let transcript_excerpt: String = transcript.chars().take(3000).collect();
     match ai_chapters_llm::synthesize_chapters(

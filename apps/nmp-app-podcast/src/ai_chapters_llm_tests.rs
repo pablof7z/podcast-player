@@ -54,7 +54,7 @@ fn synthesize_falls_back_on_bad_json() {
 #[test]
 #[ignore = "requires a live Ollama instance"]
 fn synthesize_against_live_ollama_returns_prose_titles() {
-    let rt = tokio::runtime::Runtime::new().unwrap();
+    let rt = std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
     let transcript = "Welcome back to the show. Today we sit down with a longtime \
         systems engineer to talk about the hard-won lessons of scaling \
         distributed databases. We start with the early architecture choices \

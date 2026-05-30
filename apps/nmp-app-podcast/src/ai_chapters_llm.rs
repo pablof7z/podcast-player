@@ -41,7 +41,7 @@ pub fn synthesize_chapters(
     transcript_excerpt: &str,
     duration_secs: f64,
     chapter_count: usize,
-    runtime: &Runtime,
+    runtime: &std::sync::Arc<Runtime>,
 ) -> Result<Vec<SynthesizedChapter>, String> {
     let preamble = system_prompt(chapter_count);
     let prompt = format!(
@@ -96,8 +96,22 @@ fn parse_chapters(response: &str) -> Result<Vec<SynthesizedChapter>, String> {
         let start_secs = item["start_secs"]
             .as_f64()
             .ok_or("chapter missing numeric `start_secs`")?;
+        if start_secs < 0.0 {
+            return Err(format!("chapter '{title}' has negative start_secs ({start_secs})"));
+        }
         chapters.push(SynthesizedChapter { title, start_secs });
     }
+
+    // Enforce monotonic ordering: a hallucinating model may return inverted
+    // timestamps which break chapter-seek behavior. Sort rather than reject
+    // so a small model reordering is corrected rather than discarded.
+    chapters.sort_by(|a, b| a.start_secs.partial_cmp(&b.start_secs).unwrap_or(std::cmp::Ordering::Equal));
+
+    // First chapter must start at 0.0 (per the system prompt contract).
+    if let Some(first) = chapters.first_mut() {
+        first.start_secs = 0.0;
+    }
+
     Ok(chapters)
 }
 
