@@ -174,13 +174,21 @@ pub fn handle_inbox_action(
 ) -> serde_json::Value {
     match action {
         InboxAction::Triage => {
-            // M5.1: move triage off the actor thread to avoid blocking the
-            // kernel for the entire LLM round-trip (which can take tens of
-            // seconds for a large library). The actor thread returns
-            // immediately; each per-episode result bumps `rev` so the iOS
-            // snapshot poll surfaces incremental updates.
-            in_progress.store(true, std::sync::atomic::Ordering::Relaxed);
-            rev.fetch_add(1, Ordering::Relaxed); // prime the spinner
+            // Guard against concurrent triage passes (re-entrancy: user double-tap,
+            // or an auto-trigger while the first pass is still running). If the flag
+            // is already `true` a pass is in flight — return early rather than
+            // spawning a second one that would race on the shared triage_cache.
+            if in_progress.compare_exchange(
+                false, true,
+                std::sync::atomic::Ordering::Acquire,
+                std::sync::atomic::Ordering::Relaxed,
+            ).is_err() {
+                return serde_json::json!({"ok": true, "status": "already_running"});
+            }
+
+            // M5.1: move triage off the actor thread. Prime the spinner rev now;
+            // each per-episode result bumps `rev` again for incremental updates.
+            rev.fetch_add(1, Ordering::Relaxed);
 
             let store_c = Arc::clone(store);
             let cache_c = Arc::clone(triage_cache);
@@ -189,9 +197,6 @@ pub fn handle_inbox_action(
             let in_progress_c = Arc::clone(in_progress);
 
             runtime.spawn(async move {
-                // Re-use the sync triage helper on the tokio thread pool.
-                // `block_on` is *not* used — we call it directly here because
-                // `run_llm_triage_async` drives each episode concurrently.
                 triage_episodes_in_background(store_c, cache_c, runtime_c, rev_c, in_progress_c).await;
             });
 
