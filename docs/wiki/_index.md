@@ -1,51 +1,42 @@
-# Podcastr Wiki Hub Index
+# Wiki Index
 
-> Repo-local wiki hub for the podcast player product, focused on durable product, knowledge, agent, and experience decisions.
+> Derived cache — do not hand-edit. Rebuilt by proactive-context after each capture.
 
-Last updated: 2026-05-12
+Last updated: 2026-05-30
 
-## Statistics
+## Guides
 
-- Sources: 9 raw source notes plus linked repo-spec references and online sources
-- Articles: 35 compiled wiki articles
-- Inventory records: 0 tracked items
-- Datasets: 0 manifests
-- Outputs: 0 generated artifacts
-- Last compiled: 2026-05-12
-- Last lint: never
-
-## Quick Navigation
-
-- [Product Wiki](topics/product/_index.md)
-- [App Wiki](topics/app/_index.md)
-- [Knowledge Wiki](topics/knowledge/_index.md)
-- [Agent Wiki](topics/agent/_index.md)
-- [Experience Wiki](topics/experience/_index.md)
-- [Adjacent Ideas Wiki](topics/adjacent/_index.md)
-
-## Topic Wikis
-
-| Wiki | Summary | Tags | Updated |
-|------|---------|------|---------|
-| [product](topics/product/_index.md) | Product promise, launch floor, and capability map. | product, strategy, launch | 2026-05-09 |
-| [app](topics/app/_index.md) | End-to-end operating guide for the current Podcastr app, codebase, runtime flows, integrations, and development rules. | app, architecture, implementation | 2026-05-12 |
-| [knowledge](topics/knowledge/_index.md) | Transcript, wiki compilation, embeddings, RAG, and citation architecture. | knowledge, transcripts, rag | 2026-05-09 |
-| [agent](topics/agent/_index.md) | Embedded agent runtime, tool surface, voice loop, and Nostr safety. | agent, tools, nostr, voice | 2026-05-09 |
-| [experience](topics/experience/_index.md) | UX north star, core surfaces, ambient modes, and accessibility. | ux, liquid-glass, accessibility | 2026-05-09 |
-| [adjacent](topics/adjacent/_index.md) | Online research on auxiliary ideas that can expand product richness. | research, adjacent, roadmap | 2026-05-09 |
-
-## Categories
-
-- **product-definition**: product, experience
-- **technical-architecture**: app, knowledge, agent
-- **execution-support**: all topic wikis
-- **expansion-research**: adjacent
-
-## Recent Changes
-
-- 2026-05-09: Initialized repo-local wiki hub and four topic wikis from user product seed plus existing spec research.
-- 2026-05-09: Added adjacent ideas topic wiki from online research.
-- 2026-05-09: Expanded agent wiki with lifetime tool platform design.
-- 2026-05-09: Refined agent tool catalog to remove unwanted tools and add TENEX-compatible delegate.
-- 2026-05-09: Updated agent wiki for concrete podcast action-tool implementation.
-- 2026-05-12: Added app-wide operating guide topic wiki from current repo docs and Swift runtime inspection.
+| Slug | Title | Summary | Tags | Volatility | Verified |
+|------|-------|---------|------|------------|----------|
+| [agent-and-social-protocols](agent-and-social-protocols.md) | Agent-to-Agent and Social Protocols | Agent-to-agent communication uses public kind:1 notes threaded via NIP-10, matching the win-the-day-app pattern. NIP-17 is an explicit non-goal. NIP-F4 is the canonical podcast publishing protocol. | protocols, nostr, agents, social, nips | warm | 2026-05-29 |
+| [agent-messaging-protocol](agent-messaging-protocol.md) | Agent Messaging Protocol | Agent-to-agent and friend/friend-agent messaging uses public kind:1 notes threaded via NIP-10; NIP-17 is an explicit non-goal | capture | warm | 2026-05-30 |
+| [auto-download-settings](auto-download-settings.md) | Auto-Download Settings (NMP v0.1.0) | Per-podcast auto-download settings (enabled, wifi_only/cellular_allowed) in Rust PodcastStore with global is_on_wifi and Swift SetAutoDownload host-op integration. | rust, swift, downloads, settings | cold | 2026-05-30 |
+| [codex-review-gate](codex-review-gate.md) | Codex Review Gate | The codex exec review --base main command is the required approval gate before shipping; it must return a clean verdict with no P1 findings. | codex, review, gate, quality, approval | cold | 2026-05-29 |
+| [d5-wire-contract](d5-wire-contract.md) | D5 Wire Contract and Swift Decode Resilience | The Rust D5 wire contract omits default-valued fields; Swift mirrors must decode absent keys with defaults via property wrappers. | d5, wire-contract, serialization, codable, schema | cold | 2026-05-29 |
+| [d6-null-guard-ffi](d6-null-guard-ffi.md) | D6 Null-Guard Rule for FFI Dispatch | FFI dispatch functions must null-guard their app pointer dereferences to degrade gracefully rather than SIGABRT. This enables unit testing of handler functions. | ffi, rust, testing, d6, dispatch | cold | 2026-05-29 |
+| [disk-full-recovery](disk-full-recovery.md) | Disk Full Recovery (ENOSPC) | Procedure for recovering from a full macOS data volume (ENOSPC) that blocks builds and codex reviews. Primary space hogs: ~/.cargo/target-shared (83 GB) and stale DerivedData. | infrastructure, build, troubleshooting | cold | 2026-05-30 |
+| [divergent-branch-resolution](divergent-branch-resolution.md) | Divergent Branch Resolution | Resolving a material fork between local M1 worktree and origin PR #133 by creating a validated superset branch and closing origin PRs as superseded. | migration, workflow, git | cold | 2026-05-30 |
+| [event-driven-update-protocol](event-driven-update-protocol.md) | Event-Driven Update Protocol | The 500ms snapshot poll is eliminated; updates are fully event-driven via push frames for dispatched changes and one-shot rev-gated pulls for shell-initiated re | capture | warm | 2026-05-30 |
+| [ios-build-pipeline](ios-build-pipeline.md) | iOS Build Pipeline | The iOS build pipeline requires manual Rust lib rebuilds before Xcode builds, Tuist project generation for new files, and awareness of cache/clean semantics. | build, ios, rust, cargo, xcode, tuist | warm | 2026-05-29 |
+| [kernel-bridge-patterns](kernel-bridge-patterns.md) | Kernel Bridge Patterns | Patterns for the Swift↔Rust kernel bridge: observation loop, audio report threading, play dispatch, store capture, and position persistence. | kernel, bridge, swift, rust, playback, observation | warm | 2026-05-29 |
+| [known-bug-patterns](known-bug-patterns.md) | Known Bug Patterns | Recurring bug patterns: observation race conditions, Rust binary staleness, ABI mismatches, schema mirror drift, and silent decode failures. | bugs, patterns, race-condition, abi, schema, decode | warm | 2026-05-29 |
+| [live-testing-methodology](live-testing-methodology.md) | Live Testing Methodology | Methodology for live testing via Xcode MCP: verification requirements, simulator management, debug logging, and throwaway edit protocol. | testing, simulator, verification, xcode-mcp, debug | warm | 2026-05-29 |
+| [m1-codex-playback-regressions](m1-codex-playback-regressions.md) | M1 Codex Playback Regressions | Four playback regressions found by codex in the M1 stack: replay-starts-at-end, auto-mark-ignored, segment-boundary-too-early, and redundant re-download. | m1, playback, regressions, codex | cold | 2026-05-29 |
+| [m1-codex-round3-fixes](m1-codex-round3-fixes.md) | M1 Codex Round-3 Fixes | Four localized P2 logic nits from codex pass 3: handle_load enqueue, ordered sleep-timer rewind, stale queue-head skip, and paused chapter persistence. | migration, playback, rust, codex | cold | 2026-05-30 |
+| [m1-queue-unification](m1-queue-unification.md) | M1 Queue Unification (Dual-Queue P1 Fix) | Codex P1 fix: dual-queue gap where UI-queued episodes never auto-advanced; resolved by unifying on the canonical PlaybackQueue. | migration, playback, rust, codex | cold | 2026-05-30 |
+| [m1-stack-integration](m1-stack-integration.md) | M1 Stack Integration (PRs #132/#133 onto Reactive Bridge) | Integrating the stale M1 Part 3 PR stack (#132/#133) onto the post-NMP-v0.1.0 reactive bridge: merge conflict resolution, bridge collision patterns, and validated integration steps. | m1, playback, bridge, merge, integration | cold | 2026-05-29 |
+| [m2-download-path-unification](m2-download-path-unification.md) | M2 Download Path Unification | M2 unified the download path: wifi_only gating moved to Rust, total_bytes exposed in the snapshot, and NetworkCapability provides reactive connectivity monitoring. | migration, downloads, rust, swift | cold | 2026-05-30 |
+| [m3-settings-credentials](m3-settings-credentials.md) | M3 Settings and Credentials Migration | M3 migrates all settings and credentials into the Rust kernel: SettingsSnapshot expansion, iCloudSettingsSync deletion, and OpenRouter/Ollama to PcstIdentityCapability Keychain slots. | m3, settings, credentials, rust, migration | warm | 2026-05-30 |
+| [nmp-integration-rules](nmp-integration-rules.md) | NMP Integration Rules | Rules for integrating with NMP: use the canonical snapshot-projection seam, never create bespoke pull symbols, and never use ADR-0037 for basic wiring. | nmp, integration, projection, seam, anti-pattern | cold | 2026-05-29 |
+| [nmp-update-transport](nmp-update-transport.md) | NMP Update Transport (FlatBuffers Push) | The kernel delivers updates as binary FlatBuffers frames via a (ptr, len) callback, decoded through a Rust helper into JSON for Swift consumption. | nmp, transport, flatbuffers, ffi, push | cold | 2026-05-29 |
+| [nmp-v0-1-0-adoption](nmp-v0-1-0-adoption.md) | NMP v0.1.0 Adoption | The NMP v0.1.0 adoption was scoped to one mandatory item (store_open_failure alert) plus a ride-along fix, executed in a single worktree. | nmp, v0.1.0, adoption, plan, migration | cold | 2026-05-29 |
+| [nmp-version-upgrades](nmp-version-upgrades.md) | NMP Version Upgrades | Process for upgrading NMP versions: pin bump, three-layer verification, changelog, and stable base commit. | nmp, upgrade, version, cargo, verification | warm | 2026-05-29 |
+| [playback-engine-m1-part3](playback-engine-m1-part3.md) | Playback Engine (M1 Part 3 Engine Swap) | The M1 Part 3 engine swap (AudioEngine → AudioCapability kernel bridge): PlaybackState patterns, streaming URLs, position persistence, segment-end advancement, item-end handling, audio report threading, and the observation loop fix. | playback, engine, audio, kernel-bridge, m1 | warm | 2026-05-29 |
+| [playbackstate-m1-pure-renderer](playbackstate-m1-pure-renderer.md) | PlaybackState as Pure Renderer (M1.7) | PlaybackState is a pure renderer at 205 lines (≤300 limit). All business callbacks moved to Rust; only thin shell methods remain. | m1, playback, playbackstate, renderer | cold | 2026-05-29 |
+| [podcast-projection-registration](podcast-projection-registration.md) | Podcast Projection Registration | The podcast projection is registered through the canonical nmp_app_register_snapshot_projection seam and rides the reactive push frame. | nmp, projection, push, registration, snapshot | cold | 2026-05-29 |
+| [project-plan-and-backlog](project-plan-and-backlog.md) | Project Plan and Backlog | The project's ordered M0-M8 migration sequence, current state after NMP v0.1.0 adoption, and items explicitly deleted from the backlog. | planning, migration, backlog | warm | 2026-05-30 |
+| [reactive-update-model](reactive-update-model.md) | Reactive Update Model (No Polling) | The app is fully reactive — no polling. Updates flow via kernel push frames for dispatched changes and event-driven one-shot pulls for shell-initiated reports. | reactive, push, emit, poll, event-driven | cold | 2026-05-29 |
+| [security-and-constraints](security-and-constraints.md) | Security and Constraints | Security constraints: nsec never logged, real relay only, Ollama models, and the reactive-no-polling rule. | security, nsec, relay, ollama, reactive | cold | 2026-05-29 |
+| [stale-rust-lib-shadowing](stale-rust-lib-shadowing.md) | Stale Rust Lib Shadowing in Linker Search Path | A stale Rust static library in the project-local target dir can shadow a freshly-built shared-target-dir lib, causing undefined symbol linker errors for newly-added FFI functions. | ios, build, rust, linker, troubleshooting | warm | 2026-05-29 |
+| [store-open-failure-alert](store-open-failure-alert.md) | Store Open Failure Alert | When the LMDB store fails to open, the kernel surfaces a store_open_failure diagnostic via the push frame, which the app must present as a user-facing alert. | nmp, store, lmdb, error-handling, alert | cold | 2026-05-29 |
+| [test-migration-pattern](test-migration-pattern.md) | Test Migration: Swift → Rust Coverage | When Swift behavior migrates to Rust, Swift tests are deleted only after confirming equivalent Rust coverage exists. Coverage audit and handler test construction patterns. | testing, rust, swift, migration, coverage | cold | 2026-05-29 |
