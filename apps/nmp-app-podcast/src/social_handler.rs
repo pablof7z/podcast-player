@@ -31,7 +31,7 @@ const RELAY_URL: &str = "wss://relay.primal.net";
 /// Returns `{"ok":true,"following_count":N}` on success, or
 /// `{"ok":false,"error":"..."}` on any hard failure.
 pub fn handle_fetch_contacts(handler: &PodcastHostOpHandler) -> serde_json::Value {
-    // 1. Get the active pubkey.
+    // 1. Get the active pubkey — checked synchronously before spawning.
     let pubkey_hex = match handler.identity.lock() {
         Ok(id) => match id.pubkey_hex.clone() {
             Some(pk) => pk,
@@ -40,49 +40,55 @@ pub fn handle_fetch_contacts(handler: &PodcastHostOpHandler) -> serde_json::Valu
         Err(_) => return json!({"ok": false, "error": "identity lock poisoned"}),
     };
 
-    let relay_urls = vec![RELAY_URL.to_string()];
+    // M5.3: spawn the relay fetches off the actor thread. Each fetch can take
+    // up to 8s (8s timeout × 2 round trips = up to 16s blocked). The actor
+    // returns immediately; the snapshot lands in `handler.social` when done.
+    let social = std::sync::Arc::clone(&handler.social);
+    let rev = std::sync::Arc::clone(&handler.rev);
+    let runtime = std::sync::Arc::clone(&handler.runtime);
 
-    // 2. Fetch kind:3 (contact list) for the active user.
-    let kind3_events = fetch_relay_events(
-        &handler.runtime,
-        json!({"kinds": [3], "authors": [&pubkey_hex], "limit": 1}),
-        &relay_urls,
-        8_000,
-    );
+    runtime.spawn(async move {
+        let relay_urls = vec![RELAY_URL.to_string()];
 
-    // 3. Parse follow pubkeys from `p` tags.
-    let follow_pubkeys: Vec<String> = kind3_events
-        .iter()
-        .flat_map(|ev| {
-            ev["tags"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|t| {
-                    let arr = t.as_array()?;
-                    if arr.first()?.as_str()? == "p" {
-                        arr.get(1)?.as_str().map(str::to_string)
-                    } else {
-                        None
-                    }
-                })
-        })
-        .collect();
-
-    let following_count = follow_pubkeys.len();
-
-    // 4. Batch-fetch kind:0 metadata for follows (cap at 50 for speed).
-    let batch: Vec<String> = follow_pubkeys.iter().take(50).cloned().collect();
-    let kind0_events = if !batch.is_empty() {
-        fetch_relay_events(
-            &handler.runtime,
-            json!({"kinds": [0], "authors": batch}),
+        // 2. Fetch kind:3 (contact list) for the active user.
+        let kind3_events = fetch_relay_events_async(
+            json!({"kinds": [3], "authors": [&pubkey_hex], "limit": 1}),
             &relay_urls,
             8_000,
-        )
-    } else {
-        vec![]
-    };
+        ).await;
+
+        // 3. Parse follow pubkeys from `p` tags.
+        let follow_pubkeys: Vec<String> = kind3_events
+            .iter()
+            .flat_map(|ev| {
+                ev["tags"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|t| {
+                        let arr = t.as_array()?;
+                        if arr.first()?.as_str()? == "p" {
+                            arr.get(1)?.as_str().map(str::to_string)
+                        } else {
+                            None
+                        }
+                    })
+            })
+            .collect();
+
+        let following_count = follow_pubkeys.len();
+
+        // 4. Batch-fetch kind:0 metadata for follows (cap at 50 for speed).
+        let batch: Vec<String> = follow_pubkeys.iter().take(50).cloned().collect();
+        let kind0_events = if !batch.is_empty() {
+            fetch_relay_events_async(
+                json!({"kinds": [0], "authors": batch}),
+                &relay_urls,
+                8_000,
+            ).await
+        } else {
+            vec![]
+        };
 
     // 5. Build ContactSummary list with bech32-encoded npub.
     let contacts: Vec<ContactSummary> = follow_pubkeys
@@ -126,31 +132,28 @@ pub fn handle_fetch_contacts(handler: &PodcastHostOpHandler) -> serde_json::Valu
         })
         .collect();
 
-    // 6. Store the snapshot and bump rev.
-    if let Ok(mut social) = handler.social.lock() {
-        *social = Some(SocialSnapshot {
-            following: contacts,
-            following_count,
-        });
-    }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+        // 6. Store the snapshot and bump rev.
+        if let Ok(mut s) = social.lock() {
+            *s = Some(SocialSnapshot {
+                following: contacts,
+                following_count,
+            });
+        }
+        rev.fetch_add(1, Ordering::Relaxed);
+    }); // end spawn
 
-    json!({"ok": true, "following_count": following_count})
+    json!({"ok": true, "status": "fetch_started"})
 }
 
-/// Block the caller and run an async subscribe-until-EOSE on the given filter.
-fn fetch_relay_events(
-    runtime: &tokio::runtime::Runtime,
+/// Async relay subscription — runs directly in an async context (no block_on).
+async fn fetch_relay_events_async(
     filter: serde_json::Value,
     relay_urls: &[String],
     timeout_ms: u64,
 ) -> Vec<serde_json::Value> {
     let sub_id = uuid::Uuid::new_v4().to_string();
     let timeout_dur = Duration::from_millis(timeout_ms);
-    let relay_urls = relay_urls.to_vec();
-    runtime.block_on(async move {
-        crate::relay::subscribe_until_eose(&sub_id, &filter, &relay_urls, timeout_dur).await
-    })
+    crate::relay::subscribe_until_eose(&sub_id, &filter, relay_urls, timeout_dur).await
 }
 
 #[cfg(test)]
