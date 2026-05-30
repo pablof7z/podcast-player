@@ -3,10 +3,8 @@ import os.log
 
 /// Thin shim over `PcstIdentityCapability` for the OpenRouter BYOK API key.
 ///
-/// All reads and writes now go through the canonical `pcst.byok.openrouter`
-/// Keychain slot managed by `PcstIdentityCapability`. The legacy
-/// `<bundleID>.openrouter` service entry is migrated by
-/// `LegacyKeychainMigration` on first launch.
+/// All reads and writes go through the canonical `pcst.byok.openrouter`
+/// Keychain slot managed by `PcstIdentityCapability`.
 enum OpenRouterCredentialStore {
     private static let accountID = PcstIdentityCapability.AccountID.byokOpenRouter
     private static var identity: PcstIdentityCapability { PcstIdentityCapability.direct }
