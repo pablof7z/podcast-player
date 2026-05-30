@@ -168,6 +168,7 @@
 		32C79C078D00A45265BBCA1C /* AgentActivitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1080F0E59AE876398CAAB12F /* AgentActivitySheet.swift */; };
 		32F5C47F9E7EAF11F0279CF5 /* UsageCostSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B0E2F5B40C79F7BF31C4C8 /* UsageCostSettingsView.swift */; };
 		33340E773BE485FA1157D0C0 /* WikiGenerateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F95093BB667AB332BA41066 /* WikiGenerateSheet.swift */; };
+		33B5C78EABDDF8E21399815A /* NostrRelayCapability+Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E545C4A61627D171A60ACA /* NostrRelayCapability+Transport.swift */; };
 		346E9CDB702D8B46FB946003 /* PodcastMediaTypes.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12295CE221DC6DF3996808E2 /* PodcastMediaTypes.generated.swift */; };
 		355E418CA87244CCA8B6853D /* RSSParserURLResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D33E475EA8AB59900E904C /* RSSParserURLResolutionTests.swift */; };
 		35C501695520BE577357E0C5 /* HomeResumeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147F525305B6C28C25EA3158 /* HomeResumeCard.swift */; };
@@ -498,6 +499,7 @@
 		ABB91C90DD5A3AAA06718D8A /* WikiOpenRouterClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECBDB4F400BF75A859C92B55 /* WikiOpenRouterClient.swift */; };
 		AC582ACB194B69A4D7FBE9B9 /* AudioCapability+Wire.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A68B971C8B62C972814482 /* AudioCapability+Wire.swift */; };
 		ACB3BFFA7CAB0C4D9B69DB5B /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DACB30A67A1166D856B816C /* CategoryDetailView.swift */; };
+		ACD2D5462012186DD9B4E5E8 /* NostrRelayCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44783CFAF53AA3D4573794F0 /* NostrRelayCapability.swift */; };
 		ACF0971E2A14036E46837F60 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C0676822D8B8507BB45A /* NotificationService.swift */; };
 		AD9AB76F11EF3865A4C5D811 /* ClipBoundaryResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F15D6C692C7EC94B1B01DB /* ClipBoundaryResolver.swift */; };
 		AE4B338CCD0457357051BB98 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F998CA032CA284708B3D4F43 /* ChatMessage.swift */; };
@@ -1000,6 +1002,7 @@
 		439919116DBE11CBC5573F5C /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		43F7758E1F0D45473CD0314B /* AudioCapability+Observers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioCapability+Observers.swift"; sourceTree = "<group>"; };
 		441F113FA005D215335ECB76 /* PlayerChaptersScrollView+Notes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerChaptersScrollView+Notes.swift"; sourceTree = "<group>"; };
+		44783CFAF53AA3D4573794F0 /* NostrRelayCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrRelayCapability.swift; sourceTree = "<group>"; };
 		44B0E2F5B40C79F7BF31C4C8 /* UsageCostSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCostSettingsView.swift; sourceTree = "<group>"; };
 		44DB68A2A42D3C0D678256C1 /* NostrEventPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrEventPublisher.swift; sourceTree = "<group>"; };
 		450899569DB261492DDE5001 /* NetworkingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkingSettingsView.swift; sourceTree = "<group>"; };
@@ -1473,6 +1476,7 @@
 		F3A1FB14FBB262FD4B3DC278 /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
 		F3AAD15F0A5EED308179615E /* RAGSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RAGSearch.swift; sourceTree = "<group>"; };
 		F3D33E475EA8AB59900E904C /* RSSParserURLResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParserURLResolutionTests.swift; sourceTree = "<group>"; };
+		F3E545C4A61627D171A60ACA /* NostrRelayCapability+Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NostrRelayCapability+Transport.swift"; sourceTree = "<group>"; };
 		F422EDC3520DE2E220B30E2E /* AgentToolsPodcastActionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentToolsPodcastActionTests.swift; sourceTree = "<group>"; };
 		F4328EE2348E4311577A0600 /* NostrApprovalPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrApprovalPresenter.swift; sourceTree = "<group>"; };
 		F436E45D05D08DEB69988EC1 /* BYOKModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BYOKModels.swift; sourceTree = "<group>"; };
@@ -2729,6 +2733,8 @@
 				6108721868EBD4C9B2692A91 /* LegacyIOTypes.swift */,
 				B9335AFD38322339BA7091D9 /* LegacyKeychainMigration.swift */,
 				5A887037C6EF99FFA16FAAE4 /* NetworkCapability.swift */,
+				44783CFAF53AA3D4573794F0 /* NostrRelayCapability.swift */,
+				F3E545C4A61627D171A60ACA /* NostrRelayCapability+Transport.swift */,
 				1B9D2C1EA50BF129A30F4698 /* NotificationCapability.swift */,
 				62D12DA76E0D7D9192F00723 /* PcstIdentityCapability.swift */,
 				F667BC7E9AEB03AAF8949C6B /* PlatformCapability.swift */,
@@ -3046,6 +3052,8 @@
 				19892D76EBA40634B01AD62E /* LegacyIOTypes.swift in Sources */,
 				4E6BDE0EF8A0314AE3A30A71 /* LegacyKeychainMigration.swift in Sources */,
 				FC9A860EB3EDD3B8152CF07A /* NetworkCapability.swift in Sources */,
+				33B5C78EABDDF8E21399815A /* NostrRelayCapability+Transport.swift in Sources */,
+				ACD2D5462012186DD9B4E5E8 /* NostrRelayCapability.swift in Sources */,
 				BE2FEE700F321B7072BF1D40 /* NotificationCapability.swift in Sources */,
 				60152638366031A4B42AB726 /* PcstIdentityCapability.swift in Sources */,
 				A7258277C94C8A3662B727AC /* PlatformCapability+WireTypes.swift in Sources */,
