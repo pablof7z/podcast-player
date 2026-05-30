@@ -209,6 +209,16 @@ pub struct PodcastStore {
     pub(super) blossom_server_url: String,
     /// YouTube extractor URL (optional).
     pub(super) youtube_extractor_url: Option<String>,
+    /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
+    pub(super) wiki_auto_generate_on_transcript_ingest: bool,
+    /// Whether to auto-ingest publisher-provided transcripts. Default `true`.
+    pub(super) auto_ingest_publisher_transcripts: bool,
+    /// Whether to fall back to Scribe (STT) when publisher transcript ingestion fails. Default `true`.
+    pub(super) auto_fallback_to_scribe: bool,
+    /// Whether to send local notifications when new episodes arrive. Default `true`.
+    pub(super) notify_on_new_episodes: bool,
+    /// Whether to send local notifications when briefing/AI processing is ready. Default `true`.
+    pub(super) notify_on_briefing_ready: bool,
     /// Last-known Wi-Fi state reported by `nmp.network.capability`. `true` when
     /// the device's active interface is Wi-Fi. Defaults to `true` so
     /// auto-download runs on first launch before the iOS capability fires its
@@ -290,6 +300,11 @@ impl PodcastStore {
             eleven_labs_voice_name: String::new(),
             blossom_server_url: "https://blossom.primal.net".to_owned(),
             youtube_extractor_url: None,
+            wiki_auto_generate_on_transcript_ingest: false,
+            auto_ingest_publisher_transcripts: true,
+            auto_fallback_to_scribe: true,
+            notify_on_new_episodes: true,
+            notify_on_briefing_ready: true,
             is_on_wifi: true,
             data_dir: None,
             loaded_queue: Vec::new(),
@@ -519,6 +534,11 @@ impl PodcastStore {
             "https://blossom.primal.net".to_owned()
         };
         self.youtube_extractor_url = loaded.settings.youtube_extractor_url;
+        self.wiki_auto_generate_on_transcript_ingest = loaded.settings.wiki_auto_generate_on_transcript_ingest;
+        self.auto_ingest_publisher_transcripts = loaded.settings.auto_ingest_publisher_transcripts;
+        self.auto_fallback_to_scribe = loaded.settings.auto_fallback_to_scribe;
+        self.notify_on_new_episodes = loaded.settings.notify_on_new_episodes;
+        self.notify_on_briefing_ready = loaded.settings.notify_on_briefing_ready;
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
         // Restore deferred Wi-Fi downloads that were pending when the app was
@@ -632,6 +652,11 @@ impl PodcastStore {
                 eleven_labs_voice_name: self.eleven_labs_voice_name.clone(),
                 blossom_server_url: self.blossom_server_url.clone(),
                 youtube_extractor_url: self.youtube_extractor_url.clone(),
+                wiki_auto_generate_on_transcript_ingest: self.wiki_auto_generate_on_transcript_ingest,
+                auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
+                auto_fallback_to_scribe: self.auto_fallback_to_scribe,
+                notify_on_new_episodes: self.notify_on_new_episodes,
+                notify_on_briefing_ready: self.notify_on_briefing_ready,
             },
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
             pending_wifi_downloads: self.pending_wifi_downloads.clone(),
