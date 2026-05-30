@@ -92,6 +92,11 @@ fn handle_index_episode(
 
     match knowledge_store.lock() {
         Ok(mut ks) => {
+            // Delete all prior chunks for this episode before inserting the new
+            // batch. Without this, a re-index with a shorter transcript leaves
+            // stale trailing chunks (old indices N..M) that persist in search
+            // results as if they were current content.
+            ks.delete_episode(&episode_id);
             for chunk in chunks {
                 ks.upsert(KnowledgeChunk::without_embedding(chunk));
             }

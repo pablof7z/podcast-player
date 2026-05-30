@@ -198,19 +198,37 @@ fn index_episode_chunks_stored_transcript() {
 }
 
 #[test]
-fn reindex_is_idempotent_on_chunk_key() {
+fn reindex_same_transcript_does_not_duplicate_chunks() {
     let store = shared(PodcastStore::new());
     let text = "alpha beta gamma".to_owned();
-    store
-        .lock()
-        .unwrap()
-        .set_transcript("ep-1".to_owned(), text);
+    store.lock().unwrap().set_transcript("ep-1".to_owned(), text);
     let ks = empty_knowledge();
     let rev = Arc::new(AtomicU64::new(1));
     handle_index_episode("ep-1".to_owned(), &store, &ks, &rev);
     handle_index_episode("ep-1".to_owned(), &store, &ks, &rev);
-    // Same (episode_id, chunk_index) keys → replaced in place, not duplicated.
+    // delete_episode clears the prior batch before upserting; same transcript
+    // → same chunk count, not doubled.
     assert_eq!(ks.lock().unwrap().len(), 1);
+}
+
+#[test]
+fn reindex_shorter_transcript_removes_stale_trailing_chunks() {
+    let store = shared(PodcastStore::new());
+    // Synthesize a long first transcript that produces ≥2 chunks.
+    let long_text = "word ".repeat(500); // ~2500 chars → ~2-3 chunks
+    store.lock().unwrap().set_transcript("ep-2".to_owned(), long_text);
+    let ks = empty_knowledge();
+    let rev = Arc::new(AtomicU64::new(1));
+    handle_index_episode("ep-2".to_owned(), &store, &ks, &rev);
+    let first_count = ks.lock().unwrap().len();
+    assert!(first_count >= 2, "expected ≥2 chunks from long transcript");
+
+    // Now replace with a short transcript that fits in one chunk.
+    store.lock().unwrap().set_transcript("ep-2".to_owned(), "short".to_owned());
+    handle_index_episode("ep-2".to_owned(), &store, &ks, &rev);
+    let second_count = ks.lock().unwrap().len();
+    // Stale trailing chunks must be gone — only the new single chunk remains.
+    assert_eq!(second_count, 1, "reindex must clear stale trailing chunks (got {second_count}, had {first_count})");
 }
 
 #[test]
