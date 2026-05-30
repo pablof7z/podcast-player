@@ -66,6 +66,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                 description: Some(strip_html(&podcast.description))
                     .filter(|d| !d.is_empty()),
                 auto_download: s.is_auto_download_enabled(podcast.id),
+                cellular_allowed: !s.wifi_only_for(podcast.id),
                 episodes: episodes
                     .iter()
                     .map(|ep| {

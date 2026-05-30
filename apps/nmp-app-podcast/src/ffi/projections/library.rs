@@ -36,6 +36,12 @@ pub struct PodcastSummary {
     /// iTunes search rows, which never have a real `PodcastId`).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub auto_download: bool,
+    /// When `true`, cellular auto-download is explicitly allowed for this
+    /// show (Wi-Fi-only is off). Omitted from the wire when `false` (D5).
+    /// The iOS subscription list reads this to correctly rebuild
+    /// `AutoDownloadPolicy.wifiOnly` from the projection.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cellular_allowed: bool,
     /// Recent episodes — ordered newest-first by the projection layer.
     pub episodes: Vec<EpisodeSummary>,
 }

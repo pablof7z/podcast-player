@@ -123,8 +123,27 @@ impl PodcastHostOpHandler {
             Ok(mut s) => s.drain_pending_wifi_downloads(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
-        let count = pending.len();
-        for (episode_id, url) in pending {
+        // Revalidate each entry before dispatch: the user may have
+        // unsubscribed, disabled auto-download, or already downloaded the
+        // episode between the cellular refresh and now. Stale entries must
+        // not trigger downloads the user has since opted out of.
+        let valid: Vec<(String, String)> = match self.store.lock() {
+            Ok(s) => pending
+                .into_iter()
+                .filter(|(ep_id, _url)| {
+                    // Episode must still exist in the store.
+                    let Some(podcast_id) = s.podcast_id_for_episode(ep_id) else { return false };
+                    // Show must still have auto-download enabled.
+                    if !s.is_auto_download_enabled(podcast_id) { return false }
+                    // Episode must not already be on disk.
+                    if s.episode_is_downloaded(ep_id) { return false }
+                    true
+                })
+                .collect(),
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        };
+        let count = valid.len();
+        for (episode_id, url) in valid {
             let cmd = crate::capability::DownloadCommand::start(url, episode_id, None);
             let _ = self.dispatch_download(&cmd, correlation_id);
         }

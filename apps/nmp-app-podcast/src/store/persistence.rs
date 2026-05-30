@@ -125,6 +125,11 @@ pub(super) struct PersistedPodcast {
     /// schemas as empty (see this file, line ~60).
     #[serde(default)]
     pub auto_download: bool,
+    /// When `true`, the user explicitly allowed cellular auto-downloads
+    /// for this show (i.e. Wi-Fi-only is off). Absent in older files ⇒
+    /// `false` (cellular not allowed — default Wi-Fi-only behaviour).
+    #[serde(default)]
+    pub cellular_allowed: bool,
 }
 
 /// Resolve the path of `podcasts.json` inside `data_dir`.

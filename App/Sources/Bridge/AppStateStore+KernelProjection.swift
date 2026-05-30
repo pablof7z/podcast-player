@@ -87,9 +87,14 @@ extension AppStateStore {
                 imageURL: summary.artworkUrl.flatMap { URL(string: $0) },
                 description: summary.description ?? ""
             ))
+            // `cellularAllowed` is projected from Rust's
+            // `auto_download_cellular_allowed` set; absent (false) means
+            // the default Wi-Fi-only behaviour. Round-trip the flag so a
+            // user who turned off Wi-Fi-only doesn't find it silently
+            // re-enabled after the next kernel snapshot.
             let autoDownload: AutoDownloadPolicy = summary.autoDownload
-                ? AutoDownloadPolicy(mode: .allNew, wifiOnly: true)
-                : AutoDownloadPolicy(mode: .off, wifiOnly: true)
+                ? AutoDownloadPolicy(mode: .allNew, wifiOnly: !summary.cellularAllowed)
+                : AutoDownloadPolicy(mode: .off, wifiOnly: !summary.cellularAllowed)
             subscriptions.append(PodcastSubscription(
                 podcastID: uuid,
                 autoDownload: autoDownload

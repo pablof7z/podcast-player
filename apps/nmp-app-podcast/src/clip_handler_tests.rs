@@ -144,6 +144,7 @@ fn library_with_show(ep_id: &str, episode_title: &str, show_title: &str) -> Vec<
         author: None,
         description: None,
         auto_download: false,
+        cellular_allowed: false,
         episodes: vec![EpisodeSummary {
             id: ep_id.into(),
             title: episode_title.into(),

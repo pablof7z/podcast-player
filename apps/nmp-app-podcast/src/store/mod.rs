@@ -207,6 +207,7 @@ impl PodcastStore {
         // doesn't immediately re-flush on the next `Playing` tick.
         self.last_flushed_positions.clear();
         self.auto_download_enabled.clear();
+        self.auto_download_cellular_allowed.clear();
         self.memory_facts.clear();
         self.ad_segments.clear();
         for row in loaded.podcasts {
@@ -221,6 +222,9 @@ impl PodcastStore {
             self.episodes.insert(id, row.episodes);
             if row.auto_download {
                 self.auto_download_enabled.insert(id);
+            }
+            if row.cellular_allowed {
+                self.auto_download_cellular_allowed.insert(id);
             }
         }
         // Settings are stored in the same envelope so onboarding completion
@@ -293,6 +297,7 @@ impl PodcastStore {
                 podcast: podcast.clone(),
                 episodes: self.episodes.get(id).cloned().unwrap_or_default(),
                 auto_download: self.auto_download_enabled.contains(id),
+                cellular_allowed: self.auto_download_cellular_allowed.contains(id),
             })
             .collect();
         // Stable order so two consecutive saves produce identical bytes —

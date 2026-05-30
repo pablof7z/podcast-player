@@ -166,6 +166,17 @@ impl PodcastStore {
         self.local_paths.get(episode_id).map(String::as_str)
     }
 
+    /// Return the `PodcastId` for the podcast that owns `episode_id_str`, or
+    /// `None` when the episode is unknown. Used for validation before dispatch.
+    pub fn podcast_id_for_episode(&self, episode_id_str: &str) -> Option<podcast_core::PodcastId> {
+        for (podcast_id, episodes) in &self.episodes {
+            if episodes.iter().any(|e| e.id.0.to_string() == episode_id_str) {
+                return Some(*podcast_id);
+            }
+        }
+        None
+    }
+
     /// Returns `true` when the episode's audio file has a locally tracked path.
     /// Used by `handle_play` to enqueue a background download for episodes that
     /// are streamed rather than played from local storage.
