@@ -255,6 +255,16 @@ worktrees currently in flight.
   Rust `HttpRequest` struct and have `blossom.rs` set it instead of `body`.
 - **m5-chirp-headers-parity.** Reconcile podcast-player and Chirp HTTP header
   schemas once the canonical `nmp-core::capability::http` shape lands.
+- ~~**m8-blossom-binary-body.**~~ Done (Rust side): `HttpRequest` now carries
+  binary bodies in a dedicated `body_base64` field
+  (`apps/podcast-feeds/src/http.rs`), and the Blossom upload
+  (`apps/nmp-app-podcast/src/blossom.rs`) emits the base64 blob in
+  `body_base64` with `body: None` instead of stuffing base64 *text* into the
+  UTF-8 `body` field. The iOS executor decodes `body_base64` back to raw
+  `Data` before sending and prefers it over `body`
+  (`App/Sources/Capabilities/HttpCapability.swift`, PR #174), so binary audio
+  uploads survive the bridge intact and the path is end-to-end functional once
+  the Swift change merges.
 - **legacy-app-deletion-gate.** Do not delete `App/Sources/` until every
   feature in `docs/plan/nmp-feature-parity.md` is `Done` and the NMP app is
   the sole implementation for user flows.
