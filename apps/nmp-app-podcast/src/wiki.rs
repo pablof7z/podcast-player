@@ -38,7 +38,7 @@ pub(crate) fn handle_wiki_action(
     articles: &Arc<Mutex<Vec<WikiArticle>>>,
     search_results: &Arc<Mutex<Vec<WikiArticle>>>,
     store: &Arc<Mutex<PodcastStore>>,
-    rev: &AtomicU64,
+    rev: &Arc<AtomicU64>,
     runtime: &Arc<Runtime>,
     action: WikiAction,
 ) -> serde_json::Value {
@@ -56,7 +56,7 @@ pub(crate) fn handle_wiki_action(
 fn handle_generate(
     articles: &Arc<Mutex<Vec<WikiArticle>>>,
     store: &Arc<Mutex<PodcastStore>>,
-    rev: &AtomicU64,
+    rev: &Arc<AtomicU64>,
     runtime: &Arc<Runtime>,
     podcast_id: String,
     topic: String,
@@ -104,42 +104,69 @@ fn handle_generate(
     let article_id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().timestamp();
 
-    // Attempt LLM synthesis; fall back to placeholder on error.
-    let placeholder = format!(
-        "This article about {topic} will be generated from episode transcripts and \
-         web research. LLM synthesis is a follow-up.",
+    // M5.2: insert a placeholder article immediately (is_generating=true) so
+    // the iOS snapshot shows the article card while synthesis runs off-thread.
+    let placeholder_summary = format!(
+        "Generating an article about '{topic}'…",
         topic = topic_trimmed
     );
-    let (summary, generation_error) =
-        match wiki_llm::synthesize_summary(topic_trimmed, &podcast_title, &transcripts, runtime) {
-            Ok(body) => (body, None),
-            Err(e) => (placeholder, Some(e)),
-        };
-
-    let article = WikiArticle {
+    let placeholder_article = WikiArticle {
         id: article_id.clone(),
-        podcast_id,
+        podcast_id: podcast_id.clone(),
         topic: topic_trimmed.to_owned(),
-        summary,
+        summary: placeholder_summary,
         source_episode_ids: Vec::new(),
         last_updated_at: now,
-        is_generating: false,
-        generation_error,
+        is_generating: true,
+        generation_error: None,
     };
     match articles.lock() {
-        Ok(mut w) => {
-            w.push(article);
-            rev.fetch_add(1, Ordering::Relaxed);
-            serde_json::json!({"ok": true, "article_id": article_id})
-        }
-        Err(_) => serde_json::json!({"ok": false, "error": "wiki_articles poisoned"}),
+        Ok(mut w) => w.push(placeholder_article),
+        Err(_) => return serde_json::json!({"ok": false, "error": "wiki_articles poisoned"}),
     }
+    rev.fetch_add(1, Ordering::Relaxed);
+
+    // Spawn synthesis off the actor thread. When done, find and update the
+    // placeholder in-place so the iOS snapshot surfaces the real article.
+    let articles_c = Arc::clone(articles);
+    let runtime_c = Arc::clone(runtime);
+    let rev_c = Arc::clone(rev);
+    let article_id_c = article_id.clone();
+    let topic_owned = topic_trimmed.to_owned();
+    let placeholder_fallback = format!(
+        "Could not generate an article about '{topic_trimmed}'. Check that Ollama is running."
+    );
+
+    runtime.spawn(async move {
+        let result = tokio::task::spawn_blocking(move || {
+            wiki_llm::synthesize_summary(&topic_owned, &podcast_title, &transcripts, &runtime_c)
+        })
+        .await;
+
+        let (summary, error) = match result {
+            Ok(Ok(body)) => (body, None),
+            Ok(Err(e)) => (placeholder_fallback, Some(e)),
+            Err(_) => (placeholder_fallback, Some("synthesis task panicked".to_owned())),
+        };
+
+        if let Ok(mut w) = articles_c.lock() {
+            if let Some(a) = w.iter_mut().find(|a| a.id == article_id_c) {
+                a.summary = summary;
+                a.is_generating = false;
+                a.generation_error = error;
+                a.last_updated_at = Utc::now().timestamp();
+            }
+        }
+        rev_c.fetch_add(1, Ordering::Relaxed);
+    });
+
+    serde_json::json!({"ok": true, "article_id": article_id})
 }
 
 fn handle_delete(
     articles: &Arc<Mutex<Vec<WikiArticle>>>,
     search_results: &Arc<Mutex<Vec<WikiArticle>>>,
-    rev: &AtomicU64,
+    rev: &Arc<AtomicU64>,
     article_id: String,
 ) -> serde_json::Value {
     let removed = match articles.lock() {
@@ -164,7 +191,7 @@ fn handle_delete(
 fn handle_search(
     articles: &Arc<Mutex<Vec<WikiArticle>>>,
     search_results: &Arc<Mutex<Vec<WikiArticle>>>,
-    rev: &AtomicU64,
+    rev: &Arc<AtomicU64>,
     query: String,
 ) -> serde_json::Value {
     let q = query.trim().to_lowercase();
