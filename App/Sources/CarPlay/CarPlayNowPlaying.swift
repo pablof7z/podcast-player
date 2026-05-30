@@ -85,7 +85,7 @@ enum CarPlayNowPlaying {
     // MARK: - Chapters button
 
     private static func hasNavigableChapters(_ episode: Episode, playback: PlaybackState) -> Bool {
-        !playback.resolveNavigableChapters(episode).isEmpty
+        !(episode.chapters?.filter(\.includeInTableOfContents) ?? []).isEmpty
     }
 
     private static func makeChaptersButton(
@@ -110,7 +110,7 @@ enum CarPlayNowPlaying {
             return CPListTemplate(title: "Chapters", sections: [])
         }
         let chapters = Array(
-            playback.resolveNavigableChapters(episode)
+            (episode.chapters?.filter(\.includeInTableOfContents) ?? [])
                 .prefix(CPListTemplate.maximumItemCount)
         )
         let items = chapters.map { chapter -> CPListItem in

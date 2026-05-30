@@ -8,10 +8,13 @@ use crate::host_op_handler::PodcastHostOpHandler;
 
 impl PodcastHostOpHandler {
     fn handle_play(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
-        let (podcast_id, url, position_secs) = {
+        let (podcast_id, url, position_secs, needs_download) = {
             match self.store.lock() {
                 Ok(s) => match s.episode_playback_info(&episode_id) {
-                    Some(info) => info,
+                    Some((pod_id, ep_url, pos)) => {
+                        let downloaded = s.episode_is_downloaded(&episode_id);
+                        (pod_id, ep_url, pos, !downloaded)
+                    }
                     None => {
                         return serde_json::json!({
                             "ok": false,
@@ -30,11 +33,65 @@ impl PodcastHostOpHandler {
         // `Playing` report (no extra round-trip via iOS).
         hydrate_actor_for_play(&self.store, &self.player_actor, &episode_id);
         self.rev.fetch_add(1, Ordering::Relaxed);
-        if let Err(e) = self.dispatch_audio(&AudioCommand::load(&url, position_secs), correlation_id) {
+        if let Err(e) = self.dispatch_audio(
+            &AudioCommand::load_with_id(&url, position_secs, &episode_id),
+            correlation_id,
+        ) {
             return serde_json::json!({"ok": false, "error": e});
         }
         if let Err(e) = self.dispatch_audio(&AudioCommand::Play, correlation_id) {
             return serde_json::json!({"ok": false, "error": e});
+        }
+        // Enqueue a background download for episodes played from remote URL.
+        // `DownloadQueue::enqueue` is idempotent: returns `None` (no dispatch)
+        // when the item is already queued or in a non-terminal state.
+        if needs_download {
+            let dl_id = episode_id.clone();
+            let dl_url = url.clone();
+            self.handle_download_command(|q| q.enqueue(dl_id, dl_url), correlation_id);
+        }
+        serde_json::json!({"ok": true})
+    }
+
+    fn handle_load(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
+        let (podcast_id, url, position_secs, needs_download) = {
+            match self.store.lock() {
+                Ok(s) => match s.episode_playback_info(&episode_id) {
+                    Some((pod_id, ep_url, pos)) => {
+                        let downloaded = s.episode_is_downloaded(&episode_id);
+                        (pod_id, ep_url, pos, !downloaded)
+                    }
+                    None => {
+                        return serde_json::json!({
+                            "ok": false,
+                            "error": format!("episode not found: {episode_id}")
+                        })
+                    }
+                },
+                Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+            }
+        };
+        if let Ok(mut actor) = self.player_actor.lock() {
+            actor.stage_load(&episode_id, Some(podcast_id), &url, position_secs);
+        }
+        hydrate_actor_for_play(&self.store, &self.player_actor, &episode_id);
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        // Dispatch Load only — no Play. iOS calls Resume when the user taps play.
+        let dispatch = self.dispatch_audio(
+            &AudioCommand::load_with_id(&url, position_secs, &episode_id),
+            correlation_id,
+        );
+        if let Err(e) = dispatch {
+            return serde_json::json!({"ok": false, "error": e});
+        }
+        // Enqueue a background download for streamed episodes. The UI's play
+        // path dispatches `load` (not `play`), and restored mini-player plays
+        // skip the Swift-side enqueue, so owning the download-on-play rule here
+        // keeps it consistent across every play entry point. Idempotent.
+        if needs_download {
+            let dl_id = episode_id.clone();
+            let dl_url = url.clone();
+            self.handle_download_command(|q| q.enqueue(dl_id, dl_url), correlation_id);
         }
         serde_json::json!({"ok": true})
     }
@@ -46,6 +103,8 @@ impl PodcastHostOpHandler {
     ) -> serde_json::Value {
         match action {
             PlayerAction::Play { episode_id } => self.handle_play(episode_id, correlation_id),
+            PlayerAction::Load { episode_id } => self.handle_load(episode_id, correlation_id),
+            PlayerAction::Resume => self.dispatch_audio_json(AudioCommand::Play, correlation_id),
             PlayerAction::Pause => self.dispatch_audio_json(AudioCommand::Pause, correlation_id),
             PlayerAction::Seek { position_secs } => {
                 self.dispatch_audio_json(AudioCommand::seek(position_secs), correlation_id)
@@ -239,3 +298,7 @@ impl PodcastHostOpHandler {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "player_actions_tests.rs"]
+mod tests;

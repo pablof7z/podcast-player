@@ -2,80 +2,12 @@ import SwiftUI
 
 extension RootView {
 
-    /// Wires all playback-state callbacks. Called from `.onAppear` so the
-    /// closures reference the live `store` and `playbackState` values that
-    /// exist at the point the root view first appears.
     func setupPlaybackHandlers() {
-        playbackState.onPersistPosition = { [store] id, position in
-            store.setEpisodePlaybackPosition(id, position: position)
-            store.setLastPlayedEpisode(id)
-        }
-        playbackState.onEpisodeFinished = { [store, playbackState] id in
-            store.markEpisodePlayed(id)
-            let endOfEpisodeArmed: Bool
-            switch playbackState.engine.sleepTimer.phase {
-            case .armedEndOfEpisode, .fired:
-                endOfEpisodeArmed = true
-            default:
-                endOfEpisodeArmed = false
-            }
-            guard store.state.settings.autoPlayNext, !endOfEpisodeArmed else { return }
-            playbackState.playNext { store.episode(id: $0) }
-        }
-        playbackState.onFlushPositions = { [store] in
-            store.flushPendingPositions()
-        }
-        playbackState.onEnsureDownloadEnqueued = { [store] id in
-            store.kernelDownload(id)
-        }
-        playbackState.onKernelEnqueueLast = { [store] id in
-            store.kernelEnqueueLast(episodeID: id)
-        }
-        playbackState.onKernelEnqueueNext = { [store] id in
-            store.kernelEnqueueNext(episodeID: id)
-        }
-        playbackState.onKernelDequeueEpisode = { [store] id in
-            store.kernelDequeueEpisode(episodeID: id)
-        }
-        playbackState.onKernelClearQueue = { [store] in
-            store.kernelClearQueue()
-        }
-        // Seed the Up Next queue from the Rust-persisted snapshot.
-        // Two cases: kernel already attached (pendingKernelQueue has data)
-        // or kernel attaches later (onQueueFromKernel callback fires it then).
-        let seedQueue: ([UUID]) -> Void = { [playbackState] ids in
-            guard playbackState.queue.isEmpty else { return }
-            playbackState.queue = ids.map { QueueItem.episode($0) }
-        }
-        if !store.pendingKernelQueue.isEmpty {
-            seedQueue(store.pendingKernelQueue)
-            store.pendingKernelQueue = []
-        } else {
-            store.onQueueFromKernel = seedQueue
-        }
-        playbackState.onClearTriageDecision = { [store] id in
-            store.clearTriageDecision(id)
-        }
-        playbackState.onSegmentFinished = { [store, playbackState] in
-            let advanced = playbackState.playNext { store.episode(id: $0) }
-            if !advanced {
-                playbackState.pause()
-            }
-        }
-        // Cold-launch quick-action routing.
-        if let delegate = UIApplication.shared.delegate as? AppDelegate,
-           let url = delegate.pendingShortcutURL {
-            delegate.pendingShortcutURL = nil
-            handleDeepLink(url)
-        }
-        playbackState.autoMarkPlayedOnFinish = store.state.settings.autoMarkPlayedAtEnd
-        playbackState.applyPreferences(from: store.state.settings)
-        playbackState.resolveShowName = { [store] episode in
-            store.podcast(id: episode.podcastID)?.title ?? ""
-        }
-        playbackState.resolveShowImage = { [store] episode in
-            store.podcast(id: episode.podcastID)?.imageURL
-        }
+        // Inject store reference so PlaybackState can dispatch kernel
+        // actions directly (queue, triage, download).
+        playbackState.store = store
+
+        // Engine metadata resolvers — lock-screen / NowPlayingCenter.
         playbackState.engine.resolveShowName = { [store] episode in
             store.podcast(id: episode.podcastID)?.title
         }
@@ -90,22 +22,33 @@ extension RootView {
             if let chapterURL = navigable.active(at: playhead)?.imageURL {
                 return chapterURL
             }
-            return live.imageURL
-                ?? store.podcast(id: live.podcastID)?.imageURL
+            return live.imageURL ?? store.podcast(id: live.podcastID)?.imageURL
         }
-        playbackState.resolveNavigableChapters = { [store] episode in
-            let live = store.episode(id: episode.id) ?? episode
-            return live.chapters?.filter(\.includeInTableOfContents) ?? []
+
+        // Seed the Up Next queue from the Rust-persisted snapshot.
+        let seedQueue: ([UUID]) -> Void = { [playbackState] ids in
+            guard playbackState.queue.isEmpty else { return }
+            playbackState.queue = ids.map { QueueItem.episode($0) }
         }
-        playbackState.onClipRequested = {
-            AutoSnipController.shared.captureSnip(source: .headphone)
+        if !store.pendingKernelQueue.isEmpty {
+            seedQueue(store.pendingKernelQueue)
+            store.pendingKernelQueue = []
+        } else {
+            store.onQueueFromKernel = seedQueue
         }
+
+        // Cold-launch quick-action routing.
+        if let delegate = UIApplication.shared.delegate as? AppDelegate,
+           let url = delegate.pendingShortcutURL {
+            delegate.pendingShortcutURL = nil
+            handleDeepLink(url)
+        }
+
+        playbackState.applyPreferences(from: store.state.settings)
+
         AutoSnipController.shared.attach(playback: playbackState, store: store)
 
-        // Restore the last-played episode so the mini-player reappears after
-        // an app restart. Loads the episode in a paused state — the user taps
-        // play to resume. Only runs when no deep-link or shortcut has already
-        // loaded an episode.
+        // Restore last-played episode so the mini-player reappears on restart.
         if playbackState.episode == nil,
            let lastID = store.state.lastPlayedEpisodeID,
            let episode = store.episode(id: lastID) {
@@ -143,9 +86,6 @@ extension RootView {
 
 // MARK: - PlaybackIntentObserver
 
-/// Handles `NotificationCenter` posts from `PlaybackAppIntents` (Siri /
-/// Shortcuts / CarPlay). Extracted into a `ViewModifier` so the main
-/// `RootView` body stays below the Swift type-checker expression limit.
 struct PlaybackIntentObserver: ViewModifier {
     let playbackState: PlaybackState
 

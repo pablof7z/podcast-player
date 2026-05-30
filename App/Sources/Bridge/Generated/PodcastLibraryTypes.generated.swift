@@ -6,7 +6,7 @@ import Foundation
 
 /// Narrow projection for a subscribed podcast (one library grid/list cell).
 /// Episode rows are embedded so the show-detail view doesn't need a second pull.
-struct PodcastSummary: Codable, Identifiable, Equatable, Hashable {
+struct PodcastSummary: Identifiable, Equatable, Hashable {
     var id: String
     var title: String
     var episodeCount: Int = 0
@@ -31,7 +31,7 @@ struct PodcastSummary: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// One episode row embedded in `PodcastSummary.episodes`.
-struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
+struct EpisodeSummary: Identifiable, Equatable, Hashable {
     var id: String
     var title: String
     var podcastId: String? = nil
@@ -43,6 +43,9 @@ struct EpisodeSummary: Codable, Identifiable, Equatable, Hashable {
     /// On-disk path to the downloaded enclosure when one exists. `nil`
     /// means the episode has not been downloaded yet.
     var downloadPath: String? = nil
+    /// Original RSS enclosure URL for streaming. Present for all library
+    /// episodes; used by the host player when `downloadPath` is absent.
+    var enclosureUrl: String? = nil
     /// Show notes / episode description from the RSS feed, HTML-stripped.
     /// `nil` when empty (D5 — omit to let the host hide the section).
     var description: String? = nil
@@ -73,7 +76,7 @@ struct TranscriptEntry: Codable, Equatable, Hashable {
 }
 
 /// Narrow chapter projection for full-player chapter rail rendering.
-struct ChapterSummary: Codable, Equatable, Hashable {
+struct ChapterSummary: Equatable, Hashable {
     var startSecs: Double
     var endSecs: Double? = nil
     var title: String
@@ -84,7 +87,7 @@ struct ChapterSummary: Codable, Equatable, Hashable {
 
 /// One advertisement interval inside an episode's audio track.
 /// `[startSecs, endSecs)` half-open interval.
-struct AdSegment: Codable, Identifiable, Equatable, Hashable {
+struct AdSegment: Identifiable, Equatable, Hashable {
     var id: String
     var startSecs: Double
     var endSecs: Double
@@ -113,4 +116,78 @@ struct NostrShowSummary: Codable, Identifiable, Equatable, Hashable {
     var categories: [String]? = nil
 
     var id: String { eventId }
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false) and Vec fields (omit when empty). Swift's synthesized Decodable
+// requires every non-optional key to be present, but Rust legitimately omits
+// these keys when the value is the zero/default. `decodeIfPresent` + fallback
+// makes the decoder forward- and backward-compatible.
+//
+// WHY extensions, not struct bodies: putting `init(from:)` inside the struct
+// body suppresses the synthesized memberwise init. Extensions preserve it.
+
+extension PodcastSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        episodeCount = try c.decodeIfPresent(Int.self, forKey: .episodeCount) ?? 0
+        unplayedCount = try c.decodeIfPresent(Int.self, forKey: .unplayedCount) ?? 0
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        feedUrl = try c.decodeIfPresent(String.self, forKey: .feedUrl)
+        author = try c.decodeIfPresent(String.self, forKey: .author)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
+        episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []
+    }
+}
+
+extension EpisodeSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        podcastId = try c.decodeIfPresent(String.self, forKey: .podcastId)
+        podcastTitle = try c.decodeIfPresent(String.self, forKey: .podcastTitle)
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs)
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        publishedAt = try c.decodeIfPresent(Int.self, forKey: .publishedAt)
+        downloadPath = try c.decodeIfPresent(String.self, forKey: .downloadPath)
+        enclosureUrl = try c.decodeIfPresent(String.self, forKey: .enclosureUrl)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        transcriptUrl = try c.decodeIfPresent(String.self, forKey: .transcriptUrl)
+        transcriptEntries = try c.decodeIfPresent([TranscriptEntry].self, forKey: .transcriptEntries)
+        chapters = try c.decodeIfPresent([ChapterSummary].self, forKey: .chapters)
+        playbackPositionSecs = try c.decodeIfPresent(Double.self, forKey: .playbackPositionSecs)
+        transcript = try c.decodeIfPresent(String.self, forKey: .transcript)
+        aiCategories = try c.decodeIfPresent([String].self, forKey: .aiCategories) ?? []
+        adSegments = try c.decodeIfPresent([AdSegment].self, forKey: .adSegments) ?? []
+        played = try c.decodeIfPresent(Bool.self, forKey: .played) ?? false
+        starred = try c.decodeIfPresent(Bool.self, forKey: .starred) ?? false
+    }
+}
+
+extension AdSegment: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        startSecs = try c.decode(Double.self, forKey: .startSecs)
+        endSecs = try c.decode(Double.self, forKey: .endSecs)
+        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "midroll"
+    }
+}
+
+extension ChapterSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        startSecs = try c.decode(Double.self, forKey: .startSecs)
+        endSecs = try c.decodeIfPresent(Double.self, forKey: .endSecs)
+        title = try c.decode(String.self, forKey: .title)
+        imageUrl = try c.decodeIfPresent(String.self, forKey: .imageUrl)
+        url = try c.decodeIfPresent(String.self, forKey: .url)
+        isAiGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAiGenerated) ?? false
+    }
 }

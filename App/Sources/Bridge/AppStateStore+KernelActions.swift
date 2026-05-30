@@ -64,6 +64,52 @@ extension AppStateStore {
                          body: ["op": "refresh", "podcast_id": podcastID.uuidString])
     }
 
+    // MARK: - Playback dispatch (M1 Part 3)
+
+    /// Load an episode into the Rust actor without starting playback.
+    /// Rust resolves the URL and position, stages the actor, and dispatches
+    /// `AudioCommand::Load` to iOS. iOS routes the command to `AudioEngine`.
+    func kernelLoad(episodeID: UUID) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "load", "episode_id": episodeID.uuidString])
+    }
+
+    /// Resume playback of the currently-staged episode. Dispatches
+    /// `AudioCommand::Play` only — no reload, no position reset.
+    func kernelResume() {
+        kernel?.dispatch(namespace: "podcast.player", body: ["op": "resume"])
+    }
+
+    /// Pause playback.
+    func kernelPause() {
+        kernel?.dispatch(namespace: "podcast.player", body: ["op": "pause"])
+    }
+
+    /// Seek to `positionSecs`.
+    func kernelSeek(positionSecs: Double) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "seek", "position_secs": positionSecs])
+    }
+
+    /// Write `positionSecs` for `episodeID` directly to the store without
+    /// dispatching an audio command. Use for paused seeks where the engine
+    /// has already moved but no `Playing` reports are in flight — this keeps
+    /// Rust's saved position in sync so the next `kernelLoad` returns the
+    /// correct resume point instead of snapping back to a stale position.
+    func kernelPersistPosition(episodeID: UUID, positionSecs: Double) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "persist_position",
+                                "episode_id": episodeID.uuidString,
+                                "position_secs": positionSecs])
+    }
+
+    /// Play an episode from its saved position (or beginning).
+    /// Rust stages the actor and dispatches `AudioCommand::Load + Play`.
+    func kernelPlay(episodeID: UUID) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "play", "episode_id": episodeID.uuidString])
+    }
+
     // MARK: - Episode state
 
     /// Mark an episode as fully played (namespace: podcast.inbox).

@@ -1,12 +1,17 @@
 import Foundation
 
-// MARK: - Audio callbacks
+// MARK: - Audio + Kernel bridge callbacks
 
 extension PlaybackState {
 
-    /// Keep system-originated commands on the `PlaybackState` boundary so they
-    /// get the same persistence, flushing, and snapshot side effects as UI taps.
+    /// Wire the `AudioEngine` event callbacks that drive the UI and forward
+    /// real playback events to the Rust kernel via `AudioCapability.emitReport`.
+    ///
+    /// Also installs the `AudioCapability.commandHandler` bridge so Rust-
+    /// originated `AudioCommand`s (auto-advance, remote-control) reach
+    /// `AudioEngine` instead of AudioCapability's idle own `AVPlayer`.
     func configureAudioEngineCallbacks() {
+        // ── NowPlaying / lock-screen remote commands ─────────────────────
         var callbacks = NowPlayingCenter.Callbacks()
         callbacks.play = { [weak self] in self?.play() }
         callbacks.pause = { [weak self] in self?.pause() }
@@ -15,8 +20,6 @@ extension PlaybackState {
         callbacks.skipBackward = { [weak self] in self?.skipBackward() }
         callbacks.seek = { [weak self] time in self?.seek(to: time) }
         callbacks.changeRate = { [weak self] rate in self?.setRate(rate) }
-        // AirPods double/triple-tap (or any source emitting next/previous
-        // track) routes through the user-configured action.
         callbacks.nextTrack = { [weak self] in
             guard let self else { return }
             self.performHeadphoneGesture(self.headphoneDoubleTapAction)
@@ -26,9 +29,109 @@ extension PlaybackState {
             self.performHeadphoneGesture(self.headphoneTripleTapAction)
         }
         engine.setNowPlayingCallbacks(callbacks)
+        engine.onSleepTimerFire = { [weak self] in self?.pause() }
 
-        engine.onSleepTimerFire = { [weak self] in
-            self?.pause()
+        // ── Kernel bridge: AudioEngine → AudioCapability → Rust ──────────
+        let audio = PodcastCapabilities.shared.audio
+        engine.onPlayingTick = { [weak self, weak audio] url, position, duration in
+            audio?.emitReport(.playing(url: url, positionSecs: position, durationSecs: duration))
+            guard let self else { return }
+            // Throttle WidgetKit reloads to ~1 per 5 ticks (~5 s at 1 Hz).
+            self.widgetPositionTickCount += 1
+            if self.widgetPositionTickCount >= 5 {
+                self.widgetPositionTickCount = 0
+                NowPlayingSnapshotStore.updatePosition(position, isPlaying: true)
+            }
+            // Advance bounded-segment queue items (clips, agent segments) that
+            // are not in the Rust queue. Rust handles whole-episode auto-advance
+            // via maybe_auto_advance; this path covers start/end-bounded items.
+            if let end = self.currentSegmentEndTime, position >= end {
+                self.currentSegmentEndTime = nil
+                let store = self.store
+                if !self.queue.isEmpty {
+                    _ = self.playNext(resolve: { store?.episode(id: $0) })
+                } else {
+                    self.engine.pause()
+                }
+            }
+        }
+        engine.onPauseEvent = { [weak audio] url, position in
+            audio?.emitReport(.paused(url: url, positionSecs: position))
+        }
+        engine.onItemEnd = { [weak self, weak audio] url in
+            audio?.emitReport(.itemEnd(url: url))
+            // Run the iOS-side mark-played path so side effects (delete-after-
+            // played, position cache flush, projection invalidation) fire in
+            // addition to Rust's own apply_writeback mark — but only when the
+            // user's "mark played at end" setting is on. Rust's apply_writeback
+            // gates the same way, so leaving this ungated would mark episodes
+            // played (and delete-after-played) against the user's preference.
+            guard let self, let episodeID = self.episode?.id else { return }
+            guard self.store?.state.settings.autoMarkPlayedAtEnd == true else { return }
+            self.store?.markEpisodePlayed(episodeID)
+        }
+        engine.onSleepTimerEpisodeEnd = { [weak self] in
+            // Sleep timer stopped at end of episode: position was already flushed
+            // via onPauseEvent. This path deliberately skips emitting `itemEnd`
+            // so Rust's `maybe_auto_advance` doesn't fire.
+            guard let self, let episodeID = self.episode?.id else { return }
+            // Mark played + run iOS side effects only if the user setting allows
+            // (matches the natural-end path and Rust's apply_writeback gate).
+            // The position rewind for this completed episode is handled in
+            // `AudioEngine.handleEndOfItem`, which reports the final paused
+            // position as 0 on the ordered audio-report channel (no racy
+            // separate host op).
+            if self.store?.state.settings.autoMarkPlayedAtEnd == true {
+                self.store?.markEpisodePlayed(episodeID)
+            }
+        }
+
+        // ── Kernel bridge: Rust AudioCommand → AudioEngine ───────────────
+        // Commands from Rust (auto-advance, Siri, CarPlay) route here so
+        // AudioEngine — the real player — acts on them, not AudioCapability's
+        // idle own AVPlayer.
+        audio.commandHandler = { [weak self] command in
+            guard let self else { return }
+            switch command {
+            case let .load(urlString, positionSecs, episodeID):
+                if let idStr = episodeID,
+                   let id = UUID(uuidString: idStr),
+                   var episode = self.store?.episode(id: id) {
+                    // The store's enclosureURL is a placeholder for streaming
+                    // episodes (Rust projects only the local download path).
+                    // Use Rust's resolved URL for non-downloaded episodes.
+                    if case .notDownloaded = episode.downloadState,
+                       let url = URL(string: urlString) {
+                        episode.enclosureURL = url
+                    }
+                    // Rust popped this whole-episode item from its queue during
+                    // auto-advance; mirror the removal in the iOS queue so the
+                    // Up Next sheet doesn't show a stale entry.
+                    if self.queue.first.map({ $0.episodeID == id && $0.startSeconds == nil }) == true {
+                        self.queue.removeFirst()
+                    }
+                    self.setEpisode(episode, playAfterLoad: false)
+                    if positionSecs > 0 { self.engine.seek(to: positionSecs) }
+                }
+            case .play:
+                self.engine.play()
+            case .pause:
+                self.engine.pause()
+            case let .seek(positionSecs):
+                self.engine.seek(to: positionSecs)
+            case .stop:
+                self.engine.pause()
+            case let .setSpeed(speed):
+                self.engine.setRate(Double(speed))
+            case let .setSleepTimer(secs):
+                if let secs, secs > 0 {
+                    self.engine.setSleepTimer(.duration(TimeInterval(secs)))
+                } else {
+                    self.engine.setSleepTimer(.off)
+                }
+            case .setVolume:
+                break // AudioEngine has no volume API
+            }
         }
     }
 

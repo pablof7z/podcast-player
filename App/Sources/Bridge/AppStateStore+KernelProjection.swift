@@ -28,9 +28,6 @@ extension AppStateStore {
     func attachKernel(_ kernel: KernelModel) {
         self.kernel = kernel
         kernelObservationTask?.cancel()
-        // Apply immediately so the first render sees real data even before the
-        // first observation-change fires.
-        applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
         // Seed the Up Next queue from the kernel's persisted snapshot. The
         // handler may not be wired yet (setupPlaybackHandlers runs on .onAppear
         // which can fire after this task), so stash the IDs in pendingKernelQueue
@@ -46,6 +43,12 @@ extension AppStateStore {
         }
         kernelObservationTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
+                // Apply current state FIRST, then arm the observation for the
+                // next change. This eliminates the race where the kernel snapshot
+                // advances between `attachKernel` returning and this Task's first
+                // iteration — without this, `withObservationTracking` arms on an
+                // already-final value and never fires, leaving the UI empty.
+                self?.applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
                 // Suspend until either kernel.library or kernel.podcastSnapshot changes.
                 // withObservationTracking fires onChange once and returns; we loop
                 // to re-arm continuously.
@@ -58,7 +61,6 @@ extension AppStateStore {
                     }
                 }
                 guard !Task.isCancelled else { break }
-                self?.applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
             }
         }
     }
@@ -179,6 +181,7 @@ extension AppStateStore {
         }
 
         state = next
+        onNowPlayingSnapshot?(snapshot, library)
     }
 }
 
@@ -192,11 +195,11 @@ private extension EpisodeSummary {
 
         let pubDate: Date = publishedAt.map { Date(timeIntervalSince1970: Double($0)) } ?? Date.distantPast
 
-        // Use the local file URL when the episode is downloaded; otherwise a
-        // stable placeholder. Downloads are triggered through the Rust kernel
-        // (dispatch "download"), not directly by iOS code, so the remote URL
-        // is not needed in the projection — Rust fetches and reports the path.
+        // For downloaded episodes, use the local file URL. For streaming
+        // episodes, use the RSS enclosure URL projected from Rust so the
+        // host player can start without a Rust round-trip.
         let enclosureURL: URL = downloadPath.flatMap { URL(fileURLWithPath: $0) }
+            ?? enclosureUrl.flatMap { URL(string: $0) }
             ?? URL(string: "https://placeholder.invalid/\(id)")!
 
         let downloadState: DownloadState

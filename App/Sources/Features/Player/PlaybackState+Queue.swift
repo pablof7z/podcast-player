@@ -14,11 +14,10 @@ extension PlaybackState {
     /// so a library-row "Queue" button can't stack the same full episode twice.
     func enqueue(_ episodeID: UUID) {
         guard episodeID != episode?.id else { return }
-        // Deduplicate whole-episode items only (startSeconds == nil).
         let alreadyWhole = queue.contains { $0.episodeID == episodeID && $0.startSeconds == nil }
         guard !alreadyWhole else { return }
         queue.append(.episode(episodeID))
-        onKernelEnqueueLast(episodeID)
+        store?.kernelEnqueueLast(episodeID: episodeID)
     }
 
     /// Append a `QueueItem` (possibly bounded) to the end of the queue.
@@ -33,10 +32,8 @@ extension PlaybackState {
     /// the agent's `play_episode` tool with `queue_position: "next"`.
     func insertNext(_ item: QueueItem) {
         queue.insert(item, at: 0)
-        // Mirror to Rust for whole-episode items only; bounded segments
-        // (startSeconds != nil) have no Rust representation.
         if item.startSeconds == nil {
-            onKernelEnqueueNext(item.episodeID)
+            store?.kernelEnqueueNext(episodeID: item.episodeID)
         }
     }
 
@@ -48,20 +45,20 @@ extension PlaybackState {
     func enqueueSegments(_ items: [QueueItem], playNow: Bool, resolve: (UUID) -> Episode?) {
         guard !items.isEmpty else { return }
         if playNow {
-            // Start the first segment immediately, push the rest into the queue.
             let first = items[0]
             guard let episode = resolve(first.episodeID) else {
-                // First segment's episode is unavailable — fall through to queue-only.
                 queue.append(contentsOf: items)
                 return
             }
-            currentSegmentEndTime = first.endSeconds
+            // Set the segment boundary AFTER `setEpisode`: loading a different
+            // episode clears `currentSegmentEndTime`, so setting it first would
+            // be wiped and the clip would play through the whole episode.
             setEpisode(episode)
+            currentSegmentEndTime = first.endSeconds
             if let start = first.startSeconds {
                 engine.seek(to: start)
             }
             play()
-            // Remaining segments become the new queue (prepend so they play next).
             queue.insert(contentsOf: items.dropFirst(), at: 0)
         } else {
             queue.append(contentsOf: items)
@@ -73,7 +70,7 @@ extension PlaybackState {
     /// Remove all queue items whose `episodeID` matches. Idempotent.
     func removeFromQueue(_ episodeID: UUID) {
         queue.removeAll { $0.episodeID == episodeID }
-        onKernelDequeueEpisode(episodeID)
+        store?.kernelDequeueEpisode(episodeID: episodeID)
     }
 
     /// Remove a single queue item by its stable slot identity.
@@ -95,7 +92,7 @@ extension PlaybackState {
     func clearQueue() {
         queue.removeAll()
         currentSegmentEndTime = nil
-        onKernelClearQueue()
+        store?.kernelClearQueue()
     }
 
     @discardableResult
@@ -125,10 +122,10 @@ extension PlaybackState {
         while !queue.isEmpty {
             let item = queue.removeFirst()
             guard let next = resolve(item.episodeID) else { continue }
-            // Apply segment boundary BEFORE setEpisode so tickPersistence
-            // sees the new end time immediately on the next tick.
-            currentSegmentEndTime = item.endSeconds
+            // Boundary set AFTER `setEpisode` (which clears it on episode change),
+            // otherwise the segment end is wiped and the clip plays through.
             setEpisode(next)
+            currentSegmentEndTime = item.endSeconds
             if let start = item.startSeconds {
                 engine.seek(to: start)
             }

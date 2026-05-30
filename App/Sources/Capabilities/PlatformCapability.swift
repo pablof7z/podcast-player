@@ -90,6 +90,20 @@ final class PlatformCapability {
     /// `becomeCurrent()`).
     private var currentActivity: NSUserActivity?
 
+    // Dedup keys for `applyNowPlayingSnapshot`. All fields written to
+    // `NowPlayingSnapshot` are compared except `positionSecs` (excluded
+    // intentionally — position-only ticks are handled by
+    // `PlaybackState.writeNowPlayingSnapshot`). Comparing every written field
+    // ensures library-hydration passes (showName, episodeTitle, imageURL,
+    // duration) always write through instead of being blocked by stale state.
+    private var lastNowPlayingEpisodeId: String? = nil
+    private var lastNowPlayingIsPlaying: Bool = false
+    private var lastNowPlayingChapterTitle: String? = nil
+    private var lastNowPlayingEpisodeTitle: String = ""
+    private var lastNowPlayingShowName: String = ""
+    private var lastNowPlayingImageURLString: String? = nil
+    private var lastNowPlayingDurationSecs: Double = 0
+
     /// Idempotent. Marks the capability active. Today this is a
     /// no-op besides flipping the flag — the OS resources
     /// (`NSUserActivity`, App Group `UserDefaults`) are lazily
@@ -110,6 +124,87 @@ final class PlatformCapability {
     }
 
     var isStarted: Bool { started }
+
+    // MARK: - Now-playing widget (NowPlayingSnapshot path)
+
+    /// Translate the kernel's player state into a `NowPlayingSnapshot` and
+    /// write it to the App Group so the widget picks it up. Called by the
+    /// kernel-projection observer on every `onNowPlayingSnapshot` tick.
+    ///
+    /// Deduplicates on all written fields except `positionSecs` — the most
+    /// common ticks during live playback change only position, which is
+    /// excluded so those ticks don't waste App Group writes. Position is kept
+    /// fresh by `PlaybackState.writeNowPlayingSnapshot` (throttled to 5 s).
+    /// All other fields are compared so library-hydration passes always win.
+    func applyNowPlayingSnapshot(_ snapshot: PodcastUpdate?, library: [PodcastSummary]) {
+        guard let nowPlaying = snapshot?.nowPlaying,
+              let episodeIdStr = nowPlaying.episodeId else { return }
+        let isPlaying = nowPlaying.isPlaying
+        let chapterTitle = nowPlaying.currentChapterTitle
+        var episodeTitle = episodeIdStr
+        var showName = ""
+        var imageURLString: String? = nil
+        var libraryDurationSecs: Double? = nil
+        outer: for pod in library {
+            for ep in pod.episodes where ep.id == episodeIdStr {
+                episodeTitle = ep.title
+                showName = pod.title
+                imageURLString = ep.artworkUrl ?? pod.artworkUrl
+                libraryDurationSecs = ep.durationSecs
+                break outer
+            }
+        }
+        // Prefer library duration (set when feed metadata arrives) over the kernel
+        // snapshot value (only populated once the Rust audio capability emits
+        // Playing reports). Fall back to the cached iOS snapshot for same-episode
+        // refreshes so a hydration pass never regresses a duration that was already
+        // known. Last resort: whatever the kernel reported.
+        let durationSecs: Double
+        if let lib = libraryDurationSecs, lib > 0 {
+            durationSecs = lib
+        } else if let cached = NowPlayingSnapshotStore.lastWrittenSnapshot?.duration,
+                  cached > 0,
+                  episodeIdStr == lastNowPlayingEpisodeId {
+            durationSecs = cached
+        } else {
+            durationSecs = nowPlaying.durationSecs
+        }
+        if episodeIdStr == lastNowPlayingEpisodeId,
+           isPlaying == lastNowPlayingIsPlaying,
+           chapterTitle == lastNowPlayingChapterTitle,
+           episodeTitle == lastNowPlayingEpisodeTitle,
+           showName == lastNowPlayingShowName,
+           imageURLString == lastNowPlayingImageURLString,
+           durationSecs == lastNowPlayingDurationSecs { return }
+        let episodeChanged = (episodeIdStr != lastNowPlayingEpisodeId)
+        lastNowPlayingEpisodeId = episodeIdStr
+        lastNowPlayingIsPlaying = isPlaying
+        lastNowPlayingChapterTitle = chapterTitle
+        lastNowPlayingEpisodeTitle = episodeTitle
+        lastNowPlayingShowName = showName
+        lastNowPlayingImageURLString = imageURLString
+        lastNowPlayingDurationSecs = durationSecs
+        // Preserve the live playhead only on same-episode metadata refreshes.
+        // The kernel snapshot excludes position-only ticks from its content hash,
+        // so nowPlaying.positionSecs can be far behind the real playhead. On an
+        // episode change (Siri / kernel auto-advance), use the kernel position
+        // so a new episode doesn't inherit the old 40-minute playhead.
+        let livePosition: TimeInterval
+        if !episodeChanged, let cached = NowPlayingSnapshotStore.lastWrittenSnapshot?.position {
+            livePosition = cached
+        } else {
+            livePosition = nowPlaying.positionSecs
+        }
+        NowPlayingSnapshotStore.write(NowPlayingSnapshot(
+            episodeTitle: episodeTitle,
+            showName: showName,
+            imageURLString: imageURLString,
+            position: livePosition,
+            duration: durationSecs,
+            chapterTitle: chapterTitle,
+            isPlaying: isPlaying
+        ))
+    }
 
     // MARK: - Widget snapshot serialization
 

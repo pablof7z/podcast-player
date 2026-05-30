@@ -27,6 +27,7 @@ extension KernelModel {
         h.combine(update.nowPlaying?.durationSecs)
         h.combine(update.nowPlaying?.url)
         h.combine(update.nowPlaying?.volume)
+        h.combine(update.nowPlaying?.currentChapterTitle)
 
         // Settings
         h.combine(update.settings.skipForwardSecs)

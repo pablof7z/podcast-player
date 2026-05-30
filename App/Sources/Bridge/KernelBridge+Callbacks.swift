@@ -83,26 +83,45 @@ extension PodcastHandle {
     /// the `sendReport` closure from its own `@MainActor` methods; the closure
     /// uses `MainActor.assumeIsolated` to safely reach back into
     /// `PodcastCapabilities.shared` from the non-isolated closure type.
+    ///
+    /// The FFI call is dispatched to a background serial queue so that when
+    /// `maybe_auto_advance` re-enters `SyncCapabilityBridge` and calls
+    /// `DispatchQueue.main.sync`, the calling thread is not main and the
+    /// hop cannot deadlock.
     @MainActor
     func attachAudioReportChannel() {
+        let reportQueue = DispatchQueue(label: "podcast.audio-report", qos: .utility)
         PodcastCapabilities.shared.audio.attach { [weak self] reportJSON in
             MainActor.assumeIsolated {
-                guard let self, let handle = self.podcastHandle else { return }
-                guard let result = nmp_app_podcast_audio_report(handle, reportJSON) else {
-                    // No follow-up command, but the report still bumped `rev`
-                    // (e.g. position/now-playing) — pull it through reactively.
-                    self.onSnapshotMaybeChanged?()
-                    return
+                // Capture self strongly for the background hop so the handle
+                // pointer stays valid until the FFI call completes. The FFI
+                // call runs off-main so Rust's `maybe_auto_advance` re-entry
+                // (which may call `DispatchQueue.main.sync` through
+                // `SyncCapabilityBridge`) cannot deadlock against this thread.
+                guard let self else { return }
+                reportQueue.async { [self] in
+                    guard let handle = self.podcastHandle else { return }
+                    guard let result = nmp_app_podcast_audio_report(handle, reportJSON) else {
+                        // No follow-up command, but the report still bumped `rev`
+                        // (e.g. position/now-playing) — pull it through reactively
+                        // (event-driven, not polled). Hop to main: the snapshot
+                        // hook drives `@MainActor` kernel state.
+                        Task { @MainActor in self.onSnapshotMaybeChanged?() }
+                        return
+                    }
+                    defer { nmp_app_free_string(result) }
+                    let followUpJSON = String(cString: result)
+                    let command = followUpJSON.data(using: .utf8)
+                        .flatMap { try? JSONDecoder().decode(AudioCommand.self, from: $0) }
+                    Task { @MainActor in
+                        if let command {
+                            PodcastCapabilities.shared.audio.execute(command)
+                        }
+                        // The report bumped the podcast `rev`; surface it
+                        // reactively (event-driven, not polled).
+                        self.onSnapshotMaybeChanged?()
+                    }
                 }
-                defer { nmp_app_free_string(result) }
-                let followUpJSON = String(cString: result)
-                if let data = followUpJSON.data(using: .utf8),
-                   let command = try? JSONDecoder().decode(AudioCommand.self, from: data) {
-                    PodcastCapabilities.shared.audio.execute(command)
-                }
-                // The report bumped the podcast `rev`; surface it reactively
-                // (event-driven, not polled).
-                self.onSnapshotMaybeChanged?()
             }
         }
     }
@@ -201,6 +220,11 @@ extension PodcastHandle {
         guard let data = json.data(using: .utf8) else { return PodcastUpdate() }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return (try? decoder.decode(PodcastUpdate.self, from: data)) ?? PodcastUpdate()
+        do {
+            return try decoder.decode(PodcastUpdate.self, from: data)
+        } catch {
+            kbLog.error("podcastSnapshot decode: \(error, privacy: .public)")
+            return PodcastUpdate()
+        }
     }
 }

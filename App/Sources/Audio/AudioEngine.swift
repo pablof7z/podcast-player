@@ -74,6 +74,28 @@ final class AudioEngine {
     /// an in-app pause.
     var onSleepTimerFire: () -> Void = {}
 
+    // ── Kernel-bridge throttle state (M1 Part 3) ────────────────────────
+    // Throttle `onPlayingTick` to ≤1 Hz per D8. Track the last-reported
+    // whole second so duplicate ticks within the same second are dropped.
+    var lastReportedSecond: Int = -1
+
+    // ── Kernel-bridge report hooks (M1 Part 3) ───────────────────────────
+    // These callbacks let `PlaybackState` forward real AVFoundation events
+    // to the Rust kernel via `AudioCapability.emitReport(_:)` so the
+    // kernel's `apply_writeback` receives genuine position data.
+    //
+    // (url, positionSecs, durationSecs) — fires on every time-observer tick
+    // while playing. Throttling to ≤1 Hz is the caller's responsibility.
+    var onPlayingTick: ((String, Double, Double) -> Void)?
+    // (url, positionSecs) — fires on pause.
+    var onPauseEvent: ((String, Double) -> Void)?
+    // url — fires on natural end of item.
+    var onItemEnd: ((String) -> Void)?
+    // fires when the sleep timer stops playback at the natural end of an episode.
+    // Position is already flushed via onPauseEvent; this signals the caller to
+    // mark the episode played without triggering auto-advance.
+    var onSleepTimerEpisodeEnd: (() -> Void)?
+
     /// NowPlaying surface — exposed so the player can push artwork mid-playback
     /// once Lane 4 has it loaded (artwork isn't on `Episode` yet — Lane 2 owns).
     let nowPlaying = NowPlayingCenter()
@@ -236,6 +258,8 @@ final class AudioEngine {
         player.pause()
         state = .paused
         publishNowPlaying()
+        let url = episode?.enclosureURL.absoluteString ?? ""
+        onPauseEvent?(url, currentTime)
     }
 
     func toggle() {

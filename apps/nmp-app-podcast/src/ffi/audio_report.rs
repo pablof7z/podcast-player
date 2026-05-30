@@ -33,7 +33,10 @@ use std::time::SystemTime;
 use nmp_core::substrate::CapabilityRequest;
 
 use super::handle::PodcastHandle;
-use crate::capability::{AudioCommand, AudioReport, AUDIO_CAPABILITY_NAMESPACE};
+use crate::capability::{
+    AudioCommand, AudioReport, DownloadCommand, AUDIO_CAPABILITY_NAMESPACE,
+    DOWNLOAD_CAPABILITY_NAMESPACE,
+};
 use crate::store::PodcastStore;
 
 /// Minimum position delta (seconds) between disk flushes while a `Playing`
@@ -151,11 +154,18 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
         }
         AudioReport::ItemEnd { .. } => {
             // Natural play-to-completion. Gate the "mark listened" write on
-            // the store's `auto_mark_played_at_end` flag (M1.3). The
-            // position is already up-to-date from the last `Playing` tick.
+            // the store's `auto_mark_played_at_end` flag (M1.3).
             if store.auto_mark_played_at_end() {
                 store.mark_episode_played(episode_id);
             }
+            // Rewind to the start on natural completion so the next play begins
+            // from 0 instead of resuming at the end. `mark_episode_played` only
+            // flips the played flag, and the engine emits a `Paused` at
+            // `duration` just before `ItemEnd`, so without this the stored
+            // position is the duration and replay lands at the end. Runs
+            // regardless of `auto_mark_played_at_end` — a finished episode should
+            // always restart cleanly.
+            store.set_episode_position(episode_id, 0.0);
             store.flush_positions();
         }
         AudioReport::Failed { .. } | AudioReport::BufferingProgress { .. } => {}
@@ -164,32 +174,45 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
 
 /// M1.3 — auto-advance on natural end.
 ///
-/// Called only on `ItemEnd`. Reads the actor's `auto_play_next` flag and
-/// queue. If conditions are met, pops the next episode, stages a load in
-/// the actor, and dispatches `Load` + `Play` back to iOS via the
-/// capability channel. Does nothing (silently) on any lock failure.
+/// Called only on `ItemEnd`. Reads the actor's `auto_play_next` flag, pops the
+/// next episode from the canonical playback queue, stages a load in the actor,
+/// and dispatches `Load` + `Play` back to iOS via the capability channel. Does
+/// nothing (silently) on any lock failure.
 fn maybe_auto_advance(handle: &PodcastHandle) {
-    // Read the flag + pop atomically under the actor lock.
-    let next_episode_id = {
-        let mut actor = match handle.player_actor.lock() {
-            Ok(a) => a,
+    // The `auto_play_next` flag lives on the actor (mirrored from settings).
+    let auto_play_next = match handle.player_actor.lock() {
+        Ok(a) => a.auto_play_next,
+        Err(_) => return,
+    };
+    if !auto_play_next {
+        return;
+    }
+
+    // Pop the next episode from the CANONICAL `PlaybackQueue` (`handle.queue`)
+    // — the same queue the UI enqueues into via the `podcast.queue` namespace
+    // and the one the snapshot renders as Up Next (`build_snapshot` reads
+    // `handle.queue`). The actor's own queue is NOT populated by the UI enqueue
+    // path, so advancing off it would silently skip UI-queued episodes. (The
+    // vestigial `PlayerActor` queue is tracked for removal in BACKLOG.md.)
+    // Pop the next RESOLVABLE episode, skipping stale heads — entries for
+    // episodes removed from the library or unsubscribed shows. The old Swift
+    // `playNext` loop did this; popping once and bailing on a stale head would
+    // strand every valid Up Next entry behind it. Queue and store locks are
+    // taken separately per iteration (never nested) to avoid lock-order hazards.
+    let (episode_id, podcast_id, url, position_secs) = loop {
+        let popped = match handle.queue.lock() {
+            Ok(mut q) => q.next(),
             Err(_) => return,
         };
-        if !actor.auto_play_next || actor.queue().is_empty() {
-            return;
+        let Some(id) = popped else { return }; // queue exhausted — nothing to play
+        let info = match handle.store.lock() {
+            Ok(s) => s.episode_playback_info(&id),
+            Err(_) => return,
+        };
+        if let Some((pod, ep_url, pos)) = info {
+            break (id, pod, ep_url, pos);
         }
-        actor.pop_next()
-    };
-
-    let Some(episode_id) = next_episode_id else { return; };
-
-    // Look up playback info for the next episode.
-    let (podcast_id, url, position_secs) = match handle.store.lock() {
-        Ok(s) => match s.episode_playback_info(&episode_id) {
-            Some(info) => info,
-            None => return, // episode disappeared from library
-        },
-        Err(_) => return,
+        // Stale head already popped; continue to the next entry.
     };
 
     // Stage the new load on the actor.
@@ -198,8 +221,24 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
     }
 
     // Dispatch Load + Play. Failures degrade silently per D6.
-    dispatch_audio_cmd(handle, &AudioCommand::load(&url, position_secs));
+    dispatch_audio_cmd(handle, &AudioCommand::load_with_id(&url, position_secs, &episode_id));
     dispatch_audio_cmd(handle, &AudioCommand::Play);
+
+    // Enqueue a background download for un-downloaded episodes (mirrors
+    // handle_play). `DownloadQueue::enqueue` is idempotent.
+    let needs_dl = match handle.store.lock() {
+        Ok(s) => !s.episode_is_downloaded(&episode_id),
+        Err(_) => false,
+    };
+    if needs_dl {
+        let dl_cmd = match handle.download_queue.lock() {
+            Ok(mut q) => q.enqueue(episode_id.clone(), url.clone()),
+            Err(_) => None,
+        };
+        if let Some(cmd) = dl_cmd {
+            dispatch_download_cmd(handle, &cmd);
+        }
+    }
 
     handle.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 }
@@ -211,6 +250,19 @@ fn dispatch_audio_cmd(handle: &PodcastHandle, cmd: &AudioCommand) {
     };
     let req = CapabilityRequest {
         namespace: AUDIO_CAPABILITY_NAMESPACE.to_owned(),
+        correlation_id: String::new(),
+        payload_json,
+    };
+    let _ = unsafe { &*handle.app }.dispatch_capability(&req);
+}
+
+fn dispatch_download_cmd(handle: &PodcastHandle, cmd: &DownloadCommand) {
+    let payload_json = match serde_json::to_string(cmd) {
+        Ok(j) => j,
+        Err(_) => return,
+    };
+    let req = CapabilityRequest {
+        namespace: DOWNLOAD_CAPABILITY_NAMESPACE.to_owned(),
         correlation_id: String::new(),
         payload_json,
     };

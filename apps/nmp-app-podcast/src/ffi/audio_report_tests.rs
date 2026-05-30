@@ -271,6 +271,41 @@ fn item_end_marks_episode_played_and_flushes() {
 }
 
 #[test]
+fn item_end_rewinds_position_to_zero() {
+    // A natural play-to-completion must reset the stored position to 0 so the
+    // next play starts from the beginning instead of resuming at the end.
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Rewind Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Episode");
+    let ep_id = ep.id.0.to_string();
+    store.subscribe(podcast, vec![ep]);
+
+    // Engine emits a Playing tick near the end, then a Paused at duration, then
+    // ItemEnd — mirroring the real report sequence the regression came from.
+    apply_writeback(
+        &mut store,
+        &AudioReport::Playing { url: "u".into(), position_secs: 59.5, duration_secs: 60.0 },
+        &ep_id,
+    );
+    apply_writeback(
+        &mut store,
+        &AudioReport::Paused { url: "u".into(), position_secs: 60.0 },
+        &ep_id,
+    );
+    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+
+    // `position_for` returns `None` for a zero position (the canonical
+    // "start from the beginning" sentinel — see `position_for_returns_none_when_zero`).
+    // Before the fix this was `Some(60.0)` (the duration), so replay landed at the end.
+    assert_eq!(
+        store.position_for(&ep_id),
+        None,
+        "position must rewind to the start on natural completion so replay starts over"
+    );
+}
+
+#[test]
 fn item_end_serde_round_trips() {
     let report = AudioReport::ItemEnd { url: "https://ex.com/ep.mp3".into() };
     let json = serde_json::to_string(&report).expect("encode");

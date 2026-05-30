@@ -90,6 +90,27 @@ worktrees currently in flight.
   behavior on simulator and device.
 - **queue-hardening.** Validate item-ended advancement, duplicate handling,
   remove/clear, persistence expectations, and UI sync.
+- **player-actor-queue-unification.** `maybe_auto_advance` now pops from the
+  canonical `PlaybackQueue` (`handle.queue`, the queue the UI enqueues into via
+  `podcast.queue` and the snapshot renders). The separate `PlayerActor.queue`
+  (populated only by the `podcast.player` `Enqueue`/`PlayNext` ops, which the UI
+  does not use) is now vestigial for auto-advance. Collapse the two queues into
+  one owner: route the `podcast.player` enqueue ops at `PlaybackQueue` (or delete
+  them) and drop `PlayerActor`'s queue field + `enqueue`/`pop_next`/`queue()`.
+- **remote-command-kernel-routing.** Lock-screen / Control Center commands
+  (`AudioCapability+RemoteCommands`) call `execute(.play)`/`.seek` which run the
+  engine directly through the same `commandHandler` that Rust-issued commands
+  use. After a cold restart where the player restored a paused episode but Rust
+  never staged it, a lock-screen Play starts audio without a `kernelLoad`, so
+  Rust has no `episode_id` for the subsequent position reports. Fix by routing
+  lock-screen-originated commands through a report-to-Rust path (or staging the
+  restored episode in Rust on restore) — distinct from Rust-issued playback
+  commands so it doesn't loop through `handle_load`'s echoed `Load`.
+- **carplay-chapters-live-resolve.** `CarPlayNowPlaying` reads
+  `playback.episode.chapters` directly; when chapters hydrate after the episode
+  loaded (or before CarPlay connects), `PlaybackState.episode` can be the stale
+  pre-hydration copy. Restore a store-backed resolver so the CarPlay chapter
+  button/list appears once the store has chapters.
 - **download-state-projection.** Runtime queue projection is now wired:
   player download actions mutate `DownloadQueue`, download reports update
   progress/paused/failed/completed state, and snapshots expose active/queued/
@@ -101,6 +122,15 @@ worktrees currently in flight.
   gate, provider settings, and persistence migration.
 - **notification-hardening.** Validate authorization, schedule/update/cancel,
   deep links, duplicate prevention, and quiet failure behavior.
+- **stale-subscription-refresh-test.** `SubscriptionRefreshServiceTests`
+  (`testSubscriptionServiceRefreshUsesSharedRefreshSemantics`) injects a Swift
+  `FeedClient(session:)` stub, but `SubscriptionService.refresh` now delegates to
+  `store.kernelRefresh` (Rust), which fetches via its own HTTP capability and
+  ignores the injected client — so the stubbed feed never reaches the kernel and
+  the assertions (Fresh Title / etag / episode-1) fail. Pre-existing on main
+  (test last touched by PR #131, before refresh moved to the kernel). Rewrite to
+  stub the Rust HTTP capability (or move to a headless scenario) or delete; it no
+  longer exercises the live path.
 
 ## Active P1 - Social/Nostr Real Logic
 
@@ -213,6 +243,11 @@ worktrees currently in flight.
   status behind.
 - **line-limit-audit.** Continue enforcing the 300-line soft and 500-line hard
   limits. Split files before adding logic to near-limit modules.
+- **m1.6-kernel-widget-position.** Once `AudioCapability.sendReport` is wired
+  to the Rust kernel (M1.6), kernel-projection position ticks will drive
+  `nowPlaying.positionSecs`. At that point `PlatformCapability.applyNowPlayingSnapshot`
+  needs a separate position-write path (not gated by the identity dedup) so the
+  widget stays live during playback. Owner: M1.6 agent.
 
 ## Pending Decisions
 
