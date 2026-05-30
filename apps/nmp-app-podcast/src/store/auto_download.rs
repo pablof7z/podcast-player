@@ -46,13 +46,23 @@ use podcast_core::{Episode, EpisodeId};
 /// handler should dispatch as `DownloadCommand::StartDownload` (one per
 /// command). Ordering mirrors the input `fresh` slice (newest-first
 /// per the parser's contract).
+///
+/// * `wifi_only_on` — when `true`, only downloads when `is_on_wifi` is also
+///   `true`. When `false`, downloads on any interface (cellular + Wi-Fi).
+/// * `is_on_wifi` — current network-path state reported by
+///   `nmp.network.capability`. Ignored when `wifi_only_on` is `false`.
 pub fn episodes_to_auto_download(
     fresh: &[Episode],
     existing_guids: &HashSet<String>,
     local_paths: &HashMap<EpisodeId, String>,
     auto_download_on: bool,
+    wifi_only_on: bool,
+    is_on_wifi: bool,
 ) -> Vec<(EpisodeId, String)> {
     if !auto_download_on {
+        return Vec::new();
+    }
+    if wifi_only_on && !is_on_wifi {
         return Vec::new();
     }
     fresh

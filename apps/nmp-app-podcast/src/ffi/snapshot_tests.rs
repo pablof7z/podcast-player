@@ -224,6 +224,7 @@ fn snapshot_with_downloads_round_trips() {
             episode_id: "ep-1".into(),
             progress: 0.5,
             state: "active".into(),
+            total_bytes: None,
             error: None,
         }],
         queued_count: 2,
@@ -244,6 +245,7 @@ fn download_item_snapshot_omits_none_error() {
         episode_id: "ep-1".into(),
         progress: 0.0,
         state: "queued".into(),
+        total_bytes: None,
         error: None,
     };
     let json = serde_json::to_string(&item).expect("encode");

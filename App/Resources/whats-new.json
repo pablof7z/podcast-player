@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-05-30T02:00:00Z",
+      "lines": [
+        "Auto-download now honours your per-show Wi-Fi-only setting — episodes won't start downloading on cellular unless you've allowed it."
+      ]
+    },
+    {
       "shipped_at": "2026-05-28T09:00:00Z",
       "lines": [
         "If on-device storage can't be opened, the app now warns you that this session won't be saved instead of failing silently."

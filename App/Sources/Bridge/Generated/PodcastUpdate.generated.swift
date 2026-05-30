@@ -110,6 +110,9 @@ struct DownloadItemSnapshot: Identifiable, Equatable {
     var episodeId: String
     var progress: Double = 0
     var state: String
+    /// Total file size (bytes) once the server reports `Content-Length`.
+    /// `nil` until the first HTTP response arrives.
+    var totalBytes: Int64? = nil
     var error: String? = nil
 
     var id: String { episodeId }
@@ -212,6 +215,7 @@ extension DownloadItemSnapshot: Codable {
         episodeId = try c.decode(String.self, forKey: .episodeId)
         progress = try c.decodeIfPresent(Double.self, forKey: .progress) ?? 0
         state = try c.decode(String.self, forKey: .state)
+        totalBytes = try c.decodeIfPresent(Int64.self, forKey: .totalBytes)
         error = try c.decodeIfPresent(String.self, forKey: .error)
     }
 }

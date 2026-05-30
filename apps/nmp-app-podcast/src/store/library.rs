@@ -33,6 +33,7 @@ impl PodcastStore {
         let removed_p = self.podcasts.remove(&podcast_id).is_some();
         let removed_e = self.episodes.remove(&podcast_id).is_some();
         let removed_a = self.auto_download_enabled.remove(&podcast_id);
+        self.auto_download_cellular_allowed.remove(&podcast_id);
         if removed_p || removed_e || removed_a {
             self.persist();
         }

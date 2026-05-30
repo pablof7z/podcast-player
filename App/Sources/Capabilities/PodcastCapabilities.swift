@@ -76,6 +76,12 @@ final class PodcastCapabilities {
     let iCloudSync: iCloudSyncCapability
     let spotlight: SpotlightCapability
     let voice: VoiceCapability
+    /// Network-state monitor. Observes `NWPathMonitor` and delivers
+    /// `nmp.network.capability` `ConnectivityChanged` reports so Rust's
+    /// `is_on_wifi` flag stays current for Wi-Fi-only auto-download gating.
+    /// Started from `KernelModel.init()` after the podcast projection is
+    /// registered (it needs the podcast handle to send reports).
+    let network: NetworkCapability
 
     init(
         keyring: KeychainCapability = KeychainCapability(),
@@ -88,7 +94,8 @@ final class PodcastCapabilities {
         platform: PlatformCapability = PlatformCapability(),
         iCloudSync: iCloudSyncCapability = iCloudSyncCapability(),
         spotlight: SpotlightCapability = SpotlightCapability.shared,
-        voice: VoiceCapability = VoiceCapability()
+        voice: VoiceCapability = VoiceCapability(),
+        network: NetworkCapability = NetworkCapability()
     ) {
         self.keyring = keyring
         self.identity = identity
@@ -101,6 +108,7 @@ final class PodcastCapabilities {
         self.iCloudSync = iCloudSync
         self.spotlight = spotlight
         self.voice = voice
+        self.network = network
     }
 
     /// Idempotent: start all owned capabilities. Safe to call on every app

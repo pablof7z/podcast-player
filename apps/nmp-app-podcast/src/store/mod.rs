@@ -85,6 +85,11 @@ pub struct PodcastStore {
     /// new episodes are surfaced in the snapshot but not downloaded.
     /// Cleared by `unsubscribe` so a later re-subscribe starts fresh.
     auto_download_enabled: HashSet<PodcastId>,
+    /// Podcasts for which cellular auto-download is **explicitly allowed**
+    /// (i.e. the user set Wi-Fi-only to `false`). Absence means the default
+    /// applies: Wi-Fi-only (matching `AutoDownloadPolicy.default.wifiOnly`).
+    /// Cleared by `unsubscribe`.
+    auto_download_cellular_allowed: HashSet<PodcastId>,
     /// Durable agent-memory bag (feature #33). Keyed on `MemoryFact.key`
     /// so writes upsert and the snapshot can render a deduped list. Lives
     /// alongside `podcasts` in `podcasts.json` so both projections share
@@ -111,6 +116,13 @@ pub struct PodcastStore {
     pub(super) skip_forward_secs: f64,
     /// Skip-backward interval (seconds). Default 15.0; user-configurable.
     pub(super) skip_backward_secs: f64,
+    /// Last-known Wi-Fi state reported by `nmp.network.capability`. `true` when
+    /// the device's active interface is Wi-Fi. Defaults to `true` so
+    /// auto-download runs on first launch before the iOS capability fires its
+    /// initial `ConnectivityChanged` event (conservative: assumes Wi-Fi until
+    /// told otherwise, avoiding unnecessary cellular charges on startup).
+    /// Not persisted — refreshed from the capability on every app launch.
+    pub(super) is_on_wifi: bool,
     data_dir: Option<PathBuf>,
     /// Episode ids loaded from disk during `set_data_dir`. Drained exactly
     /// once by `take_loaded_queue`; the FFI layer seeds the shared
@@ -133,6 +145,7 @@ impl PodcastStore {
             last_flushed_positions: HashMap::new(),
             has_completed_onboarding: false,
             auto_download_enabled: HashSet::new(),
+            auto_download_cellular_allowed: HashSet::new(),
             memory_facts: HashMap::new(),
             ad_segments: HashMap::new(),
             auto_skip_ads_enabled: false,
@@ -142,6 +155,7 @@ impl PodcastStore {
             headphone_triple_tap_action: "clipNow".to_owned(),
             skip_forward_secs: 30.0,
             skip_backward_secs: 15.0,
+            is_on_wifi: true,
             data_dir: None,
             loaded_queue: Vec::new(),
             cached_queue: Vec::new(),

@@ -257,11 +257,15 @@ impl PodcastHostOpHandler {
                                     .collect()
                             };
                             let auto_on = s.is_auto_download_enabled(podcast_id);
+                            let wifi_only = s.wifi_only_for(podcast_id);
+                            let is_on_wifi = s.is_on_wifi();
                             let to_auto_download = episodes_to_auto_download(
                                 &parsed.episodes,
                                 &existing_guids,
                                 s.local_paths(),
                                 auto_on,
+                                wifi_only,
+                                is_on_wifi,
                             );
                             let podcast_title = parsed.podcast.title.clone();
                             let merged = merge_episodes(parsed.episodes.clone(), existing);

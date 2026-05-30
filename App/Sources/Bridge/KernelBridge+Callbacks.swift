@@ -187,6 +187,16 @@ extension PodcastHandle {
         }
     }
 
+    /// Start the network monitor and deliver an initial `ConnectivityChanged`
+    /// report so Rust's `is_on_wifi` flag is primed before the first feed
+    /// refresh. Must be called from a `@MainActor` context after
+    /// `registerPodcastProjection()`.
+    @MainActor
+    func startNetworkMonitor() {
+        guard let handle = podcastHandle else { return }
+        PodcastCapabilities.shared.network.start(handle: handle)
+    }
+
     func unregisterPodcastProjectionIfNeeded() {
         guard let handle = podcastHandle else { return }
         nmp_app_podcast_unregister(handle)
