@@ -16,8 +16,7 @@ import os.log
 // (that contract — PD-019 — is deliberately unbuilt). App-domain secret I/O
 // is Swift-owned today: `OpenRouter`/`Ollama`/`NostrCredentialStore` all write
 // the Keychain directly via `PcstIdentityCapability.direct`. This migration
-// follows that established pattern and the run-once shape of
-// `LegacyKeychainMigration`.
+// follows that established pattern with a run-once-per-launch shape.
 //
 // ## Idempotent, no sentinel
 //

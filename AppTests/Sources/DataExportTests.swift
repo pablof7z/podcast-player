@@ -4,18 +4,6 @@ import XCTest
 
 final class DataExportTests: XCTestCase {
 
-    func testDataExportRedactsLegacyOpenRouterKey() throws {
-        var state = AppState()
-        state.settings.legacyOpenRouterAPIKey = "sk-or-v1-leaked-secret"
-
-        let payload = DataExport.makePayload(from: state)
-        let data = try DataExport.encode(payload)
-        let json = String(data: data, encoding: .utf8) ?? ""
-
-        XCTAssertFalse(json.contains("sk-or-v1-leaked-secret"))
-        XCTAssertNil(payload.state.settings.legacyOpenRouterAPIKey)
-    }
-
     func testDataExportRoundTripsCoreRecords() throws {
         var state = AppState()
         let podcast = makeSubscription(title: "Round Trip Show")

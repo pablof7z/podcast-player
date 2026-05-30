@@ -3,10 +3,8 @@ import os.log
 
 /// Thin shim over `PcstIdentityCapability` for the Ollama BYOK API key.
 ///
-/// All reads and writes now go through the canonical `pcst.byok.ollama`
-/// Keychain slot managed by `PcstIdentityCapability`. The legacy
-/// `<bundleID>.ollama` service entry is migrated by
-/// `LegacyKeychainMigration` v2 on first launch post-M3.
+/// All reads and writes go through the canonical `pcst.byok.ollama`
+/// Keychain slot managed by `PcstIdentityCapability`.
 enum OllamaCredentialStore {
     private static let accountID = PcstIdentityCapability.AccountID.byokOllama
     private static var identity: PcstIdentityCapability { PcstIdentityCapability.direct }

@@ -225,13 +225,6 @@ final class AppStateStore {
             Self.logger.error("Persistence.load failed: \(error, privacy: .public) — starting with empty state")
             loadedState = AppState()
         }
-        // Keychain migration: move legacy per-service keys into PcstIdentityCapability
-        // slots. v2 adds the Ollama slot; re-running is safe (skip-if-present guard).
-        LegacyKeychainMigration.runIfNeeded()
-        // JSON→Keychain pump: older builds stored the OpenRouter key as plaintext in
-        // the AppState JSON blob. The Keychain migrator cannot read that — it only
-        // knows about previous Keychain services. This pump handles that upgrade path.
-        Self.migrateLegacyOpenRouterSecretIfNeeded(in: &loadedState, persistence: persistence)
         // Strip synthetic external-playback podcasts written by an earlier
         // build that used an `external-episode://` sentinel feed URL. The
         // new model parents external episodes to `Podcast.unknownID` (or a
@@ -277,34 +270,6 @@ final class AppStateStore {
         // retained on `self` so the observer outlives the init call but
         // dies with the store. See `AppStateStore+PositionDebounce.swift`.
         backgroundObserver = registerBackgroundFlushObserver()
-    }
-
-    /// Pulls the latest iCloud values into `state.settings`.
-    // MARK: - Legacy migration helpers
-
-    /// Migrate the plaintext OpenRouter key from the AppState JSON blob into the
-    /// Keychain (PcstIdentityCapability.byokOpenRouter). Older builds stored the
-    /// key in `Settings.legacyOpenRouterAPIKey`; LegacyKeychainMigration cannot
-    /// reach JSON fields — only previous Keychain services — so this pump is still
-    /// needed for users upgrading from JSON-blob storage.
-    private static func migrateLegacyOpenRouterSecretIfNeeded(
-        in state: inout AppState,
-        persistence: Persistence
-    ) {
-        let legacyKey = state.settings.legacyOpenRouterAPIKey?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !legacyKey.isEmpty else {
-            state.settings.legacyOpenRouterAPIKey = nil
-            return
-        }
-        do {
-            try OpenRouterCredentialStore.saveAPIKey(legacyKey)
-            state.settings.markOpenRouterManual()
-        } catch {
-            logger.error("Failed to migrate legacy OpenRouter key to keychain: \(error, privacy: .public)")
-            state.settings.clearOpenRouterCredential()
-        }
-        state.settings.legacyOpenRouterAPIKey = nil
-        persistence.save(state)
     }
 
     // MARK: - Settings

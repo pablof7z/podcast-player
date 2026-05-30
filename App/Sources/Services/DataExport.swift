@@ -50,12 +50,13 @@ enum DataExport {
     // MARK: - Build
 
     /// Returns a redacted copy of `state` safe for export.
-    /// - Removes the legacy OpenRouter API key (the only secret-shaped field
-    ///   that ever touched persistence; current credentials live in Keychain).
+    ///
+    /// No secret-shaped fields are persisted in `AppState` today — all
+    /// credentials live in the Keychain — so this is currently an identity
+    /// copy. It is kept as the single redaction seam: any future
+    /// secret-shaped persisted field must be cleared here before export.
     static func redactedState(from state: AppState) -> AppState {
-        var copy = state
-        copy.settings.legacyOpenRouterAPIKey = nil
-        return copy
+        state
     }
 
     /// Builds the export payload from the live in-memory state.

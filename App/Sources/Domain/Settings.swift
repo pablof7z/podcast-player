@@ -126,10 +126,6 @@ struct Settings: Codable, Hashable, Sendable {
     var openRouterBYOKKeyID: String?
     var openRouterBYOKKeyLabel: String?
     var openRouterConnectedAt: Date?
-    /// Decode-only migration drain. Reads the plaintext key that old builds
-    /// stored in the AppState JSON blob and hands it off to the Keychain pump
-    /// in `AppStateStore.migrateLegacyOpenRouterSecretIfNeeded`. Never re-encoded.
-    var legacyOpenRouterAPIKey: String?
 
     // Ollama Cloud credentials (secret stored in Keychain; only metadata here)
     var ollamaCredentialSource: OllamaCredentialSource = .none
@@ -260,7 +256,6 @@ struct Settings: Codable, Hashable, Sendable {
         case embeddingsModel, embeddingsModelName, rerankerEnabled
         case imageGenerationModel, imageGenerationModelName
         case blossomServerURL
-        case openRouterAPIKey  // legacy — decode only, never re-encoded
         case openRouterCredentialSource
         case openRouterBYOKKeyID, openRouterBYOKKeyLabel, openRouterConnectedAt
         case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt, ollamaChatURL
@@ -301,7 +296,6 @@ struct Settings: Codable, Hashable, Sendable {
         imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? ""
         blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
-        legacyOpenRouterAPIKey = try c.decodeIfPresent(String.self, forKey: .openRouterAPIKey)
         openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
@@ -345,15 +339,6 @@ struct Settings: Codable, Hashable, Sendable {
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
         youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
-
-        // Promote the legacy plaintext key to .manual so the UI renders the
-        // connected state correctly. AppStateStore pumps it into Keychain and
-        // then clears this field — it is never re-encoded.
-        if openRouterCredentialSource == .none,
-           let legacy = legacyOpenRouterAPIKey,
-           !legacy.trimmingCharacters(in: .whitespaces).isEmpty {
-            openRouterCredentialSource = .manual
-        }
     }
 
     func encode(to encoder: Encoder) throws {
