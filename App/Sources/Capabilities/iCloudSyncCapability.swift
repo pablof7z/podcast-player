@@ -121,6 +121,10 @@ final class iCloudSyncCapability {
     /// lifetime — the model owns the capability, not the other way round.
     weak var kernel: KernelModel?
 
+    /// Reference to the app state store for echo suppression. Weak so the
+    /// capability does not extend the store's lifetime.
+    weak var appStore: AppStateStore?
+
     /// Retained observer token. Cleared in `stop()` so the notification
     /// centre does not call back into a stopped capability.
     private var changeObserver: NSObjectProtocol?
@@ -187,6 +191,7 @@ final class iCloudSyncCapability {
         kernel = nil
         lastWritten = [:]
         isApplyingRemoteChange = false
+        appStore?.isApplyingRemoteChange = false
     }
 
     var isStarted: Bool { started }
@@ -203,6 +208,7 @@ final class iCloudSyncCapability {
             // Single-tick suppression. Seed `lastWritten` with the
             // kernel's view so the next genuine local edit *is* written.
             isApplyingRemoteChange = false
+            appStore?.isApplyingRemoteChange = false
             settings.write(to: &lastWritten)
             return
         }
@@ -470,6 +476,9 @@ final class iCloudSyncCapability {
     private func dispatchKeysFromCloud(_ keys: [String]) {
         let touched = Set(keys)
         var didDispatch = false
+        // Set the echo-suppression flag on the app store so updateSettings
+        // does not re-dispatch the same values back to the kernel.
+        appStore?.isApplyingRemoteChange = true
 
         if touched.contains(Key.skipForwardSecs) || touched.contains(Key.skipBackwardSecs),
            let forward = (kvs.object(forKey: Key.skipForwardSecs) as? NSNumber)?.intValue,
@@ -887,6 +896,7 @@ final class iCloudSyncCapability {
         // the flag so the next outbound tick is not swallowed.
         if !didDispatch {
             isApplyingRemoteChange = false
+            appStore?.isApplyingRemoteChange = false
         }
     }
 }

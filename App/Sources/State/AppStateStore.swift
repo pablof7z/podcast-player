@@ -170,6 +170,11 @@ final class AppStateStore {
     /// without producing extra refreshes.
     var widgetReloadTask: Task<Void, Never>?
 
+    /// Echo-suppression flag for iCloud sync. Set by the iCloud capability
+    /// while applying a remote change so `updateSettings` does not re-dispatch
+    /// the same values back to the kernel (breaking the one-way sync).
+    var isApplyingRemoteChange: Bool = false
+
     // MARK: - Position debounce
     //
     // Position updates from `PlaybackState.tickPersistence` arrive at 1 Hz.
@@ -296,6 +301,16 @@ final class AppStateStore {
     // MARK: - Settings
 
     func updateSettings(_ settings: Settings) {
+        // Echo suppression: if the iCloud capability just applied a remote
+        // change via dispatchSilent, skip the outbound dispatch path so we
+        // do not re-echo the value back to the cloud. The kernel snapshot
+        // update (from dispatchSilent) will trigger this method; we suppress
+        // it here and let the capability's applySettingsSnapshot handle
+        // the outbound side.
+        guard !isApplyingRemoteChange else {
+            state.settings = settings
+            return
+        }
         let prior = state.settings
         state.settings = settings
         // Mirror the Rust-owned subset of settings to the kernel so they
