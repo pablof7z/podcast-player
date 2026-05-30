@@ -16,7 +16,15 @@ import Network
 final class NetworkCapability {
     private let monitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "podcast.network-monitor", qos: .utility)
-    private(set) var isOnWifi = true
+    /// Intentionally starts as `false` so the very first `NWPathMonitor` update
+    /// — which arrives even when the device was already on Wi-Fi at launch —
+    /// always triggers `onWifiRestored` when Wi-Fi is confirmed. This ensures
+    /// persisted deferred downloads (from a previous session on cellular) are
+    /// dispatched immediately on a cold launch that starts on Wi-Fi, rather than
+    /// being stuck until the user cycles between networks.
+    /// The Rust `is_on_wifi` default (`true`) is intentionally conservative and
+    /// independent of this Swift flag.
+    private(set) var isOnWifi = false
     /// Called on the main actor when Wi-Fi is (re)connected.
     var onWifiRestored: (() -> Void)?
 
