@@ -137,6 +137,32 @@ struct SettingsSnapshot: Equatable {
     var imageGenerationModelName: String = "Gemini 2.5 Flash"
     /// Whether the reranker is enabled for search results. Default `false`.
     var rerankerEnabled: Bool = false
+    /// OpenRouter credential source enum (raw String: "apiKey", "byok", "nostr").
+    var openRouterCredentialSource: String = ""
+    /// OpenRouter BYOK key ID (optional).
+    var openRouterBYOKKeyID: String? = nil
+    /// OpenRouter BYOK key label (optional).
+    var openRouterBYOKKeyLabel: String? = nil
+    /// OpenRouter credential connected-at timestamp (optional, converted to Date in Swift).
+    var openRouterConnectedAt: Date? = nil
+    /// Ollama credential source enum (raw String: "apiKey", "byok", "nostr").
+    var ollamaCredentialSource: String = ""
+    /// Ollama BYOK key ID (optional).
+    var ollamaBYOKKeyID: String? = nil
+    /// Ollama BYOK key label (optional).
+    var ollamaBYOKKeyLabel: String? = nil
+    /// Ollama credential connected-at timestamp (optional, converted to Date in Swift).
+    var ollamaConnectedAt: Date? = nil
+    /// Ollama chat endpoint URL for LLM inference.
+    var ollamaChatURL: String = ""
+    /// ElevenLabs credential source enum (raw String: "apiKey", "byok", "nostr").
+    var elevenLabsCredentialSource: String = ""
+    /// ElevenLabs BYOK key ID (optional).
+    var elevenLabsBYOKKeyID: String? = nil
+    /// ElevenLabs BYOK key label (optional).
+    var elevenLabsBYOKKeyLabel: String? = nil
+    /// ElevenLabs credential connected-at timestamp (optional, converted to Date in Swift).
+    var elevenLabsConnectedAt: Date? = nil
 }
 
 /// Active download-queue projection surfaced via `PodcastUpdate.downloads`.
@@ -258,6 +284,25 @@ extension SettingsSnapshot: Codable {
         imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "google/gemini-2.5-flash-image"
         imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? "Gemini 2.5 Flash"
         rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
+        openRouterCredentialSource = try c.decodeIfPresent(String.self, forKey: .openRouterCredentialSource) ?? ""
+        openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
+        openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
+        if let timestamp = try c.decodeIfPresent(Int.self, forKey: .openRouterConnectedAt) {
+            openRouterConnectedAt = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        }
+        ollamaCredentialSource = try c.decodeIfPresent(String.self, forKey: .ollamaCredentialSource) ?? ""
+        ollamaBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyID)
+        ollamaBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyLabel)
+        if let timestamp = try c.decodeIfPresent(Int.self, forKey: .ollamaConnectedAt) {
+            ollamaConnectedAt = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        }
+        ollamaChatURL = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) ?? ""
+        elevenLabsCredentialSource = try c.decodeIfPresent(String.self, forKey: .elevenLabsCredentialSource) ?? ""
+        elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
+        elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
+        if let timestamp = try c.decodeIfPresent(Int.self, forKey: .elevenLabsConnectedAt) {
+            elevenLabsConnectedAt = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        }
     }
 }
 
