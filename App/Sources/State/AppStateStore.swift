@@ -367,6 +367,15 @@ final class AppStateStore {
                                  "has_completed_onboarding": settings.hasCompletedOnboarding
                              ])
         }
+        if settings.defaultPlaybackRate != prior.defaultPlaybackRate {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_default_playback_rate", "rate": settings.defaultPlaybackRate])
+        }
+        if settings.autoDeleteDownloadsAfterPlayed != prior.autoDeleteDownloadsAfterPlayed {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_auto_delete_downloads_after_played",
+                                    "enabled": settings.autoDeleteDownloadsAfterPlayed])
+        }
     }
 
     /// Wipes all user data while preserving API credentials and Nostr identity.
