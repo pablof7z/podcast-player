@@ -314,11 +314,11 @@ extension SettingsSnapshot: Codable {
         case elevenLabsBYOKKeyID = "eleven_labs_byok_key_id"
         case elevenLabsBYOKKeyLabel = "eleven_labs_byok_key_label"
         case elevenLabsConnectedAt
-        case sttProvider
-        case openRouterWhisperModel
-        case assemblyAISTTModel
-        case elevenLabsSTTModel
-        case elevenLabsTTSModel
+        case sttProvider = "stt_provider"
+        case openRouterWhisperModel = "open_router_whisper_model"
+        case assemblyAISTTModel = "assembly_ai_stt_model"
+        case elevenLabsSTTModel = "eleven_labs_stt_model"
+        case elevenLabsTTSModel = "eleven_labs_tts_model"
         case elevenLabsVoiceID = "eleven_labs_voice_id"
         case elevenLabsVoiceName = "eleven_labs_voice_name"
         case blossomServerURL = "blossom_server_url"
