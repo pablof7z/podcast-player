@@ -79,7 +79,7 @@ pub fn upload_to_blossom(
 
     let hash_hex = sha256_hex(&bytes);
     let now = chrono::Utc::now().timestamp();
-    let auth_event_json = build_auth_event(secret_bytes, &hash_hex, now)?;
+    let auth_event_json = build_auth_event(secret_bytes, &hash_hex, bytes.len(), now)?;
     let auth_header = format!(
         "Nostr {}",
         base64::engine::general_purpose::STANDARD.encode(auth_event_json.as_bytes())
@@ -127,9 +127,10 @@ fn sha256_hex(bytes: &[u8]) -> String {
 fn build_auth_event(
     secret_bytes: &[u8; 32],
     file_hash_hex: &str,
+    byte_count: usize,
     created_at_secs: i64,
 ) -> Result<String, String> {
-    let tags = auth_event_tags(file_hash_hex, created_at_secs);
+    let tags = auth_event_tags(file_hash_hex, byte_count, created_at_secs);
     let sk = SecretKey::from_slice(secret_bytes)
         .map_err(|e| format!("invalid secret key: {e}"))?;
     let keys = Keys::new(sk);
@@ -150,10 +151,18 @@ fn build_auth_event(
 
 /// The tag set for a Blossom upload auth event. Pure so the test can assert
 /// the exact shape without signing.
-fn auth_event_tags(file_hash_hex: &str, created_at_secs: i64) -> Vec<Vec<String>> {
+///
+/// Includes the BUD-01-recommended `["size", <byte_count>]` tag so servers
+/// that enforce a max blob size can reject the auth before the body transits.
+fn auth_event_tags(
+    file_hash_hex: &str,
+    byte_count: usize,
+    created_at_secs: i64,
+) -> Vec<Vec<String>> {
     vec![
         vec!["t".into(), "upload".into()],
         vec!["x".into(), file_hash_hex.to_string()],
+        vec!["size".into(), byte_count.to_string()],
         vec![
             "expiration".into(),
             (created_at_secs + AUTH_EXPIRATION_SECS).to_string(),

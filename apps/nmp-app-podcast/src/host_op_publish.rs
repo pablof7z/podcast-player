@@ -193,8 +193,25 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
     // local download, upload it to the configured Blossom server and point the
     // `audio` tag at the hosted blob. On any failure (no local file, upload
     // error) fall back to the RSS enclosure URL the builder uses by default.
-    let (tags, blossom_url_used, blossom_error) =
-        resolve_episode_tags(handler, &episode, local_path.as_deref(), &blossom_url, &secret_bytes);
+    //
+    // The Blossom upload dispatches HTTP through the capability executor, which
+    // requires a live `app` pointer. In unit tests / pre-login the pointer is
+    // null and there is no executor to dispatch through, so we skip the upload
+    // entirely and publish with the enclosure URL.
+    let (tags, blossom_url_used, blossom_error) = if local_path.is_some()
+        && !handler.app.is_null()
+    {
+        let correlation_id = uuid::Uuid::new_v4().to_string();
+        resolve_episode_tags(
+            &episode,
+            local_path.as_deref(),
+            &blossom_url,
+            &secret_bytes,
+            |req| handler.dispatch_http(req, &correlation_id),
+        )
+    } else {
+        (episode_to_episode_tags(&episode), None, None)
+    };
     let content = episode.description.clone();
     let created_at = Utc::now().timestamp();
 
@@ -226,27 +243,27 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
 /// * `blossom_error` — `Some(diagnostic)` when an upload was attempted and
 ///   failed; logged and surfaced to the caller for visibility, but the publish
 ///   still proceeds with the enclosure fallback.
+///
+/// `fetch` is the HTTP transport (in production a closure over
+/// `handler.dispatch_http`). It is injected so this function stays pure and
+/// unit-testable with no `*mut NmpApp` dependency — mirroring
+/// [`blossom::upload_to_blossom`]. The caller is responsible for the
+/// null-`app` / no-local-file short-circuit before invoking the upload path.
 fn resolve_episode_tags(
-    handler: &PodcastHostOpHandler,
     episode: &podcast_core::types::episode::Episode,
     local_path: Option<&str>,
     blossom_url: &str,
     secret_bytes: &[u8; 32],
+    fetch: impl FnOnce(
+        &podcast_feeds::http::HttpRequest,
+    ) -> Result<podcast_feeds::http::HttpResult, String>,
 ) -> (Vec<Vec<String>>, Option<String>, Option<String>) {
     let Some(path) = local_path else {
         // No local download — publish with the RSS enclosure URL.
         return (episode_to_episode_tags(episode), None, None);
     };
-    if handler.app.is_null() {
-        // Unit-test / pre-login: no capability executor to dispatch HTTP
-        // through. Fall back to the enclosure URL.
-        return (episode_to_episode_tags(episode), None, None);
-    }
 
-    let correlation_id = uuid::Uuid::new_v4().to_string();
-    match blossom::upload_to_blossom(path, blossom_url, secret_bytes, |req| {
-        handler.dispatch_http(req, &correlation_id)
-    }) {
+    match blossom::upload_to_blossom(path, blossom_url, secret_bytes, fetch) {
         Ok(result) => {
             let imeta = ImetaInfo {
                 url: Some(result.url.clone()),

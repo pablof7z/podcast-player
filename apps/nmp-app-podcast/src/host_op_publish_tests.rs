@@ -9,10 +9,14 @@ use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
+use chrono::Utc;
+use podcast_core::types::episode::Episode;
 use podcast_core::Podcast;
+use podcast_feeds::http::{HttpMethod, HttpResult};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
+use url::Url;
 
 /// Construct a `PodcastHostOpHandler` with a NULL `app` pointer
 /// — the publish handlers never dispatch capabilities, so the
@@ -190,4 +194,122 @@ fn remove_owned_clears_key_and_pubkey_field() {
         .podcast_by_id_str(&id)
         .and_then(|p| p.owner_pubkey_hex.clone())
         .is_none());
+}
+
+// ---------------------------------------------------------------------------
+// resolve_episode_tags — Blossom upload branch coverage (M8).
+//
+// `resolve_episode_tags` is pure: it takes an injected `fetch` closure (same
+// pattern as `blossom::upload_to_blossom`), so all three branches are tested
+// here without a live `*mut NmpApp`. The closure either succeeds, errors, or
+// panics (to prove it is never reached when there is no local file).
+// ---------------------------------------------------------------------------
+
+/// Build a minimal episode whose RSS enclosure points at a known URL. Used to
+/// assert which URL lands in the `audio` tag.
+fn test_episode() -> Episode {
+    Episode::new(
+        Podcast::new("Tag Test").id,
+        "https://feed.example/rss.xml",
+        "guid-1",
+        "Episode One",
+        Url::parse("https://feed.example/enclosure.mp3").unwrap(),
+        Utc::now(),
+    )
+}
+
+/// Extract the `["audio", url, mime]` tag's URL from a built tag set.
+fn audio_url(tags: &[Vec<String>]) -> &str {
+    tags.iter()
+        .find(|t| t.first().map(String::as_str) == Some("audio"))
+        .and_then(|t| t.get(1))
+        .map(String::as_str)
+        .expect("audio tag present")
+}
+
+/// No local download → publish with the RSS enclosure URL; the fetch closure
+/// is never invoked (no Blossom attempt) and `blossom_error` is None.
+#[test]
+fn resolve_episode_tags_no_local_file_uses_enclosure() {
+    let episode = test_episode();
+    let secret = [9u8; 32];
+    let (tags, blossom_url_used, blossom_error) = resolve_episode_tags(
+        &episode,
+        None,
+        "https://blossom.example",
+        &secret,
+        |_req| panic!("fetch must not be called when there is no local file"),
+    );
+    assert_eq!(audio_url(&tags), "https://feed.example/enclosure.mp3");
+    assert_eq!(blossom_url_used, None, "no Blossom URL when no local file");
+    assert_eq!(blossom_error, None, "no error when no upload attempted");
+}
+
+/// Upload error → fall back to the enclosure URL, `blossom_error` populated,
+/// `blossom_url_used` is None.
+#[test]
+fn resolve_episode_tags_upload_error_falls_back_to_enclosure() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ep.mp3");
+    std::fs::write(&path, b"fake audio bytes").unwrap();
+    let episode = test_episode();
+    let secret = [9u8; 32];
+
+    let (tags, blossom_url_used, blossom_error) = resolve_episode_tags(
+        &episode,
+        Some(path.to_str().unwrap()),
+        "https://blossom.example",
+        &secret,
+        // Server rejects the upload — non-2xx status.
+        |_req| Ok(HttpResult::Ok { status_code: 500, headers: vec![], body: "boom".into() }),
+    );
+
+    assert_eq!(
+        audio_url(&tags),
+        "https://feed.example/enclosure.mp3",
+        "audio tag must fall back to the enclosure URL on upload error"
+    );
+    assert_eq!(blossom_url_used, None, "no Blossom URL on failed upload");
+    let err = blossom_error.expect("blossom_error must be populated on upload error");
+    assert!(err.contains("500"), "error should surface the http status: {err}");
+}
+
+/// Success → the Blossom blob URL appears in the `audio` tag,
+/// `blossom_url_used` carries it, and `blossom_error` is None.
+#[test]
+fn resolve_episode_tags_success_uses_blossom_url() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ep.mp3");
+    std::fs::write(&path, b"fake audio bytes").unwrap();
+    let episode = test_episode();
+    let secret = [9u8; 32];
+
+    let (tags, blossom_url_used, blossom_error) = resolve_episode_tags(
+        &episode,
+        Some(path.to_str().unwrap()),
+        "https://blossom.example",
+        &secret,
+        |req| {
+            // Sanity: the upload targets {server}/upload via POST.
+            assert_eq!(req.method, HttpMethod::Post);
+            assert_eq!(req.url, "https://blossom.example/upload");
+            Ok(HttpResult::Ok {
+                status_code: 200,
+                headers: vec![],
+                body: r#"{"url":"https://blossom.example/blob.mp3","sha256":"ab","size":16,"type":"audio/mpeg"}"#.into(),
+            })
+        },
+    );
+
+    assert_eq!(
+        audio_url(&tags),
+        "https://blossom.example/blob.mp3",
+        "audio tag must point at the hosted Blossom blob on success"
+    );
+    assert_eq!(
+        blossom_url_used.as_deref(),
+        Some("https://blossom.example/blob.mp3"),
+        "blossom_url_used must carry the hosted URL"
+    );
+    assert_eq!(blossom_error, None, "no error on a successful upload");
 }

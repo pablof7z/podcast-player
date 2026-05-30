@@ -10,7 +10,8 @@ use super::*;
 fn build_auth_event_has_correct_tags() {
     let hash = "a".repeat(64);
     let created_at = 1_700_000_000i64;
-    let tags = auth_event_tags(&hash, created_at);
+    let byte_count = 4096usize;
+    let tags = auth_event_tags(&hash, byte_count, created_at);
 
     // t=upload
     assert!(
@@ -22,6 +23,12 @@ fn build_auth_event_has_correct_tags() {
         tags.iter().any(|t| t.first().map(String::as_str) == Some("x")
             && t.get(1).map(String::as_str) == Some(hash.as_str())),
         "missing x=<hash> tag: {tags:?}"
+    );
+    // size=<byte count> (BUD-01 recommended)
+    assert!(
+        tags.iter().any(|t| t.first().map(String::as_str) == Some("size")
+            && t.get(1).map(String::as_str) == Some(byte_count.to_string().as_str())),
+        "missing size=<byte_count> tag: {tags:?}"
     );
     // expiration is in the future relative to created_at
     let exp = tags
@@ -35,7 +42,7 @@ fn build_auth_event_has_correct_tags() {
 
     // And the signed event really is kind 24242 with those tags.
     let secret = [7u8; 32];
-    let json = build_auth_event(&secret, &hash, created_at).expect("sign auth event");
+    let json = build_auth_event(&secret, &hash, byte_count, created_at).expect("sign auth event");
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(parsed["kind"].as_u64(), Some(KIND_BLOSSOM_AUTH as u64));
     assert!(parsed["sig"].as_str().is_some_and(|s| !s.is_empty()), "event not signed");
