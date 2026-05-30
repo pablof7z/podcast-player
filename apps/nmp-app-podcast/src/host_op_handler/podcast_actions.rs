@@ -123,27 +123,39 @@ impl PodcastHostOpHandler {
             Ok(mut s) => s.drain_pending_wifi_downloads(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
-        // Revalidate each entry before dispatch: the user may have
-        // unsubscribed, disabled auto-download, or already downloaded the
-        // episode between the cellular refresh and now. Stale entries must
-        // not trigger downloads the user has since opted out of.
-        let valid: Vec<(String, String)> = match self.store.lock() {
-            Ok(s) => pending
-                .into_iter()
-                .filter(|(ep_id, _url)| {
-                    // Episode must still exist in the store.
-                    let Some(podcast_id) = s.podcast_id_for_episode(ep_id) else { return false };
-                    // Show must still have auto-download enabled.
-                    if !s.is_auto_download_enabled(podcast_id) { return false }
-                    // Episode must not already be on disk.
-                    if s.episode_is_downloaded(ep_id) { return false }
-                    true
-                })
-                .collect(),
+        // Revalidate each entry before dispatch. Separate into:
+        //   dispatch_now  — current network allows it and show still wants it.
+        //   keep_pending  — still valid but not allowed on current network yet
+        //                   (network flapped back to cellular; requeue them).
+        //   drop          — unsubscribed, download disabled, or already on disk.
+        let mut dispatch_now = Vec::new();
+        let mut keep_pending = Vec::new();
+        match self.store.lock() {
+            Ok(s) => {
+                let is_on_wifi = s.is_on_wifi();
+                for (ep_id, url) in pending {
+                    let Some(podcast_id) = s.podcast_id_for_episode(&ep_id) else { continue };
+                    if !s.is_auto_download_enabled(podcast_id) { continue }
+                    if s.episode_is_downloaded(&ep_id) { continue }
+                    let wifi_only = s.wifi_only_for(podcast_id);
+                    if wifi_only && !is_on_wifi {
+                        // Network flapped back to cellular — requeue rather than drop.
+                        keep_pending.push((ep_id, url));
+                    } else {
+                        dispatch_now.push((ep_id, url));
+                    }
+                }
+            }
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
-        let count = valid.len();
-        for (episode_id, url) in valid {
+        // Re-add entries that are still valid but need Wi-Fi.
+        if !keep_pending.is_empty() {
+            if let Ok(mut s) = self.store.lock() {
+                s.add_pending_wifi_downloads(keep_pending);
+            }
+        }
+        let count = dispatch_now.len();
+        for (episode_id, url) in dispatch_now {
             let cmd = crate::capability::DownloadCommand::start(url, episode_id, None);
             let _ = self.dispatch_download(&cmd, correlation_id);
         }

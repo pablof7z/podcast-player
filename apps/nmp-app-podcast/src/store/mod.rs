@@ -260,6 +260,10 @@ impl PodcastStore {
         };
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
+        // Restore deferred Wi-Fi downloads that were pending when the app was
+        // last killed. These survive restart and are dispatched on the next
+        // Wi-Fi connectivity event.
+        self.pending_wifi_downloads = loaded.pending_wifi_downloads;
         self.podcasts.len()
     }
 
@@ -328,6 +332,7 @@ impl PodcastStore {
                 skip_backward_secs: self.skip_backward_secs,
             },
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
+            pending_wifi_downloads: self.pending_wifi_downloads.clone(),
         }
     }
 
