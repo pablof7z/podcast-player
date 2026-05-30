@@ -566,7 +566,8 @@ impl PodcastStore {
         self.nostr_profile_name = loaded.settings.nostr_profile_name;
         self.nostr_profile_about = loaded.settings.nostr_profile_about;
         self.nostr_profile_picture = loaded.settings.nostr_profile_picture;
-        self.nostr_public_key_hex = loaded.settings.nostr_public_key_hex;
+        // nostr_public_key_hex is read-only (from Keychain), never hydrate from persisted state
+        self.nostr_public_key_hex = None;
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
         // Restore deferred Wi-Fi downloads that were pending when the app was
@@ -691,7 +692,8 @@ impl PodcastStore {
                 nostr_profile_name: self.nostr_profile_name.clone(),
                 nostr_profile_about: self.nostr_profile_about.clone(),
                 nostr_profile_picture: self.nostr_profile_picture.clone(),
-                nostr_public_key_hex: self.nostr_public_key_hex.clone(),
+                // nostr_public_key_hex is excluded from persistence (read-only, from Keychain)
+                nostr_public_key_hex: None,
             },
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
             pending_wifi_downloads: self.pending_wifi_downloads.clone(),

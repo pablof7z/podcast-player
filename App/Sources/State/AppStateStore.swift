@@ -553,6 +553,30 @@ final class AppStateStore {
             kernel?.dispatch(namespace: "podcast.settings",
                              body: ["op": "set_notify_on_briefing_ready", "enabled": settings.notifyOnBriefingReady])
         }
+        if settings.nostrEnabled != prior.nostrEnabled {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_enabled", "enabled": settings.nostrEnabled])
+        }
+        if settings.nostrRelayURL != prior.nostrRelayURL {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_relay_url", "url": settings.nostrRelayURL])
+        }
+        if settings.nostrPublicRelays != prior.nostrPublicRelays {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_public_relays", "relays": settings.nostrPublicRelays])
+        }
+        if settings.nostrProfileName != prior.nostrProfileName {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_profile_name", "name": settings.nostrProfileName])
+        }
+        if settings.nostrProfileAbout != prior.nostrProfileAbout {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_profile_about", "about": settings.nostrProfileAbout])
+        }
+        if settings.nostrProfilePicture != prior.nostrProfilePicture {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_nostr_profile_picture", "picture": settings.nostrProfilePicture])
+        }
     }
 
     /// Wipes all user data while preserving API credentials and Nostr identity.
