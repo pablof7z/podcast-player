@@ -151,6 +151,7 @@ fn handle_dismiss_records_in_set_and_bumps_rev() {
             .unwrap(),
     );
 
+    let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let result = handle_inbox_action(
         InboxAction::Dismiss { episode_id: "ep-7".into() },
         &store,
@@ -158,6 +159,7 @@ fn handle_dismiss_records_in_set_and_bumps_rev() {
         &rev,
         &cache,
         &runtime,
+        &in_progress,
     );
     assert_eq!(result["ok"], true);
     assert!(dismissed.lock().unwrap().contains("ep-7"));
@@ -181,9 +183,13 @@ fn handle_triage_bumps_rev() {
     // Triage will attempt LLM calls that fail (Ollama likely not running in
     // unit test environment). The rev must still be bumped regardless of
     // whether LLM calls succeed.
-    let result = handle_inbox_action(InboxAction::Triage, &store, &dismissed, &rev, &cache, &runtime);
+    let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let result = handle_inbox_action(InboxAction::Triage, &store, &dismissed, &rev, &cache, &runtime, &in_progress);
+    // Triage now spawns a background task. The dispatch returns immediately
+    // after priming rev (+1). Additional rev bumps come from the background
+    // task as results arrive. Assert >= 1, not == 1.
     assert_eq!(result["ok"], true);
-    assert_eq!(rev.load(Ordering::Relaxed), 1);
+    assert!(rev.load(Ordering::Relaxed) >= 1, "rev must be bumped at least once (spinner prime)");
     // No dismissed entries added.
     assert!(dismissed.lock().unwrap().is_empty());
 }
@@ -207,6 +213,7 @@ fn handle_mark_listened_flips_store_flag() {
         eps.iter().find(|e| e.title == "Fresh").unwrap().id.0.to_string()
     };
 
+    let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let result = handle_inbox_action(
         InboxAction::MarkListened { episode_id: fresh_id.clone() },
         &store,
@@ -214,6 +221,7 @@ fn handle_mark_listened_flips_store_flag() {
         &rev,
         &cache,
         &runtime,
+        &in_progress,
     );
     assert_eq!(result["ok"], true);
     assert_eq!(rev.load(Ordering::Relaxed), 1);
