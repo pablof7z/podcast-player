@@ -84,6 +84,11 @@ impl AgentChatHandler {
         if trimmed.is_empty() {
             return serde_json::json!({"ok": false, "error": "empty message"});
         }
+        // Re-entrancy guard: one LLM call at a time keeps the placeholder-fill
+        // logic sound. If busy, reject rather than stacking a second pending row.
+        if self.busy.load(Ordering::Acquire) {
+            return serde_json::json!({"ok": false, "error": "agent_busy"});
+        }
         let now = Utc::now().timestamp();
 
         // Read the current history snapshot WITHOUT holding the mutex across the LLM call.
@@ -108,6 +113,11 @@ impl AgentChatHandler {
             is_generating: true,
         };
 
+        // Capture the placeholder id before moving it into the vec. The background
+        // task fills its own row by id — NOT last_mut() — so a concurrent Clear or
+        // second Send (rejected by the busy guard) cannot clobber the wrong row.
+        let placeholder_id = assistant_placeholder.id.clone();
+
         // Push user message and placeholder; mark busy.
         match self.conversation.lock() {
             Ok(mut c) => {
@@ -118,33 +128,57 @@ impl AgentChatHandler {
         }
         self.busy.store(true, Ordering::Relaxed);
         self.touched.store(true, Ordering::Relaxed);
+        // Prime rev so the iOS snapshot immediately surfaces the is_generating
+        // placeholder. The background task bumps rev again when the reply lands.
         self.rev.fetch_add(1, Ordering::Relaxed);
 
-        // Call the LLM synchronously (actor thread is a plain std::thread, block_on is safe).
-        // Fall back to the scaffold reply on any error.
-        let reply = match &self.runtime {
-            Some(rt) => agent_llm::chat_sync(
-                AGENT_SYSTEM_PROMPT,
-                &history_snapshot,
-                trimmed,
-                rt,
-            )
-            .unwrap_or_else(|_| SCAFFOLD_ASSISTANT_REPLY.to_owned()),
-            None => SCAFFOLD_ASSISTANT_REPLY.to_owned(),
-        };
+        match &self.runtime {
+            Some(rt) => {
+                // M5.2: spawn LLM call off the actor thread so the kernel stays
+                // responsive while waiting for Ollama (can take 2–30s).
+                let conversation = Arc::clone(&self.conversation);
+                let busy = Arc::clone(&self.busy);
+                let rev = Arc::clone(&self.rev);
+                let runtime_clone = Arc::clone(rt);
+                let message_owned = trimmed.to_owned();
 
-        // Mutate the placeholder in-place: fill content and clear is_generating.
-        match self.conversation.lock() {
-            Ok(mut c) => {
-                if let Some(last) = c.last_mut() {
-                    last.content = reply;
-                    last.is_generating = false;
-                }
+                rt.spawn(async move {
+                    let reply = tokio::task::spawn_blocking(move || {
+                        agent_llm::chat_sync(
+                            AGENT_SYSTEM_PROMPT,
+                            &history_snapshot,
+                            &message_owned,
+                            &runtime_clone,
+                        )
+                        .unwrap_or_else(|_| SCAFFOLD_ASSISTANT_REPLY.to_owned())
+                    })
+                    .await
+                    .unwrap_or_else(|_| SCAFFOLD_ASSISTANT_REPLY.to_owned());
+
+                    // Find the placeholder by id — NOT last_mut() — so that a
+                    // concurrent Clear or second Send doesn't clobber the wrong row.
+                    if let Ok(mut c) = conversation.lock() {
+                        if let Some(msg) = c.iter_mut().find(|m| m.id == placeholder_id) {
+                            msg.content = reply;
+                            msg.is_generating = false;
+                        }
+                    }
+                    busy.store(false, Ordering::Relaxed);
+                    rev.fetch_add(1, Ordering::Relaxed);
+                });
             }
-            Err(_) => return serde_json::json!({"ok": false, "error": "conversation poisoned"}),
+            None => {
+                // Test / scaffold path: no runtime wired, fill immediately by id.
+                if let Ok(mut c) = self.conversation.lock() {
+                    if let Some(msg) = c.iter_mut().find(|m| m.id == placeholder_id) {
+                        msg.content = SCAFFOLD_ASSISTANT_REPLY.to_owned();
+                        msg.is_generating = false;
+                    }
+                }
+                self.busy.store(false, Ordering::Relaxed);
+                self.rev.fetch_add(1, Ordering::Relaxed);
+            }
         }
-        self.busy.store(false, Ordering::Relaxed);
-        self.rev.fetch_add(1, Ordering::Relaxed);
         serde_json::json!({"ok": true})
     }
 

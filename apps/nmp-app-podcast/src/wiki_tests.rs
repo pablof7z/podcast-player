@@ -29,12 +29,14 @@ fn make_slots() -> (
     )
 }
 
+/// Tests that Generate inserts a placeholder article synchronously (is_generating=true)
+/// and primes rev. The background synthesis task runs off-thread on the production
+/// multi-thread runtime; on the test's current-thread runtime the spawn is queued
+/// but not polled. End-to-end coverage (is_generating→false, final summary) is
+/// deferred to BACKLOG: wiki-generate-e2e-test.
 #[test]
-fn generate_creates_article_with_placeholder_summary() {
+fn generate_inserts_placeholder_and_primes_rev() {
     let (articles, results, store, rev, rt) = make_slots();
-    // Ollama is not running in unit tests — the LLM call will fail and the
-    // placeholder summary is committed instead. The test only checks that an
-    // article record was created; it does not assert on LLM content.
     let envelope = handle_wiki_action(
         &articles,
         &results,
@@ -54,9 +56,10 @@ fn generate_creates_article_with_placeholder_summary() {
     assert_eq!(stored.len(), 1);
     assert_eq!(stored[0].topic, "Bitcoin halvings");
     assert_eq!(stored[0].podcast_id, "pod-1");
-    assert!(!stored[0].is_generating);
-    // Either the LLM succeeded (long text) or fell back to the placeholder.
-    assert!(!stored[0].summary.is_empty());
+    // Placeholder is inserted with is_generating=true; background task fills it.
+    assert!(stored[0].is_generating, "placeholder must be is_generating=true");
+    assert!(!stored[0].summary.is_empty(), "placeholder summary must not be empty");
+    // Exactly one synchronous rev prime before the background task runs.
     assert_eq!(rev.load(Ordering::Relaxed), 1);
 }
 
