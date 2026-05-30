@@ -187,6 +187,24 @@ extension PodcastHandle {
         }
     }
 
+    /// Start the network monitor and deliver an initial `ConnectivityChanged`
+    /// report so Rust's `is_on_wifi` flag is primed before the first feed
+    /// refresh. Must be called from a `@MainActor` context after
+    /// `registerPodcastProjection()`.
+    @MainActor
+    func startNetworkMonitor() {
+        guard let handle = podcastHandle else { return }
+        // When Wi-Fi is restored after a cellular-only period, dispatch the
+        // deferred downloads action so episodes that were skipped on cellular
+        // are downloaded immediately rather than waiting for the next refresh.
+        PodcastCapabilities.shared.network.onWifiRestored = { [weak self] in
+            guard let self else { return }
+            _ = self.dispatchAction(namespace: "podcast",
+                                    body: ["op": "dispatch_deferred_wifi_downloads"])
+        }
+        PodcastCapabilities.shared.network.start(handle: handle)
+    }
+
     func unregisterPodcastProjectionIfNeeded() {
         guard let handle = podcastHandle else { return }
         nmp_app_podcast_unregister(handle)

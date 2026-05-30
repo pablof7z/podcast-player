@@ -61,6 +61,14 @@ pub(super) struct PersistedStore {
     /// pre-existing files (before queue persistence shipped) loading as empty.
     #[serde(default)]
     pub queue: Vec<String>,
+    /// Episodes deferred because the device was on cellular at refresh time for
+    /// a Wi-Fi-only show. Pairs of `(episode_id_str, enclosure_url)`. Persisted
+    /// so that an app kill while on cellular doesn't permanently lose the
+    /// deferred downloads — they survive restart and are dispatched on the next
+    /// Wi-Fi connection. `#[serde(default)]` for backward compat with older
+    /// files that lack this field.
+    #[serde(default)]
+    pub pending_wifi_downloads: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,6 +133,11 @@ pub(super) struct PersistedPodcast {
     /// schemas as empty (see this file, line ~60).
     #[serde(default)]
     pub auto_download: bool,
+    /// When `true`, the user explicitly allowed cellular auto-downloads
+    /// for this show (i.e. Wi-Fi-only is off). Absent in older files ⇒
+    /// `false` (cellular not allowed — default Wi-Fi-only behaviour).
+    #[serde(default)]
+    pub cellular_allowed: bool,
 }
 
 /// Resolve the path of `podcasts.json` inside `data_dir`.

@@ -66,6 +66,7 @@ pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
                 author: r.artist_name,
                 description: None,
                 auto_download: false,
+                cellular_allowed: false,
                 episodes: vec![],
             })
         })

@@ -153,4 +153,9 @@ void nmp_app_remove_account(void *app, const char *identity_id);
 // ABI break; caller MUST free a non-NULL result via `nmp_app_free_string`.
 char *nmp_app_podcast_voice_report(void *handle, const char *report_json);
 
+// Deliver a JSON-encoded NetworkReport (nmp.network.capability ConnectivityChanged)
+// to the kernel. Updates the Wi-Fi state flag used by the auto-download policy.
+// Always returns NULL — no follow-up command.
+char *nmp_app_podcast_network_report(void *handle, const char *report_json);
+
 #endif

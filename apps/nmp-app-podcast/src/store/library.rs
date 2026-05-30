@@ -33,6 +33,7 @@ impl PodcastStore {
         let removed_p = self.podcasts.remove(&podcast_id).is_some();
         let removed_e = self.episodes.remove(&podcast_id).is_some();
         let removed_a = self.auto_download_enabled.remove(&podcast_id);
+        self.auto_download_cellular_allowed.remove(&podcast_id);
         if removed_p || removed_e || removed_a {
             self.persist();
         }
@@ -163,6 +164,17 @@ impl PodcastStore {
     /// Look up the on-disk path of a downloaded enclosure, if any.
     pub fn local_path_for(&self, episode_id: &EpisodeId) -> Option<&str> {
         self.local_paths.get(episode_id).map(String::as_str)
+    }
+
+    /// Return the `PodcastId` for the podcast that owns `episode_id_str`, or
+    /// `None` when the episode is unknown. Used for validation before dispatch.
+    pub fn podcast_id_for_episode(&self, episode_id_str: &str) -> Option<podcast_core::PodcastId> {
+        for (podcast_id, episodes) in &self.episodes {
+            if episodes.iter().any(|e| e.id.0.to_string() == episode_id_str) {
+                return Some(*podcast_id);
+            }
+        }
+        None
     }
 
     /// Returns `true` when the episode's audio file has a locally tracked path.

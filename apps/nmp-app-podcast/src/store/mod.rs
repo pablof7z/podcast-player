@@ -85,6 +85,19 @@ pub struct PodcastStore {
     /// new episodes are surfaced in the snapshot but not downloaded.
     /// Cleared by `unsubscribe` so a later re-subscribe starts fresh.
     auto_download_enabled: HashSet<PodcastId>,
+    /// Podcasts for which cellular auto-download is **explicitly allowed**
+    /// (i.e. the user set Wi-Fi-only to `false`). Absence means the default
+    /// applies: Wi-Fi-only (matching `AutoDownloadPolicy.default.wifiOnly`).
+    /// Cleared by `unsubscribe`.
+    auto_download_cellular_allowed: HashSet<PodcastId>,
+    /// Episodes deferred because the device was on cellular when the feed
+    /// refreshed and the show is Wi-Fi-only. These are dispatched as a batch
+    /// the next time `NetworkReport::ConnectivityChanged { is_wifi: true }`
+    /// arrives. Keyed by `(episode_id_str, enclosure_url)`.
+    /// Not persisted — a cold launch on Wi-Fi will re-discover them naturally
+    /// via the next feed refresh; deferred entries represent at most the
+    /// downloads that were missed in the current session.
+    pub(super) pending_wifi_downloads: Vec<(String, String)>,
     /// Durable agent-memory bag (feature #33). Keyed on `MemoryFact.key`
     /// so writes upsert and the snapshot can render a deduped list. Lives
     /// alongside `podcasts` in `podcasts.json` so both projections share
@@ -111,6 +124,13 @@ pub struct PodcastStore {
     pub(super) skip_forward_secs: f64,
     /// Skip-backward interval (seconds). Default 15.0; user-configurable.
     pub(super) skip_backward_secs: f64,
+    /// Last-known Wi-Fi state reported by `nmp.network.capability`. `true` when
+    /// the device's active interface is Wi-Fi. Defaults to `true` so
+    /// auto-download runs on first launch before the iOS capability fires its
+    /// initial `ConnectivityChanged` event (conservative: assumes Wi-Fi until
+    /// told otherwise, avoiding unnecessary cellular charges on startup).
+    /// Not persisted — refreshed from the capability on every app launch.
+    pub(super) is_on_wifi: bool,
     data_dir: Option<PathBuf>,
     /// Episode ids loaded from disk during `set_data_dir`. Drained exactly
     /// once by `take_loaded_queue`; the FFI layer seeds the shared
@@ -133,6 +153,8 @@ impl PodcastStore {
             last_flushed_positions: HashMap::new(),
             has_completed_onboarding: false,
             auto_download_enabled: HashSet::new(),
+            auto_download_cellular_allowed: HashSet::new(),
+            pending_wifi_downloads: Vec::new(),
             memory_facts: HashMap::new(),
             ad_segments: HashMap::new(),
             auto_skip_ads_enabled: false,
@@ -142,6 +164,7 @@ impl PodcastStore {
             headphone_triple_tap_action: "clipNow".to_owned(),
             skip_forward_secs: 30.0,
             skip_backward_secs: 15.0,
+            is_on_wifi: true,
             data_dir: None,
             loaded_queue: Vec::new(),
             cached_queue: Vec::new(),
@@ -184,6 +207,7 @@ impl PodcastStore {
         // doesn't immediately re-flush on the next `Playing` tick.
         self.last_flushed_positions.clear();
         self.auto_download_enabled.clear();
+        self.auto_download_cellular_allowed.clear();
         self.memory_facts.clear();
         self.ad_segments.clear();
         for row in loaded.podcasts {
@@ -198,6 +222,9 @@ impl PodcastStore {
             self.episodes.insert(id, row.episodes);
             if row.auto_download {
                 self.auto_download_enabled.insert(id);
+            }
+            if row.cellular_allowed {
+                self.auto_download_cellular_allowed.insert(id);
             }
         }
         // Settings are stored in the same envelope so onboarding completion
@@ -233,6 +260,10 @@ impl PodcastStore {
         };
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
+        // Restore deferred Wi-Fi downloads that were pending when the app was
+        // last killed. These survive restart and are dispatched on the next
+        // Wi-Fi connectivity event.
+        self.pending_wifi_downloads = loaded.pending_wifi_downloads;
         self.podcasts.len()
     }
 
@@ -270,6 +301,7 @@ impl PodcastStore {
                 podcast: podcast.clone(),
                 episodes: self.episodes.get(id).cloned().unwrap_or_default(),
                 auto_download: self.auto_download_enabled.contains(id),
+                cellular_allowed: self.auto_download_cellular_allowed.contains(id),
             })
             .collect();
         // Stable order so two consecutive saves produce identical bytes —
@@ -300,6 +332,7 @@ impl PodcastStore {
                 skip_backward_secs: self.skip_backward_secs,
             },
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
+            pending_wifi_downloads: self.pending_wifi_downloads.clone(),
         }
     }
 

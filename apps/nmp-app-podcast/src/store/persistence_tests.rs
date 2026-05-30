@@ -86,6 +86,7 @@ fn save_then_load_round_trips_podcasts_and_episodes() {
             podcast: podcast.clone(),
             episodes: episodes.clone(),
             auto_download: false,
+            cellular_allowed: false,
         }],
         has_completed_onboarding: false,
         memory_facts: vec![],

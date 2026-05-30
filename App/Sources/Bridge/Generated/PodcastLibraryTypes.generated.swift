@@ -27,6 +27,12 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// decode must tolerate its absence — synthesized `Decodable` would otherwise
     /// throw `keyNotFound`.
     @DefaultFalse var autoDownload: Bool = false
+    /// When `true`, the user explicitly allowed cellular auto-downloads
+    /// for this show (Wi-Fi-only is off). Omitted from the wire when `false`
+    /// (D5 — `#[serde(skip_serializing_if)]`). The iOS subscription list
+    /// uses this to reconstruct `AutoDownloadPolicy.wifiOnly` from the
+    /// snapshot rather than hardcoding `wifiOnly: true` for all enabled rows.
+    @DefaultFalse var cellularAllowed: Bool = false
     @DefaultEmptyArray var episodes: [EpisodeSummary] = []
 }
 
@@ -141,6 +147,7 @@ extension PodcastSummary: Codable {
         author = try c.decodeIfPresent(String.self, forKey: .author)
         description = try c.decodeIfPresent(String.self, forKey: .description)
         autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
+        cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
         episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []
     }
 }

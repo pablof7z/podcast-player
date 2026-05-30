@@ -120,6 +120,54 @@ impl PodcastStore {
         self.skip_backward_secs
     }
 
+    /// Set whether cellular auto-download is allowed for a podcast.
+    /// `wifi_only=true` (the default) restricts auto-download to Wi-Fi.
+    /// `wifi_only=false` allows downloads on any interface including cellular.
+    pub fn set_wifi_only(&mut self, podcast_id: PodcastId, wifi_only: bool) {
+        // `auto_download_cellular_allowed` tracks the explicit cellular-ok overrides.
+        // Present = cellular allowed (wifi_only=false). Absent = wifi-only (default).
+        let changed = if !wifi_only {
+            self.auto_download_cellular_allowed.insert(podcast_id)
+        } else {
+            self.auto_download_cellular_allowed.remove(&podcast_id)
+        };
+        if changed {
+            self.persist();
+        }
+    }
+
+    /// Whether auto-download is Wi-Fi-gated for this podcast.
+    /// Returns `true` (Wi-Fi-only) by default; `false` only when the user
+    /// explicitly allowed cellular downloads via `set_wifi_only(false)`.
+    pub fn wifi_only_for(&self, podcast_id: PodcastId) -> bool {
+        !self.auto_download_cellular_allowed.contains(&podcast_id)
+    }
+
+    /// Whether the device's active network interface is Wi-Fi. Updated by
+    /// `nmp.network.capability` `ConnectivityChanged` reports. Defaults to
+    /// `true` (conservative: assume Wi-Fi until the capability fires).
+    pub fn is_on_wifi(&self) -> bool {
+        self.is_on_wifi
+    }
+
+    /// Update the Wi-Fi state from a `NetworkReport::ConnectivityChanged`
+    /// event. Not persisted — this is a runtime signal, not durable config.
+    pub fn set_is_on_wifi(&mut self, value: bool) {
+        self.is_on_wifi = value;
+    }
+
+    /// Append deferred downloads (episodes that need Wi-Fi but the device
+    /// was on cellular at refresh time).
+    pub fn add_pending_wifi_downloads(&mut self, items: Vec<(String, String)>) {
+        self.pending_wifi_downloads.extend(items);
+    }
+
+    /// Drain and return all pending Wi-Fi downloads. Called when Wi-Fi is
+    /// restored so they can be dispatched immediately.
+    pub fn drain_pending_wifi_downloads(&mut self) -> Vec<(String, String)> {
+        std::mem::take(&mut self.pending_wifi_downloads)
+    }
+
     /// Update both skip intervals. Clamps each value to `[1.0, 120.0]`
     /// seconds and persists when either value changes.
     pub fn set_skip_intervals(&mut self, forward_secs: f64, backward_secs: f64) {

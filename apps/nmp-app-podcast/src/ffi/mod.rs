@@ -50,6 +50,7 @@ mod snapshot_update;
 mod snapshot_tests;
 #[cfg(test)]
 mod snapshot_tests_ext;
+mod network_report;
 mod voice_report;
 
 pub use actions::{
@@ -101,4 +102,5 @@ pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
     nmp_app_podcast_unregister, PodcastUpdate,
 };
+pub use network_report::nmp_app_podcast_network_report;
 pub use voice_report::nmp_app_podcast_voice_report;

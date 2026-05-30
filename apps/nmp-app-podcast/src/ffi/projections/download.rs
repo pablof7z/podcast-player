@@ -49,6 +49,11 @@ pub struct DownloadItemSnapshot {
     /// projection layer decides whether to retain a brief "just
     /// finished" banner).
     pub state: String,
+    /// Total file size in bytes once the server reports `Content-Length`.
+    /// `None` until the first HTTP response; used by the UI to show byte
+    /// counts and derive the denominator for the progress bar.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_bytes: Option<u64>,
     /// Most recent failure diagnostic, when `state == "failed"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,

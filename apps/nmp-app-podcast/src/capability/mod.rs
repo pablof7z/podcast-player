@@ -25,11 +25,13 @@ pub mod audio;
 pub mod dispatch;
 pub mod download;
 pub mod http;
+pub mod network;
 pub mod notification;
 pub mod nostr_relay;
 pub mod voice;
 
 pub use audio::{AudioCommand, AudioReport, AUDIO_CAPABILITY_NAMESPACE};
+pub use network::{NetworkReport, NETWORK_CAPABILITY_NAMESPACE};
 pub use dispatch::{
     dispatch_audio_report_json, dispatch_download_report_json, encode_audio_command,
     DispatchOutcome,
