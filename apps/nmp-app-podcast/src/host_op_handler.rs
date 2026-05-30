@@ -570,6 +570,41 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
+            SettingsAction::SetNostrEnabled { enabled } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_nostr_enabled(enabled);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetNostrRelayUrl { url } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_nostr_relay_url(url);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetNostrPublicRelays { relays } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_nostr_public_relays(relays);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetNostrProfile { name, about, picture } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_nostr_profile(name, about, picture);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetNostrPublicKeyHex { hex } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_nostr_public_key_hex(hex);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
         }
     }
 }

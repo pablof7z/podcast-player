@@ -219,6 +219,20 @@ pub struct PodcastStore {
     pub(super) notify_on_new_episodes: bool,
     /// Whether to send local notifications when briefing/AI processing is ready. Default `true`.
     pub(super) notify_on_briefing_ready: bool,
+    /// Whether Nostr publishing and identity features are enabled. Default `false`.
+    pub(super) nostr_enabled: bool,
+    /// Primary Nostr relay URL for publishing and event distribution. Default empty.
+    pub(super) nostr_relay_url: String,
+    /// List of public Nostr relay URLs for broadcast and subscription. Default empty.
+    pub(super) nostr_public_relays: Vec<String>,
+    /// User's display name in Nostr profile metadata. Default empty.
+    pub(super) nostr_profile_name: String,
+    /// User's about/bio text in Nostr profile metadata. Default empty.
+    pub(super) nostr_profile_about: String,
+    /// User's picture URL in Nostr profile metadata. Default empty.
+    pub(super) nostr_profile_picture: String,
+    /// Nostr public key hex (read-only, derived from Keychain). Not persisted.
+    pub(super) nostr_public_key_hex: Option<String>,
     /// Last-known Wi-Fi state reported by `nmp.network.capability`. `true` when
     /// the device's active interface is Wi-Fi. Defaults to `true` so
     /// auto-download runs on first launch before the iOS capability fires its
@@ -305,6 +319,13 @@ impl PodcastStore {
             auto_fallback_to_scribe: true,
             notify_on_new_episodes: true,
             notify_on_briefing_ready: true,
+            nostr_enabled: false,
+            nostr_relay_url: String::new(),
+            nostr_public_relays: Vec::new(),
+            nostr_profile_name: String::new(),
+            nostr_profile_about: String::new(),
+            nostr_profile_picture: String::new(),
+            nostr_public_key_hex: None,
             is_on_wifi: true,
             data_dir: None,
             loaded_queue: Vec::new(),
@@ -539,6 +560,13 @@ impl PodcastStore {
         self.auto_fallback_to_scribe = loaded.settings.auto_fallback_to_scribe;
         self.notify_on_new_episodes = loaded.settings.notify_on_new_episodes;
         self.notify_on_briefing_ready = loaded.settings.notify_on_briefing_ready;
+        self.nostr_enabled = loaded.settings.nostr_enabled;
+        self.nostr_relay_url = loaded.settings.nostr_relay_url;
+        self.nostr_public_relays = loaded.settings.nostr_public_relays;
+        self.nostr_profile_name = loaded.settings.nostr_profile_name;
+        self.nostr_profile_about = loaded.settings.nostr_profile_about;
+        self.nostr_profile_picture = loaded.settings.nostr_profile_picture;
+        self.nostr_public_key_hex = loaded.settings.nostr_public_key_hex;
         self.cached_queue = loaded.queue.clone();
         self.loaded_queue = loaded.queue;
         // Restore deferred Wi-Fi downloads that were pending when the app was
@@ -657,6 +685,13 @@ impl PodcastStore {
                 auto_fallback_to_scribe: self.auto_fallback_to_scribe,
                 notify_on_new_episodes: self.notify_on_new_episodes,
                 notify_on_briefing_ready: self.notify_on_briefing_ready,
+                nostr_enabled: self.nostr_enabled,
+                nostr_relay_url: self.nostr_relay_url.clone(),
+                nostr_public_relays: self.nostr_public_relays.clone(),
+                nostr_profile_name: self.nostr_profile_name.clone(),
+                nostr_profile_about: self.nostr_profile_about.clone(),
+                nostr_profile_picture: self.nostr_profile_picture.clone(),
+                nostr_public_key_hex: self.nostr_public_key_hex.clone(),
             },
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
             pending_wifi_downloads: self.pending_wifi_downloads.clone(),

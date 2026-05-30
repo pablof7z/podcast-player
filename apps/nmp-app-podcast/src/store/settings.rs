@@ -682,6 +682,81 @@ impl PodcastStore {
         self.notify_on_briefing_ready = value;
         self.persist();
     }
+
+    /// Whether Nostr publishing and identity features are enabled. Default `false`.
+    pub fn nostr_enabled(&self) -> bool {
+        self.nostr_enabled
+    }
+
+    /// Set the nostr-enabled toggle and persist. Idempotent.
+    pub fn set_nostr_enabled(&mut self, value: bool) {
+        if self.nostr_enabled == value { return; }
+        self.nostr_enabled = value;
+        self.persist();
+    }
+
+    /// Primary Nostr relay URL for publishing and event distribution.
+    pub fn nostr_relay_url(&self) -> &str {
+        &self.nostr_relay_url
+    }
+
+    /// Set the Nostr relay URL and persist. Idempotent.
+    pub fn set_nostr_relay_url(&mut self, url: String) {
+        if self.nostr_relay_url == url { return; }
+        self.nostr_relay_url = url;
+        self.persist();
+    }
+
+    /// List of public Nostr relay URLs for broadcast and subscription.
+    pub fn nostr_public_relays(&self) -> &[String] {
+        &self.nostr_public_relays
+    }
+
+    /// Set the list of public Nostr relays and persist. Idempotent.
+    pub fn set_nostr_public_relays(&mut self, relays: Vec<String>) {
+        if self.nostr_public_relays == relays { return; }
+        self.nostr_public_relays = relays;
+        self.persist();
+    }
+
+    /// User's display name in Nostr profile metadata.
+    pub fn nostr_profile_name(&self) -> &str {
+        &self.nostr_profile_name
+    }
+
+    /// User's about/bio text in Nostr profile metadata.
+    pub fn nostr_profile_about(&self) -> &str {
+        &self.nostr_profile_about
+    }
+
+    /// User's picture URL in Nostr profile metadata.
+    pub fn nostr_profile_picture(&self) -> &str {
+        &self.nostr_profile_picture
+    }
+
+    /// Set all three profile fields (name, about, picture) atomically and persist. Idempotent.
+    pub fn set_nostr_profile(&mut self, name: String, about: String, picture: String) {
+        if self.nostr_profile_name == name
+            && self.nostr_profile_about == about
+            && self.nostr_profile_picture == picture
+        {
+            return;
+        }
+        self.nostr_profile_name = name;
+        self.nostr_profile_about = about;
+        self.nostr_profile_picture = picture;
+        self.persist();
+    }
+
+    /// Nostr public key hex (read-only, derived from Keychain). Not persisted.
+    pub fn nostr_public_key_hex(&self) -> Option<&str> {
+        self.nostr_public_key_hex.as_deref()
+    }
+
+    /// Set the Nostr public key hex. Not persisted; used only for snapshot projection.
+    pub fn set_nostr_public_key_hex(&mut self, hex: Option<String>) {
+        self.nostr_public_key_hex = hex;
+    }
 }
 
 #[cfg(test)]

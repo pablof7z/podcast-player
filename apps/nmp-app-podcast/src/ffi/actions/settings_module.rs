@@ -109,6 +109,16 @@ pub enum SettingsAction {
     SetNotifyOnNewEpisodes { enabled: bool },
     /// Toggle local notifications for briefing readiness.
     SetNotifyOnBriefingReady { enabled: bool },
+    /// Set the Nostr-enabled toggle.
+    SetNostrEnabled { enabled: bool },
+    /// Set the Nostr relay URL.
+    SetNostrRelayUrl { url: String },
+    /// Set the list of public Nostr relays.
+    SetNostrPublicRelays { relays: Vec<String> },
+    /// Set Nostr profile metadata (name, about, picture).
+    SetNostrProfile { name: String, about: String, picture: String },
+    /// Set the Nostr public key hex (read-only, for projection only).
+    SetNostrPublicKeyHex { hex: Option<String> },
 }
 
 /// Action module for the `"podcast.settings"` namespace.

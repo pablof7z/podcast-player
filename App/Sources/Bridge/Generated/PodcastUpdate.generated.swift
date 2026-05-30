@@ -191,6 +191,20 @@ struct SettingsSnapshot: Equatable {
     var notifyOnNewEpisodes: Bool = true
     /// Whether to send local notifications when briefing/AI processing is ready. Default `true`.
     var notifyOnBriefingReady: Bool = true
+    /// Whether Nostr publishing and identity features are enabled. Default `false`.
+    var nostrEnabled: Bool = false
+    /// Primary Nostr relay URL for publishing and event distribution. Default empty.
+    var nostrRelayURL: String = ""
+    /// List of public Nostr relay URLs for broadcast and subscription. Default empty.
+    var nostrPublicRelays: [String] = []
+    /// User's display name in Nostr profile metadata. Default empty.
+    var nostrProfileName: String = ""
+    /// User's about/bio text in Nostr profile metadata. Default empty.
+    var nostrProfileAbout: String = ""
+    /// User's picture URL in Nostr profile metadata. Default empty.
+    var nostrProfilePicture: String = ""
+    /// Nostr public key hex (read-only, derived from Keychain). Not persisted.
+    var nostrPublicKeyHex: String? = nil
 }
 
 /// Active download-queue projection surfaced via `PodcastUpdate.downloads`.
@@ -338,6 +352,13 @@ extension SettingsSnapshot: Codable {
         case autoFallbackToScribe = "auto_fallback_to_scribe"
         case notifyOnNewEpisodes = "notify_on_new_episodes"
         case notifyOnBriefingReady = "notify_on_briefing_ready"
+        case nostrEnabled = "nostr_enabled"
+        case nostrRelayURL = "nostr_relay_url"
+        case nostrPublicRelays = "nostr_public_relays"
+        case nostrProfileName = "nostr_profile_name"
+        case nostrProfileAbout = "nostr_profile_about"
+        case nostrProfilePicture = "nostr_profile_picture"
+        case nostrPublicKeyHex = "nostr_public_key_hex"
     }
 
     init(from decoder: Decoder) throws {
@@ -402,6 +423,13 @@ extension SettingsSnapshot: Codable {
         autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
         notifyOnNewEpisodes = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) ?? true
         notifyOnBriefingReady = try c.decodeIfPresent(Bool.self, forKey: .notifyOnBriefingReady) ?? true
+        nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
+        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? ""
+        nostrPublicRelays = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) ?? []
+        nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
+        nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
+        nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
+        nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
     }
 }
 
