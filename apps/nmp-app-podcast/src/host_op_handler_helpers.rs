@@ -6,17 +6,54 @@
 use podcast_core::Episode;
 
 /// Merge a freshly-parsed episode list against the prior in-store list,
-/// preserving `position_secs` so a refresh does not lose listening progress.
+/// preserving per-episode state that lives only in the store and would
+/// otherwise be clobbered when the RSS re-parse replaces the episode record.
+///
+/// Carried forward for episodes matched by [`podcast_core::EpisodeId`]:
+///
+/// * `position_secs` — listening progress.
+/// * `chapters` — but **only** AI-generated chapters, and only when the
+///   freshly-parsed episode supplies none. AI chapters
+///   ([`crate::ai_chapters`]) are synthesized into the store and never appear
+///   in the RSS feed, so a refresh that re-parses the feed would drop them and
+///   the UI would flash empty until the next snapshot rebuild
+///   (`m4-chapters-rust-persistence`). Publisher chapters always win (D7): when
+///   the fresh episode carries its own chapters we keep those, so a feed that
+///   later ships real Podcasting 2.0 chapters cleanly supersedes the AI ones.
 pub(crate) fn merge_episodes(fresh: Vec<Episode>, existing: Vec<Episode>) -> Vec<Episode> {
     fresh
         .into_iter()
         .map(|mut ep| {
             if let Some(prev) = existing.iter().find(|e| e.id == ep.id) {
                 ep.position_secs = prev.position_secs;
+                carry_forward_ai_chapters(&mut ep, prev);
             }
             ep
         })
         .collect()
+}
+
+/// True when an episode carries usable chapters — i.e. `Some(non-empty)`.
+/// Mirrors the "loaded" notion in
+/// [`crate::store::PodcastStore::episode_chapters_state`] so the merge gate and
+/// the AI-compile gate agree on what "has chapters" means.
+fn has_chapters(ep: &Episode) -> bool {
+    ep.chapters.as_ref().map(|c| !c.is_empty()).unwrap_or(false)
+}
+
+/// Copy AI-generated chapters from `prev` onto `ep` when `ep` brought none of
+/// its own. Only AI chapters are carried — prior publisher chapters that
+/// vanished from the re-parsed feed are intentionally allowed to drop.
+fn carry_forward_ai_chapters(ep: &mut Episode, prev: &Episode) {
+    if has_chapters(ep) {
+        return; // Fresh chapters (publisher or otherwise) win — D7.
+    }
+    if let Some(prev_chapters) = prev.chapters.as_ref() {
+        let ai: Vec<_> = prev_chapters.iter().filter(|c| c.is_ai_generated).cloned().collect();
+        if !ai.is_empty() {
+            ep.chapters = Some(ai);
+        }
+    }
 }
 
 #[cfg(test)]
