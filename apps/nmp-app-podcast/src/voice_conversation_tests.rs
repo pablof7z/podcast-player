@@ -143,3 +143,61 @@ fn empty_transcript_never_spawns() {
     // drain, but it keeps the teardown contract explicit in the test).
     mgr.shutdown();
 }
+
+#[test]
+fn shutdown_aborts_genuinely_inflight_task() {
+    // The four shutdown/spawn tests above all exercise the *pre-spawn* guard:
+    // `shutting_down` is set before any task exists, so they prove the fast
+    // path no-ops but never prove `shutdown` cancels a task already running on
+    // a worker thread — the actual UAF window. This test closes that gap by
+    // parking a genuine in-flight task on the manager's runtime and asserting
+    // `shutdown` cancels it.
+    //
+    // `shutdown` does `std::mem::take` then `await`s (and drops) each handle,
+    // so the handles are consumed and an emptied-`inflight` check alone is
+    // vacuous — it passes even if `shutdown` did nothing. To observe the abort
+    // we capture a `Drop` guard *inside* the task future: when `abort` cancels
+    // the parked future, tokio drops it, flipping `dropped` to true. Drain +
+    // drop-guard together prove `shutdown` actually aborted the task.
+    use std::future::pending;
+
+    struct AbortFlag(Arc<AtomicBool>);
+    impl Drop for AbortFlag {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
+    let mgr = manager_with_null_app();
+    let rt = Arc::clone(&mgr.runtime); // same runtime `shutdown` will join on
+
+    let dropped = Arc::new(AtomicBool::new(false));
+    let guard = AbortFlag(Arc::clone(&dropped));
+    let (started_tx, started_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let handle = rt.spawn(async move {
+        let _guard = guard; // lives as part of the future's state
+        let _ = started_tx.send(()); // announce we are genuinely running
+        pending::<()>().await; // park forever — only `abort` can end this
+    });
+    mgr.inflight.lock().unwrap().push(handle);
+
+    // Prove the task is actually in-flight (parked, past its first poll)
+    // before `shutdown` — this is the in-flight case, not the pre-spawn guard.
+    // This `block_on` completes before `shutdown` runs its own `block_on`, so
+    // there is no nested-runtime panic.
+    rt.block_on(async {
+        started_rx.await.expect("in-flight task must reach its park point");
+    });
+
+    mgr.shutdown();
+
+    assert!(
+        mgr.inflight.lock().unwrap().is_empty(),
+        "shutdown must drain the inflight handles"
+    );
+    assert!(
+        dropped.load(Ordering::SeqCst),
+        "shutdown must abort (and thereby drop) the in-flight task future"
+    );
+}
