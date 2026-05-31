@@ -287,9 +287,15 @@ worktrees currently in flight.
      (`AgentGeneratedPodcastService.audioFileURL`, `agent-episodes/<id>.m4a`) →
      publishes a real `Episode` on the "Agent Generated" virtual podcast
      (`AgentGeneratedPodcastService.publishEpisode`) → persists transcript +
-     chapters. Media persistence and show/episode publishing integration are
-     done here. (NIP-F4 publishing of these episodes is the remaining genuine
-     gap on this path.)
+     chapters. Media persistence (the m4a is written to durable Application
+     Support) and show/episode publishing integration (a real `Episode` is
+     upserted onto a `Podcast(kind: .synthetic)`) both exist here. NOT audited
+     in this investigation, and still potentially open on this path: NIP-F4
+     publishing of these episodes, deletion cleanup (no removal of the
+     `agent-episodes/<id>.m4a` file or its store entry was found), and whether
+     the published `.synthetic` episode *metadata* round-trips the store's disk
+     layer so the episode reappears after restart (the audio file persists
+     regardless; the library entry is unverified).
   2. **Kernel `podcast.tts` path (orphaned scaffold).** `tts.rs` / `tts_llm.rs`
      / `TtsEpisodeSummary`: an LLM writes a *text script*, held in an
      in-memory-only `Arc<Mutex<Vec<TtsEpisodeSummary>>>` that
