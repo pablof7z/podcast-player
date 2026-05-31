@@ -92,15 +92,15 @@ struct KernelBunkerHandshake: Decodable, Equatable {
 /// kernel already knows about, so these profiles resolve without a Swift-side
 /// relay round-trip.
 ///
-/// `display` is the kernel's merged best display name (NIP-05 identifier >
-/// `display_name` > `name` > short npub); `pictureUrl` is the kind:0 picture.
+/// `display` maps to `display_name` on the wire — the kernel's merged best
+/// display name (NIP-05 > display_name > name); `pictureUrl` is the kind:0 picture.
 /// Both are optional — the kernel may have only one or neither.
 struct ResolvedProfile: Decodable, Equatable {
     let display: String?
     let pictureUrl: String?
 
     enum CodingKeys: String, CodingKey {
-        case display
+        case display = "display_name"
         case pictureUrl = "picture_url"
     }
 }
