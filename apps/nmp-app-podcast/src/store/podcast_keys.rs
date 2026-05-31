@@ -204,6 +204,11 @@ impl PodcastKeyStore {
     /// than for the library file.
     fn save(&self) {
         let Some(dir) = &self.data_dir else { return };
+        // Mirror `persistence::save`: ensure the data directory exists before
+        // writing. Without this, the first-ever write to a not-yet-created
+        // `data_dir` fails silently and the freshly-minted secret is lost on
+        // the next restart (D6 keeps the in-memory map for the session only).
+        let _ = std::fs::create_dir_all(dir);
         let mut keys: Vec<PersistedKey> = self
             .keys
             .iter()

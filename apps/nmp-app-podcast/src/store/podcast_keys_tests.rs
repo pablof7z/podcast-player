@@ -119,6 +119,39 @@ fn keys_persist_and_reload() {
 }
 
 #[test]
+fn save_creates_missing_data_dir_so_key_survives_reload() {
+    // Regression: `save` must `create_dir_all` before writing, exactly like
+    // `persistence::save`. The bound directory does NOT exist yet (the iOS
+    // shell binds a per-app data dir that may not be created until first
+    // write), so without the `create_dir_all` the atomic write to
+    // `<dir>/podcast-keys.json.tmp` fails silently and the secret is lost on
+    // the next restart. Binding to `tempdir()` directly would NOT catch this
+    // (that path already exists), so we bind to a not-yet-created subdir.
+    let root = tempfile::tempdir().expect("tempdir");
+    let data_dir = root.path().join("not").join("yet").join("created");
+    assert!(!data_dir.exists(), "precondition: data dir must not exist yet");
+
+    let pk = {
+        let mut store = PodcastKeyStore::new();
+        // Nonexistent dir loads nothing.
+        assert_eq!(store.set_data_dir(data_dir.clone()), 0, "nothing to load");
+        store.generate_key("pod-a");
+        // The write must have actually landed on disk, creating the dir.
+        assert!(
+            data_dir.join(PODCAST_KEYS_FILE).exists(),
+            "save must create the missing data dir and write the keys file"
+        );
+        store.pubkey_hex("pod-a").expect("derived")
+    };
+
+    // Fresh "session": a new store bound to the same (now-existing) dir must
+    // reload the key the first session minted.
+    let mut reloaded = PodcastKeyStore::new();
+    assert_eq!(reloaded.set_data_dir(data_dir), 1, "reloaded the persisted key");
+    assert_eq!(reloaded.pubkey_hex("pod-a").as_deref(), Some(pk.as_str()));
+}
+
+#[test]
 fn remove_key_persists_deletion() {
     let dir = tempfile::tempdir().expect("tempdir");
     {
