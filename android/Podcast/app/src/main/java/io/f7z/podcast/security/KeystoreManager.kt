@@ -33,7 +33,7 @@ object KeystoreManager {
 
     /** Encrypt and persist [nsec] under the secure store. Overwrites any prior value. */
     fun saveNsec(context: Context, nsec: String) {
-        prefs(context).edit().putString(KEY_NSEC, nsec).apply()
+        runCatching { prefs(context).edit().putString(KEY_NSEC, nsec).apply() }
     }
 
     /**
@@ -50,9 +50,13 @@ object KeystoreManager {
         null
     }
 
-    /** Remove the stored nsec. Idempotent. */
+    /** Remove the stored nsec. Idempotent. Silently no-ops on Keystore failure. */
     fun clearNsec(context: Context) {
-        prefs(context).edit().remove(KEY_NSEC).apply()
+        runCatching { prefs(context).edit().remove(KEY_NSEC).apply() }.getOrElse {
+            // If we can't open the store, delete the whole file so the nsec
+            // cannot auto-restore on next launch.
+            runCatching { context.applicationContext.deleteSharedPreferences(PREFS_FILE) }
+        }
     }
 
     private fun prefs(context: Context): SharedPreferences {
