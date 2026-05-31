@@ -48,14 +48,22 @@ extension AppStateStore {
                 // advances between `attachKernel` returning and this Task's first
                 // iteration — without this, `withObservationTracking` arms on an
                 // already-final value and never fires, leaving the UI empty.
-                self?.applyKernelState(library: kernel.library, snapshot: kernel.podcastSnapshot)
-                // Suspend until either kernel.library or kernel.podcastSnapshot changes.
+                self?.applyKernelState(
+                    library: kernel.library,
+                    snapshot: kernel.podcastSnapshot,
+                    identity: kernel.kernelIdentity)
+                // Suspend until kernel.library, kernel.podcastSnapshot, or
+                // kernel.kernelIdentity changes. The identity write is
+                // equality-gated in `KernelModel.apply`, so this arms only on a
+                // genuine identity change (sign-in, handshake, or a new
+                // resolved-profiles entry) — not at the 4 Hz playback emit rate.
                 // withObservationTracking fires onChange once and returns; we loop
                 // to re-arm continuously.
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                     withObservationTracking {
                         _ = kernel.library
                         _ = kernel.podcastSnapshot
+                        _ = kernel.kernelIdentity
                     } onChange: {
                         continuation.resume()
                     }
@@ -67,8 +75,14 @@ extension AppStateStore {
 
     /// Project the current kernel state into `AppState`.
     /// Takes `library` and `snapshot` separately because `KernelModel` gates
-    /// them on different content hashes.
-    private func applyKernelState(library: [PodcastSummary], snapshot: PodcastUpdate?) {
+    /// them on different content hashes. `identity` carries the kernel's
+    /// resolved-profiles map, merged into `nostrProfileCache` after the main
+    /// projection lands.
+    private func applyKernelState(
+        library: [PodcastSummary],
+        snapshot: PodcastUpdate?,
+        identity: KernelIdentityProjection
+    ) {
         var next = state
 
         // ── Podcasts + subscriptions ──────────────────────────────────────
@@ -178,7 +192,41 @@ extension AppStateStore {
         }
 
         state = next
+
+        // ── Kernel-resolved profiles → nostrProfileCache ──────────────────
+        // Additive merge of `projections.resolved_profiles` (NMP v0.2.0+).
+        // Run AFTER `state = next` so the snapshot taken at the top of this
+        // method doesn't clobber the inserts. Routed through `setNostrProfile`
+        // (createdAt = 0): its `existing.fetchedFromCreatedAt >= 0` guard makes
+        // this idempotent and never downgrades a real relay-sourced kind:0
+        // (createdAt > 0), while still seeding pubkeys the cache hasn't seen.
+        // `NostrProfileFetcher` (active relay subscriptions) is untouched and
+        // coexists — resolved_profiles is pre-populated, not a replacement.
+        mergeResolvedProfiles(identity.resolvedProfiles)
+
         onNowPlayingSnapshot?(snapshot, library)
+    }
+
+    /// Fold the kernel's resolved-profiles map into `nostrProfileCache`. Each
+    /// entry becomes a minimal `NostrProfileMetadata` (display → displayName,
+    /// pictureUrl → picture) so agent-conversation views resolve a name and
+    /// avatar without a Swift-side relay round-trip. Idempotent via the
+    /// `setNostrProfile` createdAt guard.
+    private func mergeResolvedProfiles(_ profiles: [String: ResolvedProfile]) {
+        for (pubkey, profile) in profiles {
+            // Skip empty rows — no name and no picture is nothing to surface,
+            // and inserting one would only mask a later richer fetch.
+            guard profile.display != nil || profile.pictureUrl != nil else { continue }
+            setNostrProfile(NostrProfileMetadata(
+                pubkey: pubkey,
+                name: nil,
+                displayName: profile.display,
+                about: nil,
+                picture: profile.pictureUrl,
+                nip05: nil,
+                fetchedFromCreatedAt: 0
+            ))
+        }
     }
 }
 
