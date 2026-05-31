@@ -45,10 +45,19 @@ import io.f7z.podcast.PodcastSnapshot
 fun ShowDetailScreen(
     showId: String,
     snapshot: PodcastSnapshot?,
+    onEpisodeSelected: (EpisodeSummary) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Resolve the show by the id carried in the nav route. A library tile
+    // passes the Rust subscription UUID; a search-result row passes the
+    // iTunes `collectionId` (or feed URL), which never matches a
+    // subscription UUID. So fall back to `searchResults` (matching either
+    // the result id or its feed URL) before giving up — tapping an
+    // unsubscribed result then resolves to its title + the empty-episode
+    // state instead of "Show not found".
     val show = snapshot?.subscriptions?.firstOrNull { it.id == showId }
+        ?: snapshot?.searchResults?.firstOrNull { it.id == showId || it.feedUrl == showId }
 
     Scaffold(
         modifier = modifier,
@@ -78,13 +87,18 @@ fun ShowDetailScreen(
         }
         ShowDetailBody(
             episodes = show.episodes,
+            onEpisodeSelected = onEpisodeSelected,
             modifier = Modifier.padding(inner),
         )
     }
 }
 
 @Composable
-private fun ShowDetailBody(episodes: List<EpisodeSummary>, modifier: Modifier = Modifier) {
+private fun ShowDetailBody(
+    episodes: List<EpisodeSummary>,
+    onEpisodeSelected: (EpisodeSummary) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     if (episodes.isEmpty()) {
         Box(
             modifier = modifier
@@ -109,14 +123,15 @@ private fun ShowDetailBody(episodes: List<EpisodeSummary>, modifier: Modifier = 
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
     ) {
         items(episodes, key = { it.id }) { episode ->
-            EpisodeRow(episode = episode)
+            EpisodeRow(episode = episode, onClick = { onEpisodeSelected(episode) })
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EpisodeRow(episode: EpisodeSummary) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun EpisodeRow(episode: EpisodeSummary, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
