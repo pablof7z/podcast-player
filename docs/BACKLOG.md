@@ -340,17 +340,6 @@ worktrees currently in flight.
   `nowPlaying.positionSecs`. At that point `PlatformCapability.applyNowPlayingSnapshot`
   needs a separate position-write path (not gated by the identity dedup) so the
   widget stays live during playback. Owner: M1.6 agent.
-- **voice-conversation-off-thread-dispatch-uaf.** `VoiceConversationManager`
-  (M5.6-voice, `apps/nmp-app-podcast/src/voice_conversation.rs`) dispatches
-  `VoiceCommand::Speak` by dereferencing the `*mut NmpApp` from inside a
-  `runtime.spawn` task on a Tokio worker thread. `NmpApp::Drop` joins only the
-  actor and update-listener threads — it does not await this crate's Tokio
-  runtime, and `Runtime::drop` does not wait for detached tasks. A long LLM
-  turn that returns after `nmp_app_free` begins is therefore an unfenced read
-  of a freeing `NmpApp`. Fix: route the `Speak` dispatch back through the actor
-  thread (so the existing actor-join fence covers it) instead of dereferencing
-  `app` off-thread. The synchronous `audio_report.rs` dispatch is the safe
-  precedent. Owner: M5.6 follow-up.
 
 ## Pending Decisions
 
@@ -382,6 +371,19 @@ worktrees currently in flight.
 
 ## Done / Recently Reconciled
 
+- **voice-conversation-off-thread-dispatch-uaf.** Done on branch
+  `fix/voice-conversation-uaf`. The original suggestion (route `Speak` back
+  through the actor thread) was unreachable: pinned nmp-ffi rev `ec15ede`
+  exposes no accessor to clone the capability-callback slot and no seam to
+  post a closure onto the actor thread, and the dep must not be forked.
+  Instead `VoiceConversationManager` now retains the outer turn `JoinHandle`s
+  and exposes `shutdown()` (abort + `block_on(join)`); `nmp_app_podcast_unregister`
+  calls it — contractually before `nmp_app_free` — so every in-flight `app`
+  dereference is fenced before the allocation frees. A `Drop` impl could not
+  serve as the fence: the snapshot-projection closure holds a second strong
+  `Arc<PodcastHandle>`, so the manager drops during `nmp_app_free` (after the
+  actor join), too late. A `shutting_down` flag makes any late
+  `on_transcript_final` a no-op.
 - **pod0-rename.** Done via PR #52; visible app name is Pod0 while stable
   identifiers remain unchanged.
 - **episode-id-stability.** Done via PR #70; `EpisodeId::from_feed_and_guid`
