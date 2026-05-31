@@ -410,6 +410,13 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
     // reclaims the shell's strong ref; the snapshot-projection closure holds a
     // second ref that is released when the app's projection registry is dropped.
     let reclaimed = unsafe { Arc::from_raw(handle as *const PodcastHandle) };
+    // Fence the voice-conversation off-thread dispatch UAF: abort + join any
+    // in-flight LLM turn so no spawned Tokio task can dereference `app` after
+    // `nmp_app_free`. The caller contract guarantees `unregister` runs before
+    // `nmp_app_free`, and (because the snapshot-projection closure holds a
+    // second strong `Arc<PodcastHandle>`) the manager itself does not drop
+    // here — so this explicit drain, not a `Drop` impl, is the fence.
+    reclaimed.voice_conversation.shutdown();
     let _ = reclaimed.app;
 }
 
