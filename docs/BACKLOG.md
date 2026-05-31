@@ -277,9 +277,48 @@ worktrees currently in flight.
   correct behavior. Note: this is separate from the parallel SwiftUI
   `AudioConversationManager` voice path used by `VoiceView`, which has the same
   missing-sink gap.
-- **tts-episodes-real-generation.** Replace placeholder scripts with real
-  provider-generated audio, persisted media, playback, deletion, and optional
-  NIP-F4 publishing integration.
+- **tts-episodes-reconcile-two-mechanisms (feature #43).** Investigated for M9
+  ("media persistence + show/episode publishing"). Finding: those legs are NOT
+  missing — they already ship, but behind a *different mechanism* than the one
+  the matrix row tracks. There are two parallel, disconnected TTS paths:
+  1. **Swift agent-tool path (the real, complete capability).**
+     `AgentTools+TTS.generate_tts_episode` → `AgentTTSComposer.generateAndPublish`
+     does ElevenLabs synthesis → stitched m4a written to Application Support
+     (`AgentGeneratedPodcastService.audioFileURL`, `agent-episodes/<id>.m4a`) →
+     publishes a real `Episode` on the "Agent Generated" virtual podcast
+     (`AgentGeneratedPodcastService.publishEpisode`) → persists transcript +
+     chapters. Media persistence and show/episode publishing integration are
+     done here. (NIP-F4 publishing of these episodes is the remaining genuine
+     gap on this path.)
+  2. **Kernel `podcast.tts` path (orphaned scaffold).** `tts.rs` / `tts_llm.rs`
+     / `TtsEpisodeSummary`: an LLM writes a *text script*, held in an
+     in-memory-only `Arc<Mutex<Vec<TtsEpisodeSummary>>>` that
+     `ffi/register.rs` rebuilds empty on every `register` (so generated
+     episodes are lost on restart); on `play` it dispatches a live
+     `VoiceCommand::Speak` (AVSpeech). No audio file, no library episode, no
+     persistence. **No iOS View/sheet dispatches its `generate`/`play`
+     actions** — every Swift `tts`/`TtsEpisode` reference is the Agent
+     subsystem or a Bridge type-mirror; the `tts.rs` doc-comment claims about
+     "the iOS sheet's Stepper" / "the iOS list renders it" describe UI that
+     does not exist.
+
+  The open work is therefore **mechanism reconciliation, which is a
+  human-decision gate** (AGENTS.md fragmentation, D7, the feature-#41 briefings
+  precedent), not net-new persistence code:
+  - **Option A — adopt the Swift composer, delete the kernel stub.** Point #43
+    at the agent-tool path; remove the orphaned kernel `podcast.tts` handler +
+    `TtsEpisodeSummary` snapshot leg + `tts_llm.rs`. Lowest-risk; matches the
+    only path with any UI/audio/persistence today.
+  - **Option B — make the kernel path real by dispatching synthesis to Swift.**
+    Add a capability so the kernel `generate`/`play` actions route to
+    `AgentTTSComposer` (kernel stays SSOT, Swift owns audio). More plumbing;
+    only worth it if the kernel TTS surface is meant to grow its own UI.
+  - Do **not** attempt Rust-native audio synthesis as the fix. That reintroduces
+    the binary-transport blocker (iOS `HttpCapability` body is UTF-8 String
+    only — see the M8-Blossom note — so synthesized audio bytes cannot transit
+    Rust↔Swift) and duplicates what `AgentTTSComposer` already does natively.
+    The binary-transport constraint applies *only* to a Rust-native synth
+    attempt; the Swift path sidesteps it.
 - **ai-chapters-real-generation.** Replace equal-length stub chapters with
   transcript/LLM-grounded chapters, provenance, regeneration/clear behavior,
   and persistence.
