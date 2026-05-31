@@ -87,7 +87,25 @@ struct KernelBunkerHandshake: Decodable, Equatable {
     }
 }
 
-/// Identity-slice of one kernel snapshot tick. All three fields may be empty
+/// One row from `projections.resolved_profiles` — the kernel's pre-merged
+/// pubkey → profile map (NMP v0.2.0+). Populated by NMP for every pubkey the
+/// kernel already knows about, so these profiles resolve without a Swift-side
+/// relay round-trip.
+///
+/// `display` is the kernel's merged best display name (NIP-05 identifier >
+/// `display_name` > `name` > short npub); `pictureUrl` is the kind:0 picture.
+/// Both are optional — the kernel may have only one or neither.
+struct ResolvedProfile: Decodable, Equatable {
+    let display: String?
+    let pictureUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case display
+        case pictureUrl = "picture_url"
+    }
+}
+
+/// Identity-slice of one kernel snapshot tick. All fields may be empty
 /// or `nil` when no identity is loaded and no handshake is in flight — that
 /// is the steady-state for a fresh install.
 struct KernelIdentityProjection: Equatable {
@@ -97,9 +115,14 @@ struct KernelIdentityProjection: Equatable {
     let accounts: [KernelAccountSummary]
     /// Bunker handshake progress, or `nil` when no handshake is in flight.
     let bunkerHandshake: KernelBunkerHandshake?
+    /// Kernel-resolved profiles keyed by hex pubkey (`projections.resolved_profiles`,
+    /// NMP v0.2.0+). Additive: pre-populated by the kernel and merged into the
+    /// app's `nostrProfileCache` so agent-conversation pubkeys render without a
+    /// dedicated relay subscription. Empty on kernels that predate the slot.
+    let resolvedProfiles: [String: ResolvedProfile]
 
     static let empty = KernelIdentityProjection(
-        activeAccount: nil, accounts: [], bunkerHandshake: nil)
+        activeAccount: nil, accounts: [], bunkerHandshake: nil, resolvedProfiles: [:])
 
     /// The active row (if any), looked up by pubkey.
     var activeAccountRow: KernelAccountSummary? {
@@ -148,7 +171,15 @@ extension KernelIdentityProjection {
             return try? JSONDecoder().decode(KernelBunkerHandshake.self, from: json)
         }()
 
+        let resolvedProfiles: [String: ResolvedProfile] = {
+            guard let obj = projections["resolved_profiles"] as? [String: Any],
+                  let json = try? JSONSerialization.data(withJSONObject: obj)
+            else { return [:] }
+            return (try? JSONDecoder().decode([String: ResolvedProfile].self, from: json)) ?? [:]
+        }()
+
         return KernelIdentityProjection(
-            activeAccount: active, accounts: accounts, bunkerHandshake: handshake)
+            activeAccount: active, accounts: accounts, bunkerHandshake: handshake,
+            resolvedProfiles: resolvedProfiles)
     }
 }

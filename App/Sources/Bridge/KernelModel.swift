@@ -381,7 +381,15 @@ final class KernelModel {
         // mandatory store alert fires on the first frame and identity stays live
         // even on ticks where the podcast projection didn't change.
         storeOpenFailure = result.storeOpenFailure
-        kernelIdentity = result.identity
+        // `apply` runs on every accepted push frame (4 Hz during playback), but
+        // the identity slice — accounts, handshake, and the resolved-profiles
+        // map — changes far less often. Gate the `@Observable` write on a real
+        // change so identity observers (and the resolved-profiles → cache pump
+        // in `applyKernelState`) don't fire a full projection rebuild at the
+        // emit rate. Relies on `KernelIdentityProjection: Equatable`.
+        if result.identity != kernelIdentity {
+            kernelIdentity = result.identity
+        }
         snapshotCount &+= 1
         lastSnapshotAt = Date()
         // Drive the podcast observable surface from the pushed projection.
