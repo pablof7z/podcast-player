@@ -244,19 +244,23 @@ worktrees currently in flight.
 - **ai-chapters-real-generation.** Replace equal-length stub chapters with
   transcript/LLM-grounded chapters, provenance, regeneration/clear behavior,
   and persistence.
-- **m4-chapters-rust-persistence.** Last preserved-state field. M4 deleted the
-  Swift-only preservation merge for transcriptState, triage, and the RAG
-  metadata flag (all now ride the Rust projection via the D7 capability-report
-  model), but the chapters fallback in `AppStateStore+KernelProjection.swift`
-  (`if episodes[idx].chapters?.isEmpty != false { ... = prior.chapters }`)
-  remains: `setEpisodeChapters` (and `AIChapterCompiler`) mutate Swift state
-  only — there is no Rust action to RECEIVE AI-generated chapters, so they
-  can't round-trip and would flash empty on a feed-refresh pass without the
-  fallback. Wire it like ad_segments: a `SetChapters` `PodcastAction`, a
-  `chapters` store side-map (persisted, `is_ai_generated` preserved), a
-  projection onto `EpisodeSummary`, and a `kernelSetChapters` dispatch from
-  `setEpisodeChapters`; then delete the chapters fallback to finish the
-  preserved-state-block removal.
+- **m4-chapters-rust-persistence.** Rust round-trip DONE — the original
+  premise (chapters mutate Swift state only, no Rust action to receive them)
+  was superseded by PR #175, which moved chapter synthesis into the kernel:
+  `ai_chapters` calls `store.set_episode_chapters`, which writes `ep.chapters`
+  (serialized to `podcasts.json` — the field is
+  `serde(skip_serializing_if = "Option::is_none")`, not skipped) and flushes to
+  disk, and `ffi/snapshot.rs` already projects chapters (incl. `is_ai_generated`
+  + `source`) from the store onto `EpisodeSummary`. The remaining live gap —
+  AI chapters flashing empty on a feed-refresh — was that `merge_episodes`
+  (`host_op_handler_helpers.rs`) only carried `position_secs` forward, so a
+  re-parsed RSS episode (chapters=None) clobbered them in memory before
+  `subscribe()` re-persisted. Fixed: `merge_episodes` now carries prior
+  AI-generated chapters forward when the fresh episode supplies none (publisher
+  chapters still win — D7). Remaining follow-up (separate, iOS-only): the now-
+  redundant chapters fallback in `AppStateStore+KernelProjection.swift`
+  (`if episodes[idx].chapters?.isEmpty != false { ... = prior.chapters }`) can
+  be deleted to finish the preserved-state-block removal.
 - **inbox-triage-real-model.** Replace recency heuristic with provider-backed
   triage, persisted dismiss/listened state, explainable reasons, and user
   correction loop. Partially done in PR #123 (rig-core + Ollama LLM scoring
