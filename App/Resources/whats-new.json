@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-01T15:00:00Z",
+      "lines": [
+        "Agent-generated podcasts now publish as NIP-F4 — the canonical Nostr podcast standard"
+      ]
+    },
+    {
       "shipped_at": "2026-06-01T12:00:00Z",
       "lines": [
         "Configure app relays in Settings → Networking → App Relays"

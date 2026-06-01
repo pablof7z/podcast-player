@@ -3,7 +3,8 @@ import Foundation
 // MARK: - AgentOwnedPodcastManagerProtocol
 //
 // Manages agent-created synthetic podcasts: creation, metadata updates, artwork
-// generation (via image-gen + Blossom upload), and NIP-74 Nostr publishing.
+// generation (via image-gen + Blossom upload), and NIP-F4 Nostr publishing
+// (delegated to the Rust kernel's `podcast.publish` action namespace).
 // Implemented by `LiveAgentOwnedPodcastManager`, injected via `PodcastAgentToolDeps`.
 
 protocol AgentOwnedPodcastManagerProtocol: Sendable {
@@ -21,7 +22,7 @@ protocol AgentOwnedPodcastManagerProtocol: Sendable {
 
     /// Update mutable metadata on an existing agent-owned podcast. Nil params
     /// keep the current value. If the podcast is public and nostr is enabled
-    /// the updated kind:30074 event is re-published.
+    /// the updated NIP-F4 kind:10154 show event is re-published via the kernel.
     func updatePodcast(
         podcastID: PodcastID,
         title: String?,
@@ -42,12 +43,14 @@ protocol AgentOwnedPodcastManagerProtocol: Sendable {
     /// `updatePodcast` as `imageURL`.
     func generateAndUploadArtwork(prompt: String) async throws -> URL
 
-    /// Upload the episode's audio, chapters, and transcript to Blossom, then
-    /// publish NIP-74 kind:30074 (show) + kind:30075 (episode) events signed
-    /// by the agent key. No-ops when nostr is disabled or the parent podcast is
-    /// not agent-owned / is private.
-    /// Returns the NIP-19 `naddr` of the published episode event, or `nil` when
-    /// the publish was skipped (disabled / private).
+    /// Dispatch a NIP-F4 `kind:54` episode publish to the Rust kernel
+    /// (`podcast.publish.publish_episode`). Rust resolves the parent podcast's
+    /// per-podcast key, uploads the audio to Blossom, and broadcasts the signed
+    /// event. No-ops (returns `nil`) when nostr is disabled or the parent
+    /// podcast is not agent-owned / is private.
+    /// Returns a non-nil status marker when the publish was dispatched. The
+    /// signed event id / naddr is no longer returned synchronously — it lives in
+    /// the Rust snapshot projection.
     func publishEpisodeToNostr(episodeID: EpisodeID) async throws -> String?
 }
 

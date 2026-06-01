@@ -4,11 +4,13 @@ import SwiftUI
 //
 // Lists agent-owned podcasts (shows created via the `create_podcast` tool or
 // the AI agent) and lets the user toggle per-podcast Nostr visibility between
-// private (library only) and public (published as NIP-74 kind:30074 events).
+// private (library only) and public (published as NIP-F4 kind:10154 show events
+// via the Rust kernel's `podcast.publish` namespace).
 //
-// Also manages the relay list used when publishing NIP-74 events — initialised
-// from the user's NIP-65 kind:10002 outbox relays, falling back to
-// relay.primal.net and relay.damus.io when none are found.
+// Also manages the user's Nostr write relay list — initialised from the user's
+// NIP-65 kind:10002 outbox relays, falling back to relay.primal.net and
+// relay.damus.io when none are found. (NIP-F4 publishing itself routes through
+// the kernel relay pool; this list is the user's broader relay configuration.)
 
 struct AgentPodcastsView: View {
     @Environment(AppStateStore.self) private var store
@@ -57,7 +59,7 @@ struct AgentPodcastsView: View {
         } header: {
             Text("Owned Shows")
         } footer: {
-            Text("Public shows are published as NIP-74 Nostr events signed by the agent's key. Episodes added to public shows are also published when Nostr is enabled.")
+            Text("Public shows are published as NIP-F4 Nostr events — the canonical podcast standard — signed by a per-show key. Episodes added to public shows are also published when Nostr is enabled.")
         }
     }
 
@@ -118,7 +120,7 @@ struct AgentPodcastsView: View {
         } header: {
             Label("Publishing Relays", systemImage: "network")
         } footer: {
-            Text("NIP-74 podcast events are published to these relays. Initialized from your NIP-65 relay list. Swipe a row to remove.")
+            Text("Your Nostr write relays, initialized from your NIP-65 relay list. Swipe a row to remove.")
         }
     }
 
