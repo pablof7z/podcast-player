@@ -19,7 +19,7 @@ extension AgentTools {
                 description: """
                 Create a new agent-owned podcast show. The show is private by default \
                 (stored in the user's library only). Set visibility to 'public' to publish \
-                a NIP-74 kind:30074 Nostr event signed by the agent's key. \
+                a NIP-F4 kind:10154 Nostr show event signed by a per-podcast key. \
                 Before creating, consider calling generate_podcast_artwork to produce cover art \
                 and pass the resulting image_url here. Returns the stable podcast_id for use \
                 in generate_tts_episode and update_podcast.
@@ -31,7 +31,7 @@ extension AgentTools {
                     "image_url": ["type": "string", "description": "Cover art URL (use generate_podcast_artwork to produce one). Optional but strongly recommended for public shows."],
                     "language": ["type": "string", "description": "BCP-47 language tag, e.g. 'en', 'es'. Optional."],
                     "categories": ["type": "array", "items": ["type": "string"], "description": "Topic tags / genre strings. Optional."],
-                    "visibility": ["type": "string", "enum": ["private", "public"], "description": "Whether to publish a NIP-74 Nostr event. Defaults to 'private'."],
+                    "visibility": ["type": "string", "enum": ["private", "public"], "description": "Whether to publish a NIP-F4 Nostr show event. Defaults to 'private'."],
                 ],
                 required: ["title"]
             ),
@@ -39,8 +39,8 @@ extension AgentTools {
                 name: PodcastNames.updatePodcast,
                 description: """
                 Update metadata on an agent-owned podcast. Omit any field to leave it unchanged. \
-                If the podcast is public and Nostr is enabled, the updated kind:30074 event is \
-                re-published. Use this to set cover art after calling generate_podcast_artwork, \
+                If the podcast is public and Nostr is enabled, the updated NIP-F4 kind:10154 show \
+                event is re-published. Use this to set cover art after calling generate_podcast_artwork, \
                 rename the show, or change visibility.
                 """,
                 properties: [
@@ -91,13 +91,12 @@ extension AgentTools {
             ownedPodcastTool(
                 name: PodcastNames.publishEpisode,
                 description: """
-                Publish an existing episode as a NIP-74 kind:30075 Nostr event to its parent \
-                agent-owned podcast. Uploads the episode audio, chapters, and transcript to \
-                Blossom, then signs and broadcasts the event to the configured relay. \
-                Returns the NIP-19 naddr of the published event so it can be shared or referenced. \
-                Fails with a descriptive error when: Nostr is disabled, the parent podcast is \
-                private, no relay is configured, or the episode does not belong to an \
-                agent-owned podcast.
+                Publish an existing episode as a NIP-F4 kind:54 Nostr event to its parent \
+                agent-owned podcast. The kernel resolves the podcast's per-podcast signing key, \
+                uploads the episode audio to Blossom, then signs and broadcasts the event to the \
+                relay pool. Reports success once the publish is dispatched. \
+                Does nothing (reported as not published) when Nostr is disabled, the parent \
+                podcast is private, or the episode does not belong to an agent-owned podcast.
                 """,
                 properties: [
                     "episode_id": ["type": "string", "description": "The UUID of the episode to publish. Must belong to an agent-owned podcast whose visibility is 'public'."],
