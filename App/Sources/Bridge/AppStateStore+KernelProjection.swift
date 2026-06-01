@@ -1,5 +1,7 @@
 import Foundation
 import Observation
+import os
+import os.signpost
 
 // MARK: - KernelModel → AppState projection
 //
@@ -88,6 +90,10 @@ extension AppStateStore {
         snapshot: PodcastUpdate?,
         identity: KernelIdentityProjection
     ) {
+        let applyInterval = signposter.beginInterval(
+            "applyKernelState", "episodes=\(library.flatMap(\.episodes).count)")
+        defer { signposter.endInterval("applyKernelState", applyInterval) }
+
         var next = state
 
         // ── Podcasts + subscriptions ──────────────────────────────────────
@@ -284,7 +290,9 @@ private extension EpisodeSummary {
         let downloadState: DownloadState
         if let path = downloadPath {
             let fileURL = URL(fileURLWithPath: path)
+            let statInterval = signposter.beginInterval("toEpisode.fileStat")
             let byteCount: Int64 = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize.map { Int64($0) }) ?? 0
+            signposter.endInterval("toEpisode.fileStat", statInterval)
             downloadState = .downloaded(localFileURL: fileURL, byteCount: byteCount)
         } else {
             downloadState = .notDownloaded
