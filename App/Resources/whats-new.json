@@ -4,7 +4,7 @@
     {
       "shipped_at": "2026-06-01T01:00:00Z",
       "lines": [
-        "The relay your agent uses for Nostr is now clearly labeled \"Agent Relay\" in Identity → Connection, with a note on what it's used for."
+        "Your agent's Nostr relay is now a clearly labeled \"Agent Relay\" row in Settings → Agent — tap it to view or change the relay, with a note on what it's used for."
       ]
     },
     {
