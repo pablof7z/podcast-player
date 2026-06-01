@@ -379,9 +379,8 @@ extension AppStateStore {
                 episodes[idx].chapters = prior.chapters
             }
         }
-        // `episodes` is the locally-built projected list; assign it to the live
-        // `self.episodes` stored property inside the batch below (NOT onto the
-        // `next` DTO — episodes no longer round-trip through `state`).
+        // Assign the projected list to the live `self.episodes` stored property
+        // inside the batch below (episodes no longer round-trip through `state`).
         let projectedEpisodes = episodes
 
         // ── Settings ─────────────────────────────────────────────────────
