@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-01T18:30:00Z",
+      "lines": [
+        "Your older agent-generated episodes now stick around after updating the app"
+      ]
+    },
+    {
       "shipped_at": "2026-06-01T16:30:00Z",
       "lines": [
         "Editing and deleting agent-owned podcasts now updates and publishes correctly"
