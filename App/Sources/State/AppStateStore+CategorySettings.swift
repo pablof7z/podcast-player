@@ -30,19 +30,16 @@ extension AppStateStore {
         state.categorySettings[id] = record
     }
 
-    /// Returns the auto-download policy that should actually drive new-episode
-    /// behaviour for `podcastID`. Resolution order:
-    ///
-    /// 1. The podcast's primary category override (if any).
-    /// 2. The per-subscription `autoDownload` policy as it stands today.
-    func effectiveAutoDownload(forPodcast podcastID: UUID) -> AutoDownloadPolicy {
-        let fallback = subscription(podcastID: podcastID)?.autoDownload ?? .default
-        guard let category = state.categories.first(where: { $0.subscriptionIDs.contains(podcastID) }) else {
-            return fallback
-        }
-        let settings = state.categorySettings[category.id] ?? .default(for: category.id)
-        return settings.autoDownloadOverride ?? fallback
-    }
+    // NOTE: Auto-download evaluation ("which episodes should download right
+    // now, given the policy + Wi-Fi state") is owned entirely by the Rust
+    // kernel (M2): `PodcastAction::SetAutoDownload { enabled, wifi_only }`
+    // records the policy and `episodes_to_auto_download` / the Wi-Fi-gated
+    // batch decide what actually downloads. iOS no longer resolves a policy
+    // to drive downloads; it only dispatches the user's choice through
+    // `kernelSetAutoDownload` and reads the current setting back from the
+    // kernel snapshot for display. The former `effectiveAutoDownload(forPodcast:)`
+    // resolver lived here and was already dead (no callers) once the kernel
+    // took over the decision; it has been removed rather than left as a trap.
 
     /// True when transcription should run for episodes of `podcastID`.
     /// Defaults to `true` in every "no category info yet" path so users

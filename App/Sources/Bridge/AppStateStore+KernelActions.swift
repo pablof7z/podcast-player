@@ -131,6 +131,21 @@ extension AppStateStore {
                          body: ["op": "play", "episode_id": episodeID.uuidString])
     }
 
+    // MARK: - Inbox triage
+
+    /// Ask the kernel to (re)triage the inbox (namespace: podcast.inbox).
+    ///
+    /// The Rust kernel owns inbox triage (M5): it selects candidates, runs
+    /// the classifier, and projects per-episode decisions onto
+    /// `Episode.triageDecision` every snapshot tick. Swift only displays
+    /// the result. This `triage` op is the "recompute / force a visible
+    /// tick" signal — fired on appear and pull-to-refresh so freshly
+    /// arrived episodes get a decision without Swift running any
+    /// orchestration of its own.
+    func kernelTriageInbox() {
+        kernel?.dispatch(namespace: "podcast.inbox", body: ["op": "triage"])
+    }
+
     // MARK: - Episode state
 
     /// Mark an episode as fully played (namespace: podcast.inbox).
@@ -271,9 +286,11 @@ extension AppStateStore {
     /// Report a batch of AI Inbox triage decisions to the Rust kernel so they
     /// survive a feed refresh via the projection (replaces the deleted
     /// preserved-state merge). Batched — one dispatch (one rev bump + one
-    /// library re-encode) per `applyTriageDecisions` pass rather than one per
-    /// episode. `decision` is the raw `TriageDecision` rawValue, or `"none"`
-    /// to clear a prior decision (the `clearTriageDecision` path).
+    /// library re-encode) per call rather than one per episode. `decision` is
+    /// the raw `TriageDecision` rawValue, or `"none"` to clear a prior
+    /// decision. The kernel owns triage (M5); the sole remaining Swift caller
+    /// is `clearTriageDecision`, used when the user rescues an archived
+    /// episode by playing it.
     func kernelSetEpisodeTriage(_ patches: [KernelTriagePatch]) {
         guard !patches.isEmpty else { return }
         let decisions: [[String: Any]] = patches.map { patch in
@@ -346,5 +363,57 @@ extension AppStateStore {
     func kernelSetRelayRole(url: String, role: String) {
         kernel?.dispatch(namespace: "podcast.settings",
                          body: ["op": "set_relay_role", "url": url, "role": role])
+    }
+
+    // MARK: - NIP-F4 publishing (podcast.publish namespace)
+    //
+    // Canonical agent-owned podcast publishing. Rust owns the cryptography:
+    // `create_owned_podcast` generates a per-podcast secp256k1 keypair, stamps
+    // `owner_pubkey_hex` onto the podcast row, and registers the key so the
+    // publish ops can sign. `publish_show` (kind:10154) and `publish_episode`
+    // (kind:54) build + sign + broadcast NIP-F4 events to the relay pool;
+    // `publish_author_claim` (kind:10064) lists every owned-podcast pubkey under
+    // the active agent identity. These replace the legacy Swift NIP-74
+    // (kind:30074/30075) builders.
+    //
+    // Fire-and-forget: the signed event id / naddr now lives in Rust's
+    // `publish_state` and is surfaced via the snapshot projection, not returned
+    // synchronously. Callers must NOT expect an event id back from dispatch.
+    //
+    // Field names verified against
+    // apps/nmp-app-podcast/src/ffi/actions/publish_module.rs (PublishAction).
+
+    /// Claim ownership of a podcast for NIP-F4 publishing: Rust generates a
+    /// per-podcast keypair and stamps `owner_pubkey_hex`. Must run before any
+    /// `publish_show` / `publish_episode` for that podcast — those ops fail
+    /// `ok:false ("podcast not owned")` if the key was never generated.
+    func kernelCreateOwnedPodcast(podcastId: String) {
+        kernel?.dispatch(namespace: "podcast.publish",
+                         body: ["op": "create_owned_podcast", "podcast_id": podcastId])
+    }
+
+    /// Build, sign, and broadcast the NIP-F4 `kind:10154` show event for an
+    /// owned podcast. Requires a prior `kernelCreateOwnedPodcast`.
+    func kernelPublishShow(podcastId: String) {
+        kernel?.dispatch(namespace: "podcast.publish",
+                         body: ["op": "publish_show", "podcast_id": podcastId])
+    }
+
+    /// Build, sign, and broadcast the NIP-F4 `kind:54` episode event. Rust
+    /// resolves the parent podcast (and its per-podcast key) from the episode,
+    /// uploads the audio to Blossom when available, and falls back to the RSS
+    /// enclosure URL otherwise. Requires the parent podcast to have been claimed
+    /// via `kernelCreateOwnedPodcast`.
+    func kernelPublishEpisode(episodeId: String) {
+        kernel?.dispatch(namespace: "podcast.publish",
+                         body: ["op": "publish_episode", "episode_id": episodeId])
+    }
+
+    /// Build, sign, and broadcast the NIP-F4 `kind:10064` author-claim event
+    /// listing every owned-podcast pubkey under `agentPubkeyHex` (the active
+    /// agent identity).
+    func kernelPublishAuthorClaim(agentPubkeyHex: String) {
+        kernel?.dispatch(namespace: "podcast.publish",
+                         body: ["op": "publish_author_claim", "agent_pubkey_hex": agentPubkeyHex])
     }
 }
