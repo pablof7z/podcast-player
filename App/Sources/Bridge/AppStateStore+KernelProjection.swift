@@ -28,6 +28,11 @@ extension AppStateStore {
     func attachKernel(_ kernel: KernelModel) {
         self.kernel = kernel
         kernelObservationTask?.cancel()
+        // Report which STT providers have a Keychain API key so the kernel's
+        // STT fallback policy resolves `settings.effectiveSttProvider`
+        // correctly from launch. Rust can't read the Keychain; this is the
+        // only signal it has. Re-dispatched after every key save/delete.
+        syncSTTKeysPresent()
         // Seed the Up Next queue from the kernel's persisted snapshot. The
         // handler may not be wired yet (setupPlaybackHandlers runs on .onAppear
         // which can fire after this task), so stash the IDs in pendingKernelQueue
@@ -92,14 +97,24 @@ extension AppStateStore {
         for summary in library {
             guard let uuid = UUID(uuidString: summary.id) else { continue }
             let feedURL = summary.feedUrl.flatMap { URL(string: $0) }
+            // Synthetic (agent-owned) rows now live in the Rust store as SSOT
+            // and project back here. Without round-tripping `kind` /
+            // `ownerPubkeyHex` / `nostrVisibility` the wholesale `next.podcasts`
+            // replace below would rebuild every row as `.rss` with no owner,
+            // wiping owned-podcast detection (`listOwnedPodcasts` filters on
+            // `ownerPubkeyHex != nil`) and the publish gate.
+            let kind: Podcast.Kind = summary.kind == "synthetic" ? .synthetic : .rss
+            let visibility = Podcast.NostrVisibility(rawValue: summary.nostrVisibility) ?? .public
             podcasts.append(Podcast(
                 id: uuid,
-                kind: .rss,
+                kind: kind,
                 feedURL: feedURL,
                 title: summary.title,
                 author: summary.author ?? "",
                 imageURL: summary.artworkUrl.flatMap { URL(string: $0) },
-                description: summary.description ?? ""
+                description: summary.description ?? "",
+                ownerPubkeyHex: summary.ownerPubkeyHex,
+                nostrVisibility: visibility
             ))
             // `cellularAllowed` is projected from Rust's
             // `auto_download_cellular_allowed` set; absent (false) means

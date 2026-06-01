@@ -65,6 +65,15 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                 },
                 description: Some(strip_html(&podcast.description))
                     .filter(|d| !d.is_empty()),
+                kind: match podcast.kind {
+                    podcast_core::PodcastKind::Synthetic => "synthetic".to_string(),
+                    podcast_core::PodcastKind::Rss => "rss".to_string(),
+                },
+                owner_pubkey_hex: podcast.owner_pubkey_hex.clone(),
+                nostr_visibility: match podcast.nostr_visibility {
+                    podcast_core::NostrVisibility::Private => "private".to_string(),
+                    podcast_core::NostrVisibility::Public => "public".to_string(),
+                },
                 auto_download: s.is_auto_download_enabled(podcast.id),
                 cellular_allowed: !s.wifi_only_for(podcast.id),
                 episodes: episodes
@@ -187,6 +196,10 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
             eleven_labs_byok_key_label: s.eleven_labs_byok_key_label().map(|s| s.to_owned()),
             eleven_labs_connected_at: s.eleven_labs_connected_at(),
             stt_provider: s.stt_provider().to_owned(),
+            effective_stt_provider: s.effective_stt_provider().to_owned(),
+            effective_stt_provider_requires_key: crate::store::stt_policy::requires_key(
+                s.effective_stt_provider(),
+            ),
             open_router_whisper_model: s.open_router_whisper_model().to_owned(),
             assembly_ai_stt_model: s.assembly_ai_stt_model().to_owned(),
             eleven_labs_stt_model: s.eleven_labs_stt_model().to_owned(),
