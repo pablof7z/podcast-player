@@ -39,8 +39,8 @@ impl PodcastHostOpHandler {
             PodcastAction::ImportOpml { content } => {
                 self.handle_import_opml(content, correlation_id)
             }
-            PodcastAction::Download { episode_id } => {
-                self.handle_download(episode_id, correlation_id)
+            PodcastAction::Download { episode_id, url } => {
+                self.handle_download(episode_id, url, correlation_id)
             }
             PodcastAction::DeleteDownload { episode_id } => {
                 self.handle_delete_download(episode_id)
@@ -288,8 +288,17 @@ impl PodcastHostOpHandler {
         }
     }
 
-    fn handle_download(&self, episode_id_str: String, correlation_id: &str) -> serde_json::Value {
-        let url = {
+    fn handle_download(
+        &self,
+        episode_id_str: String,
+        provided_url: Option<String>,
+        correlation_id: &str,
+    ) -> serde_json::Value {
+        let url = if let Some(url) = provided_url {
+            // iOS passed the URL directly — use it without store lookup.
+            url
+        } else {
+            // Fall back to store lookup (for legacy/Rust-side dispatch).
             match self.store.lock() {
                 Ok(s) => match s.episode_enclosure_url(&episode_id_str) {
                     Some((_id, url)) => url,

@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // MARK: - Kernel-backed mutation entry points
 //
@@ -276,9 +277,22 @@ extension AppStateStore {
     // MARK: - Downloads
 
     /// Queue a download (namespace: podcast).
+    /// Passes the episode enclosure URL directly in the dispatch to avoid
+    /// relying on Rust store lookup (which may not have the episode yet).
     func kernelDownload(_ id: UUID) {
+        guard let episode = state.episodes.first(where: { $0.id == id }) else {
+            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
+                   "kernelDownload: episode not found: %{public}s", id.uuidString)
+            return
+        }
+
+        let enclosureURL = episode.enclosureURL.absoluteString
+        os_log(.debug, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
+               "kernelDownload: queuing episode=%{public}s url=%{public}s",
+               id.uuidString, enclosureURL)
+
         kernel?.dispatch(namespace: "podcast",
-                         body: ["op": "download", "episode_id": id.uuidString])
+                         body: ["op": "download", "episode_id": id.uuidString, "url": enclosureURL])
     }
 
     /// Cancel an in-progress or queued download (namespace: podcast.player).
