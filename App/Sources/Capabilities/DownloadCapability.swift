@@ -166,14 +166,17 @@ final class DownloadCapability {
             let data = requestJSON.data(using: .utf8),
             let request = try? JSONDecoder().decode(CapabilityRequest.self, from: data)
         else {
+            logger.debug("DownloadCapability: malformed request envelope")
             return errorEnvelope(correlationID: "", message: "malformed-request")
         }
         guard
             let payload = request.payloadJSON.data(using: .utf8),
             let command = try? JSONDecoder().decode(DownloadCommand.self, from: payload)
         else {
+            logger.debug("DownloadCapability: malformed command payload for request \(request.correlationID)")
             return errorEnvelope(correlationID: request.correlationID, message: "malformed-payload")
         }
+        logger.debug("DownloadCapability: decoded command: \(String(describing: command))")
         execute(command)
         return okEnvelope(correlationID: request.correlationID)
     }
@@ -184,14 +187,19 @@ final class DownloadCapability {
     func execute(_ command: DownloadCommand) {
         switch command {
         case let .startDownload(url, episodeID, _):
+            logger.debug("DownloadCapability: executing startDownload episodeID=\(episodeID) url=\(url)")
             startDownload(url: url, episodeID: episodeID)
         case let .pauseDownload(episodeID):
+            logger.debug("DownloadCapability: executing pauseDownload episodeID=\(episodeID)")
             pauseDownload(episodeID: episodeID)
         case let .resumeDownload(episodeID):
+            logger.debug("DownloadCapability: executing resumeDownload episodeID=\(episodeID)")
             resumeDownload(episodeID: episodeID)
         case let .cancelDownload(episodeID):
+            logger.debug("DownloadCapability: executing cancelDownload episodeID=\(episodeID)")
             cancelDownload(episodeID: episodeID)
         case .cancelAll:
+            logger.debug("DownloadCapability: executing cancelAll")
             cancelAll()
         }
     }
@@ -203,15 +211,21 @@ final class DownloadCapability {
         // again, ignore the duplicate (the existing task will emit its
         // own reports); we never preempt a live task with a fresh one
         // because that would lose bytes.
-        if taskByEpisode[episodeID] != nil { return }
+        if taskByEpisode[episodeID] != nil {
+            logger.debug("DownloadCapability: startDownload already in flight for \(episodeID)")
+            return
+        }
         guard let url = URL(string: url) else {
+            logger.error("DownloadCapability: invalid URL for \(episodeID): \(url)")
             emit(.failed(episodeID: episodeID, error: "invalid-url"))
             return
         }
         let task: URLSessionDownloadTask
         if let resumeData = Self.loadResumeData(for: episodeID) {
+            logger.debug("DownloadCapability: resuming download for \(episodeID)")
             task = session.downloadTask(withResumeData: resumeData)
         } else {
+            logger.debug("DownloadCapability: starting new download for \(episodeID) from \(url.absoluteString)")
             task = session.downloadTask(with: url)
         }
         task.taskDescription = episodeID
@@ -219,6 +233,7 @@ final class DownloadCapability {
         lastEmittedBytes[episodeID] = 0
         lastEmittedAt[episodeID] = .distantPast
         task.resume()
+        logger.debug("DownloadCapability: resumed URLSessionDownloadTask for \(episodeID)")
     }
 
     private func pauseDownload(episodeID: String) {

@@ -40,12 +40,18 @@ pub enum PodcastAction {
     /// Begin downloading the episode's enclosure to local storage.
     ///
     /// The host op handler looks up the episode's `enclosure_url` from the
-    /// `PodcastStore`, then dispatches `DownloadCommand::StartDownload` to
-    /// the iOS `DownloadCapability`. The capability owns the
-    /// `URLSessionDownloadTask`; once the report path wires up, `Completed`
-    /// reports stamp `local_path` into the store, which the snapshot
-    /// surfaces as `EpisodeSummary.download_path`.
-    Download { episode_id: String },
+    /// `PodcastStore`, or uses the `url` field if provided by the caller (iOS).
+    /// Then dispatches `DownloadCommand::StartDownload` to the iOS
+    /// `DownloadCapability`. The capability owns the `URLSessionDownloadTask`;
+    /// once the report path wires up, `Completed` reports stamp `local_path`
+    /// into the store, which the snapshot surfaces as `EpisodeSummary.download_path`.
+    Download {
+        episode_id: String,
+        /// Optional enclosure URL passed directly from iOS. If provided, skips
+        /// the store lookup (useful when the episode may not be indexed yet).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        url: Option<String>,
+    },
     /// Remove a previously downloaded episode from disk and clear the
     /// kernel-side `local_path` mapping.
     DeleteDownload { episode_id: String },
