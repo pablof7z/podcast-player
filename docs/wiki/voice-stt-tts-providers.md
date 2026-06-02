@@ -7,7 +7,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-31
-updated: 2026-05-31
+updated: 2026-06-01
 verified: 2026-05-31
 compiled-from: conversation
 sources:
@@ -18,11 +18,9 @@ sources:
 
 ## Voice STT Providers
 
-The default voice STT provider is apple_native, with key-based fallback to ElevenLabs or AssemblyAI. [^14943-114]
+The default voice STT provider is apple_native, not elevenlabs_scribe, with a keyless fallback that downgrades cloud providers to native.
 
-
+<!-- citations: [^14943-114] [^14943-129] -->
 ## Voice TTS Providers
 
-Voice TTS checks the ElevenLabs voice_id and dispatches to the appropriate provider. [^14943-115]
-## See Also
-
+Voice TTS checks the ElevenLabs voice_id and dispatches to the appropriate provider. <!-- [^14943-115] -->

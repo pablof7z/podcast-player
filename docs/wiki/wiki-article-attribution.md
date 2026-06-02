@@ -18,7 +18,4 @@ sources:
 
 ## Attribution
 
-Wiki articles include source_episode_ids attribution showing which episodes contributed to each article. [^14943-116]
-
-## See Also
-
+Wiki articles include source_episode_ids attribution showing which episodes contributed to each article. <!-- [^14943-116] -->

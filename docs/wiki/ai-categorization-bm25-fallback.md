@@ -7,7 +7,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-31
-updated: 2026-05-31
+updated: 2026-06-01
 verified: 2026-05-31
 compiled-from: conversation
 sources:
@@ -18,7 +18,6 @@ sources:
 
 ## AI Categorization BM25 Fallback
 
-AI categorization uses BM25 search over knowledge chunks as a text-only fallback when no embedding model is available. [^14943-99]
+AI categorization uses BM25 search over knowledge chunks as a text-only fallback when no embedding model is available. BM25 uses the non-negative IDF variant ln(1 + (N - df + 0.5)/(df + 0.5)), k1=1.5, b=0.75, with [0,1] per-query normalization, filtering zero-score docs.
 
-## See Also
-
+<!-- citations: [^14943-99] [^14943-100] [^14943-133] -->

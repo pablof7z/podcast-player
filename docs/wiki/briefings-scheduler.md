@@ -7,7 +7,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-31
-updated: 2026-05-31
+updated: 2026-06-01
 verified: 2026-05-31
 compiled-from: conversation
 sources:
@@ -16,9 +16,4 @@ sources:
 
 # Briefings Scheduler
 
-## Briefings Scheduler
-
-Briefings use a scheduler that wires BriefingScheduler from the podcast-briefings crate to the kernel dispatch loop. [^14943-102]
-
-## See Also
-
+> This feature was removed from the backlog. The `podcast-briefings` crate and `BriefingScheduler` → kernel dispatch loop integration were not carried forward. See `project-plan-and-backlog.md` for the deletion rationale.

@@ -18,7 +18,4 @@ sources:
 
 ## Task Handler Namespaces
 
-CreateTaskSheet sends correct namespace strings matching the Rust action handlers. [^14943-112]
-
-## See Also
-
+CreateTaskSheet sends correct namespace strings matching the Rust action handlers. <!-- [^14943-112] -->

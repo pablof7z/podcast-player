@@ -9,7 +9,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-30
-updated: 2026-05-30
+updated: 2026-06-01
 verified: 2026-05-30
 compiled-from: conversation
 sources:
@@ -22,7 +22,7 @@ sources:
 
 ## Overview
 
-migration-v2.md defines the ordered M0-M8 execution sequence for migrating all features from the legacy App/Sources/ to the NMP kernel. The plan superseded the feature-parity matrix as the operative roadmap. The sequence is: M1 PlaybackState → M2 Downloads → M3 Settings/Credentials → M4 Preserved State → M5 AI Scaffolds Become Real → M6 Keys to Keychain → M7 Compat Burn-Down → M8 Delete App/Sources/. [^14943-70]
+migration-v2.md defines the ordered M0-M8 execution sequence for migrating all features from the legacy App/Sources/ to the NMP kernel. The plan superseded the feature-parity matrix as the operative roadmap. The sequence is: M1 PlaybackState → M2 Downloads → M3 Settings/Credentials → M4 Preserved State → M5 AI Scaffolds Become Real → M6 Keys to Keychain → M7 Compat Burn-Down → M8 Delete App/Sources/. <!-- [^14943-70] -->
 
 ## Current State (Post NMP v0.1.0)
 
@@ -31,7 +31,6 @@ After the NMP v0.1.0 adoption, M1 (playback engine swap), and M2 (download path 
 <!-- citations: [^14943-71] [^14943-86] -->
 ## Deleted Items
 
-Three items were explicitly deleted from the backlog during the NMP v0.1.0 framing revision: (1) p0-nipf4-legacy-data — no legacy data migration needed since NMP is the only implementation. (2) NIP-74 migration — NIP-F4 is canonical; NIP-74 survives only as code-symbol names and anti-re-entry test guards. (3) NIP-17 work — agent-to-agent uses kind:1/NIP-10; NIP-17 is an explicit non-goal everywhere. [^14943-72]
+Four items were explicitly deleted from the backlog during the NMP v0.1.0 framing revision: (1) p0-nipf4-legacy-data — no legacy data migration needed since NMP is the only implementation. (2) NIP-74 migration — NIP-F4 is canonical; NIP-74 survives only as code-symbol names and anti-re-entry test guards. (3) NIP-17 work — agent-to-agent uses kind:1/NIP-10; NIP-17 is an explicit non-goal everywhere. (4) Briefings — the Rust text-only path and the Swift audio-production path were not duplicates, but neither was kept. <!-- [^14943-72] -->
 
-## See Also
-
+<!-- citations: [^14943-72] [^14943-125] -->

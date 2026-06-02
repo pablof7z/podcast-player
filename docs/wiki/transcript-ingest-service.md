@@ -7,7 +7,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-31
-updated: 2026-05-31
+updated: 2026-06-01
 verified: 2026-05-31
 compiled-from: conversation
 sources:
@@ -18,7 +18,6 @@ sources:
 
 ## Transcript Ingest Service
 
-The transcript ingest service calls nmp_app_podcast_transcript_report after completing STT, ensuring that Rust owns the transcript state. The toEpisode function derives transcriptState from the Rust-projected transcript and transcript_url fields rather than relying on preserved state. [^14943-113]
+The transcript ingest service calls nmp_app_podcast_transcript_report after completing STT, ensuring that Rust owns the transcript state. The toEpisode function derives transcriptState from the Rust-projected transcript and transcriptEntries fields rather than relying on preserved state.
 
-## See Also
-
+<!-- citations: [^14943-113] [^14943-156] -->

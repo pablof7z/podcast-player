@@ -29,15 +29,15 @@ The NMP v0.1.0 adoption (75 commits, ~38k insertions ahead of the previous pin `
 1. **`store_open_failure` (mandatory)** — The host MUST surface LMDB-open-failure diagnostics to the user. Implemented as a SwiftUI alert on `RootView`.
 2. **`active_account_handle()` (optional, deferred)** — Direct slot read for the signed-in pubkey, replacing snapshot polling. Deferred because the pubkey already arrives reactively each tick.
 3. **Typed FlatBuffers sidecar (speculative, deferred)** — ADR-0037 per-key optimization. Not an app-facing choice; blocked on a feed migration that doesn't exist.
-4. **TUI unused-import warning (trivial)** — One-line `cargo fix` ride-along. [^14943-62]
+4. **TUI unused-import warning (trivial)** — One-line `cargo fix` ride-along. <!-- [^14943-62] -->
 
 ## Execution Decision
 
-The planner recommended (and the user approved) a single-worktree approach rather than fanning out multiple agents. The coordination overhead of a multi-agent fan-out would exceed the work itself. All adoption work landed in worktree `podcast-player-nmp-adopt` on branch `feat/nmp-store-open-failure-alert`. [^14943-63]
+The planner recommended (and the user approved) a single-worktree approach rather than fanning out multiple agents. The coordination overhead of a multi-agent fan-out would exceed the work itself. All adoption work landed in worktree `podcast-player-nmp-adopt` on branch `feat/nmp-store-open-failure-alert`. <!-- [^14943-63] -->
 
 ## Work Tracking
 
-The WIP tracker (`WIP.md` in the main repo, gitignored) records active work items with branch, PR, and status. Each entry includes `added`, `branch`, and `pr` (optional) fields. When work is merged, entries move from Active to Recent History. The tracker is never committed. [^14943-64]
+The WIP tracker (`WIP.md` in the main repo, gitignored) records active work items with branch, PR, and status. Each entry includes `added`, `branch`, and `pr` (optional) fields. When work is merged, entries move from Active to Recent History. The tracker is never committed. <!-- [^14943-64] -->
 
 ## Deferred Items
 

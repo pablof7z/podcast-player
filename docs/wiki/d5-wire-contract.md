@@ -29,7 +29,7 @@ The Rust projection types use `#[serde(skip_serializing_if)]` annotations to omi
 - `#[serde(default, skip_serializing_if = "Vec::is_empty")]` on `Vec<T>` fields — omitted when empty
 - `#[serde(default, skip_serializing_if = "Option::is_none")]` on `Option<T>` fields — omitted when `None`
 
-This contract is enforced by 31 Rust tests asserting byte-identity (e.g., `default_snapshot_omits_now_playing`, `omits_empty_*`). The D5 contract must be preserved — always-serializing to work around Swift decoder limitations is not permitted. [^14943-12]
+This contract is enforced by 31 Rust tests asserting byte-identity (e.g., `default_snapshot_omits_now_playing`, `omits_empty_*`). The D5 contract must be preserved — always-serializing to work around Swift decoder limitations is not permitted. <!-- [^14943-12] -->
 
 ## Swift Default-Tolerant Decoding
 
@@ -41,7 +41,7 @@ Swift's synthesized `Codable` ignores property defaults (`= false`, `= []`) for 
 - `@DefaultEmptyArray<Element: Codable>` — decodes `[Element]`, defaulting to `[]` on missing/null
 - `@DefaultSettings` — decodes `SettingsSnapshot`, defaulting to `.init()` on missing/null
 
-These wrappers are strict: present-but-malformed values throw (the decoder calls `try container.decode(...)`, not `try?`). Only missing keys and null values receive the default. [^14943-13]
+These wrappers are strict: present-but-malformed values throw (the decoder calls `try container.decode(...)`, not `try?`). Only missing keys and null values receive the default. <!-- [^14943-13] -->
 
 ## Affected Fields
 
@@ -55,15 +55,15 @@ The D5-vs-non-optional mismatch affects many fields across the type tree. Fields
 
 **PodcastUpdate:** `library`, `searchResults`, `nostrResults`, `comments`, `queue`, `picks`, `inbox`, `nowPlaying`, `downloads`, `tasks`, `knowledge`, `briefing`, `notifications`, and other top-level arrays (all skip-when-empty); `settings` (struct, skip-when-none)
 
-All these fields use the appropriate default-tolerant wrapper in the Swift mirror. Fields whose Swift mirrors are already Optional are unaffected. [^14943-14]
+All these fields use the appropriate default-tolerant wrapper in the Swift mirror. Fields whose Swift mirrors are already Optional are unaffected. <!-- [^14943-14] -->
 
 ## Systemic Nature
 
-This is a systemic schema-mirror drift — not a one-off field mismatch. Because the pull path uses the same Swift decoder with `try?` (silently falling back to empty), real-data library decode was broken on both push and pull prior to the fix. The `try?` hid the failures, so empty-state frames appeared to work while any frame containing real podcast data failed silently. [^14943-15]
+This is a systemic schema-mirror drift — not a one-off field mismatch. Because the pull path uses the same Swift decoder with `try?` (silently falling back to empty), real-data library decode was broken on both push and pull prior to the fix. The `try?` hid the failures, so empty-state frames appeared to work while any frame containing real podcast data failed silently. <!-- [^14943-15] -->
 
 ## Codex-Enforced
 
-The codex review (`codex exec review --base main`) flagged the initial always-serialize approach as a P1: it broke the 31 D5 contract tests. The correct fix is to preserve the D5 wire contract intact on the Rust side and make the Swift mirror decode missing keys with defaults. This is the codex-approved approach. [^14943-16]
+The review gate flagged the initial always-serialize approach as a P1: it broke the 31 D5 contract tests. The correct fix is to preserve the D5 wire contract intact on the Rust side and make the Swift mirror decode missing keys with defaults. <!-- [^14943-16] -->
 
 ## See Also
 - [[nmp-update-transport|NMP Update Transport (FlatBuffers Push)]] — related guide
