@@ -10,18 +10,31 @@ struct AppSidebarView: View {
     @Environment(AppStateStore.self) private var store
     private var userIdentity: UserIdentityStore { store.identity }
 
+    @State private var showPodcastsSheet = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             navSection
                 .padding(.top, AppTheme.Spacing.sm)
-            podcastsSection
-                .padding(.top, AppTheme.Spacing.md)
             Spacer()
         }
         .safeAreaPadding(.top)
         .safeAreaPadding(.bottom)
         .background(Color(.systemBackground).ignoresSafeArea())
+        .sheet(isPresented: $showPodcastsSheet) {
+            NavigationStack {
+                AllPodcastsListView()
+                    .navigationDestination(for: Podcast.self) { podcast in
+                        ShowDetailView(podcast: podcast)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Done") { showPodcastsSheet = false }
+                        }
+                    }
+            }
+        }
     }
 
     // MARK: - Header
@@ -68,6 +81,10 @@ struct AppSidebarView: View {
                 selectedTab = .library
                 dismiss()
             }
+            navRow("Podcasts", icon: "mic.fill", isActive: false) {
+                dismiss()
+                showPodcastsSheet = true
+            }
             navRow("Bookmarks", icon: "bookmark.fill", isActive: selectedTab == .bookmarks) {
                 selectedTab = .bookmarks
                 dismiss()
@@ -80,17 +97,6 @@ struct AppSidebarView: View {
                 selectedTab = .wiki
                 dismiss()
             }
-        }
-    }
-
-    // MARK: - Podcasts
-
-    private var podcastsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Divider()
-                .padding(.horizontal, AppTheme.Spacing.md)
-                .padding(.bottom, AppTheme.Spacing.md)
-            AppSidebarPodcastsSection(onDismissSidebar: dismiss)
         }
     }
 
