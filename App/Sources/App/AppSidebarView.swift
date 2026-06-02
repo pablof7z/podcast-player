@@ -15,6 +15,8 @@ struct AppSidebarView: View {
             header
             navSection
                 .padding(.top, AppTheme.Spacing.sm)
+            podcastsSection
+                .padding(.top, AppTheme.Spacing.md)
             Spacer()
         }
         .safeAreaPadding(.top)
@@ -78,6 +80,17 @@ struct AppSidebarView: View {
                 selectedTab = .wiki
                 dismiss()
             }
+        }
+    }
+
+    // MARK: - Podcasts
+
+    private var podcastsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+                .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.md)
+            AppSidebarPodcastsSection(onDismissSidebar: dismiss)
         }
     }
 

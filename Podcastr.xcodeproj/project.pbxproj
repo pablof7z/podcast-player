@@ -689,6 +689,7 @@
 		F225EFA39AA3A3CD6F8AABA0 /* AppStateStore+DerivedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD7F743FEB2B7E0ADC851CA /* AppStateStore+DerivedViews.swift */; };
 		F2E311C0D6D9B347C709AB67 /* DiscoverSearchTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519E489FD7FA0B6F484E9790 /* DiscoverSearchTextField.swift */; };
 		F3B55ECE7F9F3116A78674E5 /* VoiceNoteAgentContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E62B751C797AA6938486EB /* VoiceNoteAgentContext.swift */; };
+		F3D187D7A125195A04A07DC2 /* AppSidebarPodcastsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */; };
 		F4E111B81EA568C2F171813C /* VoiceCapability+Barge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */; };
 		F4E138BE2A089DED1A539302 /* BargeInDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03425D7B2A109A66BDA52B7E /* BargeInDetector.swift */; };
 		F510DB989FCA5ED54A9D3BED /* EpisodeAuditLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01283C24F6A52722FFE56958 /* EpisodeAuditLogView.swift */; };
@@ -1473,6 +1474,7 @@
 		F5EC59DDC4E5BC03024D6952 /* WidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBundle.swift; sourceTree = "<group>"; };
 		F5FFA17A547FC084A88FB297 /* CarPlayShows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayShows.swift; sourceTree = "<group>"; };
 		F625E27AE87384496001984E /* RSSDateParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSDateParsing.swift; sourceTree = "<group>"; };
+		F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebarPodcastsSection.swift; sourceTree = "<group>"; };
 		F667BC7E9AEB03AAF8949C6B /* PlatformCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCapability.swift; sourceTree = "<group>"; };
 		F7192A50120796AF81480691 /* CodableDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodableDefaults.swift; sourceTree = "<group>"; };
 		F71D89644FF06B08E16A5FF2 /* WikiCitation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiCitation.swift; sourceTree = "<group>"; };
@@ -2113,6 +2115,7 @@
 			isa = PBXGroup;
 			children = (
 				CCDBEC4F0E2BBCFFB096BEFD /* AppDelegate.swift */,
+				F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */,
 				64334EEB9F70E379F701528A /* AppSidebarView.swift */,
 				B7B74353E34FC5F74A23CDE5 /* PlayerNavSheets.swift */,
 				A1E1AC1E33A14A2AB17F388B /* RootView.swift */,
@@ -2950,6 +2953,7 @@
 				51DE42256BE5C0C2D745CBF4 /* WikiResearchSkill.swift in Sources */,
 				8030172D16AC36C093699CC0 /* YouTubeIngestionSkill.swift in Sources */,
 				B3E189C5BA5D59D07FF8FC37 /* AppDelegate.swift in Sources */,
+				F3D187D7A125195A04A07DC2 /* AppSidebarPodcastsSection.swift in Sources */,
 				12042258AA49A866C169BFD8 /* AppSidebarView.swift in Sources */,
 				398C6F7A4FB6418F662BDD95 /* PlayerNavSheets.swift in Sources */,
 				8483922E435FD8629CF2B14C /* RootView+DeepLink.swift in Sources */,
