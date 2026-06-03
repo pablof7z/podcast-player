@@ -295,15 +295,26 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     let downloads = handle.download_queue.lock().ok()
         .and_then(|q| build_downloads_snapshot(&q));
 
-    // Project comments for the now-playing episode from the cache.
+    // Project comments for the episode the user is currently viewing
+    // (set by `handle_fetch_comments`), falling back to the now-playing
+    // episode when the comments section hasn't been opened this session.
+    let viewed_comments_episode_id = handle
+        .viewed_comments_episode_id
+        .lock()
+        .ok()
+        .and_then(|v| v.clone());
     let comments = handle
         .comments_cache
         .lock()
         .ok()
         .and_then(|cache| {
-            now_playing
-                .as_ref()
-                .and_then(|np| np.episode_id.as_deref())
+            viewed_comments_episode_id
+                .as_deref()
+                .or_else(|| {
+                    now_playing
+                        .as_ref()
+                        .and_then(|np| np.episode_id.as_deref())
+                })
                 .and_then(|ep_id| cache.get(ep_id).cloned())
         })
         .unwrap_or_default();

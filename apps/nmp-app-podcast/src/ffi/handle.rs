@@ -192,6 +192,13 @@ pub struct PodcastHandle {
     /// Written by `handle_fetch_comments` / `handle_post_comment` on the
     /// actor thread; read by `build_snapshot_payload` on the main thread.
     pub(crate) comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
+    /// Episode id whose comments the user is currently viewing. Set by
+    /// `handle_fetch_comments` (the comments section opens for an episode);
+    /// read by `build_snapshot_payload` to project that episode's comments
+    /// instead of being limited to the now-playing episode. `None` until the
+    /// first `FetchComments` dispatch, in which case the snapshot falls back
+    /// to the now-playing episode id.
+    pub(crate) viewed_comments_episode_id: Arc<Mutex<Option<String>>>,
     /// NIP-02 social graph snapshot. `None` until the first
     /// `FetchContacts` dispatch completes. Written by
     /// `social_handler::handle_fetch_contacts` on the actor thread; read

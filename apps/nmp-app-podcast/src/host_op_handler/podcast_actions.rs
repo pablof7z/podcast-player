@@ -72,6 +72,7 @@ impl PodcastHostOpHandler {
                 crate::comments_handler::handle_fetch_comments(
                     self.app,
                     &self.store,
+                    &self.viewed_comments_episode_id,
                     &episode_id,
                 )
             }

@@ -122,6 +122,7 @@ pub extern "C" fn nmp_app_podcast_register(
         Arc::new(Mutex::new(HashMap::new()));
     let comments_cache: Arc<Mutex<HashMap<String, Vec<crate::ffi::projections::CommentSummary>>>> =
         Arc::new(Mutex::new(HashMap::new()));
+    let viewed_comments_episode_id: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let social = Arc::new(Mutex::new(None));
     let agent_notes: Arc<Mutex<Vec<crate::ffi::projections::AgentNoteSummary>>> =
         Arc::new(Mutex::new(Vec::new()));
@@ -234,6 +235,7 @@ pub extern "C" fn nmp_app_podcast_register(
         publish_state.clone(),
         agent_chat,
         comments_cache.clone(),
+        viewed_comments_episode_id.clone(),
         runtime.clone(),
         inbox_triage_cache.clone(),
         Arc::clone(&inbox_triage_in_progress),
@@ -334,6 +336,7 @@ pub extern "C" fn nmp_app_podcast_register(
         inbox_triage_cache,
         inbox_triage_in_progress,
         comments_cache,
+        viewed_comments_episode_id,
         social,
         agent_notes,
         runtime: runtime_for_handle,

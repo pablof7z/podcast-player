@@ -5,17 +5,19 @@ import SwiftUI
 // Embedded comments thread for an episode. Hosts:
 //   - A live list of NIP-22 (kind 1111) comments anchored to the Podcasting
 //     2.0 `<podcast:guid>` via NIP-73 (`podcast:item:guid:<guid>`).
-//   - A composer that publishes via the user's configured signer
-//     (`UserIdentityStore.signer`) to the user's configured Nostr relay.
+//   - A composer that publishes through the kernel, which signs with the
+//     active user signer and routes through its relay pool (no iOS WebSocket,
+//     no secret bytes in app code).
 //
 // This is a section, not a sheet — it lives inside the existing
 // `EpisodeDetailView` scroll, so the user discovers comments in the same
 // surface they're already on. Phase 1 supports top-level comments only;
 // reply threading + reactions are deliberate future work.
 //
-// Comments live entirely in Nostr — there's no local persistence. A
-// dismissed view re-fetches on the next appear from the relay's index.
-// That's fine for v1 and matches Fountain's behaviour.
+// Comments live entirely in Nostr — there's no local persistence. The kernel
+// owns the comment cache and projects it onto `PodcastUpdate.comments` for the
+// episode the user is currently viewing; the view reads that projection
+// reactively (no polling, no app-side subscription lifecycle).
 struct EpisodeCommentsSection: View {
 
     let episode: Episode
@@ -23,22 +25,23 @@ struct EpisodeCommentsSection: View {
     @Environment(AppStateStore.self) private var store
     private var identity: UserIdentityStore { store.identity }
 
-    /// Live websocket subscription. Held in @State so the view's lifetime
-    /// drives the network connection's lifetime.
-    @State private var subscription: NostrCommentService.Subscription?
-    @State private var comments: [EpisodeComment] = []
     @State private var draft: String = ""
-    @State private var isPublishing = false
-    @State private var errorMessage: String?
     @FocusState private var composerFocused: Bool
 
-    /// The comment target — only resolves when the episode carries a
-    /// publisher GUID (Podcasting 2.0 `<guid>` element). Episodes without a
-    /// GUID can't be globally addressed on Nostr, so we hide the surface
-    /// rather than fake a key.
-    private var target: CommentTarget? {
-        guard !episode.guid.isEmpty else { return nil }
-        return .episode(guid: episode.guid)
+    /// Comments for this episode, projected by the kernel onto the snapshot.
+    /// The kernel scopes `comments` to the episode whose `fetch_comments` was
+    /// last dispatched (see `kernelFetchComments`), so the list is already the
+    /// right episode's thread.
+    private var comments: [CommentSummary] {
+        store.kernel?.podcastSnapshot?.comments ?? []
+    }
+
+    /// Comments can only be anchored when the episode carries a publisher GUID
+    /// (Podcasting 2.0 `<guid>` element). Episodes without a GUID can't be
+    /// globally addressed on Nostr, so we hide the surface rather than fake a
+    /// key.
+    private var hasGUID: Bool {
+        !episode.guid.isEmpty
     }
 
     var body: some View {
@@ -46,8 +49,8 @@ struct EpisodeCommentsSection: View {
         // own padding here, otherwise the section sits in a narrower
         // gutter than the show notes immediately above it.
         Group {
-            if let target {
-                content(target: target)
+            if hasGUID {
+                content
             } else {
                 unsupportedState
             }
@@ -56,20 +59,15 @@ struct EpisodeCommentsSection: View {
 
     // MARK: - Content
 
-    @ViewBuilder
-    private func content(target: CommentTarget) -> some View {
+    private var content: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             header
             composer
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, AppTheme.Spacing.sm)
-            }
             commentsList
         }
-        .task(id: target) { await openSubscription(target: target) }
+        .task(id: episode.id) {
+            store.kernelFetchComments(episodeID: episode.id)
+        }
     }
 
     private var header: some View {
@@ -105,14 +103,10 @@ struct EpisodeCommentsSection: View {
                 identityChip
                 Spacer()
                 Button {
-                    Task { await publish() }
+                    post()
                 } label: {
-                    if isPublishing {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Text("Post")
-                            .font(.subheadline.weight(.semibold))
-                    }
+                    Text("Post")
+                        .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canPublish)
@@ -128,15 +122,9 @@ struct EpisodeCommentsSection: View {
             HStack(spacing: 4) {
                 Image(systemName: "person.crop.circle.fill")
                     .foregroundStyle(.secondary)
-                Text(EpisodeComment(
-                    id: "",
-                    target: .episode(guid: ""),
-                    authorPubkeyHex: pubkey,
-                    content: "",
-                    createdAt: Date()
-                ).authorShortKey)
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
+                Text(Self.shortKey(pubkey))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
             }
         } else {
             Text("Nostr key not set up")
@@ -146,9 +134,7 @@ struct EpisodeCommentsSection: View {
     }
 
     private var canPublish: Bool {
-        guard !isPublishing else { return false }
-        guard identity.signer != nil else { return false }
-        return !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     // MARK: - List
@@ -169,17 +155,20 @@ struct EpisodeCommentsSection: View {
         }
     }
 
-    private func commentRow(_ comment: EpisodeComment) -> some View {
+    private func commentRow(_ comment: CommentSummary) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: AppTheme.Spacing.xs) {
-                Text(comment.authorShortKey)
+                Text(comment.authorName ?? Self.shortKey(comment.authorNpub))
                     .font(.caption.monospaced().weight(.semibold))
                     .foregroundStyle(.primary)
                 Text("·")
                     .foregroundStyle(.tertiary)
-                Text(comment.createdAt, style: .relative)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    Date(timeIntervalSince1970: TimeInterval(comment.createdAt)),
+                    style: .relative
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Spacer()
             }
             Text(comment.content)
@@ -207,60 +196,22 @@ struct EpisodeCommentsSection: View {
         .padding(AppTheme.Spacing.sm)
     }
 
-    // MARK: - Network lifecycle
+    // MARK: - Actions
 
-    private func openSubscription(target: CommentTarget) async {
-        // Tear down any prior subscription before opening a new one — the
-        // task is keyed on `target`, so this branch only runs when the
-        // target changed (different episode).
-        subscription?.cancel()
-        comments = []
-        let service = NostrCommentService(store: store)
-        let sub = service.subscribe(target: target)
-        subscription = sub
-        for await comment in sub.stream {
-            // Newest first. Comments arrive out of order from the relay
-            // (stored events come oldest-first; live events come in
-            // creation order) — inserting at the head and re-sorting is
-            // O(N log N) per arrival but N is small for episode comments.
-            comments.append(comment)
-            comments.sort { $0.createdAt > $1.createdAt }
-        }
+    private func post() {
+        guard hasGUID, canPublish else { return }
+        let text = draft
+        store.kernelPostComment(episodeID: episode.id, content: text)
+        draft = ""
+        composerFocused = false
+        Haptics.success()
     }
 
-    private func publish() async {
-        guard let target,
-              let signer = identity.signer,
-              canPublish else { return }
-        let text = draft
-        isPublishing = true
-        errorMessage = nil
-        defer { isPublishing = false }
-        do {
-            let service = NostrCommentService(store: store)
-            let event = try await service.publish(
-                content: text,
-                target: target,
-                signer: signer
-            )
-            // Optimistically append so the user sees their comment land
-            // before the relay echo round-trips through the subscription.
-            let mine = EpisodeComment(
-                id: event.id,
-                target: target,
-                authorPubkeyHex: event.pubkey,
-                content: event.content,
-                createdAt: Date(timeIntervalSince1970: TimeInterval(event.created_at))
-            )
-            if !comments.contains(where: { $0.id == mine.id }) {
-                comments.insert(mine, at: 0)
-            }
-            draft = ""
-            composerFocused = false
-            Haptics.success()
-        } catch {
-            errorMessage = error.localizedDescription
-            Haptics.error()
-        }
+    // MARK: - Helpers
+
+    /// Display label for an npub — last 8 characters, matching the compact
+    /// affordance used elsewhere in the app.
+    private static func shortKey(_ key: String) -> String {
+        String(key.suffix(8))
     }
 }

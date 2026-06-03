@@ -134,6 +134,11 @@ pub struct PodcastHostOpHandler {
     /// actor thread; read by `build_snapshot_payload` on the main thread.
     /// In-memory only — comments re-fetch on next `FetchComments` dispatch.
     pub(crate) comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
+    /// Episode id whose comments the user is currently viewing. Shared with
+    /// `PodcastHandle.viewed_comments_episode_id`. Set by
+    /// `handle_fetch_comments` so the snapshot reader projects the viewed
+    /// episode's comments rather than the now-playing episode's.
+    pub(crate) viewed_comments_episode_id: Arc<Mutex<Option<String>>>,
     /// Shared Tokio runtime for async LLM / relay work. Seeded in
     /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
     /// Used by wiki synthesis, agent chat, inbox triage, and social graph fetches.
@@ -197,6 +202,7 @@ impl PodcastHostOpHandler {
         publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
         agent_chat: AgentChatHandler,
         comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
+        viewed_comments_episode_id: Arc<Mutex<Option<String>>>,
         runtime: Arc<Runtime>,
         inbox_triage_cache: Arc<Mutex<HashMap<String, TriageResult>>>,
         inbox_triage_in_progress: Arc<std::sync::atomic::AtomicBool>,
@@ -231,6 +237,7 @@ impl PodcastHostOpHandler {
             publish_state,
             agent_chat,
             comments_cache,
+            viewed_comments_episode_id,
             runtime,
             inbox_triage_cache,
             inbox_triage_in_progress,

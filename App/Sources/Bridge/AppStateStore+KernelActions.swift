@@ -209,6 +209,29 @@ extension AppStateStore {
         return nil
     }
 
+    // MARK: - Comments (NIP-22 / kind:1111)
+
+    /// Subscribe to an episode's NIP-22 comments via the kernel. Rust opens a
+    /// relay-pool subscription (no iOS WebSocket) and marks this episode as the
+    /// one being viewed; inbound comments land on
+    /// `podcastSnapshot.comments` via the reactive push seam.
+    func kernelFetchComments(episodeID: String) {
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "fetch_comments",
+                                "episode_id": episodeID])
+    }
+
+    /// Publish a NIP-22 comment for an episode via the kernel. Rust signs with
+    /// the active user signer and routes through its relay pool — no secret
+    /// bytes in app code. The comment is optimistically reflected on
+    /// `podcastSnapshot.comments`.
+    func kernelPostComment(episodeID: String, content: String) {
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "post_comment",
+                                "episode_id": episodeID,
+                                "content": content])
+    }
+
     // MARK: - Queue (podcast.queue namespace)
 
     /// Push an episode to the back of the Rust-owned Up Next queue.
