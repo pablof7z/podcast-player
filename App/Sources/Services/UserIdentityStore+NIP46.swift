@@ -2,40 +2,56 @@ import Foundation
 
 // MARK: - UserIdentityStore nostrconnect flow
 //
-// Keeps nostrconnect pairing logic out of the 500-line-capped core file.
-// Uses the internal seams added to the main file.
+// Routes all NIP-46 pairing through the NMP kernel — no Swift WebSocket,
+// no Nip44 crypto, no RemoteSigner in this path.
+//
+// * `connectViaNostrConnect`: kernel generates the URI AND starts listening;
+//   UI observes `remoteSignerState` reactively via `applyBunkerHandshake`.
+// * `applyBunkerHandshake`: called by `AppStateStore` on every kernel identity
+//   snapshot tick; maps `KernelBunkerHandshake` → `remoteSignerState`.
 
 extension UserIdentityStore {
 
-    /// Begin nostrconnect:// pairing. Generates the nostrconnect URI and calls
-    /// `onURI` synchronously so the UI can display the QR code or open a signer
-    /// app immediately. Blocks until pairing completes or the 5-minute timeout
-    /// expires. On success the identity switches to `.remoteSigner` and the
-    /// connection is persisted for automatic reconnect on next launch.
+    /// Begin nostrconnect:// pairing via the kernel's NIP-46 broker.
+    /// The kernel generates the URI and immediately starts listening for the
+    /// signer app's response on its embedded relay — no Swift WebSocket.
+    /// State changes arrive via `applyBunkerHandshake` on the next snapshot tick.
     func connectViaNostrConnect(
-        relay: URL = RemoteSigner.nostrConnectDefaultRelay,
+        relay: URL? = nil,
         onURI: @escaping @Sendable (String) -> Void
     ) async {
         _beginNostrConnect()
-        do {
-            let sessionPair = try NostrKeyPair.generate()
-            let (signer, userPub) = try await RemoteSigner.nostrConnect(
-                relayURL: relay,
-                sessionKeyPair: sessionPair,
-                onURI: onURI
-            )
-            try _adoptNostrConnectSigner(
-                signer: signer,
-                userPubkeyHex: userPub,
-                sessionPrivKeyHex: sessionPair.privateKeyHex,
-                relayAbsoluteString: relay.absoluteString
-            )
-            loadCachedProfile(for: userPub)
-            let pub = userPub
-            Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            _failNostrConnect(msg)
+        guard let uri = kernel?.nostrconnectURI(
+            relayURL: relay?.absoluteString,
+            callbackScheme: "podcastr"
+        ) else {
+            _failNostrConnect("Kernel unavailable")
+            return
+        }
+        onURI(uri)
+        // State progression (connecting → connected/failed) comes reactively
+        // via AppStateStore.applyBunkerHandshake on kernel snapshot ticks.
+    }
+
+    /// Called by AppStateStore on every kernel identity snapshot tick.
+    /// Maps the kernel's `KernelBunkerHandshake` projection to `remoteSignerState`.
+    @MainActor
+    func applyBunkerHandshake(_ handshake: KernelBunkerHandshake?, activeAccount: String?) {
+        if let handshake {
+            if handshake.isTerminalSuccess, let pubkey = activeAccount {
+                guard case .connected = remoteSignerState else {
+                    remoteSignerState = .connected(pubkey)
+                    publicKeyHex = pubkey
+                    mode = .remoteSigner
+                    loadCachedProfile(for: pubkey)
+                    Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
+                    return
+                }
+            } else if handshake.isFailed {
+                let msg = handshake.message ?? "NIP-46 pairing failed."
+                _failNostrConnect(msg)
+            }
+            // isInFlight → stay in .connecting (set by _beginNostrConnect)
         }
     }
 }

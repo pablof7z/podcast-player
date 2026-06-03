@@ -163,60 +163,21 @@ final class UserIdentityStore {
 
     // MARK: - NIP-46 connect / disconnect
 
-    /// Parse a `bunker://…` URI, run the connect handshake, and persist the
-    /// connection on success so launch reconnects automatically. An `auth_url`
-    /// challenge advances state to `.awaitingAuthorization(url)` for the UI.
+    /// Parse a `bunker://…` URI and begin the NIP-46 handshake via the kernel's
+    /// signer broker — no Swift WebSocket. State changes arrive reactively via
+    /// `applyBunkerHandshake` on kernel snapshot ticks.
     func connectRemoteSigner(uri: String) async {
         loginError = nil
-        let parsed: BunkerURI
         do {
-            parsed = try BunkerURI.parse(uri)
+            _ = try BunkerURI.parse(uri) // validate URI format before dispatching
         } catch {
             loginError = (error as? LocalizedError)?.errorDescription ?? "Invalid bunker URI."
             remoteSignerState = .failed(loginError ?? "Invalid bunker URI.")
             return
         }
         remoteSignerState = .connecting
-        do {
-            let sessionPair = try NostrKeyPair.generate()
-            let signer = RemoteSigner(bunker: parsed, sessionKeyPair: sessionPair)
-            let userPub = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            try KeychainStore.saveString(sessionPair.privateKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
-            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-            let meta = RemoteMeta(
-                bunkerPubkeyHex: parsed.remotePubkeyHex,
-                relays: parsed.relays,
-                secret: parsed.secret,
-                permissions: parsed.permissions,
-                userPubkeyHex: userPub
-            )
-            try saveRemoteMeta(meta)
-            self.signer = signer
-            self.publicKeyHex = userPub
-            self.keyPair = nil
-            self.mode = .remoteSigner
-            self.remoteSignerState = .connected(userPub)
-            // Wire the bunker into the kernel signer broker so kernel-side
-            // features can delegate signing over the relay.
-            self.syncBunkerToKernel(uri: uri)
-            self.loadCachedProfile(for: userPub)
-            let pub = userPub
-            Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            loginError = msg
-            remoteSignerState = .failed(msg)
-        }
-    }
-
-    /// Surfaces the bunker's `auth_url` URL to the UI. Called from inside `connect(...)`'s
-    /// `onAuthChallenge` continuation; the connect call itself is still suspended waiting
-    /// for the eventual `ack`.
-    private func handleAuthChallenge(url: URL) {
-        remoteSignerState = .awaitingAuthorization(url)
+        // Hand off to the kernel — NMP handles NIP-44, NIP-46, and relay routing.
+        syncBunkerToKernel(uri: uri)
     }
 
     func disconnectRemoteSigner() async {

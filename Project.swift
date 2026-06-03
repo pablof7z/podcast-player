@@ -100,6 +100,8 @@ let project = Project(
                     "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
                     "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug $(SRCROOT)/target/aarch64-apple-ios/release $(HOME)/.cargo/target-shared/aarch64-apple-ios/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios/release",
                     "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": "$(inherited) $(SRCROOT)/target/aarch64-apple-ios-sim/debug $(SRCROOT)/target/aarch64-apple-ios-sim/release $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/release",
+                    // Allow LiteRTLM's -Xlinker -all_load flag (required for binary xcframework).
+                    "ALLOW_UNSAFE_PACKAGE_BUILD_FLAGS": "YES",
                 ]
             )
         ),
