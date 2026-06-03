@@ -189,11 +189,10 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
     }
 
     // Pop the next episode from the CANONICAL `PlaybackQueue` (`handle.queue`)
-    // — the same queue the UI enqueues into via the `podcast.queue` namespace
-    // and the one the snapshot renders as Up Next (`build_snapshot` reads
-    // `handle.queue`). The actor's own queue is NOT populated by the UI enqueue
-    // path, so advancing off it would silently skip UI-queued episodes. (The
-    // vestigial `PlayerActor` queue is tracked for removal in BACKLOG.md.)
+    // — the single queue owner. The UI enqueues into it via both the
+    // `podcast.queue` namespace and the `podcast.player` enqueue ops (which
+    // alias the same queue), and the snapshot renders it as Up Next
+    // (`build_snapshot` reads `handle.queue`).
     // Pop the next RESOLVABLE episode, skipping stale heads — entries for
     // episodes removed from the library or unsubscribed shows. The old Swift
     // `playNext` loop did this; popping once and bailing on a stale head would

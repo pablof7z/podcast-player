@@ -146,13 +146,6 @@ worktrees currently in flight.
   behavior on simulator and device.
 - **queue-hardening.** Validate item-ended advancement, duplicate handling,
   remove/clear, persistence expectations, and UI sync.
-- **player-actor-queue-unification.** `maybe_auto_advance` now pops from the
-  canonical `PlaybackQueue` (`handle.queue`, the queue the UI enqueues into via
-  `podcast.queue` and the snapshot renders). The separate `PlayerActor.queue`
-  (populated only by the `podcast.player` `Enqueue`/`PlayNext` ops, which the UI
-  does not use) is now vestigial for auto-advance. Collapse the two queues into
-  one owner: route the `podcast.player` enqueue ops at `PlaybackQueue` (or delete
-  them) and drop `PlayerActor`'s queue field + `enqueue`/`pop_next`/`queue()`.
 - **remote-command-kernel-routing.** Lock-screen / Control Center commands
   (`AudioCapability+RemoteCommands`) call `execute(.play)`/`.seek` which run the
   engine directly through the same `commandHandler` that Rust-issued commands
