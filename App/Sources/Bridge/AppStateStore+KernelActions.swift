@@ -232,6 +232,26 @@ extension AppStateStore {
                                 "content": content])
     }
 
+    /// Publish a kind:1 agent-to-agent note via the kernel.
+    /// Rust builds all NIP-10 tags and routes through the NMP relay pool.
+    func kernelPublishAgentNote(
+        recipientPubkeyHex: String,
+        content: String,
+        rootEventID: String? = nil,
+        inboundEventID: String? = nil,
+        rootATags: [String] = []
+    ) {
+        var body: [String: Any] = [
+            "op": "publish_agent_note",
+            "recipient_pubkey_hex": recipientPubkeyHex,
+            "content": content
+        ]
+        if let root = rootEventID { body["root_event_id"] = root }
+        if let inbound = inboundEventID { body["inbound_event_id"] = inbound }
+        if !rootATags.isEmpty { body["root_a_tags"] = rootATags }
+        kernel?.dispatch(namespace: "podcast", body: body)
+    }
+
     // MARK: - Queue (podcast.queue namespace)
 
     /// Push an episode to the back of the Rust-owned Up Next queue.

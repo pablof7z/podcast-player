@@ -178,7 +178,7 @@ struct AgentPodcastsView: View {
         // NMP owns relay configuration — just read the configured relays from
         // the kernel snapshot. No WebSocket, no relay logic in Swift.
         let relays = await MainActor.run {
-            store.podcastSnapshot?.configuredRelays.map(\.url).filter { !$0.isEmpty } ?? []
+            store.kernel?.podcastSnapshot?.configuredRelays.map(\.url).filter { !$0.isEmpty } ?? []
         }
         await MainActor.run { updateRelays(relays) }
     }

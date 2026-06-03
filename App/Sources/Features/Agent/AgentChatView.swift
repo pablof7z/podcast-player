@@ -80,7 +80,7 @@ struct AgentChatView: View {
                     inputFocused = true
                 }
             } else {
-                inputFocused = hasKey
+                inputFocused = true
             }
         }
         .onChange(of: session.phase) { _, newPhase in

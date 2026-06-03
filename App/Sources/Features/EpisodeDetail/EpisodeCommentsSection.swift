@@ -66,7 +66,7 @@ struct EpisodeCommentsSection: View {
             commentsList
         }
         .task(id: episode.id) {
-            store.kernelFetchComments(episodeID: episode.id)
+            store.kernelFetchComments(episodeID: episode.id.uuidString.lowercased())
         }
     }
 
@@ -201,7 +201,7 @@ struct EpisodeCommentsSection: View {
     private func post() {
         guard hasGUID, canPublish else { return }
         let text = draft
-        store.kernelPostComment(episodeID: episode.id, content: text)
+        store.kernelPostComment(episodeID: episode.id.uuidString.lowercased(), content: text)
         draft = ""
         composerFocused = false
         Haptics.success()

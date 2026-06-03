@@ -3,16 +3,13 @@ import os.log
 
 // MARK: - LivePeerEventPublisher
 //
-// Dispatches kind:1 agent-to-agent notes to the Rust kernel. Swift passes
-// semantic values; Rust builds all NIP-10 tags and routes through NMP.
+// Dispatches kind:1 agent-to-agent notes through the Rust kernel.
+// Swift passes typed semantic values; Rust builds NIP-10 tags and routes via NMP.
 
 final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Sendable {
-    private let logger = Logger.app("AgentTools")
     weak var store: AppStateStore?
 
-    init(store: AppStateStore) {
-        self.store = store
-    }
+    init(store: AppStateStore) { self.store = store }
 
     func publishConversationReply(
         peerContext: PeerConversationContext,
@@ -24,14 +21,13 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
         }
         guard let store else { throw NostrEventPublisherError.noSigningKey }
         await MainActor.run {
-            store.kernelDispatch("podcast", [
-                "op": "publish_agent_note",
-                "recipient_pubkey_hex": peerContext.peerPubkeyHex,
-                "content": body,
-                "root_event_id": peerContext.rootEventID,
-                "inbound_event_id": peerContext.inboundEventID,
-                "root_a_tags": peerContext.rootATags.compactMap { $0.count > 1 ? $0[1] : nil }
-            ])
+            store.kernelPublishAgentNote(
+                recipientPubkeyHex: peerContext.peerPubkeyHex,
+                content: body,
+                rootEventID: peerContext.rootEventID,
+                inboundEventID: peerContext.inboundEventID,
+                rootATags: peerContext.rootATags.compactMap { $0.count > 1 ? $0[1] : nil }
+            )
         }
         return "queued"
     }
@@ -46,13 +42,12 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
         }
         guard let store else { throw NostrEventPublisherError.noSigningKey }
         await MainActor.run {
-            store.kernelDispatch("podcast", [
-                "op": "publish_agent_note",
-                "recipient_pubkey_hex": friendPubkeyHex,
-                "content": body,
-                "root_a_tags": peerContext?.rootATags.compactMap { $0.count > 1 ? $0[1] : nil }
+            store.kernelPublishAgentNote(
+                recipientPubkeyHex: friendPubkeyHex,
+                content: body,
+                rootATags: peerContext?.rootATags.compactMap { $0.count > 1 ? $0[1] : nil }
                     ?? [FeedbackRelayClient.projectCoordinate]
-            ])
+            )
         }
         return "queued"
     }
@@ -62,7 +57,6 @@ final class LivePeerEventPublisher: PeerEventPublisherProtocol, @unchecked Senda
 
 struct LiveFriendDirectoryAdapter: FriendDirectoryProtocol {
     weak var store: AppStateStore?
-
     init(store: AppStateStore) { self.store = store }
 
     func resolvePubkey(prefixOrFull: String) async -> String? {
@@ -76,12 +70,9 @@ struct LiveFriendDirectoryAdapter: FriendDirectoryProtocol {
 
 final class LivePendingFriendMessageRegistrar: PendingFriendMessageRegistrarProtocol, @unchecked Sendable {
     weak var store: AppStateStore?
-
     init(store: AppStateStore) { self.store = store }
 
     func register(_ message: PendingFriendMessage) async {
-        await MainActor.run { [weak self] in
-            self?.store?.registerPendingFriendMessage(message)
-        }
+        await MainActor.run { [weak self] in self?.store?.registerPendingFriendMessage(message) }
     }
 }
