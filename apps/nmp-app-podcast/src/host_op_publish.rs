@@ -3,8 +3,8 @@
 //!
 //! Each function builds a signed NIP-F4 event (kind:10154 show, kind:54
 //! episode, kind:10064 author-claim) using real secp256k1 cryptography via
-//! the `nostr` crate, then broadcasts it to `relay.primal.net` through the
-//! `nostr_relay` capability.
+//! the `nostr` crate, then broadcasts it to the app's configured write relays
+//! through the `nostr_relay` capability.
 //!
 //! Return envelope:
 //!   - `status: "published"` — event signed AND relay accepted it.
@@ -428,10 +428,39 @@ pub(crate) fn sign_event(
     Ok((event_json, event_id))
 }
 
-/// Dispatch a signed event JSON string to `relay.primal.net` via the
-/// `nostr_relay` capability. Returns `"published"` if the relay accepted
-/// the event, `"signed"` otherwise (null app pointer, parse error, or
-/// relay rejection).
+/// Collect write-capable relay URLs from the app's configured relay slot.
+/// Relays with role `"both"` or `"write"` are included. Falls back to
+/// `wss://relay.primal.net` when the slot is empty or contains no write relays
+/// so that publish always reaches at least one relay.
+///
+/// SAFETY: caller must guarantee `app` is non-null.
+fn write_relay_urls(app: &nmp_ffi::NmpApp) -> Vec<String> {
+    let slot = app.configured_relays_handle();
+    let urls: Vec<String> = slot
+        .lock()
+        .map(|guard| {
+            guard
+                .as_slice()
+                .iter()
+                .filter(|r| {
+                    nmp_core::__ffi_internal::has_role(r.role(), "both")
+                        || nmp_core::__ffi_internal::has_role(r.role(), "write")
+                })
+                .map(|r| r.url().to_owned())
+                .collect()
+        })
+        .unwrap_or_default();
+    if urls.is_empty() {
+        vec!["wss://relay.primal.net".to_owned()]
+    } else {
+        urls
+    }
+}
+
+/// Dispatch a signed event JSON string to the app's configured write relays
+/// via the `nostr_relay` capability. Returns `"published"` if the relay
+/// accepted the event, `"signed"` otherwise (null app pointer, parse error,
+/// or relay rejection).
 ///
 /// Null-app guard: unit tests run with `app == null_mut()`. Dispatching
 /// a capability through a null pointer is UB — we return `"signed"` early.
@@ -443,9 +472,11 @@ pub(crate) fn dispatch_nostr_relay(
         return "signed";
     }
 
+    // SAFETY: app is non-null (checked above).
+    let app = unsafe { &*handler.app };
     let relay_req = NostrRelayRequest::Publish {
         event_json: event_json.to_owned(),
-        relay_urls: vec!["wss://relay.primal.net".to_owned()],
+        relay_urls: write_relay_urls(app),
     };
     let payload_json = match serde_json::to_string(&relay_req) {
         Ok(j) => j,
@@ -457,10 +488,7 @@ pub(crate) fn dispatch_nostr_relay(
         payload_json,
     };
 
-    // SAFETY: app is non-null (checked above). The pointer is valid for the
-    // duration of this call — same invariant as `dispatch_http` in
-    // `host_op_handler.rs`.
-    let envelope = unsafe { &*handler.app }.dispatch_capability(&cap_req);
+    let envelope = app.dispatch_capability(&cap_req);
     match serde_json::from_str::<NostrRelayResult>(&envelope.result_json) {
         Ok(NostrRelayResult::Published { ok: true, .. }) => "published",
         _ => "signed",
