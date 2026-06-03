@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-03T20:00:00Z",
+      "lines": [
+        "Pressing Play from the lock screen right after reopening the app now correctly saves your position and marks episodes played"
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T16:30:52Z",
       "lines": [
         "Your Nostr profile name, bio, and picture now sync across your devices"
