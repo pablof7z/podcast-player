@@ -292,32 +292,19 @@ final class UserIdentityStore {
         )
         guard alreadyPublished != pair.publicKeyHex else { return }
         let pubkey = pair.publicKeyHex
-        let keyService = Self.userKeyService
-        let profileAccount = Self.generatedProfileAccount
-        let signer = LocalKeySigner(keyPair: pair)
         let profile = Self.generatedProfile(pubkey: pubkey)
-        Task.detached {
-            guard let data = try? JSONSerialization.data(withJSONObject: profile, options: [.sortedKeys]),
-                  let content = String(data: data, encoding: .utf8) else { return }
-            let event = try await signer.sign(NostrEventDraft(kind: 0, content: content))
-            var published = false
-            for relayURL in FeedbackRelayClient.profileRelayURLs {
-                let client = FeedbackRelayClient(relayURL: relayURL)
-                do {
-                    try await client.publish(event, authSigner: signer)
-                    published = true
-                } catch {
-                    continue
-                }
-            }
-            if published {
-                try? KeychainStore.saveString(
-                    pubkey,
-                    service: keyService,
-                    account: profileAccount
-                )
-            }
-        }
+        // Route through the kernel — NMP signs with the active signer and
+        // publishes via its relay pool. No signing or WebSocket in Swift.
+        dispatchToKernel(namespace: "podcast.social", body: [
+            "op": "publish_profile",
+            "name":         profile["name"] ?? "",
+            "display_name": profile["display_name"] ?? "",
+            "about":        profile["about"] ?? "",
+            "picture":      profile["picture"] ?? "",
+        ])
+        try? KeychainStore.saveString(pubkey,
+                                      service: Self.userKeyService,
+                                      account: Self.generatedProfileAccount)
     }
 
     private static func generatedProfile(pubkey: String) -> [String: String] {
