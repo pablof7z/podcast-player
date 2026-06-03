@@ -34,10 +34,10 @@ use std::ffi::{c_char, CStr, CString};
 use std::sync::Arc;
 
 use super::handle::PodcastHandle;
-use crate::llm::{LlmRequest, backend_for};
+use crate::agent_llm::chat_with_tools;
 
 /// Convert the OpenAI message array JSON to a flat (role, content) history
-/// suitable for [`LlmRequest`]. System message is extracted separately.
+/// suitable for the tool loop. System message is extracted separately.
 ///
 /// Strategy: walk the array in order; the first `system` entry becomes the
 /// system prompt. All `user` and `assistant` text messages become history
@@ -179,47 +179,15 @@ pub extern "C" fn nmp_app_podcast_chat_complete(
     let store = Arc::clone(&handle_ref.store);
     let runtime = Arc::clone(&handle_ref.runtime);
 
-    // Select backend using the stored model (thinking model for agent turns;
-    // the same model preference agent_llm.rs uses).
-    let model = crate::agent_llm::THINKING_MODEL.to_owned();
-
-    let req = LlmRequest {
-        system,
-        history: history_without_last,
-        user: user_message,
-        model: model.clone(),
+    // Drive the full Rust tool loop (search_library, get_transcript,
+    // get_podcast_info, get_memory_facts) via chat_with_tools.  Swift's
+    // turn-loop receives only the final prose answer — it never sees raw
+    // tool_calls from this path, so Swift dispatches upgrade_thinking /
+    // use_skill in its own intercept layer before calling here.
+    let result = match chat_with_tools(&system, &history_without_last, &user_message, store, &runtime) {
+        Ok(text) => text,
+        Err(e) => return err_envelope(&e).into_raw(),
     };
-
-    let backend = backend_for(&store, &model);
-
-    let result = runtime.block_on(async move {
-        match backend.complete(&req).await {
-            Ok(text) => text,
-            Err(e) => {
-                // Try fast model as fallback, mirroring agent_llm::single_turn.
-                let fallback_model = crate::agent_llm::FAST_MODEL.to_owned();
-                let fallback_req = LlmRequest {
-                    system: req.system.clone(),
-                    history: req.history.clone(),
-                    user: req.user.clone(),
-                    model: fallback_model.clone(),
-                };
-                let fallback_backend = backend_for(&store, &fallback_model);
-                match fallback_backend.complete(&fallback_req).await {
-                    Ok(text) => text,
-                    Err(e2) => {
-                        eprintln!("nmp_app_podcast_chat_complete: both models failed: {e}, {e2}");
-                        format!("error:{e}")
-                    }
-                }
-            }
-        }
-    });
-
-    // Return error envelope if both models failed.
-    if result.starts_with("error:") {
-        return err_envelope(&result[6..]).into_raw();
-    }
 
     ok_envelope(&result).into_raw()
 }

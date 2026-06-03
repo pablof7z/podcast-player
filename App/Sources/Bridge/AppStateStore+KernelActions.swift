@@ -381,6 +381,28 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast", body: body)
     }
 
+    // MARK: - LLM provider credentials (podcast.settings namespace)
+
+    /// Push the current LLM provider API keys into the Rust kernel so
+    /// `PodcastStore::open_router_api_key()` / `ollama_api_key()` return live
+    /// values. Called on kernel attach and after every key save/delete.
+    /// Rust can't read the Keychain directly — this is the only delivery path.
+    func kernelSetProviderApiKeys() {
+        var body: [String: Any] = ["op": "set_provider_api_keys"]
+        do {
+            if let key = try OpenRouterCredentialStore.apiKey() {
+                body["open_router"] = key
+            }
+            if let key = try OllamaCredentialStore.apiKey() {
+                body["ollama"] = key
+            }
+        } catch {
+            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
+                   "Failed to resolve LLM credentials for kernel: %{public}@", error.localizedDescription)
+        }
+        kernel?.dispatch(namespace: "podcast.settings", body: body)
+    }
+
     // MARK: - App relays (podcast.settings namespace)
     //
     // Relay state is kernel-owned (NMP v0.2.1 `AppRelaySlot`), not `PodcastStore`.
@@ -565,32 +587,4 @@ extension AppStateStore {
                          body: ["op": "publish_author_claim", "agent_pubkey_hex": agentPubkeyHex])
     }
 
-    // MARK: - LLM Provider credential push (podcast.settings namespace)
-    //
-    // Push resolved API keys from the Keychain into the Rust kernel's
-    // in-memory settings store. Keys are never persisted on either side;
-    // re-push on every cold launch after Keychain unlock and after any
-    // Settings credential edit. The kernel uses these to initialize
-    // LlmBackend instances without requiring the FFI caller to resolve
-    // or pass keys themselves (provider-blind routing).
-
-    /// Push OpenRouter and Ollama API keys from the Keychain into the Rust
-    /// kernel's in-memory provider registry. Called on app launch after
-    /// Keychain unlock and after any Settings credential mutation
-    /// (OpenRouterCredentialStore.saveAPIKey / OllamaCredentialStore.saveAPIKey).
-    func kernelSetProviderApiKeys() {
-        var body: [String: Any] = ["op": "set_provider_api_keys"]
-        do {
-            if let key = try OpenRouterCredentialStore.apiKey() {
-                body["open_router"] = key
-            }
-            if let key = try OllamaCredentialStore.apiKey() {
-                body["ollama"] = key
-            }
-        } catch {
-            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
-                   "Failed to resolve LLM credentials for kernel: %{public}@", error.localizedDescription)
-        }
-        kernel?.dispatch(namespace: "podcast.settings", body: body)
-    }
 }

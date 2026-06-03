@@ -53,7 +53,9 @@ impl LlmBackend for OpenRouterBackend {
             })?;
 
         // Build the agent with the system prompt.
-        let agent = client.agent(&req.model).preamble(&req.system).build();
+        // Strip the "openrouter:" routing prefix before forwarding to the API.
+        let model_id = req.model.strip_prefix("openrouter:").unwrap_or(&req.model);
+        let agent = client.agent(model_id).preamble(&req.system).build();
 
         // Convert history and chat.
         let mut history = make_history(&req.history);
