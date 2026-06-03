@@ -70,6 +70,37 @@ pub(crate) fn publish_raw_via_nmp(
     dispatch_nmp_publish(app, body)
 }
 
+/// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }` with an
+/// **explicit** relay target instead of the user's NIP-65 outbox (`Auto`).
+///
+/// NMP signs with the active signer (user's nsec), stamps `created_at` (D9),
+/// and routes the event only to `relays`. NMP performs NIP-42 AUTH on those
+/// connections automatically — required for relays that demand AUTH to accept
+/// writes (e.g. the feedback relay's protected `["-"]` notes). No secret bytes
+/// in app code; no relay socket opened by the host.
+///
+/// Returns `"queued"` or `"signed"` (null app).
+pub(crate) fn publish_raw_explicit_via_nmp(
+    app: *mut nmp_ffi::NmpApp,
+    kind: u32,
+    tags: &[Vec<String>],
+    content: &str,
+    relays: &[&str],
+) -> &'static str {
+    if app.is_null() {
+        return "signed";
+    }
+    let body = serde_json::json!({
+        "PublishRaw": {
+            "kind": kind,
+            "tags": tags,
+            "content": content,
+            "target": { "Explicit": { "relays": relays } },
+        }
+    });
+    dispatch_nmp_publish(app, body)
+}
+
 /// Push a [`LogicalInterest`] into NMP's relay pool. The kernel opens the
 /// subscription through its own connections — no iOS WebSocket ever opened.
 pub(crate) fn push_interest_via_nmp(app: *mut nmp_ffi::NmpApp, interest: LogicalInterest) {

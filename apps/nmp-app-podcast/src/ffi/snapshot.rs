@@ -303,6 +303,18 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .map(|n| n.clone())
         .unwrap_or_default();
 
+    // In-app feedback events (kind:1 + kind:513 for the TENEX project coord),
+    // cached as SignedNostrEvent-shaped JSON by `FeedbackObserver`. Reactive
+    // push: filled by `FetchFeedback` on the actor thread, projected here on
+    // every tick (no polling, no pull symbols). The iOS `FeedbackStore` rebuilds
+    // threads from this flat list.
+    let feedback_events = handle
+        .feedback_events_cache
+        .lock()
+        .ok()
+        .map(|f| f.clone())
+        .unwrap_or_default();
+
     // Configured app relays (NMP v0.2.1). Kernel-owned slot, projected by the
     // sibling helper. SAFETY: `handle.app` is the live `*mut NmpApp` the
     // host-op handler also dereferences; the actor joins before `nmp_app_free`.
@@ -353,6 +365,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         social,
         agent_notes,
         configured_relays,
+        feedback_events,
         ..PodcastUpdate::default()
     }
 }

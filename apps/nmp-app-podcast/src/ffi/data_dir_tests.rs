@@ -54,6 +54,7 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         comments_cache: Arc::new(Mutex::new(HashMap::new())),
         social: Arc::new(Mutex::new(None)),
         agent_notes: Arc::new(Mutex::new(Vec::new())),
+        feedback_events_cache: Arc::new(Mutex::new(Vec::new())),
         runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }

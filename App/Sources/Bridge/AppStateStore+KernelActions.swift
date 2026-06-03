@@ -234,6 +234,39 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast.queue", body: ["op": "clear"])
     }
 
+    // MARK: - Feedback (in-app TENEX project notes)
+
+    /// Open the in-app feedback subscription via the kernel. Rust pushes a
+    /// relay-pinned subscription to the feedback relay (no iOS WebSocket) for
+    /// kind:1 + kind:513 events bearing the project `["a"]` coord; inbound
+    /// events land on `podcastSnapshot.feedbackEvents` via the reactive push
+    /// seam, and `FeedbackStore` rebuilds threads from them.
+    func kernelFetchFeedback() {
+        kernel?.dispatch(namespace: "podcast", body: ["op": "fetch_feedback"])
+    }
+
+    /// Publish a feedback note (kind:1) via the kernel. Rust builds all tags
+    /// (project anchor, category, NIP-70 protected marker, NIP-10 reply
+    /// markers), signs with the active user signer, and routes to the feedback
+    /// relay with an explicit publish target (NMP AUTHs the write) — no secret
+    /// bytes in app code, no iOS relay socket. `parentEventID` / `replyToPubkey`
+    /// are nil for a new thread, set for a reply.
+    func kernelPublishFeedback(
+        category: String,
+        content: String,
+        parentEventID: String? = nil,
+        replyToPubkey: String? = nil
+    ) {
+        var body: [String: Any] = [
+            "op": "publish_feedback",
+            "category": category,
+            "content": content,
+        ]
+        if let parent = parentEventID { body["parent_event_id"] = parent }
+        if let pk = replyToPubkey { body["reply_to_pubkey"] = pk }
+        kernel?.dispatch(namespace: "podcast", body: body)
+    }
+
     // MARK: - Chapters
 
     /// Fetch Podcasting 2.0 chapters JSON for an episode (namespace: podcast).
