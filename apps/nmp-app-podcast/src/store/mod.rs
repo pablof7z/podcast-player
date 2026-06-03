@@ -233,6 +233,9 @@ pub struct PodcastStore {
     pub(super) blossom_server_url: String,
     /// YouTube extractor URL (optional).
     pub(super) youtube_extractor_url: Option<String>,
+    /// Local on-device LLM model ID (optional). When set, this dominates all callers
+    /// in factory::backend_for, routing to LocalModelBackend via the global callback socket.
+    pub(super) local_model_id: Option<String>,
     /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
     pub(super) wiki_auto_generate_on_transcript_ingest: bool,
     /// Whether to auto-ingest publisher-provided transcripts. Default `true`.
@@ -356,6 +359,7 @@ impl PodcastStore {
             eleven_labs_voice_name: String::new(),
             blossom_server_url: "https://blossom.primal.net".to_owned(),
             youtube_extractor_url: None,
+            local_model_id: None,
             wiki_auto_generate_on_transcript_ingest: false,
             auto_ingest_publisher_transcripts: true,
             auto_fallback_to_scribe: true,
@@ -770,6 +774,7 @@ impl PodcastStore {
                 eleven_labs_voice_name: self.eleven_labs_voice_name.clone(),
                 blossom_server_url: self.blossom_server_url.clone(),
                 youtube_extractor_url: self.youtube_extractor_url.clone(),
+                local_model_id: self.local_model_id.clone(),
                 wiki_auto_generate_on_transcript_ingest: self.wiki_auto_generate_on_transcript_ingest,
                 auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
                 auto_fallback_to_scribe: self.auto_fallback_to_scribe,

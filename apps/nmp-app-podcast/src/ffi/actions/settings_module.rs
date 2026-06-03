@@ -106,6 +106,9 @@ pub enum SettingsAction {
     SetBlossomServerUrl { url: String },
     /// Set the YouTube extractor URL (optional).
     SetYoutubeExtractorUrl { url: Option<String> },
+    /// Set the local on-device LLM model ID (optional). When set, this dominates
+    /// all other provider selections in the LLM factory.
+    SetLocalModel { model_id: Option<String> },
     /// Toggle wiki auto-generation on transcript ingest.
     SetWikiAutoGenerateOnTranscriptIngest { enabled: bool },
     /// Toggle auto-ingest of publisher-provided transcripts.

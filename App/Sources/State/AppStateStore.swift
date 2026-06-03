@@ -199,6 +199,13 @@ final class AppStateStore {
     @ObservationIgnored
     var onNowPlayingSnapshot: ((PodcastUpdate?, [PodcastSummary]) -> Void)?
 
+    /// Service for loading and executing on-device LLM inference. Registered
+    /// with the kernel at attach time so Rust can call back into Swift for
+    /// local model responses. Held with app lifetime to keep the
+    /// `Unmanaged.passUnretained` FFI context pointer valid.
+    @ObservationIgnored
+    lazy var localLLMService = LocalLLMService()
+
     /// Retained observer token for `UIApplication.didEnterBackgroundNotification`.
     /// On background, the position cache is flushed to disk so the user
     /// can force-quit + relaunch without losing playback progress.

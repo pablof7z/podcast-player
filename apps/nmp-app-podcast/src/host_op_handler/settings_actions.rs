@@ -210,6 +210,13 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
+            SettingsAction::SetLocalModel { model_id } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_local_model_id(model_id);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
             SettingsAction::SetWikiAutoGenerateOnTranscriptIngest { enabled } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_wiki_auto_generate_on_transcript_ingest(enabled);

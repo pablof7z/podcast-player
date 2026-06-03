@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-03T12:07:00Z",
+      "lines": [
+        "Run AI locally on your device with downloadable Gemma 4 models — private, offline, no API key."
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T12:06:00Z",
       "lines": [
         "Download progress now updates live instead of staying stuck at 0%"

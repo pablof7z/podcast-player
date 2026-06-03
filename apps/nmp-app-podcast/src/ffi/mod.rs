@@ -36,6 +36,7 @@ mod data_dir;
 mod download_report;
 pub(crate) mod handle;
 mod helpers;
+mod local_llm;
 pub mod projections;
 #[cfg(test)]
 mod projections_tests;
@@ -107,6 +108,7 @@ pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
     nmp_app_podcast_unregister, AppRelayRow, PodcastUpdate,
 };
+pub use local_llm::{nmp_app_register_local_llm, nmp_app_clear_local_llm};
 pub use network_report::nmp_app_podcast_network_report;
 pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use voice_report::nmp_app_podcast_voice_report;

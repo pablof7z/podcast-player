@@ -623,6 +623,19 @@ impl PodcastStore {
         self.persist();
     }
 
+    /// Local on-device LLM model ID (optional). When set, this dominates all callers
+    /// in the LLM factory.
+    pub fn local_model_id(&self) -> Option<&str> {
+        self.local_model_id.as_deref()
+    }
+
+    /// Set the local model ID and persist. Idempotent.
+    pub fn set_local_model_id(&mut self, value: Option<String>) {
+        if self.local_model_id == value { return; }
+        self.local_model_id = value;
+        self.persist();
+    }
+
     /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
     pub fn wiki_auto_generate_on_transcript_ingest(&self) -> bool {
         self.wiki_auto_generate_on_transcript_ingest
