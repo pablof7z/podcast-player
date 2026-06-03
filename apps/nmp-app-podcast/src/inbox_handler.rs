@@ -357,6 +357,17 @@ pub fn handle_inbox_action(
         InboxAction::MarkListened { episode_id } => match store.lock() {
             Ok(mut s) => {
                 let _flipped = s.mark_episode_played(&episode_id);
+                // Delete-after-played is kernel-owned policy (D0). A manual
+                // mark-played (and the sleep-timer-end path, which routes
+                // through `inbox/mark_listened`) honours the user's
+                // `auto_delete_downloads_after_played` setting here. Keyed only
+                // on the auto-delete setting (not `auto_mark_played_at_end`),
+                // matching the prior Swift `markEpisodePlayed` gate. File
+                // removal stays out of the store, mirroring
+                // `handle_delete_download`.
+                if let Some(path) = s.clear_local_path_if_auto_delete(&episode_id) {
+                    let _ = std::fs::remove_file(&path);
+                }
                 rev.fetch_add(1, Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }

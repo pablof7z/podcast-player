@@ -269,6 +269,61 @@ fn handle_mark_listened_flips_store_flag() {
 }
 
 #[test]
+fn mark_listened_deletes_download_when_auto_delete_on() {
+    // Seam test: the kernel-owned delete-after-played policy must fire on the
+    // manual mark-played path (inbox/mark_listened) — this is also the path the
+    // sleep-timer-end case routes through. With auto-delete on and the episode
+    // downloaded, mark-played removes the local file.
+    let now = Utc::now().timestamp();
+    let store = fixture_store(now);
+    let dismissed = Arc::new(Mutex::new(HashSet::<String>::new()));
+    let rev = Arc::new(AtomicU64::new(0));
+    let cache = empty_triage_cache();
+    let runtime = Arc::new(
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap(),
+    );
+    let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+    // Stage a real downloaded file for the "Fresh" episode and enable the
+    // auto-delete setting.
+    let tmp = std::env::temp_dir().join(format!(
+        "nmp-inbox-autodelete-{}.mp3",
+        uuid::Uuid::new_v4()
+    ));
+    std::fs::write(&tmp, b"audio bytes").expect("write fixture file");
+    let (fresh_id, typed_id) = {
+        let mut s = store.lock().unwrap();
+        let (_, eps) = s.all_podcasts()[0];
+        let ep = eps.iter().find(|e| e.title == "Fresh").unwrap();
+        let typed = ep.id;
+        let id_str = ep.id.0.to_string();
+        s.set_local_path(typed, tmp.to_string_lossy().into_owned(), 11);
+        s.set_auto_delete_downloads_after_played(true);
+        (id_str, typed)
+    };
+
+    let result = handle_inbox_action(
+        InboxAction::MarkListened { episode_id: fresh_id },
+        &store,
+        &dismissed,
+        &rev,
+        &cache,
+        &runtime,
+        &in_progress,
+    );
+    assert_eq!(result["ok"], true);
+
+    let s = store.lock().unwrap();
+    assert!(
+        s.local_path_for(&typed_id).is_none(),
+        "local-path mapping must be cleared after manual mark-played with auto-delete on"
+    );
+    assert!(!tmp.exists(), "the downloaded file must be removed from disk");
+}
+
+#[test]
 fn score_buckets_match_documented_thresholds() {
     let now = 1_000_000_000;
     assert_eq!(score(now, now - 3_600).1, "Just published");

@@ -157,6 +157,15 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
             // the store's `auto_mark_played_at_end` flag (M1.3).
             if store.auto_mark_played_at_end() {
                 store.mark_episode_played(episode_id);
+                // Delete-after-played is kernel-owned policy (D0). Now that the
+                // episode is marked played, honour the user's
+                // `auto_delete_downloads_after_played` setting by dropping the
+                // local download and removing the file. Only runs when the
+                // mark actually happened (i.e. `auto_mark_played_at_end` is on),
+                // matching the prior Swift `onItemEnd` gate.
+                if let Some(path) = store.clear_local_path_if_auto_delete(episode_id) {
+                    let _ = std::fs::remove_file(&path);
+                }
             }
             // Rewind to the start on natural completion so the next play begins
             // from 0 instead of resuming at the end. `mark_episode_played` only
