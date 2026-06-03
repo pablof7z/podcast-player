@@ -73,7 +73,7 @@ struct EpisodeDetailActionsMenu: View {
         switch episode.downloadState {
         case .notDownloaded, .queued:
             Button {
-                store.kernelDownload(episode.id)
+                store.kernelDownload(episodeID: episode.id, enclosureURL: episode.enclosureURL.absoluteString)
             } label: {
                 Label("Download", systemImage: "arrow.down.circle")
             }
@@ -91,7 +91,7 @@ struct EpisodeDetailActionsMenu: View {
             }
         case .failed:
             Button {
-                store.kernelDownload(episode.id)
+                store.kernelDownload(episodeID: episode.id, enclosureURL: episode.enclosureURL.absoluteString)
             } label: {
                 Label("Retry download", systemImage: "arrow.clockwise")
             }

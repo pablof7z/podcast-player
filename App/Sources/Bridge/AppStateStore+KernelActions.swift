@@ -279,22 +279,40 @@ extension AppStateStore {
     /// Queue a download (namespace: podcast).
     /// Passes the episode enclosure URL directly in the dispatch to avoid
     /// relying on Rust store lookup (which may not have the episode yet).
+    /// Tries to find the episode in state.episodes, falls back to Rust lookup if not found.
     func kernelDownload(_ id: UUID) {
-        guard let episode = state.episodes.first(where: { $0.id == id }) else {
-            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
-                   "kernelDownload: episode not found: %{public}s", id.uuidString)
-            return
+        if let episode = state.episodes.first(where: { $0.id == id }) {
+            let enclosureURL = episode.enclosureURL.absoluteString
+            kernelDownload(episodeID: id, enclosureURL: enclosureURL)
+        } else {
+            // Episode not in state yet — pass nil URL and let Rust look it up
+            kernelDownloadWithoutURL(id)
         }
+    }
 
-        let enclosureURL = episode.enclosureURL.absoluteString
+    /// Dispatch a download with explicit URL (used by episode detail views that have
+    /// the full episode object even if it's not yet in state.episodes).
+    func kernelDownload(episodeID: UUID, enclosureURL: String) {
         os_log(.debug, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
                "kernelDownload: queuing episode=%{public}s url=%{public}s",
-               id.uuidString, enclosureURL)
+               episodeID.uuidString, enclosureURL)
+        DiagnosticLog.shared.append(
+            level: .info, category: "dispatch",
+            message: "download episode_id=\(episodeID)")
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "download", "episode_id": episodeID.uuidString, "url": enclosureURL])
+    }
+
+    /// Dispatch a download without URL (lets Rust look it up in its store).
+    private func kernelDownloadWithoutURL(_ id: UUID) {
+        os_log(.debug, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
+               "kernelDownload: queuing episode=%{public}s (no URL, Rust will lookup)",
+               id.uuidString)
         DiagnosticLog.shared.append(
             level: .info, category: "dispatch",
             message: "download episode_id=\(id)")
         kernel?.dispatch(namespace: "podcast",
-                         body: ["op": "download", "episode_id": id.uuidString, "url": enclosureURL])
+                         body: ["op": "download", "episode_id": id.uuidString])
     }
 
     /// Cancel an in-progress or queued download (namespace: podcast.player).
