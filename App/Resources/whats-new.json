@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-04T02:45:00Z",
+      "lines": [
+        "Your Nostr key is now held by the app's secure kernel and never leaves it — stronger key safety across sign-in, profile, and feedback."
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T12:07:00Z",
       "lines": [
         "Run AI locally on your device with downloadable Gemma 4 models — private, offline, no API key."

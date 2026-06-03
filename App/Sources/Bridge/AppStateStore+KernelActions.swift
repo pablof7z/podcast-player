@@ -512,7 +512,7 @@ extension AppStateStore {
     // MARK: - NIP-F4 publishing (podcast.publish namespace)
     //
     // Canonical agent-owned podcast publishing. Rust owns the cryptography:
-    // `create_owned_podcast` generates a per-podcast secp256k1 keypair, stamps
+    // `create_owned_podcast` generates a per-podcast Nostr keypair, stamps
     // `owner_pubkey_hex` onto the podcast row, and registers the key so the
     // publish ops can sign. `publish_show` (kind:10154) and `publish_episode`
     // (kind:54) build + sign + broadcast NIP-F4 events to the relay pool;

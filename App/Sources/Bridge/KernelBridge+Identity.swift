@@ -41,6 +41,35 @@ extension PodcastHandle {
         nmp_app_cancel_bunker_handshake(raw)
     }
 
+    /// Generate a brand-new account (keypair) inside the kernel, publish its
+    /// kind:0 profile + relay list, and — when `makeActive` is true — switch
+    /// the active session to it. The kernel owns the generated secret; Swift
+    /// never sees private bytes. The resulting pubkey surfaces on the next
+    /// snapshot tick via `KernelIdentityProjection.activeAccount` (when
+    /// `makeActive`). Fire-and-forget (D6).
+    ///
+    /// `profileJSON` is a flat string-map (`{"name":"…","display_name":"…"}`);
+    /// `relaysJSON` is `[[url, role], …]`. Pass `"{}"` / `"[]"` for kernel
+    /// defaults.
+    func createNewAccount(
+        profileJSON: String,
+        relaysJSON: String,
+        mls: Bool,
+        makeActive: Bool
+    ) {
+        profileJSON.withCString { profile in
+            relaysJSON.withCString { relays in
+                nmp_app_create_new_account(
+                    raw,
+                    profile,
+                    relays,
+                    mls,
+                    makeActive ? 1 : 0
+                )
+            }
+        }
+    }
+
     /// Allocate a freshly generated `nostrconnect://` URI from the broker,
     /// copy it to a Swift `String`, and free the C buffer. Returns `nil`
     /// when the broker is not initialised or Rust returned a null pointer.

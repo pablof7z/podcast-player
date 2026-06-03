@@ -49,17 +49,17 @@ extension UserIdentityStore {
     }
 
     /// Sign + publish a kind:0 metadata event with the supplied profile
-    /// fields. Mirrors the shape of `publishGeneratedProfileIfNeeded` but
+    /// fields. Driven by the EditProfile flow:
     /// is driven by the EditProfile flow rather than auto-publish on first
     /// launch. The resulting event is fanned out across every relay in
     /// `FeedbackRelayClient.profileRelayURLs`; success is "at least one
     /// relay acked." Returns the signed event so callers can echo it into
     /// local profile state.
     func publishProfile(name: String, displayName: String, about: String, picture: String) async throws -> SignedNostrEvent {
-        if signer == nil {
-            try _ensureGeneratedKey()
-        }
-        guard let signer else { throw UserIdentityError.noIdentity }
+        // Self-heal: a fresh user with no identity gets a kernel-generated
+        // account dispatched here (the pubkey lands on the next snapshot tick).
+        // The kernel signs with its active account — there is no Swift signer.
+        try _ensureGeneratedKey()
         let payload: [String: String] = [
             "name": name,
             "display_name": displayName,
@@ -118,10 +118,10 @@ extension UserIdentityStore {
     /// an episode coord to pass in, so the tag is omitted; future episode-
     /// anchored notes will populate it.
     func publishUserNote(_ note: Note, episodeCoord: String?) async throws -> SignedNostrEvent {
-        if signer == nil {
-            try _ensureGeneratedKey()
-        }
-        guard let signer else { throw UserIdentityError.noIdentity }
+        // Self-heal: a fresh user with no identity gets a kernel-generated
+        // account dispatched here (the pubkey lands on the next snapshot tick).
+        // The kernel signs with its active account — there is no Swift signer.
+        try _ensureGeneratedKey()
         var tags: [[String]] = [["t", "note"]]
         if let episodeCoord, !episodeCoord.isEmpty {
             tags.insert(["a", episodeCoord], at: 0)
@@ -151,10 +151,10 @@ extension UserIdentityStore {
         episode: Episode? = nil,
         podcast: Podcast? = nil
     ) async throws -> SignedNostrEvent {
-        if signer == nil {
-            try _ensureGeneratedKey()
-        }
-        guard let signer else { throw UserIdentityError.noIdentity }
+        // Self-heal: a fresh user with no identity gets a kernel-generated
+        // account dispatched here (the pubkey lands on the next snapshot tick).
+        // The kernel signs with its active account — there is no Swift signer.
+        try _ensureGeneratedKey()
 
         var tags: [[String]] = []
 

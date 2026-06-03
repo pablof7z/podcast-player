@@ -41,16 +41,15 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
     @MainActor
     private func settings() -> Settings? { store?.state.settings }
 
-    nonisolated private func nostrSigner() throws -> LocalKeySigner {
-        guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
+    /// The active account's pubkey, read from the kernel-backed identity store
+    /// (the kernel owns the key — Swift derives nothing). `nil` when no
+    /// identity is configured. MainActor-isolated because the identity store is.
+    @MainActor
+    private func agentPubkeyHex() throws -> String {
+        guard let hex = store?.identity.publicKeyHex, !hex.isEmpty else {
             throw AgentOwnedPodcastError.noSigningKey
         }
-        let kp = try NostrKeyPair(privateKeyHex: hex)
-        return LocalKeySigner(keyPair: kp)
-    }
-
-    nonisolated private func agentPubkeyHex() throws -> String {
-        try nostrSigner().keyPair.publicKeyHex
+        return hex
     }
 
     // MARK: - createPodcast
@@ -64,11 +63,15 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         categories: [String],
         visibility: Podcast.NostrVisibility
     ) async throws -> AgentOwnedPodcastInfo {
-        let pubkey: String
-        if visibility == .public {
-            pubkey = try agentPubkeyHex()
-        } else {
-            pubkey = (try? agentPubkeyHex()) ?? "agent-private"
+        // Resolve the owner pubkey from the kernel-backed identity store on the
+        // main actor. A public show requires a real signing identity; a private
+        // show can fall back to a local placeholder (it never publishes).
+        let pubkey: String = try await MainActor.run {
+            if visibility == .public {
+                return try agentPubkeyHex()
+            } else {
+                return (try? agentPubkeyHex()) ?? "agent-private"
+            }
         }
         let podcast = Podcast(
             kind: .synthetic,

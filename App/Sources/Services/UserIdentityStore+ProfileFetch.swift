@@ -20,7 +20,7 @@ extension UserIdentityStore {
     }
 
     /// Load profile fields from the UserDefaults cache for instant display
-    /// before the relay fetch completes. Called synchronously inside `adoptLocal`.
+    /// before the relay fetch completes. Called when the active pubkey changes (reconcile path).
     func loadCachedProfile(for pubkeyHex: String) {
         guard let data = UserDefaults.standard.data(forKey: Self.kind0CachePrefix + pubkeyHex),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String]

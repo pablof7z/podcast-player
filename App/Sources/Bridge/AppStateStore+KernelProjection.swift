@@ -396,8 +396,10 @@ extension AppStateStore {
             // synchronous prompt-building window and the approval-enrich
             // snapshot — neither of which an async push can satisfy.
             mergeResolvedProfiles(identity.resolvedProfiles)
-            self.identity.applyBunkerHandshake(identity.bunkerHandshake,
-                                               activeAccount: identity.activeAccount)
+            self.identity.applyKernelIdentity(
+                handshake: identity.bunkerHandshake,
+                activeAccount: identity.activeAccount,
+                isRemoteSigner: identity.isRemoteSigner)
         }
 
         // After the batch flushes: the widget path reads only `snapshot` and
@@ -443,8 +445,10 @@ extension AppStateStore {
             state = next
             self.episodes = overlaidEpisodes
             mergeResolvedProfiles(identity.resolvedProfiles)
-            self.identity.applyBunkerHandshake(identity.bunkerHandshake,
-                                               activeAccount: identity.activeAccount)
+            self.identity.applyKernelIdentity(
+                handshake: identity.bunkerHandshake,
+                activeAccount: identity.activeAccount,
+                isRemoteSigner: identity.isRemoteSigner)
         }
         onNowPlayingSnapshot?(snapshot, library)
     }

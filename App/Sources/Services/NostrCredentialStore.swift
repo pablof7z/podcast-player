@@ -3,7 +3,7 @@ import os.log
 
 /// Stores the Nostr private key (hex) in Keychain.
 /// The matching public key hex is stored in Settings (non-secret).
-/// Implement secp256k1 key derivation (e.g. via swift-secp256k1) to derive pubkey from privkey.
+/// The kernel (NMP) owns key generation and signing; this store only persists/reads the raw hex blob.
 enum NostrCredentialStore {
     private static let logger = Logger.app("NostrCredentialStore")
     private static let service = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nostr"

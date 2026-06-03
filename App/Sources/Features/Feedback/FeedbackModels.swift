@@ -182,28 +182,3 @@ struct FeedbackReply: Identifiable {
         self.createdAt = createdAt
     }
 }
-
-// MARK: - Nostr feedback helpers
-
-extension SignedNostrEvent {
-    var projectATags: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "a" ? tag[1] : nil
-        }
-    }
-
-    var eTagIDs: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "e" ? tag[1] : nil
-        }
-    }
-
-    var rootEventID: String? {
-        if let marked = tags.first(where: { tag in
-            tag.count >= 4 && tag[0] == "e" && tag[3] == "root"
-        }) {
-            return marked[1]
-        }
-        return eTagIDs.first
-    }
-}
