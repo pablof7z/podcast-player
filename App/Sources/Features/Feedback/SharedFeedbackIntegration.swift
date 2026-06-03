@@ -19,23 +19,16 @@ struct PodcastShakeFeedbackSigner: ShakeFeedbackSigner, @unchecked Sendable {
     }
 
     func signFeedbackEvent(_ draft: ShakeFeedbackEventDraft) async throws -> ShakeFeedbackEvent {
-        guard let signer = await MainActor.run(body: { identity?.signer }) else {
+        // Hard rule: NO signing in Swift. The ShakeFeedbackKit protocol expects
+        // a signed event returned synchronously; the compliant path is a kernel
+        // sign-for-return continuation (`nmp_app_sign_event_for_return` → read
+        // the `signed_events` frame), which is not wired yet. Until then we
+        // surface a missing-identity error so the SDK does not publish — rather
+        // than signing in Swift. See `docs/wiki/nmp-signing-contract.md`.
+        _ = draft
+        guard await MainActor.run(body: { identity?.publicKeyHex }) != nil else {
             throw ShakeFeedbackError.missingIdentity
         }
-        let event = try await signer.sign(NostrEventDraft(
-            kind: draft.kind,
-            content: draft.content,
-            tags: draft.tags,
-            createdAt: draft.createdAt
-        ))
-        return ShakeFeedbackEvent(
-            id: event.id,
-            pubkey: event.pubkey,
-            createdAt: event.created_at,
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            sig: event.sig
-        )
+        throw ShakeFeedbackError.missingIdentity
     }
 }

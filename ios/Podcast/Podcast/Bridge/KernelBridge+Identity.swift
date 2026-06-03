@@ -25,14 +25,14 @@ extension PodcastHandle {
     /// (i.e. `nmp_signer_broker_init` was never called) — which is why we
     /// call the init from `PodcastHandle.init` itself.
     func signInBunker(uri: String) {
-        uri.withCString { nmp_app_signin_bunker(raw, $0) }
+        uri.withCString { nmp_app_signin_bunker(raw, $0, 1) }
     }
 
     /// Enqueue `ActorCommand::SignInNsec` with the supplied bech32 / hex
     /// secret. The Rust side wraps it in `Zeroizing<String>` immediately
     /// upon copy-in.
     func signInNsec(_ nsec: String) {
-        nsec.withCString { nmp_app_signin_nsec(raw, $0) }
+        nsec.withCString { nmp_app_signin_nsec(raw, $0, 1) }
     }
 
     /// Cancel the in-flight NIP-46 handshake. Idempotent / safe when nothing

@@ -227,9 +227,10 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         let imageGen = ImageGenerationService(apiKey: apiKey)
         let imageData = try await imageGen.generate(prompt: prompt, model: settings.imageGenerationModel)
-        let signer = try nostrSigner()
+        // Auth signing is the kernel's job (sign-for-return); the uploader is
+        // degraded until that continuation is wired (no Swift signing).
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
-        let url = try await blossom.upload(data: imageData, contentType: "image/png", signer: signer)
+        let url = try await blossom.upload(data: imageData, contentType: "image/png")
         Self.logger.info("Artwork uploaded to \(url.absoluteString, privacy: .public)")
         return url
     }

@@ -134,8 +134,34 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // `callback_scheme` may be NULL — when non-null Rust appends a percent-encoded
 // `&callback=<scheme>` query parameter so the signer app can deep-link back.
 // Pass NULL when the host scheme is not registered with the OS.
-void nmp_app_signin_nsec(void *app, const char *secret);
-void nmp_app_signin_bunker(void *app, const char *uri);
+void nmp_app_signin_nsec(void *app, const char *secret, uint8_t make_active);
+void nmp_app_signin_bunker(void *app, const char *uri, uint8_t make_active);
+
+// `nmp_app_create_new_account` generates a keypair and publishes kind:0 + the
+// relay list. `make_active = 1` activates the new account immediately
+// (standard onboarding); `make_active = 0` registers it without switching the
+// active session (agent/secondary accounts). `profile_json` is a flat
+// string-map; `relays_json` is `[[url, role], …]`.
+void nmp_app_create_new_account(void *app,
+                                const char *profile_json,
+                                const char *relays_json,
+                                bool mls,
+                                uint8_t make_active);
+
+// D13 sign-and-return — sign a draft event with the named (or active) account
+// WITHOUT publishing it. `account_pubkey_hex` is the hex pubkey of the signer
+// to use; pass the empty string ("") to sign with the active account.
+// `unsigned_json` is `{"kind":N,"content":"…","tags":[…],"created_at":N}` —
+// `created_at` is advisory (the kernel re-stamps it, D7). Returns a heap
+// `correlation_id` C string the caller MUST free via `nmp_app_free_string`;
+// the signed flat-NIP-01 JSON is delivered ASYNC in the `signed_events`
+// snapshot projection keyed by that id (`{ "ok": true, "signed_json": "…" }`
+// or `{ "ok": false, "error": "…" }`). The host MUST register its
+// continuation BEFORE calling so it does not miss the single drain-on-emit
+// frame that carries the result.
+char *nmp_app_sign_event_for_return(void *app,
+                                    const char *account_pubkey_hex,
+                                    const char *unsigned_json);
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
 char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);

@@ -101,6 +101,23 @@ pub(crate) fn publish_raw_explicit_via_nmp(
     dispatch_nmp_publish(app, body)
 }
 
+/// Dispatch a kind:0 profile metadata update to `nmp.publish { PublishProfile }`.
+/// `fields` is a flat string-valued JSON object (`name`, `display_name`,
+/// `about`, `picture`, …); the kernel serialises it into the kind:0 `content`,
+/// signs with the active signer, stamps `created_at` (D7), and routes via the
+/// NIP-65 outbox. No secret bytes in app code; the host never builds the event.
+/// Returns `"queued"` or `"signed"` (null app).
+pub(crate) fn publish_profile_via_nmp(
+    app: *mut nmp_ffi::NmpApp,
+    fields: serde_json::Map<String, serde_json::Value>,
+) -> &'static str {
+    if app.is_null() {
+        return "signed";
+    }
+    let body = serde_json::json!({ "PublishProfile": { "fields": fields } });
+    dispatch_nmp_publish(app, body)
+}
+
 /// Push a [`LogicalInterest`] into NMP's relay pool. The kernel opens the
 /// subscription through its own connections — no iOS WebSocket ever opened.
 pub(crate) fn push_interest_via_nmp(app: *mut nmp_ffi::NmpApp, interest: LogicalInterest) {

@@ -30,14 +30,6 @@ import Foundation
 
 extension UserIdentityStore {
 
-    /// True when signing should be delegated to the Rust kernel
-    /// (`podcast.social.*`). Local keys have been forwarded to the kernel;
-    /// `.none` self-heals to a generated local key first. Remote signers
-    /// (bunker) keep the Swift NIP-46 path.
-    private var kernelSigningEnabled: Bool {
-        mode != .remoteSigner
-    }
-
     /// Synthesize the `SignedNostrEvent` callers expect when the actual
     /// sign happens kernel-side. The kernel dispatch is fire-and-forget
     /// (`DispatchResult`, not an event); every production call-site discards
@@ -77,40 +69,20 @@ extension UserIdentityStore {
         let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
         let content = String(data: data, encoding: .utf8) ?? "{}"
 
-        let event: SignedNostrEvent
-        if kernelSigningEnabled {
-            // Kernel path — sign + publish kind:0 through `podcast.social`.
-            dispatchToKernel(
-                namespace: "podcast.social",
-                body: [
-                    "op": "publish_profile",
-                    "name": name,
-                    "display_name": displayName,
-                    "about": about,
-                    "picture": picture,
-                ]
-            )
-            event = kernelDispatchedEventStub(kind: 0, content: content, tags: [])
-        } else {
-            // Remote-signer (bunker) path — sign + publish Swift-side.
-            let signed = try await signer.sign(NostrEventDraft(kind: 0, content: content))
-            var lastError: Error?
-            var anyAck = false
-            for relayURL in FeedbackRelayClient.profileRelayURLs {
-                let client = FeedbackRelayClient(relayURL: relayURL)
-                do {
-                    try await client.publish(signed, authSigner: signer)
-                    anyAck = true
-                } catch {
-                    lastError = error
-                    continue
-                }
-            }
-            if !anyAck, let lastError {
-                throw lastError
-            }
-            event = signed
-        }
+        // Sign + publish kind:0 through the kernel (`podcast.social`). The
+        // kernel signs with the active account — local nsec OR NIP-46 bunker —
+        // so there is no Swift signing path here for either identity mode.
+        dispatchToKernel(
+            namespace: "podcast.social",
+            body: [
+                "op": "publish_profile",
+                "name": name,
+                "display_name": displayName,
+                "about": about,
+                "picture": picture,
+            ]
+        )
+        let event = kernelDispatchedEventStub(kind: 0, content: content, tags: [])
 
         // Update local state immediately so the UI reflects the new profile
         // without waiting for a relay round-trip on next launch.
@@ -154,16 +126,11 @@ extension UserIdentityStore {
         if let episodeCoord, !episodeCoord.isEmpty {
             tags.insert(["a", episodeCoord], at: 0)
         }
-        if kernelSigningEnabled {
-            dispatchToKernel(
-                namespace: "podcast.social",
-                body: ["op": "publish_note", "content": note.text, "tags": tags]
-            )
-            return kernelDispatchedEventStub(kind: 1, content: note.text, tags: tags)
-        }
-        let event = try await signer.sign(NostrEventDraft(kind: 1, content: note.text, tags: tags))
-        try await FeedbackRelayClient().publish(event, authSigner: signer)
-        return event
+        dispatchToKernel(
+            namespace: "podcast.social",
+            body: ["op": "publish_note", "content": note.text, "tags": tags]
+        )
+        return kernelDispatchedEventStub(kind: 1, content: note.text, tags: tags)
     }
 
     /// Sign + publish a user-authored clip as a kind:9802 highlight (NIP-84)
@@ -215,18 +182,13 @@ extension UserIdentityStore {
             tags.append(["alt", caption])
         }
 
-        if kernelSigningEnabled {
-            // Tag assembly stays Swift-side (it holds the resolved episode +
-            // podcast); only the sign + publish moves to the kernel.
-            dispatchToKernel(
-                namespace: "podcast.social",
-                body: ["op": "publish_highlight", "content": clip.transcriptText, "tags": tags]
-            )
-            return kernelDispatchedEventStub(kind: 9802, content: clip.transcriptText, tags: tags)
-        }
-
-        let event = try await signer.sign(NostrEventDraft(kind: 9802, content: clip.transcriptText, tags: tags))
-        try await FeedbackRelayClient().publish(event, authSigner: signer)
-        return event
+        // Tag assembly stays Swift-side (it holds the resolved episode +
+        // podcast); the sign + publish is the kernel's job for both local-key
+        // and bunker identities.
+        dispatchToKernel(
+            namespace: "podcast.social",
+            body: ["op": "publish_highlight", "content": clip.transcriptText, "tags": tags]
+        )
+        return kernelDispatchedEventStub(kind: 9802, content: clip.transcriptText, tags: tags)
     }
 }
