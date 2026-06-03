@@ -582,6 +582,33 @@ worktrees currently in flight.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
+- **dead-streaming-only-setting.** `iCloudSyncCapability` still carries an
+  orphaned `streamingOnly` setting: it defines the KV key
+  `pcst.streaming_only`, mirrors it outbound, and on a remote change dispatches
+  `podcast.settings` `{"op":"set_streaming_only"}`. But there is NO Rust
+  handler (`SettingsAction` has no `SetStreamingOnly` variant; `streaming_only`
+  appears nowhere in `apps/nmp-app-podcast/src/`), NO field on the Swift
+  `Settings` struct, NO UI that writes it, and the projection bridge
+  (`iCloudSyncCapability+Snapshot.swift::from(podcastUpdate:)`) hardcodes
+  `streamingOnly: nil`. With `#[serde(tag="op")]`/no `#[serde(other)]` the
+  dispatch fails `from_str::<SettingsAction>` and is silently dropped. It is
+  dead plumbing, not a domain setting to migrate. Decision needed: either
+  delete the `streamingOnly` KV key + snapshot field + both
+  `applySettingsSnapshot`/remote-apply arms (cleanest), OR build a real
+  streaming-vs-download playback setting end-to-end (Settings field + UI +
+  `SettingsSnapshot` projection + `SetStreamingOnly` op) if the feature is
+  actually wanted. Surfaced during the `settings-completion` (M3) audit;
+  Article VII says do not build the feature speculatively — favor deletion.
+- **provider-api-keys-no-kernel-handler.** `AppStateStore.kernelSetProviderApiKeys`
+  dispatches `podcast.settings` `{"op":"set_provider_api_keys", open_router, ollama}`
+  on launch + after credential edits, but there is no matching `SettingsAction`
+  variant or handler in `apps/nmp-app-podcast/src/` — so LLM API keys may never
+  reach the kernel's in-memory provider registry (the dispatch falls through
+  every action enum and is dropped). This is a CREDENTIALS concern (PR #140's
+  domain) and was explicitly out of scope for the `settings-completion` audit;
+  flagged here for the credential owner to verify whether the kernel actually
+  needs the keys or routes LLM calls another way.
+
 - **observable-granularity-podcasts-subscriptions.** PR for
   `fix/observable-granularity` promoted `episodes` out of the single
   `AppStateStore.state` into its own `@Observable` stored property (the hot
