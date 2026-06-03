@@ -261,17 +261,22 @@ extension AppStateStore {
             kernel?.dispatch(namespace: "podcast.settings",
                              body: ["op": "set_nostr_public_relays", "relays": settings.nostrPublicRelays])
         }
-        if settings.nostrProfileName != prior.nostrProfileName {
+        // Profile name/about/picture are carried in a single atomic op
+        // (`SetNostrProfile { name, about, picture }`) — the kernel has no
+        // per-field profile ops, so the previous three separate
+        // `set_nostr_profile_{name,about,picture}` dispatches failed to
+        // deserialize and never reached the store. Dispatch the whole profile
+        // whenever any of the three fields changes.
+        if settings.nostrProfileName != prior.nostrProfileName
+            || settings.nostrProfileAbout != prior.nostrProfileAbout
+            || settings.nostrProfilePicture != prior.nostrProfilePicture {
             kernel?.dispatch(namespace: "podcast.settings",
-                             body: ["op": "set_nostr_profile_name", "name": settings.nostrProfileName])
-        }
-        if settings.nostrProfileAbout != prior.nostrProfileAbout {
-            kernel?.dispatch(namespace: "podcast.settings",
-                             body: ["op": "set_nostr_profile_about", "about": settings.nostrProfileAbout])
-        }
-        if settings.nostrProfilePicture != prior.nostrProfilePicture {
-            kernel?.dispatch(namespace: "podcast.settings",
-                             body: ["op": "set_nostr_profile_picture", "picture": settings.nostrProfilePicture])
+                             body: [
+                                 "op": "set_nostr_profile",
+                                 "name": settings.nostrProfileName,
+                                 "about": settings.nostrProfileAbout,
+                                 "picture": settings.nostrProfilePicture
+                             ])
         }
     }
 }

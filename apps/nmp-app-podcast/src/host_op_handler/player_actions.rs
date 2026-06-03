@@ -199,6 +199,10 @@ impl PodcastHostOpHandler {
         }
     }
 
+    /// `podcast.player.enqueue` — alias for `podcast.queue.add_last`. Appends
+    /// to the back of the **canonical** [`PlaybackQueue`] (`self.queue`), the
+    /// same queue the snapshot's `Up Next` projection renders from. Validates
+    /// the episode exists, then mutates + persists via the shared queue helper.
     fn handle_enqueue(&self, episode_id: String) -> serde_json::Value {
         let exists = match self.store.lock() {
             Ok(s) => s.episode_playback_info(&episode_id).is_some(),
@@ -207,46 +211,84 @@ impl PodcastHostOpHandler {
         if !exists {
             return serde_json::json!({"ok": false, "error": format!("episode not found: {episode_id}")});
         }
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.enqueue(&episode_id);
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        }
+        self.mutate_queue(|q| q.add_to_end(&episode_id))
     }
 
+    /// `podcast.player.dequeue` — alias for `podcast.queue.remove`. Removes the
+    /// id from anywhere in the canonical queue (silent no-op when absent).
     fn handle_dequeue(&self, episode_id: String) -> serde_json::Value {
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.dequeue(&episode_id);
-                self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
-            }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
-        }
+        self.mutate_queue(|q| q.remove(&episode_id))
     }
 
+    /// `podcast.player.clear_queue` — alias for `podcast.queue.clear`. Empties
+    /// the canonical queue.
     fn handle_clear_queue(&self) -> serde_json::Value {
-        match self.player_actor.lock() {
-            Ok(mut a) => {
-                a.clear_queue();
+        self.mutate_queue(|q| q.clear())
+    }
+
+    /// Pop the front of the **canonical** queue and play it. Backs both the
+    /// explicit `PlayNext` user action and the `Advance` op. Skips stale heads
+    /// (ids whose episode is no longer resolvable in the store) so a removed
+    /// episode at the front never strands the valid entries behind it — the
+    /// same loop `maybe_auto_advance` runs, minus the `auto_play_next` gate
+    /// (this is an explicit user action). Queue and store locks are taken
+    /// separately per iteration (never nested) to avoid lock-order hazards.
+    fn handle_play_next(&self, correlation_id: &str) -> serde_json::Value {
+        loop {
+            let popped = match self.queue.lock() {
+                Ok(mut q) => q.next(),
+                Err(_) => return serde_json::json!({"ok": false, "error": "queue poisoned"}),
+            };
+            let Some(id) = popped else {
+                self.persist_queue();
                 self.rev.fetch_add(1, Ordering::Relaxed);
-                serde_json::json!({"ok": true})
+                return serde_json::json!({"ok": false, "error": "queue is empty"});
+            };
+            let resolvable = match self.store.lock() {
+                Ok(s) => s.episode_playback_info(&id).is_some(),
+                Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+            };
+            if resolvable {
+                // Persist the new (popped) queue ordering before handing off to
+                // `handle_play`, which dispatches Load+Play and bumps `rev`.
+                self.persist_queue();
+                return self.handle_play(id, correlation_id);
             }
-            Err(_) => serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
+            // Stale head already popped; continue to the next entry.
         }
     }
 
-    fn handle_play_next(&self, correlation_id: &str) -> serde_json::Value {
-        let next_id = match self.player_actor.lock() {
-            Ok(mut a) => a.pop_next(),
-            Err(_) => return serde_json::json!({"ok": false, "error": "player_actor poisoned"}),
+    /// Apply a mutation to the canonical [`PlaybackQueue`], persist the new
+    /// ordering to `podcasts.json`, and bump `rev` so the next snapshot tick
+    /// surfaces it. Mirrors `host_op_handler_queue::handle_queue_action` so the
+    /// `podcast.player` queue ops stay byte-identical to `podcast.queue`.
+    fn mutate_queue(
+        &self,
+        f: impl FnOnce(&mut crate::queue::PlaybackQueue),
+    ) -> serde_json::Value {
+        let items = match self.queue.lock() {
+            Ok(mut q) => {
+                f(&mut q);
+                q.items().to_vec()
+            }
+            Err(_) => return serde_json::json!({"ok": false, "error": "queue poisoned"}),
         };
-        match next_id {
-            Some(id) => self.handle_play(id, correlation_id),
-            None => serde_json::json!({"ok": false, "error": "queue is empty"}),
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut s) = self.store.lock() {
+            s.persist_with_queue(&items);
+        }
+        serde_json::json!({"ok": true})
+    }
+
+    /// Flush the current canonical queue ordering to `podcasts.json` without
+    /// otherwise mutating it. Used after `handle_play_next` pops the head.
+    fn persist_queue(&self) {
+        let items = match self.queue.lock() {
+            Ok(q) => q.items().to_vec(),
+            Err(_) => return,
+        };
+        if let Ok(mut s) = self.store.lock() {
+            s.persist_with_queue(&items);
         }
     }
 

@@ -58,25 +58,17 @@ extension PlaybackState {
         engine.onPauseEvent = { [weak audio] url, position in
             audio?.emitReport(.paused(url: url, positionSecs: position))
         }
-        engine.onItemEnd = { [weak self, weak audio] url in
+        engine.onItemEnd = { [weak audio] url in
             audio?.emitReport(.itemEnd(url: url))
-            // Mark-played-at-end is the KERNEL's policy on this path. The
-            // `itemEnd` report above drives Rust's `apply_writeback` ItemEnd
-            // branch, which flips `played` (gated on `auto_mark_played_at_end`),
-            // rewinds the stored position to 0, and bumps the snapshot rev — the
-            // resulting frame round-trips `played`/`position` back through the
-            // projection (`toEpisode`). So no Swift `markEpisodePlayed` mark is
-            // needed here; doing it would duplicate the kernel-owned decision.
-            //
-            // Delete-after-played, however, has no kernel policy (see
-            // `markEpisodePlayed` for the full rationale: the kernel owns the
-            // delete *operation* but not the *trigger* on played). So we keep a
-            // gated delete reaction here, mirroring the kernel's own
-            // `auto_mark_played_at_end` gate so a finished-but-not-marked
-            // episode is never deleted against the user's preference.
-            guard let self, let episodeID = self.episode?.id else { return }
-            guard self.store?.state.settings.autoMarkPlayedAtEnd == true else { return }
-            self.store?.deleteDownloadIfAutoDeleteAfterPlayed(episodeID)
+            // Both mark-played-at-end AND delete-after-played are KERNEL policy
+            // on this path. The `itemEnd` report above drives Rust's
+            // `apply_writeback` ItemEnd branch, which (gated on
+            // `auto_mark_played_at_end`) flips `played`, rewinds the stored
+            // position to 0, and — when `auto_delete_downloads_after_played` is
+            // on — removes the local download itself. The resulting frame
+            // round-trips `played`/`position`/download state back through the
+            // projection. So no Swift reaction is needed here; doing it would
+            // duplicate kernel-owned decisions (D0).
         }
         engine.onSleepTimerEpisodeEnd = { [weak self] in
             // Sleep timer stopped at end of episode: position was already flushed
@@ -127,6 +119,25 @@ extension PlaybackState {
                     if positionSecs > 0 { self.engine.seek(to: positionSecs) }
                 }
             case .play:
+                // Cold-restart restore case: RootView re-seeds the last-played
+                // episode into the engine (paused), but Rust's `PlayerActor`
+                // was never sent a `Load` for it — so its `nowPlaying` is still
+                // empty. If we just `engine.play()` here, audio starts but Rust
+                // attributes the resulting `Playing` reports to no episode:
+                // position never persists and the episode never marks played.
+                //
+                // So before starting audio, if Rust has no staged episode
+                // (`nowPlaying.episodeId` nil/empty) but we have a restored one,
+                // stage it in Rust via `kernelLoad` first. Rust replies with a
+                // `Load` echo that lands on the `.load` case below, which only
+                // calls `setEpisode(playAfterLoad: false)` — it never re-issues
+                // `play()` or `kernelLoad`, so this cannot loop. (Rust-originated
+                // auto-advance plays already carry a populated `nowPlaying`, so
+                // the guard is a no-op there.)
+                let stagedEpisodeID = self.store?.kernel?.podcastSnapshot?.nowPlaying?.episodeId
+                if (stagedEpisodeID?.isEmpty ?? true), let episodeID = self.episode?.id {
+                    self.store?.kernelLoad(episodeID: episodeID)
+                }
                 self.engine.play()
             case .pause:
                 self.engine.pause()

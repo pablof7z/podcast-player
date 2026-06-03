@@ -271,6 +271,71 @@ fn item_end_marks_episode_played_and_flushes() {
 }
 
 #[test]
+fn item_end_deletes_download_when_auto_delete_on() {
+    // Seam test: the ItemEnd writeback branch must honour the kernel-owned
+    // delete-after-played policy. With auto-mark + auto-delete both on, a
+    // downloaded episode's local file is removed from disk on natural end.
+    let dir = TempDir::new("item-end-autodelete");
+    let mut store = PodcastStore::new();
+    store.set_data_dir(dir.path.clone());
+    let podcast = Podcast::new("Auto-delete Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Episode");
+    let typed_id = ep.id;
+    let ep_id = ep.id.0.to_string();
+    store.subscribe(podcast, vec![ep]);
+
+    // Write a real file and register it as the episode's download so the
+    // `remove_file` leg has something to remove.
+    let audio_path = dir.path.join("episode.mp3");
+    std::fs::write(&audio_path, b"audio bytes").expect("write fixture file");
+    store.set_local_path(typed_id, audio_path.to_string_lossy().into_owned(), 11);
+    store.set_auto_mark_played_at_end(true);
+    store.set_auto_delete_downloads_after_played(true);
+    assert!(audio_path.exists());
+
+    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+
+    assert!(
+        store.local_path_for(&typed_id).is_none(),
+        "local-path mapping must be cleared after ItemEnd with auto-delete on"
+    );
+    assert!(
+        !audio_path.exists(),
+        "the downloaded file must be removed from disk"
+    );
+}
+
+#[test]
+fn item_end_keeps_download_when_auto_delete_off() {
+    // With auto-delete OFF, ItemEnd marks played but the local download (and
+    // file) survive.
+    let dir = TempDir::new("item-end-keep");
+    let mut store = PodcastStore::new();
+    store.set_data_dir(dir.path.clone());
+    let podcast = Podcast::new("Keep Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Episode");
+    let typed_id = ep.id;
+    let ep_id = ep.id.0.to_string();
+    store.subscribe(podcast, vec![ep]);
+
+    let audio_path = dir.path.join("episode.mp3");
+    std::fs::write(&audio_path, b"audio bytes").expect("write fixture file");
+    store.set_local_path(typed_id, audio_path.to_string_lossy().into_owned(), 11);
+    store.set_auto_mark_played_at_end(true);
+    // auto_delete_downloads_after_played defaults to false.
+
+    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+
+    assert!(
+        store.local_path_for(&typed_id).is_some(),
+        "local-path mapping must survive when auto-delete is off"
+    );
+    assert!(audio_path.exists(), "the downloaded file must remain on disk");
+}
+
+#[test]
 fn item_end_rewinds_position_to_zero() {
     // A natural play-to-completion must reset the stored position to 0 so the
     // next play starts from the beginning instead of resuming at the end.

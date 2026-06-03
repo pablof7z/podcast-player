@@ -162,6 +162,69 @@ fn clear_local_path_returns_previous_and_unsets() {
     assert!(store.clear_local_path(&ep_id).is_none());
 }
 
+// ── Delete-after-played policy ───────────────────────────────────────
+
+/// Subscribe a one-episode podcast and return the episode's stringified id.
+fn seed_single_episode(store: &mut PodcastStore, title: &str) -> String {
+    let podcast = make_podcast(title);
+    let podcast_id = podcast.id;
+    let episode = make_episode(podcast_id, "Ep 1");
+    let episode_id = episode.id.0.to_string();
+    store.subscribe(podcast, vec![episode]);
+    episode_id
+}
+
+#[test]
+fn clear_local_path_if_auto_delete_off_keeps_download() {
+    // Setting OFF: the local path survives a mark-played even when downloaded.
+    let mut store = PodcastStore::new();
+    let ep_str = seed_single_episode(&mut store, "Show");
+    let (ep_id, _url) = store.episode_enclosure_url(&ep_str).unwrap();
+    store.set_local_path(ep_id, "/tmp/ep.mp3".into(), 4096);
+    assert!(!store.auto_delete_downloads_after_played());
+
+    assert_eq!(store.clear_local_path_if_auto_delete(&ep_str), None);
+    assert_eq!(store.local_path_for(&ep_id), Some("/tmp/ep.mp3"));
+}
+
+#[test]
+fn clear_local_path_if_auto_delete_on_drops_download_and_returns_path() {
+    // Setting ON + downloaded: drops the mapping and hands back the path so the
+    // caller can remove the file.
+    let mut store = PodcastStore::new();
+    let ep_str = seed_single_episode(&mut store, "Show");
+    let (ep_id, _url) = store.episode_enclosure_url(&ep_str).unwrap();
+    store.set_local_path(ep_id, "/tmp/ep.mp3".into(), 4096);
+    store.set_auto_delete_downloads_after_played(true);
+
+    let removed = store.clear_local_path_if_auto_delete(&ep_str);
+    assert_eq!(removed.as_deref(), Some("/tmp/ep.mp3"));
+    assert!(store.local_path_for(&ep_id).is_none());
+    // The recorded size is dropped alongside the path (lifecycle-locked).
+    assert!(store.file_size_for(&ep_id).is_none());
+}
+
+#[test]
+fn clear_local_path_if_auto_delete_on_but_not_downloaded_is_noop() {
+    // Setting ON but the episode was never downloaded: nothing to remove.
+    let mut store = PodcastStore::new();
+    let ep_str = seed_single_episode(&mut store, "Show");
+    store.set_auto_delete_downloads_after_played(true);
+
+    assert_eq!(store.clear_local_path_if_auto_delete(&ep_str), None);
+}
+
+#[test]
+fn clear_local_path_if_auto_delete_unknown_episode_is_noop() {
+    // Setting ON but the id is unknown: degrade silently, no panic.
+    let mut store = PodcastStore::new();
+    store.set_auto_delete_downloads_after_played(true);
+    assert_eq!(
+        store.clear_local_path_if_auto_delete(&Uuid::new_v4().to_string()),
+        None
+    );
+}
+
 // ── Playback position writeback ──────────────────────────────────────
 
 #[test]
