@@ -106,9 +106,9 @@ completion, not absence of all infrastructure.
 | 23 | NIP-46 remote signer | Partial | Broker wiring exists; finish live handshake, nostrconnect URI lifecycle, cancellation, error states, and account projection. |
 | 24 | Profile editing + kind:0 publish | Partial | Current local `@AppStorage` fallback must become Rust/Nostr-owned profile publish plus relay confirmation/profile cache hydration. |
 | 25 | NIP-65 relay list | Partial | UI exists; persist/read via NMP substrate relay-list store, publish real list, and remove `@AppStorage` seed fallback. |
-| 26 | NIP-F4 discovery | Partial | Show search exists via HTTP gateway and parser tags are corrected; finish relay subscription path, episode fetch by podcast pubkey, and pure-Nostr subscribe. |
-| 27 | NIP-F4 publish owned shows | Scaffold | Kind `10154` wire tags and pubkey derivation are corrected; persist the secret, sign the event, publish to relays, update author claims, and delete/cleanup owned-show state. |
-| 28 | NIP-F4 publish episodes | Scaffold | Kind `54` wire tags are corrected; upload audio to Blossom, emit the canonical `audio` tag, sign the event, publish to relays, and project publish/queue errors. |
+| 26 | NIP-F4 discovery | Partial | kind:10154 show discovery is relay-backed via `NostrDiscoveryObserver` + `EnsureInterest` (NMP relay pool, not HTTP socket). Remaining: kind:54 episode fetch by podcast pubkey via relay for Nostr-only podcasts without RSS. |
+| 27 | NIP-F4 publish owned shows | Partial | Signing (real secp256k1), file-backed key persistence, relay dispatch, author claims, and key cleanup on delete are all implemented. Remaining: relay URL is hardcoded to primal.net; no durable retry queue on relay rejection. |
+| 28 | NIP-F4 publish episodes | Partial | Signing, Blossom upload (with enclosure fallback), and relay dispatch are implemented. Same relay-URL hardcode caveat as #27. |
 | 29 | Nostr episode comments | Scaffold | Replace `nostr_relay_pending` stubs with kind-1111 relay subscribe/publish and map local `EpisodeId` to NIP-73 podcast item anchors. |
 | 30 | Friends/social graph | Scaffold | Replace `nostr_pending` stub with kind:3 contact-list store, metadata hydration, subscription refresh, and snapshot projection. |
 

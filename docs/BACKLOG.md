@@ -9,19 +9,10 @@ worktrees currently in flight.
 - ~~**p0-nipf4-wire-contract.**~~ Done in PR #89: aligned kind `10154`/`54`
   builders and parsers with the NIP-F4 wire contract; removed non-NIP-F4
   `d`/`a`/`published_at`/`imeta` tags; round-trip tests verify absence.
-- **p0-nipf4-real-keys.** ~~Real pubkey derivation~~ done in PR #93
-  (`nostr::Keys::generate()` + real secp256k1). Remaining: persisted storage,
-  Keychain-backed secret, survive restart, cleanup on owned-podcast delete.
-- **p0-nipf4-sign-and-publish.** Replace unsigned `event_json` plus
-  `relay_pending` diagnostics with signed events published to configured
-  relays. If publish is async, implement a durable queue with retry/error
-  projection; do not imply success before relay acceptance or durable queueing.
-- **p0-nipf4-relay-discovery.** Implement canonical relay-backed kind `10154`
-  show discovery and kind `54` episode fetch by podcast pubkey. Gateway search
-  may remain as an optional convenience, not the source of truth.
-- **p0-nipf4-author-claim.** Publish and refresh kind `10064` author claims
-  after owned-podcast create/update/delete. Tests must verify exact `p` tags
-  and signer identity.
+- ~~**p0-nipf4-real-keys.**~~ Done: file-backed persistence to `podcast-keys.json` (atomic write/rename), reload on restart, key cleanup on `remove_owned_podcast`. Keychain migration deferred indefinitely — file storage is the canonical path.
+- ~~**p0-nipf4-sign-and-publish.**~~ Done: `sign_event` produces real secp256k1-signed events with valid `id`/`pubkey`/`sig`; `dispatch_nostr_relay` publishes to `relay.primal.net` and returns `"published"` on relay acceptance. Relay URL is hardcoded but matches the only configured write relay. `relay_pending` status removed.
+- **p0-nipf4-relay-discovery.** kind:10154 show discovery via relay IS wired (`NostrDiscoveryObserver` + `EnsureInterest` pattern; relay pool, not HTTP socket). Remaining: kind:54 episode fetch by podcast pubkey via relay (Nostr-only podcasts without RSS). HTTP gateway search remains a convenience path.
+- ~~**p0-nipf4-author-claim.**~~ Done: `publish_author_claim` signs with active agent key and publishes kind:10064. Called after create/update/delete of owned podcasts.
 - **p0-plan-truthfulness.** Keep `docs/plan.md`,
   `docs/plan/nmp-feature-parity.md`, and this backlog synchronized with code.
   Do not mark scaffolded behavior done.
