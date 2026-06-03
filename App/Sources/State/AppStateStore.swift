@@ -261,7 +261,7 @@ final class AppStateStore {
             Self.logger.error("Persistence.load failed: \(error, privacy: .public) — starting with empty state")
             loadedState = AppState()
         }
-        // Strip synthetic external-playback podcasts written by an earlier
+        // Strip legacy external-playback podcasts written by an earlier
         // build that used an `external-episode://` sentinel feed URL. The
         // new model parents external episodes to `Podcast.unknownID` (or a
         // real podcast row when a feed_url is supplied), so these legacy

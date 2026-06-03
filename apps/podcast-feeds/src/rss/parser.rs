@@ -1,7 +1,7 @@
 use std::fmt;
 
 use chrono::Utc;
-use podcast_core::{NostrVisibility, Episode, Podcast, PodcastId, PodcastKind};
+use podcast_core::{NostrVisibility, Episode, Podcast, PodcastId};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use url::Url;
@@ -91,7 +91,6 @@ pub fn parse_feed(
     let now = Utc::now();
     let podcast = Podcast {
         id: podcast_id,
-        kind: PodcastKind::Rss,
         feed_url: Some(feed_url.clone()),
         title: state.channel_title.trim().to_string(),
         author: state.channel_author.trim().to_string(),

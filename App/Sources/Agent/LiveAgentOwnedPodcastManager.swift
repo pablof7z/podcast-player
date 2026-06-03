@@ -5,16 +5,15 @@ import os.log
 //
 // Production implementation of `AgentOwnedPodcastManagerProtocol`. After the
 // owned-podcast lifecycle moved fully into the Rust kernel, this type is a thin
-// wrapper: it routes create / update / delete through the `podcast.publish`
-// NIP-F4 action namespace and keeps a Swift render mirror in step until the
-// next kernel snapshot push reconciles. The only real policy that remains
-// Swift-side is the artwork generation pipeline (image-gen → Blossom upload)
-// and the public-visibility-flip episode backfill (the kernel `Update` op
-// carries no `visibility`, so the retro-publish of existing episodes on a
-// private→public flip is sequenced here).
+// wrapper: it routes create / update / delete through the kernel and lets the
+// next kernel snapshot push reconcile the render store. The only real policy
+// that remains Swift-side is the artwork generation pipeline (image-gen →
+// Blossom upload) and the public-visibility-flip episode backfill (the kernel
+// `Update` op carries no `visibility`, so the retro-publish of existing
+// episodes on a private→public flip is sequenced here).
 //
-// Lifecycle ownership (Rust kernel, `podcast.publish.*`):
-//   create_synthetic_podcast — insert the feed-less row into the kernel store
+// Lifecycle ownership (Rust kernel):
+//   podcast.create_podcast   — insert the feed-less row into the kernel store
 //                              (the SSOT; `create_owned`/`publish_show` no-op
 //                               without it).
 //   create_owned_podcast     — generate + register the per-podcast keypair.
@@ -70,8 +69,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         } else {
             pubkey = (try? agentPubkeyHex()) ?? "agent-private"
         }
-        let podcast = Podcast(
-            kind: .synthetic,
+        // In-memory value only — the kernel store is the SSOT and projects the
+        // row back on the next push. NOT written to `store.podcasts`.
+        let stored = Podcast(
             feedURL: nil,
             title: title,
             author: author,
@@ -82,23 +82,21 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             ownerPubkeyHex: pubkey,
             nostrVisibility: visibility
         )
-        let stored = await MainActor.run { () -> Podcast in
-            guard let store else { return podcast }
-            // 1. Insert the synthetic row into the Rust kernel store (SSOT).
-            //    Without this the key-registration + publish ops below no-op.
-            store.kernelCreateSyntheticPodcast(
-                podcastId: podcast.id.uuidString,
+        await MainActor.run {
+            // Insert the feed-less row into the Rust kernel store (SSOT).
+            // Without this the key-registration + publish ops below no-op.
+            store?.kernelCreatePodcast(
+                podcastId: stored.id.uuidString,
                 title: title,
                 description: description,
                 author: author,
+                feedUrl: nil,
                 artworkUrl: imageURL?.absoluteString,
                 language: language,
                 categories: categories,
-                visibility: visibility.rawValue
+                visibility: visibility.rawValue,
+                titleIsPlaceholder: false
             )
-            // 2. Mirror into the Swift render store so the UI shows the new show
-            //    immediately; the next snapshot push reconciles from the kernel.
-            return store.upsertPodcast(podcast)
         }
         Self.logger.info("Created agent-owned podcast '\(title, privacy: .public)' id=\(stored.id, privacy: .public)")
         // 3. Claim the per-podcast NIP-F4 signing key once, at creation,

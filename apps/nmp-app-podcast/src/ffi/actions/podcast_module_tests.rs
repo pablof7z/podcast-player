@@ -17,6 +17,104 @@ fn subscribe_action_round_trips() {
 }
 
 #[test]
+fn create_podcast_action_round_trips() {
+    let action = PodcastAction::CreatePodcast {
+        podcast_id: "pod-1".into(),
+        title: "Agent Show".into(),
+        description: "desc".into(),
+        author: "Agent".into(),
+        feed_url: Some("https://example.com/feed.xml".into()),
+        artwork_url: Some("https://img/a.png".into()),
+        language: Some("en".into()),
+        categories: vec!["Tech".into()],
+        visibility: Some("private".into()),
+        title_is_placeholder: true,
+    };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""op":"create_podcast""#));
+    assert!(json.contains(r#""podcast_id":"pod-1""#));
+    assert!(json.contains(r#""feed_url":"https://example.com/feed.xml""#));
+    assert!(json.contains(r#""title_is_placeholder":true"#));
+    let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+
+#[test]
+fn create_podcast_decodes_swift_wire_shape() {
+    // The exact body shape `AppStateStore.kernelCreatePodcast` sends for a
+    // feed-less agent show (no feed_url / artwork / language). A field-name
+    // mismatch between the Swift dispatcher and this enum fails decode here.
+    let json = r#"{"op":"create_podcast","podcast_id":"p","title":"T","description":"","author":"A","categories":[],"visibility":"private","title_is_placeholder":false}"#;
+    let decoded: PodcastAction = serde_json::from_str(json).expect("decode");
+    assert_eq!(
+        decoded,
+        PodcastAction::CreatePodcast {
+            podcast_id: "p".into(),
+            title: "T".into(),
+            description: String::new(),
+            author: "A".into(),
+            feed_url: None,
+            artwork_url: None,
+            language: None,
+            categories: vec![],
+            visibility: Some("private".into()),
+            title_is_placeholder: false,
+        }
+    );
+}
+
+#[test]
+fn add_episode_action_round_trips() {
+    let action = PodcastAction::AddEpisode {
+        podcast_id: "pod-1".into(),
+        episode_id: "ep-1".into(),
+        title: "Episode One".into(),
+        enclosure_url: "file:///tmp/ep-1.m4a".into(),
+        description: "notes".into(),
+        duration_secs: Some(90.0),
+        image_url: Some("https://img/e.png".into()),
+        chapters: vec![EpisodeChapterArg {
+            start_secs: 30.0,
+            title: "Clip".into(),
+            image_url: Some("https://img/c.png".into()),
+            source_episode_id: Some("src-ep".into()),
+        }],
+        transcript: Some("transcript text".into()),
+    };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""op":"add_episode""#));
+    assert!(json.contains(r#""enclosure_url":"file:///tmp/ep-1.m4a""#));
+    assert!(json.contains(r#""source_episode_id":"src-ep""#));
+    let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+
+#[test]
+fn add_episode_decodes_swift_wire_shape_http_enclosure() {
+    // The exact body `AppStateStore.kernelAddEpisode` sends for an external-play
+    // (remote http enclosure, no chapters / image / duration / transcript).
+    let json = r#"{"op":"add_episode","podcast_id":"p","episode_id":"e","title":"T","enclosure_url":"https://example.com/audio.mp3","description":"","chapters":[]}"#;
+    let decoded: PodcastAction = serde_json::from_str(json).expect("decode");
+    match decoded {
+        PodcastAction::AddEpisode {
+            enclosure_url,
+            duration_secs,
+            image_url,
+            chapters,
+            transcript,
+            ..
+        } => {
+            assert_eq!(enclosure_url, "https://example.com/audio.mp3");
+            assert!(duration_secs.is_none());
+            assert!(image_url.is_none());
+            assert!(chapters.is_empty());
+            assert!(transcript.is_none());
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+#[test]
 fn import_opml_action_round_trips() {
     let xml = "<opml version=\"2.0\"><body/></opml>".to_string();
     let action = PodcastAction::ImportOpml { content: xml.clone() };

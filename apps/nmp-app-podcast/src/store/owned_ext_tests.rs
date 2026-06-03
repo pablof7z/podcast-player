@@ -58,44 +58,72 @@ fn episode_with_podcast_clone_returns_none_for_unknown_episode() {
 }
 
 #[test]
-fn insert_synthetic_podcast_creates_feedless_row() {
+fn create_podcast_creates_feedless_row() {
     let mut store = PodcastStore::new();
     let id = Uuid::new_v4().to_string();
-    let ok = store.insert_synthetic_podcast(
+    let ok = store.create_podcast(
         &id,
-        "Synth".into(),
+        "Agent Show".into(),
         "Desc".into(),
         "Agent".into(),
+        None,
         Some("https://img/a.png".into()),
         Some("en".into()),
         vec!["Tech".into()],
         podcast_core::NostrVisibility::Public,
+        false,
     );
     assert!(ok);
     let p = store.podcast_by_id_str(&id).expect("row present");
-    assert_eq!(p.title, "Synth");
+    assert_eq!(p.title, "Agent Show");
     assert_eq!(p.author, "Agent");
     assert!(p.feed_url.is_none());
-    assert_eq!(
-        p.kind,
-        podcast_core::PodcastKind::Synthetic
-    );
+    assert!(!p.title_is_placeholder);
     assert_eq!(p.image_url.as_ref().map(|u| u.as_str()), Some("https://img/a.png"));
     assert_eq!(p.categories, vec!["Tech".to_string()]);
 }
 
 #[test]
-fn insert_synthetic_podcast_rejects_bad_uuid() {
+fn create_podcast_stores_feed_url_and_placeholder_flag() {
+    // External-play placeholder path: a feed-backed row whose title is a
+    // provisional fallback awaiting metadata hydration.
     let mut store = PodcastStore::new();
-    let ok = store.insert_synthetic_podcast(
+    let id = Uuid::new_v4().to_string();
+    let ok = store.create_podcast(
+        &id,
+        "example.com".into(),
+        String::new(),
+        String::new(),
+        Some("https://example.com/feed.xml".into()),
+        None,
+        None,
+        vec![],
+        podcast_core::NostrVisibility::Public,
+        true,
+    );
+    assert!(ok);
+    let p = store.podcast_by_id_str(&id).expect("row present");
+    assert_eq!(
+        p.feed_url.as_ref().map(|u| u.as_str()),
+        Some("https://example.com/feed.xml")
+    );
+    assert!(p.title_is_placeholder);
+}
+
+#[test]
+fn create_podcast_rejects_bad_uuid() {
+    let mut store = PodcastStore::new();
+    let ok = store.create_podcast(
         "not-a-uuid",
         "T".into(),
         String::new(),
         String::new(),
         None,
         None,
+        None,
         vec![],
         podcast_core::NostrVisibility::Public,
+        false,
     );
     assert!(!ok);
     assert_eq!(store.podcast_count(), 0);
@@ -158,42 +186,51 @@ fn update_owned_metadata_returns_false_for_unknown() {
     assert!(!store.update_owned_metadata("nope", Some("x".into()), None, None, None, None));
 }
 
-#[test]
-fn insert_synthetic_episode_registers_under_synthetic_podcast() {
-    let mut store = PodcastStore::new();
-    let pid = Uuid::new_v4().to_string();
-    store.insert_synthetic_podcast(
-        &pid,
+/// Insert a feed-less podcast row for the episode tests below.
+fn seed_podcast(store: &mut PodcastStore, pid: &str) {
+    store.create_podcast(
+        pid,
         "Agent Generated".into(),
         String::new(),
         "Agent".into(),
         None,
         None,
+        None,
         vec![],
         NostrVisibility::Public,
+        false,
     );
+}
+
+#[test]
+fn add_episode_local_file_is_downloaded() {
+    let mut store = PodcastStore::new();
+    let pid = Uuid::new_v4().to_string();
+    seed_podcast(&mut store, &pid);
 
     // A real temp file so the file:// URL + byte-count path resolves.
     let dir = std::env::temp_dir();
-    let audio = dir.join(format!("synthetic-{}.m4a", Uuid::new_v4()));
+    let audio = dir.join(format!("agent-{}.m4a", Uuid::new_v4()));
     std::fs::write(&audio, b"fake-m4a-bytes").unwrap();
     let audio_path = audio.to_string_lossy().to_string();
 
     let eid = Uuid::new_v4().to_string();
-    let ok = store.insert_synthetic_episode(
+    let ok = store.add_episode(
         &pid,
         &eid,
         "Episode One".into(),
         &audio_path,
+        "Episode description".into(),
         Some(123.5),
+        None,
         vec![
-            SyntheticChapter {
+            EpisodeChapter {
                 start_secs: 0.0,
                 title: "Intro".into(),
                 image_url: None,
                 source_episode_id: None,
             },
-            SyntheticChapter {
+            EpisodeChapter {
                 start_secs: 30.0,
                 title: "Clip".into(),
                 image_url: Some("https://img/clip.png".into()),
@@ -212,6 +249,7 @@ fn insert_synthetic_episode_registers_under_synthetic_podcast() {
     let ep = &eps[0];
     assert_eq!(ep.id, ep_id);
     assert_eq!(ep.title, "Episode One");
+    assert_eq!(ep.description, "Episode description");
     assert_eq!(ep.duration_secs, Some(123.5));
     assert!(!ep.played);
     assert_eq!(ep.position_secs, 0.0);
@@ -242,28 +280,69 @@ fn insert_synthetic_episode_registers_under_synthetic_podcast() {
 }
 
 #[test]
-fn insert_synthetic_episode_is_idempotent_on_episode_id() {
+fn add_episode_http_enclosure_is_not_downloaded() {
+    // Remote enclosure (RSS / external audio): NotDownloaded, no local path,
+    // explicit image_url + description honored, no chapters.
     let mut store = PodcastStore::new();
     let pid = Uuid::new_v4().to_string();
-    store.insert_synthetic_podcast(
+    seed_podcast(&mut store, &pid);
+
+    let eid = Uuid::new_v4().to_string();
+    let ok = store.add_episode(
         &pid,
-        "Agent Generated".into(),
-        String::new(),
-        "Agent".into(),
-        None,
-        None,
+        &eid,
+        "Remote Episode".into(),
+        "https://example.com/audio.mp3",
+        "Remote description".into(),
+        Some(600.0),
+        Some("https://img/episode.png".into()),
         vec![],
-        NostrVisibility::Public,
+        None,
     );
+    assert!(ok);
+
+    let pod_id = PodcastId(Uuid::parse_str(&pid).unwrap());
+    let parsed = Uuid::parse_str(&eid).unwrap();
+    let ep_id = EpisodeId(parsed);
+    let eps = store.episodes_for(pod_id);
+    assert_eq!(eps.len(), 1);
+    let ep = &eps[0];
+    assert_eq!(ep.title, "Remote Episode");
+    assert_eq!(ep.description, "Remote description");
+    assert_eq!(
+        ep.enclosure_url.as_str(),
+        "https://example.com/audio.mp3"
+    );
+    assert!(matches!(
+        ep.download_state,
+        podcast_core::types::download::DownloadState::NotDownloaded
+    ));
+    // No local path side-map for a remote enclosure.
+    assert_eq!(store.local_path_for(&ep_id), None);
+    // Explicit image_url wins.
+    assert_eq!(
+        ep.image_url.as_ref().map(|u| u.as_str()),
+        Some("https://img/episode.png")
+    );
+    assert!(ep.chapters.is_none());
+}
+
+#[test]
+fn add_episode_is_idempotent_on_episode_id() {
+    let mut store = PodcastStore::new();
+    let pid = Uuid::new_v4().to_string();
+    seed_podcast(&mut store, &pid);
     let pod_id = PodcastId(Uuid::parse_str(&pid).unwrap());
     let eid = Uuid::new_v4().to_string();
 
     let insert = |store: &mut PodcastStore, title: &str| {
-        store.insert_synthetic_episode(
+        store.add_episode(
             &pid,
             &eid,
             title.into(),
             "/tmp/agent-episode.m4a",
+            String::new(),
+            None,
             None,
             vec![],
             None,
@@ -272,18 +351,20 @@ fn insert_synthetic_episode_is_idempotent_on_episode_id() {
     assert!(insert(&mut store, "First"));
     assert!(insert(&mut store, "Second"));
     let eps = store.episodes_for(pod_id);
-    assert_eq!(eps.len(), 1, "re-register must replace, not duplicate");
+    assert_eq!(eps.len(), 1, "re-add must replace, not duplicate");
     assert_eq!(eps[0].title, "Second");
 }
 
 #[test]
-fn insert_synthetic_episode_rejects_unknown_podcast() {
+fn add_episode_rejects_unknown_podcast() {
     let mut store = PodcastStore::new();
-    let ok = store.insert_synthetic_episode(
+    let ok = store.add_episode(
         &Uuid::new_v4().to_string(),
         &Uuid::new_v4().to_string(),
         "Orphan".into(),
         "/tmp/x.m4a",
+        String::new(),
+        None,
         None,
         vec![],
         None,
@@ -292,24 +373,17 @@ fn insert_synthetic_episode_rejects_unknown_podcast() {
 }
 
 #[test]
-fn insert_synthetic_episode_rejects_bad_episode_id() {
+fn add_episode_rejects_bad_episode_id() {
     let mut store = PodcastStore::new();
     let pid = Uuid::new_v4().to_string();
-    store.insert_synthetic_podcast(
-        &pid,
-        "Agent Generated".into(),
-        String::new(),
-        "Agent".into(),
-        None,
-        None,
-        vec![],
-        NostrVisibility::Public,
-    );
-    let ok = store.insert_synthetic_episode(
+    seed_podcast(&mut store, &pid);
+    let ok = store.add_episode(
         &pid,
         "not-a-uuid",
         "Bad".into(),
         "/tmp/x.m4a",
+        String::new(),
+        None,
         None,
         vec![],
         None,

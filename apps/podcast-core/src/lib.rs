@@ -13,7 +13,7 @@ pub use types::{
     ChapterSource, Clip, ClipBoundary, ClipSource, DownloadState, ElevenLabsCredentialSource,
     Episode, EpisodeId,
     GenerationSource, HeadphoneGestureAction, NostrVisibility, OllamaCredentialSource,
-    OpenRouterCredentialSource, Person, Podcast, PodcastCategory, PodcastId, PodcastKind,
+    OpenRouterCredentialSource, Person, Podcast, PodcastCategory, PodcastId,
     PodcastSubscription, ProviderCredentialMetadata, Settings, SoundBite, SttProvider,
     TranscriptKind, TranscriptSource, TranscriptState, TriageDecision,
 };

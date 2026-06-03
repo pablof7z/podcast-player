@@ -94,7 +94,6 @@ struct SubscriptionService {
             return existing
         }
         let placeholder = Podcast(
-            kind: .rss,
             feedURL: url,
             title: url.host ?? trimmed,
             titleIsPlaceholder: true

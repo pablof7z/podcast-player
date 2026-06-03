@@ -16,11 +16,11 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     /// Foreign key to the parent `Podcast.id`. Every episode has a real
     /// parent podcast — agent-added episodes without a known feed parent
     /// to `Podcast.unknownID`; TTS-generated episodes parent to the
-    /// "Agent Generated" synthetic podcast row owned by
+    /// "Agent Generated" feed-less podcast row owned by
     /// `AgentGeneratedPodcastService`. There is no sentinel "no podcast"
     /// value.
     var podcastID: UUID
-    /// Publisher's `<guid>` (or synthetic fallback). Used to dedupe across feed
+    /// Publisher's `<guid>` (or generated fallback). Used to dedupe across feed
     /// re-fetches and to key cross-system records (vector store, Spotlight).
     var guid: String
 

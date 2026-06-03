@@ -104,7 +104,7 @@ struct EpisodeDetailView: View {
     /// Warm the transcript on first appearance. Kicks off ingest when:
     /// - state is `.none` (not already ingested or in-flight), AND
     /// - a publisher transcript URL is present, OR the episode belongs to a
-    ///   synthetic external-playback subscription (STT fallback path).
+    ///   feed-less external-playback subscription (STT fallback path).
     ///
     /// We deliberately do not retry `.failed` here — failures sit until
     /// the user re-arms ingestion via Settings → Transcripts.

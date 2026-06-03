@@ -27,7 +27,7 @@ pub use episode::{Episode, EpisodeId};
 pub use generation_source::GenerationSource;
 pub use handoff::{HandoffState, HANDOFF_ACTIVITY_BROWSING, HANDOFF_ACTIVITY_PLAYING};
 pub use person::Person;
-pub use podcast::{NostrVisibility, Podcast, PodcastId, PodcastKind};
+pub use podcast::{NostrVisibility, Podcast, PodcastId};
 pub use settings::{
     ElevenLabsCredentialSource, HeadphoneGestureAction, OllamaCredentialSource,
     OpenRouterCredentialSource, ProviderCredentialMetadata, Settings, SttProvider,

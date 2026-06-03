@@ -44,7 +44,7 @@ struct OPMLExport: Sendable {
 
     // MARK: Private
 
-    /// Returns the outline XML row for a podcast, or `nil` for synthetic
+    /// Returns the outline XML row for a podcast, or `nil` for feed-less
     /// podcasts (no feed URL — nothing to round-trip into another app).
     private func makeOutline(for podcast: Podcast) -> String? {
         guard let feedURL = podcast.feedURL else { return nil }

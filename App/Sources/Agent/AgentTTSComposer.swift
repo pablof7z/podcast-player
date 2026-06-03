@@ -83,12 +83,12 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         // 3b. Inherit artwork from the first snippet chapter that has one —
         // covers the typical case where the TTS-stitched episode includes
         // clips from a real show, so the result carries that show's image
-        // even though the synthetic "Agent Generated" podcast itself has
+        // even though the "Agent Generated" podcast itself has
         // none.
         let inheritedArtwork = chapters.first(where: { $0.imageURL != nil })?.imageURL
 
-        // 4. Register the episode in the Rust kernel store (the source of
-        //    truth) so it survives the `applyKernelState` full-replace tick and
+        // 4. Add the episode to the Rust kernel store (the source of truth) so
+        //    it survives the `applyKernelState` full-replace tick and
         //    `publish_episode` can later resolve it by id. The kernel owns the
         //    episode lifecycle now; Swift only writes the audio file (already
         //    done above) and builds the chapter structure. Chapter building
@@ -99,12 +99,14 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
             guard let store else { return "" }
             let resolvedPodcastID = targetPodcastID
                 ?? AgentGeneratedPodcastService.ensurePodcastID(in: store)
-            store.kernelRegisterSyntheticEpisode(
+            store.kernelAddEpisode(
                 podcastId: resolvedPodcastID.uuidString,
                 episodeId: episodeID.uuidString,
                 title: title,
-                audioPath: outputURL.path,
+                enclosureUrl: outputURL.absoluteString,
+                description: description ?? "",
                 durationSecs: durationSeconds,
+                imageUrl: inheritedArtwork?.absoluteString,
                 chapters: chapters.map(Self.chapterWire),
                 transcript: transcript.segments.map(\.text)
                     .joined(separator: " ").nilIfEmpty
@@ -161,14 +163,10 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         )
     }
 
-    /// Convert an `Episode.Chapter` into the `register_synthetic_episode` wire
-    /// dict. Carries the parity fields (`image_url`, `source_episode_id`) the
-    /// kernel stores and projects back onto the episode's chapters.
-    ///
-    /// Not `private` so the one-shot synthetic-episode backfill
-    /// (`AppStateStore+KernelProjection.backfillSyntheticEpisodes`) can reuse
-    /// the same wire encoding rather than duplicate it — there must be one
-    /// canonical chapter-wire representation.
+    /// Convert an `Episode.Chapter` into the `add_episode` wire dict. Carries
+    /// the parity fields (`image_url`, `source_episode_id`) the kernel stores
+    /// and projects back onto the episode's chapters. One canonical chapter-wire
+    /// representation.
     static func chapterWire(_ chapter: Episode.Chapter) -> [String: Any] {
         var dict: [String: Any] = [
             "start_secs": chapter.startTime,

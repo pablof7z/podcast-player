@@ -39,12 +39,10 @@ pub fn handle_publish_action(
     action: PublishAction,
 ) -> serde_json::Value {
     match action {
-        // Create / update / delete lifecycle lives in the sibling module
-        // (keeps this file under the 500-LOC hard limit). It owns its own
-        // variant destructuring via `handle_lifecycle_action`.
-        action @ (PublishAction::CreateSyntheticPodcast { .. }
-        | PublishAction::RegisterSyntheticEpisode { .. }
-        | PublishAction::UpdateOwnedPodcast { .. }
+        // Update / delete lifecycle lives in the sibling module (keeps this
+        // file under the 500-LOC hard limit). It owns its own variant
+        // destructuring via `handle_lifecycle_action`.
+        action @ (PublishAction::UpdateOwnedPodcast { .. }
         | PublishAction::DeleteOwnedPodcast { .. }) => {
             crate::host_op_publish_lifecycle::handle_lifecycle_action(handler, action)
         }

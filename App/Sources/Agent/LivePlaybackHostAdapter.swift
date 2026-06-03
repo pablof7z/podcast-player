@@ -158,12 +158,33 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
                 logger.error("playExternalEpisode: playback host missing")
                 return nil
             }
-            let episode = store.upsertEpisode(
-                podcastID: parentResolution.podcastID,
-                audioURL: audioURL,
+            // Add the episode to the Rust kernel store (SSOT). The enclosure is
+            // an `http(s)://` URL, so the kernel marks it NotDownloaded; it
+            // rides the next projection push back into `store.episodes`.
+            let episodeID = UUID()
+            store.kernelAddEpisode(
+                podcastId: parentResolution.podcastID.uuidString,
+                episodeId: episodeID.uuidString,
                 title: title,
-                imageURL: nil,
-                duration: durationSeconds
+                enclosureUrl: audioURL.absoluteString,
+                description: "",
+                durationSecs: durationSeconds,
+                imageUrl: nil,
+                chapters: [],
+                transcript: nil
+            )
+            // Transient in-memory value: the player needs an `Episode`
+            // synchronously for `enqueueSegments` / queue insertion, and the
+            // projection has not delivered the persisted copy yet. NOT written
+            // to `store.episodes`.
+            let episode = Episode(
+                id: episodeID,
+                podcastID: parentResolution.podcastID,
+                guid: episodeID.uuidString,
+                title: title,
+                pubDate: Date(),
+                duration: durationSeconds,
+                enclosureURL: audioURL
             )
             let podcastTitle = store.podcast(id: parentResolution.podcastID)?.title
             let item = QueueItem(
@@ -174,7 +195,7 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
             )
             switch queuePosition {
             case .now:
-                playback.enqueueSegments([item], playNow: true) { store.episode(id: $0) }
+                playback.enqueueSegments([item], playNow: true, head: episode)
                 logger.info("playExternalEpisode(now): '\(title, privacy: .public)' at \(startSeconds ?? 0)")
                 return PlayEpisodeResult(
                     episodeID: episode.id.uuidString,
@@ -249,15 +270,22 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         // defaults to the feed host so the UI shows something sensible
         // immediately; metadata hydration overwrites it on success.
         // titleIsPlaceholder stays true until hydration succeeds, letting
-        // the UI render it as provisional.
-        let placeholder = Podcast(
-            kind: .rss,
-            feedURL: feedURL,
+        // the UI render it as provisional. The row lives in the Rust kernel
+        // store (SSOT) and projects back on the next push.
+        let podcastID = UUID()
+        store.kernelCreatePodcast(
+            podcastId: podcastID.uuidString,
             title: feedURL.host ?? feedURLString,
+            description: "",
+            author: "",
+            feedUrl: feedURL.absoluteString,
+            artworkUrl: nil,
+            language: nil,
+            categories: [],
+            visibility: Podcast.NostrVisibility.public.rawValue,
             titleIsPlaceholder: true
         )
-        let stored = store.upsertPodcast(placeholder)
-        return ExternalParentResolution(podcastID: stored.id, shouldHydrateMetadata: true)
+        return ExternalParentResolution(podcastID: podcastID, shouldHydrateMetadata: true)
     }
 
     /// Fetches the feed in the background and updates the placeholder
@@ -272,19 +300,29 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
         // here; we clear it only when the fetch returns real metadata below.
         let placeholder = Podcast(
             id: podcastID,
-            kind: .rss,
             feedURL: feedURL,
             title: feedURL.host ?? feedURL.absoluteString,
             titleIsPlaceholder: true
         )
         do {
             let result = try await client.fetch(placeholder)
-            if case .updated(var podcast, _, _) = result {
-                // Explicit clear — don't rely on FeedClient zero-initialising
-                // a field it doesn't know about.
-                podcast.titleIsPlaceholder = false
+            if case .updated(let podcast, _, _) = result {
+                // Re-create with the SAME id + enriched metadata; the kernel
+                // upsert updates the row in place. `titleIsPlaceholder: false`
+                // clears the provisional marker now that real metadata arrived.
                 await MainActor.run {
-                    store.updatePodcast(podcast)
+                    store.kernelCreatePodcast(
+                        podcastId: podcastID.uuidString,
+                        title: podcast.title,
+                        description: podcast.description,
+                        author: podcast.author,
+                        feedUrl: feedURL.absoluteString,
+                        artworkUrl: podcast.imageURL?.absoluteString,
+                        language: podcast.language,
+                        categories: podcast.categories,
+                        visibility: Podcast.NostrVisibility.public.rawValue,
+                        titleIsPlaceholder: false
+                    )
                 }
             }
             // .notModified on a first hydration fetch means the server sent no

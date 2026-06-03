@@ -138,11 +138,14 @@ extension KernelModel {
             hasher.combine(podcast.episodeCount)
             hasher.combine(podcast.artworkUrl)
             hasher.combine(podcast.author)
+            // A feed-host→real-title hydration of an external-play placeholder
+            // changes `feedUrl`/`title`; include feedUrl so the projection
+            // refreshes when only the feed URL is enriched.
+            hasher.combine(podcast.feedUrl)
             // Owned-podcast identity: a visibility flip or ownership claim
             // mutates these without touching title/artwork, so include them
             // or the library projection would not refresh on an owned-podcast
             // update.
-            hasher.combine(podcast.kind)
             hasher.combine(podcast.ownerPubkeyHex)
             hasher.combine(podcast.nostrVisibility)
             for episode in podcast.episodes {

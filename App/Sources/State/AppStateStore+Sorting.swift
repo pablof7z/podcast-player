@@ -19,13 +19,13 @@ extension AppStateStore {
     /// that array is the newest-pubDate episode index, so the recency
     /// lookup is O(1) per podcast.
     ///
-    /// Synthetic podcasts (Agent Generated, Unknown) are excluded by virtue
+    /// Feed-less podcasts (Agent Generated, Unknown) are excluded by virtue
     /// of having no `PodcastSubscription` row in the new model — they're
     /// `Podcast`-only and never appear in the user's subscription list.
     var sortedFollowedPodcastsByRecency: [Podcast] {
         let podcastByID = Dictionary(uniqueKeysWithValues: state.podcasts.map { ($0.id, $0) })
         let followed = state.subscriptions.compactMap { podcastByID[$0.podcastID] }
-            .filter { $0.kind == .rss }
+            .filter { $0.feedURL != nil }
         let episodes = self.episodes
         var lookup: [UUID: Date] = [:]
         lookup.reserveCapacity(followed.count)

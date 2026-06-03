@@ -5,7 +5,7 @@
 //! .parseShow(from:)` so the Rust + Swift discovery paths converge on the
 //! same `Podcast` row given identical wire input.
 
-use podcast_core::types::podcast::{NostrVisibility, Podcast, PodcastId, PodcastKind};
+use podcast_core::types::podcast::{NostrVisibility, Podcast, PodcastId};
 use url::Url;
 use uuid::Uuid;
 
@@ -79,7 +79,6 @@ pub fn show_to_podcast(show: &NIP74Show) -> Podcast {
     let coordinate = show.coordinate();
     Podcast {
         id: podcast_id_from_coordinate(&coordinate),
-        kind: PodcastKind::Rss,
         feed_url: None,
         title: show.title.clone(),
         author: show.author_pubkey.clone().unwrap_or_default(),

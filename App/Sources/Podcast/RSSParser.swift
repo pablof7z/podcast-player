@@ -81,7 +81,6 @@ struct RSSParser: Sendable {
 
         let podcast = Podcast(
             id: podcastID,
-            kind: .rss,
             feedURL: feedURL,
             title: delegate.channelTitle.rss_trimmedOrEmpty,
             author: delegate.channelAuthor.rss_trimmedOrEmpty,

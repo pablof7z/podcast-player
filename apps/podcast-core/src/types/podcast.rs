@@ -26,13 +26,6 @@ impl PodcastId {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PodcastKind {
-    Rss,
-    Synthetic,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum NostrVisibility {
     Private,
     Public,
@@ -41,7 +34,6 @@ pub enum NostrVisibility {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Podcast {
     pub id: PodcastId,
-    pub kind: PodcastKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub feed_url: Option<Url>,
     pub title: String,
@@ -73,7 +65,6 @@ impl Podcast {
     pub fn new(title: impl Into<String>) -> Self {
         Self {
             id: PodcastId::generate(),
-            kind: PodcastKind::Rss,
             feed_url: None,
             title: title.into(),
             author: String::new(),
@@ -99,7 +90,6 @@ impl Podcast {
     pub fn unknown() -> Self {
         Self {
             id: PodcastId::unknown(),
-            kind: PodcastKind::Synthetic,
             title: "Unknown".into(),
             ..Self::new("Unknown")
         }

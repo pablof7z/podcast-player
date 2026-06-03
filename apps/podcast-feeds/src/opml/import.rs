@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::fmt;
 
-use podcast_core::{NostrVisibility, Podcast, PodcastId, PodcastKind};
+use podcast_core::{NostrVisibility, Podcast, PodcastId};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use url::Url;
@@ -92,7 +92,6 @@ fn seed_podcast(
 ) -> Podcast {
     Podcast {
         id: PodcastId::generate(),
-        kind: PodcastKind::Rss,
         feed_url: Some(feed_url),
         title,
         author: String::new(),

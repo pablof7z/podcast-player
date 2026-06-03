@@ -58,13 +58,6 @@ extension AppStateStore {
                 pendingKernelQueue = queueIDs
             }
         }
-        // One-shot backfill of pre-#215 agent-generated episodes. Runs
-        // SYNCHRONOUSLY here — before the observation `Task` below is created —
-        // so it reads `state.episodes` while it still holds the persisted,
-        // pre-kernel set. The first `applyKernelState` (inside that Task) does a
-        // full-replace from the kernel projection, so any synthetic episode not
-        // yet registered in the kernel would be wiped before we could see it.
-        backfillSyntheticEpisodes()
         kernelObservationTask = Task { @MainActor [weak self] in
             // Previous-tick `EpisodeSummary` cache, keyed by the wire `id`
             // string. Held as a local across loop iterations (this Task is the
@@ -125,12 +118,6 @@ extension AppStateStore {
         }
     }
 
-    // `backfillSyntheticEpisodes()` (the one-shot pre-#215 synthetic-episode
-    // migration called from `attachKernel`) lives in
-    // `AppStateStore+SyntheticBackfill.swift` (split out to keep this file
-    // under the 500-line hard limit — see the `kernelprojection-split`
-    // backlog item).
-
     /// Project the current kernel state into `AppState`.
     /// Takes `library` and `snapshot` separately because `KernelModel` gates
     /// them on different content hashes. `identity` carries the kernel's
@@ -187,17 +174,16 @@ extension AppStateStore {
         for summary in library {
             guard let uuid = UUID(uuidString: summary.id) else { continue }
             let feedURL = summary.feedUrl.flatMap { URL(string: $0) }
-            // Synthetic (agent-owned) rows now live in the Rust store as SSOT
-            // and project back here. Without round-tripping `kind` /
-            // `ownerPubkeyHex` / `nostrVisibility` the wholesale `next.podcasts`
-            // replace below would rebuild every row as `.rss` with no owner,
-            // wiping owned-podcast detection (`listOwnedPodcasts` filters on
-            // `ownerPubkeyHex != nil`) and the publish gate.
-            let kind: Podcast.Kind = summary.kind == "synthetic" ? .synthetic : .rss
+            // Agent-owned rows now live in the Rust store as SSOT and project
+            // back here. Without round-tripping `ownerPubkeyHex` /
+            // `nostrVisibility` the wholesale `next.podcasts` replace below would
+            // rebuild every row with no owner, wiping owned-podcast detection
+            // (`listOwnedPodcasts` filters on `ownerPubkeyHex != nil`) and the
+            // publish gate. A feed-less row is just a podcast with `feedURL ==
+            // nil` — no separate kind discriminator.
             let visibility = Podcast.NostrVisibility(rawValue: summary.nostrVisibility) ?? .public
             podcasts.append(Podcast(
                 id: uuid,
-                kind: kind,
                 feedURL: feedURL,
                 title: summary.title,
                 author: summary.author ?? "",

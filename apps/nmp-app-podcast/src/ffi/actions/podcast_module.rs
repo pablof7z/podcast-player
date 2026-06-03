@@ -28,6 +28,57 @@ use crate::discover_nostr::{nostr_discovery_identity, nostr_discovery_interest};
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum PodcastAction {
     Subscribe { feed_url: String },
+    /// Insert (or update) a podcast row from full caller-supplied metadata.
+    /// `podcast_id` is the Swift-minted UUID so both stores agree on identity.
+    /// `feed_url` distinguishes a feed-backed show (external-play placeholder)
+    /// from a feed-less agent-owned / TTS show (absent). Idempotent on id — an
+    /// enriched re-create updates the row in place. `visibility` is the
+    /// canonical `NostrVisibility` snake_case string (`"public"` / `"private"`).
+    /// `title_is_placeholder` marks a provisional feed-host fallback title.
+    /// A feed-less podcast is just a podcast with no `feed_url`.
+    CreatePodcast {
+        podcast_id: String,
+        title: String,
+        #[serde(default)]
+        description: String,
+        #[serde(default)]
+        author: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        feed_url: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        artwork_url: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        language: Option<String>,
+        #[serde(default)]
+        categories: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        visibility: Option<String>,
+        #[serde(default)]
+        title_is_placeholder: bool,
+    },
+    /// Insert (or update) an episode under a podcast. `podcast_id` / `episode_id`
+    /// are the Swift-minted UUID strings. `enclosure_url` branches on scheme:
+    /// a `file://` URL or bare absolute path → the audio is already on disk
+    /// (Downloaded + local-path side-map); an `http(s)://` URL → a remote
+    /// enclosure (NotDownloaded, fetched later by the download capability).
+    /// `chapters` carry the parity fields; `transcript` is the flat episode
+    /// transcript text; `image_url` overrides the per-episode artwork.
+    AddEpisode {
+        podcast_id: String,
+        episode_id: String,
+        title: String,
+        enclosure_url: String,
+        #[serde(default)]
+        description: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        duration_secs: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        image_url: Option<String>,
+        #[serde(default)]
+        chapters: Vec<EpisodeChapterArg>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        transcript: Option<String>,
+    },
     Unsubscribe { podcast_id: String },
     Refresh { podcast_id: String },
     RefreshAll,
@@ -236,6 +287,21 @@ pub enum PodcastAction {
     /// immediately. The iOS `summarize_episode` agent tool dispatches this then
     /// awaits the snapshot until `episode.summary` populates.
     SummarizeEpisode { episode_id: String },
+}
+
+/// One chapter for an [`PodcastAction::AddEpisode`] op. `image_url` +
+/// `source_episode_id` carry the parity fields the Swift TTS composer built on
+/// `Episode.Chapter` (mid-play artwork swap + source-episode chip). They round
+/// the kernel store, not just the wire, so the projected chapter is identical
+/// to the pre-kernel build.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct EpisodeChapterArg {
+    pub start_secs: f64,
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_episode_id: Option<String>,
 }
 
 /// One row in a [`PodcastAction::SetEpisodeTriage`] batch.
