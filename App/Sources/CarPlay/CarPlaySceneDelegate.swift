@@ -28,9 +28,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     private var interfaceController: CPInterfaceController?
     private var contextReadyObserver: NSObjectProtocol?
-    /// Tracks the last episode the now-playing buttons were configured for
-    /// so a chapter-set hydration triggers a single refresh, not one per tick.
-    private var lastNowPlayingEpisodeID: UUID?
+    /// Tracks the episode ID *and* its navigable-chapter count that the
+    /// now-playing buttons were last configured for. Keying on the count as
+    /// well as the ID means a chapter-set hydration into the *same* episode
+    /// (AI chapter generation) triggers a single refresh, not one per tick —
+    /// keying on ID alone would never re-fire when chapters arrive late.
+    private var lastNowPlayingState: NowPlayingState?
+
+    private struct NowPlayingState: Equatable {
+        let episodeID: UUID?
+        let navigableChapterCount: Int
+    }
     /// Long-lived polling task that watches for episode changes so the
     /// chapter button can appear / hide as the loaded episode swaps.
     private var pollTask: Task<Void, Never>?
@@ -78,7 +86,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
         let tabBar = makeTabBar(store: store, playback: playback)
         interfaceController.setRootTemplate(tabBar, animated: false) { _, _ in }
-        CarPlayNowPlaying.configure(playback: playback, interfaceController: interfaceController)
+        CarPlayNowPlaying.configure(playback: playback, store: store, interfaceController: interfaceController)
     }
 
     private func makeTabBar(store: AppStateStore, playback: PlaybackState) -> CPTabBarTemplate {
@@ -121,10 +129,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         // before we land on Now Playing — the user shouldn't see a stale
         // chapter list for the previous episode.
         if let interfaceController {
-            CarPlayNowPlaying.refresh(playback: playback, interfaceController: interfaceController)
+            CarPlayNowPlaying.refresh(playback: playback, store: store, interfaceController: interfaceController)
             interfaceController.pushTemplate(CPNowPlayingTemplate.shared, animated: true) { _, _ in }
         }
-        lastNowPlayingEpisodeID = episode.id
+        lastNowPlayingState = nowPlayingState(playback: playback, store: store)
     }
 
     // MARK: - Live refresh
@@ -139,18 +147,31 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         pollTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(3))
-                self?.refreshNowPlayingIfEpisodeChanged()
+                self?.refreshNowPlayingIfChanged()
             }
         }
     }
 
-    private func refreshNowPlayingIfEpisodeChanged() {
+    /// Re-push the button row when either the loaded episode *or* its live
+    /// navigable-chapter count changed. Reading the count from `store.episodes`
+    /// (the Rust projection) catches chapters that hydrate after the episode
+    /// loaded — the stale `playback.episode` copy would otherwise hide the
+    /// chapter button forever.
+    private func refreshNowPlayingIfChanged() {
         guard let interfaceController,
-              let playback = CarPlayController.shared.playback else { return }
-        let currentID = playback.episode?.id
-        guard currentID != lastNowPlayingEpisodeID else { return }
-        lastNowPlayingEpisodeID = currentID
-        CarPlayNowPlaying.refresh(playback: playback, interfaceController: interfaceController)
+              let playback = CarPlayController.shared.playback,
+              let store = CarPlayController.shared.store else { return }
+        let current = nowPlayingState(playback: playback, store: store)
+        guard current != lastNowPlayingState else { return }
+        lastNowPlayingState = current
+        CarPlayNowPlaying.refresh(playback: playback, store: store, interfaceController: interfaceController)
+    }
+
+    private func nowPlayingState(playback: PlaybackState, store: AppStateStore) -> NowPlayingState {
+        NowPlayingState(
+            episodeID: playback.episode?.id,
+            navigableChapterCount: CarPlayNowPlaying.navigableChapters(playback: playback, store: store).count
+        )
     }
 
     // MARK: - Cold-connect waiting state

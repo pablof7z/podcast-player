@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-03T20:01:00Z",
+      "lines": [
+        "CarPlay now shows the chapter list as soon as chapters are ready, even when they arrive after the episode starts"
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T20:00:00Z",
       "lines": [
         "Pressing Play from the lock screen right after reopening the app now correctly saves your position and marks episodes played"
