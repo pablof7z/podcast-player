@@ -119,6 +119,25 @@ extension PlaybackState {
                     if positionSecs > 0 { self.engine.seek(to: positionSecs) }
                 }
             case .play:
+                // Cold-restart restore case: RootView re-seeds the last-played
+                // episode into the engine (paused), but Rust's `PlayerActor`
+                // was never sent a `Load` for it — so its `nowPlaying` is still
+                // empty. If we just `engine.play()` here, audio starts but Rust
+                // attributes the resulting `Playing` reports to no episode:
+                // position never persists and the episode never marks played.
+                //
+                // So before starting audio, if Rust has no staged episode
+                // (`nowPlaying.episodeId` nil/empty) but we have a restored one,
+                // stage it in Rust via `kernelLoad` first. Rust replies with a
+                // `Load` echo that lands on the `.load` case below, which only
+                // calls `setEpisode(playAfterLoad: false)` — it never re-issues
+                // `play()` or `kernelLoad`, so this cannot loop. (Rust-originated
+                // auto-advance plays already carry a populated `nowPlaying`, so
+                // the guard is a no-op there.)
+                let stagedEpisodeID = self.store?.kernel?.podcastSnapshot?.nowPlaying?.episodeId
+                if (stagedEpisodeID?.isEmpty ?? true), let episodeID = self.episode?.id {
+                    self.store?.kernelLoad(episodeID: episodeID)
+                }
                 self.engine.play()
             case .pause:
                 self.engine.pause()
