@@ -146,13 +146,6 @@ worktrees currently in flight.
   behavior on simulator and device.
 - **queue-hardening.** Validate item-ended advancement, duplicate handling,
   remove/clear, persistence expectations, and UI sync.
-- **player-actor-queue-unification.** `maybe_auto_advance` now pops from the
-  canonical `PlaybackQueue` (`handle.queue`, the queue the UI enqueues into via
-  `podcast.queue` and the snapshot renders). The separate `PlayerActor.queue`
-  (populated only by the `podcast.player` `Enqueue`/`PlayNext` ops, which the UI
-  does not use) is now vestigial for auto-advance. Collapse the two queues into
-  one owner: route the `podcast.player` enqueue ops at `PlaybackQueue` (or delete
-  them) and drop `PlayerActor`'s queue field + `enqueue`/`pop_next`/`queue()`.
 - **remote-command-kernel-routing.** Lock-screen / Control Center commands
   (`AudioCapability+RemoteCommands`) call `execute(.play)`/`.seek` which run the
   engine directly through the same `commandHandler` that Rust-issued commands
@@ -162,32 +155,12 @@ worktrees currently in flight.
   lock-screen-originated commands through a report-to-Rust path (or staging the
   restored episode in Rust on restore) — distinct from Rust-issued playback
   commands so it doesn't loop through `handle_load`'s echoed `Load`.
-- **carplay-chapters-live-resolve.** `CarPlayNowPlaying` reads
-  `playback.episode.chapters` directly; when chapters hydrate after the episode
-  loaded (or before CarPlay connects), `PlaybackState.episode` can be the stale
-  pre-hydration copy. Restore a store-backed resolver so the CarPlay chapter
-  button/list appears once the store has chapters.
 - **download-state-projection.** Runtime queue projection is now wired:
   player download actions mutate `DownloadQueue`, download reports update
   progress/paused/failed/completed state, and snapshots expose active/queued/
   paused/failed rows instead of only completed local paths. Remaining:
   validate background URLSession restore, deletion failure, and offline-first
   playback on device.
-- **delete-after-played-kernel-policy.** The "Delete after played" policy still
-  lives on the Swift side (`AppStateStore.markEpisodePlayed` and the
-  `deleteDownloadIfAutoDeleteAfterPlayed` reaction on `onItemEnd`). The kernel
-  owns the *operation* (`delete_download` → `clear_local_path`) and the
-  *setting* (`auto_delete_downloads_after_played`, with a setter in
-  `host_op_handler.rs` and a snapshot projection), but no kernel path reads the
-  setting to trigger the delete: neither `mark_episode_played`
-  (`store/playback.rs`) nor the `ItemEnd` branch of `apply_writeback`
-  (`ffi/audio_report.rs`) consults it. To finish delegating this policy to Rust,
-  `mark_episode_played` (or the `ItemEnd` handler) should, when
-  `auto_delete_downloads_after_played` is on and the episode is downloaded,
-  `clear_local_path` and emit the file-deletion through the download capability
-  so iOS removes the bytes. Once that lands, drop the Swift gate in
-  `markEpisodePlayed` and the `onItemEnd` `deleteDownloadIfAutoDeleteAfterPlayed`
-  call. Deferred from `feat/mark-played-kernel` (no-Rust-changes constraint).
 - **settings-completion.** Finish playback/settings projection parity:
   skip intervals, auto-skip ads, streaming/offline preferences, onboarding
   gate, provider settings, and persistence migration.
@@ -288,50 +261,6 @@ worktrees currently in flight.
 - **wiki-real-generation.** Replace placeholder wiki articles with RAG-backed
   synthesis, citations, refresh/invalidation, per-podcast storage, and delete
   semantics.
-- **briefings-real-pipeline (feature #41).** The matrix's definition of done is
-  six components: scheduler, composer, provider pipeline, audio generation,
-  persistence, and playback handoff. Status decomposed (verified against code on
-  main, 2026-05-31):
-  - **DONE — text generation (M5.6, `feat/m5-briefings`).** `briefing_llm.rs`
-    asks Ollama (`deepseek-v4-flash`) for a 3–5 item summary over the top-10
-    recent unplayed episodes; `briefings_handler::handle_generate_briefing`
-    flips the slot `generating → ready`, with a no-LLM `fallback_segments`
-    safety net. This is the *provider/script-generation* leg only.
-  - **OPEN — scheduler.** Nothing auto-fires on a schedule. The `tasks_handler`
-    seed already has a "Morning Briefing" row (`schedule:"daily"`,
-    op `generate_briefing`), but no ticker/cron consumes `schedule`/`next_run_at`
-    (both are always `None`; only `RunNow` — a manual button — dispatches). The
-    `podcast_briefings::BriefingScheduler` state machine (`should_generate_now`,
-    `start_pending`, `next_scheduled_minutes`) is fully implemented **but
-    instantiated nowhere** outside its own crate.
-  - **OPEN — composer.** `handle_generate_briefing` emits flat
-    `BriefingSegmentSummary{kind:"episode_summary"}` rows only. The canonical
-    `podcast_briefings::SegmentKind` (`Intro`/`EpisodeSummary`/
-    `NewEpisodeAlert`/`WeatherUpdate`/`OutroCallToAction`) and `BriefingSegment`
-    domain types exist but are unused on the live path. Per the crate's D7
-    doctrine, intro→summaries→outro structuring belongs in `podcast-briefings`,
-    not in `nmp-app-podcast`'s handler.
-  - **OPEN — audio generation.** Briefings produce text only; no TTS/audio
-    output. (TTS now lives only in the Swift `AgentTTSComposer` path — the
-    feature-#43 kernel `tts.rs`/`tts_llm.rs` stub was deleted; see
-    `tts-episodes-reconcile-two-mechanisms`. Briefing audio would compose
-    against the Swift path or a new capability, not the removed kernel stub.)
-  - **OPEN — persistence + failure/retry projection.** The slot is an in-memory
-    `Arc<Mutex<Option<BriefingSnapshot>>>`; nothing survives restart and
-    `status` never reaches `"failed"` on the live path.
-  - **BLOCKED ON A DECISION (do not implement piecemeal):** there are two
-    parallel briefing mechanisms — the `tasks_handler` seed-task path (World A:
-    `BriefingSnapshot`/`BriefingSegmentSummary` projection types) and the
-    unwired `podcast-briefings::BriefingScheduler` + `Briefing`/`BriefingSegment`
-    domain crate (World B, the M9.A skeleton that explicitly defers
-    composer/stitcher/audio to M9.B–C). Scheduler, composer, audio, persistence,
-    and failure projection all pull on reconciling these two. **A human must
-    decide which mechanism is canonical** (wire `BriefingScheduler` into the
-    kernel as SSOT, or extend the `tasks_handler` path and retire the unwired
-    crate) before an agent builds the remaining legs — building any one leg on
-    the live handler alone would add a second composition path (the
-    fragmentation AGENTS.md forbids) and a D7 violation. Sequenced to M9.B per
-    the `podcast-briefings` skeleton.
 - **voice-real-manager.** Finish Rust voice conversation manager, audio-session
   state transitions, transcript handoff, and cancellation. (Provider TTS/STT
   choices and barge-in policy are tracked separately — see
@@ -453,8 +382,8 @@ worktrees currently in flight.
      "the iOS sheet's Stepper" / "the iOS list renders it" describe UI that
      does not exist.
 
-  The reconciliation was a **human-decision gate** (AGENTS.md fragmentation, D7,
-  the feature-#41 briefings precedent), not net-new persistence code. The
+  The reconciliation was a **human-decision gate** (AGENTS.md fragmentation, D7),
+  not net-new persistence code. The
   options weighed were:
   - **Option A — adopt the Swift composer, delete the kernel stub. (CHOSEN.)**
     Point #43 at the agent-tool path; remove the orphaned kernel `podcast.tts`
@@ -581,6 +510,33 @@ worktrees currently in flight.
   `call.cancel()` before joining so the IO thread exits in milliseconds.
 
 ## Active P2 - Cross-Cutting Technical Debt
+
+- **dead-streaming-only-setting.** `iCloudSyncCapability` still carries an
+  orphaned `streamingOnly` setting: it defines the KV key
+  `pcst.streaming_only`, mirrors it outbound, and on a remote change dispatches
+  `podcast.settings` `{"op":"set_streaming_only"}`. But there is NO Rust
+  handler (`SettingsAction` has no `SetStreamingOnly` variant; `streaming_only`
+  appears nowhere in `apps/nmp-app-podcast/src/`), NO field on the Swift
+  `Settings` struct, NO UI that writes it, and the projection bridge
+  (`iCloudSyncCapability+Snapshot.swift::from(podcastUpdate:)`) hardcodes
+  `streamingOnly: nil`. With `#[serde(tag="op")]`/no `#[serde(other)]` the
+  dispatch fails `from_str::<SettingsAction>` and is silently dropped. It is
+  dead plumbing, not a domain setting to migrate. Decision needed: either
+  delete the `streamingOnly` KV key + snapshot field + both
+  `applySettingsSnapshot`/remote-apply arms (cleanest), OR build a real
+  streaming-vs-download playback setting end-to-end (Settings field + UI +
+  `SettingsSnapshot` projection + `SetStreamingOnly` op) if the feature is
+  actually wanted. Surfaced during the `settings-completion` (M3) audit;
+  Article VII says do not build the feature speculatively — favor deletion.
+- **provider-api-keys-no-kernel-handler.** `AppStateStore.kernelSetProviderApiKeys`
+  dispatches `podcast.settings` `{"op":"set_provider_api_keys", open_router, ollama}`
+  on launch + after credential edits, but there is no matching `SettingsAction`
+  variant or handler in `apps/nmp-app-podcast/src/` — so LLM API keys may never
+  reach the kernel's in-memory provider registry (the dispatch falls through
+  every action enum and is dropped). This is a CREDENTIALS concern (PR #140's
+  domain) and was explicitly out of scope for the `settings-completion` audit;
+  flagged here for the credential owner to verify whether the kernel actually
+  needs the keys or routes LLM calls another way.
 
 - **observable-granularity-podcasts-subscriptions.** PR for
   `fix/observable-granularity` promoted `episodes` out of the single

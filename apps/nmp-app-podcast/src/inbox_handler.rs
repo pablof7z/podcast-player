@@ -12,16 +12,13 @@
 //!
 //! ## Scoring strategy
 //!
-//! `build_inbox` checks the LLM triage cache first. If a `Ready` cache entry
-//! exists for an episode, its `priority_score`, `priority_reason`, and
-//! `categories` are used verbatim. Otherwise (no entry, or a `Pending`
-//! failure-placeholder entry) the recency-bucket heuristic (`score()`) is the
-//! fallback so the inbox always renders something useful even before the first
-//! triage pass completes or when Ollama is offline.
-//!
-//! `build_inbox` is a **pure projection**: it never spawns work. The proactive
-//! population lives in [`maybe_enqueue_triage`], called from the snapshot
-//! builder right next to `build_inbox`.
+//! `build_inbox` checks the LLM triage cache first. A `Ready` entry's
+//! `priority_score`, `priority_reason`, and `categories` are used verbatim;
+//! otherwise (no entry, or a `Pending` failure placeholder) the recency-bucket
+//! heuristic (`score()`) is the fallback so the inbox always renders something
+//! useful before the first triage pass or when Ollama is offline. `build_inbox`
+//! is a **pure projection**: it never spawns work. The proactive population
+//! lives in [`maybe_enqueue_triage`], called next to it in the snapshot builder.
 //!
 //! ## Proactive triage trigger
 //!
@@ -31,16 +28,15 @@
 //! episode lacks a fresh `Ready` entry. If so — and no pass is already in
 //! flight — it spawns the same background task the explicit action uses, so
 //! both paths share the `in_progress` re-entrancy guard and can never race.
-//!
-//! The predicate is deliberately conservative to avoid hammering Ollama every
-//! tick: an episode needs triage when it has **no** entry, a **`Ready`** entry
-//! older than [`TRIAGE_STALE_SECS`], or a **`Pending`** entry older than
-//! [`TRIAGE_RETRY_COOLDOWN_SECS`]. A recent `Pending` entry suppresses retries
-//! during the cooldown so an offline Ollama degrades to the heuristic instead
-//! of a hot spawn loop.
+//! The predicate is conservative (no entry, a `Ready` entry older than
+//! [`TRIAGE_STALE_SECS`], or a `Pending` entry older than
+//! [`TRIAGE_RETRY_COOLDOWN_SECS`]) so an offline Ollama degrades to the
+//! heuristic instead of a hot spawn loop.
 //!
 //! All LLM work runs off the actor thread (`runtime.spawn` →
-//! `tokio::task::spawn_blocking`); the actor is never blocked.
+//! `tokio::task::spawn_blocking`); the actor is never blocked. After a batch
+//! completes, the cache is persisted via
+//! [`crate::store::inbox_triage_cache`] so a cold launch reloads prior scores.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -356,6 +352,17 @@ pub fn handle_inbox_action(
         InboxAction::MarkListened { episode_id } => match store.lock() {
             Ok(mut s) => {
                 let _flipped = s.mark_episode_played(&episode_id);
+                // Delete-after-played is kernel-owned policy (D0). A manual
+                // mark-played (and the sleep-timer-end path, which routes
+                // through `inbox/mark_listened`) honours the user's
+                // `auto_delete_downloads_after_played` setting here. Keyed only
+                // on the auto-delete setting (not `auto_mark_played_at_end`),
+                // matching the prior Swift `markEpisodePlayed` gate. File
+                // removal stays out of the store, mirroring
+                // `handle_delete_download`.
+                if let Some(path) = s.clear_local_path_if_auto_delete(&episode_id) {
+                    let _ = std::fs::remove_file(&path);
+                }
                 rev.fetch_add(1, Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
@@ -445,6 +452,11 @@ async fn triage_episodes_in_background(
             }
         }
     }
+
+    // Batch complete: persist the whole cache once so a cold launch reloads
+    // these scores instead of re-triaging. Single choke point for both the
+    // explicit `InboxAction::Triage` and proactive `maybe_enqueue_triage` paths.
+    crate::store::inbox_triage_cache::persist_from_store(&store, &triage_cache);
 
     // Clear the in-progress flag and emit a final rev bump.
     in_progress.store(false, std::sync::atomic::Ordering::Relaxed);

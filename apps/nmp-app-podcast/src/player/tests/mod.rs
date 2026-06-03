@@ -9,15 +9,17 @@
 //!   (arming, expiry mid-Playing, `SleepTimerFired`, cancel).
 //! * [`mutators`] — Direct state mutators
 //!   (`stage_load`, `set_speed`, `set_volume`) and default constructors.
-//! * [`queue`] — Playback queue ("Up Next") mutators
-//!   (`enqueue`, `dequeue`, `clear_queue`, `pop_next`).
 //! * [`ad_skip`] — Auto ad-skip session bookkeeping.
+//!
+//! The playback queue ("Up Next") lives on the canonical
+//! [`crate::queue::PlaybackQueue`], not on `PlayerActor`; its unit tests
+//! are in `crate::queue::tests` and the `podcast.player` queue-op routing
+//! is covered by `crate::host_op_handler::player_actions::tests`.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 mod ad_skip;
 mod mutators;
-mod queue;
 mod reports;
 mod sleep_timer;
 

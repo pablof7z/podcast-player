@@ -157,6 +157,15 @@ fn apply_writeback(store: &mut PodcastStore, report: &AudioReport, episode_id: &
             // the store's `auto_mark_played_at_end` flag (M1.3).
             if store.auto_mark_played_at_end() {
                 store.mark_episode_played(episode_id);
+                // Delete-after-played is kernel-owned policy (D0). Now that the
+                // episode is marked played, honour the user's
+                // `auto_delete_downloads_after_played` setting by dropping the
+                // local download and removing the file. Only runs when the
+                // mark actually happened (i.e. `auto_mark_played_at_end` is on),
+                // matching the prior Swift `onItemEnd` gate.
+                if let Some(path) = store.clear_local_path_if_auto_delete(episode_id) {
+                    let _ = std::fs::remove_file(&path);
+                }
             }
             // Rewind to the start on natural completion so the next play begins
             // from 0 instead of resuming at the end. `mark_episode_played` only
@@ -189,11 +198,10 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
     }
 
     // Pop the next episode from the CANONICAL `PlaybackQueue` (`handle.queue`)
-    // — the same queue the UI enqueues into via the `podcast.queue` namespace
-    // and the one the snapshot renders as Up Next (`build_snapshot` reads
-    // `handle.queue`). The actor's own queue is NOT populated by the UI enqueue
-    // path, so advancing off it would silently skip UI-queued episodes. (The
-    // vestigial `PlayerActor` queue is tracked for removal in BACKLOG.md.)
+    // — the single queue owner. The UI enqueues into it via both the
+    // `podcast.queue` namespace and the `podcast.player` enqueue ops (which
+    // alias the same queue), and the snapshot renders it as Up Next
+    // (`build_snapshot` reads `handle.queue`).
     // Pop the next RESOLVABLE episode, skipping stale heads — entries for
     // episodes removed from the library or unsubscribed shows. The old Swift
     // `playNext` loop did this; popping once and bailing on a stale head would

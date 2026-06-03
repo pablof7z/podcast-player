@@ -8,6 +8,24 @@
       ]
     },
     {
+      "shipped_at": "2026-06-03T20:01:00Z",
+      "lines": [
+        "CarPlay now shows the chapter list as soon as chapters are ready, even when they arrive after the episode starts"
+      ]
+    },
+    {
+      "shipped_at": "2026-06-03T20:00:00Z",
+      "lines": [
+        "Pressing Play from the lock screen right after reopening the app now correctly saves your position and marks episodes played"
+      ]
+    },
+    {
+      "shipped_at": "2026-06-03T16:30:52Z",
+      "lines": [
+        "Your Nostr profile name, bio, and picture now sync across your devices"
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T12:07:00Z",
       "lines": [
         "Run AI locally on your device with downloadable Gemma 4 models — private, offline, no API key."
@@ -71,12 +89,6 @@
       "shipped_at": "2026-06-01T15:00:00Z",
       "lines": [
         "Agent-generated podcasts now publish as NIP-F4 — the canonical Nostr podcast standard"
-      ]
-    },
-    {
-      "shipped_at": "2026-06-01T14:00:00Z",
-      "lines": [
-        "Briefings feature removed — it will be rebuilt properly."
       ]
     },
     {
@@ -342,12 +354,6 @@
       "shipped_at": "2026-05-26T01:11:00Z",
       "lines": [
         "CarPlay support — your library and per-show episodes now appear on the head unit, with one-tap play that hands off to the standard Now Playing controls."
-      ]
-    },
-    {
-      "shipped_at": "2026-05-26T01:05:00Z",
-      "lines": [
-        "Daily Briefings: AI-generated summaries of your podcast queue."
       ]
     },
     {
@@ -1315,7 +1321,7 @@
     {
       "shipped_at": "2026-05-11T12:01:00Z",
       "lines": [
-        "Tap the Home title to browse categories — each category shows podcast artwork, a description, and your unplayed count. Tap the gear on any category to set its transcription, wiki, and briefings preferences independently. Selecting a category scopes the whole feed to that section."
+        "Tap the Home title to browse categories — each category shows podcast artwork, a description, and your unplayed count. Tap the gear on any category to set its transcription and wiki preferences independently. Selecting a category scopes the whole feed to that section."
       ]
     },
     {

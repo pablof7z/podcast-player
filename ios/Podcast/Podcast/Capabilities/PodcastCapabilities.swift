@@ -11,10 +11,6 @@ import Foundation
 ///   - `KeychainCapability`    — generic NMP keyring (`nmp.keyring.capability`)
 ///   - `PcstIdentityCapability` — podcast-app identity/BYOK slots (`pcst.identity.capability`)
 ///   - `HttpCapability`        — host HTTP transport
-///   - `LegacyIOCapability`    — one-shot legacy-data reader (`pcst.legacy_io.capability`).
-///                                Used only on first launch to migrate data
-///                                from the pre-NMP Swift app; idle thereafter.
-///                                iOS-only — Android/web targets stub this out.
 ///   - `AudioCapability`       — AVPlayer-backed audio (`nmp.audio.capability`)
 ///   - `DownloadCapability`    — URLSession background downloads
 ///                                (`nmp.download.capability`)
@@ -64,7 +60,6 @@ final class PodcastCapabilities {
     let keyring: KeychainCapability
     let identity: PcstIdentityCapability
     let http: HttpCapability
-    let legacyIO: LegacyIOCapability
     let audio: AudioCapability
     let download: DownloadCapability
     let notification: NotificationCapability
@@ -82,7 +77,6 @@ final class PodcastCapabilities {
         keyring: KeychainCapability = KeychainCapability(),
         identity: PcstIdentityCapability = PcstIdentityCapability(),
         http: HttpCapability = HttpCapability(),
-        legacyIO: LegacyIOCapability = LegacyIOCapability(),
         audio: AudioCapability = AudioCapability(),
         download: DownloadCapability = DownloadCapability(),
         notification: NotificationCapability = NotificationCapability(),
@@ -94,7 +88,6 @@ final class PodcastCapabilities {
         self.keyring = keyring
         self.identity = identity
         self.http = http
-        self.legacyIO = legacyIO
         self.audio = audio
         self.download = download
         self.notification = notification
@@ -115,7 +108,6 @@ final class PodcastCapabilities {
         keyring.start()
         identity.start()
         http.start()
-        legacyIO.start()
         audio.start()
         download.start()
         notification.start()
@@ -136,7 +128,6 @@ final class PodcastCapabilities {
         keyring.stop()
         identity.stop()
         http.stop()
-        legacyIO.stop()
         audio.stop()
         download.stop()
         notification.stop()
@@ -172,8 +163,6 @@ final class PodcastCapabilities {
             return identity.handleJSON(requestJSON)
         case HttpCapability.namespace:
             return http.handleJSON(requestJSON)
-        case LegacyIOCapability.namespace:
-            return legacyIO.handleJSON(requestJSON)
         case AudioCapability.namespace:
             return audio.handleJSON(requestJSON)
         case DownloadCapability.namespace:
