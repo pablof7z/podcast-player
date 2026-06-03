@@ -255,6 +255,27 @@ pub enum PodcastAction {
     /// immediately. The iOS `summarize_episode` agent tool dispatches this then
     /// awaits the snapshot until `episode.summary` populates.
     SummarizeEpisode { episode_id: String },
+    /// Open the in-app feedback subscription (TENEX project notes) through the
+    /// NMP relay pool. Pushes a relay-pinned `OneShot` interest for kind:1 +
+    /// kind:513 events bearing the project `["a"]` coord; results arrive via
+    /// [`crate::feedback_handler::FeedbackObserver`] and surface on
+    /// `PodcastUpdate.feedback_events`. Replaces the deleted Swift
+    /// `FeedbackRelayClient` WebSocket fetch — no iOS relay socket.
+    FetchFeedback,
+    /// Sign + publish a feedback note (kind:1) to the feedback relay via NMP.
+    /// Rust builds all tags (`["a",coord]`, `["t",category]`, the NIP-70 `["-"]`
+    /// protected marker, and NIP-10 `["e",…,"root"]` / `["p",…]` for replies);
+    /// Swift passes only semantic values. NMP signs with the active user signer
+    /// and AUTHs the explicit-target write — no secret bytes in app code, no iOS
+    /// relay socket. Roots omit `parent_event_id`/`reply_to_pubkey`.
+    PublishFeedback {
+        category: String,
+        content: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        parent_event_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reply_to_pubkey: Option<String>,
+    },
 }
 
 /// One row in a [`PodcastAction::SetEpisodeTriage`] batch.

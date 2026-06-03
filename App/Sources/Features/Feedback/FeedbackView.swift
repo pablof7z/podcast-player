@@ -50,6 +50,7 @@ struct FeedbackView: View {
                 }
         }
         .task {
+            store.appStore = appStore
             await store.load(identity: userIdentity)
         }
         .sheet(isPresented: $composerPresented) {

@@ -56,6 +56,42 @@ struct PodcastUpdate {
     /// Relays editor. Empty until the kernel seeds defaults at start or the
     /// user adds a relay.
     @DefaultEmptyArray var configuredRelays: [AppRelayRow] = []
+    /// In-app feedback events (TENEX project notes): kind:1 messages/replies +
+    /// kind:513 metadata, all bearing the project `["a"]` coord. Each row is a
+    /// `SignedNostrEvent`-shaped object (`pubkey` is the author, `sig` is empty).
+    /// Empty until the first `fetch_feedback` dispatch. `FeedbackStore` rebuilds
+    /// threads from this flat list (replacing the deleted `FeedbackRelayClient`
+    /// WebSocket fetch). Decoded into `FeedbackEventDTO` — NOT `SignedNostrEvent`
+    /// — because the snapshot decoder runs `.convertFromSnakeCase`, which would
+    /// rename `created_at` and break `SignedNostrEvent`'s explicit coding key.
+    @DefaultEmptyArray var feedbackEvents: [FeedbackEventDTO] = []
+}
+
+/// Snapshot-decode mirror of a feedback Nostr event. Mirrors
+/// `SignedNostrEvent` but with a camelCase `createdAt` so it survives the
+/// snapshot decoder's `.convertFromSnakeCase` strategy. Mapped to
+/// `SignedNostrEvent` (with `sig = ""`) before `FeedbackStore.buildThreads`.
+struct FeedbackEventDTO: Codable, Equatable {
+    var id: String = ""
+    var pubkey: String = ""
+    var createdAt: Int = 0
+    var kind: Int = 0
+    var tags: [[String]] = []
+    var content: String = ""
+
+    /// Project onto the `SignedNostrEvent` shape `buildThreads` consumes.
+    /// `sig` is empty — `buildThreads` never reads the signature.
+    var asSignedEvent: SignedNostrEvent {
+        SignedNostrEvent(
+            id: id,
+            pubkey: pubkey,
+            created_at: createdAt,
+            kind: kind,
+            tags: tags,
+            content: content,
+            sig: ""
+        )
+    }
 }
 
 /// One configured app relay: URL plus NIP-65 role string
@@ -308,6 +344,7 @@ extension PodcastUpdate: Codable {
         categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
         agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
+        feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
     }
 }
 

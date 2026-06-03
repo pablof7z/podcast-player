@@ -55,6 +55,7 @@ pub(crate) mod nmp_dispatch;
 pub mod download;
 pub(crate) mod episode_summary;
 pub(crate) mod episode_summary_llm;
+pub(crate) mod feedback_handler;
 pub mod ffi;
 pub(crate) mod host_op_handler;
 pub(crate) mod host_op_handler_helpers;
