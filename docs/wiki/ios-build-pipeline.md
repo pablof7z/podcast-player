@@ -12,11 +12,13 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-29
-updated: 2026-06-01
+updated: 2026-06-03
 verified: 2026-05-29
 compiled-from: conversation
 sources:
   - session:14943b9b-5bf3-4317-bc44-298a773bc75e
+  - session:e1cfd663-230d-4f78-9078-0c9ed8b6a4bb
+  - session:c43d5e77-d667-4e71-a574-47aaab5b6a7a
 ---
 
 # iOS Build Pipeline
@@ -25,12 +27,15 @@ sources:
 
 ## Build Prerequisite
 
-Xcode's incremental build system does not detect changes in external Rust static libraries. After modifying Rust source in the podcast crate, you must manually rebuild the iOS simulator static library before building in Xcode:
+Xcode's incremental build system does not detect changes in external Rust static libraries. The Rust library must be linked as a static archive (.a) rather than a cdylib (.dylib) to prevent missing-library crashes on the device caused by embedded Mac-absolute paths. When building for an iOS device, any Rust cdylib (.dylib) files must be deleted so the linker falls back to the static library (.a), preventing embedded Mac-absolute paths that cause launch crashes on the device. Deploying to an iPhone requires performing the following steps in order: build the Rust library, delete the generated dylib, build the Xcode project, install, and launch. After modifying Rust source in the podcast crate, you must manually rebuild the iOS simulator static library before building in Xcode:
 ```bash
 cargo build -p nmp-app-podcast --target aarch64-apple-ios-sim
 ```
-Failing to do this results in the app linking a stale binary — the Rust changes won't take effect. <!-- [^14943-32] -->
+Failing to do this results in the app linking a stale binary — the Rust changes won't take effect.
 
+The Rust `build.rs` must correctly map the `aarch64-apple-ios-sim` target triple to the simulator SDK and use `xcrun` for SDK resolution rather than hardcoded paths. This applies to all compilation steps in `build.rs`, including the chkstk stub compilation, which must use `xcrun` and the correct target triple mapping rather than a hardcoded Xcode path and partial string match.
+
+<!-- citations: [^14943-32] [^e1cfd-4] [^c43d5-1] [^e1cfd-10] [^c43d5-3] [^e1cfd-18] -->
 ## Library Search Path
 
 Xcode searches for the static library in this order:

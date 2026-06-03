@@ -33,7 +33,7 @@ The podcast `rev` (`Arc<AtomicU64>`, starts at 1) is bumped synchronously inside
 
 ## Event-Driven Replacement
 
-NMP apps must be event-driven — UI reads from kernel snapshot projections reactively rather than using local polling-based loading states. Legitimate triage indicators (e.g., `triage_in_progress` for LLM operations) are allowed; the prohibition is on polling-based spinners, not on all loading indicators. The 500ms poll is replaced with an event-driven system using a `onSnapshotMaybeChanged` hook (PR #136 enforced this by removing the poll):
+NMP apps must be event-driven — UI reads from kernel snapshot projections reactively rather than using local polling-based loading states. Legitimate triage indicators (e.g., `triage_in_progress` for LLM operations, `is_generating`) are allowed; the prohibition is on polling-based spinners, not on all loading indicators. The 500ms poll is replaced with an event-driven system using a `onSnapshotMaybeChanged` hook (PR #136 enforced this by removing the poll):
 
 1. **Dispatched host-ops:** already trigger a kernel emit via `DispatchHostOp` → `maybe_emit_after_dispatch` → the registered projection rides the push frame → `apply()` handles it.
 
@@ -43,7 +43,7 @@ NMP apps must be event-driven — UI reads from kernel snapshot projections reac
 
 All three report channels (audio, download, voice) must fire the hook. Missing any channel causes that report's state updates to go stale.
 
-<!-- citations: [^14943-24] [^14943-126] [^8bfa1-5] -->
+<!-- citations: [^14943-24] [^14943-126] [^8bfa1-5] [^8bfa1-10] -->
 ## Poll Deletion
 
 The `startSnapshotPoll()` method is deleted entirely. The `snapshotPollTask` field is removed from `KernelModel`. The 500ms `Task.sleep(for: .milliseconds(500))` loop is gone. Idle work goes from 2 pulls/second to zero. The `dispatch`/`dispatchSilent` methods retain their one-shot `pullPodcastSnapshotIfChanged()` call for instant post-action feedback — this is not polling; it fires exactly once per user action. <!-- [^14943-25] -->

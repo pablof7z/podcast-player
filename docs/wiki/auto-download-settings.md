@@ -10,11 +10,12 @@ tags:
 volatility: cold
 confidence: medium
 created: 2026-05-30
-updated: 2026-06-01
+updated: 2026-06-02
 verified: 2026-05-30
 compiled-from: conversation
 sources:
   - session:14943b9b-5bf3-4317-bc44-298a773bc75e
+  - session:e1cfd663-230d-4f78-9078-0c9ed8b6a4bb
 ---
 
 # Auto-Download Settings (NMP v0.1.0)
@@ -40,4 +41,6 @@ PodcastStore maintains a global is_on_wifi: bool flag. The NetworkCapability obs
 <!-- citations: [^14943-68] [^14943-138] -->
 ## Swift Settings Dispatch
 
-The Swift UI dispatches auto-download settings changes via the SetAutoDownload action. This host-op carries an enabled boolean and a wifi_only boolean. The handle_set_auto_download handler processes both fields, updating auto_download_enabled and auto_download_cellular_allowed (inverting wifi_only since the set tracks cellular-allowed). The Action struct's wifi_only field defaults to true via #[serde(default = "default_true")]. <!-- [^14943-69] -->
+The Swift UI dispatches auto-download settings changes via the SetAutoDownload action. This host-op carries an enabled boolean and a wifi_only boolean. The handle_set_auto_download handler processes both fields, updating auto_download_enabled and auto_download_cellular_allowed (inverting wifi_only since the set tracks cellular-allowed). The Action struct's wifi_only field defaults to true via #[serde(default = "default_true")]. The Swift dispatch body for downloads must pass enclosureURL directly so Rust doesn't need to look it up in its own store, preventing silent episode not found failures.
+
+<!-- citations: [^14943-69] [^e1cfd-3] -->

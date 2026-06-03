@@ -9,11 +9,12 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-30
-updated: 2026-06-01
+updated: 2026-06-03
 verified: 2026-05-30
 compiled-from: conversation
 sources:
   - session:14943b9b-5bf3-4317-bc44-298a773bc75e
+  - session:c43d5e77-d667-4e71-a574-47aaab5b6a7a
 ---
 
 # Project Plan and Backlog
@@ -22,8 +23,9 @@ sources:
 
 ## Overview
 
-migration-v2.md defines the ordered M0-M8 execution sequence for migrating all features from the legacy App/Sources/ to the NMP kernel. The plan superseded the feature-parity matrix as the operative roadmap. The sequence is: M1 PlaybackState → M2 Downloads → M3 Settings/Credentials → M4 Preserved State → M5 AI Scaffolds Become Real → M6 Keys to Keychain → M7 Compat Burn-Down → M8 Delete App/Sources/. <!-- [^14943-70] -->
+migration-v2.md defines the ordered M0-M8 execution sequence for migrating all features from the legacy App/Sources/ to the NMP kernel. The plan superseded the feature-parity matrix as the operative roadmap. The sequence is: M1 PlaybackState → M2 Downloads → M3 Settings/Credentials → M4 Preserved State → M5 AI Scaffolds Become Real → M6 Keys to Keychain → M7 Compat Burn-Down → M8 Delete App/Sources/. Completed plan files must be deleted from docs/plan/ and must not be retained. docs/plan.md must serve as an index for things still to be done and must not track items that have already been completed.
 
+<!-- citations: [^14943-70] [^c43d5-5] -->
 ## Current State (Post NMP v0.1.0)
 
 After the NMP v0.1.0 adoption, M1 (playback engine swap), and M2 (download path unification), the project's status is: the wiring and data flow are done and working, and M1+M2 are merged to main. M1 (PR #138) delivered: AudioEngine→AudioCapability kernel bridge, PlaybackState as a ~205-line pure renderer, reactive playback with position persistence, segment-end advancement, auto-advance on the canonical PlaybackQueue, and 4 codex-found playback regressions fixed. M2 (PR #139) delivered: wifi_only auto-download gating in Rust, total_bytes in DownloadItemSnapshot, NetworkCapability reactive connectivity monitoring, and a deferred-download system for cellular-blocked episodes with persisted pending_wifi_downloads and full revalidation before dispatch. The product — especially the entire AI layer — is mostly scaffold. The next milestone is M3 (settings/credentials in Rust, ~40% done). The backlog's remaining buckets include P0 correctness (Keychain, relay publish/discovery, validation gate), P1 ownership, P1 social/Nostr, P1 AI, and platform items.

@@ -1,0 +1,1065 @@
+[
+  {
+    "id": "subscribe-via-search",
+    "title": "Subscribe to a podcast found via keyword search",
+    "priority": "P0",
+    "area": "search",
+    "preconditions": [
+      "App launched and on Home tab",
+      "Network available",
+      "Library empty or known baseline subscription count recorded"
+    ],
+    "steps": [
+      "Tap the Search tab",
+      "Tap the search field",
+      "Type \"This American Life\"",
+      "Submit the search (keyboard return)",
+      "Wait for results list to render",
+      "Tap the first matching podcast result row",
+      "On the podcast detail screen, tap the Subscribe button",
+      "Navigate to the Library tab"
+    ],
+    "assertions": [
+      "Search results render at least one podcast cell with title and artwork",
+      "Subscribe button toggles to a subscribed/Unsubscribe state immediately (reactive, no manual refresh)",
+      "The subscribed podcast appears in Library without a reload",
+      "Library subscription count increased by exactly 1"
+    ],
+    "performance_budget": 3
+  },
+  {
+    "id": "subscribe-via-rss-url",
+    "title": "Subscribe by pasting a raw RSS feed URL",
+    "priority": "P1",
+    "area": "search",
+    "preconditions": [
+      "App on Search tab",
+      "A valid known RSS feed URL is available (e.g. a public podcast feed)"
+    ],
+    "steps": [
+      "Tap the search field",
+      "Type or paste a full https RSS feed URL",
+      "Submit the search",
+      "Wait for the feed to be parsed and a single podcast result to render",
+      "Tap the result",
+      "Tap Subscribe"
+    ],
+    "assertions": [
+      "App detects the input is a URL and fetches/parses the feed rather than doing keyword search",
+      "A podcast detail is shown with correct title and at least one episode listed",
+      "Subscribe succeeds and the podcast appears in Library"
+    ],
+    "performance_budget": 5
+  },
+  {
+    "id": "unsubscribe-from-library",
+    "title": "Unsubscribe a podcast and confirm removal",
+    "priority": "P1",
+    "area": "library",
+    "preconditions": [
+      "At least one podcast subscribed",
+      "On Library tab"
+    ],
+    "steps": [
+      "Record current subscription count",
+      "Tap a subscribed podcast to open its detail",
+      "Tap Unsubscribe (or swipe-to-delete on the library row)",
+      "Confirm the action if a confirmation dialog appears",
+      "Return to Library"
+    ],
+    "assertions": [
+      "The podcast is removed from Library reactively (no manual refresh)",
+      "Subscription count decreased by exactly 1",
+      "Re-opening the podcast from search shows the Subscribe (not Unsubscribe) state"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "play-episode-basic",
+    "title": "Tap an episode and confirm playback starts under budget",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "At least one subscribed podcast with episodes",
+      "Network available for streaming",
+      "Nothing currently playing"
+    ],
+    "steps": [
+      "Open a subscribed podcast",
+      "Tap an episode row to open episode detail (or tap its play button)",
+      "Tap Play",
+      "Observe the mini-player / now-playing UI appear",
+      "Wait until the elapsed time begins advancing"
+    ],
+    "assertions": [
+      "Playback starts and the elapsed time counter advances within the budget",
+      "Mini-player appears with episode title and artwork",
+      "Play button state flips to Pause",
+      "Audio session is active (now-playing populated)"
+    ],
+    "performance_budget": 1
+  },
+  {
+    "id": "pause-resume-playback",
+    "title": "Pause and resume keeps position",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "An episode is actively playing past 0:05"
+    ],
+    "steps": [
+      "Note the current elapsed time T",
+      "Tap Pause",
+      "Wait 2 seconds",
+      "Confirm elapsed time has not advanced",
+      "Tap Play (resume)"
+    ],
+    "assertions": [
+      "On pause the elapsed time freezes at ~T and the button shows Play",
+      "While paused the counter does not advance",
+      "On resume playback continues from ~T (no restart to 0:00)",
+      "No audible glitch / no FFI state desync between kernel and UI"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "skip-forward-back-15",
+    "title": "Skip 15s forward and back adjusts position correctly",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "An episode is playing at a position with > 30s remaining and > 30s elapsed"
+    ],
+    "steps": [
+      "Open the full player view",
+      "Note elapsed time T",
+      "Tap skip-forward control",
+      "Note new elapsed time T2",
+      "Tap skip-back control",
+      "Note new elapsed time T3"
+    ],
+    "assertions": [
+      "After skip-forward, position advances by approximately the configured interval (default 15s, within +/-1s)",
+      "After skip-back, position decreases by approximately the configured interval",
+      "T3 is approximately equal to T (round-trip returns near original)",
+      "Skipping does not pause playback"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "scrub-seek-slider",
+    "title": "Scrub the progress slider to seek",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "An episode is loaded in the full player with known duration"
+    ],
+    "steps": [
+      "Open the full player",
+      "Drag the progress slider thumb to roughly the midpoint",
+      "Release"
+    ],
+    "assertions": [
+      "Elapsed time jumps to ~50% of duration",
+      "Audio resumes playing from the seeked position (if it was playing)",
+      "Slider position and numeric elapsed label stay consistent (no drift between them)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "playback-speed-change",
+    "title": "Change playback speed and confirm it applies",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "An episode is playing"
+    ],
+    "steps": [
+      "Open the full player",
+      "Tap the playback-speed control",
+      "Select 1.5x (or cycle to 1.5x)",
+      "Observe elapsed-time advance rate over 4 wall-clock seconds"
+    ],
+    "assertions": [
+      "The speed control label updates to 1.5x",
+      "Elapsed time advances ~6s over 4 wall-clock seconds (1.5x rate, within tolerance)",
+      "No audio dropout when changing speed"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "playback-speed-persists",
+    "title": "Playback speed persists across app restart",
+    "priority": "P1",
+    "area": "settings",
+    "preconditions": [
+      "App can be force-quit and relaunched"
+    ],
+    "steps": [
+      "Set playback speed to a non-default value (e.g. 1.5x) via player or Settings",
+      "Force-quit the app",
+      "Relaunch the app",
+      "Start playing any episode and open the player"
+    ],
+    "assertions": [
+      "Playback speed control shows the previously-set 1.5x value after relaunch",
+      "New playback honors 1.5x without re-setting it",
+      "Setting survived the kernel/preferences persistence round-trip"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "chapter-list-renders",
+    "title": "Episode with chapters shows chapter list",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "A subscribed episode known to contain chapter markers is available"
+    ],
+    "steps": [
+      "Open the chaptered episode's detail",
+      "Locate the Chapters section / open the chapters view",
+      "Verify chapter titles and start timestamps are listed"
+    ],
+    "assertions": [
+      "Chapters render in ascending timestamp order",
+      "Each chapter shows a title and a start time",
+      "Chapter count matches the feed's chapter data"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "chapter-tap-seeks",
+    "title": "Tapping a chapter seeks playback to its timestamp",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "A chaptered episode is loaded and chapters list is visible"
+    ],
+    "steps": [
+      "Start playback",
+      "Open the chapters list",
+      "Tap a chapter that starts later in the episode",
+      "Return to the player and read elapsed time"
+    ],
+    "assertions": [
+      "Elapsed time jumps to within +/-2s of the tapped chapter's start timestamp",
+      "The player highlights/labels the current chapter as the tapped one",
+      "Playback continues from the new position"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "skip-segments-applied",
+    "title": "Skip segments (intro/ads) are auto-skipped during playback",
+    "priority": "P2",
+    "area": "player",
+    "preconditions": [
+      "An episode with defined skip segments is available",
+      "Auto-skip is enabled in settings"
+    ],
+    "steps": [
+      "Seek to just before a skip segment's start",
+      "Let playback run through the segment boundary",
+      "Observe elapsed time across the boundary"
+    ],
+    "assertions": [
+      "Playback jumps over the skip segment automatically",
+      "Elapsed time lands at or after the segment end without stopping",
+      "A skip indication is shown to the user (toast/marker)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "download-episode",
+    "title": "Download an episode and confirm progress + completion",
+    "priority": "P0",
+    "area": "downloads",
+    "preconditions": [
+      "A subscribed podcast with a downloadable episode",
+      "Network available",
+      "Episode is not already downloaded"
+    ],
+    "steps": [
+      "Open the episode detail",
+      "Tap the Download button",
+      "Observe progress indicator advancing",
+      "Wait until download completes"
+    ],
+    "assertions": [
+      "Download progress UI appears and advances from 0 toward 100% (reactive updates from kernel)",
+      "On completion the control changes to a Downloaded/Delete state",
+      "The episode is marked as available offline in its row badge",
+      "No stuck-at-0% or stuck-at-99% hang"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "offline-playback-downloaded",
+    "title": "Downloaded episode plays with network disabled",
+    "priority": "P0",
+    "area": "downloads",
+    "preconditions": [
+      "An episode is fully downloaded",
+      "Ability to disable simulator/device network"
+    ],
+    "steps": [
+      "Disable network (airplane mode / toggle connectivity)",
+      "Open the downloaded episode",
+      "Tap Play"
+    ],
+    "assertions": [
+      "Playback starts from local file with no network",
+      "Elapsed time advances normally",
+      "No buffering/error state shown for the offline file"
+    ],
+    "performance_budget": 1
+  },
+  {
+    "id": "delete-download-reclaims",
+    "title": "Delete a downloaded episode removes local file and updates UI",
+    "priority": "P1",
+    "area": "downloads",
+    "preconditions": [
+      "An episode is fully downloaded"
+    ],
+    "steps": [
+      "Open the downloaded episode detail",
+      "Tap Delete download (or swipe to delete in a Downloads list)",
+      "Confirm if prompted"
+    ],
+    "assertions": [
+      "The Downloaded badge is removed reactively",
+      "Control reverts to Download state",
+      "Storage usage figure (if shown in Settings) decreases",
+      "Episode metadata and play position are preserved (only the file is removed)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "offline-library-access",
+    "title": "Library remains accessible with no network",
+    "priority": "P0",
+    "area": "offline",
+    "preconditions": [
+      "Several podcasts subscribed and previously loaded",
+      "Ability to disable network"
+    ],
+    "steps": [
+      "Disable network",
+      "Cold-launch the app",
+      "Navigate to the Library tab",
+      "Open one subscribed podcast"
+    ],
+    "assertions": [
+      "Library renders cached subscriptions without network",
+      "Podcast detail shows previously-fetched episode list from cache",
+      "No blocking error screen; offline state is communicated gracefully",
+      "App does not crash or hang waiting on the relay/network"
+    ],
+    "performance_budget": 2
+  },
+  {
+    "id": "queue-add-multiple",
+    "title": "Add multiple episodes to the queue",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "At least 3 episodes available across subscriptions",
+      "Queue empty"
+    ],
+    "steps": [
+      "Add episode A to queue (long-press or context action -> Add to Queue)",
+      "Add episode B to queue",
+      "Add episode C to queue",
+      "Open the Queue view"
+    ],
+    "assertions": [
+      "Queue shows A, B, C in the order added",
+      "Queue count badge equals 3",
+      "Each entry shows correct title and source podcast"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "queue-reorder",
+    "title": "Reorder queue via drag",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "Queue has at least 3 items A, B, C in that order"
+    ],
+    "steps": [
+      "Open the Queue view",
+      "Enter edit/reorder mode if required",
+      "Drag item C above item A",
+      "Exit edit mode"
+    ],
+    "assertions": [
+      "New queue order is C, A, B",
+      "Reordering persists when leaving and returning to the queue",
+      "Kernel queue state matches displayed order (no UI-only reorder)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "queue-remove-item",
+    "title": "Remove an item from the queue",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "Queue has at least 2 items"
+    ],
+    "steps": [
+      "Open the Queue view",
+      "Swipe-to-delete (or remove action) on the second item",
+      "Confirm if prompted"
+    ],
+    "assertions": [
+      "The removed item disappears reactively",
+      "Queue count decreases by 1",
+      "Remaining items keep their relative order"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "queue-autoadvance",
+    "title": "Queue auto-advances to next episode on completion",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "Queue has at least 2 items A then B",
+      "Continuous/auto-play enabled"
+    ],
+    "steps": [
+      "Play item A",
+      "Seek to within a few seconds of A's end",
+      "Let A finish"
+    ],
+    "assertions": [
+      "On A completion, B begins playing automatically",
+      "A is removed from (or marked played in) the queue",
+      "Now-playing metadata updates to B",
+      "No gap where playback stalls indefinitely"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "background-playback-continues",
+    "title": "Audio continues when app is backgrounded",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "An episode is playing"
+    ],
+    "steps": [
+      "Note elapsed time T",
+      "Send the app to background (home / scene phase change)",
+      "Wait 5 seconds",
+      "Bring the app to foreground",
+      "Read elapsed time T2"
+    ],
+    "assertions": [
+      "Audio keeps playing while backgrounded (T2 ~ T + 5s)",
+      "On return, UI elapsed time matches actual playback position (no kernel/UI desync after scene-phase change)",
+      "Now-playing info remains populated"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "control-center-controls",
+    "title": "Control Center / lock screen controls drive playback",
+    "priority": "P1",
+    "area": "player",
+    "preconditions": [
+      "An episode is playing",
+      "Remote command center supported in the test environment"
+    ],
+    "steps": [
+      "Trigger remote pause command (Control Center toggle)",
+      "Trigger remote play command",
+      "Trigger remote skip-forward command"
+    ],
+    "assertions": [
+      "Remote pause pauses in-app and updates the in-app button state",
+      "Remote play resumes",
+      "Remote skip moves position by the configured interval",
+      "Now-playing elapsed/duration metadata stays accurate"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "carplay-session",
+    "title": "CarPlay scene shows podcasts and controls",
+    "priority": "P2",
+    "area": "player",
+    "preconditions": [
+      "CarPlay simulator/environment available",
+      "At least one subscribed podcast with episodes"
+    ],
+    "steps": [
+      "Connect the CarPlay environment",
+      "Open the app's CarPlay interface",
+      "Browse to a podcast and select an episode",
+      "Use the CarPlay transport controls (play/pause/skip)"
+    ],
+    "assertions": [
+      "CarPlay lists subscribed podcasts and episodes",
+      "Selecting an episode starts playback",
+      "Transport controls work and reflect state",
+      "No crash on CarPlay connect/disconnect scene transitions"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "auto-download-new-episodes",
+    "title": "Auto-download rule downloads new episodes for a podcast",
+    "priority": "P1",
+    "area": "downloads",
+    "preconditions": [
+      "A subscribed podcast",
+      "Auto-download settings screen accessible"
+    ],
+    "steps": [
+      "Open Settings -> Auto-download (or the podcast's settings)",
+      "Enable auto-download for new episodes for that podcast",
+      "Trigger a feed refresh that surfaces a new episode (or simulate one)",
+      "Return to the podcast / Downloads"
+    ],
+    "assertions": [
+      "The auto-download toggle persists",
+      "A newly-arrived episode begins downloading automatically without manual tap",
+      "Completed auto-download is marked offline-available",
+      "Rule is scoped to the chosen podcast (others not auto-downloaded)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "auto-download-settings-persist",
+    "title": "Auto-download settings persist across restart",
+    "priority": "P2",
+    "area": "settings",
+    "preconditions": [
+      "Auto-download configured with at least one non-default rule"
+    ],
+    "steps": [
+      "Configure auto-download rules (e.g. limit to 3 most recent, wifi-only)",
+      "Force-quit and relaunch",
+      "Reopen the auto-download settings"
+    ],
+    "assertions": [
+      "All configured rules display their previously-set values",
+      "wifi-only / episode-limit options survive persistence",
+      "No defaults silently restored"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "opml-import",
+    "title": "Import an OPML file adds podcasts to library",
+    "priority": "P1",
+    "area": "library",
+    "preconditions": [
+      "A valid OPML file with several feeds is available to the app (Files/share sheet)",
+      "Known baseline subscription count"
+    ],
+    "steps": [
+      "Open Settings -> Import (or trigger OPML import flow)",
+      "Select the OPML file",
+      "Wait for feeds to be parsed and added"
+    ],
+    "assertions": [
+      "All feeds in the OPML are added as subscriptions (count increases by the OPML feed count, minus any duplicates)",
+      "Imported podcasts render with titles and artwork in Library",
+      "Malformed/duplicate entries are handled gracefully (no crash, deduped)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "opml-export",
+    "title": "Export current library as OPML",
+    "priority": "P2",
+    "area": "library",
+    "preconditions": [
+      "At least 2 podcasts subscribed"
+    ],
+    "steps": [
+      "Open Settings -> Export OPML",
+      "Trigger export and capture the share sheet / saved file"
+    ],
+    "assertions": [
+      "An OPML document is produced containing an outline entry per subscribed podcast",
+      "Each entry includes the feed xmlUrl and title",
+      "Exported file is valid XML/OPML (re-importable)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "nostr-identity-create",
+    "title": "View or create a Nostr keypair / profile",
+    "priority": "P1",
+    "area": "nostr",
+    "preconditions": [
+      "Identity/profile screen accessible",
+      "Either no key yet (create path) or an existing key (view path)"
+    ],
+    "steps": [
+      "Open the Identity / Profile screen",
+      "If no key exists, tap Create/Generate keypair",
+      "View the public key (npub)"
+    ],
+    "assertions": [
+      "A valid npub (bech32, npub1... prefix) is generated/shown",
+      "The private key is stored securely (Keychain) and not displayed in plaintext by default",
+      "Identity persists across relaunch (same npub)",
+      "Profile metadata fields are editable and save"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "nostr-publish-podcast-nipf4",
+    "title": "Publish a podcast via NIP-F4 to the relay",
+    "priority": "P1",
+    "area": "nostr",
+    "preconditions": [
+      "A Nostr identity exists",
+      "Network and relay.primal.net reachable",
+      "A podcast available to publish"
+    ],
+    "steps": [
+      "Open a podcast / share-to-Nostr flow",
+      "Trigger Publish (NIP-F4)",
+      "Wait for relay acknowledgement"
+    ],
+    "assertions": [
+      "A NIP-F4 event is signed with the user's key and accepted by the relay (OK message)",
+      "Publishing is reactive (status updates via NDKSwift sequences, not polling)",
+      "Success is reflected in the UI",
+      "On relay failure, a clear error is shown without crashing"
+    ],
+    "performance_budget": 5
+  },
+  {
+    "id": "nostr-discover-podcast",
+    "title": "Discover a podcast published over Nostr",
+    "priority": "P2",
+    "area": "nostr",
+    "preconditions": [
+      "At least one NIP-F4 podcast event exists on the relay",
+      "Network available"
+    ],
+    "steps": [
+      "Open the Nostr discovery / Friends feed",
+      "Wait for relay subscription to deliver events",
+      "Tap a discovered podcast"
+    ],
+    "assertions": [
+      "Discovered podcasts populate reactively as relay events arrive (no manual poll)",
+      "A discovered podcast can be opened and subscribed",
+      "Event metadata (title, feed) maps correctly into the podcast model"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "ai-generate-transcript",
+    "title": "Generate a transcript for an episode via AI",
+    "priority": "P2",
+    "area": "ai",
+    "preconditions": [
+      "Ollama reachable at localhost:11434 with required model",
+      "A downloaded/streamable episode",
+      "AI features enabled in Settings"
+    ],
+    "steps": [
+      "Open the episode detail",
+      "Tap Generate Transcript",
+      "Observe progress/streaming",
+      "Wait for completion"
+    ],
+    "assertions": [
+      "Transcript generation starts and streams/updates without blocking the UI",
+      "Final transcript renders with readable text and (if supported) timestamps",
+      "Transcript is cached/persisted and shown immediately on re-open",
+      "Graceful error if Ollama is unreachable"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "ai-episode-summary",
+    "title": "Generate an episode summary via AI",
+    "priority": "P2",
+    "area": "ai",
+    "preconditions": [
+      "AI configured (Ollama reachable)",
+      "An episode with available transcript or description"
+    ],
+    "steps": [
+      "Open the episode detail",
+      "Tap Summarize",
+      "Wait for the summary to generate"
+    ],
+    "assertions": [
+      "A concise summary is produced and rendered",
+      "Summary is persisted and re-displayed on re-open without regeneration",
+      "UI remains responsive during generation"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "ai-agent-chat-episode",
+    "title": "Ask the agent a question about an episode",
+    "priority": "P2",
+    "area": "ai",
+    "preconditions": [
+      "AI configured",
+      "An episode with transcript context available"
+    ],
+    "steps": [
+      "Open AgentChat from the episode context",
+      "Type a question about the episode content",
+      "Send and wait for the streamed response"
+    ],
+    "assertions": [
+      "The agent responds with content grounded in the episode/transcript",
+      "Response streams token-by-token without freezing the UI",
+      "Conversation history is retained within the session"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "clipping-create",
+    "title": "Create a clipping from the currently-playing episode",
+    "priority": "P2",
+    "area": "ai",
+    "preconditions": [
+      "An episode is playing past 0:30"
+    ],
+    "steps": [
+      "Open the player",
+      "Tap Clip / Create clipping",
+      "Adjust clip start/end if offered",
+      "Save the clipping"
+    ],
+    "assertions": [
+      "A clipping is created with the correct episode reference and timestamp range",
+      "The clipping appears in the Clippings list",
+      "Playing the clipping seeks to the captured range"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "bookmark-add-and-view",
+    "title": "Bookmark a position and view it later",
+    "priority": "P2",
+    "area": "player",
+    "preconditions": [
+      "An episode is playing"
+    ],
+    "steps": [
+      "Tap Bookmark at the current position",
+      "Open the Bookmarks list",
+      "Tap the new bookmark"
+    ],
+    "assertions": [
+      "Bookmark is created with the episode and timestamp",
+      "It appears in the Bookmarks list reactively",
+      "Tapping it opens the episode and seeks to the bookmarked time"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "settings-credentials-save",
+    "title": "Save AI / credentials settings and confirm persistence",
+    "priority": "P1",
+    "area": "settings",
+    "preconditions": [
+      "Settings -> credentials/AI config screen accessible"
+    ],
+    "steps": [
+      "Open Settings -> AI / credentials",
+      "Enter or change a credential/endpoint (e.g. Ollama base URL or an API key field)",
+      "Save",
+      "Force-quit and relaunch",
+      "Reopen the same settings screen"
+    ],
+    "assertions": [
+      "The saved value is shown after relaunch",
+      "Secret fields are stored in Keychain and masked, not plaintext in defaults",
+      "Changing the endpoint actually routes subsequent AI calls to the new endpoint"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "resume-position-across-restart",
+    "title": "Episode play position is remembered across restart",
+    "priority": "P0",
+    "area": "player",
+    "preconditions": [
+      "An episode played to a non-trivial position (e.g. 2:00)"
+    ],
+    "steps": [
+      "Play an episode to ~2:00 and pause",
+      "Force-quit the app",
+      "Relaunch",
+      "Reopen the same episode"
+    ],
+    "assertions": [
+      "The episode shows a resume point at ~2:00 (within a few seconds)",
+      "Tapping Play resumes from ~2:00, not 0:00",
+      "Progress is reflected in the episode row (partial-played indicator)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "mark-played-unplayed",
+    "title": "Mark episode played / unplayed updates state",
+    "priority": "P2",
+    "area": "library",
+    "preconditions": [
+      "A subscribed episode that is unplayed"
+    ],
+    "steps": [
+      "Open the episode context menu",
+      "Tap Mark as Played",
+      "Observe the row",
+      "Tap Mark as Unplayed"
+    ],
+    "assertions": [
+      "Marking played sets the played indicator and (per settings) may remove from queue/up-next",
+      "Marking unplayed restores the unplayed state and resets/keeps position per app rules",
+      "State changes are reactive across the episode list and detail"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "large-library-load-perf",
+    "title": "Large library (50+ podcasts) loads under budget",
+    "priority": "P1",
+    "area": "performance",
+    "preconditions": [
+      "50+ podcasts subscribed (seed via OPML import or fixture)",
+      "App can be cold-launched"
+    ],
+    "steps": [
+      "Cold-launch the app",
+      "Navigate to Library",
+      "Measure time from tab tap to fully-rendered list",
+      "Scroll the full list rapidly top-to-bottom"
+    ],
+    "assertions": [
+      "Library renders within the budget",
+      "Scrolling stays smooth with no sustained blank cells / no visible jank",
+      "Artwork loads lazily without blocking the main thread",
+      "Memory does not balloon during scroll"
+    ],
+    "performance_budget": 2
+  },
+  {
+    "id": "player-transition-perf",
+    "title": "Player open/close and play/pause transitions are smooth",
+    "priority": "P1",
+    "area": "performance",
+    "preconditions": [
+      "An episode is loaded"
+    ],
+    "steps": [
+      "Rapidly open and dismiss the full player 5 times",
+      "Rapidly toggle play/pause 10 times",
+      "Switch between two episodes back-to-back"
+    ],
+    "assertions": [
+      "Each play/pause toggle is honored with no missed taps and no kernel/UI state divergence",
+      "Open/close animation does not drop frames noticeably",
+      "Rapid episode switching does not leave stale now-playing metadata or orphaned audio",
+      "No crash from rapid FFI state mutation"
+    ],
+    "performance_budget": 1
+  },
+  {
+    "id": "reactive-update-cross-screen",
+    "title": "State change on one screen reflects on another reactively",
+    "priority": "P0",
+    "area": "performance",
+    "preconditions": [
+      "An episode visible in both a list and a detail/player simultaneously reachable"
+    ],
+    "steps": [
+      "Start downloading an episode from its detail",
+      "Navigate back to the episode list while download is in progress",
+      "Observe the list row's download indicator",
+      "Start playback and navigate to a different tab, then to the mini-player"
+    ],
+    "assertions": [
+      "Download progress on the list row updates live from the same kernel state (single source of truth)",
+      "Play state shown in mini-player, list, and detail are all consistent",
+      "No screen shows stale state requiring a manual refresh (push-seam reactivity working)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "search-empty-and-no-results",
+    "title": "Search handles empty query and no-results gracefully",
+    "priority": "P2",
+    "area": "search",
+    "preconditions": [
+      "On the Search tab"
+    ],
+    "steps": [
+      "Submit an empty search",
+      "Type a nonsense string unlikely to match (e.g. \"zxqwv-no-such-podcast-9911\")",
+      "Submit"
+    ],
+    "assertions": [
+      "Empty query does not crash and shows a sensible empty/initial state",
+      "No-results query shows an explicit empty-results message, not a spinner forever",
+      "Clearing the field restores the default search state"
+    ],
+    "performance_budget": 3
+  },
+  {
+    "id": "onboarding-first-launch",
+    "title": "First-launch onboarding completes and is not shown again",
+    "priority": "P1",
+    "area": "onboarding",
+    "preconditions": [
+      "Fresh install / app data erased so onboarding has not been completed"
+    ],
+    "steps": [
+      "Cold-launch the freshly-installed app",
+      "Step through the onboarding screens to completion",
+      "Force-quit and relaunch"
+    ],
+    "assertions": [
+      "Onboarding flow renders on first launch",
+      "Completing it lands the user on Home/Library",
+      "On subsequent relaunch onboarding is NOT shown again (completion flag persisted)"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "whatsnew-shown-once",
+    "title": "What's New screen appears after update and dismisses permanently",
+    "priority": "P2",
+    "area": "onboarding",
+    "preconditions": [
+      "App version that triggers the What's New screen on first launch of that version"
+    ],
+    "steps": [
+      "Launch the app for the first time at the new version",
+      "Dismiss the What's New screen",
+      "Relaunch"
+    ],
+    "assertions": [
+      "What's New is shown once for the new version",
+      "After dismissal it does not reappear on relaunch of the same version",
+      "Dismiss-state is keyed to version and persists"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "voice-stt-command",
+    "title": "Voice STT captures a spoken command/query",
+    "priority": "P2",
+    "area": "voice",
+    "preconditions": [
+      "Voice STT provider configured",
+      "Microphone permission granted",
+      "Audio input available in the test environment"
+    ],
+    "steps": [
+      "Open the Voice feature",
+      "Start a voice capture",
+      "Provide audio input (fixture/simulated)",
+      "Stop capture"
+    ],
+    "assertions": [
+      "Transcribed text appears for the spoken input",
+      "The transcription drives the intended action (e.g. search) if wired",
+      "Graceful handling if mic permission denied or provider unreachable"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "voice-tts-playback",
+    "title": "Voice TTS reads text aloud",
+    "priority": "P2",
+    "area": "voice",
+    "preconditions": [
+      "Voice TTS provider configured"
+    ],
+    "steps": [
+      "From a TTS-enabled surface (e.g. summary read-aloud), trigger Speak",
+      "Observe playback of synthesized audio",
+      "Pause/stop the TTS playback"
+    ],
+    "assertions": [
+      "Synthesized speech plays back",
+      "TTS playback respects pause/stop controls",
+      "TTS does not conflict with / corrupt the episode audio session state"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "ffi-rapid-subscribe-unsubscribe",
+    "title": "Rapid subscribe/unsubscribe cycling stays consistent (FFI stress)",
+    "priority": "P1",
+    "area": "performance",
+    "preconditions": [
+      "A podcast detail open with a Subscribe button"
+    ],
+    "steps": [
+      "Tap Subscribe/Unsubscribe 10 times rapidly",
+      "Stop and read the final button state",
+      "Navigate to Library and back"
+    ],
+    "assertions": [
+      "Final UI state matches actual kernel subscription state (even/odd taps reconcile correctly)",
+      "Library reflects the true final state (present iff subscribed)",
+      "No crash, no duplicate library entries, no orphaned kernel subscription from rapid FFI mutation"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "deep-link-episode-open",
+    "title": "Opening a podcast/episode deep link routes correctly",
+    "priority": "P2",
+    "area": "nostr",
+    "preconditions": [
+      "A deep link / shared Nostr link to a podcast or episode is available",
+      "App installed"
+    ],
+    "steps": [
+      "Trigger the deep link while app is cold (not running)",
+      "Then trigger another deep link while app is already running"
+    ],
+    "assertions": [
+      "Cold-start deep link routes to the correct podcast/episode after launch",
+      "Warm deep link navigates to the correct destination without losing player state",
+      "Invalid/unresolvable link shows a graceful error, not a crash"
+    ],
+    "performance_budget": null
+  },
+  {
+    "id": "feed-refresh-new-episodes",
+    "title": "Pull-to-refresh surfaces new episodes",
+    "priority": "P1",
+    "area": "library",
+    "preconditions": [
+      "A subscribed podcast known to have a fresh episode not yet loaded",
+      "Network available"
+    ],
+    "steps": [
+      "Open the podcast detail",
+      "Note current episode count / newest episode",
+      "Pull to refresh (or trigger refresh action)",
+      "Wait for refresh to complete"
+    ],
+    "assertions": [
+      "New episodes are fetched and prepended reactively",
+      "Episode count increases / newest episode updates if the feed has new items",
+      "Refresh indicator clears when done; no infinite spinner",
+      "Read/played and download state of existing episodes is preserved across refresh"
+    ],
+    "performance_budget": null
+  }
+]

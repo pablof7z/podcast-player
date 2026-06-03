@@ -543,6 +543,7 @@
 		BC2B2D06757F18375915F7E8 /* PlayerNoChaptersPlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7C2CF4B36802CEB8978949 /* PlayerNoChaptersPlaceholder.swift */; };
 		BCA8C2F0E607C72C539EE83E /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7ED360E9B9FB6F6433586DA /* DateExtensions.swift */; };
 		BD5291CA245E96FCC71BF80C /* AgentMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4C33F157CAC4BB21A070B7 /* AgentMemory.swift */; };
+		BD5FD44FF2D265DBB4F65E23 /* LLMReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D1D9F69D94A0B005DA3980 /* LLMReadiness.swift */; };
 		BE2FEE700F321B7072BF1D40 /* NotificationCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9D2C1EA50BF129A30F4698 /* NotificationCapability.swift */; };
 		BEC64DA7760B17C2DC954116 /* TranscriptionQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668434DAEAFE8E5526AA8D23 /* TranscriptionQueue.swift */; };
 		BF15F158993C66AA8D946BDC /* PodcastCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD43D04D75A3BC340AC8792 /* PodcastCategory.swift */; };
@@ -693,7 +694,6 @@
 		F225EFA39AA3A3CD6F8AABA0 /* AppStateStore+DerivedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD7F743FEB2B7E0ADC851CA /* AppStateStore+DerivedViews.swift */; };
 		F2E311C0D6D9B347C709AB67 /* DiscoverSearchTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519E489FD7FA0B6F484E9790 /* DiscoverSearchTextField.swift */; };
 		F3B55ECE7F9F3116A78674E5 /* VoiceNoteAgentContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E62B751C797AA6938486EB /* VoiceNoteAgentContext.swift */; };
-		F3D187D7A125195A04A07DC2 /* AppSidebarPodcastsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */; };
 		F4E111B81EA568C2F171813C /* VoiceCapability+Barge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */; };
 		F4E138BE2A089DED1A539302 /* BargeInDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03425D7B2A109A66BDA52B7E /* BargeInDetector.swift */; };
 		F510DB989FCA5ED54A9D3BED /* EpisodeAuditLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01283C24F6A52722FFE56958 /* EpisodeAuditLogView.swift */; };
@@ -1097,6 +1097,7 @@
 		64423DF6A4BB13725F785B08 /* AppTheme+ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppTheme+ViewExtensions.swift"; sourceTree = "<group>"; };
 		64C3D3C27ED0AD9791FEB59D /* AppStateStore+Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Settings.swift"; sourceTree = "<group>"; };
 		64CCEB4A7701F0ACD3FEA63D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		64D1D9F69D94A0B005DA3980 /* LLMReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMReadiness.swift; sourceTree = "<group>"; };
 		64DB68ECE06F82597B5DCE9E /* HomeActiveFilterChipsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeActiveFilterChipsTests.swift; sourceTree = "<group>"; };
 		654532F9ECE33BB8040DDFFB /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		661B46155E318E5D5685CAAA /* PlayerChaptersScrollView+AskAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerChaptersScrollView+AskAgent.swift"; sourceTree = "<group>"; };
@@ -1482,7 +1483,6 @@
 		F5EC59DDC4E5BC03024D6952 /* WidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBundle.swift; sourceTree = "<group>"; };
 		F5FFA17A547FC084A88FB297 /* CarPlayShows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayShows.swift; sourceTree = "<group>"; };
 		F625E27AE87384496001984E /* RSSDateParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSDateParsing.swift; sourceTree = "<group>"; };
-		F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebarPodcastsSection.swift; sourceTree = "<group>"; };
 		F667BC7E9AEB03AAF8949C6B /* PlatformCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCapability.swift; sourceTree = "<group>"; };
 		F7192A50120796AF81480691 /* CodableDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodableDefaults.swift; sourceTree = "<group>"; };
 		F71D89644FF06B08E16A5FF2 /* WikiCitation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiCitation.swift; sourceTree = "<group>"; };
@@ -1824,6 +1824,7 @@
 				9AEA03C43AECDFCE885BF7FD /* ChatConversation.swift */,
 				F998CA032CA284708B3D4F43 /* ChatMessage.swift */,
 				29EAF4E0D24ABF69170C9579 /* ClaimNostrProfiles.swift */,
+				64D1D9F69D94A0B005DA3980 /* LLMReadiness.swift */,
 				1CA40CBC356BB0BCB296C6DD /* NostrAgentSurface.swift */,
 			);
 			path = Agent;
@@ -2142,7 +2143,6 @@
 			isa = PBXGroup;
 			children = (
 				CCDBEC4F0E2BBCFFB096BEFD /* AppDelegate.swift */,
-				F64FC9464DAF153D4CEB0C47 /* AppSidebarPodcastsSection.swift */,
 				64334EEB9F70E379F701528A /* AppSidebarView.swift */,
 				B7B74353E34FC5F74A23CDE5 /* PlayerNavSheets.swift */,
 				A1E1AC1E33A14A2AB17F388B /* RootView.swift */,
@@ -2981,7 +2981,6 @@
 				51DE42256BE5C0C2D745CBF4 /* WikiResearchSkill.swift in Sources */,
 				8030172D16AC36C093699CC0 /* YouTubeIngestionSkill.swift in Sources */,
 				B3E189C5BA5D59D07FF8FC37 /* AppDelegate.swift in Sources */,
-				F3D187D7A125195A04A07DC2 /* AppSidebarPodcastsSection.swift in Sources */,
 				12042258AA49A866C169BFD8 /* AppSidebarView.swift in Sources */,
 				398C6F7A4FB6418F662BDD95 /* PlayerNavSheets.swift in Sources */,
 				8483922E435FD8629CF2B14C /* RootView+DeepLink.swift in Sources */,
@@ -3132,6 +3131,7 @@
 				EC6DD9E498251B50D4470293 /* ChatConversation.swift in Sources */,
 				AE4B338CCD0457357051BB98 /* ChatMessage.swift in Sources */,
 				90B13EA8F9A0883E3AE8F7CF /* ClaimNostrProfiles.swift in Sources */,
+				BD5FD44FF2D265DBB4F65E23 /* LLMReadiness.swift in Sources */,
 				93DA240D4E7B29E494ED1212 /* NostrAgentSurface.swift in Sources */,
 				6D703EBB91024FAA8CDE300F /* AskAgentView.swift in Sources */,
 				8C5DF6E9201F2714D3911120 /* BookmarksView.swift in Sources */,
@@ -3689,8 +3689,7 @@
 				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug $(SRCROOT)/target/aarch64-apple-ios/release $(HOME)/.cargo/target-shared/aarch64-apple-ios/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios/release";
 				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios-sim/debug $(SRCROOT)/target/aarch64-apple-ios-sim/release $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/release";
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/release/libnmp_app_podcast.a";
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "$(inherited) -lnmp_app_podcast";
+				OTHER_LDFLAGS = "$(inherited) -lnmp_app_podcast";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Podcastr;
 				PROVISIONING_PROFILE_SPECIFIER = "$(CI_APP_PROFILE_SPECIFIER)";
@@ -3761,8 +3760,7 @@
 				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug $(SRCROOT)/target/aarch64-apple-ios/release $(HOME)/.cargo/target-shared/aarch64-apple-ios/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios/release";
 				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios-sim/debug $(SRCROOT)/target/aarch64-apple-ios-sim/release $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/release";
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug/libnmp_app_podcast.a";
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "$(inherited) -lnmp_app_podcast";
+				OTHER_LDFLAGS = "$(inherited) -lnmp_app_podcast";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Podcastr;
 				PROVISIONING_PROFILE_SPECIFIER = "$(CI_APP_PROFILE_SPECIFIER)";

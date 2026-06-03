@@ -10,11 +10,12 @@ tags:
 volatility: cold
 confidence: medium
 created: 2026-05-30
-updated: 2026-05-30
+updated: 2026-06-03
 verified: 2026-05-30
 compiled-from: conversation
 sources:
   - session:14943b9b-5bf3-4317-bc44-298a773bc75e
+  - session:e1cfd663-230d-4f78-9078-0c9ed8b6a4bb
 ---
 
 # M2 Download Path Unification
@@ -25,6 +26,13 @@ sources:
 
 Milestone M2 from migration-v2.md is the download path unification. Prior to M2, download orchestration was split: the Rust kernel handled download lifecycle but wifi_only gating was Swift-only, and total_bytes (expected byte count) was absent from the projected snapshot. Audit revealed M2 was ~60% done already: EpisodeDownloadService*.swift were already deleted, URLSession handoff to Rust was done, and the rename from EpisodeDownloadStore to DownloadCapability+Storage.swift had been completed in M1. <!-- [^14943-43] -->
 
+Manual download requests—triggered by swiping or tapping a download button on an episode—are wired end-to-end: the UI dispatches a `kernelDownload` action to the kernel (looking up episodes via the canonical `episode(id:)` accessor on `AppStateStore`), which routes it through the Rust `DownloadQueue` as a `DownloadCommand::StartDownload` to `DownloadCapability` for actual byte transfer via a `URLSession` `downloadTask`. Swift passes the `enclosureURL` directly in the dispatch body so that `handle_download` uses it if present and falls back to its own store lookup otherwise. <!-- [^e1cfd-6] -->
+
+EpisodeSummary.toEpisode() must map download states of `.queued` and `.downloading` from the DownloadQueueSnapshot (PodcastUpdate.downloads.active), not just `.downloaded` and `.notDownloaded`. [^e1cfd-12]
+
+<!-- citations: [^14943-43] [^e1cfd-6] [^e1cfd-11] -->
+
+<!-- citations: [^14943-43] [^e1cfd-6] [^e1cfd-12] [^e1cfd-11] [^e1cfd-15] -->
 ## total_bytes in DownloadItemSnapshot
 
 Rust's DownloadItem already included a total_bytes: Option<u64> field, but it was not exposed in the DownloadItemSnapshot that rides the podcast projection. The fix added total_bytes to the Rust DownloadItemSnapshot struct, which populates the Swift mirror. This enables the UI to display expected download sizes for in-progress downloads. <!-- [^14943-44] -->
