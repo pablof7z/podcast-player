@@ -47,6 +47,10 @@ let project = Project(
             url: "https://github.com/onevcat/Kingfisher",
             requirement: .upToNextMajor(from: "8.0.0")
         ),
+        .remote(
+            url: "https://github.com/google-ai-edge/LiteRT-LM",
+            requirement: .upToNextMajor(from: "0.12.0")
+        ),
         .local(path: "../ios-shake-feedback"),
     ],
     settings: .settings(
@@ -76,6 +80,7 @@ let project = Project(
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
                 .package(product: "Kingfisher"),
+                .package(product: "LiteRTLM"),
                 .package(product: "ShakeFeedbackKit"),
                 .target(name: "\(appName)Widget"),
             ],
