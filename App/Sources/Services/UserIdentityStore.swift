@@ -292,31 +292,15 @@ final class UserIdentityStore {
     // MARK: - Private — remote
 
     private func resumeRemote(meta: RemoteMeta, sessionKeyPair: NostrKeyPair) async {
-        let bunker = BunkerURI(
-            remotePubkeyHex: meta.bunkerPubkeyHex,
-            relays: meta.relays,
-            secret: meta.secret,
-            permissions: meta.permissions
-        )
-        // Cached pubkey lets `signer.publicKey()` answer during the ~1s
-        // reconnect window instead of `.missingPublicKey`.
-        let signer = RemoteSigner(
-            bunker: bunker,
-            sessionKeyPair: sessionKeyPair,
-            cachedUserPublicKeyHex: meta.userPubkeyHex
-        )
-        // Available immediately (answers `publicKey()` from cache; sign
-        // requests block on the WebSocket).
-        self.signer = signer
-        do {
-            _ = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            self.remoteSignerState = .connected(meta.userPubkeyHex)
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            self.remoteSignerState = .failed(msg)
-        }
+        // Reconstruct the bunker:// URI and hand the reconnect to the kernel
+        // signer broker. The kernel owns NIP-44 + NIP-46 and becomes the active
+        // signer; state arrives via applyBunkerHandshake. No RemoteSigner in Swift.
+        var uri = "bunker://\(meta.bunkerPubkeyHex)?"
+        uri += meta.relays.map { "relay=\($0)" }.joined(separator: "&")
+        if let secret = meta.secret { uri += "&secret=\(secret)" }
+        if !meta.permissions.isEmpty { uri += "&perms=\(meta.permissions.joined(separator: ","))" }
+        syncBunkerToKernel(uri: uri)
+        publicKeyHex = meta.userPubkeyHex
     }
 
     private func tearDownRemote() async {
@@ -357,6 +341,18 @@ final class UserIdentityStore {
     func _failNostrConnect(_ message: String) {
         loginError = message
         remoteSignerState = .failed(message)
+    }
+
+    /// Adopt a kernel-completed bunker pairing. Called by `applyBunkerHandshake`
+    /// when the kernel's handshake projection reports terminal success. The
+    /// kernel is the signer; Swift holds no key material — only published state.
+    func _adoptKernelBunker(pubkey: String) {
+        publicKeyHex = pubkey
+        keyPair = nil
+        mode = .remoteSigner
+        remoteSignerState = .connected(pubkey)
+        loadCachedProfile(for: pubkey)
+        Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
     }
 
     /// Called by `UserIdentityStore+NIP46.swift` after nostrconnect pairing completes.

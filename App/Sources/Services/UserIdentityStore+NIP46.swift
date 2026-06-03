@@ -37,21 +37,14 @@ extension UserIdentityStore {
     /// Maps the kernel's `KernelBunkerHandshake` projection to `remoteSignerState`.
     @MainActor
     func applyBunkerHandshake(_ handshake: KernelBunkerHandshake?, activeAccount: String?) {
-        if let handshake {
-            if handshake.isTerminalSuccess, let pubkey = activeAccount {
-                guard case .connected = remoteSignerState else {
-                    remoteSignerState = .connected(pubkey)
-                    publicKeyHex = pubkey
-                    mode = .remoteSigner
-                    loadCachedProfile(for: pubkey)
-                    Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
-                    return
-                }
-            } else if handshake.isFailed {
-                let msg = handshake.message ?? "NIP-46 pairing failed."
-                _failNostrConnect(msg)
-            }
-            // isInFlight → stay in .connecting (set by _beginNostrConnect)
+        guard let handshake else { return }
+        if handshake.isTerminalSuccess, let pubkey = activeAccount {
+            // Only adopt once — avoid re-adopting on every snapshot tick.
+            if case .connected = remoteSignerState { return }
+            _adoptKernelBunker(pubkey: pubkey)
+        } else if handshake.isFailed {
+            _failNostrConnect(handshake.message ?? "NIP-46 pairing failed.")
         }
+        // isInFlight → stay in .connecting (set by _beginNostrConnect)
     }
 }
