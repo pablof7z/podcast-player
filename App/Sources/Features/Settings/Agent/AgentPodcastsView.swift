@@ -175,21 +175,10 @@ struct AgentPodcastsView: View {
     }
 
     private func initializeRelays() async {
-        let userPubkey = await MainActor.run { store.identity.publicKeyHex }
-        let inboxRelay = await MainActor.run { store.state.settings.nostrRelayURL }
-
-        isFetchingRelays = true
-        defer { Task { @MainActor in isFetchingRelays = false } }
-
-        var relays: [String] = []
-        if let pubkey = userPubkey, !pubkey.isEmpty {
-            relays = await NIP65RelayFetcher.fetchWriteRelays(
-                for: pubkey,
-                extraRelayURL: inboxRelay.isEmpty ? nil : inboxRelay
-            )
-        }
-        if relays.isEmpty {
-            relays = NIP65RelayFetcher.defaultRelays
+        // NMP owns relay configuration — just read the configured relays from
+        // the kernel snapshot. No WebSocket, no relay logic in Swift.
+        let relays = await MainActor.run {
+            store.podcastSnapshot?.configuredRelays.map(\.url).filter { !$0.isEmpty } ?? []
         }
         await MainActor.run { updateRelays(relays) }
     }

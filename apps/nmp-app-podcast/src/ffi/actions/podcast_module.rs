@@ -167,8 +167,17 @@ pub enum PodcastAction {
     PublishAgentNote {
         recipient_pubkey_hex: String,
         content: String,
+        /// NIP-10 root event ID — generates `["e", id, "", "root"]`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         root_event_id: Option<String>,
+        /// NIP-10 inbound event ID — when different from root_event_id,
+        /// generates an additional `["e", id, "", "reply"]` tag.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        inbound_event_id: Option<String>,
+        /// NIP-72 channel-anchor a-tags (`["a", coord]`). Rust appends them
+        /// verbatim — Swift never constructs tag arrays.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        root_a_tags: Vec<String>,
     },
     /// Feature #44 — subscribe to inbound kind:1 notes addressed to the
     /// active account (`#p` filter) and surface them on

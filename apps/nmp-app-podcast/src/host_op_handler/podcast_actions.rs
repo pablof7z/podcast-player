@@ -98,12 +98,16 @@ impl PodcastHostOpHandler {
                 recipient_pubkey_hex,
                 content,
                 root_event_id,
+                inbound_event_id,
+                root_a_tags,
             } => crate::agent_note_handler::handle_publish_agent_note(
                 self.app,
                 &self.identity,
                 &recipient_pubkey_hex,
                 &content,
                 root_event_id.as_deref(),
+                inbound_event_id.as_deref(),
+                &root_a_tags,
             ),
             PodcastAction::FetchAgentNotes => {
                 crate::agent_note_handler::handle_fetch_agent_notes(
