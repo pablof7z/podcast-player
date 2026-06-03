@@ -99,7 +99,7 @@ final class UserIdentityWiringTests: XCTestCase {
         _ = store.addNote(text: "agent note", kind: .free, target: nil, author: .agent)
         // Give any (stray) fire-and-forget Task a chance to land.
         try await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertTrue(signer.calls.isEmpty, "Agent-authored notes must not reach the user signer.")
+        XCTAssertTrue(signer.calls.isEmpty, "Agent-authored notes must not reach the user signer. Got \(signer.calls.count) call(s): \(signer.calls.map { "kind:\($0.kind) '\($0.content.prefix(40))'" })")
     }
 
     func testAgentToolCreateNoteDoesNotSign() async throws {
@@ -112,7 +112,7 @@ final class UserIdentityWiringTests: XCTestCase {
             batchID: UUID()
         )
         try await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertTrue(signer.calls.isEmpty, "AgentTools.createNote must not reach the user signer.")
+        XCTAssertTrue(signer.calls.isEmpty, "AgentTools.createNote must not reach the user signer. Got \(signer.calls.count) call(s): \(signer.calls.map { "kind:\($0.kind) '\($0.content.prefix(40))'" })")
         // The note still landed locally.
         XCTAssertEqual(store.state.notes.last?.text, "agent tool note")
         XCTAssertEqual(store.state.notes.last?.author, .agent)
@@ -244,7 +244,7 @@ final class UserIdentityWiringTests: XCTestCase {
     private func waitForSignerCalls(
         count: Int,
         timeout: TimeInterval = 2.0,
-        file: StaticString = #file,
+        file: StaticString = #filePath,
         line: UInt = #line
     ) async throws {
         let deadline = Date().addingTimeInterval(timeout)
