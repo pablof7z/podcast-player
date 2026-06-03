@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-03T19:58:00Z",
+      "lines": [
+        "CarPlay now shows the chapter list as soon as chapters are ready, even when they arrive after the episode starts"
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T12:06:00Z",
       "lines": [
         "Download progress now updates live instead of staying stuck at 0%"

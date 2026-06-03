@@ -25,20 +25,23 @@ enum CarPlayNowPlaying {
 
     /// Wire the standard now-playing template's custom button row.
     /// `interfaceController` is needed so the chapter button can push the
-    /// chapter list when tapped.
+    /// chapter list when tapped. `store` provides the live, projected episode
+    /// array so chapters that hydrate after load are resolved correctly.
     static func configure(
         playback: PlaybackState,
+        store: AppStateStore,
         interfaceController: CPInterfaceController
     ) {
         let template = CPNowPlayingTemplate.shared
         template.isAlbumArtistButtonEnabled = false
-        refresh(playback: playback, interfaceController: interfaceController)
+        refresh(playback: playback, store: store, interfaceController: interfaceController)
     }
 
     /// Rebuild the button row. Called after configure, and again whenever
     /// the loaded episode (or its chapter set) changes.
     static func refresh(
         playback: PlaybackState,
+        store: AppStateStore,
         interfaceController: CPInterfaceController
     ) {
         let template = CPNowPlayingTemplate.shared
@@ -46,11 +49,27 @@ enum CarPlayNowPlaying {
         var buttons: [CPNowPlayingButton] = []
         buttons.append(makeRateButton(playback: playback))
 
-        if let episode = playback.episode, hasNavigableChapters(episode, playback: playback) {
-            buttons.append(makeChaptersButton(playback: playback, on: interfaceController))
+        if !navigableChapters(playback: playback, store: store).isEmpty {
+            buttons.append(makeChaptersButton(playback: playback, store: store, on: interfaceController))
         }
 
         template.updateNowPlayingButtons(buttons)
+    }
+
+    /// Resolve the live chapter set for the currently-loaded episode.
+    ///
+    /// `PlaybackState.episode` can be a stale pre-hydration copy when chapters
+    /// arrive after the episode loads (AI generation) or before CarPlay
+    /// connects. `store.episodes` is the Rust projection output and is always
+    /// current, so we look the episode up there by ID and read its chapters.
+    static func navigableChapters(
+        playback: PlaybackState,
+        store: AppStateStore
+    ) -> [Episode.Chapter] {
+        guard let episodeID = playback.episode?.id,
+              let episode = store.episodes.first(where: { $0.id == episodeID })
+        else { return [] }
+        return (episode.chapters ?? []).filter(\.includeInTableOfContents)
     }
 
     // MARK: - Speed cycle button
@@ -84,17 +103,14 @@ enum CarPlayNowPlaying {
 
     // MARK: - Chapters button
 
-    private static func hasNavigableChapters(_ episode: Episode, playback: PlaybackState) -> Bool {
-        !(episode.chapters?.filter(\.includeInTableOfContents) ?? []).isEmpty
-    }
-
     private static func makeChaptersButton(
         playback: PlaybackState,
+        store: AppStateStore,
         on interfaceController: CPInterfaceController
     ) -> CPNowPlayingButton {
         let glyph = UIImage(systemName: "list.bullet.rectangle")
         return CPNowPlayingImageButton(image: glyph ?? UIImage()) { _ in
-            let template = makeChaptersTemplate(playback: playback, on: interfaceController)
+            let template = makeChaptersTemplate(playback: playback, store: store, on: interfaceController)
             interfaceController.pushTemplate(template, animated: true) { _, _ in }
         }
     }
@@ -104,13 +120,11 @@ enum CarPlayNowPlaying {
     /// Playing so the driver lands on familiar transport controls.
     private static func makeChaptersTemplate(
         playback: PlaybackState,
+        store: AppStateStore,
         on interfaceController: CPInterfaceController
     ) -> CPListTemplate {
-        guard let episode = playback.episode else {
-            return CPListTemplate(title: "Chapters", sections: [])
-        }
         let chapters = Array(
-            (episode.chapters?.filter(\.includeInTableOfContents) ?? [])
+            navigableChapters(playback: playback, store: store)
                 .prefix(CPListTemplate.maximumItemCount)
         )
         let items = chapters.map { chapter -> CPListItem in

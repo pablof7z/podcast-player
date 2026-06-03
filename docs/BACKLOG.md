@@ -162,11 +162,6 @@ worktrees currently in flight.
   lock-screen-originated commands through a report-to-Rust path (or staging the
   restored episode in Rust on restore) — distinct from Rust-issued playback
   commands so it doesn't loop through `handle_load`'s echoed `Load`.
-- **carplay-chapters-live-resolve.** `CarPlayNowPlaying` reads
-  `playback.episode.chapters` directly; when chapters hydrate after the episode
-  loaded (or before CarPlay connects), `PlaybackState.episode` can be the stale
-  pre-hydration copy. Restore a store-backed resolver so the CarPlay chapter
-  button/list appears once the store has chapters.
 - **download-state-projection.** Runtime queue projection is now wired:
   player download actions mutate `DownloadQueue`, download reports update
   progress/paused/failed/completed state, and snapshots expose active/queued/
