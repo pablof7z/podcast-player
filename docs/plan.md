@@ -26,6 +26,7 @@ This is the canonical project plan. Detailed implementation plans live under
   - `docs/plan/nmp-v0.1.0-upgrade.md` - NMP dependency upgrade from old pin to `nmp-v0.1.0` tag: changelog, breakage analysis, and follow-up items.
   - `docs/plan/nmp-v0.2.0-upgrade.md` - NMP dependency upgrade to `nmp-v0.2.0` (rev `ae7b004`): non-breaking pin bump (C-ABI unchanged), changelog, and not-yet-adopted items.
   - `docs/plan/nmp-v0.2.1-upgrade.md` - NMP dependency upgrade to `nmp-v0.2.1` (rev `7be4a771`): pin bump (C-ABI unchanged) plus the required relay-seed change after NMP moved default relays out of `nmp-core`.
+  - `docs/plan/nmp-v0.2.2-upgrade.md` - NMP dependency upgrade to `nmp-v0.2.2` (rev `6a0c4fda`): pin bump only, no podcast-app code changes. Upstream adds F-ttl subsystem and renames `timeline_insert_events` → `timeline_insert_event_batch` (not used by podcast).
   - `docs/plan/android-parity.md` - Android feature-parity status matrix (Tier 1-4) and the subscribe/search/episode-detail wave.
 
 ## Migration State
