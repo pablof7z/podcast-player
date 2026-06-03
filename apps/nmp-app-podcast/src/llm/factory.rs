@@ -3,6 +3,7 @@
 use std::sync::{Arc, Mutex};
 
 use super::backend::LlmBackend;
+use super::local_model_backend::LocalModelBackend;
 use super::ollama_backend::OllamaBackend;
 use super::openrouter_backend::OpenRouterBackend;
 use crate::store::PodcastStore;
@@ -43,7 +44,8 @@ fn ollama_api_key(store: &PodcastStore) -> Option<String> {
 /// pushed key, then returns the right boxed backend.
 ///
 /// Selection rule:
-/// - If the model string carries an `openrouter:` prefix, use OpenRouter.
+/// - If `store.local_model_id()` is Some, use LocalModelBackend (dominates all other callers).
+/// - Else if the model string carries an `openrouter:` prefix, use OpenRouter.
 /// - Else if `store.open_router_credential_source()` indicates a connected
 ///   OpenRouter source for non-Ollama models, use OpenRouter.
 /// - Else use Ollama (the default).
@@ -51,6 +53,11 @@ pub fn backend_for(
     store: &Arc<Mutex<PodcastStore>>,
     model: &str,
 ) -> Box<dyn LlmBackend> {
+    // Check for local model ID FIRST (dominates all callers).
+    if let Some(id) = store.lock().ok().and_then(|s| s.local_model_id().map(|s| s.to_owned())) {
+        return Box::new(LocalModelBackend { model_id: id });
+    }
+
     let use_openrouter = if model.starts_with("openrouter:") {
         true
     } else {
@@ -124,5 +131,27 @@ mod tests {
             base_url_from_chat_url(url),
             DEFAULT_OLLAMA_BASE_URL
         );
+    }
+
+    #[tokio::test]
+    async fn test_backend_for_returns_local_with_empty_callback_slot() {
+        // Store with local_model_id set but no callback registered should return a backend
+        // that yields Unavailable when called.
+        let store = Arc::new(Mutex::new(PodcastStore::new()));
+        {
+            let mut s = store.lock().unwrap();
+            s.set_local_model_id(Some("gemma-4-e2b".to_string()));
+        }
+
+        let backend = backend_for(&store, "openrouter:anything");
+        let req = crate::llm::LlmRequest {
+            system: "test".to_string(),
+            history: vec![],
+            user: "test".to_string(),
+            model: "test".to_string(),
+        };
+
+        let result = backend.complete(&req).await;
+        assert!(matches!(result, Err(crate::llm::LlmError::Unavailable(_))));
     }
 }

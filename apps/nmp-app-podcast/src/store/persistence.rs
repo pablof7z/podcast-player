@@ -261,6 +261,9 @@ pub(super) struct PersistedSettings {
     /// YouTube extractor URL (optional).
     #[serde(default)]
     pub youtube_extractor_url: Option<String>,
+    /// Local on-device LLM model ID (optional).
+    #[serde(default)]
+    pub local_model_id: Option<String>,
     /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
     #[serde(default)]
     pub wiki_auto_generate_on_transcript_ingest: bool,
@@ -352,6 +355,7 @@ impl Default for PersistedSettings {
             eleven_labs_voice_name: String::new(),
             blossom_server_url: "https://blossom.primal.net".to_owned(),
             youtube_extractor_url: None,
+            local_model_id: None,
             wiki_auto_generate_on_transcript_ingest: false,
             auto_ingest_publisher_transcripts: true,
             auto_fallback_to_scribe: true,

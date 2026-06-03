@@ -210,6 +210,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
             eleven_labs_voice_name: s.eleven_labs_voice_name().to_owned(),
             blossom_server_url: s.blossom_server_url().to_owned(),
             youtube_extractor_url: s.youtube_extractor_url().map(|s| s.to_owned()),
+            local_model_id: s.local_model_id().map(|s| s.to_owned()),
             wiki_auto_generate_on_transcript_ingest: s.wiki_auto_generate_on_transcript_ingest(),
             auto_ingest_publisher_transcripts: s.auto_ingest_publisher_transcripts(),
             auto_fallback_to_scribe: s.auto_fallback_to_scribe(),

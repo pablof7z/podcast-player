@@ -3,11 +3,13 @@ import Foundation
 enum LLMProvider: String, Codable, Hashable, Sendable, CaseIterable {
     case openRouter = "openrouter"
     case ollama = "ollama"
+    case local = "local"
 
     var displayName: String {
         switch self {
         case .openRouter: return "OpenRouter"
         case .ollama:     return "Ollama Cloud"
+        case .local:      return "Local Models"
         }
     }
 }
@@ -40,6 +42,8 @@ struct LLMModelReference: Hashable, Sendable {
             return modelID
         case .ollama:
             return "\(provider.rawValue):\(modelID)"
+        case .local:
+            return modelID
         }
     }
 

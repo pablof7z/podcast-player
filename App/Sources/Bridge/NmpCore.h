@@ -204,4 +204,13 @@ char *nmp_app_podcast_transcript_report(void *handle, const char *report_json);
 // completes. Swift MUST call it from a background thread / detached Task.
 char *nmp_app_podcast_chat_complete(void *handle, const char *messages_json);
 
+// ── Local LLM registration ──────────────────────────────────────────────
+//
+// Register a local LLM backend callback. The callback receives a context pointer
+// and a JSON prompt string, and returns a malloc-allocated JSON response string.
+// Rust owns the response string lifetime and frees it via nmp_app_free_string.
+typedef char* (*NmpLocalLlmFn)(void* context, const char* prompt_json);
+void nmp_app_register_local_llm(void* handle, void* context, NmpLocalLlmFn fn);
+void nmp_app_clear_local_llm(void* handle);
+
 #endif
