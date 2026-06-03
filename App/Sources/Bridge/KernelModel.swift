@@ -440,6 +440,15 @@ final class KernelModel {
         }
     }
 
+    // ── Provider-blind LLM chat completion ──────────────────────────────
+
+    /// Resolve the opaque podcast handle pointer for use in a blocking FFI call.
+    /// The pointer is stable for the process lifetime once registered (D6).
+    /// Returns nil when the kernel is not yet registered.
+    var podcastHandlePointer: UnsafeMutableRawPointer? {
+        kernel.podcastHandle
+    }
+
     // ── Identity / NIP-46 ────────────────────────────────────────────────
     //
     // Typed wrappers around the NMP-core identity FFI. `UserIdentityStore`

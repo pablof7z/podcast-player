@@ -279,9 +279,10 @@ async fn score_picks_in_background(
     let mut scores: HashMap<String, (f32, String)> = HashMap::new();
     for (ep_id, ep_title, pod_title, description) in score_inputs {
         let runtime2 = Arc::clone(&runtime);
+        let store2 = Arc::clone(&store);
         let profile2 = profile.clone();
         let result = tokio::task::spawn_blocking(move || {
-            score_episode_for_picks(&ep_title, &pod_title, &description, &profile2, &runtime2)
+            score_episode_for_picks(&ep_title, &pod_title, &description, &profile2, &runtime2, &store2)
         })
         .await;
 

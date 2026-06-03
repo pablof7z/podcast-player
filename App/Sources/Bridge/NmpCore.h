@@ -183,4 +183,25 @@ char *nmp_app_podcast_network_report(void *handle, const char *report_json);
 // Always returns NULL.
 char *nmp_app_podcast_transcript_report(void *handle, const char *report_json);
 
+// ── Provider-blind single-turn LLM completion ─────────────────────────────
+//
+// `nmp_app_podcast_chat_complete` drives one LLM turn through the Rust
+// backend, hiding all provider/credential details from Swift. Swift passes the
+// full OpenAI-format message array as a JSON string and receives the assistant's
+// text back.
+//
+// `messages_json` — JSON array of {"role":"…","content":"…"} objects. The
+// system prompt must be the first entry (role = "system"). Tool-call turns
+// are supported (role = "tool", role = "assistant" with tool_calls).
+//
+// Returns a heap-allocated JSON string of the form:
+//   {"text":"<assistant reply>"}   on success
+//   {"error":"<reason>"}           on failure (model unreachable, bad input, …)
+// The caller MUST free the returned pointer via `nmp_app_free_string`.
+// D6: never returns NULL for a non-null handle.
+//
+// Threading: this call BLOCKS the calling thread while the network round-trip
+// completes. Swift MUST call it from a background thread / detached Task.
+char *nmp_app_podcast_chat_complete(void *handle, const char *messages_json);
+
 #endif

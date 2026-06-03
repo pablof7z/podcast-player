@@ -19,14 +19,12 @@
 //! and falls back to [`fallback_segments`], a no-LLM one-segment summary
 //! built from the episode titles only, so the briefing always completes.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::{Prompt as _, PromptError};
-use rig_core::providers::ollama;
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 
 pub const FAST_MODEL: &str = "deepseek-v4-flash:cloud";
-pub const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 
 /// System preamble for the briefing model.
 const BRIEFING_PREAMBLE: &str = "You are a podcast briefing assistant. Given recent podcast \
@@ -43,13 +41,14 @@ const DESC_TRUNCATE_CHARS: usize = 500;
 /// for the most-recent unplayed episodes (the caller picks the top 10).
 ///
 /// Returns a `Vec<String>` of briefing segments (one per "story") on success,
-/// or `Err(message)` when Ollama is unreachable or the reply can't be parsed
+/// or `Err(message)` when the LLM is unreachable or the reply can't be parsed
 /// as a JSON array. On an empty input slice the function short-circuits to a
 /// single "nothing new" segment rather than prompting the model with no
 /// material.
 pub fn generate_briefing_segments(
     episode_summaries: &[(String, String, String)],
     runtime: &Arc<tokio::runtime::Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<Vec<String>, String> {
     if episode_summaries.is_empty() {
         return Ok(vec![
@@ -61,18 +60,15 @@ pub fn generate_briefing_segments(
     let prompt = build_prompt(episode_summaries);
 
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(OLLAMA_BASE_URL)
-            .build()
-            .map_err(|e| e.to_string())?;
+        let backend = backend_for(store, FAST_MODEL);
+        let req = LlmRequest {
+            system: BRIEFING_PREAMBLE.to_owned(),
+            history: Vec::new(),
+            user: prompt,
+            model: FAST_MODEL.to_owned(),
+        };
 
-        let agent = client.agent(FAST_MODEL).preamble(BRIEFING_PREAMBLE).build();
-
-        let response: String = agent
-            .prompt(prompt.as_str())
-            .await
-            .map_err(|e: PromptError| e.to_string())?;
+        let response: String = backend.complete(&req).await?;
 
         parse_briefing_array(&response)
     })

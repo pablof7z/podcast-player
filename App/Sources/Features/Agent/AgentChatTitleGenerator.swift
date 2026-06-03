@@ -38,10 +38,8 @@ enum AgentChatTitleGenerator {
     static func generate(transcript: String, model: String) async -> String? {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        let reference = LLMModelReference(storedID: model)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            return nil
-        }
+        // Credential checking is Rust-owned; proceed and let the client
+        // fail gracefully if no key is configured.
         let client = WikiOpenRouterClient.live(model: model)
         do {
             let json = try await client.compile(

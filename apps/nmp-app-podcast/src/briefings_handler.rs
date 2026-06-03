@@ -73,10 +73,11 @@ pub fn handle_generate_briefing(
         let slot_c = Arc::clone(slot);
         let rev_c = Arc::clone(rev);
         let runtime_c = Arc::clone(runtime);
+        let store_c = Arc::clone(store);
 
         runtime.spawn(async move {
             let segments = tokio::task::spawn_blocking(move || {
-                briefing_llm::generate_briefing_segments(&episodes, &runtime_c)
+                briefing_llm::generate_briefing_segments(&episodes, &runtime_c, &store_c)
                     .unwrap_or_else(|_| briefing_llm::fallback_segments(&episodes))
             })
             .await

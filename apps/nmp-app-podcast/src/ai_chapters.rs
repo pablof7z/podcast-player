@@ -96,13 +96,14 @@ pub(crate) fn handle_compile_chapters(
     // inbox triage). The actor returns immediately; chapters land in the store
     // when the background task completes and bump rev for the next snapshot.
     let store_c = Arc::clone(store);
+    let store_c2 = Arc::clone(store);
     let rev_c = Arc::clone(rev);
     let runtime_c = Arc::clone(runtime);
     let episode_id_c = episode_id.clone();
 
     runtime.spawn(async move {
         let outcome = tokio::task::spawn_blocking(move || {
-            synthesize_with_fallback(&episode_title, &transcript, duration_secs, &runtime_c)
+            synthesize_with_fallback(&episode_title, &transcript, duration_secs, &runtime_c, &store_c)
         })
         .await
         // A join error (panic in the blocking worker) is itself a definitive
@@ -120,7 +121,7 @@ pub(crate) fn handle_compile_chapters(
         // chapterless so the UI can re-trigger rather than show fake slices.
         match outcome {
             SynthOutcome::Chapters(chapters) => {
-                if let Ok(mut s) = store_c.lock() {
+                if let Ok(mut s) = store_c2.lock() {
                     s.set_episode_chapters(&episode_id_c, chapters);
                 }
                 rev_c.fetch_add(1, Ordering::Relaxed);
@@ -175,6 +176,7 @@ fn synthesize_with_fallback(
     transcript: &str,
     duration_secs: f64,
     runtime: &Arc<Runtime>,
+    store: &Arc<std::sync::Mutex<PodcastStore>>,
 ) -> SynthOutcome {
     let excerpt: String = transcript.chars().take(TRANSCRIPT_EXCERPT_CHARS).collect();
 
@@ -185,6 +187,7 @@ fn synthesize_with_fallback(
         duration_secs,
         STUB_CHAPTER_COUNT,
         runtime,
+        store,
     );
     if let Some(outcome) = first_attempt_outcome(first, duration_secs, STUB_CHAPTER_COUNT) {
         return outcome;
@@ -199,6 +202,7 @@ fn synthesize_with_fallback(
         STUB_CHAPTER_COUNT,
         PromptStyle::Simple,
         runtime,
+        store,
     );
     terminal_outcome(retry, duration_secs, STUB_CHAPTER_COUNT)
 }

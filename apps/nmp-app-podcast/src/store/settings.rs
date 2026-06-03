@@ -757,6 +757,23 @@ impl PodcastStore {
     pub fn set_nostr_public_key_hex(&mut self, hex: Option<String>) {
         self.nostr_public_key_hex = hex;
     }
+
+    /// OpenRouter API key (in-memory only; never persisted to disk).
+    pub fn open_router_api_key(&self) -> Option<&str> {
+        self.open_router_api_key.as_deref()
+    }
+
+    /// Ollama API key (in-memory only; never persisted to disk).
+    pub fn ollama_api_key(&self) -> Option<&str> {
+        self.ollama_api_key.as_deref()
+    }
+
+    /// Set both provider API keys in-memory. Does NOT call `persist()`;
+    /// these keys never touch disk. Idempotent.
+    pub fn set_provider_api_keys(&mut self, open_router: Option<String>, ollama: Option<String>) {
+        self.open_router_api_key = open_router;
+        self.ollama_api_key = ollama;
+    }
 }
 
 #[cfg(test)]

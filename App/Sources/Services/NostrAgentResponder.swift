@@ -16,17 +16,11 @@ import os.log
 ///     one-shot, sign + publish the kind:1 reply with NIP-10 tags, and
 ///     record both incoming + outgoing turns into the store.
 ///
-/// Agent invocation: we call `AgentLLMClient.streamCompletion` directly
-/// rather than going through `AgentChatSession`. Rationale: chat session
-/// is `@Observable`, owns a `ChatHistoryStore` conversation row,
-/// auto-resumes, swaps between "initial" and "thinking" models, and
-/// drives the typing-indicator + skill-enable UI state. None of that is
-/// useful for a one-shot peer reply; reusing it would force us to
-/// instantiate a phantom conversation, suppress half the UI hooks, and
-/// drag in the full tool dispatcher. The lower-level
-/// `AgentLLMClient.streamCompletion` already handles provider switching
-/// + credential resolution + cost-ledger logging, which is exactly what
-/// we need.
+/// Agent invocation: `AgentRelayBridge` drives the full turn-loop via
+/// `AgentLLMClient.streamCompletion`, which calls the Rust provider-blind
+/// backend (`nmp_app_podcast_chat_complete`). Provider selection and
+/// credential resolution are fully Rust-owned; Swift passes only the
+/// message array and receives the assistant text.
 @MainActor
 final class NostrAgentResponder {
 

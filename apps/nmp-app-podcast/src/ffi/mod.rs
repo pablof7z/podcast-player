@@ -30,6 +30,7 @@
 
 pub mod actions;
 pub(crate) mod agent_context;
+mod chat_complete;
 mod audio_report;
 mod data_dir;
 mod download_report;
@@ -89,6 +90,7 @@ pub use actions::{
     PICKS_LIMIT, PICKS_PER_SHOW_CAP,
 };
 pub use audio_report::nmp_app_podcast_audio_report;
+pub use chat_complete::nmp_app_podcast_chat_complete;
 pub use data_dir::nmp_app_podcast_set_data_dir;
 pub use download_report::nmp_app_podcast_download_report;
 pub use handle::PodcastHandle;

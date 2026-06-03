@@ -156,8 +156,9 @@ async fn categorize_in_background(
 
     for (ep_id, ep_title, description) in episodes {
         let runtime2 = Arc::clone(&runtime);
+        let store2 = Arc::clone(&store);
         let result = tokio::task::spawn_blocking(move || {
-            categorize_episode(&ep_title, &description, &runtime2)
+            categorize_episode(&ep_title, &description, &runtime2, &store2)
         })
         .await;
 

@@ -12,11 +12,8 @@
 
 use std::sync::{Arc, Mutex};
 
-use rig_core::client::{CompletionClient, Nothing};
-use rig_core::completion::{Chat, Message};
-use rig_core::providers::ollama;
-
 use crate::agent_tools::{self, ToolRegistry, TOOL_INSTRUCTIONS};
+use crate::llm::{LlmRequest, backend_for};
 use crate::store::PodcastStore;
 
 /// Maximum number of tool-call round-trips before we force a final answer.
@@ -29,56 +26,23 @@ pub const FAST_MODEL: &str = "deepseek-v4-flash:cloud";
 /// Thinking/agent model for deep-reasoning chat turns.
 pub const THINKING_MODEL: &str = "deepseek-v4-pro:cloud";
 
-/// Default Ollama base URL (Ollama Cloud). Used when the store has no URL configured.
-pub const DEFAULT_OLLAMA_BASE_URL: &str = "https://ollama.com";
-
-/// Derive the rig-core base URL from the stored full chat URL.
-///
-/// The store holds the complete endpoint (e.g. `https://ollama.com/api/chat`)
-/// while rig-core's `base_url` wants just the host root. Strip `/api/chat`
-/// if present; fall back to the cloud default for empty values.
-pub fn base_url_from_chat_url(chat_url: &str) -> String {
-    let trimmed = chat_url.trim_end_matches("/api/chat");
-    if trimmed.is_empty() {
-        DEFAULT_OLLAMA_BASE_URL.to_owned()
-    } else {
-        trimmed.to_owned()
-    }
-}
-
-/// Convert stored `(role, content)` pairs into rig-core chat history.
-/// The `Chat` trait prepends the new user turn itself — we only pass prior turns.
-fn make_history(pairs: &[(String, String)]) -> Vec<Message> {
-    pairs
-        .iter()
-        .map(|(role, content)| {
-            if role == "user" {
-                Message::user(content.as_str())
-            } else {
-                Message::assistant(content.as_str())
-            }
-        })
-        .collect()
-}
-
 /// Drive one model turn: thinking model first, fast model as fallback.
-/// Shared by [`chat_sync`] and the tool loop in [`chat_with_tools`].
+/// Shared by the tool loop in [`chat_with_tools`].
 async fn single_turn(
     system_prompt: &str,
     history: &[(String, String)],
     user_message: &str,
-    base_url: &str,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<String, String> {
-    let client = ollama::Client::builder()
-        .base_url(base_url)
-        .api_key(Nothing)
-        .build()
-        .map_err(|e| e.to_string())?;
-
     // Try the thinking model first (reasoning mode for richer answers).
-    let thinking_agent = client.agent(THINKING_MODEL).preamble(system_prompt).build();
-    let mut h1 = make_history(history);
-    match thinking_agent.chat(user_message, &mut h1).await {
+    let backend = backend_for(store, THINKING_MODEL);
+    let req = LlmRequest {
+        system: system_prompt.to_owned(),
+        history: history.to_vec(),
+        user: user_message.to_owned(),
+        model: THINKING_MODEL.to_owned(),
+    };
+    match backend.complete(&req).await {
         Ok(reply) => return Ok(reply),
         Err(thinking_err) => {
             eprintln!(
@@ -88,10 +52,15 @@ async fn single_turn(
     }
 
     // Fall back to the fast model.
-    let fast_agent = client.agent(FAST_MODEL).preamble(system_prompt).build();
-    let mut h2 = make_history(history);
-    fast_agent
-        .chat(user_message, &mut h2)
+    let backend = backend_for(store, FAST_MODEL);
+    let req = LlmRequest {
+        system: system_prompt.to_owned(),
+        history: history.to_vec(),
+        user: user_message.to_owned(),
+        model: FAST_MODEL.to_owned(),
+    };
+    backend
+        .complete(&req)
         .await
         .map_err(|e| format!("{FAST_MODEL} also failed: {e}"))
 }
@@ -118,11 +87,7 @@ pub fn chat_with_tools(
     store: Arc<Mutex<PodcastStore>>,
     runtime: &tokio::runtime::Runtime,
 ) -> Result<String, String> {
-    let base_url = store
-        .lock()
-        .map(|g| base_url_from_chat_url(g.ollama_chat_url()))
-        .unwrap_or_else(|_| DEFAULT_OLLAMA_BASE_URL.to_owned());
-    let registry = ToolRegistry::new(store);
+    let registry = ToolRegistry::new(store.clone());
     let full_prompt = format!("{system_prompt}\n\n{TOOL_INSTRUCTIONS}");
 
     runtime.block_on(async {
@@ -134,17 +99,17 @@ pub fn chat_with_tools(
         let mut used_a_tool = false;
 
         for _ in 0..MAX_TOOL_TURNS {
-            let reply = match single_turn(&full_prompt, &convo, &next_user_message, &base_url).await {
+            let reply = match single_turn(&full_prompt, &convo, &next_user_message, &store).await {
                 Ok(r) => r,
                 Err(e) => {
-                    // First model call failing means Ollama is down — propagate so
+                    // First model call failing means the model is down — propagate so
                     // the handler uses its scaffold fallback. If we've already run a
                     // tool, force a clean plain-text summary instead of leaking the
                     // internal "Tool X returned…" scaffolding to the user.
                     if !used_a_tool {
                         return Err(e);
                     }
-                    return Ok(force_final_answer(system_prompt, &convo, user_message, &base_url).await);
+                    return Ok(force_final_answer(system_prompt, &convo, user_message, &store).await);
                 }
             };
 
@@ -169,7 +134,7 @@ pub fn chat_with_tools(
 
         // Tool-call budget exhausted and the model still wants a tool. Make one
         // final tools-suppressed call so the user gets prose, never raw JSON.
-        Ok(force_final_answer(system_prompt, &convo, user_message, &base_url).await)
+        Ok(force_final_answer(system_prompt, &convo, user_message, &store).await)
     })
 }
 
@@ -181,13 +146,13 @@ async fn force_final_answer(
     system_prompt: &str,
     convo: &[(String, String)],
     original_question: &str,
-    base_url: &str,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> String {
     let closing = format!(
         "Based on the tool results above, answer this question in plain text \
          (do not call any tools): {original_question}"
     );
-    single_turn(system_prompt, convo, &closing, base_url)
+    single_turn(system_prompt, convo, &closing, store)
         .await
         .unwrap_or_else(|_| crate::agent_handler::SCAFFOLD_ASSISTANT_REPLY.to_owned())
 }
