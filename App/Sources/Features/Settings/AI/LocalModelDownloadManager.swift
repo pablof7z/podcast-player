@@ -32,12 +32,11 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         config.sessionSendsLaunchEvents = true
         self.session = URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue.main)
 
-        recomputeStatesFromDisk()
+        recomputeStatesFromDisk(activeModelID: nil)
     }
 
-    func recomputeStatesFromDisk() {
+    func recomputeStatesFromDisk(activeModelID: String?) {
         var newStates: [String: LocalModelState] = [:]
-        let activeModelID = UserDefaults.standard.string(forKey: "settings.localModelID")
 
         for spec in LocalModelCatalog.all {
             let fileURL = modelFileURL(for: spec.id)

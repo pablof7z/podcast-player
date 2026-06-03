@@ -19,9 +19,14 @@ struct LocalModelsSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if downloadManager == nil {
-                // Initialize download manager - may be shared from store or created fresh
                 downloadManager = LocalModelDownloadManager()
             }
+            // Recompute active badge from the kernel-projected localModelID now
+            // that the store is available (init() ran without it).
+            downloadManager?.recomputeStatesFromDisk(activeModelID: store.state.settings.localModelID)
+        }
+        .onChange(of: store.state.settings.localModelID) { _, newID in
+            downloadManager?.recomputeStatesFromDisk(activeModelID: newID)
         }
     }
 

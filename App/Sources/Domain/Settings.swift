@@ -115,6 +115,9 @@ struct Settings: Codable, Hashable, Sendable {
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
     /// default to save tokens; settings UI exposes the toggle.
     var rerankerEnabled: Bool = false
+    /// ID of the selected local model (e.g. "gemma-4-e2b"), or nil to use cloud providers.
+    /// When set, all AI features route through the on-device LiteRT-LM model.
+    var localModelID: String?
 
     // Blossom
     /// Blossom BUD-02 server used for uploading podcast artwork, audio, chapters, and
@@ -271,6 +274,7 @@ struct Settings: Codable, Hashable, Sendable {
         case nostrPublicKeyHex
         case hasCompletedOnboarding
         case youtubeExtractorURL
+        case localModelID
     }
 
     init(from decoder: Decoder) throws {
@@ -335,6 +339,7 @@ struct Settings: Codable, Hashable, Sendable {
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
         youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
+        localModelID = try c.decodeIfPresent(String.self, forKey: .localModelID)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -399,6 +404,7 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(nostrPublicKeyHex, forKey: .nostrPublicKeyHex)
         try c.encode(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
         try c.encodeIfPresent(youtubeExtractorURL, forKey: .youtubeExtractorURL)
+        try c.encodeIfPresent(localModelID, forKey: .localModelID)
     }
 
 }

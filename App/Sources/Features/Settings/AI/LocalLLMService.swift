@@ -38,12 +38,6 @@ actor LocalLLMService {
         engine = nil
     }
 
-    nonisolated func modelFileURL(for modelID: String) -> URL {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let modelsDir = caches.appendingPathComponent("LocalModels", isDirectory: true)
-        return modelsDir.appendingPathComponent("\(modelID).litertlm")
-    }
-
     func infer(promptJSON: String) async -> String {
         guard let engine = engine else {
             return #"{"error":"Local model not loaded"}"#
