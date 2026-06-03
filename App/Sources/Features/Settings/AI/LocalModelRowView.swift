@@ -117,41 +117,14 @@ struct LocalModelRowView: View {
 
 #Preview {
     VStack {
-        LocalModelRowView(
-            spec: LocalModelCatalog.all.first ?? LocalModelSpec(id: "test", displayName: "Test Model", sizeBytes: 2_600_000_000),
-            state: .notDownloaded,
-            onDownload: {},
-            onCancel: {},
-            onActivate: {},
-            onDelete: {}
-        )
-
-        LocalModelRowView(
-            spec: LocalModelCatalog.all.first ?? LocalModelSpec(id: "test", displayName: "Test Model", sizeBytes: 2_600_000_000),
-            state: .downloading(0.45),
-            onDownload: {},
-            onCancel: {},
-            onActivate: {},
-            onDelete: {}
-        )
-
-        LocalModelRowView(
-            spec: LocalModelCatalog.all.first ?? LocalModelSpec(id: "test", displayName: "Test Model", sizeBytes: 2_600_000_000),
-            state: .downloaded,
-            onDownload: {},
-            onCancel: {},
-            onActivate: {},
-            onDelete: {}
-        )
-
-        LocalModelRowView(
-            spec: LocalModelCatalog.all.first ?? LocalModelSpec(id: "test", displayName: "Test Model", sizeBytes: 2_600_000_000),
-            state: .active,
-            onDownload: {},
-            onCancel: {},
-            onActivate: {},
-            onDelete: {}
-        )
+        LocalModelRowView(spec: LocalModelCatalog.all[0], state: .notDownloaded,
+                          onDownload: {}, onCancel: {}, onActivate: {}, onDelete: {})
+        LocalModelRowView(spec: LocalModelCatalog.all[0], state: .downloading(progress: 0.45),
+                          onDownload: {}, onCancel: {}, onActivate: {}, onDelete: {})
+        LocalModelRowView(spec: LocalModelCatalog.all[0], state: .downloaded,
+                          onDownload: {}, onCancel: {}, onActivate: {}, onDelete: {})
+        LocalModelRowView(spec: LocalModelCatalog.all[0], state: .active,
+                          onDownload: {}, onCancel: {}, onActivate: {}, onDelete: {})
     }
-    .environment(AppStateStore.previewInstance)
+    .environment(AppStateStore())
 }

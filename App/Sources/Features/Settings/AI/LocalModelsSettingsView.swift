@@ -40,7 +40,7 @@ struct LocalModelsSettingsView: View {
                     LocalModelRowView(
                         spec: spec,
                         state: state,
-                        onDownload: { manager.download(spec) },
+                        onDownload: { manager.download(spec: spec) },
                         onCancel: { manager.cancel(spec.id) },
                         onActivate: { store.kernelSetLocalModel(modelID: spec.id) },
                         onDelete: { manager.delete(spec.id); if store.state.settings.localModelID == spec.id { store.kernelSetLocalModel(modelID: nil) } }
@@ -62,6 +62,6 @@ struct LocalModelsSettingsView: View {
 #Preview {
     NavigationStack {
         LocalModelsSettingsView()
-            .environment(AppStateStore.previewInstance)
+            .environment(AppStateStore())
     }
 }

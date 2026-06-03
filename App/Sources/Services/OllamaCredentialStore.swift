@@ -37,6 +37,9 @@ enum LLMProviderCredentialResolver {
             return try OpenRouterCredentialStore.apiKey()
         case .ollama:
             return try OllamaCredentialStore.apiKey()
+        case .local:
+            // On-device models need no credential.
+            return nil
         }
     }
 
@@ -46,6 +49,9 @@ enum LLMProviderCredentialResolver {
             return OpenRouterCredentialStore.hasAPIKey()
         case .ollama:
             return OllamaCredentialStore.hasAPIKey()
+        case .local:
+            // On-device models are always "available" — no key needed.
+            return true
         }
     }
 
@@ -63,6 +69,9 @@ enum LLMProviderCredentialResolver {
                 return true
             }
             return host == "ollama.com" || host == "www.ollama.com"
+        case .local:
+            // On-device models never require a key.
+            return false
         }
     }
 

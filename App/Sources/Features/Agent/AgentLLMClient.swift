@@ -53,8 +53,13 @@ enum AgentLLMClient {
         // Run the blocking Rust call off @MainActor so we don't stall the UI.
         // The handle pointer is safe to use from any thread (PodcastHandle
         // is marked Send+Sync; the FFI function is D6-safe and re-entrant).
-        let responseJSON: String = try await Task.detached(priority: .userInitiated) {
-            messagesJSON.withCString { msgPtr in
+        // Bridge the non-Sendable pointer across the task boundary as an Int.
+        let handleBits = Int(bitPattern: handle)
+        let responseJSON: String = await Task.detached(priority: .userInitiated) {
+            guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
+                return #"{"error":"null kernel handle"}"#
+            }
+            return messagesJSON.withCString { msgPtr in
                 guard let ptr = nmp_app_podcast_chat_complete(handle, msgPtr) else {
                     return #"{"error":"null response from Rust"}"#
                 }

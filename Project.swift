@@ -47,9 +47,13 @@ let project = Project(
             url: "https://github.com/onevcat/Kingfisher",
             requirement: .upToNextMajor(from: "8.0.0")
         ),
+        // Pinned to a revision (not a version range) because LiteRTLM declares
+        // `unsafeFlags(["-Xlinker", "-all_load"])`, which SwiftPM forbids on a
+        // versioned remote dependency. A revision pin is allowed to carry unsafe
+        // flags. Revision = the 0.13.0 release commit.
         .remote(
             url: "https://github.com/google-ai-edge/LiteRT-LM",
-            requirement: .upToNextMajor(from: "0.12.0")
+            requirement: .revision("bbc5181df03c6962d7786ce4ad72c8565232d2b2")
         ),
         .local(path: "../ios-shake-feedback"),
     ],
@@ -100,8 +104,6 @@ let project = Project(
                     "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
                     "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug $(SRCROOT)/target/aarch64-apple-ios/release $(HOME)/.cargo/target-shared/aarch64-apple-ios/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios/release",
                     "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": "$(inherited) $(SRCROOT)/target/aarch64-apple-ios-sim/debug $(SRCROOT)/target/aarch64-apple-ios-sim/release $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios-sim/release",
-                    // Allow LiteRTLM's -Xlinker -all_load flag (required for binary xcframework).
-                    "ALLOW_UNSAFE_PACKAGE_BUILD_FLAGS": "YES",
                 ]
             )
         ),

@@ -136,6 +136,10 @@ struct WikiOpenRouterClient: Sendable {
                 apiKey: resolvedKey,
                 model: modelReference.modelID
             )
+        case .local:
+            // Wiki compilation uses cloud HTTP providers; on-device local
+            // models are not wired into this path.
+            throw WikiClientError.missingCredential(provider: modelReference.provider.displayName)
         }
     }
 

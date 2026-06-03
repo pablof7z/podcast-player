@@ -23,6 +23,10 @@ final class ProviderEmbeddingsClient: EmbeddingsClient, @unchecked Sendable {
         case .ollama:
             return try await OllamaEmbeddingsClient(model: reference.modelID)
                 .embed(texts)
+        case .local:
+            // On-device local models are chat-only; they don't expose an
+            // embeddings endpoint. Embeddings must use a cloud provider.
+            throw EmbeddingsError.missingAPIKey
         }
     }
 }

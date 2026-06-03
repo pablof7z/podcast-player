@@ -1,11 +1,14 @@
 import Foundation
-import LiteRTLM
+// LiteRTLM's Engine/Conversation types predate Swift 6 strict-concurrency
+// auditing (Conversation is a non-Sendable class). @preconcurrency downgrades
+// the cross-actor non-Sendable diagnostics to warnings for this SDK.
+@preconcurrency import LiteRTLM
 import os.log
 
 actor LocalLLMService {
     private var engine: Engine?
 
-    private var cacheDir: URL {
+    private nonisolated var cacheDir: URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         return caches.appendingPathComponent("LiteRTCache", isDirectory: true)
     }
@@ -15,7 +18,7 @@ actor LocalLLMService {
     }
 
     func load(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
-        guard let fileURL = downloadManager.modelFileURL(for: spec.id) as URL? else {
+        guard let fileURL = await downloadManager.modelFileURL(for: spec.id) as URL? else {
             throw LocalLLMError.modelNotFound
         }
 
@@ -29,7 +32,7 @@ actor LocalLLMService {
             cacheDir: cacheDir.path
         )
         let newEngine = Engine(engineConfig: config)
-        try newEngine.initialize()
+        try await newEngine.initialize()
         engine = newEngine
         os_log("Local LLM engine initialized with model: %{public}@", log: .default, type: .info, fileURL.path)
     }
@@ -58,7 +61,7 @@ actor LocalLLMService {
         }
 
         do {
-            let conversation = try engine.createConversation()
+            let conversation = try await engine.createConversation()
             let userMessage = Message(contents: [.text(promptText)], role: .user)
             let response = try await conversation.sendMessage(userMessage)
 
@@ -83,7 +86,8 @@ actor LocalLLMService {
     }
 
     func registerWithKernel(_ kernel: KernelModel) async {
-        guard let handle = kernel.podcastHandlePointer else {
+        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
+        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
             os_log("Cannot register local LLM: no kernel handle", log: .default, type: .error)
             return
         }
@@ -93,8 +97,9 @@ actor LocalLLMService {
         os_log("Local LLM service registered with kernel", log: .default, type: .debug)
     }
 
-    func clearFromKernel(_ kernel: KernelModel) {
-        guard let handle = kernel.podcastHandlePointer else { return }
+    func clearFromKernel(_ kernel: KernelModel) async {
+        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
+        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else { return }
         nmp_app_clear_local_llm(handle)
         os_log("Local LLM service cleared from kernel", log: .default, type: .debug)
     }
@@ -113,19 +118,25 @@ private func localLLMCallback(
     let promptString = String(cString: promptJSON)
 
     // The FFI call runs on a Rust background thread (not the cooperative pool),
-    // so blocking with a semaphore here is safe.
+    // so blocking with a semaphore here is safe. The semaphore guarantees the
+    // Task's write to `box` happens-before the read after `wait()`, so the
+    // @unchecked Sendable box carries the result across the boundary without a
+    // real race (Swift 6 can't prove the ordering, hence the box).
+    final class ResultBox: @unchecked Sendable {
+        var value = #"{"error":"Inference failed"}"#
+    }
+    let box = ResultBox()
     let semaphore = DispatchSemaphore(value: 0)
-    var result: String = #"{"error":"Inference failed"}"#
 
     let task = Task {
-        result = await service.infer(promptJSON: promptString)
+        box.value = await service.infer(promptJSON: promptString)
         semaphore.signal()
     }
 
     semaphore.wait()
     task.cancel()
 
-    guard let resultCString = result.cString(using: .utf8) else {
+    guard let resultCString = box.value.cString(using: .utf8) else {
         return nil
     }
 

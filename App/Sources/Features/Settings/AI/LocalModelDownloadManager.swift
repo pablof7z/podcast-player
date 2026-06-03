@@ -99,35 +99,37 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
 
     // MARK: - URLSessionDownloadDelegate
 
-    func urlSession(
+    nonisolated func urlSession(
         _ session: URLSession,
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo temporaryURL: URL
     ) {
         guard let originalURL = downloadTask.originalRequest?.url else { return }
 
-        let modelID = activeDownloads.first(where: { $0.value.lastPathComponent.dropLast(9) == URL(fileURLWithPath: originalURL.lastPathComponent).lastPathComponent.dropLast(9) })?.key
-        guard let modelID = modelID else { return }
+        MainActor.assumeIsolated {
+            let modelID = activeDownloads.first(where: { $0.value.lastPathComponent.dropLast(9) == URL(fileURLWithPath: originalURL.lastPathComponent).lastPathComponent.dropLast(9) })?.key
+            guard let modelID = modelID else { return }
 
-        let destinationURL = activeDownloads[modelID] ?? modelFileURL(for: modelID)
+            let destinationURL = activeDownloads[modelID] ?? modelFileURL(for: modelID)
 
-        do {
-            try fileManager.removeItem(at: destinationURL)
-        } catch {
-            // File might not exist yet
-        }
+            do {
+                try fileManager.removeItem(at: destinationURL)
+            } catch {
+                // File might not exist yet
+            }
 
-        do {
-            try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-            states[modelID] = .downloaded
-            activeDownloads.removeValue(forKey: modelID)
-        } catch {
-            os_log("Failed to move downloaded model: %{public}@", log: .default, type: .error, error.localizedDescription)
-            states[modelID] = .notDownloaded
+            do {
+                try fileManager.moveItem(at: temporaryURL, to: destinationURL)
+                states[modelID] = .downloaded
+                activeDownloads.removeValue(forKey: modelID)
+            } catch {
+                os_log("Failed to move downloaded model: %{public}@", log: .default, type: .error, error.localizedDescription)
+                states[modelID] = .notDownloaded
+            }
         }
     }
 
-    func urlSession(
+    nonisolated func urlSession(
         _ session: URLSession,
         downloadTask: URLSessionDownloadTask,
         didWriteData bytesWritten: Int64,
@@ -138,10 +140,12 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
               let modelID = LocalModelCatalog.all.first(where: { $0.downloadURL == originalURL })?.id else { return }
 
         let progress = totalBytesExpectedToWrite > 0 ? Double(totalBytesWritten) / Double(totalBytesExpectedToWrite) : 0.0
-        states[modelID] = .downloading(progress: progress)
+        MainActor.assumeIsolated {
+            states[modelID] = .downloading(progress: progress)
+        }
     }
 
-    func urlSession(
+    nonisolated func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
         didCompleteWithError error: Error?
@@ -149,10 +153,12 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         guard let originalURL = task.originalRequest?.url,
               let modelID = LocalModelCatalog.all.first(where: { $0.downloadURL == originalURL })?.id else { return }
 
-        if let error = error {
-            os_log("Download failed for model %{public}@: %{public}@", log: .default, type: .error, modelID, error.localizedDescription)
-            states[modelID] = .notDownloaded
+        MainActor.assumeIsolated {
+            if let error = error {
+                os_log("Download failed for model %{public}@: %{public}@", log: .default, type: .error, modelID, error.localizedDescription)
+                states[modelID] = .notDownloaded
+            }
+            activeDownloads.removeValue(forKey: modelID)
         }
-        activeDownloads.removeValue(forKey: modelID)
     }
 }
