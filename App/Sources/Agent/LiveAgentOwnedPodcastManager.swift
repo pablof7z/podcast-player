@@ -227,38 +227,18 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         let imageGen = ImageGenerationService(apiKey: apiKey)
         let imageData = try await imageGen.generate(prompt: prompt, model: settings.imageGenerationModel)
-        // D13: sign the Blossom auth event through the kernel using the AGENT's
-        // key (registered as a non-active signer), instead of reading the
-        // agent's raw private key bytes via `nostrSigner()`. The agent key is a
-        // distinct identity from the user's active account, so we register it
-        // (make_active=0) and sign explicitly by its pubkey.
-        guard let kernel = await MainActor.run(body: { store?.kernel }) else {
-            throw AgentOwnedPodcastError.storeUnavailable
-        }
-        let agentPubkey = try await registerAgentSignerWithKernel(kernel)
+        // The agent's key is an app-generated LOCAL key (NostrCredentialStore) —
+        // never a NIP-46 bunker — so signing it locally via `nostrSigner()` is
+        // NOT a D13 violation (there are always raw bytes to read; nothing
+        // breaks for bunker users). The D13 fix applies only to the USER's
+        // active-account signing (feedback + profile photo), which now routes
+        // through the kernel. Fully kernel-routing the agent key would need a
+        // justified non-active registration seam + ADR — out of scope here.
+        let signer = try nostrSigner()
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
-        let url = try await blossom.upload(
-            data: imageData,
-            contentType: "image/png",
-            accountPubkey: agentPubkey,
-            kernel: kernel
-        )
+        let url = try await blossom.upload(data: imageData, contentType: "image/png", signer: signer)
         Self.logger.info("Artwork uploaded to \(url.absoluteString, privacy: .public)")
         return url
-    }
-
-    /// Register the agent's key with the kernel as a NON-ACTIVE signer (D13) and
-    /// return its hex pubkey. Idempotent: the kernel's signer map dedupes by
-    /// pubkey, so re-registering the same key on every upload is harmless — the
-    /// active account is never disturbed. The agent's secret never leaves the
-    /// Keychain except as the `Zeroizing`-wrapped argument the kernel consumes.
-    private func registerAgentSignerWithKernel(_ kernel: KernelModel) async throws -> String {
-        guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
-            throw AgentOwnedPodcastError.noSigningKey
-        }
-        let pubkey = try agentPubkeyHex()
-        await MainActor.run { kernel.addSignerNsec(hex, makeActive: false) }
-        return pubkey
     }
 
     // MARK: - publishEpisodeToNostr

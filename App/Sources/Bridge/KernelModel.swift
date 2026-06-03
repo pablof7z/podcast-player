@@ -477,15 +477,9 @@ final class KernelModel {
     /// `ActorCommand::SignInNsec` handler validates and persists the key
     /// via the kernel keyring path — DO NOT also write to
     /// `PcstIdentityCapability` here. Single source of truth.
-    func signInNsec(_ nsec: String) {
-        kernel.signInNsec(nsec)
-    }
-
-    /// Register a signer from an `nsec` (or hex) WITHOUT activating it (D13) —
-    /// the agent / secondary-key path. `makeActive = true` is identical to
-    /// `signInNsec`. SECURITY: never log `nsec`.
-    func addSignerNsec(_ nsec: String, makeActive: Bool) {
-        kernel.addSignerNsec(nsec, makeActive: makeActive)
+    /// `makeActive = false` registers a secondary signer without activating it.
+    func signInNsec(_ nsec: String, makeActive: Bool = true) {
+        kernel.signInNsec(nsec, makeActive: makeActive)
     }
 
     /// Cancel the in-flight bunker handshake. Safe / idempotent when nothing

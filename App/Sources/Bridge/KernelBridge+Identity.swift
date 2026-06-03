@@ -28,20 +28,13 @@ extension PodcastHandle {
         uri.withCString { nmp_app_signin_bunker(raw, $0) }
     }
 
-    /// Enqueue `ActorCommand::SignInNsec` with the supplied bech32 / hex
-    /// secret. The Rust side wraps it in `Zeroizing<String>` immediately
-    /// upon copy-in.
-    func signInNsec(_ nsec: String) {
-        nsec.withCString { nmp_app_signin_nsec(raw, $0) }
-    }
-
-    /// Register a signer from an `nsec` WITHOUT activating it (`makeActive =
-    /// false`) — the agent / secondary-key path that must sign (e.g. a Blossom
-    /// upload) without disturbing the user's active account. `makeActive = true`
-    /// is identical to `signInNsec`. The Rust side `Zeroizing`-wraps the secret
-    /// on copy-in (D13). SECURITY: never log `nsec`.
-    func addSignerNsec(_ nsec: String, makeActive: Bool) {
-        nsec.withCString { nmp_app_add_signer_nsec(raw, $0, makeActive ? 1 : 0) }
+    /// Enqueue `ActorCommand::AddSigner` with the supplied bech32 / hex secret.
+    /// `makeActive = true` registers AND activates (the normal user sign-in);
+    /// `makeActive = false` registers a secondary signer without disturbing the
+    /// active account. The Rust side wraps the secret in `Zeroizing<String>`
+    /// immediately upon copy-in (D13).
+    func signInNsec(_ nsec: String, makeActive: Bool = true) {
+        nsec.withCString { nmp_app_signin_nsec(raw, $0, makeActive ? 1 : 0) }
     }
 
     /// D13 sign-and-return — sign `unsignedJSON` with the `accountPubkeyHex`

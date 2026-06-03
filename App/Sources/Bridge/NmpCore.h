@@ -134,19 +134,16 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // `callback_scheme` may be NULL — when non-null Rust appends a percent-encoded
 // `&callback=<scheme>` query parameter so the signer app can deep-link back.
 // Pass NULL when the host scheme is not registered with the OS.
-void nmp_app_signin_nsec(void *app, const char *secret);
+// `make_active = 1` registers the signer AND activates it (the normal user
+// sign-in). `make_active = 0` registers a secondary signer WITHOUT activating
+// it — sign by its pubkey via `nmp_app_sign_event_for_return` without
+// disturbing the active account. The `secret` is `Zeroizing`-wrapped on
+// copy-in (D13). Hosts MUST NOT log it.
+void nmp_app_signin_nsec(void *app, const char *secret, unsigned char make_active);
 void nmp_app_signin_bunker(void *app, const char *uri);
 
 // ── Sign-and-return (D13) ──────────────────────────────────────────────────
 //
-// `nmp_app_add_signer_nsec` registers a signer from an `nsec1…` (or hex)
-// string. `make_active = 0` registers WITHOUT activating (an agent / secondary
-// key that must sign without disturbing the user's active account);
-// `make_active = 1` is identical to `nmp_app_signin_nsec`. The `nsec` is
-// wrapped in `Zeroizing` on copy-in — no raw key bytes are retained (D13).
-// Hosts MUST NOT log the secret. Declared per `crates/nmp-ffi/src/identity.rs`.
-void nmp_app_add_signer_nsec(void *app, const char *nsec, unsigned char make_active);
-
 // `nmp_app_sign_event_for_return` signs an unsigned event draft with the named
 // (or active) account's signer and parks the signed JSON in the `signed_events`
 // snapshot projection, keyed by a returned opaque correlation id. This is the
