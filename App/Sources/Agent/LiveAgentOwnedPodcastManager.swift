@@ -227,11 +227,38 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         let imageGen = ImageGenerationService(apiKey: apiKey)
         let imageData = try await imageGen.generate(prompt: prompt, model: settings.imageGenerationModel)
-        let signer = try nostrSigner()
+        // D13: sign the Blossom auth event through the kernel using the AGENT's
+        // key (registered as a non-active signer), instead of reading the
+        // agent's raw private key bytes via `nostrSigner()`. The agent key is a
+        // distinct identity from the user's active account, so we register it
+        // (make_active=0) and sign explicitly by its pubkey.
+        guard let kernel = await MainActor.run(body: { store?.kernel }) else {
+            throw AgentOwnedPodcastError.storeUnavailable
+        }
+        let agentPubkey = try await registerAgentSignerWithKernel(kernel)
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
-        let url = try await blossom.upload(data: imageData, contentType: "image/png", signer: signer)
+        let url = try await blossom.upload(
+            data: imageData,
+            contentType: "image/png",
+            accountPubkey: agentPubkey,
+            kernel: kernel
+        )
         Self.logger.info("Artwork uploaded to \(url.absoluteString, privacy: .public)")
         return url
+    }
+
+    /// Register the agent's key with the kernel as a NON-ACTIVE signer (D13) and
+    /// return its hex pubkey. Idempotent: the kernel's signer map dedupes by
+    /// pubkey, so re-registering the same key on every upload is harmless — the
+    /// active account is never disturbed. The agent's secret never leaves the
+    /// Keychain except as the `Zeroizing`-wrapped argument the kernel consumes.
+    private func registerAgentSignerWithKernel(_ kernel: KernelModel) async throws -> String {
+        guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
+            throw AgentOwnedPodcastError.noSigningKey
+        }
+        let pubkey = try agentPubkeyHex()
+        await MainActor.run { kernel.addSignerNsec(hex, makeActive: false) }
+        return pubkey
     }
 
     // MARK: - publishEpisodeToNostr

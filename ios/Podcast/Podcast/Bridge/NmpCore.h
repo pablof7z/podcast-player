@@ -126,6 +126,21 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // Pass NULL when the host scheme is not registered with the OS.
 void nmp_app_signin_nsec(void *app, const char *secret);
 void nmp_app_signin_bunker(void *app, const char *uri);
+
+// ── Sign-and-return (D13) ──────────────────────────────────────────────────
+//
+// `nmp_app_add_signer_nsec` registers a signer from an `nsec1…` string.
+// `make_active = 0` registers WITHOUT activating (agent / secondary key);
+// `make_active = 1` == `nmp_app_signin_nsec`. The `nsec` is `Zeroizing`-wrapped
+// on copy-in (D13). `nmp_app_sign_event_for_return` signs an unsigned draft
+// with the named (or active, when `account_pubkey_hex == ""`) signer and parks
+// the signed JSON in `projections.signed_events[<returned id>]`; it NEVER
+// publishes. Returns a heap correlation-id string to free via
+// `nmp_app_free_string`. Declared per `crates/nmp-ffi/src/identity.rs`.
+void nmp_app_add_signer_nsec(void *app, const char *nsec, unsigned char make_active);
+char *nmp_app_sign_event_for_return(void *app, const char *account_pubkey_hex,
+                                    const char *unsigned_json);
+
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
 char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);

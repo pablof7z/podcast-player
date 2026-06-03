@@ -109,15 +109,20 @@ struct ChangePhotoSheet: View {
                 uploadState = .failed("Could not read the selected photo.")
                 return
             }
-            guard let signer = identity.signer else {
+            // D13: sign the Blossom kind:24242 auth event through the kernel
+            // (active account) instead of reading raw private key bytes via
+            // `identity.signer`. Works for NIP-46 bunker users.
+            guard let kernel = store.kernel, identity.publicKeyHex != nil else {
                 uploadState = .failed("Sign in to upload a photo.")
                 return
             }
             let prepared = try Self.resizeJPEG(raw, maxEdge: 800, quality: 0.85)
+            // Empty pubkey → active account; the kernel fills it and signs.
             let url = try await uploader.upload(
                 data: prepared,
                 contentType: "image/jpeg",
-                signer: signer
+                accountPubkey: "",
+                kernel: kernel
             )
             pictureURL = url.absoluteString
             Haptics.success()

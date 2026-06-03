@@ -136,6 +136,35 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // Pass NULL when the host scheme is not registered with the OS.
 void nmp_app_signin_nsec(void *app, const char *secret);
 void nmp_app_signin_bunker(void *app, const char *uri);
+
+// ── Sign-and-return (D13) ──────────────────────────────────────────────────
+//
+// `nmp_app_add_signer_nsec` registers a signer from an `nsec1…` (or hex)
+// string. `make_active = 0` registers WITHOUT activating (an agent / secondary
+// key that must sign without disturbing the user's active account);
+// `make_active = 1` is identical to `nmp_app_signin_nsec`. The `nsec` is
+// wrapped in `Zeroizing` on copy-in — no raw key bytes are retained (D13).
+// Hosts MUST NOT log the secret. Declared per `crates/nmp-ffi/src/identity.rs`.
+void nmp_app_add_signer_nsec(void *app, const char *nsec, unsigned char make_active);
+
+// `nmp_app_sign_event_for_return` signs an unsigned event draft with the named
+// (or active) account's signer and parks the signed JSON in the `signed_events`
+// snapshot projection, keyed by a returned opaque correlation id. This is the
+// D13 seam: a host needing a signed auth event (Blossom upload header, feedback
+// event) gets it WITHOUT reading raw private key bytes — works for NIP-46
+// bunker users too. The signed event is NEVER published.
+//
+// `account_pubkey_hex` — lowercase hex pubkey of the signer to use; pass "" to
+//   use the active account.
+// `unsigned_json` — `{"kind":N,"content":"...","tags":[[...]],"created_at":N}`.
+//   `created_at` is advisory; the kernel re-stamps it from its own clock (D7).
+//
+// Returns a heap correlation-id C string the caller MUST free via
+// `nmp_app_free_string`. The host polls `projections.signed_events[<id>]` for
+// `{"ok":true,"signed_json":"..."}` or `{"ok":false,"error":"..."}`.
+char *nmp_app_sign_event_for_return(void *app, const char *account_pubkey_hex,
+                                    const char *unsigned_json);
+
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
 char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);

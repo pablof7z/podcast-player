@@ -178,12 +178,17 @@ final class PodcastHandle: @unchecked Sendable {
             // generic snapshot (sibling of `projections`), which `PodcastUpdate`
             // does not model — so read it raw, mirroring the identity decode.
             let storeOpenFailure = KernelUpdateResult.extractStoreOpenFailure(envelopePayload: data)
+            // D13 sign-and-return — the `signed_events` projection slice (raw
+            // read, drain-once, empty on steady-state frames). The update
+            // handler resolves any waiting `signEventForReturn` continuation.
+            let signedEvents = KernelUpdateResult.extractSignedEvents(envelopePayload: data)
             let duration = start.duration(to: .now)
             kbLog.info("decoded ok rev=\(update.rev)")
             return KernelUpdateResult(
                 update: update,
                 identity: identity,
                 storeOpenFailure: storeOpenFailure,
+                signedEvents: signedEvents,
                 payloadBytes: data.count,
                 callbackReceivedAt: start,
                 decodeMicros: duration.microseconds)
@@ -244,6 +249,14 @@ struct KernelUpdateResult {
     /// LMDB store and fell back to in-memory (this session's data will not
     /// persist). The host MUST surface this to the user.
     let storeOpenFailure: String?
+    /// D13 sign-and-return — the `projections.signed_events` slice of this
+    /// frame, keyed by `correlation_id`. Each value is the raw kernel shape
+    /// `{"ok": true, "signed_json": "..."}` or `{"ok": false, "error": "..."}`.
+    /// Empty on every frame that carried no sign-and-return result (the common
+    /// case — the projection is drain-once and absent in steady state). The
+    /// update handler resolves any waiting `signEventForReturn` continuation
+    /// whose id appears here.
+    let signedEvents: [String: [String: Any]]
     let payloadBytes: Int
     let callbackReceivedAt: ContinuousClock.Instant
     let decodeMicros: Int
@@ -261,6 +274,30 @@ extension KernelUpdateResult {
               let value = outer["v"] as? [String: Any]
         else { return nil }
         return value["store_open_failure"] as? String
+    }
+
+    /// D13 sign-and-return — extract the `projections.signed_events` slice from
+    /// a kernel snapshot wire envelope (`{"t":"snapshot","v":{"projections":...}}`).
+    /// Raw `JSONSerialization` read, mirroring `extractStoreOpenFailure` /
+    /// `KernelIdentityProjection.decode` — the typed `PodcastUpdate` decode
+    /// drops this generic-snapshot projection. Keys are read VERBATIM (snake_case
+    /// `signed_json`/`ok`/`error`) because this raw path does NOT apply the
+    /// `.convertFromSnakeCase` strategy the typed `PodcastUpdate` decode uses.
+    /// Returns `[:]` when the projection is absent (every steady-state frame).
+    static func extractSignedEvents(envelopePayload data: Data) -> [String: [String: Any]] {
+        guard let raw = try? JSONSerialization.jsonObject(with: data),
+              let outer = raw as? [String: Any],
+              let value = outer["v"] as? [String: Any],
+              let projections = value["projections"] as? [String: Any],
+              let signed = projections["signed_events"] as? [String: Any]
+        else { return [:] }
+        var out: [String: [String: Any]] = [:]
+        for (correlationID, entry) in signed {
+            if let dict = entry as? [String: Any] {
+                out[correlationID] = dict
+            }
+        }
+        return out
     }
 }
 

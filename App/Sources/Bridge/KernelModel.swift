@@ -55,6 +55,22 @@ final class KernelModel {
     private(set) var snapshotCount: UInt64 = 0
     private(set) var lastSnapshotAt: Date?
 
+    // ── D13 sign-and-return registry ─────────────────────────────────────────
+    // Correlation-id-keyed continuation registry + stash for the kernel
+    // sign-and-return path (`KernelModel+SignAndReturn.swift`). `@ObservationIgnored`
+    // — internal bookkeeping, never a UI surface. Both maps are touched only on
+    // the main actor (this class is `@MainActor`), so the stash check-then-act
+    // is atomic without a lock.
+
+    /// Continuations awaiting a `signed_events[<id>]` result, keyed by correlation_id.
+    @ObservationIgnored
+    var signContinuations: [String: CheckedContinuation<String, Error>] = [:]
+
+    /// Results that arrived before their continuation was registered (the
+    /// local-key fast-frame race) — drained when the continuation registers.
+    @ObservationIgnored
+    var pendingSignResults: [String: SignOutcome] = [:]
+
     /// Clearable toast text sourced from snapshot or synchronous dispatch
     /// rejections.
     private(set) var lastErrorToast: String?
@@ -465,6 +481,13 @@ final class KernelModel {
         kernel.signInNsec(nsec)
     }
 
+    /// Register a signer from an `nsec` (or hex) WITHOUT activating it (D13) —
+    /// the agent / secondary-key path. `makeActive = true` is identical to
+    /// `signInNsec`. SECURITY: never log `nsec`.
+    func addSignerNsec(_ nsec: String, makeActive: Bool) {
+        kernel.addSignerNsec(nsec, makeActive: makeActive)
+    }
+
     /// Cancel the in-flight bunker handshake. Safe / idempotent when nothing
     /// is in flight.
     func cancelBunkerHandshake() {
@@ -516,6 +539,14 @@ final class KernelModel {
         // mandatory store alert fires on the first frame and identity stays live
         // even on ticks where the podcast projection didn't change.
         storeOpenFailure = result.storeOpenFailure
+        // D13 sign-and-return — resolve any waiting `signEventForReturn`
+        // continuation whose correlation_id appears in this frame's
+        // `signed_events` projection. Runs before the rev-gated podcast apply so
+        // an upload / feedback await resumes on the very frame the result lands.
+        // Empty on every steady-state frame, so this is a no-op in the common case.
+        if !result.signedEvents.isEmpty {
+            resolveSignedEvents(result.signedEvents)
+        }
         // `apply` runs on every accepted push frame (4 Hz during playback), but
         // the identity slice — accounts, handshake, and the resolved-profiles
         // map — changes far less often. Gate the `@Observable` write on a real
