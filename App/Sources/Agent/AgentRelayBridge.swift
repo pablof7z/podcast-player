@@ -31,8 +31,8 @@ final class AgentRelayBridge {
     }
 
     /// Variant init that takes a pre-built `PodcastAgentToolDeps` directly.
-    /// Used by `NostrAgentResponder`, which gets its `PlaybackState` via a
-    /// late-bound closure provider (RootView wires it post-construction).
+    /// Used when `PlaybackState` is late-bound via a closure provider
+    /// (RootView wires it post-construction).
     init(
         store: AppStateStore,
         podcastDeps: PodcastAgentToolDeps?,

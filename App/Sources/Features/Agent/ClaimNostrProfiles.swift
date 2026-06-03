@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Reference-first profile claiming
 //
-// Replaces the bespoke `NostrProfileFetcher` websocket. A view that displays
+// A view that displays
 // Nostr profiles attaches `.claimNostrProfiles(_:consumer:)` with the pubkeys
 // it renders; the kernel resolves each one over its own relay pool and
 // delivers the result through `projections.resolved_profiles`, which

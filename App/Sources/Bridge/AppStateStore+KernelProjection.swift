@@ -385,10 +385,7 @@ extension AppStateStore {
             // delivery half of reference-first profile resolution: display
             // surfaces `claimNostrProfiles(_:consumer:)` the pubkeys they
             // render, the kernel resolves each kind:0 over its relay pool, and
-            // the result lands here on the next push frame. The bespoke
-            // `NostrProfileFetcher` remains only for `NostrAgentResponder`'s
-            // synchronous prompt-building window and the approval-enrich
-            // snapshot — neither of which an async push can satisfy.
+            // the result lands here on the next push frame.
             mergeResolvedProfiles(identity.resolvedProfiles)
         }
 
