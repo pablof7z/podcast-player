@@ -63,9 +63,8 @@ struct AgentChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
         .onAppear {
-            let model = store.state.settings.agentInitialModel
-            let hasKey = LLMReadiness.canSend(model: model, store: store)
-            showSettingsHint = !hasKey
+            // Credential state is Rust-owned; do not gate UI on it here.
+            showSettingsHint = false
             // Drain any pending ask-agent context that was set since the
             // session was last opened (e.g. long-press → Ask Agent while
             // the session was already alive but the sheet was closed).

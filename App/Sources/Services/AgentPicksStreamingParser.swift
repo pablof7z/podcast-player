@@ -13,7 +13,7 @@ import Foundation
 // the first outer `{` and ignores everything before it.
 //
 // Why this exists instead of re-running `JSONSerialization` every chunk:
-//   • `onPartialContent` from `AgentOpenRouterClient` fires per SSE delta;
+//   • `onPartialContent` from `AgentLLMClient` fires once with the full reply;
 //     mid-stream the buffer is invalid JSON (unbalanced braces, half-
 //     written strings), so `JSONSerialization` would throw on every chunk
 //     until the very last one. We'd have to swallow noise and we'd never

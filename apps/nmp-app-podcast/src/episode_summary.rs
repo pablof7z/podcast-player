@@ -74,12 +74,14 @@ async fn summarize_in_background(
     inputs: crate::store::summary::EpisodeSummaryInputs,
 ) {
     let runtime2 = Arc::clone(&runtime);
+    let store2 = Arc::clone(&store);
     let result = tokio::task::spawn_blocking(move || {
         summarize_episode(
             &inputs.title,
             &inputs.description,
             inputs.transcript.as_deref(),
             &runtime2,
+            &store2,
         )
     })
     .await;

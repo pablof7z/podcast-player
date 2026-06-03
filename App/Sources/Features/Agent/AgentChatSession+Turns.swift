@@ -79,11 +79,6 @@ extension AgentChatSession {
     /// Like `send(_:)` but skips appending the user message — it's already in
     /// both `messages` and `rawMessages` from the original turn.
     func regenerateSend(_ text: String, source: AgentRunSource) async {
-        guard LLMReadiness.canSend(model: store.state.settings.agentInitialModel, store: store) else {
-            phase = .failed(LLMReadiness.missingCredentialMessage(for: store.state.settings.agentInitialModel))
-            return
-        }
-
         if !rawMessages.isEmpty {
             rawMessages[0] = ["role": "system", "content": systemPromptText]
         }
@@ -108,11 +103,6 @@ extension AgentChatSession {
     func send(_ text: String, source: AgentRunSource) async {
         let trimmed = text.trimmed
         guard !trimmed.isEmpty else { return }
-
-        guard LLMReadiness.canSend(model: store.state.settings.agentInitialModel, store: store) else {
-            phase = .failed(LLMReadiness.missingCredentialMessage(for: store.state.settings.agentInitialModel))
-            return
-        }
 
         if rawMessages.isEmpty {
             rawMessages.append([
@@ -158,17 +148,17 @@ extension AgentChatSession {
 
             let messagesBeforeCall = rawMessages
             let result: AgentResult
-            let modelForTurn = isUpgraded
-                ? store.state.settings.agentThinkingModel
-                : store.state.settings.agentInitialModel
             do {
+                // Model selection is Rust-owned; pass empty string — the Rust backend
+                // always uses THINKING_MODEL with FAST_MODEL fallback regardless of
+                // the Swift-side setting, so the isUpgraded flag only affects the
+                // system prompt context in a future PR.
                 result = try await AgentLLMClient.streamCompletion(
                     messages: rawMessages,
                     tools: AgentTools.schema
                          + AgentTools.podcastSchema
                          + AgentSkillRegistry.schemas(for: enabledSkills),
-                    model: modelForTurn,
-                    store: store
+                    model: ""
                 ) { [weak self] partial in
                     self?.streamingContent = partial
                 }
@@ -376,7 +366,6 @@ extension AgentChatSession {
         }
         return result.resultJSON
     }
-
 
     /// Saves any non-empty partial streaming content as an assistant message
     /// before an error terminates the turn.

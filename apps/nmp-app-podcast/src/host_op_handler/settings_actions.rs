@@ -280,6 +280,12 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
+            SettingsAction::SetProviderApiKeys { open_router, ollama } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_provider_api_keys(open_router, ollama);
+                }
+                serde_json::json!({"ok": true})
+            }
             // Relay edits mutate kernel-owned state (the `AppRelaySlot`), not
             // `PodcastStore` — `SettingsActionModule::execute` already emitted
             // the real `ActorCommand::AddRelay` / `RemoveRelay` that mutates the

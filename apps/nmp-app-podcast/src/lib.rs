@@ -65,6 +65,7 @@ pub(crate) mod inbox_handler;
 pub(crate) mod inbox_llm;
 pub(crate) mod itunes;
 pub mod knowledge;
+pub mod llm;
 pub(crate) mod memory_handler;
 pub(crate) mod picks_handler;
 pub(crate) mod picks_llm;

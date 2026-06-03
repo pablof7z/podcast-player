@@ -32,16 +32,6 @@ struct AgentMemoryCompiler {
         let currentIDs = memories.map(\.id)
         if previous?.sourceMemoryIDs == currentIDs { return }
 
-        let model = store.state.settings.agentInitialModel
-        let reference = LLMModelReference(storedID: model)
-        guard !reference.isEmpty,
-              LLMReadiness.canSend(model: model, store: store) else {
-            // No usable LLM credential yet — leave the previous compile in
-            // place and try again after the next run. This is the same
-            // policy as a failed LLM call: never blow away a good compile.
-            return
-        }
-
         let userMessage = buildUserMessage(memories: memories, previous: previous)
         let messages: [[String: Any]] = [
             ["role": "system", "content": Self.systemPrompt],
@@ -50,12 +40,11 @@ struct AgentMemoryCompiler {
 
         let result: AgentResult
         do {
+            // Model selection is Rust-owned; credential checking is Rust-owned.
             result = try await AgentLLMClient.streamCompletion(
                 messages: messages,
                 tools: [],
-                model: model,
-                store: store,
-                feature: CostFeature.agentChat,
+                model: "",
                 onPartialContent: { _ in }
             )
         } catch {

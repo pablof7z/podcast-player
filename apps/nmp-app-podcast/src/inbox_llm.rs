@@ -24,11 +24,12 @@
 //! never blocked: both the explicit `InboxAction::Triage` and the proactive
 //! snapshot-path trigger spawn that background task and return immediately.
 
+use std::sync::{Arc, Mutex};
+
 use tokio::runtime::Runtime;
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::Prompt as _;
-use rig_core::providers::ollama;
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 
 /// Lifecycle status of a cached triage entry.
 ///
@@ -102,35 +103,32 @@ const TRIAGE_MODEL: &str = "deepseek-v4-flash:cloud";
 
 const TRIAGE_PREAMBLE: &str = r#"You are a podcast inbox triage assistant. Given episode metadata, output ONLY valid JSON with these fields: {"priority_score": <0.0-1.0>, "priority_reason": "<one sentence why>", "categories": ["<tag1>", "<tag2>"]}. No other text."#;
 
-/// Classify an episode for inbox priority using a local Ollama LLM.
+/// Classify an episode for inbox priority using the configured LLM.
 ///
-/// Returns `Err` if the Ollama endpoint is unreachable or the model
+/// Returns `Err` if the LLM endpoint is unreachable or the model
 /// response cannot be parsed as valid triage JSON.
 pub fn triage_episode(
     episode_title: &str,
     podcast_title: &str,
     description: &str,
     runtime: &Runtime,
-    base_url: &str,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<TriageResult, String> {
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(base_url)
-            .build()
-            .map_err(|e: rig_core::http_client::Error| e.to_string())?;
-
-        let agent = client
-            .agent(TRIAGE_MODEL)
-            .preamble(TRIAGE_PREAMBLE)
-            .build();
-
         let truncated: String = description.chars().take(500).collect();
         let prompt = format!(
             "Podcast: {podcast_title}\nEpisode: {episode_title}\nDescription: {truncated}"
         );
 
-        let response: String = agent.prompt(&prompt).await.map_err(|e| e.to_string())?;
+        let backend = backend_for(store, TRIAGE_MODEL);
+        let req = LlmRequest {
+            system: TRIAGE_PREAMBLE.to_owned(),
+            history: Vec::new(),
+            user: prompt,
+            model: TRIAGE_MODEL.to_owned(),
+        };
+
+        let response = backend.complete(&req).await?;
 
         let json_str = extract_json_object(&response)?;
         let v: serde_json::Value =

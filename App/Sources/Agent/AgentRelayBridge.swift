@@ -67,11 +67,6 @@ final class AgentRelayBridge {
         inboundEventID: String? = nil
     ) async -> String? {
         guard !history.isEmpty else { return nil }
-        let model = store.state.settings.agentInitialModel
-        guard LLMReadiness.canSend(model: model, store: store) else {
-            logger.warning("No LLM credential available for Nostr peer reply")
-            return nil
-        }
         var isUpgraded = false
         var enabledSkills: Set<String> = []
 
@@ -117,13 +112,6 @@ final class AgentRelayBridge {
         let trimmed = content.trimmed
         guard !trimmed.isEmpty else { return nil }
 
-        let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
-        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
-        guard !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL)
-                || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            logger.warning("No \(reference.provider.displayName, privacy: .public) key available for Nostr agent reply")
-            return nil
-        }
         var isUpgraded = false
         var enabledSkills: Set<String> = []
 
@@ -173,19 +161,15 @@ final class AgentRelayBridge {
         for _ in 0..<maxTurns {
             let messagesBeforeCall = messages
             let result: AgentResult
-            let modelForTurn = isUpgraded
-                ? store.state.settings.agentThinkingModel
-                : store.state.settings.agentInitialModel
             do {
+                // Model selection is Rust-owned; pass empty string.
                 result = try await AgentLLMClient.streamCompletion(
                     messages: messages,
                     tools: AgentTools.schema
                          + AgentTools.podcastSchema
                          + (peerContext != nil ? AgentTools.peerOnlySchema : [])
                          + AgentSkillRegistry.schemas(for: enabledSkills),
-                    model: modelForTurn,
-                    store: store,
-                    feature: CostFeature.agentNostr,
+                    model: "",
                     onPartialContent: { _ in }
                 )
             } catch {

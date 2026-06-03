@@ -178,28 +178,25 @@ final class AgentPicksService {
             return
         }
 
-        let model = store.state.settings.agentInitialModel
-        if LLMReadiness.canSend(model: model, store: store) {
-            do {
-                let picks = try await runLLMPicks(
-                    store: store,
-                    inputs: inputs,
-                    category: category,
-                    key: key,
-                    now: now
+        do {
+            let picks = try await runLLMPicks(
+                store: store,
+                inputs: inputs,
+                category: category,
+                key: key,
+                now: now
+            )
+            if !picks.isEmpty {
+                bundles[key] = HomeAgentPicksBundle(
+                    picks: picks,
+                    source: .agent,
+                    generatedAt: now
                 )
-                if !picks.isEmpty {
-                    bundles[key] = HomeAgentPicksBundle(
-                        picks: picks,
-                        source: .agent,
-                        generatedAt: now
-                    )
-                    fingerprints[key] = fingerprint
-                    return
-                }
-            } catch {
-                Self.logger.error("Agent picks LLM call failed: \(error.localizedDescription, privacy: .public)")
+                fingerprints[key] = fingerprint
+                return
             }
+        } catch {
+            Self.logger.error("Agent picks LLM call failed: \(error.localizedDescription, privacy: .public)")
         }
 
         // Fallback heuristic — rarely-opened shows proxied via stalest
@@ -242,16 +239,14 @@ final class AgentPicksService {
         // cached bundles intact.
         bundles[key] = HomeAgentPicksBundle(picks: [], source: .agent, generatedAt: now)
 
-        let model = store.state.settings.agentInitialModel
-
         // Streaming task — does the actual network call and incremental parse.
+        // Model selection is Rust-owned; `onPartialContent` fires once with
+        // the full reply text (Rust returns a complete string, not SSE chunks).
         let streamingTask = Task<[HomeAgentPick], Error> { @MainActor [weak self] in
             let result = try await AgentLLMClient.streamCompletion(
                 messages: messages,
                 tools: [],
-                model: model,
-                store: store,
-                feature: CostFeature.agentChat,
+                model: "",
                 onPartialContent: { [weak self] partial in
                     guard let self else { return }
                     Task { await activity.bump(to: Date()) }

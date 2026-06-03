@@ -33,17 +33,14 @@
 //! the re-entrancy guard on the spawn this self-heals on the next refresh;
 //! a two-tier projection would be over-engineering for the current scope.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::Prompt as _;
-use rig_core::providers::ollama;
-
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 use crate::ffi::actions::categorization_module::MAX_CATEGORIES_PER_EPISODE;
 
-const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 const CATEGORIZE_MODEL: &str = "deepseek-v4-flash:cloud";
 
 /// The fixed category taxonomy. The LLM is constrained to this list in the
@@ -70,29 +67,27 @@ const CATEGORIZE_PREAMBLE: &str = "You are a podcast episode categorizer. Given 
 
 /// Score an episode's categories using the LLM.
 ///
-/// Returns 1–3 taxonomy-valid tags, or `Err` if Ollama is unreachable, the
+/// Returns 1–3 taxonomy-valid tags, or `Err` if the LLM is unreachable, the
 /// response is unparseable, or no in-taxonomy tags survive filtering.
 pub fn categorize_episode(
     episode_title: &str,
     description: &str,
     runtime: &Arc<Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<Vec<String>, String> {
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(OLLAMA_BASE_URL)
-            .build()
-            .map_err(|e: rig_core::http_client::Error| e.to_string())?;
-
-        let agent = client
-            .agent(CATEGORIZE_MODEL)
-            .preamble(CATEGORIZE_PREAMBLE)
-            .build();
-
         let truncated: String = description.chars().take(500).collect();
         let prompt = format!("Title: {episode_title}\nDescription: {truncated}");
 
-        let response: String = agent.prompt(&prompt).await.map_err(|e| e.to_string())?;
+        let backend = backend_for(store, CATEGORIZE_MODEL);
+        let req = LlmRequest {
+            system: CATEGORIZE_PREAMBLE.to_owned(),
+            history: Vec::new(),
+            user: prompt,
+            model: CATEGORIZE_MODEL.to_owned(),
+        };
+
+        let response: String = backend.complete(&req).await?;
 
         parse_category_array(&response)
     })

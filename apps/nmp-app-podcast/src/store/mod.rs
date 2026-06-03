@@ -282,6 +282,12 @@ pub struct PodcastStore {
     /// the real queue rather than an empty slice.  Updated by every
     /// `persist_with_queue` call and seeded from disk on `load_from_disk`.
     cached_queue: Vec<String>,
+    /// OpenRouter API key (in-memory only, never persisted to disk).
+    /// Set via `set_provider_api_keys`; credential never touches disk.
+    open_router_api_key: Option<String>,
+    /// Ollama API key (in-memory only, never persisted to disk).
+    /// Set via `set_provider_api_keys`; credential never touches disk.
+    ollama_api_key: Option<String>,
 }
 
 impl PodcastStore {
@@ -367,6 +373,8 @@ impl PodcastStore {
             data_dir: None,
             loaded_queue: Vec::new(),
             cached_queue: Vec::new(),
+            open_router_api_key: None,
+            ollama_api_key: None,
         }
     }
 
