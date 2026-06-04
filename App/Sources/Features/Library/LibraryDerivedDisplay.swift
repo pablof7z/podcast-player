@@ -6,7 +6,7 @@ import SwiftUI
 extension Podcast {
 
     /// Stable per-show accent hue derived from the feed URL string when
-    /// present (synthetic podcasts fall back to the title bytes so the
+    /// present (feed-less podcasts fall back to the title bytes so the
     /// "Agent Generated" tile still gets a deterministic hue). We hash the
     /// bytes so the same podcast always reads with the same tint across
     /// launches even before artwork is loaded.

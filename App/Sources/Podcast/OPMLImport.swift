@@ -92,7 +92,6 @@ private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
         let language = attributeDict["language"]
 
         let podcast = Podcast(
-            kind: .rss,
             feedURL: feedURL,
             title: title,
             description: description,

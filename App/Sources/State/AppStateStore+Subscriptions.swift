@@ -5,14 +5,15 @@ import Foundation
 extension AppStateStore {
 
     /// Podcasts the user actively follows, sorted alphabetically by title.
-    /// Synthetic podcasts (Agent Generated, Unknown) are excluded by virtue
+    /// Feed-less podcasts (Agent Generated, Unknown) are excluded by virtue
     /// of having no `PodcastSubscription` row in the new model — they're
-    /// `Podcast`-only.
+    /// `Podcast`-only. The `feedURL != nil` filter additionally guards against
+    /// a stray subscription row pointing at a feed-less show.
     var sortedFollowedPodcasts: [Podcast] {
         let podcastByID = Dictionary(uniqueKeysWithValues: state.podcasts.map { ($0.id, $0) })
         return state.subscriptions
             .compactMap { podcastByID[$0.podcastID] }
-            .filter { $0.kind == .rss }
+            .filter { $0.feedURL != nil }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 

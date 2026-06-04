@@ -12,7 +12,7 @@ use crate::store::PodcastStore;
 ///
 /// Returns `None` when the episode is not found in the store. Falls back to
 /// the episode UUID string when the RSS `guid` field is empty (edge case for
-/// synthetic episodes that lack a canonical feed guid).
+/// agent-generated episodes that lack a canonical feed guid).
 pub fn episode_nip73_anchor(store: &PodcastStore, episode_id: &str) -> Option<String> {
     let (_, episode) = store.episode_with_podcast_clone(episode_id)?;
     let guid = if !episode.guid.is_empty() {

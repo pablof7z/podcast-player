@@ -76,11 +76,11 @@ final class PodcastCategorizationService {
         // Settings sheet, which gates its own UI on `isRunning`; future
         // callers must check `isRunning` themselves before calling.
         guard !isRunning else { return }
-        // Categorize only podcasts the user actively follows — synthetic
+        // Categorize only podcasts the user actively follows — feed-less
         // (Agent Generated, Unknown) and orphan single-episode podcasts
         // should never end up in the user's category taxonomy.
         let followedPodcastIDs = Set(store.state.subscriptions.map(\.podcastID))
-        let podcasts = store.state.podcasts.filter { followedPodcastIDs.contains($0.id) && $0.kind == .rss }
+        let podcasts = store.state.podcasts.filter { followedPodcastIDs.contains($0.id) && $0.feedURL != nil }
         guard !podcasts.isEmpty else {
             throw CategorizationError.noSubscriptions
         }

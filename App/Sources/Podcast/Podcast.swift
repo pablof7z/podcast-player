@@ -15,14 +15,7 @@ import Foundation
 /// rename.
 struct Podcast: Codable, Sendable, Identifiable, Hashable {
 
-    /// Source type. `.rss` is a feed-backed show; `.synthetic` covers the
-    /// "Agent Generated" pseudo-podcast and the Unknown-fallback row.
-    enum Kind: String, Codable, Sendable, Hashable {
-        case rss
-        case synthetic
-    }
-
-    /// Visibility for agent-owned synthetic podcasts. Controls whether the show
+    /// Visibility for agent-owned podcasts. Controls whether the show
     /// and its episodes are published as NIP-74 Nostr events (kind:30074 / kind:30075).
     enum NostrVisibility: String, Codable, Sendable, Hashable {
         /// Library-only — not published to Nostr.
@@ -39,8 +32,8 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     static let unknownID = UUID(uuidString: "00000000-EEEE-EEEE-EEEE-000000000000")!
 
     var id: UUID
-    var kind: Kind
-    /// Original RSS / Atom feed URL. `nil` for `.synthetic` podcasts.
+    /// Original RSS / Atom feed URL. `nil` for feed-less (agent-owned / TTS /
+    /// Unknown-fallback) podcasts.
     var feedURL: URL?
     var title: String
     var author: String
@@ -53,8 +46,8 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     /// When the app first learned about this podcast.
     var discoveredAt: Date
     /// Hex public key of the agent that owns this podcast. Non-nil only for
-    /// agent-created synthetic shows; `nil` for RSS shows and the legacy
-    /// "Agent Generated" singleton podcast.
+    /// agent-created feed-less shows; `nil` for feed-backed shows and the
+    /// legacy "Agent Generated" singleton podcast.
     var ownerPubkeyHex: String?
     /// NIP-74 publish visibility. Only relevant when `ownerPubkeyHex` is set.
     /// Defaults to `.public` so new agent-owned podcasts are live on Nostr
@@ -92,7 +85,6 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
 
     init(
         id: UUID = UUID(),
-        kind: Kind = .rss,
         feedURL: URL? = nil,
         title: String,
         author: String = "",
@@ -110,7 +102,6 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
         nostrCoordinate: String? = nil
     ) {
         self.id = id
-        self.kind = kind
         self.feedURL = feedURL
         self.title = title
         self.author = author
@@ -132,7 +123,6 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     /// row backs episodes the agent added without a feed_url.
     static let unknown = Podcast(
         id: Podcast.unknownID,
-        kind: .synthetic,
         feedURL: nil,
         title: "Unknown",
         author: "",
@@ -140,7 +130,7 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     )
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, feedURL, title, author, imageURL, description
+        case id, feedURL, title, author, imageURL, description
         case language, categories, discoveredAt
         case lastRefreshedAt, etag, lastModified
         case titleIsPlaceholder
@@ -150,7 +140,6 @@ struct Podcast: Codable, Sendable, Identifiable, Hashable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
-        kind = try c.decodeIfPresent(Kind.self, forKey: .kind) ?? .rss
         feedURL = try c.decodeIfPresent(URL.self, forKey: .feedURL)
         title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
         author = try c.decodeIfPresent(String.self, forKey: .author) ?? ""

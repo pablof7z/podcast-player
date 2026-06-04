@@ -5,7 +5,7 @@ use podcast_core::Podcast;
 /// Ports `OPMLExport.swift`. Output shape mirrors Apple Podcasts / Pocket
 /// Casts so re-importing into another app is lossless.
 ///
-/// Synthetic podcasts (no `feed_url`) are skipped — nothing to round-trip.
+/// Feed-less podcasts (no `feed_url`) are skipped — nothing to round-trip.
 pub fn export_opml(podcasts: &[Podcast]) -> String {
     export_opml_with(
         podcasts,

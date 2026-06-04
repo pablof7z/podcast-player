@@ -63,7 +63,7 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
     private func listPodcastsSync(limit: Int) -> [PodcastInventoryRow] {
         guard let store else { return [] }
         // All known Podcast rows — subscribed and unsubscribed. Filter out the
-        // synthetic Unknown sentinel so the agent doesn't see it as a real show.
+        // Unknown sentinel so the agent doesn't see it as a real show.
         let podcasts = store.state.podcasts
             .filter { $0.id != Podcast.unknownID }
             .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }

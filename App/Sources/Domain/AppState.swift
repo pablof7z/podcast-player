@@ -102,7 +102,7 @@ struct AppState: Codable, Sendable {
         // Subscription rows: try slim shape (new format) first. If the file
         // was written by a pre-split build, the rows carry legacy keys
         // (feedURL, title, …); split each into a Podcast + slim subscription
-        // (subscribers only — synthetic / agent-generated rows become
+        // (subscribers only — feed-less / agent-generated rows become
         // Podcast-only, with no auto-follow).
         let (decodedPodcasts, decodedSubscriptions) = try Self.decodeSubscriptions(from: c)
         podcasts = try c.decodeIfPresent([Podcast].self, forKey: .podcasts) ?? decodedPodcasts
@@ -161,7 +161,7 @@ struct AppState: Codable, Sendable {
         derivedSubscriptions.reserveCapacity(legacy.count)
         for row in legacy {
             derivedPodcasts.append(row.toPodcast())
-            // Synthetic (Agent Generated) rows were "auto-subscribed" only
+            // Feed-less (Agent Generated) rows were "auto-subscribed" only
             // because the old data model had no concept of a podcast without
             // a subscription. In the split model they become Podcast-only —
             // no notifications / no auto-download / no row in the user's
@@ -199,7 +199,6 @@ private struct LegacyPodcastSubscriptionRow: Decodable {
     func toPodcast() -> Podcast {
         Podcast(
             id: id,
-            kind: (isAgentGenerated ?? false) ? .synthetic : .rss,
             feedURL: feedURL,
             title: title ?? "",
             author: author ?? "",

@@ -2,13 +2,13 @@ import Foundation
 
 // MARK: - AgentOwnedPodcastManagerProtocol
 //
-// Manages agent-created synthetic podcasts: creation, metadata updates, artwork
-// generation (via image-gen + Blossom upload), and NIP-F4 Nostr publishing
-// (delegated to the Rust kernel's `podcast.publish` action namespace).
+// Manages agent-created (feed-less) owned podcasts: creation, metadata updates,
+// artwork generation (via image-gen + Blossom upload), and NIP-F4 Nostr
+// publishing (delegated to the Rust kernel).
 // Implemented by `LiveAgentOwnedPodcastManager`, injected via `PodcastAgentToolDeps`.
 
 protocol AgentOwnedPodcastManagerProtocol: Sendable {
-    /// Create a new agent-owned synthetic podcast. The caller's Nostr pubkey
+    /// Create a new agent-owned (feed-less) podcast. The caller's Nostr pubkey
     /// is stamped as `ownerPubkeyHex`. Returns the podcast row's stable info.
     func createPodcast(
         title: String,

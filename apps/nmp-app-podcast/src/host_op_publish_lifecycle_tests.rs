@@ -58,79 +58,32 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     )
 }
 
-#[test]
-fn register_synthetic_episode_inserts_into_kernel_store() {
-    use crate::ffi::actions::publish_module::SyntheticChapterArg;
-
-    let store = Arc::new(Mutex::new(PodcastStore::new()));
-    let handler = handler_with_store(store.clone());
-    let pid = uuid::Uuid::new_v4().to_string();
-
-    // Parent synthetic podcast must exist first.
-    let created = create_synthetic(
-        &handler,
-        pid.clone(),
-        "Agent Generated".into(),
-        String::new(),
-        "Agent".into(),
+/// Seed a feed-less podcast row directly via the store (the `create_podcast`
+/// host-op path is exercised in `podcast_actions` tests; here we just need a
+/// row to exist for the owned-podcast lifecycle handlers under test).
+fn seed_owned_row(
+    store: &Arc<Mutex<PodcastStore>>,
+    id: &str,
+    author: &str,
+    visibility: podcast_core::NostrVisibility,
+) {
+    let mut s = store.lock().unwrap();
+    s.create_podcast(
+        id,
+        "Show".into(),
+        "d".into(),
+        author.into(),
+        None,
         None,
         None,
         vec![],
-        Some("public".into()),
+        visibility,
+        false,
     );
-    assert_eq!(created["ok"], true);
-    let rev_before = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
-
-    let eid = uuid::Uuid::new_v4().to_string();
-    let out = register_synthetic_episode(
-        &handler,
-        pid.clone(),
-        eid.clone(),
-        "Episode One".into(),
-        "/tmp/agent-ep.m4a".into(),
-        Some(42.0),
-        vec![SyntheticChapterArg {
-            start_secs: 0.0,
-            title: "Intro".into(),
-            image_url: None,
-            source_episode_id: None,
-        }],
-        Some("the transcript".into()),
-    );
-    assert_eq!(out["ok"], true);
-    assert_eq!(out["episode_id"], eid);
-    assert!(
-        handler.rev.load(std::sync::atomic::Ordering::Relaxed) > rev_before,
-        "rev must bump so the projection picks up the episode"
-    );
-
-    let guard = store.lock().unwrap();
-    let pod_id = podcast_core::PodcastId(uuid::Uuid::parse_str(&pid).unwrap());
-    let eps = guard.episodes_for(pod_id);
-    assert_eq!(eps.len(), 1);
-    assert_eq!(eps[0].title, "Episode One");
-    assert_eq!(guard.transcript_for(&eid), Some("the transcript"));
 }
 
 #[test]
-fn register_synthetic_episode_fails_when_podcast_missing() {
-    let store = Arc::new(Mutex::new(PodcastStore::new()));
-    let handler = handler_with_store(store);
-    let out = register_synthetic_episode(
-        &handler,
-        uuid::Uuid::new_v4().to_string(),
-        uuid::Uuid::new_v4().to_string(),
-        "Orphan".into(),
-        "/tmp/x.m4a".into(),
-        None,
-        vec![],
-        None,
-    );
-    assert_eq!(out["ok"], false);
-}
-
-#[test]
-fn create_synthetic_inserts_row_then_create_owned_succeeds() {
+fn create_owned_requires_an_existing_row() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let handler = handler_with_store(store.clone());
     let id = uuid::Uuid::new_v4().to_string();
@@ -139,22 +92,8 @@ fn create_synthetic_inserts_row_then_create_owned_succeeds() {
     let pre = create_owned(&handler, id.clone());
     assert_eq!(pre["ok"], false, "create_owned must fail with no row");
 
-    // create_synthetic inserts the row.
-    let out = create_synthetic(
-        &handler,
-        id.clone(),
-        "Synthetic Show".into(),
-        "A show".into(),
-        "Agent".into(),
-        Some("https://img/a.png".into()),
-        None,
-        vec!["Tech".into()],
-        Some("public".into()),
-    );
-    assert_eq!(out["ok"], true);
-    assert!(store.lock().unwrap().podcast_by_id_str(&id).is_some());
-
-    // Now create_owned succeeds and stamps the owner pubkey.
+    // Seed the row, then create_owned succeeds and stamps the owner pubkey.
+    seed_owned_row(&store, &id, "Agent", podcast_core::NostrVisibility::Public);
     let post = create_owned(&handler, id.clone());
     assert_eq!(post["ok"], true);
     assert_eq!(
@@ -165,38 +104,22 @@ fn create_synthetic_inserts_row_then_create_owned_succeeds() {
 }
 
 #[test]
-fn create_synthetic_rejects_bad_uuid() {
-    let store = Arc::new(Mutex::new(PodcastStore::new()));
-    let handler = handler_with_store(store);
-    let out = create_synthetic(
-        &handler,
-        "not-a-uuid".into(),
-        "T".into(),
-        String::new(),
-        String::new(),
-        None,
-        None,
-        vec![],
-        None,
-    );
-    assert_eq!(out["ok"], false);
-}
-
-#[test]
 fn update_owned_mutates_metadata_and_skips_publish_when_private() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let id = uuid::Uuid::new_v4().to_string();
     {
         let mut s = store.lock().unwrap();
-        s.insert_synthetic_podcast(
+        s.create_podcast(
             &id,
             "Old".into(),
             "old desc".into(),
             "Agent".into(),
             None,
             None,
+            None,
             vec![],
             podcast_core::NostrVisibility::Private,
+            false,
         );
         s.set_nostr_enabled(true);
     }
@@ -230,15 +153,17 @@ fn update_owned_persists_author_and_visibility_flip_republishes() {
     let id = uuid::Uuid::new_v4().to_string();
     {
         let mut s = store.lock().unwrap();
-        s.insert_synthetic_podcast(
+        s.create_podcast(
             &id,
             "Flip Show".into(),
             "d".into(),
             "Old Author".into(),
             None,
             None,
+            None,
             vec![],
             podcast_core::NostrVisibility::Private,
+            false,
         );
         s.set_nostr_enabled(true);
     }
@@ -270,15 +195,17 @@ fn update_owned_republishes_when_public_and_nostr_enabled() {
     let id = uuid::Uuid::new_v4().to_string();
     {
         let mut s = store.lock().unwrap();
-        s.insert_synthetic_podcast(
+        s.create_podcast(
             &id,
             "Public Show".into(),
             "desc".into(),
             "Agent".into(),
             None,
             None,
+            None,
             vec![],
             podcast_core::NostrVisibility::Public,
+            false,
         );
         s.set_nostr_enabled(true);
     }
@@ -316,15 +243,17 @@ fn delete_owned_removes_row_key_and_state() {
     let id = uuid::Uuid::new_v4().to_string();
     {
         let mut s = store.lock().unwrap();
-        s.insert_synthetic_podcast(
+        s.create_podcast(
             &id,
             "Doomed".into(),
             "d".into(),
             "Agent".into(),
             None,
             None,
+            None,
             vec![],
             podcast_core::NostrVisibility::Public,
+            false,
         );
         s.set_nostr_enabled(true);
     }
@@ -350,15 +279,17 @@ fn delete_owned_removes_row_key_and_state() {
 fn delete_owned_with_no_published_show_skips_nip09_but_tears_down() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let id = uuid::Uuid::new_v4().to_string();
-    store.lock().unwrap().insert_synthetic_podcast(
+    store.lock().unwrap().create_podcast(
         &id,
         "NeverPublished".into(),
         String::new(),
         String::new(),
         None,
         None,
+        None,
         vec![],
         podcast_core::NostrVisibility::Public,
+        false,
     );
     let handler = handler_with_store(store.clone());
     create_owned(&handler, id.clone());

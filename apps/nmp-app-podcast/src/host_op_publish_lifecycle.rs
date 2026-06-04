@@ -1,14 +1,12 @@
-//! Owned-podcast create/update/delete lifecycle handlers for the
+//! Owned-podcast update/delete lifecycle handlers for the
 //! `podcast.publish.*` action namespace.
 //!
 //! Split from [`crate::host_op_publish`] to keep that file under the
-//! 500-line hard limit (AGENTS.md). These handlers make the Rust kernel
-//! the single source of truth for synthetic ("owned") podcasts:
+//! 500-line hard limit (AGENTS.md). The feed-less podcast row itself is
+//! created via the first-class `podcast.create_podcast` op (see
+//! [`crate::host_op_handler`]); these handlers own the publish-side lifecycle
+//! on top of that row:
 //!
-//! * [`create_synthetic`] — insert the feed-less podcast row from full
-//!   agent-supplied metadata. Until this landed, `create_owned_podcast`
-//!   and `publish_show` silently no-op'd for synthetic podcasts because
-//!   the row only ever existed in the Swift render store.
 //! * [`update_owned`] — apply a partial metadata update and re-publish the
 //!   `kind:10154` show event when the podcast is public + nostr is enabled.
 //!   The publish gate lives here, not in Swift (D7 — the kernel owns it).
@@ -29,41 +27,20 @@ use crate::ffi::actions::publish_module::PublishAction;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::host_op_publish::{publish_show, sign_event};
 use crate::nmp_dispatch::publish_via_nmp;
-use crate::store::owned_ext::SyntheticChapter;
 
 /// NIP-09 deletion request kind.
 const KIND_DELETION: u32 = 5;
 
-/// Route the create/update/delete lifecycle variants of [`PublishAction`].
+/// Route the update/delete lifecycle variants of [`PublishAction`].
 /// Called from [`crate::host_op_publish::handle_publish_action`] — the
 /// destructuring lives here (not in `host_op_publish.rs`) to keep that file
 /// under the 500-LOC hard limit. Any non-lifecycle variant is unreachable
-/// (the caller only forwards the three lifecycle variants).
+/// (the caller only forwards the two lifecycle variants).
 pub fn handle_lifecycle_action(
     handler: &PodcastHostOpHandler,
     action: PublishAction,
 ) -> serde_json::Value {
     match action {
-        PublishAction::CreateSyntheticPodcast {
-            podcast_id,
-            title,
-            description,
-            author,
-            artwork_url,
-            language,
-            categories,
-            visibility,
-        } => create_synthetic(
-            handler,
-            podcast_id,
-            title,
-            description,
-            author,
-            artwork_url,
-            language,
-            categories,
-            visibility,
-        ),
         PublishAction::UpdateOwnedPodcast {
             podcast_id,
             title,
@@ -80,24 +57,6 @@ pub fn handle_lifecycle_action(
             artwork_url,
             visibility,
         ),
-        PublishAction::RegisterSyntheticEpisode {
-            podcast_id,
-            episode_id,
-            title,
-            audio_path,
-            duration_secs,
-            chapters,
-            transcript,
-        } => register_synthetic_episode(
-            handler,
-            podcast_id,
-            episode_id,
-            title,
-            audio_path,
-            duration_secs,
-            chapters,
-            transcript,
-        ),
         PublishAction::DeleteOwnedPodcast { podcast_id } => delete_owned(handler, podcast_id),
         other => serde_json::json!({
             "ok": false,
@@ -113,96 +72,6 @@ fn parse_visibility(raw: Option<String>) -> NostrVisibility {
         Some("private") => NostrVisibility::Private,
         _ => NostrVisibility::Public,
     }
-}
-
-/// `podcast.publish.create_synthetic_podcast` — insert a synthetic
-/// (feed-less) podcast row into the kernel store from full metadata so the
-/// Rust store is the SSOT for owned podcasts. Idempotent on `podcast_id`.
-#[allow(clippy::too_many_arguments)]
-pub fn create_synthetic(
-    handler: &PodcastHostOpHandler,
-    podcast_id: String,
-    title: String,
-    description: String,
-    author: String,
-    artwork_url: Option<String>,
-    language: Option<String>,
-    categories: Vec<String>,
-    visibility: Option<String>,
-) -> serde_json::Value {
-    let visibility = parse_visibility(visibility);
-    let inserted = match handler.store.lock() {
-        Ok(mut s) => s.insert_synthetic_podcast(
-            &podcast_id,
-            title,
-            description,
-            author,
-            artwork_url,
-            language,
-            categories,
-            visibility,
-        ),
-        Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
-    };
-    if !inserted {
-        return serde_json::json!({
-            "ok": false,
-            "error": format!("invalid podcast id: {podcast_id}")
-        });
-    }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
-    serde_json::json!({"ok": true})
-}
-
-/// `podcast.publish.register_synthetic_episode` — insert an agent-generated
-/// episode (TTS composer output) into the kernel store under a synthetic
-/// podcast so the kernel is the SSOT: the episode survives the projection
-/// full-replace tick, and `publish_episode` can later resolve it by id.
-///
-/// Returns `ok: false` when the parent podcast row does not exist, or when the
-/// episode id / audio path is unusable (mirrors `insert_synthetic_episode`'s
-/// no-op cases). Bumps `rev` on success so the projection picks the episode up.
-#[allow(clippy::too_many_arguments)]
-pub fn register_synthetic_episode(
-    handler: &PodcastHostOpHandler,
-    podcast_id: String,
-    episode_id: String,
-    title: String,
-    audio_path: String,
-    duration_secs: Option<f64>,
-    chapters: Vec<crate::ffi::actions::publish_module::SyntheticChapterArg>,
-    transcript: Option<String>,
-) -> serde_json::Value {
-    let chapters: Vec<SyntheticChapter> = chapters
-        .into_iter()
-        .map(|c| SyntheticChapter {
-            start_secs: c.start_secs,
-            title: c.title,
-            image_url: c.image_url,
-            source_episode_id: c.source_episode_id,
-        })
-        .collect();
-
-    let inserted = match handler.store.lock() {
-        Ok(mut s) => s.insert_synthetic_episode(
-            &podcast_id,
-            &episode_id,
-            title,
-            &audio_path,
-            duration_secs,
-            chapters,
-            transcript,
-        ),
-        Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
-    };
-    if !inserted {
-        return serde_json::json!({
-            "ok": false,
-            "error": format!("could not register episode {episode_id} under podcast {podcast_id}")
-        });
-    }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
-    serde_json::json!({"ok": true, "episode_id": episode_id})
 }
 
 /// `podcast.publish.update_owned_podcast` — apply a partial metadata

@@ -112,7 +112,7 @@ enum SpotlightIndexer {
             .filter { !$0.deleted }
             .map(makeSearchable(from:))
 
-        // Spotlight indexes followed podcasts only — synthetic / orphan
+        // Spotlight indexes followed podcasts only — feed-less / orphan
         // podcasts have no user follow row and don't belong in search.
         let followedPodcastIDs = Set(state.subscriptions.map(\.podcastID))
         let podcastsForIndex = state.podcasts.filter { followedPodcastIDs.contains($0.id) }

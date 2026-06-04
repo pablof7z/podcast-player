@@ -33,10 +33,6 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// uses this to reconstruct `AutoDownloadPolicy.wifiOnly` from the
     /// snapshot rather than hardcoding `wifiOnly: true` for all enabled rows.
     @DefaultFalse var cellularAllowed: Bool = false
-    /// Source kind — `"rss"` or `"synthetic"`. Synthetic rows are agent-owned
-    /// shows with no feed URL. The Rust projection omits this key when `"rss"`
-    /// (D5), so decode defaults to `"rss"`.
-    var kind: String = "rss"
     /// Hex public key of the per-podcast NIP-F4 signing key, set once the
     /// podcast has been claimed via `create_owned_podcast`. Drives owned-
     /// podcast UI (the agent's `listOwnedPodcasts` filters on its presence).
@@ -190,7 +186,6 @@ extension PodcastSummary: Codable {
         description = try c.decodeIfPresent(String.self, forKey: .description)
         autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
         cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
-        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "rss"
         ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
         nostrVisibility = try c.decodeIfPresent(String.self, forKey: .nostrVisibility) ?? "public"
         episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []

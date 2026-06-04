@@ -22,8 +22,7 @@ extension AppStateStore {
 
     /// Returns the podcast row whose feed URL matches the input,
     /// case-insensitive so trailing-slash and scheme-case differences
-    /// don't create duplicates. Synthetic podcasts (no `feedURL`) are
-    /// looked up via this same path when callers use a sentinel URL.
+    /// don't create duplicates. Feed-less podcasts (no `feedURL`) never match.
     func podcast(feedURL: URL) -> Podcast? {
         state.podcasts.first { existing in
             guard let existingURL = existing.feedURL else { return false }
@@ -31,25 +30,22 @@ extension AppStateStore {
         }
     }
 
-    /// Inserts a podcast metadata row for agent-synthesized content — the
-    /// `Podcast(kind: .synthetic)` "Agent Generated" / agent-owned shows and
-    /// the thin `.rss` placeholder an external-play creates for an unfollowed
-    /// feed. Returns the existing row unchanged if one already matches by id.
+    /// Inserts a podcast metadata row into the Swift render store. Returns the
+    /// existing row unchanged if one already matches by id.
     ///
     /// This is an INSERT seam, not a merge: the legacy RSS pull-merge policy
     /// (`merged()` + feed-URL reconcile) was deleted because RSS subscribe /
     /// refresh / OPML now ingest exclusively through the Rust kernel
     /// (`kernelSubscribe` / `kernelRefresh`), and `applyKernelState` is the
-    /// sole writer of `.rss` podcast rows. Every caller here guards on an
-    /// existing feed URL *before* dispatching, so only brand-new synthetic /
-    /// placeholder rows reach this method.
+    /// sole writer of feed-backed podcast rows.
     ///
-    /// NOTE: synthetic / placeholder rows live only in Swift `state`; the
-    /// kernel has no synthetic-podcast model, so `applyKernelState`'s full
-    /// replace can clobber them across a projection tick. That projection
-    /// round-trip is a pre-existing gap tracked in `docs/BACKLOG.md`
-    /// (`m9-tts-persistence`); migrating these inserts to the kernel is a
-    /// separate synthetic-content subsystem, not this cleanup.
+    /// Sole remaining caller: `SubscriptionService.ensurePodcast`, which
+    /// captures an unfollowed feed (metadata + back-catalog) WITHOUT
+    /// subscribing and reads the row + episodes back synchronously. Agent-owned
+    /// / TTS / external-play creation now routes through the kernel
+    /// (`kernelCreatePodcast`). The `ensurePodcast` rows still live only in
+    /// Swift `state` and can be clobbered by a projection tick — migrating that
+    /// capture-without-subscribe path to the kernel is separate follow-up work.
     @discardableResult
     func upsertPodcast(_ incoming: Podcast) -> Podcast {
         if let existing = state.podcasts.first(where: { $0.id == incoming.id }) {
@@ -62,7 +58,7 @@ extension AppStateStore {
     /// Writes drifted metadata (title / author / artwork) back onto an
     /// existing podcast row by id. Used by the agent-owned podcast editor and
     /// the external-play placeholder hydration — a direct id-keyed write for
-    /// synthetic / placeholder rows, not an RSS merge.
+    /// feed-less / placeholder rows, not an RSS merge.
     func updatePodcast(_ updated: Podcast) {
         guard let idx = state.podcasts.firstIndex(where: { $0.id == updated.id }) else { return }
         state.podcasts[idx] = updated

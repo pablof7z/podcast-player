@@ -50,19 +50,35 @@ extension PlaybackState {
                 queue.append(contentsOf: items)
                 return
             }
-            // Set the segment boundary AFTER `setEpisode`: loading a different
-            // episode clears `currentSegmentEndTime`, so setting it first would
-            // be wiped and the clip would play through the whole episode.
-            setEpisode(episode)
-            currentSegmentEndTime = first.endSeconds
-            if let start = first.startSeconds {
-                engine.seek(to: start)
-            }
-            play()
-            queue.insert(contentsOf: items.dropFirst(), at: 0)
+            enqueueSegments(items, playNow: true, head: episode)
         } else {
             queue.append(contentsOf: items)
         }
+    }
+
+    /// `enqueueSegments` variant that takes an already-resolved head `Episode`
+    /// for the first item, bypassing the `store.episode(id:)` lookup for that
+    /// item only. Used by external-play, where the episode lives in the Rust
+    /// kernel (dispatched via `kernelAddEpisode`) and rides the next projection
+    /// push — so it is not yet readable from `store.episodes` when playback must
+    /// start synchronously. Tail items still resolve from the store as usual.
+    func enqueueSegments(_ items: [QueueItem], playNow: Bool, head: Episode) {
+        guard !items.isEmpty else { return }
+        guard playNow else {
+            queue.append(contentsOf: items)
+            return
+        }
+        let first = items[0]
+        // Set the segment boundary AFTER `setEpisode`: loading a different
+        // episode clears `currentSegmentEndTime`, so setting it first would
+        // be wiped and the clip would play through the whole episode.
+        setEpisode(head)
+        currentSegmentEndTime = first.endSeconds
+        if let start = first.startSeconds {
+            engine.seek(to: start)
+        }
+        play()
+        queue.insert(contentsOf: items.dropFirst(), at: 0)
     }
 
     // MARK: - Removal

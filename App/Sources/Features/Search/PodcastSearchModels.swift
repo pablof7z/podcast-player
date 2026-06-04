@@ -48,11 +48,11 @@ enum PodcastSearchEngine {
         let trimmed = query.trimmed
         guard !trimmed.isEmpty else { return PodcastLocalSearchResults() }
         let tokens = tokenize(trimmed)
-        // Local search covers only the user's followed RSS podcasts —
-        // synthetic shows (Agent Generated, Unknown) don't surface here.
+        // Local search covers only the user's followed feed-backed podcasts —
+        // feed-less shows (Agent Generated, Unknown) don't surface here.
         let followedPodcastIDs = Set(state.subscriptions.map(\.podcastID))
         let followedPodcasts = state.podcasts.filter {
-            followedPodcastIDs.contains($0.id) && $0.kind == .rss
+            followedPodcastIDs.contains($0.id) && $0.feedURL != nil
         }
         let podcastsByID = Dictionary(
             uniqueKeysWithValues: followedPodcasts.map { ($0.id, $0) }

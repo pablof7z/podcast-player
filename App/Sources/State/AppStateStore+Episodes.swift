@@ -61,12 +61,16 @@ extension AppStateStore {
 
     // MARK: - Writes
 
-    /// Inserts episodes for an agent-synthesized podcast — the agent TTS /
-    /// YouTube-ingested episodes published onto the `Podcast(kind: .synthetic)`
-    /// "Agent Generated" show, and the back-catalog an agent external-play
-    /// `ensurePodcast` lands for a freshly-captured feed. Returns the ids of
-    /// the rows that were newly inserted (skipping any whose `guid` already
-    /// exists under the same podcast, so a re-entrant publish is idempotent).
+    /// Inserts episodes captured Swift-side into the render store — the
+    /// back-catalog an agent external-play `ensurePodcast` lands for a
+    /// freshly-captured (but unfollowed) feed. Returns the ids of the rows that
+    /// were newly inserted (skipping any whose `guid` already exists under the
+    /// same podcast, so a re-entrant publish is idempotent).
+    ///
+    /// Sole remaining caller: `SubscriptionService.ensurePodcast` (capture an
+    /// unfollowed feed WITHOUT subscribing), which reads the inserted episodes
+    /// back synchronously. Agent TTS / external-play single-episode flows now
+    /// route through the kernel (`kernelAddEpisode`) instead.
     ///
     /// This is an INSERT seam, not a merge. The legacy RSS feed-refresh merge
     /// policy — guid-match with user-mutable-state preservation
@@ -79,7 +83,7 @@ extension AppStateStore {
     /// episodes (a fresh UUID/guid per publish, or the first-ensure backlog of
     /// a new podcast), so no merge branch was reachable.
     ///
-    /// NOTE: like the synthetic podcast rows themselves, these episodes live
+    /// NOTE: like the feed-less podcast rows themselves, these episodes live
     /// only in Swift `state`; the kernel has no model for them, so a
     /// projection tick can clobber them — a pre-existing gap tracked in
     /// `docs/BACKLOG.md` (`m9-tts-persistence`).
@@ -307,57 +311,6 @@ extension AppStateStore {
         case .transcribing: return ("transcribing", nil)
         case .failed(let message): return ("failed", message)
         }
-    }
-
-    /// Upserts a single episode attached to a known podcast. Used by the
-    /// agent's `play_external_episode` path. Re-entrant: replaying the
-    /// same audio URL under the same podcast returns the existing record
-    /// with its persisted `playbackPosition` intact. `imageURL` and
-    /// `duration` are refreshed when they change.
-    ///
-    /// The caller is responsible for ensuring `podcastID` references an
-    /// existing `Podcast` row (use `upsertPodcast` or `Podcast.unknownID`
-    /// when no feed metadata is available).
-    @discardableResult
-    func upsertEpisode(
-        podcastID: UUID,
-        audioURL: URL,
-        title: String,
-        imageURL: URL?,
-        duration: TimeInterval?
-    ) -> Episode {
-        let guid = audioURL.absoluteString
-        if let idx = self.episodes.firstIndex(where: {
-            $0.podcastID == podcastID && $0.guid == guid
-        }) {
-            var updated = self.episodes[idx]
-            var changed = false
-            if let imageURL, updated.imageURL != imageURL { updated.imageURL = imageURL; changed = true }
-            if let duration, updated.duration != duration { updated.duration = duration; changed = true }
-            if changed { self.episodes[idx] = updated }
-            return self.episodes[idx]
-        }
-        let episode = Episode(
-            podcastID: podcastID,
-            guid: guid,
-            title: title,
-            pubDate: Date(),
-            duration: duration,
-            enclosureURL: audioURL,
-            imageURL: imageURL
-        )
-        performMutationBatch {
-            self.episodes.append(episode)
-            invalidateEpisodeProjections()
-        }
-        // Trigger transcript ingest for the new episode. Auto-download is
-        // skipped since the episode is already streaming; for podcasts the
-        // user follows the next feed refresh will surface it via the normal
-        // pipeline anyway.
-        TranscriptIngestService.shared.evaluateAutoIngest(
-            newEpisodeIDs: [episode.id]
-        )
-        return episode
     }
 
     /// Records the most-recently-loaded episode so the mini-player can be

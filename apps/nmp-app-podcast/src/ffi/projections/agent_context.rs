@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub struct AgentContextSnapshot {
     /// Subscribed-show titles to list in the prompt's `## Subscriptions`
-    /// section, already sorted + capped. Synthetic shows (no follow row)
+    /// section, already sorted + capped. Feed-less shows (no follow row)
     /// are excluded by the projection layer.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub subscriptions: Vec<String>,

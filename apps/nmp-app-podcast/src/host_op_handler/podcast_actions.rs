@@ -28,6 +28,50 @@ impl PodcastHostOpHandler {
             PodcastAction::Subscribe { feed_url } => {
                 self.handle_subscribe(feed_url, correlation_id)
             }
+            PodcastAction::CreatePodcast {
+                podcast_id,
+                title,
+                description,
+                author,
+                feed_url,
+                artwork_url,
+                language,
+                categories,
+                visibility,
+                title_is_placeholder,
+            } => self.handle_create_podcast(
+                podcast_id,
+                title,
+                description,
+                author,
+                feed_url,
+                artwork_url,
+                language,
+                categories,
+                visibility,
+                title_is_placeholder,
+            ),
+            PodcastAction::AddEpisode {
+                podcast_id,
+                episode_id,
+                title,
+                enclosure_url,
+                description,
+                duration_secs,
+                image_url,
+                chapters,
+                transcript,
+            } => self.handle_add_episode(
+                podcast_id,
+                episode_id,
+                title,
+                enclosure_url,
+                description,
+                duration_secs,
+                image_url,
+                chapters,
+                transcript,
+            ),
             PodcastAction::Unsubscribe { podcast_id } => self.handle_unsubscribe(podcast_id),
             PodcastAction::Refresh { podcast_id } => {
                 self.handle_refresh(podcast_id, correlation_id)
@@ -158,6 +202,95 @@ impl PodcastHostOpHandler {
                 serde_json::json!({"ok": false, "error": "discover_nostr must be handled by execute()"})
             }
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn handle_create_podcast(
+        &self,
+        podcast_id: String,
+        title: String,
+        description: String,
+        author: String,
+        feed_url: Option<String>,
+        artwork_url: Option<String>,
+        language: Option<String>,
+        categories: Vec<String>,
+        visibility: Option<String>,
+        title_is_placeholder: bool,
+    ) -> serde_json::Value {
+        let visibility = match visibility.as_deref() {
+            Some("private") => podcast_core::NostrVisibility::Private,
+            _ => podcast_core::NostrVisibility::Public,
+        };
+        let inserted = match self.store.lock() {
+            Ok(mut s) => s.create_podcast(
+                &podcast_id,
+                title,
+                description,
+                author,
+                feed_url,
+                artwork_url,
+                language,
+                categories,
+                visibility,
+                title_is_placeholder,
+            ),
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        };
+        if !inserted {
+            return serde_json::json!({
+                "ok": false,
+                "error": format!("invalid podcast id: {podcast_id}")
+            });
+        }
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        serde_json::json!({"ok": true})
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn handle_add_episode(
+        &self,
+        podcast_id: String,
+        episode_id: String,
+        title: String,
+        enclosure_url: String,
+        description: String,
+        duration_secs: Option<f64>,
+        image_url: Option<String>,
+        chapters: Vec<crate::ffi::actions::podcast_module::EpisodeChapterArg>,
+        transcript: Option<String>,
+    ) -> serde_json::Value {
+        let chapters: Vec<crate::store::owned_ext::EpisodeChapter> = chapters
+            .into_iter()
+            .map(|c| crate::store::owned_ext::EpisodeChapter {
+                start_secs: c.start_secs,
+                title: c.title,
+                image_url: c.image_url,
+                source_episode_id: c.source_episode_id,
+            })
+            .collect();
+        let inserted = match self.store.lock() {
+            Ok(mut s) => s.add_episode(
+                &podcast_id,
+                &episode_id,
+                title,
+                &enclosure_url,
+                description,
+                duration_secs,
+                image_url,
+                chapters,
+                transcript,
+            ),
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        };
+        if !inserted {
+            return serde_json::json!({
+                "ok": false,
+                "error": format!("could not add episode {episode_id} under podcast {podcast_id}")
+            });
+        }
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        serde_json::json!({"ok": true, "episode_id": episode_id})
     }
 
     fn handle_set_episode_triage(

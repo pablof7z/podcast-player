@@ -527,67 +527,76 @@ extension AppStateStore {
     // Field names verified against
     // apps/nmp-app-podcast/src/ffi/actions/publish_module.rs (PublishAction).
 
-    /// Insert a synthetic (feed-less) owned podcast row into the Rust kernel
-    /// store from full metadata. The kernel store is the single source of
-    /// truth for owned podcasts — `create_owned_podcast` / `publish_show`
-    /// require the row to already exist there (they `ok:false` otherwise).
-    /// Must run before `kernelCreateOwnedPodcast` for the same id.
-    /// `visibility` is the canonical `NostrVisibility` rawValue
-    /// (`"public"` / `"private"`).
-    func kernelCreateSyntheticPodcast(
+    /// Insert (or update) a podcast row in the Rust kernel store — the single
+    /// source of truth. A feed-less row (`feedUrl: nil`) is an agent-owned / TTS
+    /// show; a feed-backed row (`feedUrl` set) is an external-play placeholder.
+    /// Idempotent on id — an enriched re-create updates the row in place. For
+    /// owned podcasts this must run before `kernelCreateOwnedPodcast` for the
+    /// same id (`create_owned_podcast` / `publish_show` `ok:false` without a
+    /// row). `visibility` is the canonical `NostrVisibility` rawValue
+    /// (`"public"` / `"private"`); `titleIsPlaceholder` marks a provisional
+    /// feed-host fallback title awaiting metadata hydration.
+    func kernelCreatePodcast(
         podcastId: String,
         title: String,
         description: String,
         author: String,
+        feedUrl: String?,
         artworkUrl: String?,
         language: String?,
         categories: [String],
-        visibility: String
+        visibility: String,
+        titleIsPlaceholder: Bool
     ) {
         var body: [String: Any] = [
-            "op": "create_synthetic_podcast",
+            "op": "create_podcast",
             "podcast_id": podcastId,
             "title": title,
             "description": description,
             "author": author,
             "categories": categories,
             "visibility": visibility,
+            "title_is_placeholder": titleIsPlaceholder,
         ]
+        if let feedUrl { body["feed_url"] = feedUrl }
         if let artworkUrl { body["artwork_url"] = artworkUrl }
         if let language { body["language"] = language }
-        kernel?.dispatch(namespace: "podcast.publish", body: body)
+        kernel?.dispatch(namespace: "podcast", body: body)
     }
 
-    /// Register an agent-generated episode (TTS composer output) into the Rust
-    /// kernel store under a synthetic podcast. The kernel becomes the source of
-    /// truth so the episode survives the projection full-replace tick (it is no
-    /// longer held only in the Swift render store) and `publish_episode` can
-    /// resolve it by id for NIP-F4 publishing.
-    ///
-    /// Swift still owns the audio file write — `audioPath` is the local path of
-    /// the already-stitched m4a. `chapters` carry the parity fields (`imageUrl`
-    /// for the mid-play artwork swap, `sourceEpisodeId` for the source chip).
-    /// Fire-and-forget: the episode appears on the next projection tick.
-    func kernelRegisterSyntheticEpisode(
+    /// Insert (or update) an episode under a podcast in the Rust kernel store —
+    /// the source of truth, so the episode survives the projection full-replace
+    /// tick. `enclosureUrl` branches on scheme: a `file://` URL or bare absolute
+    /// path → the audio is already on disk (Downloaded + local-path side-map);
+    /// an `http(s)://` URL → a remote enclosure (NotDownloaded, fetched later by
+    /// the download capability). `chapters` carry the parity fields (`image_url`
+    /// for the mid-play artwork swap, `source_episode_id` for the source chip);
+    /// `imageUrl` overrides the per-episode artwork. Fire-and-forget: the
+    /// episode appears on the next projection tick.
+    func kernelAddEpisode(
         podcastId: String,
         episodeId: String,
         title: String,
-        audioPath: String,
+        enclosureUrl: String,
+        description: String,
         durationSecs: Double?,
+        imageUrl: String?,
         chapters: [[String: Any]],
         transcript: String?
     ) {
         var body: [String: Any] = [
-            "op": "register_synthetic_episode",
+            "op": "add_episode",
             "podcast_id": podcastId,
             "episode_id": episodeId,
             "title": title,
-            "audio_path": audioPath,
+            "enclosure_url": enclosureUrl,
+            "description": description,
             "chapters": chapters,
         ]
         if let durationSecs { body["duration_secs"] = durationSecs }
+        if let imageUrl { body["image_url"] = imageUrl }
         if let transcript { body["transcript"] = transcript }
-        kernel?.dispatch(namespace: "podcast.publish", body: body)
+        kernel?.dispatch(namespace: "podcast", body: body)
     }
 
     /// Claim ownership of a podcast for NIP-F4 publishing: Rust generates a
