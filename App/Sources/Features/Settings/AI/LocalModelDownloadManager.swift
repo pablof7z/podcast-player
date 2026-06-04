@@ -11,11 +11,29 @@ enum LocalModelState: Equatable, Sendable {
 @MainActor
 @Observable
 final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
+    /// The single instance the app uses. A background `URLSession` permits only
+    /// one live session per identifier, and the session strongly retains its
+    /// delegate until invalidated — so constructing a fresh manager per view
+    /// appearance both violated that rule and leaked the old manager, leaving
+    /// the visible UI bound to a manager that no longer received the download
+    /// callbacks ("Cancel" with no progress). Everything goes through `.shared`.
+    static let shared = LocalModelDownloadManager()
+
+    /// Background-session identifier. Shared with `AppDelegate` so OS relaunch
+    /// events for this session are routed to this manager rather than to the
+    /// episode download capability.
+    static let sessionIdentifier = "com.podcastr.local-model-downloads"
+
     private(set) var states: [String: LocalModelState] = [:]
     private var session: URLSession?
     private var activeDownloads: [String: URL] = [:]
     private let fileManager = FileManager.default
     private let modelsDirectoryURL: URL
+
+    /// OS handoff completion handler, stored when iOS relaunches the app to
+    /// deliver this session's background events. Drained in
+    /// `urlSessionDidFinishEvents` once all queued events are processed.
+    private var backgroundCompletionHandler: (() -> Void)?
 
     override init() {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -28,7 +46,7 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
             os_log("Failed to create LocalModels directory: %{public}@", log: .default, type: .error, error.localizedDescription)
         }
 
-        let config = URLSessionConfiguration.background(withIdentifier: "com.podcastr.local-model-downloads")
+        let config = URLSessionConfiguration.background(withIdentifier: Self.sessionIdentifier)
         config.sessionSendsLaunchEvents = true
         self.session = URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue.main)
 
@@ -39,6 +57,15 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         var newStates: [String: LocalModelState] = [:]
 
         for spec in LocalModelCatalog.all {
+            // Preserve an in-flight download: this method rebuilds every state
+            // from disk and runs on each view appearance, so without this guard
+            // navigating away and back mid-download would reset the row to
+            // .notDownloaded ("Download") until the next progress callback.
+            if case .downloading = states[spec.id] {
+                newStates[spec.id] = states[spec.id]
+                continue
+            }
+
             let fileURL = modelFileURL(for: spec.id)
             let fileExists = fileManager.fileExists(atPath: fileURL.path)
 
@@ -97,6 +124,18 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         return states[modelID] ?? .notDownloaded
     }
 
+    // MARK: - Background-session OS handoff
+
+    /// Wired from `AppDelegate.application(_:handleEventsForBackgroundURLSession:)`.
+    /// Holds the OS completion handler until this session signals — via
+    /// `urlSessionDidFinishEvents` — that every queued event (including the
+    /// final `didFinishDownloadingTo` that moves the file into place) has been
+    /// delivered. Calling it before then would let iOS re-suspend the app while
+    /// the multi-GB transfer is still being finalized.
+    func handleEventsForBackgroundURLSession(completionHandler: @escaping () -> Void) {
+        backgroundCompletionHandler = completionHandler
+    }
+
     // MARK: - URLSessionDownloadDelegate
 
     nonisolated func urlSession(
@@ -104,12 +143,18 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo temporaryURL: URL
     ) {
-        guard let originalURL = downloadTask.originalRequest?.url else { return }
+        // Match by download URL — identical to the sibling didWriteData /
+        // didCompleteWithError methods. The previous basename comparison
+        // (local "gemma4-e2b" vs remote "gemma-4-E2B-it") could never be equal,
+        // so this guard always failed: the temp file was never moved, the model
+        // never persisted, and the row was stuck at .downloading(1.0) until a
+        // relaunch reset it to .notDownloaded. Using the catalog URL also works
+        // when iOS re-delivers a finished background task after a cold launch,
+        // when `activeDownloads` is empty (the `?? modelFileURL` fallback below).
+        guard let originalURL = downloadTask.originalRequest?.url,
+              let modelID = LocalModelCatalog.modelID(forDownloadURL: originalURL) else { return }
 
         MainActor.assumeIsolated {
-            let modelID = activeDownloads.first(where: { $0.value.lastPathComponent.dropLast(9) == URL(fileURLWithPath: originalURL.lastPathComponent).lastPathComponent.dropLast(9) })?.key
-            guard let modelID = modelID else { return }
-
             let destinationURL = activeDownloads[modelID] ?? modelFileURL(for: modelID)
 
             do {
@@ -137,7 +182,7 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         totalBytesExpectedToWrite: Int64
     ) {
         guard let originalURL = downloadTask.originalRequest?.url,
-              let modelID = LocalModelCatalog.all.first(where: { $0.downloadURL == originalURL })?.id else { return }
+              let modelID = LocalModelCatalog.modelID(forDownloadURL: originalURL) else { return }
 
         let progress = totalBytesExpectedToWrite > 0 ? Double(totalBytesWritten) / Double(totalBytesExpectedToWrite) : 0.0
         MainActor.assumeIsolated {
@@ -151,7 +196,7 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
         didCompleteWithError error: Error?
     ) {
         guard let originalURL = task.originalRequest?.url,
-              let modelID = LocalModelCatalog.all.first(where: { $0.downloadURL == originalURL })?.id else { return }
+              let modelID = LocalModelCatalog.modelID(forDownloadURL: originalURL) else { return }
 
         MainActor.assumeIsolated {
             if let error = error {
@@ -159,6 +204,17 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
                 states[modelID] = .notDownloaded
             }
             activeDownloads.removeValue(forKey: modelID)
+        }
+    }
+
+    /// All queued background events for this session have been delivered. Drain
+    /// the stored OS completion handler so iOS knows the app finished processing
+    /// and can suspend cleanly.
+    nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        MainActor.assumeIsolated {
+            let handler = backgroundCompletionHandler
+            backgroundCompletionHandler = nil
+            handler?()
         }
     }
 }

@@ -8,6 +8,12 @@
       ]
     },
     {
+      "shipped_at": "2026-06-04T03:00:00Z",
+      "lines": [
+        "On-device models (Gemma) now finish downloading and stay downloaded — fixed a bug where they got stuck at 100% and showed as not downloaded again after a restart."
+      ]
+    },
+    {
       "shipped_at": "2026-06-04T02:45:00Z",
       "lines": [
         "Your Nostr key is now held by the app's secure kernel and never leaves it — stronger key safety across sign-in, profile, and feedback."

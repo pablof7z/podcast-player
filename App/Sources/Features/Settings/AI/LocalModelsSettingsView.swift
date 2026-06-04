@@ -2,7 +2,11 @@ import SwiftUI
 
 struct LocalModelsSettingsView: View {
     @Environment(AppStateStore.self) private var store
-    @State private var downloadManager: LocalModelDownloadManager?
+    // The shared singleton — never construct a per-view manager: a second
+    // background session for the same identifier is undefined behaviour and the
+    // old one leaks, leaving the UI bound to a manager that no longer receives
+    // download callbacks.
+    private let downloadManager = LocalModelDownloadManager.shared
 
     var body: some View {
         ZStack {
@@ -18,15 +22,14 @@ struct LocalModelsSettingsView: View {
         .navigationTitle("Local Models")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if downloadManager == nil {
-                downloadManager = LocalModelDownloadManager()
-            }
             // Recompute active badge from the kernel-projected localModelID now
-            // that the store is available (init() ran without it).
-            downloadManager?.recomputeStatesFromDisk(activeModelID: store.state.settings.localModelID)
+            // that the store is available (init() ran without it). Existing
+            // in-flight downloads on the shared session keep their .downloading
+            // state — recompute only flips disk-backed rows.
+            downloadManager.recomputeStatesFromDisk(activeModelID: store.state.settings.localModelID)
         }
         .onChange(of: store.state.settings.localModelID) { _, newID in
-            downloadManager?.recomputeStatesFromDisk(activeModelID: newID)
+            downloadManager.recomputeStatesFromDisk(activeModelID: newID)
         }
     }
 
@@ -35,17 +38,15 @@ struct LocalModelsSettingsView: View {
     private var modelsSection: some View {
         Section {
             ForEach(LocalModelCatalog.all, id: \.id) { spec in
-                if let manager = downloadManager {
-                    let state = manager.state(for: spec.id)
-                    LocalModelRowView(
-                        spec: spec,
-                        state: state,
-                        onDownload: { manager.download(spec: spec) },
-                        onCancel: { manager.cancel(spec.id) },
-                        onActivate: { store.kernelSetLocalModel(modelID: spec.id) },
-                        onDelete: { manager.delete(spec.id); if store.state.settings.localModelID == spec.id { store.kernelSetLocalModel(modelID: nil) } }
-                    )
-                }
+                let manager = downloadManager
+                LocalModelRowView(
+                    spec: spec,
+                    state: manager.state(for: spec.id),
+                    onDownload: { manager.download(spec: spec) },
+                    onCancel: { manager.cancel(spec.id) },
+                    onActivate: { store.kernelSetLocalModel(modelID: spec.id) },
+                    onDelete: { manager.delete(spec.id); if store.state.settings.localModelID == spec.id { store.kernelSetLocalModel(modelID: nil) } }
+                )
             }
         } header: {
             Text("Available Models")
