@@ -35,7 +35,11 @@ final class LocalModelDownloadManager: NSObject, URLSessionDownloadDelegate {
     /// `urlSessionDidFinishEvents` once all queued events are processed.
     private var backgroundCompletionHandler: (() -> Void)?
 
-    override init() {
+    /// Private: the one background session per identifier lives behind
+    /// `.shared`. Constructing a second instance would spin up a duplicate
+    /// session for the same identifier and reintroduce the leak this type was
+    /// fixed to avoid — the compiler now forbids it.
+    private override init() {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         modelsDirectoryURL = appSupport.appendingPathComponent("LocalModels", isDirectory: true)
         super.init()
