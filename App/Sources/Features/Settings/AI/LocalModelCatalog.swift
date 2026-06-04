@@ -28,4 +28,14 @@ enum LocalModelCatalog {
             minDeviceRAMGB: 6
         ),
     ]
+
+    /// Resolves the catalog model a finished/in-flight download task belongs to.
+    /// This is the canonical task→model match used by every
+    /// `URLSessionDownloadDelegate` callback. It must compare the full download
+    /// URL: the remote filename (`gemma-4-E2B-it`) equals neither the model id
+    /// (`gemma4-e2b`) nor the on-disk filename, so a basename comparison can
+    /// never match and silently drops the finished download.
+    static func modelID(forDownloadURL url: URL) -> String? {
+        all.first(where: { $0.downloadURL == url })?.id
+    }
 }
