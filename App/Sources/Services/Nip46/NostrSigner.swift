@@ -44,9 +44,81 @@ protocol NostrSigner: Sendable {
     func sign(_ draft: NostrEventDraft) async throws -> SignedNostrEvent
 }
 
-// MARK: - Local-key signer (current behaviour)
+// MARK: - Kernel signer (D13 — the kernel holds the key, Swift never does)
 
-/// `NostrSigner` backed by an in-process secp256k1 key pair (the existing nsec flow).
+/// `NostrSigner` that signs through the NMP kernel via
+/// `nmp_app_sign_event_for_return`. NO private key, schnorr code, or event-id
+/// hashing runs in Swift — the kernel owns the key on the actor thread and
+/// returns the fully-signed wire event. This is the compliant replacement for
+/// the retired `LocalKeySigner` (the D13 violation).
+///
+/// `accountPubkeyHex` selects which kernel account signs (empty string → the
+/// active account). The signer is stateless beyond the `KernelModel` reference;
+/// construct it per upload from `appStore.kernel`.
+struct KernelSigner: NostrSigner {
+    /// The kernel bridge that performs the sign-for-return round-trip.
+    let kernel: KernelModel
+    /// Hex pubkey of the signing account. Empty selects the kernel's active
+    /// account; an explicit value targets a specific registered signer (e.g.
+    /// an agent-owned podcast key).
+    let accountPubkeyHex: String
+
+    init(kernel: KernelModel, accountPubkeyHex: String = "") {
+        self.kernel = kernel
+        self.accountPubkeyHex = accountPubkeyHex
+    }
+
+    func publicKey() async throws -> String {
+        if !accountPubkeyHex.isEmpty { return accountPubkeyHex }
+        guard let active = await kernel.kernelIdentity.activeAccount, !active.isEmpty else {
+            throw NostrSignerError.missingPublicKey
+        }
+        return active
+    }
+
+    func sign(_ draft: NostrEventDraft) async throws -> SignedNostrEvent {
+        // The kernel re-stamps `created_at` (D7) and fills `pubkey`/`id`/`sig`;
+        // the draft carries only kind/content/tags. `created_at` is advisory.
+        let unsigned: [String: Any] = [
+            "kind": draft.kind,
+            "content": draft.content,
+            "tags": draft.tags,
+            "created_at": draft.createdAt,
+        ]
+        guard
+            let data = try? JSONSerialization.data(withJSONObject: unsigned),
+            let unsignedJSON = String(data: data, encoding: .utf8)
+        else {
+            throw NostrSignerError.invalidEventForSigning
+        }
+        let signedJSON = try await kernel.signEventForReturn(
+            accountPubkeyHex: accountPubkeyHex, unsignedJSON: unsignedJSON)
+        guard let eventData = signedJSON.data(using: .utf8) else {
+            throw NostrSignerError.invalidEventForSigning
+        }
+        do {
+            return try JSONDecoder().decode(SignedNostrEvent.self, from: eventData)
+        } catch {
+            throw NostrSignerError.remoteRejected(
+                "kernel returned an undecodable signed event: \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - Local-key signer (NIP-46 transport session key ONLY)
+
+/// `NostrSigner` backed by an in-process secp256k1 key pair.
+///
+/// D13: this is NOT used to sign the USER's events anymore — user-identity
+/// signing (notes, Blossom auth, reactions, publishes) goes through the kernel
+/// via `KernelSigner` / the dispatch + sign-for-return seams. The single
+/// remaining legitimate use is signing the NIP-46 transport envelope
+/// (kind:24133) with the client's EPHEMERAL session key in
+/// `RemoteSigner.call` — that session key is a throwaway protocol artifact the
+/// client mints itself, never the user's long-lived identity secret. It also
+/// remains assigned to `UserIdentityStore.signer` as a vestigial
+/// identity-presence marker (never invoked to `.sign()`); collapsing that field
+/// to a pubkey is a follow-up identity-model cleanup, out of scope here.
 struct LocalKeySigner: NostrSigner {
     let keyPair: NostrKeyPair
 

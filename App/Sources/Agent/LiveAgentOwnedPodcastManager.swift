@@ -41,16 +41,18 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
     @MainActor
     private func settings() -> Settings? { store?.state.settings }
 
-    nonisolated private func nostrSigner() throws -> LocalKeySigner {
-        guard let hex = try NostrCredentialStore.privateKey(), !hex.isEmpty else {
+    /// The active account's hex pubkey, sourced from the kernel (D13 — never a
+    /// Swift-held private key). This value is only an OPTIMISTIC stamp for the
+    /// new podcast row: the kernel generates a per-podcast keypair on
+    /// `create_owned_podcast` and reconciles `owner_pubkey_hex` on the next
+    /// snapshot tick (see `AppStateStore+KernelActions.kernelCreateOwnedPodcast`),
+    /// so the field the kernel ultimately owns wins regardless.
+    @MainActor
+    private func agentPubkeyHex() throws -> String {
+        guard let pubkey = store?.kernel?.kernelIdentity.activeAccount, !pubkey.isEmpty else {
             throw AgentOwnedPodcastError.noSigningKey
         }
-        let kp = try NostrKeyPair(privateKeyHex: hex)
-        return LocalKeySigner(keyPair: kp)
-    }
-
-    nonisolated private func agentPubkeyHex() throws -> String {
-        try nostrSigner().keyPair.publicKeyHex
+        return pubkey
     }
 
     // MARK: - createPodcast
@@ -66,9 +68,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
     ) async throws -> AgentOwnedPodcastInfo {
         let pubkey: String
         if visibility == .public {
-            pubkey = try agentPubkeyHex()
+            pubkey = try await agentPubkeyHex()
         } else {
-            pubkey = (try? agentPubkeyHex()) ?? "agent-private"
+            pubkey = (try? await agentPubkeyHex()) ?? "agent-private"
         }
         let podcast = Podcast(
             kind: .synthetic,
@@ -227,10 +229,19 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
         let imageGen = ImageGenerationService(apiKey: apiKey)
         let imageData = try await imageGen.generate(prompt: prompt, model: settings.imageGenerationModel)
-        // Auth signing is the kernel's job (sign-for-return); the uploader is
-        // degraded until that continuation is wired (no Swift signing).
+        // Auth signing is the kernel's job (D13 sign-for-return): the
+        // KernelSigner signs the kind:24242 auth event with the active account —
+        // no private key in Swift. The artwork blob isn't owned by the
+        // per-podcast key; any valid auth signature the Blossom server accepts
+        // suffices (it only checks the `x` hash tag matches the upload).
+        guard let kernel = await store?.kernel else {
+            throw AgentOwnedPodcastError.storeUnavailable
+        }
         let blossom = BlossomUploader(serverURLString: settings.blossomServerURL)
-        let url = try await blossom.upload(data: imageData, contentType: "image/png")
+        let url = try await blossom.upload(
+            data: imageData,
+            contentType: "image/png",
+            signer: KernelSigner(kernel: kernel))
         Self.logger.info("Artwork uploaded to \(url.absoluteString, privacy: .public)")
         return url
     }
