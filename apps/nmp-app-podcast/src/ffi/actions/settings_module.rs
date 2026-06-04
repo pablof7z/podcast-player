@@ -106,6 +106,9 @@ pub enum SettingsAction {
     SetBlossomServerUrl { url: String },
     /// Set the YouTube extractor URL (optional).
     SetYoutubeExtractorUrl { url: Option<String> },
+    /// Set the local on-device LLM model ID (optional). When set, this dominates
+    /// all other provider selections in the LLM factory.
+    SetLocalModel { model_id: Option<String> },
     /// Toggle wiki auto-generation on transcript ingest.
     SetWikiAutoGenerateOnTranscriptIngest { enabled: bool },
     /// Toggle auto-ingest of publisher-provided transcripts.
@@ -140,6 +143,12 @@ pub enum SettingsAction {
     /// role of an existing row), so this emits `ActorCommand::AddRelay` with
     /// the new role, exactly like `AddRelay`.
     SetRelayRole { url: String, role: String },
+    /// Set both OpenRouter and Ollama API keys in-memory. In-memory only;
+    /// these keys never touch disk. No projection consumes this action.
+    SetProviderApiKeys {
+        open_router: Option<String>,
+        ollama: Option<String>,
+    },
 }
 
 /// Action module for the `"podcast.settings"` namespace.

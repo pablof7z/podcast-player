@@ -52,8 +52,10 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         inbox_triage_cache: Arc::new(Mutex::new(HashMap::new())),
         inbox_triage_in_progress: Arc::new(AtomicBool::new(false)),
         comments_cache: Arc::new(Mutex::new(HashMap::new())),
+        viewed_comments_episode_id: Arc::new(Mutex::new(None)),
         social: Arc::new(Mutex::new(None)),
         agent_notes: Arc::new(Mutex::new(Vec::new())),
+        feedback_events_cache: Arc::new(Mutex::new(Vec::new())),
         runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }

@@ -440,6 +440,15 @@ final class KernelModel {
         }
     }
 
+    // ── Provider-blind LLM chat completion ──────────────────────────────
+
+    /// Resolve the opaque podcast handle pointer for use in a blocking FFI call.
+    /// The pointer is stable for the process lifetime once registered (D6).
+    /// Returns nil when the kernel is not yet registered.
+    var podcastHandlePointer: UnsafeMutableRawPointer? {
+        kernel.podcastHandle
+    }
+
     // ── Identity / NIP-46 ────────────────────────────────────────────────
     //
     // Typed wrappers around the NMP-core identity FFI. `UserIdentityStore`
@@ -463,6 +472,31 @@ final class KernelModel {
     /// `PcstIdentityCapability` here. Single source of truth.
     func signInNsec(_ nsec: String) {
         kernel.signInNsec(nsec)
+    }
+
+    /// Generate a fresh account in the kernel (keypair + kind:0 publish). The
+    /// kernel owns the secret; Swift never holds private bytes. When
+    /// `makeActive` is true the new account becomes the active session and its
+    /// pubkey arrives on the next snapshot tick via
+    /// `kernelIdentity.activeAccount`. `profile` is a flat string-map and
+    /// `relays` is a list of `[url, role]` pairs; both default to kernel
+    /// defaults when omitted.
+    func createNewAccount(
+        profile: [String: String] = [:],
+        relays: [[String]] = [],
+        mls: Bool = false,
+        makeActive: Bool = true
+    ) {
+        let profileJSON = (try? JSONSerialization.data(withJSONObject: profile, options: [.sortedKeys]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        let relaysJSON = (try? JSONSerialization.data(withJSONObject: relays, options: []))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        kernel.createNewAccount(
+            profileJSON: profileJSON,
+            relaysJSON: relaysJSON,
+            mls: mls,
+            makeActive: makeActive
+        )
     }
 
     /// Cancel the in-flight bunker handshake. Safe / idempotent when nothing

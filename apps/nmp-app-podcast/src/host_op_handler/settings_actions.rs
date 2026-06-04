@@ -210,6 +210,13 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
+            SettingsAction::SetLocalModel { model_id } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_local_model_id(model_id);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
             SettingsAction::SetWikiAutoGenerateOnTranscriptIngest { enabled } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_wiki_auto_generate_on_transcript_ingest(enabled);
@@ -271,6 +278,12 @@ impl PodcastHostOpHandler {
                     s.set_nostr_public_key_hex(hex);
                 }
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetProviderApiKeys { open_router, ollama } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_provider_api_keys(open_router, ollama);
+                }
                 serde_json::json!({"ok": true})
             }
             // Relay edits mutate kernel-owned state (the `AppRelaySlot`), not

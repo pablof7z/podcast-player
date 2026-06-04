@@ -68,18 +68,35 @@ pub fn handle_fetch_agent_notes(
 // ── publish ──────────────────────────────────────────────────────────────────
 
 /// Build kind:1 NIP-10 tags for an agent note.
+/// Build NIP-10 tags for a kind:1 agent note from semantic values.
+/// Rust owns all tag construction — Swift passes only data, never arrays.
 pub(crate) fn build_agent_note_tags(
     recipient_pubkey_hex: &str,
     root_event_id: Option<&str>,
+    inbound_event_id: Option<&str>,
+    root_a_tags: &[String],
 ) -> Result<Vec<Vec<String>>, String> {
     nostr::PublicKey::parse(recipient_pubkey_hex)
         .map_err(|e| format!("invalid recipient pubkey: {e}"))?;
-    let mut tags: Vec<Vec<String>> = Vec::with_capacity(2);
-    if let Some(root) = root_event_id {
-        if !root.is_empty() {
-            tags.push(vec!["e".to_string(), root.to_string(), String::new(), "root".to_string()]);
+    let mut tags: Vec<Vec<String>> = Vec::new();
+    // NIP-72 channel anchors first.
+    for coord in root_a_tags {
+        if !coord.is_empty() {
+            tags.push(vec!["a".to_string(), coord.clone()]);
         }
     }
+    // NIP-10 root marker.
+    if let Some(root) = root_event_id.filter(|s| !s.is_empty()) {
+        tags.push(vec!["e".to_string(), root.to_string(), String::new(), "root".to_string()]);
+    }
+    // NIP-10 reply marker (only when different from root).
+    if let Some(inbound) = inbound_event_id.filter(|s| !s.is_empty()) {
+        let is_new = root_event_id.map_or(true, |r| r != inbound);
+        if is_new {
+            tags.push(vec!["e".to_string(), inbound.to_string(), String::new(), "reply".to_string()]);
+        }
+    }
+    // Recipient.
     tags.push(vec!["p".to_string(), recipient_pubkey_hex.to_string()]);
     Ok(tags)
 }
@@ -92,6 +109,8 @@ pub fn handle_publish_agent_note(
     recipient_pubkey_hex: &str,
     content: &str,
     root_event_id: Option<&str>,
+    inbound_event_id: Option<&str>,
+    root_a_tags: &[String],
 ) -> serde_json::Value {
     if content.trim().is_empty() {
         return serde_json::json!({"ok": false, "error": "empty note"});
@@ -103,7 +122,7 @@ pub fn handle_publish_agent_note(
         Err(_) => return serde_json::json!({"ok": false, "error": "identity poisoned"}),
         _ => {}
     }
-    let tags = match build_agent_note_tags(recipient_pubkey_hex, root_event_id) {
+    let tags = match build_agent_note_tags(recipient_pubkey_hex, root_event_id, inbound_event_id, root_a_tags) {
         Ok(t) => t,
         Err(e) => return serde_json::json!({"ok": false, "error": e}),
     };

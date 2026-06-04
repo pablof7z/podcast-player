@@ -64,6 +64,7 @@ impl PodcastHostOpHandler {
                 crate::comments_handler::handle_fetch_comments(
                     self.app,
                     &self.store,
+                    &self.viewed_comments_episode_id,
                     &episode_id,
                 )
             }
@@ -89,12 +90,16 @@ impl PodcastHostOpHandler {
                 recipient_pubkey_hex,
                 content,
                 root_event_id,
+                inbound_event_id,
+                root_a_tags,
             } => crate::agent_note_handler::handle_publish_agent_note(
                 self.app,
                 &self.identity,
                 &recipient_pubkey_hex,
                 &content,
                 root_event_id.as_deref(),
+                inbound_event_id.as_deref(),
+                &root_a_tags,
             ),
             PodcastAction::FetchAgentNotes => {
                 crate::agent_note_handler::handle_fetch_agent_notes(
@@ -131,6 +136,21 @@ impl PodcastHostOpHandler {
                     episode_id,
                 )
             }
+            PodcastAction::FetchFeedback => {
+                crate::feedback_handler::handle_fetch_feedback(self.app)
+            }
+            PodcastAction::PublishFeedback {
+                category,
+                content,
+                parent_event_id,
+                reply_to_pubkey,
+            } => crate::feedback_handler::handle_publish_feedback(
+                self.app,
+                &category,
+                &content,
+                parent_event_id.as_deref(),
+                reply_to_pubkey.as_deref(),
+            ),
             // DiscoverNostr is handled in PodcastActionModule::execute via
             // EnsureInterest/DropInterestOwner before reaching the host-op
             // handler — it never arrives here.

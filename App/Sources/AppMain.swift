@@ -7,7 +7,6 @@ struct PodcastrApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var kernelModel = KernelModel()
     @State private var store = AppStateStore()
-    @State private var relayService: NostrRelayService?
     @State private var scheduledTaskRunner: AgentScheduledTaskRunner?
     /// Single global owner-consultation coordinator. Lives here (not on
     /// `AgentChatSession`) so an inbound peer-agent reply flowing through
@@ -38,7 +37,7 @@ struct PodcastrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(relayService: relayService, scheduledTaskRunner: scheduledTaskRunner)
+            RootView(scheduledTaskRunner: scheduledTaskRunner)
                 .environment(kernelModel)
                 .environment(store)
                 .environment(askCoordinator)
@@ -54,9 +53,6 @@ struct PodcastrApp: App {
                 .task { store.identity.start() }
                 .task { CarPlayController.shared.attach(store: store) }
                 .task {
-                    let service = NostrRelayService(store: store, askCoordinator: askCoordinator)
-                    relayService = service
-                    service.start()
                     scheduledTaskRunner = AgentScheduledTaskRunner(store: store)
                 }
                 .task {
@@ -82,12 +78,6 @@ struct PodcastrApp: App {
                 .sheet(item: $whatsNewPresentation) { presentation in
                     WhatsNewSheet(entries: presentation.entries)
                 }
-                .onChange(of: store.state.settings.nostrEnabled) { _, _ in relayService?.start() }
-                .onChange(of: store.state.settings.nostrRelayURL) { _, _ in relayService?.start() }
-                .onChange(of: store.state.settings.nostrPublicKeyHex) { _, _ in relayService?.start() }
-                .onChange(of: store.state.settings.nostrProfileName) { _, _ in relayService?.republishProfile() }
-                .onChange(of: store.state.settings.nostrProfileAbout) { _, _ in relayService?.republishProfile() }
-                .onChange(of: store.state.settings.nostrProfilePicture) { _, _ in relayService?.republishProfile() }
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {

@@ -125,9 +125,12 @@ struct AdvancedView: View {
     // MARK: - Actions
 
     private func startNewAccount() async {
-        // Per §4.9: clear → start (silently regenerates a new local key).
+        // Per §4.9: clear, then ask the kernel to mint a fresh account. The
+        // kernel owns the key; the new pubkey arrives via the identity
+        // projection. (`start()` no longer generates — it only cleans up
+        // legacy keychain slots — so generation is an explicit dispatch here.)
         identity.clearIdentity()
-        identity.start()
+        try? identity.generateKey()
         Haptics.medium()
     }
 }

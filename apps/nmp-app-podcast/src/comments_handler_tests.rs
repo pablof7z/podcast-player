@@ -49,7 +49,8 @@ fn fetch_comments_episode_not_found() {
     let app = std::ptr::null_mut();
     let store = Arc::new(Mutex::new(PodcastStore::new()));
 
-    let v = handle_fetch_comments(app, &store, "no-such-id");
+    let viewed = Arc::new(Mutex::new(None::<String>));
+    let v = handle_fetch_comments(app, &store, &viewed, "no-such-id");
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"], "episode not found");
 }

@@ -210,6 +210,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
             eleven_labs_voice_name: s.eleven_labs_voice_name().to_owned(),
             blossom_server_url: s.blossom_server_url().to_owned(),
             youtube_extractor_url: s.youtube_extractor_url().map(|s| s.to_owned()),
+            local_model_id: s.local_model_id().map(|s| s.to_owned()),
             wiki_auto_generate_on_transcript_ingest: s.wiki_auto_generate_on_transcript_ingest(),
             auto_ingest_publisher_transcripts: s.auto_ingest_publisher_transcripts(),
             auto_fallback_to_scribe: s.auto_fallback_to_scribe(),
@@ -269,15 +270,26 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     let downloads = handle.download_queue.lock().ok()
         .and_then(|q| build_downloads_snapshot(&q));
 
-    // Project comments for the now-playing episode from the cache.
+    // Project comments for the episode the user is currently viewing
+    // (set by `handle_fetch_comments`), falling back to the now-playing
+    // episode when the comments section hasn't been opened this session.
+    let viewed_comments_episode_id = handle
+        .viewed_comments_episode_id
+        .lock()
+        .ok()
+        .and_then(|v| v.clone());
     let comments = handle
         .comments_cache
         .lock()
         .ok()
         .and_then(|cache| {
-            now_playing
-                .as_ref()
-                .and_then(|np| np.episode_id.as_deref())
+            viewed_comments_episode_id
+                .as_deref()
+                .or_else(|| {
+                    now_playing
+                        .as_ref()
+                        .and_then(|np| np.episode_id.as_deref())
+                })
                 .and_then(|ep_id| cache.get(ep_id).cloned())
         })
         .unwrap_or_default();
@@ -301,6 +313,18 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .lock()
         .ok()
         .map(|n| n.clone())
+        .unwrap_or_default();
+
+    // In-app feedback events (kind:1 + kind:513 for the TENEX project coord),
+    // cached as SignedNostrEvent-shaped JSON by `FeedbackObserver`. Reactive
+    // push: filled by `FetchFeedback` on the actor thread, projected here on
+    // every tick (no polling, no pull symbols). The iOS `FeedbackStore` rebuilds
+    // threads from this flat list.
+    let feedback_events = handle
+        .feedback_events_cache
+        .lock()
+        .ok()
+        .map(|f| f.clone())
         .unwrap_or_default();
 
     // Configured app relays (NMP v0.2.1). Kernel-owned slot, projected by the
@@ -353,6 +377,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         social,
         agent_notes,
         configured_relays,
+        feedback_events,
         ..PodcastUpdate::default()
     }
 }

@@ -278,5 +278,9 @@ extension AppStateStore {
                                  "picture": settings.nostrProfilePicture
                              ])
         }
+        if settings.localModelID != prior.localModelID {
+            kernel?.dispatch(namespace: "podcast.settings",
+                             body: ["op": "set_local_model", "model_id": settings.localModelID as Any])
+        }
     }
 }

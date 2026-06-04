@@ -71,12 +71,6 @@ final class PodcastCapabilities {
     let iCloudSync: iCloudSyncCapability
     let spotlight: SpotlightCapability
     let voice: VoiceCapability
-    /// Nostr relay transport (`nostr_relay`). Opens `URLSessionWebSocketTask`
-    /// connections so the kernel's NIP-F4 publishes and Nostr-backed reads
-    /// (comments, discovery) actually reach the relay network. Before this
-    /// landed the namespace was unregistered and every publish/subscribe
-    /// returned an `unknown-namespace` error envelope.
-    let nostrRelay: NostrRelayCapability
     /// Network-state monitor. Observes `NWPathMonitor` and delivers
     /// `nmp.network.capability` `ConnectivityChanged` reports so Rust's
     /// `is_on_wifi` flag stays current for Wi-Fi-only auto-download gating.
@@ -95,7 +89,6 @@ final class PodcastCapabilities {
         iCloudSync: iCloudSyncCapability = iCloudSyncCapability(),
         spotlight: SpotlightCapability = SpotlightCapability.shared,
         voice: VoiceCapability = VoiceCapability(),
-        nostrRelay: NostrRelayCapability = NostrRelayCapability(),
         network: NetworkCapability = NetworkCapability()
     ) {
         self.keyring = keyring
@@ -108,7 +101,6 @@ final class PodcastCapabilities {
         self.iCloudSync = iCloudSync
         self.spotlight = spotlight
         self.voice = voice
-        self.nostrRelay = nostrRelay
         self.network = network
     }
 
@@ -128,7 +120,6 @@ final class PodcastCapabilities {
         notification.start()
         platform.start()
         spotlight.start()
-        nostrRelay.start()
     }
 
     /// Bring the iCloud sync capability online. Idempotent. Separated
@@ -156,7 +147,6 @@ final class PodcastCapabilities {
         iCloudSync.stop()
         spotlight.stop()
         voice.stop()
-        nostrRelay.stop()
     }
 
     /// Single capability-callback entry point. Routes the raw kernel
@@ -193,8 +183,6 @@ final class PodcastCapabilities {
             return notification.handleJSON(requestJSON)
         case VoiceCapability.namespace:
             return voice.handleJSON(requestJSON)
-        case NostrRelayCapability.namespace:
-            return nostrRelay.handleJSON(requestJSON)
         default:
             // D6 — an unknown namespace is data, not a crash. Echo the
             // correlation id so the issuing kernel module can still correlate.

@@ -5,8 +5,8 @@ import Foundation
 /// Stripped-down provider client tuned for the wiki
 /// compile pipeline.
 ///
-/// Differs from `AgentOpenRouterClient` (which streams SSE deltas and
-/// supports tool calls) on purpose:
+/// Differs from `AgentLLMClient` (which calls the Rust provider-blind
+/// backend and supports tool calls) on purpose:
 ///   • Compile turns are non-interactive — no streaming UI required.
 ///   • The response is forced to a single JSON object via
 ///     `response_format: { "type": "json_object" }`.
@@ -136,6 +136,10 @@ struct WikiOpenRouterClient: Sendable {
                 apiKey: resolvedKey,
                 model: modelReference.modelID
             )
+        case .local:
+            // Wiki compilation uses cloud HTTP providers; on-device local
+            // models are not wired into this path.
+            throw WikiClientError.missingCredential(provider: modelReference.provider.displayName)
         }
     }
 

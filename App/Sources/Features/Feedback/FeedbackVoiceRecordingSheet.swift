@@ -5,9 +5,9 @@ import SwiftUI
 /// the send action goes through `FeedbackStore.publishThread` instead of
 /// dispatching to the agent.
 ///
-/// Identity is auto-provisioned by `UserIdentityStore.publishFeedbackNote`
-/// (it generates a local key on first use), so this sheet does not gate
-/// on `hasIdentity` — the user can always speak and ship.
+/// Identity is auto-provisioned when the feedback note is published (a local
+/// key is generated + forwarded to the kernel signer on first use), so this
+/// sheet does not gate on `hasIdentity` — the user can always speak and ship.
 struct FeedbackVoiceRecordingSheet: View {
 
     let store: FeedbackStore

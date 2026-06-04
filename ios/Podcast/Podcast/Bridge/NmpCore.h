@@ -124,8 +124,8 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // `callback_scheme` may be NULL — when non-null Rust appends a percent-encoded
 // `&callback=<scheme>` query parameter so the signer app can deep-link back.
 // Pass NULL when the host scheme is not registered with the OS.
-void nmp_app_signin_nsec(void *app, const char *secret);
-void nmp_app_signin_bunker(void *app, const char *uri);
+void nmp_app_signin_nsec(void *app, const char *secret, uint8_t make_active);
+void nmp_app_signin_bunker(void *app, const char *uri, uint8_t make_active);
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
 char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);

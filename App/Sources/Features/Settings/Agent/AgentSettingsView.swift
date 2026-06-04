@@ -17,7 +17,10 @@ struct AgentSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             settings = store.state.settings
-            hasNostrKey = NostrCredentialStore.hasPrivateKey()
+            // Identity readiness now comes from the kernel-backed identity
+            // store (the kernel owns the key); NostrCredentialStore is no
+            // longer the source of truth.
+            hasNostrKey = store.identity.hasIdentity
         }
         .onChange(of: settings) { _, new in
             store.updateSettings(new)

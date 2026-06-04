@@ -13,7 +13,6 @@ struct AgentIdentityView: View {
     @Environment(AppStateStore.self) private var store
 
     @State private var settings: Settings = Settings()
-    @State private var hasPrivateKey: Bool = false
     @State private var showCopied: Bool = false
     @State private var showRegenerateConfirm: Bool = false
     @State private var importKeyInput: String = ""
@@ -89,7 +88,6 @@ struct AgentIdentityView: View {
         }
         .onAppear {
             settings = store.state.settings
-            refreshKeyState()
             keyManagementExpanded = !hasPrivateKey
         }
         .onChange(of: settings) { _, new in store.updateSettings(new) }
@@ -208,12 +206,12 @@ struct AgentIdentityView: View {
 
     // MARK: - Computed
 
-    private var npubFull: String {
-        guard let hex = settings.nostrPublicKeyHex, !hex.isEmpty,
-              let data = Data(hexString: hex)
-        else { return "" }
-        return Bech32.encode(hrp: "npub", data: data)
-    }
+    /// The active account, sourced from the kernel-backed identity store
+    /// (the single source of truth for the signing pubkey). The kernel owns
+    /// the key; this view only reads the published pubkey.
+    private var hasPrivateKey: Bool { store.identity.hasIdentity }
+
+    private var npubFull: String { store.identity.npub ?? "" }
 
     /// Items passed to the system share sheet when the user taps "Share My Identity".
     /// Includes a human-readable invite text and a deep-link URL the recipient can tap
@@ -235,11 +233,12 @@ struct AgentIdentityView: View {
     // MARK: - Actions
 
     private func generateKeyPair() {
+        // Key generation is owned by the kernel — it mints the keypair,
+        // persists it, and publishes the kind:0 profile. The new pubkey
+        // arrives reactively via the identity projection, so `npubFull` /
+        // `hasPrivateKey` (both read `store.identity`) update on the next tick.
         do {
-            let pair = try NostrKeyPair.generate()
-            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
-            refreshKeyState()
+            try store.identity.generateKey()
         } catch {
             keychainErrorMessage = "Could not generate key pair: \(error.localizedDescription)"
             Haptics.error()
@@ -247,19 +246,14 @@ struct AgentIdentityView: View {
     }
 
     private func importPrivateKey() {
-        let trimmed = importKeyInput.trimmed.lowercased()
+        let trimmed = importKeyInput.trimmed
         guard !trimmed.isEmpty else { return }
+        // Import is owned by the kernel — it validates the key (nsec or hex),
+        // persists it in its zeroizing store, and adopts it as the active
+        // account. The resulting pubkey arrives via the identity projection.
         do {
-            let pair: NostrKeyPair
-            if trimmed.hasPrefix("nsec") {
-                pair = try NostrKeyPair(nsec: trimmed)
-            } else {
-                pair = try NostrKeyPair(privateKeyHex: trimmed)
-            }
-            try NostrCredentialStore.savePrivateKey(pair.privateKeyHex)
-            settings.nostrPublicKeyHex = pair.publicKeyHex
+            try store.identity.importNsec(trimmed)
             importKeyInput = ""
-            refreshKeyState()
             Haptics.success()
         } catch {
             keychainErrorMessage = "Invalid private key — paste the raw hex or nsec bech32."
@@ -272,7 +266,4 @@ struct AgentIdentityView: View {
         copyToClipboard(npubFull, isCopied: $showCopied)
     }
 
-    private func refreshKeyState() {
-        hasPrivateKey = NostrCredentialStore.hasPrivateKey()
-    }
 }

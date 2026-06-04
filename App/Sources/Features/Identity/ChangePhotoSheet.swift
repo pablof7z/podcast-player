@@ -109,15 +109,16 @@ struct ChangePhotoSheet: View {
                 uploadState = .failed("Could not read the selected photo.")
                 return
             }
-            guard let signer = identity.signer else {
+            guard identity.publicKeyHex != nil else {
                 uploadState = .failed("Sign in to upload a photo.")
                 return
             }
             let prepared = try Self.resizeJPEG(raw, maxEdge: 800, quality: 0.85)
+            // Auth signing is the kernel's job (sign-for-return); this uploader
+            // is degraded until that continuation is wired.
             let url = try await uploader.upload(
                 data: prepared,
-                contentType: "image/jpeg",
-                signer: signer
+                contentType: "image/jpeg"
             )
             pictureURL = url.absoluteString
             Haptics.success()

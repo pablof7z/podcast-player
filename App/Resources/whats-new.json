@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-04T02:45:00Z",
+      "lines": [
+        "Your Nostr key is now held by the app's secure kernel and never leaves it — stronger key safety across sign-in, profile, and feedback."
+      ]
+    },
+    {
       "shipped_at": "2026-06-03T20:01:00Z",
       "lines": [
         "CarPlay now shows the chapter list as soon as chapters are ready, even when they arrive after the episode starts"
@@ -17,6 +23,12 @@
       "shipped_at": "2026-06-03T16:30:52Z",
       "lines": [
         "Your Nostr profile name, bio, and picture now sync across your devices"
+      ]
+    },
+    {
+      "shipped_at": "2026-06-03T12:07:00Z",
+      "lines": [
+        "Run AI locally on your device with downloadable Gemma 4 models — private, offline, no API key."
       ]
     },
     {

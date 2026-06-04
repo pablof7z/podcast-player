@@ -209,6 +209,49 @@ extension AppStateStore {
         return nil
     }
 
+    // MARK: - Comments (NIP-22 / kind:1111)
+
+    /// Subscribe to an episode's NIP-22 comments via the kernel. Rust opens a
+    /// relay-pool subscription (no iOS WebSocket) and marks this episode as the
+    /// one being viewed; inbound comments land on
+    /// `podcastSnapshot.comments` via the reactive push seam.
+    func kernelFetchComments(episodeID: String) {
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "fetch_comments",
+                                "episode_id": episodeID])
+    }
+
+    /// Publish a NIP-22 comment for an episode via the kernel. Rust signs with
+    /// the active user signer and routes through its relay pool — no secret
+    /// bytes in app code. The comment is optimistically reflected on
+    /// `podcastSnapshot.comments`.
+    func kernelPostComment(episodeID: String, content: String) {
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "post_comment",
+                                "episode_id": episodeID,
+                                "content": content])
+    }
+
+    /// Publish a kind:1 agent-to-agent note via the kernel.
+    /// Rust builds all NIP-10 tags and routes through the NMP relay pool.
+    func kernelPublishAgentNote(
+        recipientPubkeyHex: String,
+        content: String,
+        rootEventID: String? = nil,
+        inboundEventID: String? = nil,
+        rootATags: [String] = []
+    ) {
+        var body: [String: Any] = [
+            "op": "publish_agent_note",
+            "recipient_pubkey_hex": recipientPubkeyHex,
+            "content": content
+        ]
+        if let root = rootEventID { body["root_event_id"] = root }
+        if let inbound = inboundEventID { body["inbound_event_id"] = inbound }
+        if !rootATags.isEmpty { body["root_a_tags"] = rootATags }
+        kernel?.dispatch(namespace: "podcast", body: body)
+    }
+
     // MARK: - Queue (podcast.queue namespace)
 
     /// Push an episode to the back of the Rust-owned Up Next queue.
@@ -232,6 +275,39 @@ extension AppStateStore {
     /// Empty the Rust-owned Up Next queue.
     func kernelClearQueue() {
         kernel?.dispatch(namespace: "podcast.queue", body: ["op": "clear"])
+    }
+
+    // MARK: - Feedback (in-app TENEX project notes)
+
+    /// Open the in-app feedback subscription via the kernel. Rust pushes a
+    /// relay-pinned subscription to the feedback relay (no iOS WebSocket) for
+    /// kind:1 + kind:513 events bearing the project `["a"]` coord; inbound
+    /// events land on `podcastSnapshot.feedbackEvents` via the reactive push
+    /// seam, and `FeedbackStore` rebuilds threads from them.
+    func kernelFetchFeedback() {
+        kernel?.dispatch(namespace: "podcast", body: ["op": "fetch_feedback"])
+    }
+
+    /// Publish a feedback note (kind:1) via the kernel. Rust builds all tags
+    /// (project anchor, category, NIP-70 protected marker, NIP-10 reply
+    /// markers), signs with the active user signer, and routes to the feedback
+    /// relay with an explicit publish target (NMP AUTHs the write) — no secret
+    /// bytes in app code, no iOS relay socket. `parentEventID` / `replyToPubkey`
+    /// are nil for a new thread, set for a reply.
+    func kernelPublishFeedback(
+        category: String,
+        content: String,
+        parentEventID: String? = nil,
+        replyToPubkey: String? = nil
+    ) {
+        var body: [String: Any] = [
+            "op": "publish_feedback",
+            "category": category,
+            "content": content,
+        ]
+        if let parent = parentEventID { body["parent_event_id"] = parent }
+        if let pk = replyToPubkey { body["reply_to_pubkey"] = pk }
+        kernel?.dispatch(namespace: "podcast", body: body)
     }
 
     // MARK: - Chapters
@@ -381,6 +457,28 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast", body: body)
     }
 
+    // MARK: - LLM provider credentials (podcast.settings namespace)
+
+    /// Push the current LLM provider API keys into the Rust kernel so
+    /// `PodcastStore::open_router_api_key()` / `ollama_api_key()` return live
+    /// values. Called on kernel attach and after every key save/delete.
+    /// Rust can't read the Keychain directly — this is the only delivery path.
+    func kernelSetProviderApiKeys() {
+        var body: [String: Any] = ["op": "set_provider_api_keys"]
+        do {
+            if let key = try OpenRouterCredentialStore.apiKey() {
+                body["open_router"] = key
+            }
+            if let key = try OllamaCredentialStore.apiKey() {
+                body["ollama"] = key
+            }
+        } catch {
+            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
+                   "Failed to resolve LLM credentials for kernel: %{public}@", error.localizedDescription)
+        }
+        kernel?.dispatch(namespace: "podcast.settings", body: body)
+    }
+
     // MARK: - App relays (podcast.settings namespace)
     //
     // Relay state is kernel-owned (NMP v0.2.1 `AppRelaySlot`), not `PodcastStore`.
@@ -414,7 +512,7 @@ extension AppStateStore {
     // MARK: - NIP-F4 publishing (podcast.publish namespace)
     //
     // Canonical agent-owned podcast publishing. Rust owns the cryptography:
-    // `create_owned_podcast` generates a per-podcast secp256k1 keypair, stamps
+    // `create_owned_podcast` generates a per-podcast Nostr keypair, stamps
     // `owner_pubkey_hex` onto the podcast row, and registers the key so the
     // publish ops can sign. `publish_show` (kind:10154) and `publish_episode`
     // (kind:54) build + sign + broadcast NIP-F4 events to the relay pool;
@@ -565,32 +663,19 @@ extension AppStateStore {
                          body: ["op": "publish_author_claim", "agent_pubkey_hex": agentPubkeyHex])
     }
 
-    // MARK: - LLM Provider credential push (podcast.settings namespace)
-    //
-    // Push resolved API keys from the Keychain into the Rust kernel's
-    // in-memory settings store. Keys are never persisted on either side;
-    // re-push on every cold launch after Keychain unlock and after any
-    // Settings credential edit. The kernel uses these to initialize
-    // LlmBackend instances without requiring the FFI caller to resolve
-    // or pass keys themselves (provider-blind routing).
+    // MARK: - Local LLM model selection (podcast.settings namespace)
 
-    /// Push OpenRouter and Ollama API keys from the Keychain into the Rust
-    /// kernel's in-memory provider registry. Called on app launch after
-    /// Keychain unlock and after any Settings credential mutation
-    /// (OpenRouterCredentialStore.saveAPIKey / OllamaCredentialStore.saveAPIKey).
-    func kernelSetProviderApiKeys() {
-        var body: [String: Any] = ["op": "set_provider_api_keys"]
-        do {
-            if let key = try OpenRouterCredentialStore.apiKey() {
-                body["open_router"] = key
-            }
-            if let key = try OllamaCredentialStore.apiKey() {
-                body["ollama"] = key
-            }
-        } catch {
-            os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
-                   "Failed to resolve LLM credentials for kernel: %{public}@", error.localizedDescription)
+    /// Activate a local model by ID, or pass nil to switch back to cloud providers.
+    /// The kernel persists the selection to Settings.local_model_id and routes future
+    /// LLM inference requests through the registered Swift callback.
+    func kernelSetLocalModel(modelID: String?) {
+        var body: [String: Any] = ["op": "set_local_model"]
+        if let modelID = modelID {
+            body["model_id"] = modelID
+        } else {
+            body["model_id"] = NSNull()
         }
         kernel?.dispatch(namespace: "podcast.settings", body: body)
     }
+
 }

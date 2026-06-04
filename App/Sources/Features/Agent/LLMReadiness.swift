@@ -50,6 +50,9 @@ enum LLMReadiness {
                 return true
             }
             return host == "ollama.com" || host == "www.ollama.com"
+        case .local:
+            // On-device models never require an API key.
+            return false
         }
     }
 
@@ -60,6 +63,9 @@ enum LLMReadiness {
             return OpenRouterCredentialStore.hasAPIKey()
         case .ollama:
             return OllamaCredentialStore.hasAPIKey()
+        case .local:
+            // On-device models are always ready — no key needed.
+            return true
         }
     }
 }

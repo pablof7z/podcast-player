@@ -87,7 +87,7 @@ final class AgentChatSession {
     /// re-render on coordinator identity changes — only on the
     /// coordinator's own observable state (its `current` ask).
     @ObservationIgnored weak var askCoordinator: AgentAskCoordinator?
-    @ObservationIgnored nonisolated(unsafe) private var delegationObserver: NSObjectProtocol?
+
     var rawMessages: [[String: Any]] = []
     var rawMessageCountAtLastSendStart: Int = 0
     var messageCountAtLastSendStart: Int = 0
@@ -129,26 +129,8 @@ final class AgentChatSession {
             checkAndDrainPendingContext()
         }
 
-        delegationObserver = NotificationCenter.default.addObserver(
-            forName: .agentDelegationDidComplete,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            let id = notification.object as? UUID
-            MainActor.assumeIsolated {
-                guard let self, let id, id == self.currentConversationID else { return }
-                if let convo = self.history.conversation(id: id) {
-                    self.messages = convo.messages
-                }
-            }
-        }
     }
 
-    deinit {
-        if let observer = delegationObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
 
     /// Checks the store for pending ask-agent context (voice note, chapter,
     /// transcript) and drains it into `seededDraft`. Safe to call multiple

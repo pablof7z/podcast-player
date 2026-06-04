@@ -24,15 +24,13 @@
 //! "summary" would poison the persisted field. The iOS agent tool degrades to
 //! the publisher description on its side instead.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::Prompt as _;
-use rig_core::providers::ollama;
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 
-const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
 
 /// Upper bound on the episode body fed to the model. Mirrors the 16k cap the
@@ -47,28 +45,26 @@ const SUMMARIZE_PREAMBLE: &str =
 /// Summarize an episode using the LLM.
 ///
 /// Prefers `transcript` (capped at [`MAX_BODY_CHARS`]) when present, otherwise
-/// summarizes from `title` + `description`. Returns `Err` when Ollama is
+/// summarizes from `title` + `description`. Returns `Err` when the LLM is
 /// unreachable or the response is empty.
 pub fn summarize_episode(
     title: &str,
     description: &str,
     transcript: Option<&str>,
     runtime: &Arc<Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<String, String> {
     let prompt = build_prompt(title, description, transcript);
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(OLLAMA_BASE_URL)
-            .build()
-            .map_err(|e: rig_core::http_client::Error| e.to_string())?;
+        let backend = backend_for(store, SUMMARIZE_MODEL);
+        let req = LlmRequest {
+            system: SUMMARIZE_PREAMBLE.to_owned(),
+            history: Vec::new(),
+            user: prompt,
+            model: SUMMARIZE_MODEL.to_owned(),
+        };
 
-        let agent = client
-            .agent(SUMMARIZE_MODEL)
-            .preamble(SUMMARIZE_PREAMBLE)
-            .build();
-
-        let response: String = agent.prompt(&prompt).await.map_err(|e| e.to_string())?;
+        let response: String = backend.complete(&req).await?;
 
         clean_summary(&response)
     })

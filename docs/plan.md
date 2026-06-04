@@ -28,7 +28,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 | Feature parity | Not achieved — many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked — `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Compat layer | Active debt — `ios/Podcast/Podcast/Compat/` still contains service/domain/identity/utility shims. |
-| NIP-F4 Keychain flip | Remaining work — M7 flip of the Rust read path to the Keychain (blocked on PD-019). |
+| NIP-F4 Keychain flip | Cancelled — `podcast-keys.json` is the canonical and final store for per-podcast secrets. No Keychain migration. |
 | Validation gate | Incomplete — code parity work must run focused Rust/Swift tests plus the merge gate. |
 
 ## Next Execution Order

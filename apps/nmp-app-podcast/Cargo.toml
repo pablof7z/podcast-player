@@ -36,6 +36,7 @@ path = "src/bin/headless/main.rs"
 required-features = ["headless"]
 
 [dependencies]
+async-trait = "0.1"
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"], optional = true }
 tempfile = { version = "3", optional = true }
 # WebSocket client used by the production social-graph relay subscriptions

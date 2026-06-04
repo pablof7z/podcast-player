@@ -2,25 +2,31 @@ import Foundation
 import Observation
 import os.log
 
-/// The human user's Nostr identity — entirely separate from the agent's identity.
-/// Manages its own keychain slot and published key state.
+/// The human user's Nostr identity. The Rust kernel (NMP) owns ALL key
+/// material and signing — this store holds NO private keys and performs NO
+/// crypto. It is a thin, observable mirror of the kernel identity projection
+/// (`KernelModel.kernelIdentity`): it surfaces the active pubkey and mode for
+/// the UI, and routes identity actions (import nsec, generate account, connect
+/// bunker, sign out) to the kernel.
 ///
-/// Two flavours of identity are supported:
-/// 1. **Local nsec** — a private key stored in the iOS Keychain.
-/// 2. **Remote signer (NIP-46)** — a "bunker" connection where the user's nsec lives
-///    elsewhere (Amber, nsec.app, nsecBunker, …) and we delegate signing over a relay.
+/// Two flavours of identity are supported, both kernel-backed:
+/// 1. **Local key** — a private key the kernel generated or imported and
+///    persists in its own identity store (`identity.json`).
+/// 2. **Remote signer (NIP-46)** — a "bunker" connection where the key lives
+///    in a remote signer app; the kernel delegates signing over a relay.
 ///
-/// Call `start()` once at app launch so the store auto-loads any previously saved key
-/// or remote-signer connection from the keychain.
+/// Identity state arrives reactively: every kernel snapshot tick calls
+/// `applyKernelIdentity(...)`, which reconciles `publicKeyHex` / `mode` from
+/// the kernel's `activeAccount`. Call `start()` once at launch for legacy
+/// keychain cleanup; the kernel restores its own identity asynchronously.
 @MainActor
 @Observable
 final class UserIdentityStore {
     private let logger = Logger.app("UserIdentityStore")
 
-    /// The user's signing pubkey (32-byte hex x-only). Always reflects whichever signer
-    /// is currently active — local key or NIP-46 user pubkey.
+    /// The user's signing pubkey (32-byte hex x-only), mirrored from the
+    /// kernel's active account. `nil` while no identity is configured.
     private(set) var publicKeyHex: String?
-    private(set) var keyPair: NostrKeyPair?
     private(set) var loginError: String?
 
     /// What kind of identity is currently active.
@@ -31,12 +37,9 @@ final class UserIdentityStore {
     }
     private(set) var mode: Mode = .none
 
-    /// The active signer. Whatever the rest of the app uses to sign events.
-    /// `nil` while no identity is configured.
-    private(set) var signer: (any NostrSigner)?
-
-    /// Weak handle to the Rust kernel (set by `attachKernel`); forwards the
-    /// local signing key so `podcast.social` / agent notes sign as the user.
+    /// Weak handle to the Rust kernel (set by `attachKernel`). All key
+    /// generation, import, and signing is dispatched here — the kernel is the
+    /// single owner of the user's secret.
     @ObservationIgnored weak var kernel: KernelModel?
 
     /// Test-only: records kernel dispatches instead of reaching the kernel.
@@ -56,7 +59,12 @@ final class UserIdentityStore {
     var hasIdentity: Bool { publicKeyHex != nil }
     var isRemoteSigner: Bool { mode == .remoteSigner }
 
-    // MARK: - Keychain slots
+    // MARK: - Keychain slots (legacy cleanup only)
+    //
+    // The kernel now owns all key material. These slot identifiers are kept
+    // ONLY so `start()` / `clearIdentity()` can delete stale entries written
+    // by older installs that stored the user's private key in the Swift
+    // Keychain. Nothing in this store ever WRITES a private key to them.
 
     private static let userKeyService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").user-identity"
     private static let userKeyAccount = "user-private-key-hex"
@@ -66,93 +74,79 @@ final class UserIdentityStore {
     private static let nip46SessionAccount = "session-private-key-hex"
     private static let nip46MetaService = "\(Bundle.main.bundleIdentifier ?? "Podcastr").nip46-meta"
     private static let nip46MetaAccount = "connection"
-    private static let generatedOrigin = "generated"
 
     // MARK: - Lifecycle
 
+    /// Launch hook. The kernel restores its own identity (`identity.json`)
+    /// asynchronously and the result arrives via `applyKernelIdentity` on the
+    /// first snapshot tick — so this method does NOT eagerly generate a key
+    /// (doing so would mint a duplicate account every cold start, racing the
+    /// kernel's restore). It only cleans up legacy Swift-Keychain private-key
+    /// slots from pre-kernel installs.
     func start() {
-        // Prefer an existing local key.
-        do {
-            if let hex = try KeychainStore.readString(service: Self.userKeyService, account: Self.userKeyAccount),
-               !hex.isEmpty {
-                let pair = try NostrKeyPair(privateKeyHex: hex)
-                adoptLocal(pair)
-                if isGeneratedLocalKey {
-                    publishGeneratedProfileIfNeeded(pair: pair)
-                }
-                return
-            }
-        } catch {
-            logger.error("UserIdentityStore.start failed to load local key: \(error, privacy: .public)")
-        }
-        // Otherwise, try to resume a remote-signer connection.
-        if let meta = try? loadRemoteMeta(), let session = try? loadSessionKeyPair() {
-            publicKeyHex = meta.userPubkeyHex
-            mode = .remoteSigner
-            remoteSignerState = .reconnecting
-            Task { await self.resumeRemote(meta: meta, sessionKeyPair: session) }
-        } else {
-            do {
-                try generateGeneratedKey()
-            } catch {
-                logger.error("UserIdentityStore.start failed to generate local key: \(error, privacy: .public)")
-            }
-        }
+        purgeLegacyKeychainKeys()
+    }
+
+    /// Delete any private-key material left in the Swift Keychain by older
+    /// app versions (the kernel owns keys now). Best-effort; never throws.
+    private func purgeLegacyKeychainKeys() {
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
+        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
+        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
+        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
     }
 
     // MARK: - nsec import
 
+    /// Import a private key. The kernel validates, persists, and adopts it as
+    /// the active account; the resulting pubkey arrives via `applyKernelIdentity`.
     func importNsec(_ nsec: String) throws {
         loginError = nil
         let trimmed = nsec.trimmed
-        do {
-            let pair = try NostrKeyPair(nsec: trimmed)
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
-            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-            clearRemoteConnectionState()
-            adoptLocal(pair)
-        } catch {
+        guard !trimmed.isEmpty else {
             loginError = "Invalid nsec — check the key and try again."
-            throw error
+            throw UserIdentityError.invalidKey
         }
+        remoteSignerState = .idle
+        kernel?.signInNsec(trimmed)
     }
 
-    // MARK: - Generate ephemeral key
+    // MARK: - Generate account
 
+    /// Generate a brand-new account in the kernel (keypair + kind:0 publish),
+    /// activating it as the user's identity. The kernel owns the secret; the
+    /// new pubkey arrives via `applyKernelIdentity`.
     func generateKey() throws {
         loginError = nil
-        do {
-            let pair = try NostrKeyPair.generate()
-            try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
-            try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
-            clearRemoteConnectionState()
-            adoptLocal(pair)
-            publishGeneratedProfileIfNeeded(pair: pair)
-        } catch {
-            loginError = "Failed to generate key — please try again."
-            throw error
-        }
+        remoteSignerState = .idle
+        dispatchKernelKeygen()
+    }
+
+    /// Dispatch a make-active account creation to the kernel, seeding the
+    /// auto-generated display profile so the kernel's kind:0 publish carries
+    /// it (avoids a second Swift-side profile publish).
+    private func dispatchKernelKeygen() {
+        kernel?.createNewAccount(
+            profile: Self.placeholderGeneratedProfile(),
+            relays: [],
+            mls: false,
+            makeActive: true
+        )
     }
 
     // MARK: - Sign out
 
+    /// Sign out: wipe the active identity from the kernel (and its persisted
+    /// `identity.json`) so the key cannot outlive sign-out, and clear any
+    /// legacy Swift-Keychain slots. Local published state resets immediately;
+    /// `applyKernelIdentity` confirms `activeAccount == nil` on the next tick.
     func clearIdentity() {
-        do {
-            try KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
-        } catch {
-            logger.error("UserIdentityStore.clearIdentity failed: \(error, privacy: .public)")
-        }
-        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
         try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.generatedProfileAccount)
-        Task { await self.tearDownRemote() }
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
-        // Wipe the key from the kernel too (else it outlives sign-out in the
-        // kernel IdentityStore + identity.json and can still sign).
+        purgeLegacyKeychainKeys()
+        // Wipe the key from the kernel (else it outlives sign-out in the
+        // kernel identity store + identity.json and can still sign).
         clearIdentityInKernel()
-        keyPair = nil
         publicKeyHex = nil
-        signer = nil
         mode = .none
         remoteSignerState = .idle
         profileDisplayName = nil
@@ -163,71 +157,28 @@ final class UserIdentityStore {
 
     // MARK: - NIP-46 connect / disconnect
 
-    /// Parse a `bunker://…` URI, run the connect handshake, and persist the
-    /// connection on success so launch reconnects automatically. An `auth_url`
-    /// challenge advances state to `.awaitingAuthorization(url)` for the UI.
+    /// Parse a `bunker://…` URI and begin the NIP-46 handshake via the kernel's
+    /// signer broker — no Swift WebSocket. State changes arrive reactively via
+    /// `applyKernelIdentity` on kernel snapshot ticks.
     func connectRemoteSigner(uri: String) async {
         loginError = nil
-        let parsed: BunkerURI
-        do {
-            parsed = try BunkerURI.parse(uri)
-        } catch {
-            loginError = (error as? LocalizedError)?.errorDescription ?? "Invalid bunker URI."
-            remoteSignerState = .failed(loginError ?? "Invalid bunker URI.")
+        let trimmed = uri.trimmed
+        guard trimmed.hasPrefix("bunker://") else {
+            loginError = "Invalid bunker URI."
+            remoteSignerState = .failed("Invalid bunker URI.")
             return
         }
         remoteSignerState = .connecting
-        do {
-            let sessionPair = try NostrKeyPair.generate()
-            let signer = RemoteSigner(bunker: parsed, sessionKeyPair: sessionPair)
-            let userPub = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            try KeychainStore.saveString(sessionPair.privateKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
-            try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-            let meta = RemoteMeta(
-                bunkerPubkeyHex: parsed.remotePubkeyHex,
-                relays: parsed.relays,
-                secret: parsed.secret,
-                permissions: parsed.permissions,
-                userPubkeyHex: userPub
-            )
-            try saveRemoteMeta(meta)
-            self.signer = signer
-            self.publicKeyHex = userPub
-            self.keyPair = nil
-            self.mode = .remoteSigner
-            self.remoteSignerState = .connected(userPub)
-            // Wire the bunker into the kernel signer broker so kernel-side
-            // features can delegate signing over the relay.
-            self.syncBunkerToKernel(uri: uri)
-            self.loadCachedProfile(for: userPub)
-            let pub = userPub
-            Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            loginError = msg
-            remoteSignerState = .failed(msg)
-        }
+        // Hand off to the kernel — NMP parses, validates, and handles NIP-44,
+        // NIP-46, and relay routing. No URI parsing or crypto in Swift.
+        syncBunkerToKernel(uri: trimmed)
     }
 
-    /// Surfaces the bunker's `auth_url` URL to the UI. Called from inside `connect(...)`'s
-    /// `onAuthChallenge` continuation; the connect call itself is still suspended waiting
-    /// for the eventual `ack`.
-    private func handleAuthChallenge(url: URL) {
-        remoteSignerState = .awaitingAuthorization(url)
-    }
-
+    /// Disconnect the active remote signer and wipe its kernel identity.
     func disconnectRemoteSigner() async {
-        await tearDownRemote()
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
-        // Clear any kernel-side identity wired for this bunker session.
         clearIdentityInKernel()
+        purgeLegacyKeychainKeys()
         publicKeyHex = nil
-        keyPair = nil
-        signer = nil
         mode = .none
         remoteSignerState = .idle
     }
@@ -244,161 +195,68 @@ final class UserIdentityStore {
         return "\(full.prefix(10))…\(full.suffix(6))"
     }
 
-    // MARK: - Private — local
+    // MARK: - Reactive kernel-identity reconcile
 
-    private func adoptLocal(_ pair: NostrKeyPair) {
-        keyPair = pair
-        publicKeyHex = pair.publicKeyHex
-        signer = LocalKeySigner(keyPair: pair)
-        mode = .localKey
-        remoteSignerState = .idle
-        // Forward the new local key into the kernel (no-op until attach;
-        // `attachKernel` re-syncs on connect).
-        syncIdentityToKernel()
-        loadCachedProfile(for: pair.publicKeyHex)
-        guard !isGeneratedLocalKey else { return }
-        let pubkey = pair.publicKeyHex
+    /// Reconcile published identity state from a kernel snapshot tick. Called
+    /// on EVERY tick from `AppStateStore` projection, so it must be cheap and
+    /// idempotent: only mutate observable state when a value actually changes,
+    /// and only run profile side-effects when the active pubkey changes.
+    ///
+    /// Ordering matters: handshake (in-flight / terminal) logic runs first so a
+    /// tick arriving mid-pairing with `activeAccount == nil` does not reset the
+    /// `.connecting` state that `_beginNostrConnect()` set. Steady-state pubkey
+    /// reconcile runs second.
+    @MainActor
+    func applyKernelIdentity(
+        handshake: KernelBunkerHandshake?,
+        activeAccount: String?,
+        isRemoteSigner: Bool
+    ) {
+        // 1. Handshake progression (failure surfaces an error; success is
+        //    folded into the steady-state reconcile below via activeAccount).
+        if let handshake, handshake.isFailed {
+            _failNostrConnect(handshake.message ?? "NIP-46 pairing failed.")
+        }
+
+        // 2. Steady-state: mirror the active pubkey + mode from the kernel.
+        let changed = (activeAccount != publicKeyHex)
+        if changed {
+            publicKeyHex = activeAccount
+        }
+
+        let newMode: Mode
+        if activeAccount == nil {
+            newMode = .none
+        } else {
+            newMode = isRemoteSigner ? .remoteSigner : .localKey
+        }
+        if newMode != mode { mode = newMode }
+
+        // Connection state: a live account means connected; reflect it without
+        // churning if already in the right terminal state.
+        if let pubkey = activeAccount {
+            let target: RemoteSignerState = isRemoteSigner ? .connected(pubkey) : .idle
+            if remoteSignerState != target {
+                // Don't downgrade an in-flight bunker handshake to idle on a
+                // local-key tick; only set when we have a real account.
+                remoteSignerState = target
+            }
+        }
+
+        // 3. Profile side-effects only when the active pubkey actually changes.
+        guard changed, let pubkey = activeAccount else { return }
+        loadCachedProfile(for: pubkey)
         Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
     }
 
-    private var isGeneratedLocalKey: Bool {
-        (try? KeychainStore.readString(
-            service: Self.userKeyService,
-            account: Self.userKeyOriginAccount
-        )) == Self.generatedOrigin
-    }
+    // MARK: - Internal helpers
 
-    private func generateGeneratedKey() throws {
-        let pair = try NostrKeyPair.generate()
-        try KeychainStore.saveString(pair.privateKeyHex, service: Self.userKeyService, account: Self.userKeyAccount)
-        try KeychainStore.saveString(Self.generatedOrigin, service: Self.userKeyService, account: Self.userKeyOriginAccount)
-        adoptLocal(pair)
-        publishGeneratedProfileIfNeeded(pair: pair)
-    }
-
-    private func clearRemoteConnectionState() {
-        if let remote = signer as? RemoteSigner {
-            Task { await remote.disconnect() }
-        }
-        try? KeychainStore.deleteString(service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.nip46MetaService, account: Self.nip46MetaAccount)
-        remoteSignerState = .idle
-    }
-
-    private func publishGeneratedProfileIfNeeded(pair: NostrKeyPair) {
-        let alreadyPublished = try? KeychainStore.readString(
-            service: Self.userKeyService,
-            account: Self.generatedProfileAccount
-        )
-        guard alreadyPublished != pair.publicKeyHex else { return }
-        let pubkey = pair.publicKeyHex
-        let keyService = Self.userKeyService
-        let profileAccount = Self.generatedProfileAccount
-        let signer = LocalKeySigner(keyPair: pair)
-        let profile = Self.generatedProfile(pubkey: pubkey)
-        Task.detached {
-            guard let data = try? JSONSerialization.data(withJSONObject: profile, options: [.sortedKeys]),
-                  let content = String(data: data, encoding: .utf8) else { return }
-            let event = try await signer.sign(NostrEventDraft(kind: 0, content: content))
-            var published = false
-            for relayURL in FeedbackRelayClient.profileRelayURLs {
-                let client = FeedbackRelayClient(relayURL: relayURL)
-                do {
-                    try await client.publish(event, authSigner: signer)
-                    published = true
-                } catch {
-                    continue
-                }
-            }
-            if published {
-                try? KeychainStore.saveString(
-                    pubkey,
-                    service: keyService,
-                    account: profileAccount
-                )
-            }
-        }
-    }
-
-    private static func generatedProfile(pubkey: String) -> [String: String] {
-        let seed = String(pubkey.prefix(16))
-        let index = stableProfileIndex(seed)
-        let adjectives = ["Bright", "Quiet", "Swift", "Kind", "Clear", "North"]
-        let nouns = ["Signal", "Notebook", "Harbor", "Lantern", "Thread", "Field"]
-        let adjective = adjectives[index % adjectives.count]
-        let noun = nouns[(index / adjectives.count) % nouns.count]
-        return [
-            "name": "\(adjective.lowercased())-\(noun.lowercased())-\(pubkey.prefix(4))",
-            "display_name": "\(adjective) \(noun)",
-            "about": "Feedback identity generated by Pod0.",
-            "picture": "https://api.dicebear.com/9.x/personas/svg?seed=\(seed)",
-        ]
-    }
-
-    private static func stableProfileIndex(_ seed: String) -> Int {
-        seed.utf8.reduce(0) { partial, byte in
-            (partial &* 31 &+ Int(byte)) & 0x7fffffff
-        }
-    }
-
-    // MARK: - Private — remote
-
-    private func resumeRemote(meta: RemoteMeta, sessionKeyPair: NostrKeyPair) async {
-        let bunker = BunkerURI(
-            remotePubkeyHex: meta.bunkerPubkeyHex,
-            relays: meta.relays,
-            secret: meta.secret,
-            permissions: meta.permissions
-        )
-        // Cached pubkey lets `signer.publicKey()` answer during the ~1s
-        // reconnect window instead of `.missingPublicKey`.
-        let signer = RemoteSigner(
-            bunker: bunker,
-            sessionKeyPair: sessionKeyPair,
-            cachedUserPublicKeyHex: meta.userPubkeyHex
-        )
-        // Available immediately (answers `publicKey()` from cache; sign
-        // requests block on the WebSocket).
-        self.signer = signer
-        do {
-            _ = try await signer.connect { [weak self] url in
-                await self?.handleAuthChallenge(url: url)
-            }
-            self.remoteSignerState = .connected(meta.userPubkeyHex)
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            self.remoteSignerState = .failed(msg)
-        }
-    }
-
-    private func tearDownRemote() async {
-        if let s = signer as? RemoteSigner { await s.disconnect() }
-    }
-
-    private func loadSessionKeyPair() throws -> NostrKeyPair? {
-        guard let hex = try KeychainStore.readString(service: Self.nip46SessionService, account: Self.nip46SessionAccount),
-              !hex.isEmpty else { return nil }
-        return try NostrKeyPair(privateKeyHex: hex)
-    }
-
-    private func loadRemoteMeta() throws -> RemoteMeta? {
-        guard let json = try KeychainStore.readString(service: Self.nip46MetaService, account: Self.nip46MetaAccount),
-              let data = json.data(using: .utf8) else { return nil }
-        return try JSONDecoder().decode(RemoteMeta.self, from: data)
-    }
-
-    private func saveRemoteMeta(_ meta: RemoteMeta) throws {
-        let data = try JSONEncoder().encode(meta)
-        guard let s = String(data: data, encoding: .utf8) else { return }
-        try KeychainStore.saveString(s, service: Self.nip46MetaService, account: Self.nip46MetaAccount)
-    }
-
-    // MARK: - Slice-B internal helpers
-
-    /// Internal alias for file-private `generateGeneratedKey()` so the
-    /// `+Publishing.swift` extension can self-heal without an active signer.
+    /// Internal alias used by `+Publishing.swift` and `FeedbackStore` to
+    /// self-heal a missing identity: dispatch kernel keygen so a fresh user
+    /// gets an account. The pubkey lands on the next snapshot tick.
     func _ensureGeneratedKey() throws {
-        try generateGeneratedKey()
+        guard publicKeyHex == nil else { return }
+        dispatchKernelKeygen()
     }
 
     func _beginNostrConnect() {
@@ -411,56 +269,31 @@ final class UserIdentityStore {
         remoteSignerState = .failed(message)
     }
 
-    /// Called by `UserIdentityStore+NIP46.swift` after nostrconnect pairing completes.
-    /// Persists the session + meta and updates published identity state.
-    func _adoptNostrConnectSigner(
-        signer: RemoteSigner,
-        userPubkeyHex: String,
-        sessionPrivKeyHex: String,
-        relayAbsoluteString: String
-    ) throws {
-        let meta = RemoteMeta(
-            bunkerPubkeyHex: signer.bunker.remotePubkeyHex,
-            relays: [relayAbsoluteString],
-            secret: nil,
-            permissions: [],
-            userPubkeyHex: userPubkeyHex
-        )
-        try KeychainStore.saveString(sessionPrivKeyHex, service: Self.nip46SessionService, account: Self.nip46SessionAccount)
-        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyAccount)
-        try? KeychainStore.deleteString(service: Self.userKeyService, account: Self.userKeyOriginAccount)
-        try saveRemoteMeta(meta)
-        self.signer = signer
-        self.publicKeyHex = userPubkeyHex
-        self.keyPair = nil
-        self.mode = .remoteSigner
-        self.remoteSignerState = .connected(userPubkeyHex)
+    private static func placeholderGeneratedProfile() -> [String: String] {
+        // A neutral display profile for an auto-generated identity. The kernel
+        // publishes this kind:0 on account creation; the user can edit it later
+        // via the EditProfile flow (`publishProfile`).
+        [
+            "name": "pod0-user",
+            "display_name": "Pod0 User",
+            "about": "Feedback identity generated by Pod0.",
+        ]
     }
 
-    // MARK: - Test seam (slice B)
+    // MARK: - Test seam
 
-    // Test-only seams. They live in this file because `signer` / `publicKeyHex`
-    // / `mode` use file-private `private(set)` and `adoptLocal` is private.
-
-    /// Swap in a recording signer (`.localKey` mode, no real keypair).
-    func _setSignerForTesting(_ signer: any NostrSigner, publicKeyHex: String = String(repeating: "0", count: 64)) {
-        self.signer = signer
-        self.publicKeyHex = publicKeyHex
-        self.mode = .localKey
+    /// Test-only: directly set the published identity state (no kernel, no
+    /// keys), so wiring tests can exercise the `.localKey` readiness path that
+    /// gates the kernel publish dispatches.
+    func _setActiveAccountForTesting(_ pubkeyHex: String, mode: Mode = .localKey) {
+        self.publicKeyHex = pubkeyHex
+        self.mode = mode
     }
 
-    /// Drop the active signer (verifies the self-heal path).
-    func _clearSignerForTesting() {
-        self.signer = nil
+    /// Test-only: drop the active identity (verifies the self-heal path).
+    func _clearActiveAccountForTesting() {
         self.publicKeyHex = nil
         self.mode = .none
-    }
-
-    /// Adopt a real local `keyPair` WITHOUT touching the Keychain, so
-    /// identity-sync tests can exercise `syncIdentityToKernel`'s `.localKey`
-    /// branch (which reads `keyPair?.privateKeyHex`).
-    func _setLocalKeyForTesting(_ pair: NostrKeyPair) {
-        adoptLocal(pair)
     }
 }
 
@@ -478,23 +311,16 @@ enum RemoteSignerState: Sendable, Equatable {
     case failed(String)               // error message
 }
 
-/// Minimal persisted NIP-46 metadata. Stored in the Keychain (JSON) alongside
-/// the session private key so the app can resume on launch without re-prompting.
-private struct RemoteMeta: Codable, Sendable {
-    let bunkerPubkeyHex: String
-    let relays: [String]
-    let secret: String?
-    let permissions: [String]
-    let userPubkeyHex: String
-}
-
 enum UserIdentityError: LocalizedError {
     case noIdentity
+    case invalidKey
 
     var errorDescription: String? {
         switch self {
         case .noIdentity:
             "No feedback identity is available."
+        case .invalidKey:
+            "Invalid key — check the value and try again."
         }
     }
 }

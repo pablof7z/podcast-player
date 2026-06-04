@@ -25,16 +25,13 @@
 //! here means the picks recommender prompt can evolve independently of inbox
 //! triage without coupling the two features.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::Prompt as _;
-use rig_core::providers::ollama;
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 
-/// Ollama endpoint shared with inbox triage.
-const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 /// Same fast model the inbox triage path uses.
 const PICKS_MODEL: &str = "deepseek-v4-flash:cloud";
 
@@ -54,7 +51,7 @@ const PICKS_PREAMBLE: &str = r#"You are a personalized podcast picks recommender
 /// [`crate::inbox_llm::triage_episode`]. `priority_score` is clamped to
 /// `0.0..=1.0`.
 ///
-/// Returns `Err` if the Ollama endpoint is unreachable or the model response
+/// Returns `Err` if the LLM endpoint is unreachable or the model response
 /// cannot be parsed as valid picks JSON. The caller is expected to fall back
 /// to the recency heuristic on `Err`.
 pub fn score_episode_for_picks(
@@ -63,23 +60,21 @@ pub fn score_episode_for_picks(
     description: &str,
     listening_profile: &str,
     runtime: &Arc<Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<(f32, String), String> {
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(OLLAMA_BASE_URL)
-            .build()
-            .map_err(|e: rig_core::http_client::Error| e.to_string())?;
-
-        let agent = client
-            .agent(PICKS_MODEL)
-            .preamble(PICKS_PREAMBLE)
-            .build();
-
         let prompt =
             build_picks_prompt(episode_title, podcast_title, description, listening_profile);
 
-        let response: String = agent.prompt(&prompt).await.map_err(|e| e.to_string())?;
+        let backend = backend_for(store, PICKS_MODEL);
+        let req = LlmRequest {
+            system: PICKS_PREAMBLE.to_owned(),
+            history: Vec::new(),
+            user: prompt,
+            model: PICKS_MODEL.to_owned(),
+        };
+
+        let response: String = backend.complete(&req).await?;
         parse_picks_response(&response)
     })
 }

@@ -5,9 +5,6 @@ struct AgentConnectionSettingsView: View {
     let hasPrivateKey: Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var nsecText: String = ""
-    @State private var nsecRevealed: Bool = false
-    @State private var nsecCopied: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -46,39 +43,16 @@ struct AgentConnectionSettingsView: View {
 
     private var privateKeySection: some View {
         Section {
-            if nsecRevealed && !nsecText.isEmpty {
-                Text(nsecText)
-                    .font(AppTheme.Typography.monoCaption)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .transition(.opacity)
-
-                Button {
-                    copyToClipboard(nsecText, isCopied: $nsecCopied)
-                } label: {
-                    Label(nsecCopied ? "Copied!" : "Copy nsec", systemImage: nsecCopied ? "checkmark" : "doc.on.doc")
-                        .foregroundStyle(nsecCopied ? .green : .accentColor)
-                }
-            } else {
-                Button {
-                    loadNsec()
-                    withAnimation(AppTheme.Animation.spring) { nsecRevealed = true }
-                    Haptics.selection()
-                } label: {
-                    Label("Reveal private key", systemImage: "eye")
-                }
-            }
+            Label("Held securely by the app kernel", systemImage: "lock.shield")
+                .font(AppTheme.Typography.callout)
+                .foregroundStyle(.secondary)
         } header: {
             Label("Private Key", systemImage: "key.fill")
         } footer: {
-            Text("Your nsec is the private key that controls your Nostr identity. Never share it.")
+            // Degraded honestly: the kernel (NMP) owns the private key in a
+            // zeroizing store and never returns the raw bytes to the app, so
+            // the previous "reveal nsec" export is no longer possible.
+            Text("Your private key is stored by the app's secure kernel and never leaves it. It cannot be exported from this screen.")
         }
-    }
-
-    private func loadNsec() {
-        guard let hex = (try? NostrCredentialStore.privateKey()) ?? nil,
-              let data = Data(hexString: hex)
-        else { return }
-        nsecText = Bech32.encode(hrp: "nsec", data: data)
     }
 }

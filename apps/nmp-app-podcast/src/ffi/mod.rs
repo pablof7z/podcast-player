@@ -30,11 +30,13 @@
 
 pub mod actions;
 pub(crate) mod agent_context;
+mod chat_complete;
 mod audio_report;
 mod data_dir;
 mod download_report;
 pub(crate) mod handle;
 mod helpers;
+mod local_llm;
 pub mod projections;
 #[cfg(test)]
 mod projections_tests;
@@ -88,6 +90,7 @@ pub use actions::{
     PICKS_LIMIT, PICKS_PER_SHOW_CAP,
 };
 pub use audio_report::nmp_app_podcast_audio_report;
+pub use chat_complete::nmp_app_podcast_chat_complete;
 pub use data_dir::nmp_app_podcast_set_data_dir;
 pub use download_report::nmp_app_podcast_download_report;
 pub use handle::PodcastHandle;
@@ -104,6 +107,7 @@ pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
     nmp_app_podcast_unregister, AppRelayRow, PodcastUpdate,
 };
+pub use local_llm::{nmp_app_register_local_llm, nmp_app_clear_local_llm};
 pub use network_report::nmp_app_podcast_network_report;
 pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use voice_report::nmp_app_podcast_voice_report;

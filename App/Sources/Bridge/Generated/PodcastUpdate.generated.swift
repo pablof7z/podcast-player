@@ -56,6 +56,42 @@ struct PodcastUpdate {
     /// Relays editor. Empty until the kernel seeds defaults at start or the
     /// user adds a relay.
     @DefaultEmptyArray var configuredRelays: [AppRelayRow] = []
+    /// In-app feedback events (TENEX project notes): kind:1 messages/replies +
+    /// kind:513 metadata, all bearing the project `["a"]` coord. Each row is a
+    /// `SignedNostrEvent`-shaped object (`pubkey` is the author, `sig` is empty).
+    /// Empty until the first `fetch_feedback` dispatch. `FeedbackStore` rebuilds
+    /// threads from this flat list (replacing the deleted `FeedbackRelayClient`
+    /// WebSocket fetch). Decoded into `FeedbackEventDTO` — NOT `SignedNostrEvent`
+    /// — because the snapshot decoder runs `.convertFromSnakeCase`, which would
+    /// rename `created_at` and break `SignedNostrEvent`'s explicit coding key.
+    @DefaultEmptyArray var feedbackEvents: [FeedbackEventDTO] = []
+}
+
+/// Snapshot-decode mirror of a feedback Nostr event. Mirrors
+/// `SignedNostrEvent` but with a camelCase `createdAt` so it survives the
+/// snapshot decoder's `.convertFromSnakeCase` strategy. Mapped to
+/// `SignedNostrEvent` (with `sig = ""`) before `FeedbackStore.buildThreads`.
+struct FeedbackEventDTO: Codable, Equatable {
+    var id: String = ""
+    var pubkey: String = ""
+    var createdAt: Int = 0
+    var kind: Int = 0
+    var tags: [[String]] = []
+    var content: String = ""
+
+    /// Project onto the `SignedNostrEvent` shape `buildThreads` consumes.
+    /// `sig` is empty — `buildThreads` never reads the signature.
+    var asSignedEvent: SignedNostrEvent {
+        SignedNostrEvent(
+            id: id,
+            pubkey: pubkey,
+            created_at: createdAt,
+            kind: kind,
+            tags: tags,
+            content: content,
+            sig: ""
+        )
+    }
 }
 
 /// One configured app relay: URL plus NIP-65 role string
@@ -215,6 +251,8 @@ struct SettingsSnapshot: Equatable {
     var blossomServerURL: String = "https://blossom.primal.net"
     /// YouTube extractor URL (optional).
     var youtubeExtractorURL: String? = nil
+    /// Local on-device LLM model ID (optional). Set via `podcast.settings.set_local_model`.
+    var localModelID: String? = nil
     /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
     var wikiAutoGenerateOnTranscriptIngest: Bool = false
     /// Whether to auto-ingest publisher-provided transcripts. Default `true`.
@@ -306,6 +344,7 @@ extension PodcastUpdate: Codable {
         categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
         agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
+        feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
     }
 }
 
@@ -383,6 +422,7 @@ extension SettingsSnapshot: Codable {
         case elevenLabsVoiceName = "eleven_labs_voice_name"
         case blossomServerURL = "blossom_server_url"
         case youtubeExtractorURL = "youtube_extractor_url"
+        case localModelID = "local_model_id"
         case wikiAutoGenerateOnTranscriptIngest = "wiki_auto_generate_on_transcript_ingest"
         case autoIngestPublisherTranscripts = "auto_ingest_publisher_transcripts"
         case autoFallbackToScribe = "auto_fallback_to_scribe"
@@ -455,6 +495,7 @@ extension SettingsSnapshot: Codable {
         elevenLabsVoiceName = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) ?? ""
         blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
         youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
+        localModelID = try c.decodeIfPresent(String.self, forKey: .localModelID)
         wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
         autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? true
         autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true

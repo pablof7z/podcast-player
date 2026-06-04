@@ -154,6 +154,16 @@ pub struct PodcastUpdate {
     /// `podcast.settings.add_relay`. Drives the iOS App Relays editor.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub configured_relays: Vec<AppRelayRow>,
+    /// In-app feedback events (TENEX project notes), as `SignedNostrEvent`-shaped
+    /// JSON objects (`{id,pubkey,created_at,kind,tags,content,sig}` — `pubkey` is
+    /// the event author, `sig` is `""`). kind:1 messages/replies + kind:513
+    /// metadata, all bearing the project `["a"]` coord. Empty until the first
+    /// `FetchFeedback` dispatch. The iOS `FeedbackStore` rebuilds threads from
+    /// this flat list (replacing the deleted `FeedbackRelayClient` WebSocket
+    /// fetch). Raw `serde_json::Value` rows because the host caches inbound
+    /// kernel events as JSON, not typed `nostr::Event`s.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub feedback_events: Vec<serde_json::Value>,
 }
 
 /// One row of the `configured_relays` projection: a relay URL plus its
@@ -201,6 +211,7 @@ impl Default for PodcastUpdate {
             categories: Vec::new(),
             agent_notes: Vec::new(),
             configured_relays: Vec::new(),
+            feedback_events: Vec::new(),
         }
     }
 }

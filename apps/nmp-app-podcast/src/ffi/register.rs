@@ -115,8 +115,11 @@ pub extern "C" fn nmp_app_podcast_register(
         Arc::new(Mutex::new(HashMap::new()));
     let comments_cache: Arc<Mutex<HashMap<String, Vec<crate::ffi::projections::CommentSummary>>>> =
         Arc::new(Mutex::new(HashMap::new()));
+    let viewed_comments_episode_id: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let social = Arc::new(Mutex::new(None));
     let agent_notes: Arc<Mutex<Vec<crate::ffi::projections::AgentNoteSummary>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    let feedback_events_cache: Arc<Mutex<Vec<serde_json::Value>>> =
         Arc::new(Mutex::new(Vec::new()));
     // Start at 1 so the first snapshot poll always triggers an iOS update
     // (guard is `update.rev > last_seen_rev`; last_seen_rev starts at 0).
@@ -199,6 +202,15 @@ pub extern "C" fn nmp_app_podcast_register(
     app_ref.set_initial_relays_for_start(vec![
         ("wss://relay.primal.net".to_string(), "both,indexer".to_string()),
         ("wss://purplepag.es".to_string(), "indexer".to_string()),
+        // In-app feedback source relay (TENEX project notes). Seeded as a
+        // read-only relay so NMP opens + NIP-42-AUTHs the connection used by
+        // the feedback fetch (kind:1 / kind:513 events bearing the project
+        // `["a"]` coord), routed here via `relay_pin` (see `feedback_handler`).
+        // Feedback *publishing* targets this relay explicitly via
+        // `PublishTarget::Explicit` (not the user's Auto outbox), so a `read`
+        // role is correct — it must not leak into the Auto write fan-out for
+        // unrelated kinds (agent notes, social).
+        ("wss://relay.tenex.chat".to_string(), "read".to_string()),
     ]);
 
     app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(
@@ -226,6 +238,7 @@ pub extern "C" fn nmp_app_podcast_register(
         publish_state.clone(),
         agent_chat,
         comments_cache.clone(),
+        viewed_comments_episode_id.clone(),
         runtime.clone(),
         inbox_triage_cache.clone(),
         Arc::clone(&inbox_triage_in_progress),
@@ -268,6 +281,20 @@ pub extern "C" fn nmp_app_podcast_register(
             crate::agent_note_handler::AgentNotesObserver::new(
                 identity.clone(),
                 agent_notes.clone(),
+                rev.clone(),
+            ),
+        ));
+
+    // In-app feedback observer — receives kind:1 + kind:513 events bearing the
+    // TENEX project `["a"]` coord from the relay-pinned subscription opened by
+    // `handle_fetch_feedback`. Caches them as SignedNostrEvent-shaped JSON for
+    // the snapshot. No iOS WebSocket (replaces the deleted FeedbackRelayClient
+    // fetch path). Unlike agent-notes, it does NOT self-filter — the Feedback
+    // UI shows the user's own threads.
+    let _feedback_observer_id =
+        app_ref.register_event_observer(std::sync::Arc::new(
+            crate::feedback_handler::FeedbackObserver::new(
+                feedback_events_cache.clone(),
                 rev.clone(),
             ),
         ));
@@ -324,8 +351,10 @@ pub extern "C" fn nmp_app_podcast_register(
         inbox_triage_cache,
         inbox_triage_in_progress,
         comments_cache,
+        viewed_comments_episode_id,
         social,
         agent_notes,
+        feedback_events_cache,
         runtime: runtime_for_handle,
     });
 

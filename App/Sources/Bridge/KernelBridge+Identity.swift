@@ -25,20 +25,49 @@ extension PodcastHandle {
     /// (i.e. `nmp_signer_broker_init` was never called) — which is why we
     /// call the init from `PodcastHandle.init` itself.
     func signInBunker(uri: String) {
-        uri.withCString { nmp_app_signin_bunker(raw, $0) }
+        uri.withCString { nmp_app_signin_bunker(raw, $0, 1) }
     }
 
     /// Enqueue `ActorCommand::SignInNsec` with the supplied bech32 / hex
     /// secret. The Rust side wraps it in `Zeroizing<String>` immediately
     /// upon copy-in.
     func signInNsec(_ nsec: String) {
-        nsec.withCString { nmp_app_signin_nsec(raw, $0) }
+        nsec.withCString { nmp_app_signin_nsec(raw, $0, 1) }
     }
 
     /// Cancel the in-flight NIP-46 handshake. Idempotent / safe when nothing
     /// is in flight.
     func cancelBunkerHandshake() {
         nmp_app_cancel_bunker_handshake(raw)
+    }
+
+    /// Generate a brand-new account (keypair) inside the kernel, publish its
+    /// kind:0 profile + relay list, and — when `makeActive` is true — switch
+    /// the active session to it. The kernel owns the generated secret; Swift
+    /// never sees private bytes. The resulting pubkey surfaces on the next
+    /// snapshot tick via `KernelIdentityProjection.activeAccount` (when
+    /// `makeActive`). Fire-and-forget (D6).
+    ///
+    /// `profileJSON` is a flat string-map (`{"name":"…","display_name":"…"}`);
+    /// `relaysJSON` is `[[url, role], …]`. Pass `"{}"` / `"[]"` for kernel
+    /// defaults.
+    func createNewAccount(
+        profileJSON: String,
+        relaysJSON: String,
+        mls: Bool,
+        makeActive: Bool
+    ) {
+        profileJSON.withCString { profile in
+            relaysJSON.withCString { relays in
+                nmp_app_create_new_account(
+                    raw,
+                    profile,
+                    relays,
+                    mls,
+                    makeActive ? 1 : 0
+                )
+            }
+        }
     }
 
     /// Allocate a freshly generated `nostrconnect://` URI from the broker,

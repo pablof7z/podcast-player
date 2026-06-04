@@ -134,8 +134,34 @@ char *nmp_app_podcast_download_report(void *handle, const char *report_json);
 // `callback_scheme` may be NULL — when non-null Rust appends a percent-encoded
 // `&callback=<scheme>` query parameter so the signer app can deep-link back.
 // Pass NULL when the host scheme is not registered with the OS.
-void nmp_app_signin_nsec(void *app, const char *secret);
-void nmp_app_signin_bunker(void *app, const char *uri);
+void nmp_app_signin_nsec(void *app, const char *secret, uint8_t make_active);
+void nmp_app_signin_bunker(void *app, const char *uri, uint8_t make_active);
+
+// `nmp_app_create_new_account` generates a keypair and publishes kind:0 + the
+// relay list. `make_active = 1` activates the new account immediately
+// (standard onboarding); `make_active = 0` registers it without switching the
+// active session (agent/secondary accounts). `profile_json` is a flat
+// string-map; `relays_json` is `[[url, role], …]`.
+void nmp_app_create_new_account(void *app,
+                                const char *profile_json,
+                                const char *relays_json,
+                                bool mls,
+                                uint8_t make_active);
+
+// D13 sign-and-return — sign a draft event with the named (or active) account
+// WITHOUT publishing it. `account_pubkey_hex` is the hex pubkey of the signer
+// to use; pass the empty string ("") to sign with the active account.
+// `unsigned_json` is `{"kind":N,"content":"…","tags":[…],"created_at":N}` —
+// `created_at` is advisory (the kernel re-stamps it, D7). Returns a heap
+// `correlation_id` C string the caller MUST free via `nmp_app_free_string`;
+// the signed flat-NIP-01 JSON is delivered ASYNC in the `signed_events`
+// snapshot projection keyed by that id (`{ "ok": true, "signed_json": "…" }`
+// or `{ "ok": false, "error": "…" }`). The host MUST register its
+// continuation BEFORE calling so it does not miss the single drain-on-emit
+// frame that carries the result.
+char *nmp_app_sign_event_for_return(void *app,
+                                    const char *account_pubkey_hex,
+                                    const char *unsigned_json);
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
 char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);
@@ -182,5 +208,35 @@ char *nmp_app_podcast_network_report(void *handle, const char *report_json);
 // can access it. JSON shape: {"episode_id":"<uuid>","text":"<plain text>"}.
 // Always returns NULL.
 char *nmp_app_podcast_transcript_report(void *handle, const char *report_json);
+
+// ── Provider-blind single-turn LLM completion ─────────────────────────────
+//
+// `nmp_app_podcast_chat_complete` drives one LLM turn through the Rust
+// backend, hiding all provider/credential details from Swift. Swift passes the
+// full OpenAI-format message array as a JSON string and receives the assistant's
+// text back.
+//
+// `messages_json` — JSON array of {"role":"…","content":"…"} objects. The
+// system prompt must be the first entry (role = "system"). Tool-call turns
+// are supported (role = "tool", role = "assistant" with tool_calls).
+//
+// Returns a heap-allocated JSON string of the form:
+//   {"text":"<assistant reply>"}   on success
+//   {"error":"<reason>"}           on failure (model unreachable, bad input, …)
+// The caller MUST free the returned pointer via `nmp_app_free_string`.
+// D6: never returns NULL for a non-null handle.
+//
+// Threading: this call BLOCKS the calling thread while the network round-trip
+// completes. Swift MUST call it from a background thread / detached Task.
+char *nmp_app_podcast_chat_complete(void *handle, const char *messages_json);
+
+// ── Local LLM registration ──────────────────────────────────────────────
+//
+// Register a local LLM backend callback. The callback receives a context pointer
+// and a JSON prompt string, and returns a malloc-allocated JSON response string.
+// Rust owns the response string lifetime and frees it via nmp_app_free_string.
+typedef char* (*NmpLocalLlmFn)(void* context, const char* prompt_json);
+void nmp_app_register_local_llm(void* handle, void* context, NmpLocalLlmFn fn);
+void nmp_app_clear_local_llm(void* handle);
 
 #endif

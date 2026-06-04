@@ -2,40 +2,35 @@ import Foundation
 
 // MARK: - UserIdentityStore nostrconnect flow
 //
-// Keeps nostrconnect pairing logic out of the 500-line-capped core file.
-// Uses the internal seams added to the main file.
+// Routes all NIP-46 pairing through the NMP kernel — no Swift WebSocket,
+// no key material, no remote-signer crypto in this path.
+//
+// * `connectViaNostrConnect`: the kernel generates the URI AND starts
+//   listening; the UI observes `remoteSignerState` reactively via
+//   `applyKernelIdentity` (in `UserIdentityStore.swift`), which maps the
+//   kernel's handshake + active account onto published state on every
+//   snapshot tick.
 
 extension UserIdentityStore {
 
-    /// Begin nostrconnect:// pairing. Generates the nostrconnect URI and calls
-    /// `onURI` synchronously so the UI can display the QR code or open a signer
-    /// app immediately. Blocks until pairing completes or the 5-minute timeout
-    /// expires. On success the identity switches to `.remoteSigner` and the
-    /// connection is persisted for automatic reconnect on next launch.
+    /// Begin nostrconnect:// pairing via the kernel's NIP-46 broker.
+    /// The kernel generates the URI and immediately starts listening for the
+    /// signer app's response on its embedded relay — no Swift WebSocket.
+    /// State changes arrive via `applyKernelIdentity` on the next snapshot tick.
     func connectViaNostrConnect(
-        relay: URL = RemoteSigner.nostrConnectDefaultRelay,
+        relay: URL? = nil,
         onURI: @escaping @Sendable (String) -> Void
     ) async {
         _beginNostrConnect()
-        do {
-            let sessionPair = try NostrKeyPair.generate()
-            let (signer, userPub) = try await RemoteSigner.nostrConnect(
-                relayURL: relay,
-                sessionKeyPair: sessionPair,
-                onURI: onURI
-            )
-            try _adoptNostrConnectSigner(
-                signer: signer,
-                userPubkeyHex: userPub,
-                sessionPrivKeyHex: sessionPair.privateKeyHex,
-                relayAbsoluteString: relay.absoluteString
-            )
-            loadCachedProfile(for: userPub)
-            let pub = userPub
-            Task { await self.fetchAndCacheProfile(pubkeyHex: pub) }
-        } catch {
-            let msg = (error as? LocalizedError)?.errorDescription ?? "\(error)"
-            _failNostrConnect(msg)
+        guard let uri = kernel?.nostrconnectURI(
+            relayURL: relay?.absoluteString,
+            callbackScheme: "podcastr"
+        ) else {
+            _failNostrConnect("Kernel unavailable")
+            return
         }
+        onURI(uri)
+        // State progression (connecting → connected/failed) comes reactively
+        // via AppStateStore → applyKernelIdentity on kernel snapshot ticks.
     }
 }

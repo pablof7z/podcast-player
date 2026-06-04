@@ -234,6 +234,9 @@ pub struct PodcastStore {
     pub(super) blossom_server_url: String,
     /// YouTube extractor URL (optional).
     pub(super) youtube_extractor_url: Option<String>,
+    /// Local on-device LLM model ID (optional). When set, this dominates all callers
+    /// in factory::backend_for, routing to LocalModelBackend via the global callback socket.
+    pub(super) local_model_id: Option<String>,
     /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
     pub(super) wiki_auto_generate_on_transcript_ingest: bool,
     /// Whether to auto-ingest publisher-provided transcripts. Default `true`.
@@ -281,6 +284,12 @@ pub struct PodcastStore {
     /// the real queue rather than an empty slice.  Updated by every
     /// `persist_with_queue` call and seeded from disk on `load_from_disk`.
     cached_queue: Vec<String>,
+    /// OpenRouter API key (in-memory only, never persisted to disk).
+    /// Set via `set_provider_api_keys`; credential never touches disk.
+    open_router_api_key: Option<String>,
+    /// Ollama API key (in-memory only, never persisted to disk).
+    /// Set via `set_provider_api_keys`; credential never touches disk.
+    ollama_api_key: Option<String>,
 }
 
 impl PodcastStore {
@@ -349,6 +358,7 @@ impl PodcastStore {
             eleven_labs_voice_name: String::new(),
             blossom_server_url: "https://blossom.primal.net".to_owned(),
             youtube_extractor_url: None,
+            local_model_id: None,
             wiki_auto_generate_on_transcript_ingest: false,
             auto_ingest_publisher_transcripts: true,
             auto_fallback_to_scribe: true,
@@ -365,6 +375,8 @@ impl PodcastStore {
             data_dir: None,
             loaded_queue: Vec::new(),
             cached_queue: Vec::new(),
+            open_router_api_key: None,
+            ollama_api_key: None,
         }
     }
 
@@ -759,6 +771,7 @@ impl PodcastStore {
                 eleven_labs_voice_name: self.eleven_labs_voice_name.clone(),
                 blossom_server_url: self.blossom_server_url.clone(),
                 youtube_extractor_url: self.youtube_extractor_url.clone(),
+                local_model_id: self.local_model_id.clone(),
                 wiki_auto_generate_on_transcript_ingest: self.wiki_auto_generate_on_transcript_ingest,
                 auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
                 auto_fallback_to_scribe: self.auto_fallback_to_scribe,

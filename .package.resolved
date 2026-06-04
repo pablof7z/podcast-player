@@ -1,5 +1,5 @@
 {
-  "originHash" : "ae42ef728a99a082dcd2d9b6de8415d68cb4cfa9a0d9972f9bda7477b3d75d71",
+  "originHash" : "e4f2cbb7cef5894fbc6a4c2923ea5f58cefd358cc2e1101af27b966bce341654",
   "pins" : [
     {
       "identity" : "kingfisher",
@@ -8,6 +8,14 @@
       "state" : {
         "revision" : "cf8be20d07654570554c8a8a4952bc8a5766a8b0",
         "version" : "8.9.0"
+      }
+    },
+    {
+      "identity" : "litert-lm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/google-ai-edge/LiteRT-LM",
+      "state" : {
+        "revision" : "bbc5181df03c6962d7786ce4ad72c8565232d2b2"
       }
     },
     {

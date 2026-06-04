@@ -171,11 +171,12 @@ fn handle_generate(
     // placeholder in-place so the iOS snapshot surfaces the real article.
     let articles_c = Arc::clone(articles);
     let runtime_c = Arc::clone(runtime);
+    let store_c = Arc::clone(store);
     let rev_c = Arc::clone(rev);
     let article_id_c = article_id.clone();
     let topic_owned = topic_trimmed.to_owned();
     let placeholder_fallback = format!(
-        "Could not generate an article about '{topic_trimmed}'. Check that Ollama is running."
+        "Could not generate an article about '{topic_trimmed}'. Check that the LLM is running."
     );
 
     runtime.spawn(async move {
@@ -186,6 +187,7 @@ fn handle_generate(
                 &transcripts,
                 &context_chunks,
                 &runtime_c,
+                &store_c,
             )
         })
         .await;

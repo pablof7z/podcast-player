@@ -175,6 +175,13 @@ pub struct PodcastHandle {
     /// Written by `handle_fetch_comments` / `handle_post_comment` on the
     /// actor thread; read by `build_snapshot_payload` on the main thread.
     pub(crate) comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
+    /// Episode id whose comments the user is currently viewing. Set by
+    /// `handle_fetch_comments` (the comments section opens for an episode);
+    /// read by `build_snapshot_payload` to project that episode's comments
+    /// instead of being limited to the now-playing episode. `None` until the
+    /// first `FetchComments` dispatch, in which case the snapshot falls back
+    /// to the now-playing episode id.
+    pub(crate) viewed_comments_episode_id: Arc<Mutex<Option<String>>>,
     /// NIP-02 social graph snapshot. `None` until the first
     /// `FetchContacts` dispatch completes. Written by
     /// `social_handler::handle_fetch_contacts` on the actor thread; read
@@ -186,6 +193,15 @@ pub struct PodcastHandle {
     /// on the actor thread; read by `build_snapshot_payload` on each tick
     /// and projected onto `PodcastUpdate.agent_notes` (reactive push seam).
     pub(crate) agent_notes: Arc<Mutex<Vec<AgentNoteSummary>>>,
+    /// In-app feedback events (kind:1 + kind:513 bearing the TENEX project
+    /// `["a"]` coord), cached as `SignedNostrEvent`-shaped JSON. Empty until the
+    /// first `FetchFeedback` dispatch. Written by `feedback_handler`'s
+    /// [`crate::feedback_handler::FeedbackObserver`] as events arrive from the
+    /// NMP relay pool; read by `build_snapshot_payload` on each tick and
+    /// projected onto `PodcastUpdate.feedback_events` (reactive push seam). Swift
+    /// rebuilds threads from this flat event list. Stored as raw JSON Values
+    /// because the host never holds the typed `nostr::Event` here.
+    pub(crate) feedback_events_cache: Arc<Mutex<Vec<serde_json::Value>>>,
     /// Shared multi-thread Tokio runtime (same `Arc` the host-op handler and
     /// voice manager hold). The snapshot path needs it so `maybe_enqueue_triage`
     /// can spawn proactive background triage off the actor thread.

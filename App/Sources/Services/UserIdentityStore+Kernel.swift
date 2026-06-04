@@ -2,86 +2,31 @@ import Foundation
 
 // MARK: - UserIdentityStore → Rust kernel identity wiring
 //
-// Bridges the user's Nostr identity into the Rust kernel's podcast-app
-// `IdentityStore` (`apps/nmp-app-podcast/src/store/identity.rs`).
+// The Rust kernel owns ALL key material and signing. This extension wires the
+// Swift identity store to the kernel for the actions Swift still initiates:
+//   * social publishing dispatches (`podcast.social.*`) — the kernel signs
+//     with the active account (local key OR NIP-46 bunker).
+//   * sign-out (`podcast.identity` `Clear`) — wipe the active key from the
+//     kernel store + its persisted `identity.json`.
+//   * bunker pairing (`signInBunker`) — hand the broker a `bunker://` URI.
 //
-// ## Why this exists
-//
-// Before this wiring the kernel's podcast-app `IdentityStore` was populated
-// ONLY by a `podcast.identity` `ImportNsec` dispatch — which iOS never sent.
-// Users signed in through `UserIdentityStore`, which kept the key in the
-// Swift Keychain and a Swift `NostrSigner` only. As a result every
-// kernel-side feature that signs on behalf of the user (agent-to-agent
-// notes, and now the `podcast.social` kind:0/1/9802 publishing) saw an empty
-// store and failed with `"not signed in"`.
-//
-// This extension closes that gap: whenever a LOCAL key is adopted (import,
-// generate, or launch-time load) we forward the key to the kernel via
-// `podcast.identity` `ImportNsec`, mirroring the Android `MainActivity`
-// `IdentityActions.importNsec` pattern. The kernel then owns the signing key
-// for the duration of the session.
-//
-// ## Local key vs. remote signer (NIP-46 bunker)
-//
-// A local key has a private key Swift can hand to the kernel — so the kernel
-// can sign locally. A NIP-46 *bunker* keeps the key remote by design; there
-// is no private key to forward, so the kernel's podcast-app `IdentityStore`
-// cannot sign for it. Bunker connections are wired through the kernel's
-// dedicated signer-broker path (`KernelModel.signInBunker`) so the template
-// identity surfaces the account, but `podcast.social` signing stays on the
-// Swift NIP-46 path for `.remoteSigner` mode. See
-// `UserIdentityStore+Publishing.swift` and BACKLOG
-// `social-bunker-signing-kernel`.
-//
-// SECURITY: the value forwarded here is the user's private key (as hex). It
-// is dispatched in-process to the kernel only; the kernel wraps it for its
-// own persistence (`identity.json`). It is NEVER logged.
+// There is NO key forwarding from Swift to the kernel anymore: the kernel
+// generates / imports / persists keys itself (via `createNewAccount` /
+// `signInNsec` / `signInBunker`), so Swift never holds or transmits private
+// bytes.
 
 extension UserIdentityStore {
 
-    /// Attach the kernel so identity changes propagate into the Rust store.
-    /// Called once from `AppStateStore.attachKernel`. Immediately syncs the
-    /// current identity so a key adopted before the kernel attached (the
-    /// common launch ordering) still reaches the kernel.
+    /// Attach the kernel so identity actions reach the Rust store. Called once
+    /// from `AppStateStore.attachKernel`. The kernel restores its own identity
+    /// asynchronously; the active pubkey arrives via `applyKernelIdentity` on
+    /// the first snapshot tick (no eager Swift-side sync needed).
     @MainActor
     func attachKernel(_ kernel: KernelModel) {
         self.kernel = kernel
-        syncIdentityToKernel()
     }
 
-    /// Forward the currently-active identity to the kernel.
-    ///
-    /// * `.localKey` — dispatch `podcast.identity` `ImportNsec` with the
-    ///   private key hex so the kernel can sign locally.
-    /// * `.remoteSigner` — the key is remote; nothing to import. The bunker
-    ///   connection is wired separately via `KernelModel.signInBunker`.
-    /// * `.none` — no-op.
-    ///
-    /// Idempotent: re-importing the same key is a cheap no-op in the kernel
-    /// (it re-derives the same pubkey and rewrites `identity.json`).
-    @MainActor
-    func syncIdentityToKernel() {
-        // A recorder (tests) intercepts even without a live kernel; production
-        // requires the kernel ref.
-        guard kernel != nil || _kernelDispatchRecorder != nil else { return }
-        switch mode {
-        case .localKey:
-            guard let privateKeyHex = keyPair?.privateKeyHex else { return }
-            // Silent — this is an internal identity sync, not a user-initiated
-            // action; a transient rejection must not toast.
-            dispatchToKernel(
-                namespace: "podcast.identity",
-                body: ["type": "ImportNsec", "nsec": privateKeyHex],
-                silent: true
-            )
-        case .remoteSigner, .none:
-            // Remote-signer keys never materialise in-process; the bunker is
-            // wired through the kernel signer broker at connect time.
-            break
-        }
-    }
-
-    /// Wipe the active identity from the kernel's podcast-app `IdentityStore`
+    /// Wipe the active identity from the kernel's podcast-app identity store
     /// (and delete its persisted `identity.json`). MUST be called on sign-out
     /// so the user's key does not outlive sign-out and remain able to sign
     /// kernel-side. Dispatches `podcast.identity` `Clear`.
@@ -98,8 +43,6 @@ extension UserIdentityStore {
     /// kernel-side features that delegate signing over the relay can resolve
     /// the remote signer. The kernel owns persistence of the bunker session;
     /// this is a no-op if the broker was never initialised (silent per D6).
-    ///
-    /// Call after a successful `connectRemoteSigner` / nostrconnect pairing.
     @MainActor
     func syncBunkerToKernel(uri: String) {
         kernel?.signInBunker(uri: uri)

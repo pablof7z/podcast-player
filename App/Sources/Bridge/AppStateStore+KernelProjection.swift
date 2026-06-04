@@ -45,6 +45,12 @@ extension AppStateStore {
         // is re-dispatched after every Settings credential mutation so the
         // kernel always has the current Keychain values.
         kernelSetProviderApiKeys()
+        // Register the local LLM service callback so Rust can invoke Swift-side
+        // inference through the loaded LiteRT-LM engine.
+        let localService = localLLMService
+        Task {
+            await localService.registerWithKernel(kernel)
+        }
         // Seed the Up Next queue from the kernel's persisted snapshot. The
         // handler may not be wired yet (setupPlaybackHandlers runs on .onAppear
         // which can fire after this task), so stash the IDs in pendingKernelQueue
@@ -390,6 +396,10 @@ extension AppStateStore {
             // synchronous prompt-building window and the approval-enrich
             // snapshot — neither of which an async push can satisfy.
             mergeResolvedProfiles(identity.resolvedProfiles)
+            self.identity.applyKernelIdentity(
+                handshake: identity.bunkerHandshake,
+                activeAccount: identity.activeAccount,
+                isRemoteSigner: identity.isRemoteSigner)
         }
 
         // After the batch flushes: the widget path reads only `snapshot` and
@@ -435,6 +445,10 @@ extension AppStateStore {
             state = next
             self.episodes = overlaidEpisodes
             mergeResolvedProfiles(identity.resolvedProfiles)
+            self.identity.applyKernelIdentity(
+                handshake: identity.bunkerHandshake,
+                activeAccount: identity.activeAccount,
+                isRemoteSigner: identity.isRemoteSigner)
         }
         onNowPlayingSnapshot?(snapshot, library)
     }
@@ -463,6 +477,7 @@ extension AppStateStore {
         }
         next.settings.skipForwardSeconds = Int(ks.skipForwardSecs)
         next.settings.skipBackwardSeconds = Int(ks.skipBackwardSecs)
+        next.settings.localModelID = ks.localModelID
 
         // ── Last-played episode ───────────────────────────────────────────
         if let episodeIdStr = snapshot?.nowPlaying?.episodeId,

@@ -7,6 +7,8 @@
 use super::{
     extract_json_array, parse_chapters, synthesize_chapters, SynthError, SynthesizedChapter,
 };
+use crate::store::PodcastStore;
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn parse_valid_json_chapters() {
@@ -68,26 +70,28 @@ fn synth_error_discriminates_unavailable_from_parse() {
 #[test]
 fn synthesize_offline_is_unavailable() {
     let rt = std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
-    let result = synthesize_chapters("Ep", "some transcript text", 600.0, 5, &rt);
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let result = synthesize_chapters("Ep", "some transcript text", 600.0, 5, &rt, &store);
     match result {
         Err(e) => assert!(
             e.is_unavailable(),
-            "offline Ollama must classify as Unavailable, got: {e:?}"
+            "offline LLM must classify as Unavailable, got: {e:?}"
         ),
-        // If a dev machine happens to have Ollama up, a successful parse is fine
+        // If a dev machine happens to have the LLM available, a successful parse is fine
         // too — we only assert the *error* shape, never that it must fail.
         Ok(_) => {}
     }
 }
 
-/// Live round-trip against a running Ollama instance (`deepseek-v4-flash:cloud`
-/// at localhost:11434). Ignored by default so the suite stays offline-clean;
+/// Live round-trip against a running LLM instance (`deepseek-v4-flash:cloud`).
+/// Ignored by default so the suite stays offline-clean;
 /// run with `cargo test -p nmp-app-podcast -- --ignored --nocapture` to confirm
 /// the real path produces prose titles (not "Chapter N") with monotonic offsets.
 #[test]
-#[ignore = "requires a live Ollama instance"]
-fn synthesize_against_live_ollama_returns_prose_titles() {
+#[ignore = "requires a live LLM instance"]
+fn synthesize_against_live_llm_returns_prose_titles() {
     let rt = std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
     let transcript = "Welcome back to the show. Today we sit down with a longtime \
         systems engineer to talk about the hard-won lessons of scaling \
         distributed databases. We start with the early architecture choices \
@@ -103,9 +107,10 @@ fn synthesize_against_live_ollama_returns_prose_titles() {
         3600.0,
         5,
         &rt,
+        &store,
     );
 
-    let chapters = result.expect("live Ollama should return chapters");
+    let chapters = result.expect("live LLM should return chapters");
     eprintln!("LIVE CHAPTERS: {chapters:#?}");
     assert!(!chapters.is_empty(), "expected at least one chapter");
     assert_eq!(chapters[0].start_secs, 0.0, "first chapter starts at 0.0");

@@ -25,15 +25,14 @@
 //! is `Unavailable`; an error out of our own [`parse_chapters`] step (which
 //! only runs after a successful round-trip) is `Parse`.
 
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tokio::runtime::Runtime;
 
-use rig_core::client::{CompletionClient as _, Nothing};
-use rig_core::completion::Prompt as _;
-use rig_core::providers::ollama;
+use crate::llm::{LlmRequest, backend_for};
+use crate::store::PodcastStore;
 
-const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 const CHAPTERS_MODEL: &str = "deepseek-v4-flash:cloud";
 
 /// Wall-clock budget for a single chapter round-trip. A hung Ollama must not
@@ -98,7 +97,7 @@ pub(crate) enum PromptStyle {
 /// One LLM round-trip: given a transcript excerpt + episode duration, return a
 /// list of `(title, start_secs)` chapter pairs.
 ///
-/// Returns [`SynthError::Unavailable`] when the Ollama endpoint is unreachable
+/// Returns [`SynthError::Unavailable`] when the LLM endpoint is unreachable
 /// or the request times out, and [`SynthError::Parse`] when the model answered
 /// but the response can't be parsed into a non-empty valid chapter array.
 pub fn synthesize_chapters(
@@ -107,6 +106,7 @@ pub fn synthesize_chapters(
     duration_secs: f64,
     chapter_count: usize,
     runtime: &std::sync::Arc<Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<Vec<SynthesizedChapter>, SynthError> {
     synthesize_chapters_styled(
         episode_title,
@@ -115,6 +115,7 @@ pub fn synthesize_chapters(
         chapter_count,
         PromptStyle::Grounded,
         runtime,
+        store,
     )
 }
 
@@ -128,6 +129,7 @@ pub(crate) fn synthesize_chapters_styled(
     chapter_count: usize,
     style: PromptStyle,
     runtime: &std::sync::Arc<Runtime>,
+    store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<Vec<SynthesizedChapter>, SynthError> {
     let preamble = system_prompt(chapter_count, style);
     let prompt = format!(
@@ -138,31 +140,29 @@ pub(crate) fn synthesize_chapters_styled(
     );
 
     runtime.block_on(async {
-        let client = ollama::Client::builder()
-            .api_key(Nothing)
-            .base_url(OLLAMA_BASE_URL)
-            .build()
-            // A build/config failure here means we never reached the model.
-            .map_err(|e: rig_core::http_client::Error| SynthError::Unavailable(e.to_string()))?;
+        let backend = backend_for(store, CHAPTERS_MODEL);
+        let req = LlmRequest {
+            system: preamble,
+            history: Vec::new(),
+            user: prompt,
+            model: CHAPTERS_MODEL.to_owned(),
+        };
 
-        let agent = client.agent(CHAPTERS_MODEL).preamble(&preamble).build();
-
-        // Wrap the round-trip in a timeout: a hung Ollama would otherwise pin
+        // Wrap the round-trip in a timeout: a hung backend would otherwise pin
         // the spawn_blocking worker indefinitely and never reach the stub
         // fallback. A timeout is treated as definitively-unavailable.
-        let response: String =
-            match tokio::time::timeout(REQUEST_TIMEOUT, agent.prompt(&prompt)).await {
-                Ok(Ok(resp)) => resp,
-                // The transport failed / model errored → unreachable.
-                Ok(Err(e)) => return Err(SynthError::Unavailable(e.to_string())),
-                // Deadline elapsed → treat as unavailable.
-                Err(_) => {
-                    return Err(SynthError::Unavailable(format!(
-                        "request exceeded {}s budget",
-                        REQUEST_TIMEOUT.as_secs()
-                    )))
-                }
-            };
+        let response: String = match tokio::time::timeout(REQUEST_TIMEOUT, backend.complete(&req)).await {
+            Ok(Ok(resp)) => resp,
+            // The transport failed / model errored → unreachable.
+            Ok(Err(e)) => return Err(SynthError::Unavailable(e.to_string())),
+            // Deadline elapsed → treat as unavailable.
+            Err(_) => {
+                return Err(SynthError::Unavailable(format!(
+                    "request exceeded {}s budget",
+                    REQUEST_TIMEOUT.as_secs()
+                )))
+            }
+        };
 
         // The model is present; any failure from here is a parse problem.
         parse_chapters(&response).map_err(SynthError::Parse)

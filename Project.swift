@@ -47,6 +47,14 @@ let project = Project(
             url: "https://github.com/onevcat/Kingfisher",
             requirement: .upToNextMajor(from: "8.0.0")
         ),
+        // Pinned to a revision (not a version range) because LiteRTLM declares
+        // `unsafeFlags(["-Xlinker", "-all_load"])`, which SwiftPM forbids on a
+        // versioned remote dependency. A revision pin is allowed to carry unsafe
+        // flags. Revision = the 0.13.0 release commit.
+        .remote(
+            url: "https://github.com/google-ai-edge/LiteRT-LM",
+            requirement: .revision("bbc5181df03c6962d7786ce4ad72c8565232d2b2")
+        ),
         .local(path: "../ios-shake-feedback"),
     ],
     settings: .settings(
@@ -76,6 +84,7 @@ let project = Project(
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),
                 .package(product: "Kingfisher"),
+                .package(product: "LiteRTLM"),
                 .package(product: "ShakeFeedbackKit"),
                 .target(name: "\(appName)Widget"),
             ],

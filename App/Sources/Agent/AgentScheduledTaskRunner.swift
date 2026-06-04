@@ -33,13 +33,8 @@ final class AgentScheduledTaskRunner {
     }
 
     private func runTask(_ task: AgentScheduledTask) async {
-        let reference = LLMModelReference(storedID: store.state.settings.agentInitialModel)
-        let ollamaChatURL = URL(string: store.state.settings.ollamaChatURL)
-        guard !LLMProviderCredentialResolver.requiresAPIKey(for: reference.provider, ollamaChatURL: ollamaChatURL)
-                || LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            logger.warning("Skipping scheduled task '\(task.label, privacy: .public)' — no API key configured")
-            return
-        }
+        // Credential checking is Rust-owned; the Rust backend returns an error
+        // envelope when no key is configured, which surfaces as a failed agent turn.
         let deps = podcastDepsProvider?()
         let session = AgentChatSession(
             store: store,

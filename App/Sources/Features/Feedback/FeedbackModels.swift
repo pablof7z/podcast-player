@@ -165,29 +165,20 @@ struct FeedbackReply: Identifiable {
         isFromMe = event.pubkey == localPubkey
         createdAt = Date(timeIntervalSince1970: TimeInterval(event.created_at))
     }
-}
 
-// MARK: - Nostr feedback helpers
-
-extension SignedNostrEvent {
-    var projectATags: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "a" ? tag[1] : nil
-        }
-    }
-
-    var eTagIDs: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "e" ? tag[1] : nil
-        }
-    }
-
-    var rootEventID: String? {
-        if let marked = tags.first(where: { tag in
-            tag.count >= 4 && tag[0] == "e" && tag[3] == "root"
-        }) {
-            return marked[1]
-        }
-        return eTagIDs.first
+    /// Optimistic reply synthesized from inputs (the kernel publish path is
+    /// fire-and-forget, so there is no returned signed event to build from).
+    init(
+        eventID: String = "local-\(UUID().uuidString)",
+        authorPubkey: String,
+        content: String,
+        isFromMe: Bool,
+        createdAt: Date = Date()
+    ) {
+        self.eventID = eventID
+        self.authorPubkey = authorPubkey
+        self.content = content
+        self.isFromMe = isFromMe
+        self.createdAt = createdAt
     }
 }

@@ -157,8 +157,17 @@ pub enum PodcastAction {
     PublishAgentNote {
         recipient_pubkey_hex: String,
         content: String,
+        /// NIP-10 root event ID — generates `["e", id, "", "root"]`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         root_event_id: Option<String>,
+        /// NIP-10 inbound event ID — when different from root_event_id,
+        /// generates an additional `["e", id, "", "reply"]` tag.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        inbound_event_id: Option<String>,
+        /// NIP-72 channel-anchor a-tags (`["a", coord]`). Rust appends them
+        /// verbatim — Swift never constructs tag arrays.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        root_a_tags: Vec<String>,
     },
     /// Feature #44 — subscribe to inbound kind:1 notes addressed to the
     /// active account (`#p` filter) and surface them on
@@ -236,6 +245,27 @@ pub enum PodcastAction {
     /// immediately. The iOS `summarize_episode` agent tool dispatches this then
     /// awaits the snapshot until `episode.summary` populates.
     SummarizeEpisode { episode_id: String },
+    /// Open the in-app feedback subscription (TENEX project notes) through the
+    /// NMP relay pool. Pushes a relay-pinned `OneShot` interest for kind:1 +
+    /// kind:513 events bearing the project `["a"]` coord; results arrive via
+    /// [`crate::feedback_handler::FeedbackObserver`] and surface on
+    /// `PodcastUpdate.feedback_events`. Replaces the deleted Swift
+    /// `FeedbackRelayClient` WebSocket fetch — no iOS relay socket.
+    FetchFeedback,
+    /// Sign + publish a feedback note (kind:1) to the feedback relay via NMP.
+    /// Rust builds all tags (`["a",coord]`, `["t",category]`, the NIP-70 `["-"]`
+    /// protected marker, and NIP-10 `["e",…,"root"]` / `["p",…]` for replies);
+    /// Swift passes only semantic values. NMP signs with the active user signer
+    /// and AUTHs the explicit-target write — no secret bytes in app code, no iOS
+    /// relay socket. Roots omit `parent_event_id`/`reply_to_pubkey`.
+    PublishFeedback {
+        category: String,
+        content: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        parent_event_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reply_to_pubkey: Option<String>,
+    },
 }
 
 /// One row in a [`PodcastAction::SetEpisodeTriage`] batch.

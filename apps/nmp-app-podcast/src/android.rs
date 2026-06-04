@@ -264,7 +264,8 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSigninNsec<'l>(
     let Ok(c_secret) = CString::new(secret) else {
         return;
     };
-    nmp_app_signin_nsec(s.app, c_secret.as_ptr());
+    // v0.2.4: make_active = 1 — Android sign-in activates the imported account.
+    nmp_app_signin_nsec(s.app, c_secret.as_ptr(), 1);
 }
 
 /// `nativeNextUpdate(handle)` — blocking drain of the snapshot channel with a

@@ -61,6 +61,7 @@ fn comments_interest(anchor: &str) -> LogicalInterest {
 pub fn handle_fetch_comments(
     app: *mut NmpApp,
     store: &Arc<Mutex<PodcastStore>>,
+    viewed_comments_episode_id: &Arc<Mutex<Option<String>>>,
     episode_id: &str,
 ) -> serde_json::Value {
     let anchor = match store.lock() {
@@ -70,6 +71,11 @@ pub fn handle_fetch_comments(
         },
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
     };
+    // Mark this episode as the one whose comments are being viewed so the
+    // snapshot projects its cache slice (not just the now-playing episode's).
+    if let Ok(mut viewed) = viewed_comments_episode_id.lock() {
+        *viewed = Some(episode_id.to_string());
+    }
     push_interest_via_nmp(app, comments_interest(&anchor));
     serde_json::json!({"ok": true, "status": "subscribed", "anchor": anchor})
 }
