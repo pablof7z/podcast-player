@@ -16,12 +16,17 @@ extension ShakeFeedbackConfig {
 /// flat wire event. The SDK's in-package Schnorr signer (`ShakeFeedbackCrypto`)
 /// is never reached on this path.
 struct PodcastShakeFeedbackSigner: ShakeFeedbackSigner, @unchecked Sendable {
-    weak var identity: UserIdentityStore?
     weak var kernel: KernelModel?
 
+    /// Advertise the SAME key the kernel will sign with — the active-account
+    /// pubkey — not the `UserIdentityStore` value. In `.hostApp` mode the SDK
+    /// trusts `publicKeyHex` as "self" (isMine reduction, NIP-42 AUTH); sourcing
+    /// it from the same place `signFeedbackEvent` signs guarantees the advertised
+    /// pubkey and the signing pubkey can never diverge. `nil` (no active account)
+    /// is more correct than advertising a key we cannot sign with.
     var publicKeyHex: String? {
         get async {
-            await MainActor.run { identity?.publicKeyHex }
+            await MainActor.run { kernel?.kernelIdentity.activeAccount }
         }
     }
 
@@ -30,7 +35,9 @@ struct PodcastShakeFeedbackSigner: ShakeFeedbackSigner, @unchecked Sendable {
         // `created_at` (D7) and fills `pubkey`/`id`/`sig`; the draft carries
         // only kind/content/tags.
         guard let kernel else { throw ShakeFeedbackError.missingIdentity }
-        guard await MainActor.run(body: { identity?.publicKeyHex }) != nil else {
+        // Gate on the kernel active account — the identity that will actually
+        // sign — not the UserIdentityStore mirror.
+        guard await MainActor.run(body: { kernel.kernelIdentity.activeAccount }) != nil else {
             throw ShakeFeedbackError.missingIdentity
         }
         let unsigned: [String: Any] = [

@@ -89,8 +89,7 @@ struct RootView: View {
                 .task(id: userIdentity.publicKeyHex) {
                     guard userIdentity.publicKeyHex != nil else { return }
                     await sharedFeedbackStore.start(
-                        hostSigner: PodcastShakeFeedbackSigner(
-                            identity: userIdentity, kernel: store.kernel))
+                        hostSigner: PodcastShakeFeedbackSigner(kernel: store.kernel))
                 }
                 .sheet(isPresented: $showSettings) {
                     NavigationStack { SettingsView() }
