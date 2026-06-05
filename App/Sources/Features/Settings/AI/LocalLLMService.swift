@@ -8,6 +8,11 @@ import os.log
 actor LocalLLMService {
     private var engine: Engine?
 
+    /// The model id whose engine is currently loaded, or nil when none. Lets
+    /// `ensureLoaded` skip a redundant (expensive) re-init when the same model
+    /// is requested again, and reload when the selection changes.
+    private(set) var loadedModelID: String?
+
     private nonisolated var cacheDir: URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         return caches.appendingPathComponent("LiteRTCache", isDirectory: true)
@@ -15,6 +20,17 @@ actor LocalLLMService {
 
     init() {
         try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+    }
+
+    /// Loads `spec`'s engine unless it is already the loaded one. Switching
+    /// models unloads the previous engine first (only one on-device engine is
+    /// kept resident at a time). Idempotent — safe to call on every settings
+    /// change and once at kernel attach.
+    func ensureLoaded(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
+        if loadedModelID == spec.id, engine != nil { return }
+        engine = nil
+        loadedModelID = nil
+        try await load(spec: spec, downloadManager: downloadManager)
     }
 
     func load(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
@@ -34,11 +50,13 @@ actor LocalLLMService {
         let newEngine = Engine(engineConfig: config)
         try await newEngine.initialize()
         engine = newEngine
+        loadedModelID = spec.id
         os_log("Local LLM engine initialized with model: %{public}@", log: .default, type: .info, fileURL.path)
     }
 
     func unload() async {
         engine = nil
+        loadedModelID = nil
     }
 
     func infer(promptJSON: String) async -> String {
@@ -47,7 +65,9 @@ actor LocalLLMService {
         }
 
         // Extract the prompt text from the JSON payload sent by the Rust kernel.
-        // Expected shape: {"prompt": "..."} or {"messages": [...]}
+        // The kernel's LocalModelBackend sends {"system","history","user","model"}
+        // where history is an array of [role, content] pairs. We also accept
+        // {"prompt"} and {"messages":[…]} shapes defensively.
         var promptText = promptJSON
         if let data = promptJSON.data(using: .utf8),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -57,6 +77,26 @@ actor LocalLLMService {
                       let last = messages.last,
                       let content = last["content"] as? String {
                 promptText = content
+            } else if obj["user"] != nil || obj["system"] != nil || obj["history"] != nil {
+                // Compose the kernel's structured request into a single prompt:
+                // system preamble, prior turns, then the new user message.
+                var parts: [String] = []
+                if let system = obj["system"] as? String, !system.isEmpty {
+                    parts.append(system)
+                }
+                if let history = obj["history"] as? [[Any]] {
+                    for turn in history where turn.count == 2 {
+                        if let role = turn[0] as? String, let content = turn[1] as? String {
+                            parts.append("\(role): \(content)")
+                        }
+                    }
+                }
+                if let user = obj["user"] as? String, !user.isEmpty {
+                    parts.append("User: \(user)")
+                }
+                if !parts.isEmpty {
+                    promptText = parts.joined(separator: "\n\n")
+                }
             }
         }
 

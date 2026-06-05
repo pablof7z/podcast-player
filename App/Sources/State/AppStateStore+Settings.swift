@@ -289,6 +289,9 @@ extension AppStateStore {
         if nextLocal != priorLocal {
             kernel?.dispatch(namespace: "podcast.settings",
                              body: ["op": "set_local_model", "model_id": nextLocal as Any])
+            // Load/unload the on-device engine to match the new selection so the
+            // kernel's LocalModelBackend callback actually has an engine to run.
+            syncLocalEngine(for: settings)
         }
     }
 
