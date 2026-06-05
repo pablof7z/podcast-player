@@ -173,7 +173,7 @@ struct AIProvidersSettingsView: View {
     }
 
     private var localStatus: String {
-        let count = LocalModelDownloadManager.shared.downloadedSpecs().count
+        let count = LocalModelCatalog.downloadedSpecs().count
         switch count {
         case 0:  return "No models"
         case 1:  return "1 model"

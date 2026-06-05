@@ -270,6 +270,7 @@ fn snapshot_with_downloads_round_trips() {
     let downloads = DownloadQueueSnapshot {
         active: vec![DownloadItemSnapshot {
             episode_id: "ep-1".into(),
+            kind: Default::default(),
             url: "https://example.com/ep-1.mp3".into(),
             progress: 0.5,
             state: "active".into(),
@@ -292,6 +293,7 @@ fn snapshot_with_downloads_round_trips() {
 fn download_item_snapshot_omits_none_error() {
     let item = DownloadItemSnapshot {
         episode_id: "ep-1".into(),
+        kind: Default::default(),
         url: String::new(),
         progress: 0.0,
         state: "queued".into(),

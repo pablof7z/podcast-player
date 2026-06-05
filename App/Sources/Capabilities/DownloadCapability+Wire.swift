@@ -11,19 +11,27 @@ import Foundation
 // Split out of `DownloadCapability.swift` to keep that file under the
 // 300-LOC soft limit (AGENTS.md).
 
+/// What a download fetches. Mirrors Rust `DownloadKind`
+/// (`#[serde(rename_all = "snake_case")]`). Absent on the wire ⇒ `.episode`
+/// (the field is omitted for episodes so the episode contract is unchanged).
+enum DownloadKind: String, Codable, Equatable {
+    case episode
+    case localModel = "local_model"
+}
+
 /// Commands Rust dispatches to the iOS download executor.
 ///
 /// Wire shape (Rust side, `serde` tagged on `"type"`, snake_case):
 ///
 /// ```text
-/// {"type":"start_download","url":"…","episode_id":"…","expected_bytes":12345}
+/// {"type":"start_download","url":"…","episode_id":"…","kind":"local_model","expected_bytes":12345}
 /// {"type":"pause_download","episode_id":"…"}
 /// {"type":"resume_download","episode_id":"…"}
 /// {"type":"cancel_download","episode_id":"…"}
 /// {"type":"cancel_all"}
 /// ```
 enum DownloadCommand: Decodable, Equatable {
-    case startDownload(url: String, episodeID: String, expectedBytes: UInt64?)
+    case startDownload(url: String, episodeID: String, kind: DownloadKind, expectedBytes: UInt64?)
     case pauseDownload(episodeID: String)
     case resumeDownload(episodeID: String)
     case cancelDownload(episodeID: String)
@@ -33,6 +41,7 @@ enum DownloadCommand: Decodable, Equatable {
         case type
         case url
         case episodeID = "episode_id"
+        case kind
         case expectedBytes = "expected_bytes"
     }
 
@@ -44,6 +53,7 @@ enum DownloadCommand: Decodable, Equatable {
             self = .startDownload(
                 url: try c.decode(String.self, forKey: .url),
                 episodeID: try c.decode(String.self, forKey: .episodeID),
+                kind: try c.decodeIfPresent(DownloadKind.self, forKey: .kind) ?? .episode,
                 expectedBytes: try c.decodeIfPresent(UInt64.self, forKey: .expectedBytes))
         case "pause_download":
             self = .pauseDownload(

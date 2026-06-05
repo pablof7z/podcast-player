@@ -385,6 +385,27 @@ extension AppStateStore {
                          body: ["op": "delete_download", "episode_id": id.uuidString])
     }
 
+    // MARK: - Local model downloads (unified queue, kind = local_model)
+
+    /// Queue an on-device model download through the unified download queue
+    /// (namespace: podcast). The kernel tags the item `local_model`, so the
+    /// shared executor writes it to `LocalModels/<id>.litertlm` and it inherits
+    /// resume / retry / background transfer.
+    func kernelDownloadLocalModel(modelID: String, url: String) {
+        DiagnosticLog.shared.append(
+            level: .info, category: "dispatch",
+            message: "download_local_model model_id=\(modelID)")
+        kernel?.dispatch(namespace: "podcast",
+                         body: ["op": "download_local_model", "model_id": modelID, "url": url])
+    }
+
+    /// Cancel an in-flight model download. Reuses the id-based cancel path
+    /// (namespace: podcast.player) — the model id is the queue item's id.
+    func kernelCancelLocalModelDownload(modelID: String) {
+        kernel?.dispatch(namespace: "podcast.player",
+                         body: ["op": "cancel_download", "episode_id": modelID])
+    }
+
     // MARK: - Transcripts
 
     /// Report a completed transcript to the Rust kernel (M5.2).

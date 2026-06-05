@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::capability::DownloadKind;
+
 /// Snapshot of the [`crate::download::DownloadQueue`] surfaced to the iOS
 /// shell via `PodcastUpdate.downloads`.
 ///
@@ -42,6 +44,11 @@ pub struct DownloadQueueSnapshot {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct DownloadItemSnapshot {
     pub episode_id: String,
+    /// What this row fetches. Omitted for `Episode` (the default) so the
+    /// episode projection is byte-identical; `local_model` lets the model UI
+    /// pick out its own rows and lets the episode overlay skip non-episodes.
+    #[serde(default, skip_serializing_if = "DownloadKind::is_episode")]
+    pub kind: DownloadKind,
     /// Enclosure URL the executor fetches. Carried on the projection so a
     /// *pull-model* capability (Android, which has no inbound
     /// `dispatch_capability` command seam) can start the HTTP download

@@ -36,13 +36,13 @@ actor LocalLLMService {
     /// check before either finished `load`'s slow GPU init and double-init —
     /// leaving an engine that no longer matches the latest selection. Chaining
     /// makes the most-recently-requested model the resident one.
-    func ensureLoaded(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
+    func ensureLoaded(spec: LocalModelSpec) async throws {
         if loadedModelID == spec.id, engine != nil { return }
         let previous = pendingLoad
         let task = Task { [weak self] in
             _ = try? await previous?.value
             guard let self else { return }
-            try await self.loadSerialized(spec: spec, downloadManager: downloadManager)
+            try await self.loadSerialized(spec: spec)
         }
         pendingLoad = task
         try await task.value
@@ -50,17 +50,16 @@ actor LocalLLMService {
 
     /// Runs inside the serialized load chain: re-checks (a prior chained load
     /// may have already brought this model up), then swaps the resident engine.
-    private func loadSerialized(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
+    private func loadSerialized(spec: LocalModelSpec) async throws {
         if loadedModelID == spec.id, engine != nil { return }
         engine = nil
         loadedModelID = nil
-        try await load(spec: spec, downloadManager: downloadManager)
+        try await load(spec: spec)
     }
 
-    func load(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
-        guard let fileURL = await downloadManager.modelFileURL(for: spec.id) as URL? else {
-            throw LocalLLMError.modelNotFound
-        }
+    func load(spec: LocalModelSpec) async throws {
+        // Weights live where the unified download executor wrote them.
+        let fileURL = DownloadCapability.localModelFileURL(for: spec.id)
 
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             throw LocalLLMError.modelFileNotFound

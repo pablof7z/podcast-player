@@ -49,6 +49,37 @@ use serde::{Deserialize, Serialize};
 /// the same string the broader capability plan uses.
 pub const DOWNLOAD_CAPABILITY_NAMESPACE: &str = "nmp.download.capability";
 
+/// What kind of resource a download fetches.
+///
+/// Determines where the iOS executor writes the finished file
+/// (`Episode` → `Application Support/Downloads/<id>.<ext>`, `LocalModel` →
+/// `Application Support/LocalModels/<id>.litertlm`) and which kernel completion
+/// path runs (Episode persists `local_path` to the episode store; LocalModel
+/// leaves the file on disk as the source of truth — see
+/// `capability::dispatch::apply_download_report`).
+///
+/// `Episode` is the historical default: pre-`kind` wire JSON (and any persisted
+/// queue item without the field) decodes to `Episode`, and the field is omitted
+/// from the wire for episodes so the episode contract stays byte-identical.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DownloadKind {
+    /// A podcast episode enclosure.
+    #[default]
+    Episode,
+    /// An on-device LLM model file.
+    LocalModel,
+}
+
+impl DownloadKind {
+    /// `true` for the default `Episode` kind. Used by `skip_serializing_if`
+    /// to keep the episode wire form unchanged (the field is omitted).
+    #[must_use]
+    pub fn is_episode(&self) -> bool {
+        matches!(self, DownloadKind::Episode)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Rust → iOS: DownloadCommand
 // ---------------------------------------------------------------------------
@@ -82,9 +113,16 @@ pub enum DownloadCommand {
     StartDownload {
         /// HTTP/HTTPS URL of the enclosure.
         url: String,
-        /// Stable episode id the capability uses to correlate progress.
-        /// Mirrors `taskDescription` on `URLSessionDownloadTask`.
+        /// Stable id the capability uses to correlate progress. For episodes
+        /// this is the episode id; for other kinds it is that resource's id
+        /// (e.g. a local model id). Mirrors `taskDescription` on
+        /// `URLSessionDownloadTask` (prefixed by kind for non-episodes).
         episode_id: String,
+        /// What this download fetches. Omitted on the wire for `Episode`
+        /// (the executor then writes to the episodes directory); `local_model`
+        /// routes the file into the on-device models directory.
+        #[serde(default, skip_serializing_if = "DownloadKind::is_episode")]
+        kind: DownloadKind,
         /// Optional pre-flight size hint; `None` if the feed didn't provide
         /// `enclosure.length`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -109,16 +147,30 @@ pub enum DownloadCommand {
 }
 
 impl DownloadCommand {
-    /// Convenience: construct a `StartDownload` command from owned strings.
+    /// Convenience: construct an episode `StartDownload` command from owned
+    /// strings. Equivalent to [`Self::start_with_kind`] with
+    /// [`DownloadKind::Episode`].
     #[must_use]
     pub fn start(
         url: impl Into<String>,
         episode_id: impl Into<String>,
         expected_bytes: Option<u64>,
     ) -> Self {
+        Self::start_with_kind(url, episode_id, expected_bytes, DownloadKind::Episode)
+    }
+
+    /// Convenience: construct a `StartDownload` for an explicit kind.
+    #[must_use]
+    pub fn start_with_kind(
+        url: impl Into<String>,
+        episode_id: impl Into<String>,
+        expected_bytes: Option<u64>,
+        kind: DownloadKind,
+    ) -> Self {
         Self::StartDownload {
             url: url.into(),
             episode_id: episode_id.into(),
+            kind,
             expected_bytes,
         }
     }

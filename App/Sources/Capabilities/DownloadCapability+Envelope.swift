@@ -32,9 +32,12 @@ extension DownloadCapability {
                 guard let self else { return }
                 for task in tasks {
                     guard let downloadTask = task as? URLSessionDownloadTask,
-                          let episodeID = task.taskDescription,
-                          !episodeID.isEmpty
+                          let taskDesc = task.taskDescription,
+                          !taskDesc.isEmpty
                     else { continue }
+                    // Key by the bare id (decoded from the kind-prefixed
+                    // taskDescription) to match start/pause/cancel/delegate.
+                    let (episodeID, _) = DownloadCapability.decodeTaskDescription(taskDesc)
                     if self.taskByEpisode[episodeID] == nil {
                         self.taskByEpisode[episodeID] = downloadTask
                     }

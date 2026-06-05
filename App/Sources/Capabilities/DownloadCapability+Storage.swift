@@ -42,6 +42,36 @@ extension DownloadCapability {
         return dir
     }
 
+    /// On-device LLM models directory:
+    /// `<Application Support>/LocalModels/`.
+    ///
+    /// Byte-for-byte the same location the (now-removed) `LocalModelDownloadManager`
+    /// used, so models already on disk are found without a re-download.
+    nonisolated static func localModelsDirectory() -> URL {
+        let appSupport: URL
+        do {
+            appSupport = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true)
+        } catch {
+            appSupport = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        }
+        let dir = appSupport.appendingPathComponent("LocalModels", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// Canonical on-disk path of a local model file:
+    /// `<Application Support>/LocalModels/<id>.litertlm`. The single source of
+    /// truth for "is this model downloaded" (read by `LocalLLMService.load` and
+    /// `syncLocalEngine`) — matches the unified download executor's destination.
+    nonisolated static func localModelFileURL(for modelID: String) -> URL {
+        let safeID = modelID.replacingOccurrences(of: "/", with: "_")
+        return localModelsDirectory().appendingPathComponent("\(safeID).litertlm")
+    }
+
     /// Resume-blob directory:
     /// `<Application Support>/Downloads/.resume/`.
     nonisolated static func resumeDataDirectory() -> URL {
@@ -50,11 +80,23 @@ extension DownloadCapability {
         return dir
     }
 
-    /// Canonical destination for a finished download. The filename keeps
-    /// the URL's extension when present (so `.m4a` / `.mp3` survive the
-    /// move); falls back to `.mp3` because the vast majority of podcast
-    /// enclosures are MP3.
+    /// Canonical destination for a finished episode download (back-compat
+    /// wrapper). See the kind-aware overload.
     nonisolated static func destinationURL(for episodeID: String, sourceURL: URL?) -> URL {
+        destinationURL(for: episodeID, sourceURL: sourceURL, kind: .episode)
+    }
+
+    /// Canonical destination for a finished download.
+    ///
+    /// * `.episode` → `Downloads/<id>.<ext>` — the filename keeps the URL's
+    ///   extension when present (so `.m4a` / `.mp3` survive the move); falls
+    ///   back to `.mp3` (the vast majority of enclosures are MP3).
+    /// * `.localModel` → `LocalModels/<id>.litertlm` — fixed extension; the
+    ///   source URL's extension is irrelevant.
+    nonisolated static func destinationURL(for episodeID: String, sourceURL: URL?, kind: DownloadKind) -> URL {
+        if kind == .localModel {
+            return localModelFileURL(for: episodeID)
+        }
         let dir = downloadsDirectory()
         let ext: String = {
             guard let raw = sourceURL?.pathExtension, !raw.isEmpty else { return "mp3" }
@@ -69,33 +111,36 @@ extension DownloadCapability {
         return dir.appendingPathComponent("\(safeID).\(ext)")
     }
 
-    /// Path the executor uses for resume data persistence. Keyed by
-    /// `episode_id` so `PauseDownload` → app suspension → app launch →
-    /// `ResumeDownload` survives a kill cleanly.
-    nonisolated static func resumeDataURL(for episodeID: String) -> URL {
+    /// Path the executor uses for resume data persistence. Keyed by id (and,
+    /// for non-episodes, a kind prefix so a model id can never alias an episode
+    /// blob) so `PauseDownload` → app suspension → app launch → `ResumeDownload`
+    /// survives a kill cleanly. Episodes keep the bare `<id>.data` name for
+    /// back-compat with blobs stashed by earlier builds.
+    nonisolated static func resumeDataURL(for episodeID: String, kind: DownloadKind = .episode) -> URL {
         let safeID = episodeID.replacingOccurrences(of: "/", with: "_")
-        return resumeDataDirectory().appendingPathComponent("\(safeID).data")
+        let name = kind == .episode ? "\(safeID).data" : "\(kind.rawValue)_\(safeID).data"
+        return resumeDataDirectory().appendingPathComponent(name)
     }
 
     /// Persist resume data for a paused download. Quiet on I/O failure
     /// — Rust will surface a `Failed` next `ResumeDownload` if the blob
     /// disappears.
-    nonisolated static func writeResumeData(_ data: Data, for episodeID: String) {
-        let url = resumeDataURL(for: episodeID)
+    nonisolated static func writeResumeData(_ data: Data, for episodeID: String, kind: DownloadKind = .episode) {
+        let url = resumeDataURL(for: episodeID, kind: kind)
         try? data.write(to: url, options: .atomic)
     }
 
-    /// Load resume data for an episode if one was previously stashed.
-    nonisolated static func loadResumeData(for episodeID: String) -> Data? {
-        let url = resumeDataURL(for: episodeID)
+    /// Load resume data for an item if one was previously stashed.
+    nonisolated static func loadResumeData(for episodeID: String, kind: DownloadKind = .episode) -> Data? {
+        let url = resumeDataURL(for: episodeID, kind: kind)
         return try? Data(contentsOf: url)
     }
 
     /// Drop a previously-stashed resume blob. Called on cancel and on
     /// successful completion so the directory doesn't accumulate stale
     /// blobs across kill/relaunch cycles.
-    nonisolated static func clearResumeData(for episodeID: String) {
-        let url = resumeDataURL(for: episodeID)
+    nonisolated static func clearResumeData(for episodeID: String, kind: DownloadKind = .episode) {
+        let url = resumeDataURL(for: episodeID, kind: kind)
         try? FileManager.default.removeItem(at: url)
     }
 
@@ -107,9 +152,10 @@ extension DownloadCapability {
     nonisolated static func moveFinishedDownload(
         from tempURL: URL,
         episodeID: String,
-        sourceURL: URL?
+        sourceURL: URL?,
+        kind: DownloadKind = .episode
     ) -> URL? {
-        let destination = destinationURL(for: episodeID, sourceURL: sourceURL)
+        let destination = destinationURL(for: episodeID, sourceURL: sourceURL, kind: kind)
         let fm = FileManager.default
         do {
             // Defensive: clear any pre-existing file at destination.
@@ -119,7 +165,7 @@ extension DownloadCapability {
             try fm.moveItem(at: tempURL, to: destination)
             // Successful move ⇒ resume blob is moot. Drop it so the
             // next `StartDownload` for the same id starts fresh.
-            clearResumeData(for: episodeID)
+            clearResumeData(for: episodeID, kind: kind)
             return destination
         } catch {
             return nil

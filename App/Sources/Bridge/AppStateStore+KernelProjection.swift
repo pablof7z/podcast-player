@@ -526,8 +526,21 @@ extension AppStateStore {
     /// Idempotent: episodes whose `downloadState` is already `.downloaded`
     /// are left untouched — a completed file on disk wins over queue state.
     private func applyDownloadOverlay(to episodes: inout [Episode], active: [DownloadItemSnapshot]?) {
-        guard let active, !active.isEmpty else { return }
-        let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.episodeId.uppercased(), $0) })
+        let active = active ?? []
+        // Extract local-model rows for the Providers → Local UI (live progress).
+        // Done before the episode guard so it also *clears* when the last model
+        // download finishes (active goes empty → row flips downloaded).
+        let modelRows = active.filter { $0.kind == .localModel }
+        let newModelDownloads = Dictionary(uniqueKeysWithValues: modelRows.map { ($0.episodeId, $0) })
+        if newModelDownloads != localModelDownloads {
+            localModelDownloads = newModelDownloads
+        }
+        guard !active.isEmpty else { return }
+        // Episode rows only — the unified queue also carries non-episode
+        // downloads (e.g. local models) whose ids are not episode UUIDs.
+        let byID = Dictionary(uniqueKeysWithValues: active
+            .filter { $0.kind == .episode }
+            .map { ($0.episodeId.uppercased(), $0) })
         for idx in episodes.indices {
             let key = episodes[idx].id.uuidString.uppercased()
             guard let dl = byID[key] else { continue }

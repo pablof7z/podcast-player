@@ -102,6 +102,12 @@ final class AppStateStore {
         }
     }
 
+    /// In-flight on-device model downloads from the unified queue, keyed by
+    /// model id. Updated on every download-snapshot tick (alongside the episode
+    /// overlay) so the Settings → Providers → Local rows render live progress.
+    /// Empty when no model download is active.
+    var localModelDownloads: [String: DownloadItemSnapshot] = [:]
+
     // MARK: - Episode projections (cache)
     //
     // These mirror `state.episodes` so the per-cell O(N) helpers in the

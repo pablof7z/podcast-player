@@ -2,11 +2,6 @@ import SwiftUI
 
 struct LocalModelsSettingsView: View {
     @Environment(AppStateStore.self) private var store
-    // The shared singleton — never construct a per-view manager: a second
-    // background session for the same identifier is undefined behaviour and the
-    // old one leaks, leaving the UI bound to a manager that no longer receives
-    // download callbacks.
-    private let downloadManager = LocalModelDownloadManager.shared
 
     var body: some View {
         ZStack {
@@ -21,16 +16,6 @@ struct LocalModelsSettingsView: View {
         }
         .navigationTitle("Local")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            // Recompute the "In use" badge from the kernel-projected
-            // localModelID now that the store is available (init() ran without
-            // it). Existing in-flight downloads on the shared session keep
-            // their .downloading state — recompute only flips disk-backed rows.
-            downloadManager.recomputeStatesFromDisk(activeModelID: store.state.settings.localModelID)
-        }
-        .onChange(of: store.state.settings.localModelID) { _, newID in
-            downloadManager.recomputeStatesFromDisk(activeModelID: newID)
-        }
     }
 
     // MARK: - Sections
@@ -38,13 +23,20 @@ struct LocalModelsSettingsView: View {
     private var modelsSection: some View {
         Section {
             ForEach(LocalModelCatalog.all, id: \.id) { spec in
-                let manager = downloadManager
+                // Download state comes from the unified kernel download snapshot
+                // (in-flight) + disk (downloaded). No bespoke manager.
                 LocalModelRowView(
                     spec: spec,
-                    state: manager.state(for: spec.id),
-                    onDownload: { manager.download(spec: spec) },
-                    onCancel: { manager.cancel(spec.id) },
-                    onDelete: { manager.delete(spec.id) }
+                    state: store.localModelState(for: spec),
+                    onDownload: {
+                        store.kernelDownloadLocalModel(
+                            modelID: spec.id, url: spec.downloadURL.absoluteString)
+                    },
+                    onCancel: { store.kernelCancelLocalModelDownload(modelID: spec.id) },
+                    onDelete: {
+                        try? FileManager.default.removeItem(
+                            at: DownloadCapability.localModelFileURL(for: spec.id))
+                    }
                 )
             }
         } header: {

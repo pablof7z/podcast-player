@@ -89,6 +89,9 @@ impl PodcastHostOpHandler {
             PodcastAction::DeleteDownload { episode_id } => {
                 self.handle_delete_download(episode_id)
             }
+            PodcastAction::DownloadLocalModel { model_id, url } => {
+                self.handle_download_local_model(model_id, url, correlation_id)
+            }
             PodcastAction::FetchTranscript { episode_id } => handle_fetch_transcript(
                 &self.store,
                 &self.transcripts,
@@ -451,6 +454,29 @@ impl PodcastHostOpHandler {
         };
         let command = match self.download_queue.lock() {
             Ok(mut q) => q.enqueue(episode_id_str, url),
+            Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
+        };
+        self.rev.fetch_add(1, Ordering::Relaxed);
+        if let Some(cmd) = command {
+            if let Err(e) = self.dispatch_download(&cmd, correlation_id) {
+                return serde_json::json!({"ok": false, "error": e});
+            }
+        }
+        serde_json::json!({"ok": true})
+    }
+
+    /// Enqueue an on-device model download (kind = `LocalModel`) through the
+    /// unified queue. Mirrors [`Self::handle_download`] but always uses the
+    /// caller-supplied `url` (models have no episode-store entry) and tags the
+    /// item so the executor writes it to the on-device models directory.
+    fn handle_download_local_model(
+        &self,
+        model_id: String,
+        url: String,
+        correlation_id: &str,
+    ) -> serde_json::Value {
+        let command = match self.download_queue.lock() {
+            Ok(mut q) => q.enqueue_with_kind(model_id, url, crate::capability::DownloadKind::LocalModel),
             Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
         };
         self.rev.fetch_add(1, Ordering::Relaxed);

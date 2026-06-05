@@ -59,20 +59,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
     ) {
-        // Route by identifier. The episode download capability and the local
-        // model download manager each own a distinct background session; the
-        // capability's handler short-circuits (immediately calling the OS
-        // handler) for any identifier it doesn't recognise, so the model
-        // session must be dispatched to its own manager — otherwise iOS is told
-        // "done" before the multi-GB model file is moved into place.
-        if identifier == LocalModelDownloadManager.sessionIdentifier {
-            MainActor.assumeIsolated {
-                LocalModelDownloadManager.shared.handleEventsForBackgroundURLSession(
-                    completionHandler: completionHandler
-                )
-            }
-            return
-        }
+        // Episodes and on-device models now share the one download capability
+        // background session, so all background-session events route there.
         PodcastCapabilities.shared.download.handleEventsForBackgroundURLSession(
             identifier: identifier,
             completionHandler: completionHandler

@@ -287,6 +287,10 @@ struct DownloadQueueSnapshot: Equatable {
 /// One row in `DownloadQueueSnapshot.active`.
 struct DownloadItemSnapshot: Identifiable, Equatable {
     var episodeId: String
+    /// What this row fetches. Omitted on the wire for episodes (the default),
+    /// so it must decode-default to `.episode`. Lets the model UI pick out its
+    /// own rows and lets the episode overlay skip non-episode rows.
+    var kind: DownloadKind = .episode
     var progress: Double = 0
     var state: String
     /// Total file size (bytes) once the server reports `Content-Length`.
@@ -523,6 +527,7 @@ extension DownloadItemSnapshot: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         episodeId = try c.decode(String.self, forKey: .episodeId)
+        kind = try c.decodeIfPresent(DownloadKind.self, forKey: .kind) ?? .episode
         progress = try c.decodeIfPresent(Double.self, forKey: .progress) ?? 0
         state = try c.decode(String.self, forKey: .state)
         totalBytes = try c.decodeIfPresent(Int64.self, forKey: .totalBytes)

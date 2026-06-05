@@ -47,9 +47,10 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        guard let episodeID = downloadTask.taskDescription, !episodeID.isEmpty else {
+        guard let taskDesc = downloadTask.taskDescription, !taskDesc.isEmpty else {
             return
         }
+        let (episodeID, _) = DownloadCapability.decodeTaskDescription(taskDesc)
         let total: UInt64? = totalBytesExpectedToWrite > 0
             ? UInt64(totalBytesExpectedToWrite)
             : nil
@@ -78,17 +79,19 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
-        guard let episodeID = downloadTask.taskDescription, !episodeID.isEmpty else {
+        guard let taskDesc = downloadTask.taskDescription, !taskDesc.isEmpty else {
             Self.logger.error("didFinishDownloadingTo: missing taskDescription")
             return
         }
+        let (episodeID, kind) = DownloadCapability.decodeTaskDescription(taskDesc)
         let sourceURL = downloadTask.originalRequest?.url
         // Move synchronously off the delegate queue — `tempLocation` is
-        // ephemeral.
+        // ephemeral. `kind` routes the file to the right directory.
         let moved = DownloadCapability.moveFinishedDownload(
             from: location,
             episodeID: episodeID,
-            sourceURL: sourceURL)
+            sourceURL: sourceURL,
+            kind: kind)
 
         Task { @MainActor [weak capability] in
             guard let capability else { return }
@@ -124,7 +127,8 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
         let isCancelled = nserr.domain == NSURLErrorDomain
             && nserr.code == NSURLErrorCancelled
         let resumeData = nserr.userInfo[NSURLSessionDownloadTaskResumeData] as? Data
-        guard let episodeID = task.taskDescription, !episodeID.isEmpty else { return }
+        guard let taskDesc = task.taskDescription, !taskDesc.isEmpty else { return }
+        let (episodeID, kind) = DownloadCapability.decodeTaskDescription(taskDesc)
         let errorDescription = error.localizedDescription
 
         Task { @MainActor [weak capability] in
@@ -141,7 +145,7 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
                 // persisted (e.g. an OS-driven cancel), stash it so a
                 // subsequent `ResumeDownload` can use it.
                 if let resumeData {
-                    DownloadCapability.writeResumeData(resumeData, for: episodeID)
+                    DownloadCapability.writeResumeData(resumeData, for: episodeID, kind: kind)
                 }
                 // The map entry was cleared by the command path; if it
                 // wasn't (OS-driven cancel), drop it now.
@@ -156,7 +160,7 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
             // failure left off. D7 — we don't decide *whether* to
             // retry; we just keep the resume blob available.
             if let resumeData {
-                DownloadCapability.writeResumeData(resumeData, for: episodeID)
+                DownloadCapability.writeResumeData(resumeData, for: episodeID, kind: kind)
             }
             capability.emit(.failed(
                 episodeID: episodeID,
