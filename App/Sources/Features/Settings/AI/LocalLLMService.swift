@@ -13,6 +13,10 @@ actor LocalLLMService {
     /// is requested again, and reload when the selection changes.
     private(set) var loadedModelID: String?
 
+    /// Tail of the serialized load chain. Each `ensureLoaded` chains after this
+    /// so concurrent calls can't overlap `load`'s multi-second GPU init.
+    private var pendingLoad: Task<Void, Error>?
+
     private nonisolated var cacheDir: URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         return caches.appendingPathComponent("LiteRTCache", isDirectory: true)
@@ -24,9 +28,29 @@ actor LocalLLMService {
 
     /// Loads `spec`'s engine unless it is already the loaded one. Switching
     /// models unloads the previous engine first (only one on-device engine is
-    /// kept resident at a time). Idempotent — safe to call on every settings
-    /// change and once at kernel attach.
+    /// kept resident at a time).
+    ///
+    /// Concurrency-safe: loads are serialized through `pendingLoad`. Without
+    /// this, two near-simultaneous calls (a settings change racing kernel
+    /// attach, or a fast X→Y→X switch) could both pass the `loadedModelID`
+    /// check before either finished `load`'s slow GPU init and double-init —
+    /// leaving an engine that no longer matches the latest selection. Chaining
+    /// makes the most-recently-requested model the resident one.
     func ensureLoaded(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
+        if loadedModelID == spec.id, engine != nil { return }
+        let previous = pendingLoad
+        let task = Task { [weak self] in
+            _ = try? await previous?.value
+            guard let self else { return }
+            try await self.loadSerialized(spec: spec, downloadManager: downloadManager)
+        }
+        pendingLoad = task
+        try await task.value
+    }
+
+    /// Runs inside the serialized load chain: re-checks (a prior chained load
+    /// may have already brought this model up), then swaps the resident engine.
+    private func loadSerialized(spec: LocalModelSpec, downloadManager: LocalModelDownloadManager) async throws {
         if loadedModelID == spec.id, engine != nil { return }
         engine = nil
         loadedModelID = nil
@@ -60,7 +84,7 @@ actor LocalLLMService {
     }
 
     func infer(promptJSON: String) async -> String {
-        guard let engine = engine else {
+        guard let engine = engine, let resident = loadedModelID else {
             return #"{"error":"Local model not loaded"}"#
         }
 
@@ -69,8 +93,10 @@ actor LocalLLMService {
         // where history is an array of [role, content] pairs. We also accept
         // {"prompt"} and {"messages":[…]} shapes defensively.
         var promptText = promptJSON
+        var requestedModel: String?
         if let data = promptJSON.data(using: .utf8),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            requestedModel = obj["model"] as? String
             if let p = obj["prompt"] as? String {
                 promptText = p
             } else if let messages = obj["messages"] as? [[String: Any]],
@@ -98,6 +124,15 @@ actor LocalLLMService {
                     promptText = parts.joined(separator: "\n\n")
                 }
             }
+        }
+
+        // The kernel routes each role to its own LocalModelBackend{model_id},
+        // but only one engine is resident at a time. If a role asks for a model
+        // that isn't the loaded one, refuse rather than silently answering with
+        // the wrong model — the kernel maps this error to Unavailable.
+        if let requestedModel, requestedModel != resident {
+            let safe = requestedModel.replacingOccurrences(of: "\"", with: "'")
+            return "{\"error\":\"requested model \(safe) is not the resident on-device model (\(resident))\"}"
         }
 
         do {
