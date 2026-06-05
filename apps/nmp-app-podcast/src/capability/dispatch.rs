@@ -19,7 +19,7 @@
 
 use std::time::SystemTime;
 
-use crate::capability::{AudioCommand, AudioReport, DownloadCommand, DownloadReport};
+use crate::capability::{AudioCommand, AudioReport, DownloadCommand, DownloadKind, DownloadReport};
 use crate::download::DownloadQueue;
 use crate::player::PlayerActor;
 use crate::store::PodcastStore;
@@ -106,7 +106,9 @@ pub fn dispatch_download_report_json(
             }
         }
     };
-    apply_download_report(store, &report);
+    // Queue-less path: no item to resolve a kind from. Models always flow
+    // through the with-queue dispatch, so Episode preserves existing behavior.
+    apply_download_report(store, &report, DownloadKind::Episode);
     DispatchOutcome::Ok {
         follow_up_json: None,
     }
@@ -154,7 +156,20 @@ pub fn dispatch_download_report_json_with_queue(
             }
         }
     };
-    let durable_changed = apply_download_report(store, &report);
+    // Resolve the item's kind from the queue (it still holds the item — we
+    // project into `store` before `queue.handle_report` below). Only episode
+    // downloads touch the episode store on completion; a local-model file is
+    // left on disk as its own source of truth (LocalLLMService reads it),
+    // so its report must never run the episode lookup/persist path.
+    let item_kind = match &report {
+        DownloadReport::Progress { episode_id, .. }
+        | DownloadReport::Completed { episode_id, .. }
+        | DownloadReport::Failed { episode_id, .. }
+        | DownloadReport::Cancelled { episode_id }
+        | DownloadReport::Paused { episode_id, .. } => queue.get(episode_id).map(|i| i.kind),
+    }
+    .unwrap_or_default();
+    let durable_changed = apply_download_report(store, &report, item_kind);
     let follow_up_json = queue
         .handle_report(report)
         .into_iter()
@@ -173,7 +188,16 @@ pub fn dispatch_download_report_json_with_queue(
 /// Returns `true` when the report mutated durable store state (a
 /// `Completed`/`Cancelled` that resolved to a known episode), so the caller
 /// can decide whether the change warrants a full snapshot `rev` bump.
-fn apply_download_report(store: &mut PodcastStore, report: &DownloadReport) -> bool {
+fn apply_download_report(
+    store: &mut PodcastStore,
+    report: &DownloadReport,
+    kind: DownloadKind,
+) -> bool {
+    // Non-episode downloads (e.g. on-device models) never touch the episode
+    // store — their finished file on disk is the source of truth.
+    if !kind.is_episode() {
+        return false;
+    }
     match report {
         DownloadReport::Completed {
             episode_id,

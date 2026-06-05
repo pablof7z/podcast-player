@@ -40,7 +40,7 @@
 
 use std::collections::HashMap;
 
-use crate::capability::{DownloadCommand, DownloadReport};
+use crate::capability::{DownloadCommand, DownloadKind, DownloadReport};
 
 mod item;
 pub use item::{DownloadItem, DownloadItemState};
@@ -137,6 +137,20 @@ impl DownloadQueue {
         episode_id: impl Into<String>,
         url: impl Into<String>,
     ) -> Option<DownloadCommand> {
+        self.enqueue_with_kind(episode_id, url, DownloadKind::Episode)
+    }
+
+    /// Enqueue a new download of an explicit [`DownloadKind`]. Same semantics
+    /// as [`Self::enqueue`]; the kind rides on the item and every
+    /// `StartDownload` the queue emits for it (including the slot-free re-emit
+    /// in [`Self::start_next_queued`]) so the executor writes the file to the
+    /// right place.
+    pub fn enqueue_with_kind(
+        &mut self,
+        episode_id: impl Into<String>,
+        url: impl Into<String>,
+        kind: DownloadKind,
+    ) -> Option<DownloadCommand> {
         let episode_id = episode_id.into();
         let url = url.into();
 
@@ -152,11 +166,11 @@ impl DownloadQueue {
         self.items.remove(&episode_id);
         self.queue_order.retain(|e| e != &episode_id);
 
-        let mut item = DownloadItem::queued(&episode_id, &url);
+        let mut item = DownloadItem::queued_with_kind(&episode_id, &url, kind);
         if self.active_count() < self.max_concurrent {
             item.state = DownloadItemState::Active;
             self.items.insert(episode_id.clone(), item);
-            Some(DownloadCommand::start(url, episode_id, None))
+            Some(DownloadCommand::start_with_kind(url, episode_id, None, kind))
         } else {
             self.items.insert(episode_id.clone(), item);
             self.queue_order.push(episode_id);
@@ -338,7 +352,14 @@ impl DownloadQueue {
                 continue;
             }
             item.state = DownloadItemState::Active;
-            commands.push(DownloadCommand::start(item.url.clone(), next_id, None));
+            // Carry the item's kind so a queued *model* dispatched when a slot
+            // frees still routes to the models directory (not the episode one).
+            commands.push(DownloadCommand::start_with_kind(
+                item.url.clone(),
+                next_id,
+                None,
+                item.kind,
+            ));
         }
         commands
     }

@@ -93,6 +93,7 @@ fn start_command_carries_url_and_episode_id() {
             url,
             episode_id,
             expected_bytes,
+            ..
         } => {
             assert_eq!(url, "https://ex.com/7.mp3");
             assert_eq!(episode_id, "ep-7");

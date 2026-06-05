@@ -106,6 +106,12 @@ pub enum PodcastAction {
     /// Remove a previously downloaded episode from disk and clear the
     /// kernel-side `local_path` mapping.
     DeleteDownload { episode_id: String },
+    /// Begin downloading an on-device LLM model through the unified download
+    /// queue (kind = `LocalModel`). User-initiated and direct: the `url` is
+    /// always supplied by the shell (models aren't in the episode store), and
+    /// this path deliberately bypasses the auto-download / deferred-wifi /
+    /// subscription-revalidation machinery, which assumes episode ids.
+    DownloadLocalModel { model_id: String, url: String },
     FetchTranscript { episode_id: String },
     /// Fetch and parse the Podcasting 2.0 chapters JSON for an episode.
     ///

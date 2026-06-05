@@ -7,6 +7,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::capability::DownloadKind;
+
 /// Lifecycle state for a single [`DownloadItem`].
 ///
 /// Transitions are driven by [`super::DownloadQueue`] in response to
@@ -90,9 +92,14 @@ impl DownloadItemState {
 /// outside the queue only read this for snapshot projection.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct DownloadItem {
-    /// Stable episode id. Mirrors the `episode_id` field every
+    /// Stable id. For episodes this is the episode id; for other kinds it is
+    /// that resource's id. Mirrors the `episode_id` field every
     /// `DownloadCommand` / `DownloadReport` variant carries.
     pub episode_id: String,
+    /// What this item fetches. Defaults to `Episode` (so a persisted queue
+    /// without the field, or any episode item, reads as `Episode`).
+    #[serde(default)]
+    pub kind: DownloadKind,
     /// HTTP/HTTPS URL of the enclosure to fetch. The queue keeps it so
     /// it can re-emit `StartDownload` on resume / re-queue without a
     /// separate lookup against the episode store.
@@ -114,11 +121,22 @@ pub struct DownloadItem {
 }
 
 impl DownloadItem {
-    /// Construct a fresh `Queued` item.
+    /// Construct a fresh `Queued` episode item.
     #[must_use]
     pub fn queued(episode_id: impl Into<String>, url: impl Into<String>) -> Self {
+        Self::queued_with_kind(episode_id, url, DownloadKind::Episode)
+    }
+
+    /// Construct a fresh `Queued` item of an explicit kind.
+    #[must_use]
+    pub fn queued_with_kind(
+        episode_id: impl Into<String>,
+        url: impl Into<String>,
+        kind: DownloadKind,
+    ) -> Self {
         Self {
             episode_id: episode_id.into(),
+            kind,
             url: url.into(),
             state: DownloadItemState::Queued,
             bytes_downloaded: 0,
