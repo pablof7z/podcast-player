@@ -14,7 +14,7 @@ import Foundation
 /// What a download fetches. Mirrors Rust `DownloadKind`
 /// (`#[serde(rename_all = "snake_case")]`). Absent on the wire ⇒ `.episode`
 /// (the field is omitted for episodes so the episode contract is unchanged).
-enum DownloadKind: String, Decodable, Equatable {
+enum DownloadKind: String, Codable, Equatable {
     case episode
     case localModel = "local_model"
 }

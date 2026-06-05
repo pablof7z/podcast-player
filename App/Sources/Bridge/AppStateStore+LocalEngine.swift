@@ -38,26 +38,26 @@ extension AppStateStore {
             return
         }
 
-        let manager = LocalModelDownloadManager.shared
-        let fileURL = manager.modelFileURL(for: targetID)
+        let fileURL = DownloadCapability.localModelFileURL(for: targetID)
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            // Not downloaded yet. Start one only if it isn't already in flight —
-            // this method runs on every settings change, so an unguarded
-            // download() would spawn duplicate background tasks for the same id.
-            if case .downloading = manager.state(for: targetID) {
+            // Not downloaded yet. Queue it through the unified download queue —
+            // but only if it isn't already in flight (this method runs on every
+            // settings change; the kernel queue is also idempotent per id). The
+            // engine loads on the next sync once the file lands.
+            if localModelDownloads[targetID] != nil {
                 os_log("syncLocalEngine: model %{public}@ download already in flight",
                        log: .default, type: .info, targetID)
             } else {
-                os_log("syncLocalEngine: model %{public}@ not downloaded yet — starting download",
+                os_log("syncLocalEngine: model %{public}@ not downloaded yet — queuing download",
                        log: .default, type: .info, targetID)
-                manager.download(spec: spec)
+                kernelDownloadLocalModel(modelID: targetID, url: spec.downloadURL.absoluteString)
             }
             return
         }
 
         Task {
             do {
-                try await service.ensureLoaded(spec: spec, downloadManager: manager)
+                try await service.ensureLoaded(spec: spec)
             } catch {
                 os_log("syncLocalEngine: failed to load local model %{public}@: %{public}@",
                        log: .default, type: .error, targetID, error.localizedDescription)
