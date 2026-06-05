@@ -186,9 +186,9 @@ final class DownloadCapability {
     /// is a pure `URLSession` translation of the command.
     func execute(_ command: DownloadCommand) {
         switch command {
-        case let .startDownload(url, episodeID, _):
-            logger.debug("DownloadCapability: executing startDownload episodeID=\(episodeID) url=\(url)")
-            startDownload(url: url, episodeID: episodeID)
+        case let .startDownload(url, episodeID, kind, _):
+            logger.debug("DownloadCapability: executing startDownload episodeID=\(episodeID) kind=\(kind.rawValue) url=\(url)")
+            startDownload(url: url, episodeID: episodeID, kind: kind)
         case let .pauseDownload(episodeID):
             logger.debug("DownloadCapability: executing pauseDownload episodeID=\(episodeID)")
             pauseDownload(episodeID: episodeID)
@@ -206,7 +206,7 @@ final class DownloadCapability {
 
     // MARK: - Command implementations
 
-    private func startDownload(url: String, episodeID: String) {
+    private func startDownload(url: String, episodeID: String, kind: DownloadKind = .episode) {
         // Already in flight? D7 — we don't decide policy. If Rust asks
         // again, ignore the duplicate (the existing task will emit its
         // own reports); we never preempt a live task with a fresh one
@@ -221,14 +221,17 @@ final class DownloadCapability {
             return
         }
         let task: URLSessionDownloadTask
-        if let resumeData = Self.loadResumeData(for: episodeID) {
+        if let resumeData = Self.loadResumeData(for: episodeID, kind: kind) {
             logger.debug("DownloadCapability: resuming download for \(episodeID)")
             task = session.downloadTask(withResumeData: resumeData)
         } else {
             logger.debug("DownloadCapability: starting new download for \(episodeID) from \(url.absoluteString)")
             task = session.downloadTask(with: url)
         }
-        task.taskDescription = episodeID
+        // Encode the kind into taskDescription so the delegate can recover where
+        // to write on a background relaunch (when taskByEpisode is empty).
+        // Episodes keep the bare id — back-compat with tasks from earlier builds.
+        task.taskDescription = Self.encodeTaskDescription(episodeID: episodeID, kind: kind)
         taskByEpisode[episodeID] = task
         lastEmittedBytes[episodeID] = 0
         lastEmittedAt[episodeID] = .distantPast
@@ -236,8 +239,28 @@ final class DownloadCapability {
         logger.debug("DownloadCapability: resumed URLSessionDownloadTask for \(episodeID)")
     }
 
+    // MARK: - taskDescription kind encoding
+
+    /// `taskDescription` carries the kind for non-episodes (`local_model:<id>`)
+    /// so a background relaunch — where only the OS-persisted task survives —
+    /// can recover the destination. Episodes keep the bare id unchanged.
+    nonisolated static func encodeTaskDescription(episodeID: String, kind: DownloadKind) -> String {
+        kind == .episode ? episodeID : "\(kind.rawValue):\(episodeID)"
+    }
+
+    /// Inverse of `encodeTaskDescription`. Unknown / unprefixed descriptions
+    /// decode as `.episode` (the historical format).
+    nonisolated static func decodeTaskDescription(_ description: String) -> (episodeID: String, kind: DownloadKind) {
+        if let colon = description.firstIndex(of: ":"),
+           let kind = DownloadKind(rawValue: String(description[..<colon])) {
+            return (String(description[description.index(after: colon)...]), kind)
+        }
+        return (description, .episode)
+    }
+
     private func pauseDownload(episodeID: String) {
         guard let task = taskByEpisode[episodeID] else { return }
+        let kind = Self.decodeTaskDescription(task.taskDescription ?? episodeID).kind
         // `cancel(byProducingResumeData:)` completes asynchronously on
         // an arbitrary queue; hop back so map mutation stays
         // main-actor-isolated.
@@ -256,7 +279,7 @@ final class DownloadCapability {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let resumeData {
-                    Self.writeResumeData(resumeData, for: episodeID)
+                    Self.writeResumeData(resumeData, for: episodeID, kind: kind)
                 }
                 self.taskByEpisode[episodeID] = nil
                 self.emit(.paused(episodeID: episodeID, bytesDownloaded: bytesSoFar))
@@ -292,9 +315,10 @@ final class DownloadCapability {
             emit(.cancelled(episodeID: episodeID))
             return
         }
+        let kind = Self.decodeTaskDescription(task.taskDescription ?? episodeID).kind
         task.cancel()
         taskByEpisode[episodeID] = nil
-        Self.clearResumeData(for: episodeID)
+        Self.clearResumeData(for: episodeID, kind: kind)
         emit(.cancelled(episodeID: episodeID))
     }
 
