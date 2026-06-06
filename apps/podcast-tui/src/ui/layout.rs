@@ -29,7 +29,17 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
         ui::help::render(frame, area, state);
     }
 
-    if matches!(state.mode, Mode::SearchInput | Mode::SubscribeInput) {
+    if matches!(
+        state.mode,
+        Mode::SearchInput
+            | Mode::SubscribeInput
+            | Mode::RelayInput
+            | Mode::AgentInput
+            | Mode::AgentMemoryInput
+            | Mode::AgentTaskInput
+            | Mode::AgentNoteInput
+            | Mode::EpisodeCommentInput
+    ) {
         render_input_bar(frame, area, state);
     }
 
@@ -51,7 +61,7 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
 }
 
 fn render_title(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let tabs = [Tab::Library, Tab::Queue, Tab::Inbox, Tab::Search, Tab::Settings]
+    let tabs = Tab::all()
         .iter()
         .map(|tab| {
             let label = format!(" {} ", tab.label());
@@ -80,16 +90,19 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Tab::Queue => ui::queue::render(frame, area, state),
         Tab::Inbox => ui::inbox::render(frame, area, state),
         Tab::Search => ui::search::render(frame, area, state),
+        Tab::Downloads => ui::downloads::render(frame, area, state),
+        Tab::Bookmarks => ui::bookmarks::render(frame, area, state),
+        Tab::Clips => ui::clips::render(frame, area, state),
+        Tab::Agent => ui::agent::render(frame, area, state),
+        Tab::Wiki => ui::wiki::render(frame, area, state),
+        Tab::Social => ui::social::render(frame, area, state),
         Tab::Settings => ui::settings::render(frame, area, state),
     }
 }
 
 fn render_library_body(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let cols = Layout::horizontal([
-        Constraint::Percentage(35),
-        Constraint::Percentage(65),
-    ])
-    .split(area);
+    let cols =
+        Layout::horizontal([Constraint::Percentage(35), Constraint::Percentage(65)]).split(area);
 
     ui::library::render(frame, cols[0], state);
     ui::episodes::render(frame, cols[1], state);
@@ -103,12 +116,17 @@ fn render_status(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     if let Some(ref dl_status) = dl_status {
         spans.push(Span::styled(
             dl_status,
-            Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::styled(" | ", Style::default().fg(Color::DarkGray)));
     }
 
-    spans.push(Span::styled(&state.status, Style::default().fg(Color::Gray)));
+    spans.push(Span::styled(
+        &state.status,
+        Style::default().fg(Color::Gray),
+    ));
 
     if let Some(ref toast) = state.toasts.last() {
         spans.push(Span::styled(" | ", Style::default().fg(Color::DarkGray)));
@@ -127,11 +145,23 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let label = match state.mode {
         Mode::SearchInput => "Search: ",
         Mode::SubscribeInput => "Subscribe: ",
+        Mode::RelayInput => "Relay: ",
+        Mode::AgentInput => "Agent: ",
+        Mode::AgentMemoryInput => "Memory key=value: ",
+        Mode::AgentTaskInput => "Task: ",
+        Mode::AgentNoteInput => "Note: ",
+        Mode::EpisodeCommentInput => "Comment: ",
         _ => return,
     };
     let value = match state.mode {
         Mode::SearchInput => &state.search_input,
         Mode::SubscribeInput => &state.subscribe_input,
+        Mode::RelayInput => &state.relay_input,
+        Mode::AgentInput => &state.agent_input,
+        Mode::AgentMemoryInput => &state.agent_memory_input,
+        Mode::AgentTaskInput => &state.agent_task_input,
+        Mode::AgentNoteInput => &state.agent_note_input,
+        Mode::EpisodeCommentInput => &state.episode_comment_input,
         _ => return,
     };
 

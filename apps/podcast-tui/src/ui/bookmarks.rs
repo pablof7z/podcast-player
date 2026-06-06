@@ -11,21 +11,22 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" Up Next ({}) ", state.queue.len()));
+        .title(format!(" Bookmarks ({}) ", state.bookmarks.len()));
 
-    if state.queue.is_empty() {
-        let text = Paragraph::new("Queue is empty. Press 'a' on an episode to add.").block(block);
+    if state.bookmarks.is_empty() {
+        let text = Paragraph::new("No starred episodes. Press 's' on an episode to bookmark it.")
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
 
-    let items: Vec<ListItem> = state
-        .queue
+    let items = state
+        .bookmarks
         .iter()
         .enumerate()
-        .map(|(i, ep)| {
-            let selected = i == state.selected_queue;
-            let base_style = if selected {
+        .map(|(index, episode)| {
+            let selected = index == state.selected_bookmark;
+            let base = if selected {
                 Style::default()
                     .fg(Color::Black)
                     .bg(Color::Cyan)
@@ -33,21 +34,24 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             } else {
                 Style::default().fg(Color::White)
             };
-            let mut spans = vec![
-                Span::styled(format!("{}. ", i + 1), Style::default().fg(Color::DarkGray)),
-                Span::styled(&ep.title, base_style),
-            ];
+            let mut spans = vec![Span::styled(&episode.title, base)];
             let mut meta = Vec::new();
-            if let Some(dur) = ep.duration_secs {
-                meta.push(format::duration(dur));
+            if let Some(show) = &episode.podcast_title {
+                meta.push(show.clone());
+            }
+            if let Some(duration) = episode.duration_secs {
+                meta.push(format::duration(duration));
+            }
+            if episode.played {
+                meta.push("played".to_string());
             }
             let active_download = state
                 .downloads
                 .iter()
-                .find(|download| download.episode_id == ep.id)
+                .find(|download| download.episode_id == episode.id)
                 .map(|download| download.state.as_str());
             if let Some(download_status) =
-                format::download_status(ep.download_path.as_deref(), active_download)
+                format::download_status(episode.download_path.as_deref(), active_download)
             {
                 meta.push(download_status);
             }
@@ -59,8 +63,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             }
             ListItem::new(Line::from(spans))
         })
-        .collect();
+        .collect::<Vec<_>>();
 
-    let list = List::new(items).block(block);
-    frame.render_widget(list, area);
+    frame.render_widget(List::new(items).block(block), area);
 }

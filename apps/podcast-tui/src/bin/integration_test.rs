@@ -140,10 +140,55 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
         episode_played(u, &episode_id) == Some(false)
     })
-    .ok_or_else(|| {
-        format!("timed out waiting for episode {episode_id} to read played == false")
-    })?;
+    .ok_or_else(|| format!("timed out waiting for episode {episode_id} to read played == false"))?;
     println!("[integration] PASS: episode.played == false");
+
+    // ---- 13. Download control routing smoke ------------------------------
+    println!("[integration] dispatching download control no-ops...");
+    runtime
+        .pause_download(&episode_id)
+        .map_err(|e| format!("pause_download dispatch failed: {e}"))?;
+    runtime
+        .resume_download(&episode_id)
+        .map_err(|e| format!("resume_download dispatch failed: {e}"))?;
+    runtime
+        .cancel_download(&episode_id)
+        .map_err(|e| format!("cancel_download dispatch failed: {e}"))?;
+    runtime
+        .cancel_all_downloads()
+        .map_err(|e| format!("cancel_all_downloads dispatch failed: {e}"))?;
+    runtime
+        .delete_download(&episode_id)
+        .map_err(|e| format!("delete_download dispatch failed: {e}"))?;
+    println!("[integration] PASS: download controls dispatched");
+
+    // ---- 14. Episode detail control routing smoke ------------------------
+    println!("[integration] dispatching episode detail controls...");
+    runtime
+        .fetch_transcript(&episode_id)
+        .map_err(|e| format!("fetch_transcript dispatch failed: {e}"))?;
+    runtime
+        .fetch_chapters(&episode_id)
+        .map_err(|e| format!("fetch_chapters dispatch failed: {e}"))?;
+    runtime
+        .compile_chapters(&episode_id)
+        .map_err(|e| format!("compile_chapters dispatch failed: {e}"))?;
+    runtime
+        .fetch_comments(&episode_id)
+        .map_err(|e| format!("fetch_comments dispatch failed: {e}"))?;
+    runtime
+        .summarize_episode(&episode_id)
+        .map_err(|e| format!("summarize_episode dispatch failed: {e}"))?;
+    runtime
+        .reset_progress(&episode_id)
+        .map_err(|e| format!("reset_progress dispatch failed: {e}"))?;
+    runtime
+        .set_sleep_timer(Some(15 * 60))
+        .map_err(|e| format!("set_sleep_timer dispatch failed: {e}"))?;
+    runtime
+        .set_sleep_timer(None)
+        .map_err(|e| format!("cancel_sleep_timer dispatch failed: {e}"))?;
+    println!("[integration] PASS: episode detail controls dispatched");
 
     // ---- 13 + 14. set_default_playback_rate 1.5, assert speed 1.5 --------
     println!("[integration] dispatching settings set_default_playback_rate 1.5…");
@@ -157,6 +202,128 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     })
     .ok_or_else(|| "timed out waiting for settings.default_playback_rate == 1.5".to_string())?;
     println!("[integration] PASS: settings.default_playback_rate == 1.5");
+
+    // ---- 15. Relay editor settings round-trip ----------------------------
+    let relay_url = "wss://tui-integration.invalid";
+    println!("[integration] adding configured relay...");
+    runtime
+        .add_relay(relay_url, "read")
+        .map_err(|e| format!("add_relay dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).as_deref() == Some("read")
+    })
+    .ok_or_else(|| "timed out waiting for relay add".to_string())?;
+    println!("[integration] PASS: relay added");
+
+    runtime
+        .set_relay_role(relay_url, "write")
+        .map_err(|e| format!("set_relay_role dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).as_deref() == Some("write")
+    })
+    .ok_or_else(|| "timed out waiting for relay role update".to_string())?;
+    println!("[integration] PASS: relay role updated");
+
+    runtime
+        .remove_relay(relay_url)
+        .map_err(|e| format!("remove_relay dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).is_none()
+    })
+    .ok_or_else(|| "timed out waiting for relay removal".to_string())?;
+    println!("[integration] PASS: relay removed");
+
+    // ---- 15 + 16. Agent chat round-trip ---------------------------------
+    println!("[integration] sending agent chat message…");
+    runtime
+        .send_agent_message("summarize my queue")
+        .map_err(|e| format!("agent send dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        u.agent
+            .as_ref()
+            .map(|agent| agent.messages.len() >= 2)
+            .unwrap_or(false)
+    })
+    .ok_or_else(|| "timed out waiting for agent messages".to_string())?;
+    println!("[integration] PASS: agent chat projected messages");
+
+    // ---- 17 + 18. Agent memory CRUD -------------------------------------
+    println!("[integration] remembering agent memory fact…");
+    runtime
+        .remember_memory("tui_test_pref", "agent parity")
+        .map_err(|e| format!("remember memory dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        memory_contains(u, "tui_test_pref", "agent parity")
+    })
+    .ok_or_else(|| "timed out waiting for memory fact".to_string())?;
+    println!("[integration] PASS: memory fact projected");
+
+    println!("[integration] forgetting agent memory fact…");
+    runtime
+        .forget_memory("tui_test_pref")
+        .map_err(|e| format!("forget memory dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        !u.memory_facts
+            .iter()
+            .any(|fact| fact.key == "tui_test_pref")
+    })
+    .ok_or_else(|| "timed out waiting for memory fact removal".to_string())?;
+    println!("[integration] PASS: memory fact removed");
+
+    // ---- 19 + 20. Agent task CRUD/run -----------------------------------
+    println!("[integration] creating agent task…");
+    runtime
+        .create_agent_task(
+            "TUI Smoke Task",
+            "once",
+            "podcast.agent",
+            r#"{"op":"clear"}"#,
+            Some("integration smoke"),
+        )
+        .map_err(|e| format!("create task dispatch failed: {e}"))?;
+    let snapshot = wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_id(u, "TUI Smoke Task").is_some()
+    })
+    .ok_or_else(|| "timed out waiting for created task".to_string())?;
+    let task_id = agent_task_id(&snapshot, "TUI Smoke Task")
+        .ok_or_else(|| "created task missing from satisfying snapshot".to_string())?;
+    println!("[integration] PASS: agent task projected ({task_id})");
+
+    runtime
+        .disable_agent_task(&task_id)
+        .map_err(|e| format!("disable task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_enabled(u, &task_id) == Some(false)
+    })
+    .ok_or_else(|| "timed out waiting for disabled task".to_string())?;
+    println!("[integration] PASS: agent task disabled");
+
+    runtime
+        .enable_agent_task(&task_id)
+        .map_err(|e| format!("enable task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_enabled(u, &task_id) == Some(true)
+    })
+    .ok_or_else(|| "timed out waiting for enabled task".to_string())?;
+    println!("[integration] PASS: agent task enabled");
+
+    runtime
+        .run_agent_task_now(&task_id)
+        .map_err(|e| format!("run task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_status(u, &task_id).as_deref() == Some("completed")
+    })
+    .ok_or_else(|| "timed out waiting for task run completion".to_string())?;
+    println!("[integration] PASS: agent task run_now completed");
+
+    runtime
+        .delete_agent_task(&task_id)
+        .map_err(|e| format!("delete task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_status(u, &task_id).is_none()
+    })
+    .ok_or_else(|| "timed out waiting for task deletion".to_string())?;
+    println!("[integration] PASS: agent task deleted");
 
     // `runtime` drops here, unregistering the kernel cleanly before the
     // temp dir is removed by the caller.
@@ -226,6 +393,45 @@ fn episode_played(update: &PodcastUpdate, episode_id: &str) -> Option<bool> {
         .flat_map(|p| p.episodes.iter())
         .find(|e| e.id == episode_id)
         .map(|e| e.played)
+}
+
+fn memory_contains(update: &PodcastUpdate, key: &str, value: &str) -> bool {
+    update
+        .memory_facts
+        .iter()
+        .any(|fact| fact.key == key && fact.value == value)
+}
+
+fn agent_task_id(update: &PodcastUpdate, title: &str) -> Option<String> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.title == title)
+        .map(|task| task.id.clone())
+}
+
+fn agent_task_enabled(update: &PodcastUpdate, task_id: &str) -> Option<bool> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.id == task_id)
+        .map(|task| task.is_enabled)
+}
+
+fn agent_task_status(update: &PodcastUpdate, task_id: &str) -> Option<String> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.id == task_id)
+        .map(|task| task.status.clone())
+}
+
+fn relay_role(update: &PodcastUpdate, url: &str) -> Option<String> {
+    update
+        .configured_relays
+        .iter()
+        .find(|relay| relay.url == url)
+        .map(|relay| relay.role.clone())
 }
 
 /// Create a unique, hermetic temp data dir under the system temp directory.

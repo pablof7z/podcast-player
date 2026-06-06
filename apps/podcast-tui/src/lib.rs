@@ -5,9 +5,17 @@
 //! kernel.  Audio playback is handled by an `mpv` subprocess capability
 //! host (falls back to a stub on systems without mpv).
 
+mod agent_state;
 pub mod app;
 pub mod audio_host;
 pub mod bridge;
+mod download_state;
 pub mod input;
+mod navigation;
+pub mod rows;
 pub mod runtime;
+mod runtime_actions;
+pub mod settings_catalog;
+mod settings_state;
 pub mod ui;
+mod update;

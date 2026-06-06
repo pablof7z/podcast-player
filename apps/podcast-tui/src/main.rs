@@ -18,10 +18,7 @@ use podcast_tui::runtime::AppRuntime;
 use podcast_tui::ui;
 
 #[derive(Debug, Parser)]
-#[command(
-    name = "podcast-tui",
-    about = "Terminal player for the Podcast app"
-)]
+#[command(name = "podcast-tui", about = "Terminal player for the Podcast app")]
 struct Args {
     #[arg(long)]
     data_dir: Option<String>,

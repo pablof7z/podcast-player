@@ -99,7 +99,9 @@ impl AudioHost {
 
     fn handle_mpv_command(&mut self, cmd: AudioCommand) -> String {
         match cmd {
-            AudioCommand::Load { url, position_secs, .. } => {
+            AudioCommand::Load {
+                url, position_secs, ..
+            } => {
                 self.kill_mpv();
                 self.last_url = Some(url.clone());
                 self.last_position_secs = position_secs;
@@ -162,7 +164,9 @@ impl AudioHost {
 
     fn handle_stub_command(&mut self, cmd: AudioCommand) -> String {
         match cmd {
-            AudioCommand::Load { url, position_secs, .. } => {
+            AudioCommand::Load {
+                url, position_secs, ..
+            } => {
                 self.last_url = Some(url.clone());
                 self.last_position_secs = position_secs;
                 self.is_playing = true;
@@ -208,7 +212,10 @@ impl AudioHost {
     fn mpv_ipc_command(&self, args: &[&str]) -> std::io::Result<()> {
         let mut stream = UnixStream::connect(&self.ipc_path)?;
         let req = MpvRequest {
-            command: args.iter().map(|s| serde_json::Value::String(s.to_string())).collect(),
+            command: args
+                .iter()
+                .map(|s| serde_json::Value::String(s.to_string()))
+                .collect(),
         };
         let line = serde_json::to_string(&req)? + "\n";
         stream.write_all(line.as_bytes())?;

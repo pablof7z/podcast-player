@@ -5,6 +5,7 @@ use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
+use crate::ui::format;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = Block::default()
@@ -13,7 +14,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .title(format!(" Inbox ({}) ", state.inbox.len()));
 
     if state.inbox.is_empty() {
-        let text = Paragraph::new("Inbox is empty. Listen to episodes to triage them.").block(block);
+        let text =
+            Paragraph::new("Inbox is empty. Listen to episodes to triage them.").block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -33,22 +35,27 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 Style::default().fg(Color::White)
             };
 
-            let mut spans = vec![Span::styled(&row.episode_title,
-                base_style,
-            )];
+            let mut spans = vec![Span::styled(&row.episode_title, base_style)];
 
             let mut meta_parts = Vec::new();
             if !row.podcast_title.is_empty() {
                 meta_parts.push(row.podcast_title.clone());
             }
             if let Some(dur) = row.duration_secs {
-                meta_parts.push(format_duration(dur));
+                meta_parts.push(format::duration(dur));
             }
             if row.priority_score > 0.0 {
                 meta_parts.push(format!("{:.0}%", row.priority_score * 100.0));
             }
             if !row.ai_categories.is_empty() {
                 meta_parts.push(row.ai_categories.join(", "));
+            }
+            if let Some(download) = state
+                .downloads
+                .iter()
+                .find(|download| download.episode_id == row.episode_id)
+            {
+                meta_parts.push(format!("download {}", download.state));
             }
             if !meta_parts.is_empty() {
                 spans.push(Span::styled(
@@ -70,16 +77,4 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 
     let list = List::new(items).block(block);
     frame.render_widget(list, area);
-}
-
-fn format_duration(secs: f64) -> String {
-    let total = secs as u64;
-    let hours = total / 3600;
-    let minutes = (total % 3600) / 60;
-    let seconds = total % 60;
-    if hours > 0 {
-        format!("{}:{:02}:{:02}", hours, minutes, seconds)
-    } else {
-        format!("{}:{:02}", minutes, seconds)
-    }
 }

@@ -2,17 +2,17 @@ use std::ffi::{c_char, c_void, CStr, CString};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex, OnceLock};
 
+use nmp_app_podcast::ffi::PodcastUpdate;
 use nmp_app_podcast::{
     nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_unregister,
     nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
 };
-use nmp_app_podcast::ffi::PodcastUpdate;
 use nmp_ffi::{
     nmp_app_dispatch_action, nmp_app_free, nmp_app_free_string, nmp_app_new,
     nmp_app_set_capability_callback, nmp_app_start, NmpApp,
 };
 use podcast_feeds::http::{HttpMethod, HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::audio_host::AudioHost;
 use crate::bridge::{self, NmpEvent};
@@ -39,11 +39,7 @@ impl AppRuntime {
         let audio_host = Arc::new(Mutex::new(AudioHost::new()));
         let _ = AUDIO_HOST.set(audio_host);
 
-        nmp_app_set_capability_callback(
-            app,
-            std::ptr::null_mut(),
-            Some(capability_handler),
-        );
+        nmp_app_set_capability_callback(app, std::ptr::null_mut(), Some(capability_handler));
 
         let podcast = nmp_app_podcast_register(app);
         if podcast.is_null() {
@@ -52,7 +48,8 @@ impl AppRuntime {
         }
 
         if let Some(dir) = data_dir {
-            let dir_cstr = CString::new(dir.as_str()).map_err(|_| "data_dir contains NUL".to_string())?;
+            let dir_cstr =
+                CString::new(dir.as_str()).map_err(|_| "data_dir contains NUL".to_string())?;
             nmp_app_podcast_set_data_dir(podcast, dir_cstr.as_ptr());
         }
 
@@ -71,8 +68,7 @@ impl AppRuntime {
         ))
     }
 
-    pub fn dispatch_action(
-        &self, namespace: &str, action_json: &str) -> Result<String> {
+    pub fn dispatch_action(&self, namespace: &str, action_json: &str) -> Result<String> {
         let namespace = CString::new(namespace)
             .map_err(|_| "action namespace contains NUL byte".to_string())?;
         let action =
@@ -92,150 +88,6 @@ impl AppRuntime {
 
     pub fn dispatch_action_value(&self, namespace: &str, action: &Value) -> Result<String> {
         self.dispatch_action(namespace, &action.to_string())
-    }
-
-    pub fn play_episode(&self, episode_id: &str, _position_secs: f64) -> Result<String> {
-        let action = json!({
-            "op": "play",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn pause(&self) -> Result<String> {
-        let action = json!({"op": "pause"}).to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn resume(&self) -> Result<String> {
-        let action = json!({"op": "play"}).to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn seek(&self, position_secs: f64) -> Result<String> {
-        let action = json!({
-            "op": "seek",
-            "position_secs": position_secs,
-        })
-        .to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn skip_forward(&self) -> Result<String> {
-        let action = json!({"op": "skip_forward"}).to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn skip_backward(&self) -> Result<String> {
-        let action = json!({"op": "skip_backward"}).to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn set_speed(&self, speed: f32) -> Result<String> {
-        let action = json!({
-            "op": "set_speed",
-            "speed": speed,
-        })
-        .to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn set_volume(&self, volume: f32) -> Result<String> {
-        let action = json!({
-            "op": "set_volume",
-            "volume": volume,
-        })
-        .to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn stop(&self) -> Result<String> {
-        let action = json!({"op": "stop"}).to_string();
-        self.dispatch_action("podcast.player", &action)
-    }
-
-    pub fn subscribe(&self, feed_url: &str) -> Result<String> {
-        let action = json!({
-            "op": "subscribe",
-            "feed_url": feed_url,
-        })
-        .to_string();
-        self.dispatch_action("podcast", &action)
-    }
-
-    pub fn search_itunes(&self, query: &str) -> Result<String> {
-        let action = json!({
-            "op": "search_itunes",
-            "query": query,
-        })
-        .to_string();
-        self.dispatch_action("podcast", &action)
-    }
-
-    pub fn download_episode(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "download",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast", &action)
-    }
-
-    pub fn add_to_queue(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "add_last",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast.queue", &action)
-    }
-
-    pub fn remove_from_queue(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "remove",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast.queue", &action)
-    }
-
-    pub fn mark_played(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "mark_listened",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast.inbox", &action)
-    }
-
-    pub fn mark_unplayed(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "mark_unlistened",
-            "episode_id": episode_id,
-        })
-        .to_string();
-        self.dispatch_action("podcast.inbox", &action)
-    }
-
-    pub fn star(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "star_episode",
-            "episode_id": episode_id,
-            "starred": true,
-        })
-        .to_string();
-        self.dispatch_action("podcast", &action)
-    }
-
-    pub fn unstar(&self, episode_id: &str) -> Result<String> {
-        let action = json!({
-            "op": "star_episode",
-            "episode_id": episode_id,
-            "starred": false,
-        })
-        .to_string();
-        self.dispatch_action("podcast", &action)
     }
 
     pub fn poll_audio_position(&self) {
@@ -306,7 +158,9 @@ fn handle_http(payload_json: &str) -> String {
     let http_req: HttpRequest = match serde_json::from_str(payload_json) {
         Ok(r) => r,
         Err(e) => {
-            let res = HttpResult::Error { message: format!("decode: {e}") };
+            let res = HttpResult::Error {
+                message: format!("decode: {e}"),
+            };
             return serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string());
         }
     };
@@ -346,17 +200,25 @@ fn handle_http(payload_json: &str) -> String {
                 .collect();
             match resp.text() {
                 Ok(body) => {
-                    let res = HttpResult::Ok { status_code, headers, body };
+                    let res = HttpResult::Ok {
+                        status_code,
+                        headers,
+                        body,
+                    };
                     serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string())
                 }
                 Err(e) => {
-                    let res = HttpResult::Error { message: format!("body: {e}") };
+                    let res = HttpResult::Error {
+                        message: format!("body: {e}"),
+                    };
                     serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string())
                 }
             }
         }
         Err(e) => {
-            let res = HttpResult::Error { message: format!("transport: {e}") };
+            let res = HttpResult::Error {
+                message: format!("transport: {e}"),
+            };
             serde_json::to_string(&res).unwrap_or_else(|_| "{}".to_string())
         }
     }
