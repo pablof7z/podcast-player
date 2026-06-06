@@ -243,6 +243,7 @@ struct AgentChatView: View {
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .accessibilityIdentifier("agent.error")
                 Spacer(minLength: 0)
                 if session.lastFailedMessage != nil {
                     Button("Retry") {
@@ -262,6 +263,7 @@ struct AgentChatView: View {
         VStack(alignment: .trailing, spacing: 2) {
             HStack(alignment: .bottom, spacing: AppTheme.Spacing.sm) {
                 TextField("Message your agent…", text: $draft, axis: .vertical)
+                    .accessibilityIdentifier("agent.input")
                     .textFieldStyle(.plain)
                     .focused($inputFocused)
                     .lineLimit(1...5)

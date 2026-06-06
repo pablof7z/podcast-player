@@ -214,12 +214,31 @@ let project = Project(
                 ]
             )
         ),
+        .target(
+            name: "\(appName)UITests",
+            destinations: [.iPhone],
+            product: .uiTests,
+            bundleId: "\(appBundleID).uitests",
+            deploymentTargets: deploymentTarget,
+            sources: ["AppUITests/Sources/**"],
+            dependencies: [.target(name: appName)],
+            settings: .settings(
+                base: [
+                    "GENERATE_INFOPLIST_FILE": "YES",
+                    "PRODUCT_BUNDLE_IDENTIFIER": "\(appBundleID).uitests",
+                    "TEST_TARGET_NAME": "\(appName)",
+                ]
+            )
+        ),
     ],
     schemes: [
         .scheme(
             name: appName,
             buildAction: .buildAction(targets: [.target(appName), .target("\(appName)Widget")]),
-            testAction: .targets([.testableTarget(target: .target("\(appName)Tests"))]),
+            testAction: .targets([
+                .testableTarget(target: .target("\(appName)Tests")),
+                .testableTarget(target: .target("\(appName)UITests")),
+            ]),
             runAction: .runAction(configuration: .debug),
             archiveAction: .archiveAction(configuration: .release),
             profileAction: .profileAction(configuration: .release),
