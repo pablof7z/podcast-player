@@ -15,11 +15,11 @@ import Foundation
 enum UITestSeeder {
     static func seedIfNeeded() {
         guard CommandLine.arguments.contains("--UITestSeed") else { return }
-        // Switch Persistence.shared to synchronous writes so position flushes are
-        // guaranteed on disk before a SIGKILL force-quit. Must be set before
-        // Persistence.shared is first accessed (which happens when AppStateStore
-        // is initialized, after this AppDelegate call returns).
-        Persistence.forceImmediateWriteForUITests = true
+        // Request synchronous position-flush writes so that the SQLite episode
+        // store is updated before a SIGKILL force-quit can race the background
+        // Task. Only the flushPendingPositions path uses this; all other writes
+        // keep their normal background-Task behavior so the app stays responsive.
+        AppStateStore.synchronousPositionFlushForUITests = true
         guard let base = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask).first
         else { return }
