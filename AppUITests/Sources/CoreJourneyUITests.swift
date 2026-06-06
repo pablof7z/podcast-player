@@ -12,11 +12,21 @@ final class CoreJourneyUITests: XCTestCase {
         t.name = name; t.lifetime = .keepAlways; add(t)
     }
 
-    /// Navigate Home -> The Daily -> first episode detail. Returns true on success.
+    /// Tap the first subscribed podcast (visible on Home) -> first episode detail. Returns true on success.
     @discardableResult
     private func openFirstEpisodeDetail(_ app: XCUIApplication) -> Bool {
-        guard robustTap(staticTextContaining(app, "The Daily")) else { return false }
-        // Wait for show detail (Episodes header).
+        // The Home tab shows podcast rows with identifier 'library-podcast-row' (a Button in SwiftUI).
+        let podcastRowBtn = app.buttons.matching(
+            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
+        let target: XCUIElement
+        if podcastRowBtn.waitForExistence(timeout: 6) {
+            target = podcastRowBtn
+        } else {
+            // Fallback: tap by podcast title text.
+            target = staticTextContaining(app, "This American Life")
+        }
+        guard robustTap(target) else { return false }
+        // Wait for show detail (Episodes header or at least some episode cells).
         _ = staticTextContaining(app, "Episodes").waitForExistence(timeout: 8)
         // Episode rows are cells after the show-header cell and the "Episodes"
         // label cell. cell[2] is the first real episode.
@@ -144,8 +154,11 @@ final class CoreJourneyUITests: XCTestCase {
     func testP0_04_ResumeReopenByTitle() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        // Open The Daily show.
-        XCTAssertTrue(robustTap(staticTextContaining(app, "The Daily")), "open show")
+        // Open the first subscribed show (visible on Home).
+        let showRowBtn = app.buttons.matching(
+            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
+        let showTarget = showRowBtn.waitForExistence(timeout: 6) ? showRowBtn : staticTextContaining(app, "This American Life")
+        XCTAssertTrue(robustTap(showTarget), "open show")
         _ = staticTextContaining(app, "Episodes").waitForExistence(timeout: 8)
         // Capture the first episode's title, then open it.
         let cells = app.cells
