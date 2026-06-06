@@ -20,14 +20,10 @@ enum UITestSeeder {
         else { return }
         let dir = base.appendingPathComponent("PodcastLibrary", isDirectory: true)
         let file = dir.appendingPathComponent("podcasts.json")
-        // Skip if a real subscription is already present (e.g. user ran tests
-        // twice — the second run should not clobber real data written in setUp).
-        if let existing = try? Data(contentsOf: file),
-           let json = try? JSONSerialization.jsonObject(with: existing) as? [String: Any],
-           let podcasts = json["podcasts"] as? [[String: Any]],
-           !podcasts.isEmpty {
-            return
-        }
+        // Always overwrite when running under --UITestSeed: the kernel may have
+        // replaced a prior seed with real RSS data (or a stale seed from the last
+        // test run). Re-seeding gives every test run a known-good starting state.
+        try? FileManager.default.removeItem(at: file)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let seed = """
         {
