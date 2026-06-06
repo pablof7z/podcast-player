@@ -270,7 +270,8 @@ final class LivePlaybackHostAdapter: PlaybackHostProtocol, @unchecked Sendable {
                 logger.error("seekTo: no episode loaded")
                 return nil
             }
-            let clamped = max(0, positionSeconds)
+            let duration = playback.duration > 0 ? playback.duration : Double.infinity
+            let clamped = min(max(0, positionSeconds), duration)
             playback.seek(to: clamped)
             logger.info("seekTo: \(clamped)")
             return clamped
