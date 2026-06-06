@@ -35,7 +35,7 @@ enum UITestSeeder {
           "podcasts": [{
             "podcast": {
               "id": "a1a1ffff-0001-0001-0001-000000000001",
-              "feed_url": "https://www.thisamericanlife.org/podcast/rss.xml",
+              "feed_url": "https://test.podcast.local/rss.xml",
               "title": "This American Life",
               "author": "This American Life",
               "image_url": "https://thisamericanlife.org/sites/all/themes/thislife/img/tal-logo-3000x3000.png",
@@ -52,8 +52,8 @@ enum UITestSeeder {
               "title": "137: The Book That Changed Your Life",
               "description": "Books that shaped peoples lives.",
               "pub_date": "2026-05-01T00:00:00Z",
-              "duration_secs": 3600.0,
-              "enclosure_url": "https://pfx.vpixl.com/6qj4J/dts.podtrac.com/redirect.mp/pdst.fm/e/prefix.up.audio/s/npr.simplecastaudio.com/d3081dd9-fcaf-445a-977c-4f56c28f5a6e/episodes/e55b1946-2658-4592-9afe-1c2a3033a31c/audio/128/default.mp3",
+              "duration_secs": 300.0,
+              "enclosure_url": "https://npr.simplecastaudio.com/d3081dd9-fcaf-445a-977c-4f56c28f5a6e/episodes/e55b1946-2658-4592-9afe-1c2a3033a31c/audio/128/default.mp3",
               "enclosure_mime_type": "audio/mpeg",
               "position_secs": 0.0,
               "played": false,
