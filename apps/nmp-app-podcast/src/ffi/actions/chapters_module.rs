@@ -11,9 +11,9 @@
 //!
 //! ## Wire shape
 //!
-//! `podcast.chapters.compile { episode_id }` — synthesize equal-length
-//! stub chapters from the cached transcript for `episode_id`. Returns
-//! `{"ok":true,"status":"compiling","chapter_count":<n>}` on success,
+//! `podcast.chapters.compile { episode_id }` — synthesize transcript-grounded
+//! chapters from the cached transcript for `episode_id`. Returns
+//! `{"ok":true,"status":"compiling","episode_id":<id>}` on success,
 //! `{"ok":true,"status":"already_has_chapters"}` when the episode
 //! already has chapters (RSS or prior compile), or
 //! `{"ok":false,"error":"no_transcript"|"no_duration"|…}` on the

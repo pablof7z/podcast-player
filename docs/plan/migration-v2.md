@@ -323,11 +323,11 @@ Status: **todo**.
 
 ## Milestone M4 — Snapshot completion for Swift-only preserved state
 
-**Done when:** Lines 122–153 of
-`App/Sources/Bridge/AppStateStore+KernelProjection.swift` (the
-"Preserve Swift-only episode state across projection passes" block) are
-deleted because nothing in that block needs preserving — every field is
-projected by Rust.
+**Done when:** the preserved-state block in
+`App/Sources/Bridge/AppStateStore+KernelProjection.swift` is deleted because
+nothing in that block needs preserving — every field is projected by Rust. The
+remaining chapters fallback is blocked on deleting the legacy Swift
+`AIChapterCompiler` call sites.
 
 For each preserved field, the work to remove it:
 
@@ -337,9 +337,9 @@ For each preserved field, the work to remove it:
 | `Episode.triageDecision`, `triageRationale`, `triageIsHero` | Project from the inbox/triage Rust store onto `EpisodeSummary` (already partially wired). Make sure refresh paths emit a non-empty triage so the projection is idempotent. |
 | `Episode.adSegments` fallback | Already projected. Delete only the Swift-side fallback; keep the Rust projection. |
 | `Episode.metadataIndexed` | Project from `podcast-knowledge`'s index state. Add a `metadata_indexed: bool` to `EpisodeSummary` and source it from the knowledge store. |
-| AI-generated chapters fallback | Emit AI chapters in the Rust projection with `is_ai_generated: true` already present in `ChapterSummary`. Replace the Swift merge with the simpler "Rust ships the full list". |
+| AI-generated chapters fallback | Rust already persists/projects AI chapters via `podcast.chapters.compile`. Move Player, Episode Detail, and transcript ingest off the legacy Swift `AIChapterCompiler`, then delete the Swift merge because Rust ships the full list. |
 
-Status: **todo**.
+Status: **partial** — Rust projection exists; Swift compiler deletion remains.
 
 ---
 

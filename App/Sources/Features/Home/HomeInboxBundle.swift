@@ -3,10 +3,9 @@ import Foundation
 // MARK: - HomeInboxBundle
 //
 // Composes the Home "Inbox" section's hero + secondaries view-model from
-// the persisted AI triage decisions on `state.episodes`. The Inbox UI is
-// the same Featured layout that previously read from `AgentPicksService`
-// — we just swap the data source so the picks are persistent agent
-// decisions (with rationale) instead of an ephemeral curation cache.
+// the persisted AI triage decisions on `state.episodes`. This is distinct
+// from the "Recommended for you" rail, which renders Rust-projected
+// `PodcastUpdate.picks` directly.
 //
 // Hero rank prefers the agent's explicit `triageIsHero` flag — the
 // LLM is allowed to crown one inbox pick per pass as the editorial
@@ -16,9 +15,8 @@ import Foundation
 @MainActor
 enum HomeInboxBundleBuilder {
 
-    /// Max secondaries surfaced below the hero card. Mirrors the cap the
-    /// previous `AgentPicksService` honoured so layout assumptions in
-    /// `HomeFeaturedSection` stay valid.
+    /// Max secondaries surfaced below the hero card. Kept stable so layout
+    /// assumptions in `HomeFeaturedSection` stay valid.
     static let secondariesCap = 4
 
     /// Compose the bundle from the store. `allowedSubscriptionIDs` is
