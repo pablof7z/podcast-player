@@ -5,6 +5,7 @@ use nmp_app_podcast::ffi::{
     WikiArticle,
 };
 
+pub use crate::agent_state::AgentSection;
 pub use crate::rows::{DownloadRow, EpisodeRow, InboxRow, PodcastRow, SearchResult};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,6 +79,9 @@ pub enum Mode {
     SearchInput,
     SubscribeInput,
     AgentInput,
+    AgentMemoryInput,
+    AgentTaskInput,
+    AgentNoteInput,
     EpisodeDetail { scroll: usize },
 }
 
@@ -120,6 +124,9 @@ pub struct AppState {
     pub search_input: String,
     pub subscribe_input: String,
     pub agent_input: String,
+    pub agent_memory_input: String,
+    pub agent_task_input: String,
+    pub agent_note_input: String,
     pub inbox: Vec<InboxRow>,
     pub selected_inbox: usize,
     pub clips: Vec<ClipSummary>,
@@ -127,12 +134,17 @@ pub struct AppState {
     pub wiki_articles: Vec<WikiArticle>,
     pub wiki_search_results: Vec<WikiArticle>,
     pub selected_wiki: usize,
+    pub agent_section: AgentSection,
     pub agent_messages: Vec<AgentMessageSummary>,
     pub agent_is_busy: bool,
     pub agent_picks: Vec<AgentPickSummary>,
+    pub selected_agent_pick: usize,
     pub agent_tasks: Vec<AgentTaskSummary>,
+    pub selected_agent_task: usize,
     pub agent_notes: Vec<AgentNoteSummary>,
+    pub selected_agent_note: usize,
     pub memory_facts: Vec<MemoryFact>,
+    pub selected_memory_fact: usize,
     pub comments: Vec<CommentSummary>,
     pub categories: Vec<CategoryBrowseItem>,
     pub active_account: Option<AccountSummary>,
@@ -170,6 +182,9 @@ impl Default for AppState {
             search_input: String::new(),
             subscribe_input: String::new(),
             agent_input: String::new(),
+            agent_memory_input: String::new(),
+            agent_task_input: String::new(),
+            agent_note_input: String::new(),
             inbox: Vec::new(),
             selected_inbox: 0,
             clips: Vec::new(),
@@ -177,12 +192,17 @@ impl Default for AppState {
             wiki_articles: Vec::new(),
             wiki_search_results: Vec::new(),
             selected_wiki: 0,
+            agent_section: AgentSection::Chat,
             agent_messages: Vec::new(),
             agent_is_busy: false,
             agent_picks: Vec::new(),
+            selected_agent_pick: 0,
             agent_tasks: Vec::new(),
+            selected_agent_task: 0,
             agent_notes: Vec::new(),
+            selected_agent_note: 0,
             memory_facts: Vec::new(),
+            selected_memory_fact: 0,
             comments: Vec::new(),
             categories: Vec::new(),
             active_account: None,

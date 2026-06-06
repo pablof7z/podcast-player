@@ -115,12 +115,15 @@ worktrees currently in flight.
 
 - **tui-feature-parity-followups.** `apps/podcast-tui` now has a parity
   foundation for bookmarks, clips, agent, wiki, social, settings, and queue
-  surfaces (see `docs/plan/tui-parity.md`). Remaining terminal-client slices:
-  downloads manager actions; episode-detail controls for transcripts, chapters,
-  summaries, comments, ad-skip, reset progress, and sleep timer; full settings
-  editors for relays/provider/STT/TTS/local models; memory/task/wiki/agent-note
-  CRUD once the corresponding kernel behavior is real; and focused TUI
-  integration scenarios beyond the current subscribe/queue/settings smoke.
+  surfaces (see `docs/plan/tui-parity.md`). The agent slice now wires chat,
+  picks, task CRUD/run, memory CRUD, and agent-note fetch/publish where the
+  kernel has real actions. Remaining terminal-client slices: downloads manager
+  actions; episode-detail controls for transcripts, chapters, summaries,
+  comments, ad-skip, reset progress, and sleep timer; full settings editors for
+  relays/provider/STT/TTS/local models; wiki generation/search and richer
+  agent note trust/conversation workflows once the corresponding kernel
+  behavior is real; and focused TUI integration scenarios beyond the current
+  subscribe/queue/settings/agent smoke.
 - **bunker-isconnecting-reactive.** `RemoteSignerView.connect()` sets
   `isConnecting = false` immediately after dispatching `signInBunker` (fire-
   and-forget). Should clear when `activeAccount` appears in snapshot (or on a

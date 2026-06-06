@@ -73,6 +73,9 @@ fn handle_mode_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) ->
         Mode::SearchInput => handle_search_input(state, runtime, key),
         Mode::SubscribeInput => handle_subscribe_input(state, runtime, key),
         Mode::AgentInput => handle_agent_input(state, runtime, key),
+        Mode::AgentMemoryInput => handle_agent_memory_input(state, runtime, key),
+        Mode::AgentTaskInput => handle_agent_task_input(state, runtime, key),
+        Mode::AgentNoteInput => handle_agent_note_input(state, runtime, key),
         Mode::EpisodeDetail { .. } => handle_episode_detail_key(state, runtime, key),
         Mode::Normal => false,
     }
@@ -147,6 +150,96 @@ fn handle_agent_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent)
     true
 }
 
+fn handle_agent_memory_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Esc => state.mode = Mode::Normal,
+        KeyCode::Enter => {
+            let input = state.agent_memory_input.trim().to_string();
+            state.agent_memory_input.clear();
+            state.mode = Mode::Normal;
+            match input.split_once('=') {
+                Some((key, value)) if !key.trim().is_empty() => {
+                    match runtime.remember_memory(key.trim(), value.trim()) {
+                        Ok(_) => state.push_toast("memory saved"),
+                        Err(e) => state.status = format!("memory error: {e}"),
+                    }
+                }
+                _ => state.status = "memory format: key=value".to_string(),
+            }
+        }
+        KeyCode::Backspace => {
+            state.agent_memory_input.pop();
+        }
+        KeyCode::Char(c) => state.agent_memory_input.push(c),
+        _ => {}
+    }
+    true
+}
+
+fn handle_agent_task_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Esc => state.mode = Mode::Normal,
+        KeyCode::Enter => {
+            let input = state.agent_task_input.trim().to_string();
+            state.agent_task_input.clear();
+            state.mode = Mode::Normal;
+            match parse_task_input(&input) {
+                Some((title, schedule, namespace, body, description)) => {
+                    match runtime.create_agent_task(
+                        title,
+                        schedule,
+                        namespace,
+                        body,
+                        description.filter(|text| !text.is_empty()),
+                    ) {
+                        Ok(_) => state.push_toast("task created"),
+                        Err(e) => state.status = format!("task error: {e}"),
+                    }
+                }
+                None => {
+                    state.status =
+                        "task format: title | schedule | namespace | json body | description"
+                            .to_string();
+                }
+            }
+        }
+        KeyCode::Backspace => {
+            state.agent_task_input.pop();
+        }
+        KeyCode::Char(c) => state.agent_task_input.push(c),
+        _ => {}
+    }
+    true
+}
+
+fn handle_agent_note_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Esc => state.mode = Mode::Normal,
+        KeyCode::Enter => {
+            let input = state.agent_note_input.trim().to_string();
+            state.agent_note_input.clear();
+            state.mode = Mode::Normal;
+            match input.split_once(' ') {
+                Some((recipient, content))
+                    if !recipient.trim().is_empty() && !content.trim().is_empty() =>
+                {
+                    match runtime.publish_agent_note(recipient.trim(), content.trim()) {
+                        Ok(_) => state.push_toast("agent note published"),
+                        Err(e) => state.status = format!("agent note error: {e}"),
+                    }
+                }
+                _ => state.status = "note format: recipient_pubkey_hex message".to_string(),
+            }
+        }
+        KeyCode::Backspace => {
+            state.agent_note_input.pop();
+        }
+        KeyCode::Char(c) => state.agent_note_input.push(c),
+        _ => {}
+    }
+    true
+}
+
 fn handle_episode_detail_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') => state.close_episode_detail(),
@@ -213,4 +306,17 @@ fn clip_selected_episode(state: &mut AppState, runtime: &AppRuntime) {
             Err(e) => state.status = format!("clip error: {e}"),
         }
     }
+}
+
+type TaskInputParts<'a> = (&'a str, &'a str, &'a str, &'a str, Option<&'a str>);
+
+fn parse_task_input(input: &str) -> Option<TaskInputParts<'_>> {
+    let parts = input.split('|').map(str::trim).collect::<Vec<_>>();
+    let [title, schedule, namespace, body, rest @ ..] = parts.as_slice() else {
+        return None;
+    };
+    if title.is_empty() || schedule.is_empty() || namespace.is_empty() || body.is_empty() {
+        return None;
+    }
+    Some((*title, *schedule, *namespace, *body, rest.first().copied()))
 }

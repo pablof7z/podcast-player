@@ -156,6 +156,98 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     .ok_or_else(|| "timed out waiting for settings.default_playback_rate == 1.5".to_string())?;
     println!("[integration] PASS: settings.default_playback_rate == 1.5");
 
+    // ---- 15 + 16. Agent chat round-trip ---------------------------------
+    println!("[integration] sending agent chat message…");
+    runtime
+        .send_agent_message("summarize my queue")
+        .map_err(|e| format!("agent send dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        u.agent
+            .as_ref()
+            .map(|agent| agent.messages.len() >= 2)
+            .unwrap_or(false)
+    })
+    .ok_or_else(|| "timed out waiting for agent messages".to_string())?;
+    println!("[integration] PASS: agent chat projected messages");
+
+    // ---- 17 + 18. Agent memory CRUD -------------------------------------
+    println!("[integration] remembering agent memory fact…");
+    runtime
+        .remember_memory("tui_test_pref", "agent parity")
+        .map_err(|e| format!("remember memory dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        memory_contains(u, "tui_test_pref", "agent parity")
+    })
+    .ok_or_else(|| "timed out waiting for memory fact".to_string())?;
+    println!("[integration] PASS: memory fact projected");
+
+    println!("[integration] forgetting agent memory fact…");
+    runtime
+        .forget_memory("tui_test_pref")
+        .map_err(|e| format!("forget memory dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        !u.memory_facts
+            .iter()
+            .any(|fact| fact.key == "tui_test_pref")
+    })
+    .ok_or_else(|| "timed out waiting for memory fact removal".to_string())?;
+    println!("[integration] PASS: memory fact removed");
+
+    // ---- 19 + 20. Agent task CRUD/run -----------------------------------
+    println!("[integration] creating agent task…");
+    runtime
+        .create_agent_task(
+            "TUI Smoke Task",
+            "once",
+            "podcast.agent",
+            r#"{"op":"clear"}"#,
+            Some("integration smoke"),
+        )
+        .map_err(|e| format!("create task dispatch failed: {e}"))?;
+    let snapshot = wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_id(u, "TUI Smoke Task").is_some()
+    })
+    .ok_or_else(|| "timed out waiting for created task".to_string())?;
+    let task_id = agent_task_id(&snapshot, "TUI Smoke Task")
+        .ok_or_else(|| "created task missing from satisfying snapshot".to_string())?;
+    println!("[integration] PASS: agent task projected ({task_id})");
+
+    runtime
+        .disable_agent_task(&task_id)
+        .map_err(|e| format!("disable task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_enabled(u, &task_id) == Some(false)
+    })
+    .ok_or_else(|| "timed out waiting for disabled task".to_string())?;
+    println!("[integration] PASS: agent task disabled");
+
+    runtime
+        .enable_agent_task(&task_id)
+        .map_err(|e| format!("enable task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_enabled(u, &task_id) == Some(true)
+    })
+    .ok_or_else(|| "timed out waiting for enabled task".to_string())?;
+    println!("[integration] PASS: agent task enabled");
+
+    runtime
+        .run_agent_task_now(&task_id)
+        .map_err(|e| format!("run task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_status(u, &task_id).as_deref() == Some("completed")
+    })
+    .ok_or_else(|| "timed out waiting for task run completion".to_string())?;
+    println!("[integration] PASS: agent task run_now completed");
+
+    runtime
+        .delete_agent_task(&task_id)
+        .map_err(|e| format!("delete task dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        agent_task_status(u, &task_id).is_none()
+    })
+    .ok_or_else(|| "timed out waiting for task deletion".to_string())?;
+    println!("[integration] PASS: agent task deleted");
+
     // `runtime` drops here, unregistering the kernel cleanly before the
     // temp dir is removed by the caller.
     Ok(())
@@ -224,6 +316,37 @@ fn episode_played(update: &PodcastUpdate, episode_id: &str) -> Option<bool> {
         .flat_map(|p| p.episodes.iter())
         .find(|e| e.id == episode_id)
         .map(|e| e.played)
+}
+
+fn memory_contains(update: &PodcastUpdate, key: &str, value: &str) -> bool {
+    update
+        .memory_facts
+        .iter()
+        .any(|fact| fact.key == key && fact.value == value)
+}
+
+fn agent_task_id(update: &PodcastUpdate, title: &str) -> Option<String> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.title == title)
+        .map(|task| task.id.clone())
+}
+
+fn agent_task_enabled(update: &PodcastUpdate, task_id: &str) -> Option<bool> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.id == task_id)
+        .map(|task| task.is_enabled)
+}
+
+fn agent_task_status(update: &PodcastUpdate, task_id: &str) -> Option<String> {
+    update
+        .agent_tasks
+        .iter()
+        .find(|task| task.id == task_id)
+        .map(|task| task.status.clone())
 }
 
 /// Create a unique, hermetic temp data dir under the system temp directory.

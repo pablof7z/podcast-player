@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent};
 
-use crate::app::{AppState, Mode, Pane};
+use crate::app::{AgentSection, AppState, Mode, Pane};
 use crate::runtime::AppRuntime;
 use crate::settings_catalog::SETTINGS_ITEMS;
 
@@ -188,20 +188,169 @@ pub(super) fn handle_clips_keys(state: &mut AppState, runtime: &AppRuntime, key:
 
 pub(super) fn handle_agent_keys(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) {
     match key.code {
-        KeyCode::Enter | KeyCode::Char('i') => {
+        KeyCode::Char('h') | KeyCode::Left => state.previous_agent_section(),
+        KeyCode::Char('l') | KeyCode::Right => state.next_agent_section(),
+        KeyCode::Char('j') | KeyCode::Down => state.next_agent_row(),
+        KeyCode::Char('k') | KeyCode::Up => state.previous_agent_row(),
+        KeyCode::Char('g') | KeyCode::Home => state.jump_agent_top(),
+        KeyCode::Char('G') | KeyCode::End => state.jump_agent_bottom(),
+        KeyCode::Enter | KeyCode::Char('i') => begin_agent_primary_input(state),
+        KeyCode::Char('n') => begin_agent_new_input(state),
+        KeyCode::Char('p') => play_selected_agent_pick(state, runtime),
+        KeyCode::Char('a') => queue_selected_agent_pick(state, runtime, false),
+        KeyCode::Char('A') => queue_selected_agent_pick(state, runtime, true),
+        KeyCode::Char('r') => run_or_refresh_agent_section(state, runtime),
+        KeyCode::Char('e') => toggle_selected_agent_task(state, runtime),
+        KeyCode::Char('d') => delete_selected_agent_row(state, runtime),
+        KeyCode::Char('x') => clear_agent_section(state, runtime),
+        KeyCode::Char('c') if state.agent_section == AgentSection::Chat => {
+            let _ = runtime.clear_agent();
+            state.push_toast("agent conversation cleared");
+        }
+        _ => {}
+    }
+}
+
+fn begin_agent_primary_input(state: &mut AppState) {
+    match state.agent_section {
+        AgentSection::Chat => {
             state.mode = Mode::AgentInput;
             state.agent_input.clear();
             state.status = "enter agent message".to_string();
         }
-        KeyCode::Char('c') => {
-            let _ = runtime.clear_agent();
-            state.push_toast("agent conversation cleared");
+        AgentSection::Memory => {
+            state.mode = Mode::AgentMemoryInput;
+            state.agent_memory_input.clear();
+            state.status = "memory format: key=value".to_string();
         }
-        KeyCode::Char('r') => {
+        AgentSection::Tasks => {
+            state.mode = Mode::AgentTaskInput;
+            state.agent_task_input.clear();
+            state.status =
+                "task format: title | schedule | namespace | json body | description".to_string();
+        }
+        AgentSection::Notes => {
+            state.mode = Mode::AgentNoteInput;
+            state.agent_note_input.clear();
+            state.status = "note format: recipient_pubkey_hex message".to_string();
+        }
+        AgentSection::Picks => {}
+    }
+}
+
+fn begin_agent_new_input(state: &mut AppState) {
+    match state.agent_section {
+        AgentSection::Tasks | AgentSection::Memory | AgentSection::Notes => {
+            begin_agent_primary_input(state)
+        }
+        AgentSection::Chat | AgentSection::Picks => {}
+    }
+}
+
+fn play_selected_agent_pick(state: &mut AppState, runtime: &AppRuntime) {
+    if state.agent_section != AgentSection::Picks {
+        return;
+    }
+    if let Some(episode_id) = state.selected_agent_pick_episode_id() {
+        let _ = runtime.play_episode(&episode_id, 0.0);
+        state.status = format!("playing agent pick {episode_id}");
+    }
+}
+
+fn queue_selected_agent_pick(state: &mut AppState, runtime: &AppRuntime, next: bool) {
+    if state.agent_section != AgentSection::Picks {
+        return;
+    }
+    if let Some(episode_id) = state.selected_agent_pick_episode_id() {
+        let result = if next {
+            runtime.add_next_to_queue(&episode_id)
+        } else {
+            runtime.add_to_queue(&episode_id)
+        };
+        if result.is_ok() {
+            state.push_toast(if next {
+                "pick added next"
+            } else {
+                "pick queued"
+            });
+        }
+    }
+}
+
+fn run_or_refresh_agent_section(state: &mut AppState, runtime: &AppRuntime) {
+    match state.agent_section {
+        AgentSection::Tasks => {
+            if let Some(task_id) = state.selected_agent_task_id() {
+                match runtime.run_agent_task_now(&task_id) {
+                    Ok(_) => state.push_toast("task dispatched"),
+                    Err(e) => state.status = format!("task run error: {e}"),
+                }
+            }
+        }
+        AgentSection::Notes => {
             let _ = runtime.fetch_agent_notes();
             state.push_toast("refreshing agent notes");
         }
-        _ => {}
+        AgentSection::Chat | AgentSection::Picks | AgentSection::Memory => {}
+    }
+}
+
+fn toggle_selected_agent_task(state: &mut AppState, runtime: &AppRuntime) {
+    if state.agent_section != AgentSection::Tasks {
+        return;
+    }
+    let Some(task_id) = state.selected_agent_task_id() else {
+        return;
+    };
+    let enabled = state.selected_agent_task_enabled().unwrap_or(false);
+    let result = if enabled {
+        runtime.disable_agent_task(&task_id)
+    } else {
+        runtime.enable_agent_task(&task_id)
+    };
+    match result {
+        Ok(_) => state.push_toast(if enabled {
+            "task disabled"
+        } else {
+            "task enabled"
+        }),
+        Err(e) => state.status = format!("task toggle error: {e}"),
+    }
+}
+
+fn delete_selected_agent_row(state: &mut AppState, runtime: &AppRuntime) {
+    match state.agent_section {
+        AgentSection::Tasks => {
+            if let Some(task_id) = state.selected_agent_task_id() {
+                match runtime.delete_agent_task(&task_id) {
+                    Ok(_) => state.push_toast("task deleted"),
+                    Err(e) => state.status = format!("task delete error: {e}"),
+                }
+            }
+        }
+        AgentSection::Memory => {
+            if let Some(key) = state.selected_memory_key() {
+                match runtime.forget_memory(&key) {
+                    Ok(_) => state.push_toast("memory forgotten"),
+                    Err(e) => state.status = format!("memory delete error: {e}"),
+                }
+            }
+        }
+        AgentSection::Chat | AgentSection::Picks | AgentSection::Notes => {}
+    }
+}
+
+fn clear_agent_section(state: &mut AppState, runtime: &AppRuntime) {
+    match state.agent_section {
+        AgentSection::Chat => {
+            let _ = runtime.clear_agent();
+            state.push_toast("agent conversation cleared");
+        }
+        AgentSection::Memory => match runtime.forget_all_memory() {
+            Ok(_) => state.push_toast("all memory forgotten"),
+            Err(e) => state.status = format!("memory clear error: {e}"),
+        },
+        AgentSection::Tasks | AgentSection::Picks | AgentSection::Notes => {}
     }
 }
 

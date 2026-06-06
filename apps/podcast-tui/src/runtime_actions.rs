@@ -146,6 +146,84 @@ impl AppRuntime {
         self.dispatch_action_value("podcast", &json!({"op": "fetch_agent_notes"}))
     }
 
+    pub fn publish_agent_note(&self, recipient_pubkey_hex: &str, content: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({
+                "op": "publish_agent_note",
+                "recipient_pubkey_hex": recipient_pubkey_hex,
+                "content": content,
+                "root_event_id": null,
+                "inbound_event_id": null,
+                "root_a_tags": [],
+            }),
+        )
+    }
+
+    pub fn create_agent_task(
+        &self,
+        title: &str,
+        schedule: &str,
+        action_namespace: &str,
+        action_body: &str,
+        description: Option<&str>,
+    ) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.tasks",
+            &json!({
+                "op": "create",
+                "title": title,
+                "description": description,
+                "action_namespace": action_namespace,
+                "action_body": action_body,
+                "schedule": schedule,
+            }),
+        )
+    }
+
+    pub fn delete_agent_task(&self, task_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.tasks",
+            &json!({"op": "delete", "task_id": task_id}),
+        )
+    }
+
+    pub fn enable_agent_task(&self, task_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.tasks",
+            &json!({"op": "enable", "task_id": task_id}),
+        )
+    }
+
+    pub fn disable_agent_task(&self, task_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.tasks",
+            &json!({"op": "disable", "task_id": task_id}),
+        )
+    }
+
+    pub fn run_agent_task_now(&self, task_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.tasks",
+            &json!({"op": "run_now", "task_id": task_id}),
+        )
+    }
+
+    pub fn remember_memory(&self, key: &str, value: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.memory",
+            &json!({"op": "remember", "key": key, "value": value, "source": "user"}),
+        )
+    }
+
+    pub fn forget_memory(&self, key: &str) -> Result<String> {
+        self.dispatch_action_value("podcast.memory", &json!({"op": "forget", "key": key}))
+    }
+
+    pub fn forget_all_memory(&self) -> Result<String> {
+        self.dispatch_action_value("podcast.memory", &json!({"op": "forget_all"}))
+    }
+
     pub fn delete_wiki_article(&self, article_id: &str) -> Result<String> {
         self.dispatch_action_value(
             "podcast.wiki",

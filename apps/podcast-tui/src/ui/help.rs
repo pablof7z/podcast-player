@@ -57,7 +57,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, _state: &AppState) {
         )),
         Line::from("Queue: p / d / x   — play / remove / clear"),
         Line::from("Clips: p / d / c   — play / delete / clip now playing"),
-        Line::from("Agent: Enter / c/r — compose / clear / fetch notes"),
+        Line::from("Agent: h/l          — switch agent section"),
+        Line::from("Agent: Enter / n   — compose or create row"),
+        Line::from("Agent: r/e/d/x     — run-refresh / toggle / delete / clear"),
         Line::from("Settings: Enter    — toggle selected setting"),
         Line::from(""),
         Line::from(Span::styled(

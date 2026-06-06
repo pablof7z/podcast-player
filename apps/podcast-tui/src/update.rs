@@ -64,6 +64,10 @@ impl AppState {
         self.agent_tasks = update.agent_tasks;
         self.agent_notes = update.agent_notes;
         self.memory_facts = update.memory_facts;
+        clamp_index(&mut self.selected_agent_pick, self.agent_picks.len());
+        clamp_index(&mut self.selected_agent_task, self.agent_tasks.len());
+        clamp_index(&mut self.selected_agent_note, self.agent_notes.len());
+        clamp_index(&mut self.selected_memory_fact, self.memory_facts.len());
         self.comments = update.comments;
         self.categories = update.categories;
         self.configured_relays = update.configured_relays;

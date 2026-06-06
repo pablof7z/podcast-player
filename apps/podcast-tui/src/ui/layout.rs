@@ -31,7 +31,12 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
 
     if matches!(
         state.mode,
-        Mode::SearchInput | Mode::SubscribeInput | Mode::AgentInput
+        Mode::SearchInput
+            | Mode::SubscribeInput
+            | Mode::AgentInput
+            | Mode::AgentMemoryInput
+            | Mode::AgentTaskInput
+            | Mode::AgentNoteInput
     ) {
         render_input_bar(frame, area, state);
     }
@@ -138,12 +143,18 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Mode::SearchInput => "Search: ",
         Mode::SubscribeInput => "Subscribe: ",
         Mode::AgentInput => "Agent: ",
+        Mode::AgentMemoryInput => "Memory key=value: ",
+        Mode::AgentTaskInput => "Task: ",
+        Mode::AgentNoteInput => "Note: ",
         _ => return,
     };
     let value = match state.mode {
         Mode::SearchInput => &state.search_input,
         Mode::SubscribeInput => &state.subscribe_input,
         Mode::AgentInput => &state.agent_input,
+        Mode::AgentMemoryInput => &state.agent_memory_input,
+        Mode::AgentTaskInput => &state.agent_task_input,
+        Mode::AgentNoteInput => &state.agent_note_input,
         _ => return,
     };
 
