@@ -72,12 +72,25 @@ pub extern "C" fn nmp_app_podcast_download_report(
         };
         let outcome = dispatch_download_report_json_with_queue(&mut store, &mut queue, report_str);
         match outcome {
-            DispatchOutcome::Ok { follow_up_json } => {
+            DispatchOutcome::Ok { follow_up_json, library_changed } => {
                 drop(queue);
                 drop(store);
+                // Always bump the download-only rev so the narrow `downloads`
+                // projection (progress ring, queue rows) refreshes.
                 handle_ref
-                    .rev
+                    .downloads_rev
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                // Only bump the global `rev` — which invalidates the snapshot
+                // cache and forces a full-library rebuild + main-thread decode —
+                // when the report actually changed library-visible state
+                // (`Completed`/`Cancelled` set/clear `local_path`). Progress
+                // ticks (the ~1 Hz hot path that pegged the CPU for the whole
+                // download) skip it entirely.
+                if library_changed {
+                    handle_ref
+                        .rev
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
                 follow_up_json
             }
             DispatchOutcome::DecodeFailed { .. } => None,

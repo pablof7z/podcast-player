@@ -11,7 +11,6 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use super::handle::PodcastHandle;
-use super::helpers::strip_html;
 use super::projections::{
     AccountSummary, AgentSnapshot, ChapterSummary, EpisodeSummary, PodcastSummary,
     SettingsSnapshot, VoiceState,
@@ -63,7 +62,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                 } else {
                     Some(podcast.author.clone())
                 },
-                description: Some(strip_html(&podcast.description))
+                description: Some(handle.clean_html(&podcast.description))
                     .filter(|d| !d.is_empty()),
                 owner_pubkey_hex: podcast.owner_pubkey_hex.clone(),
                 nostr_visibility: match podcast.nostr_visibility {
@@ -106,7 +105,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                             download_path: s.local_path_for(&ep.id).map(str::to_owned),
                             file_size_bytes: s.file_size_for(&ep.id).unwrap_or(0),
                             enclosure_url: Some(ep.enclosure_url.to_string()),
-                            description: Some(strip_html(&ep.description))
+                            description: Some(handle.clean_html(&ep.description))
                                 .filter(|d| !d.is_empty()),
                             transcript,
                             transcript_url: ep
@@ -443,6 +442,50 @@ pub extern "C" fn nmp_app_podcast_snapshot_rev(handle: *mut PodcastHandle) -> u6
     if handle.is_null() { return 0; }
     let handle = unsafe { &*handle };
     handle.rev.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Cheap download-rev probe: reads the download-only atomic counter without
+/// serializing anything. Returns `0` on null handle. The Swift download-report
+/// channel polls this before [`nmp_app_podcast_downloads_snapshot`] so a
+/// progress tick refreshes only the narrow download projection — never the full
+/// library. See [`PodcastHandle::downloads_rev`].
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn nmp_app_podcast_downloads_rev(handle: *mut PodcastHandle) -> u64 {
+    if handle.is_null() { return 0; }
+    let handle = unsafe { &*handle };
+    handle.downloads_rev.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Serialize **only** the download-queue projection (active/queued/paused/failed
+/// rows) as a JSON C string — the narrow counterpart to
+/// [`nmp_app_podcast_snapshot`]. Payload is a JSON-encoded
+/// `Option<DownloadQueueSnapshot>` (`null` when nothing is downloading).
+///
+/// This is the hot-path accessor for download progress: it locks only the
+/// download queue and serializes a handful of rows, so the ~1 Hz progress
+/// stream never pays the full-library rebuild + main-thread decode that
+/// [`nmp_app_podcast_snapshot`] does. Returns null only on a null handle or a
+/// `CString` nul-byte conflict. Free with [`nmp_app_podcast_snapshot_free`].
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn nmp_app_podcast_downloads_snapshot(handle: *mut PodcastHandle) -> *mut c_char {
+    if handle.is_null() {
+        return std::ptr::null_mut();
+    }
+    // SAFETY: caller guarantees `handle` is a valid pointer returned by
+    // `nmp_app_podcast_register` and not yet freed.
+    let handle = unsafe { &*handle };
+    let downloads = handle
+        .download_queue
+        .lock()
+        .ok()
+        .and_then(|q| build_downloads_snapshot(&q));
+    let json = serde_json::to_string(&downloads).unwrap_or_else(|_| "null".to_owned());
+    let Ok(cstr) = CString::new(json) else {
+        return std::ptr::null_mut();
+    };
+    cstr.into_raw()
 }
 
 /// Free a snapshot string previously returned by [`nmp_app_podcast_snapshot`].

@@ -80,6 +80,44 @@ let project = Project(
                 "App/Resources/whats-new.json",
             ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),
+            scripts: [
+                // Embed the Rust dylib into the app bundle so the device loader can
+                // find it at @rpath/libnmp_app_podcast.dylib. Running as a build
+                // phase means Xcode's subsequent signing step covers the dylib with
+                // the real development certificate — ad-hoc signing is not accepted
+                // on physical devices.
+                //
+                // The linker prefers .dylib over .a (standard Unix behavior), so
+                // -lnmp_app_podcast links the dylib dynamically. This avoids the
+                // duplicate-symbol conflict that occurs when two Rust static archives
+                // are both force-loaded by LiteRTLM's -all_load flag.
+                .post(
+                    script: """
+                    #!/bin/bash
+                    set -e
+                    if [[ "$PLATFORM_NAME" == "iphonesimulator" ]]; then
+                        RUST_TARGET="aarch64-apple-ios-sim"
+                    else
+                        RUST_TARGET="aarch64-apple-ios"
+                    fi
+                    DYLIB="${SRCROOT}/target/${RUST_TARGET}/debug/libnmp_app_podcast.dylib"
+                    if [ ! -f "$DYLIB" ]; then
+                        echo "warning: ${DYLIB} not found — skipping Rust dylib embed"
+                        exit 0
+                    fi
+                    install_name_tool -id "@rpath/libnmp_app_podcast.dylib" "$DYLIB"
+                    DEST="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/libnmp_app_podcast.dylib"
+                    mkdir -p "${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+                    cp -f "$DYLIB" "$DEST"
+                    /usr/bin/codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" \
+                        --preserve-metadata=identifier,entitlements,flags \
+                        --timestamp=none \
+                        "$DEST"
+                    """,
+                    name: "Embed Rust Dylib",
+                    basedOnDependencyAnalysis: false
+                )
+            ],
             dependencies: [
                 .package(product: "P256K"),
                 .package(product: "SQLiteVec"),

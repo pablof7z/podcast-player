@@ -86,6 +86,15 @@ void nmp_app_set_capability_callback(void *app, void *context, NmpCapabilityCall
 void *nmp_app_podcast_register(void *app);
 char *nmp_app_podcast_snapshot(void *handle);
 uint64_t nmp_app_podcast_snapshot_rev(void *handle);
+// Narrow download-only projection. `nmp_app_podcast_downloads_rev` bumps on
+// every download report (incl. ~1 Hz progress ticks);
+// `nmp_app_podcast_downloads_snapshot` serializes ONLY the download-queue rows
+// (JSON `Option<DownloadQueueSnapshot>`, "null" when idle). The download report
+// channel polls these so progress refreshes the download UI without forcing a
+// full-library rebuild + main-thread decode. Free the string with
+// `nmp_app_podcast_snapshot_free`.
+uint64_t nmp_app_podcast_downloads_rev(void *handle);
+char *nmp_app_podcast_downloads_snapshot(void *handle);
 void nmp_app_podcast_snapshot_free(char *ptr);
 void nmp_app_podcast_unregister(void *handle);
 

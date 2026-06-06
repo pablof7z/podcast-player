@@ -1,6 +1,6 @@
 PABLO_IPHONE := "3C438D9B-2021-5A30-93DB-910F7754F9A2"
 
-# Deploy to Pablo's iPhone: rebuild Rust (static only), build Swift, install, launch
+# Deploy to Pablo's iPhone: rebuild Rust, build Swift (embed phase signs the dylib), install, launch
 pablo-iphone-deploy:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -9,12 +9,15 @@ pablo-iphone-deploy:
     echo "==> Rebuilding Rust for aarch64-apple-ios..."
     cargo build --target aarch64-apple-ios -p nmp-app-podcast
 
-    # Cargo always emits both .a and .dylib. Xcode prefers .dylib and embeds
-    # Mac-absolute paths in it, causing launch crashes on device. Delete the
-    # dylib AFTER cargo so the Xcode linker falls back to the static .a.
-    echo "==> Removing dylibs so linker uses static .a..."
-    rm -f target/aarch64-apple-ios/debug/libnmp_app_podcast.dylib \
-          target/aarch64-apple-ios/debug/deps/libnmp_app_podcast.dylib
+    # The linker prefers .dylib over .a, which avoids duplicate-symbol conflicts
+    # with shake_feedback_core.a when LiteRTLM's -all_load is active. The dylib's
+    # install name is fixed to @rpath so the device loader can find it at runtime.
+    # The Xcode "Embed Rust Dylib" build phase copies + signs it via the real cert.
+    echo "==> Fixing dylib install name..."
+    install_name_tool -id "@rpath/libnmp_app_podcast.dylib" \
+        target/aarch64-apple-ios/debug/libnmp_app_podcast.dylib
+    # Remove the deps copy so the linker resolves to only the top-level dylib.
+    rm -f target/aarch64-apple-ios/debug/deps/libnmp_app_podcast.dylib
 
     echo "==> Building Xcode (device)..."
     xcodebuild build \
@@ -25,9 +28,10 @@ pablo-iphone-deploy:
         -skipPackagePluginValidation \
         2>&1 | grep -E "error:|BUILD SUCCEEDED|BUILD FAILED|✅|❌" || true
 
-    APP=$(xcodebuild -workspace Podcastr.xcworkspace -scheme Podcastr \
+    PRODUCTS_DIR=$(xcodebuild -workspace Podcastr.xcworkspace -scheme Podcastr \
         -configuration Debug -showBuildSettings 2>/dev/null \
-        | grep '^ *BUILT_PRODUCTS_DIR' | awk '{print $3}')/Podcastr.app
+        | grep '^ *BUILT_PRODUCTS_DIR' | awk 'NR==1{print $3}')
+    APP="$PRODUCTS_DIR/Podcastr.app"
 
     echo "==> Installing on device $DEVICE..."
     xcrun devicectl device install app --device "$DEVICE" "$APP"

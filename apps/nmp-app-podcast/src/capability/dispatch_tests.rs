@@ -35,7 +35,7 @@ fn playing_report_json_round_trip_no_follow_up() {
     let report = r#"{"type":"playing","url":"u","position_secs":1.0,"duration_secs":10.0}"#;
     let outcome = dispatch_audio_report_json(&mut actor, report, t0());
     match outcome {
-        DispatchOutcome::Ok { follow_up_json } => assert!(follow_up_json.is_none()),
+        DispatchOutcome::Ok { follow_up_json, .. } => assert!(follow_up_json.is_none()),
         DispatchOutcome::DecodeFailed { error } => panic!("decode failed: {error}"),
     }
     assert!(actor.state().is_playing);
@@ -49,7 +49,7 @@ fn sleep_timer_fired_emits_stop_command_json() {
     let outcome =
         dispatch_audio_report_json(&mut actor, r#"{"type":"sleep_timer_fired"}"#, t0());
     match outcome {
-        DispatchOutcome::Ok { follow_up_json } => {
+        DispatchOutcome::Ok { follow_up_json, .. } => {
             assert_eq!(follow_up_json.as_deref(), Some(r#"{"type":"stop"}"#));
         }
         DispatchOutcome::DecodeFailed { error } => panic!("decode failed: {error}"),
@@ -82,7 +82,10 @@ fn completed_report_records_local_path() {
     );
     let outcome = dispatch_download_report_json(&mut store, &report);
     match outcome {
-        DispatchOutcome::Ok { follow_up_json } => assert!(follow_up_json.is_none()),
+        DispatchOutcome::Ok { follow_up_json, library_changed } => {
+            assert!(follow_up_json.is_none());
+            assert!(library_changed, "completed sets local_path → library changed");
+        }
         DispatchOutcome::DecodeFailed { error } => panic!("decode failed: {error}"),
     }
     let typed_id = store
@@ -163,7 +166,10 @@ fn cancelled_report_clears_local_path() {
 
     let report = format!(r#"{{"type":"cancelled","episode_id":"{id_str}"}}"#);
     let outcome = dispatch_download_report_json(&mut store, &report);
-    assert!(matches!(outcome, DispatchOutcome::Ok { .. }));
+    assert!(matches!(
+        outcome,
+        DispatchOutcome::Ok { library_changed: true, .. }
+    ));
     assert!(store.local_path_for(&typed_id).is_none());
 }
 
@@ -185,8 +191,8 @@ fn progress_failed_paused_decode_without_mutating_store() {
     ] {
         let outcome = dispatch_download_report_json(&mut store, &report);
         assert!(
-            matches!(outcome, DispatchOutcome::Ok { .. }),
-            "{report} should decode cleanly"
+            matches!(outcome, DispatchOutcome::Ok { library_changed: false, .. }),
+            "{report} should decode cleanly without a library change (stays off the full-rebuild path)"
         );
     }
     assert_eq!(store.local_path_for(&typed_id), Some("/var/mobile/seeded.mp3"));
@@ -209,7 +215,7 @@ fn progress_report_updates_download_queue() {
         r#"{{"type":"progress","episode_id":"{id_str}","bytes_downloaded":4096,"total_bytes":8192}}"#
     );
     let outcome = dispatch_download_report_json_with_queue(&mut store, &mut queue, &report);
-    assert!(matches!(outcome, DispatchOutcome::Ok { follow_up_json: None }));
+    assert!(matches!(outcome, DispatchOutcome::Ok { follow_up_json: None, .. }));
     let item = queue.get(&id_str).expect("queued item");
     assert_eq!(item.state, DownloadItemState::Active);
     assert_eq!(item.bytes_downloaded, 4096);
@@ -227,7 +233,7 @@ fn completed_report_updates_store_queue_and_returns_next_start() {
         r#"{{"type":"completed","episode_id":"{id_str}","local_path":"/var/mobile/Downloads/{id_str}.mp3"}}"#
     );
     let outcome = dispatch_download_report_json_with_queue(&mut store, &mut queue, &report);
-    let DispatchOutcome::Ok { follow_up_json } = outcome else {
+    let DispatchOutcome::Ok { follow_up_json, .. } = outcome else {
         panic!("expected ok");
     };
     assert_eq!(

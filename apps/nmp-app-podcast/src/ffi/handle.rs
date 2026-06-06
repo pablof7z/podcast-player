@@ -53,6 +53,15 @@ pub struct PodcastHandle {
     /// here after every rebuild; the next poll hit with the same `rev` returns
     /// the cached string without re-serializing the entire library.
     pub(super) snapshot_cache: Arc<Mutex<Option<(u64, String)>>>,
+    /// Download-only revision counter, bumped on **every** download report
+    /// (including ~1 Hz progress ticks). Distinct from the global `rev` so the
+    /// download-progress hot path can drive the narrow `downloads` projection
+    /// (`nmp_app_podcast_downloads_snapshot`) without bumping `rev` — which
+    /// would invalidate the snapshot cache and force a full-library rebuild +
+    /// main-thread decode of the whole library on every progress tick. Only
+    /// library-mutating download reports (`Completed`/`Cancelled`) additionally
+    /// bump `rev`; see `DispatchOutcome::Ok.library_changed`.
+    pub(super) downloads_rev: Arc<AtomicU64>,
     /// Playback "Up Next" queue. Mutated by the queue action handler on the
     /// actor thread; read by the snapshot projection on the main thread.
     pub(super) queue: Arc<Mutex<PlaybackQueue>>,
@@ -202,6 +211,17 @@ pub struct PodcastHandle {
     /// rebuilds threads from this flat event list. Stored as raw JSON Values
     /// because the host never holds the typed `nostr::Event` here.
     pub(crate) feedback_events_cache: Arc<Mutex<Vec<serde_json::Value>>>,
+    /// Memoized `strip_html` results keyed by a 64-bit content hash of the raw
+    /// RSS description. The snapshot projection rebuilds the *entire* library on
+    /// every `rev` bump — including the ~1 Hz volatile bumps from playback
+    /// position ticks, download-progress reports, and the Nostr re-sync event
+    /// flood — and HTML-cleaning every episode description each time dominated
+    /// the rebuild (see `clean_html`). Descriptions are immutable per content,
+    /// so caching the cleaned text turns the per-rebuild cost from
+    /// "strip every episode" into "hash + clone every episode". Bounded: cleared
+    /// wholesale when it exceeds `CLEAN_HTML_CACHE_CAP` so churned descriptions
+    /// (re-sync, feed edits) can't leak unboundedly.
+    pub(super) clean_html_cache: Arc<Mutex<HashMap<u64, String>>>,
     /// Shared multi-thread Tokio runtime (same `Arc` the host-op handler and
     /// voice manager hold). The snapshot path needs it so `maybe_enqueue_triage`
     /// can spawn proactive background triage off the actor thread.
@@ -226,3 +246,47 @@ pub struct PodcastHandle {
 // Rust-trait registration path gets that fence for free (the actor join).
 unsafe impl Send for PodcastHandle {}
 unsafe impl Sync for PodcastHandle {}
+
+/// Upper bound on [`PodcastHandle::clean_html_cache`] entries. A library of a
+/// few thousand episodes seeds a few thousand stable entries; the cap only
+/// trips when description churn (re-sync, repeated feed edits) accumulates
+/// stale keys, at which point the cache is cleared and re-warms. Sized well
+/// above any realistic working set so steady-state hit rate stays ~100%.
+const CLEAN_HTML_CACHE_CAP: usize = 16_384;
+
+impl PodcastHandle {
+    /// Memoized [`super::helpers::strip_html`]. The snapshot projection calls
+    /// this once per podcast/episode description on every rebuild; since the
+    /// raw text is immutable per content, the first call strips-and-caches and
+    /// every subsequent rebuild returns a clone of the cleaned string — turning
+    /// the hot path from "3-pass HTML strip per episode" into "hash + clone per
+    /// episode". This is the contained fix for the full-library-rebuild CPU peg
+    /// (the rebuild fires ~1 Hz from playback ticks / download progress / Nostr
+    /// re-sync, each previously re-stripping every description).
+    pub(super) fn clean_html(&self, raw: &str) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        raw.hash(&mut hasher);
+        let key = hasher.finish();
+
+        if let Ok(cache) = self.clean_html_cache.lock() {
+            if let Some(cleaned) = cache.get(&key) {
+                return cleaned.clone();
+            }
+        }
+
+        // Miss: strip outside the lock (the strip is the expensive part; don't
+        // hold the cache mutex across it).
+        let cleaned = super::helpers::strip_html(raw);
+
+        if let Ok(mut cache) = self.clean_html_cache.lock() {
+            if cache.len() >= CLEAN_HTML_CACHE_CAP {
+                cache.clear();
+            }
+            cache.insert(key, cleaned.clone());
+        }
+        cleaned
+    }
+}

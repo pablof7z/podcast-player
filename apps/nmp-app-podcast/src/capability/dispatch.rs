@@ -31,7 +31,17 @@ pub enum DispatchOutcome {
     /// The report decoded and projected; `follow_up_json` is the JSON
     /// of the [`AudioCommand`] the kernel should hand back to the
     /// capability (`None` when no command is needed).
-    Ok { follow_up_json: Option<String> },
+    ///
+    /// `library_changed` tells the FFI shim whether this report mutated
+    /// library-visible state (download `Completed`/`Cancelled` touch
+    /// `local_path`; audio reports move the playhead). When `false` — the
+    /// download *progress* hot path — the shim bumps only the cheap
+    /// download rev and skips the full-library snapshot rebuild, which is
+    /// what kept the main thread pegged at ~1 Hz for the whole download.
+    Ok {
+        follow_up_json: Option<String>,
+        library_changed: bool,
+    },
     /// The inbound JSON couldn't be decoded as an [`AudioReport`].
     /// Per D6 this is data, not an exception — the caller decides
     /// whether to log, drop, or surface to diagnostics.
@@ -61,7 +71,8 @@ pub fn dispatch_audio_report_json(
 
     let follow_up = actor.handle_audio_report(report, now);
     let follow_up_json = follow_up.and_then(|cmd| serde_json::to_string(&cmd).ok());
-    DispatchOutcome::Ok { follow_up_json }
+    // Audio reports always move the playhead → library-visible (`now_playing`).
+    DispatchOutcome::Ok { follow_up_json, library_changed: true }
 }
 
 /// Encode an [`AudioCommand`] for the iOS capability. Returns `None`
@@ -106,9 +117,10 @@ pub fn dispatch_download_report_json(
             }
         }
     };
-    apply_download_report(store, &report);
+    let library_changed = apply_download_report(store, &report);
     DispatchOutcome::Ok {
         follow_up_json: None,
+        library_changed,
     }
 }
 
@@ -128,18 +140,25 @@ pub fn dispatch_download_report_json_with_queue(
             }
         }
     };
-    apply_download_report(store, &report);
+    let library_changed = apply_download_report(store, &report);
     let follow_up_json = queue
         .handle_report(report)
         .into_iter()
         .next()
         .and_then(|cmd: DownloadCommand| serde_json::to_string(&cmd).ok());
-    DispatchOutcome::Ok { follow_up_json }
+    DispatchOutcome::Ok { follow_up_json, library_changed }
 }
 
 /// Pure projection of a typed [`DownloadReport`] onto `store`. Split out
 /// so unit tests don't have to round-trip through JSON.
-fn apply_download_report(store: &mut PodcastStore, report: &DownloadReport) {
+///
+/// Returns `true` when the report mutated library-visible state — i.e. it
+/// set or cleared an episode's `local_path`, which changes
+/// [`crate::ffi::EpisodeSummary::download_path`]/`file_size_bytes` on the
+/// next full snapshot. `Progress`/`Failed`/`Paused` only move the download
+/// *queue* row (surfaced via the cheap `downloads` projection), so they
+/// return `false` and the FFI shim keeps them off the full-rebuild path.
+fn apply_download_report(store: &mut PodcastStore, report: &DownloadReport) -> bool {
     match report {
         DownloadReport::Completed {
             episode_id,
@@ -154,18 +173,23 @@ fn apply_download_report(store: &mut PodcastStore, report: &DownloadReport) {
                     .map(|m| m.len() as i64)
                     .unwrap_or(0);
                 store.set_local_path(typed_id, local_path.clone(), byte_count);
+                return true;
             }
             // Episode not in the store (e.g. unsubscribed mid-flight):
             // drop the report on the floor. D6 — data, not exception.
+            false
         }
         DownloadReport::Cancelled { episode_id } => {
             if let Some((typed_id, _url)) = store.episode_enclosure_url(&episode_id) {
-                let _ = store.clear_local_path(&typed_id);
+                // `Some(prev)` → a path was actually cleared (library changed).
+                store.clear_local_path(&typed_id).is_some()
+            } else {
+                false
             }
         }
         DownloadReport::Failed { .. }
         | DownloadReport::Paused { .. }
-        | DownloadReport::Progress { .. } => {}
+        | DownloadReport::Progress { .. } => false,
     }
 }
 

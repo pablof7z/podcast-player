@@ -224,6 +224,38 @@ extension PodcastHandle {
         return nmp_app_podcast_snapshot_rev(handle)
     }
 
+    /// Cheap download-rev check — bumps on every download report (incl. the
+    /// ~1 Hz progress stream). Used by the download-report channel to refresh
+    /// only the narrow `downloads` projection without paying the full-library
+    /// `podcastSnapshot()` decode.
+    func downloadsRev() -> UInt64 {
+        guard let handle = podcastHandle else { return 0 }
+        return nmp_app_podcast_downloads_rev(handle)
+    }
+
+    /// Pull ONLY the download-queue projection. Returns `nil` when nothing is
+    /// downloading (Rust serializes `null`) or the handle is unregistered.
+    /// Decodes a handful of rows — never the 3k-episode library — so it stays
+    /// cheap on the main-thread download-progress hot path.
+    func downloadsSnapshot() -> DownloadQueueSnapshot? {
+        guard let handle = podcastHandle,
+              let ptr = nmp_app_podcast_downloads_snapshot(handle)
+        else {
+            return nil
+        }
+        defer { nmp_app_podcast_snapshot_free(ptr) }
+        let json = String(cString: ptr)
+        guard let data = json.data(using: .utf8) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do {
+            return try decoder.decode(DownloadQueueSnapshot?.self, from: data)
+        } catch {
+            kbLog.error("downloadsSnapshot decode: \(error, privacy: .public)")
+            return nil
+        }
+    }
+
     /// Pull the latest snapshot from the podcast projection. Returns `.empty`
     /// when the handle is not registered or the projection serialization fails
     /// (D6 — never crashes, degrades to placeholder).
