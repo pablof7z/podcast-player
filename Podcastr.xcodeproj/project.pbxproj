@@ -348,6 +348,7 @@
 		7E48F4C42021FB3C6BB6FAEC /* AppTheme+Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BC59493C70AB70CDA55BDC /* AppTheme+Typography.swift */; };
 		7E75410D6B150D269F941525 /* PodcastSocialTypes.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6FDE8C3FA757C8639B68B1 /* PodcastSocialTypes.generated.swift */; };
 		7EBDA35A8EA9C526018550FD /* AgentIdentityCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63629625F9DA0A4AA6CA1CDF /* AgentIdentityCards.swift */; };
+		7F2258F126535F67A6E99551 /* AgentChatUITest.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBFD738F8695AFAD613A737E /* AgentChatUITest.swift */; };
 		7F761FB09615EF1B59A3D580 /* SetupSubscribeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2367EECEADB5A6A3DDD55441 /* SetupSubscribeUITests.swift */; };
 		7F965ED580EB659C13A85FA9 /* OPMLImportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7D5AE106B58BCB1FB3DA05 /* OPMLImportSheet.swift */; };
 		7FAB41F66F4FD5DB355EBF52 /* HomeThreadedTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F54AEAE57DE483D9B02ADB1 /* HomeThreadedTodayView.swift */; };
@@ -641,6 +642,7 @@
 		E1BAF045667099CCFF2644EB /* HomeDateline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1DB910E9D9ECB6DC973793D /* HomeDateline.swift */; };
 		E1D718060F9B04E1F00848B7 /* AutoDownloadPolicySummaryLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE84B1BA21163B4198A2A228 /* AutoDownloadPolicySummaryLabelTests.swift */; };
 		E2DE2F86BC10C63E271C989C /* TuistAssets+Podcastr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DB1DA9B59A5E414FB49EA3 /* TuistAssets+Podcastr.swift */; };
+		E2E4EBC8D3107B8C2D02957A /* UITestSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBBE85EEE34F50CD182DA6 /* UITestSeeder.swift */; };
 		E33F8D59EDFA9805B638A1AA /* DeepLinkHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F6076526CA3A2B32A3F8A7 /* DeepLinkHandlerTests.swift */; };
 		E3438C07C48C61CFB4EB8A1B /* DebugLogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A27F2B66C16F8D9EB0DCDC3 /* DebugLogsView.swift */; };
 		E3A9200AF6532A700F4604CA /* PodcastSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CADB09C7101B2717B7FA6A8 /* PodcastSearchView.swift */; };
@@ -992,6 +994,7 @@
 		3ED739916259DCA1C1404E60 /* WikiVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiVerifier.swift; sourceTree = "<group>"; };
 		3F85253D78B28686092A7D36 /* HomeAgentPickShimmerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAgentPickShimmerCard.swift; sourceTree = "<group>"; };
 		3FB88EFFF87E7658942912F9 /* EpisodeDownloadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDownloadStore.swift; sourceTree = "<group>"; };
+		3FEBBE85EEE34F50CD182DA6 /* UITestSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSeeder.swift; sourceTree = "<group>"; };
 		3FEE9A7B2E816DA7D7D12662 /* ElevenLabsTTSPreviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsTTSPreviewService.swift; sourceTree = "<group>"; };
 		4049A801101833D0EAC89954 /* ElevenLabsTTSClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsTTSClient.swift; sourceTree = "<group>"; };
 		40B3985688ABA7A3E62E5765 /* CarPlayDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayDownloads.swift; sourceTree = "<group>"; };
@@ -1574,6 +1577,7 @@
 				9D1C4E91CB2A37C70F9DA589 /* Transcript */,
 				169CC4A1645254DED6A51309 /* Voice */,
 				5215FF586797CD3FCD1D7208 /* AppMain.swift */,
+				3FEBBE85EEE34F50CD182DA6 /* UITestSeeder.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -2212,6 +2216,7 @@
 		97DF435F191EF1554EED6EDC /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				FBFD738F8695AFAD613A737E /* AgentChatUITest.swift */,
 				9E9EAB70510DB8AEB8539962 /* ClippingsFixUITests.swift */,
 				73E40182385F6635C6E7E1B3 /* CoreJourneyUITests.swift */,
 				9073E12C619801649B9EA1B2 /* RemainingP0P1UITests.swift */,
@@ -3628,6 +3633,7 @@
 				07DAAB648D29941A9F845B29 /* VTTParser.swift in Sources */,
 				A708BE914F81B99FA9A7F3B8 /* Transcript.swift in Sources */,
 				BEC64DA7760B17C2DC954116 /* TranscriptionQueue.swift in Sources */,
+				E2E4EBC8D3107B8C2D02957A /* UITestSeeder.swift in Sources */,
 				18E8E08F9880F8A8F46CE83E /* AVSpeechFallback.swift in Sources */,
 				77CFD3CC9A1B3834E83C1302 /* AudioConversationManager.swift in Sources */,
 				F4E138BE2A089DED1A539302 /* BargeInDetector.swift in Sources */,
@@ -3657,6 +3663,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F2258F126535F67A6E99551 /* AgentChatUITest.swift in Sources */,
 				D7DB26AADA6EBE4CE461E90F /* ClippingsFixUITests.swift in Sources */,
 				28B51B0DF4A6AF8AA8F5CA3E /* CoreJourneyUITests.swift in Sources */,
 				F9B0BB4F67C66E96C8B67B44 /* RemainingP0P1UITests.swift in Sources */,

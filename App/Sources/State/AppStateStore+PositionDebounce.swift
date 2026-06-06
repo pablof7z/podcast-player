@@ -134,6 +134,16 @@ extension AppStateStore {
                 mutated = true
             }
         }
+
+        // Mirror the same positions into the kernel store so that a cold relaunch
+        // (force-quit) reads the correct ep.position_secs. The kernel only updates
+        // position_secs on explicit PersistPosition actions (seek/skip while paused);
+        // without this sync the kernel snapshot always shows 0 on next launch,
+        // overriding the Swift-persisted value via KernelProjection.
+        for (id, position) in positionCache where position > 0 {
+            kernelPersistPosition(episodeID: id, positionSecs: position)
+        }
+
         positionCache.removeAll(keepingCapacity: true)
         lastPositionFlush = Date()
 

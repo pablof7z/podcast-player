@@ -7,7 +7,15 @@ import XCTest
 /// stable accessibility identifiers on every control.
 enum App {
     static let bundleID = "io.f7z.podcast"
-    static func make() -> XCUIApplication { XCUIApplication(bundleIdentifier: bundleID) }
+    /// Returns an XCUIApplication pre-configured with --UITestSeed so the app
+    /// writes a minimal This American Life library before the kernel starts.
+    /// Avoids relying on the external seed_pod0_state.py script, which targets
+    /// a specific container UUID and becomes stale after each xcodebuild install.
+    static func make() -> XCUIApplication {
+        let app = XCUIApplication(bundleIdentifier: bundleID)
+        app.launchArguments = ["--UITestSeed"]
+        return app
+    }
 }
 
 extension XCTestCase {
