@@ -394,6 +394,7 @@ struct RootView: View {
                     .animation(AppTheme.Animation.springFast, value: hasUnreadAgentMessages)
             }
             .accessibilityLabel(hasUnreadAgentMessages ? "Open Agent — new reply" : "Open Agent")
+            .accessibilityIdentifier("agent.open")
             .keyboardShortcut("a", modifiers: [.command, .shift])
         }
     }
