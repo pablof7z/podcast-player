@@ -79,6 +79,7 @@ fn handle_mode_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) ->
         Mode::AgentMemoryInput => handle_agent_memory_input(state, runtime, key),
         Mode::AgentTaskInput => handle_agent_task_input(state, runtime, key),
         Mode::AgentNoteInput => handle_agent_note_input(state, runtime, key),
+        Mode::EpisodeCommentInput => handle_episode_comment_input(state, runtime, key),
         Mode::EpisodeDetail { .. } => handle_episode_detail_key(state, runtime, key),
         Mode::Normal => false,
     }
@@ -243,6 +244,34 @@ fn handle_agent_note_input(state: &mut AppState, runtime: &AppRuntime, key: KeyE
     true
 }
 
+fn handle_episode_comment_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Esc => state.mode = Mode::Normal,
+        KeyCode::Enter => {
+            let content = state.episode_comment_input.trim().to_string();
+            state.episode_comment_input.clear();
+            state.mode = Mode::Normal;
+            if content.is_empty() {
+                return true;
+            }
+            let Some(episode_id) = state.selected_episode_id() else {
+                return true;
+            };
+            state.comments_episode_id = Some(episode_id.clone());
+            match runtime.post_comment(&episode_id, &content) {
+                Ok(_) => state.push_toast("comment posted"),
+                Err(e) => state.status = format!("comment error: {e}"),
+            }
+        }
+        KeyCode::Backspace => {
+            state.episode_comment_input.pop();
+        }
+        KeyCode::Char(c) => state.episode_comment_input.push(c),
+        _ => {}
+    }
+    true
+}
+
 fn handle_episode_detail_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('h') => state.close_episode_detail(),
@@ -257,6 +286,16 @@ fn handle_episode_detail_key(state: &mut AppState, runtime: &AppRuntime, key: Ke
         KeyCode::Char('a') => queue_selected_episode(state, runtime, false),
         KeyCode::Char('A') => queue_selected_episode(state, runtime, true),
         KeyCode::Char('c') => clip_selected_episode(state, runtime),
+        KeyCode::Char('t') => fetch_selected_episode_transcript(state, runtime),
+        KeyCode::Char('H') => fetch_selected_episode_chapters(state, runtime),
+        KeyCode::Char('u') => compile_selected_episode_chapters(state, runtime),
+        KeyCode::Char('m') => summarize_selected_episode(state, runtime),
+        KeyCode::Char('f') => fetch_selected_episode_comments(state, runtime),
+        KeyCode::Char('C') => begin_episode_comment(state),
+        KeyCode::Char('R') => reset_selected_episode_progress(state, runtime),
+        KeyCode::Char('z') => arm_sleep_timer(state, runtime, 15 * 60),
+        KeyCode::Char('Z') => arm_sleep_timer(state, runtime, 30 * 60),
+        KeyCode::Char('x') => cancel_sleep_timer(state, runtime),
         _ => {}
     }
     true
@@ -322,6 +361,81 @@ fn clip_selected_episode(state: &mut AppState, runtime: &AppRuntime) {
             Ok(_) => state.push_toast("clip saved"),
             Err(e) => state.status = format!("clip error: {e}"),
         }
+    }
+}
+
+fn fetch_selected_episode_transcript(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        match runtime.fetch_transcript(&id) {
+            Ok(_) => state.push_toast("fetching transcript"),
+            Err(e) => state.status = format!("transcript error: {e}"),
+        }
+    }
+}
+
+fn fetch_selected_episode_chapters(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        match runtime.fetch_chapters(&id) {
+            Ok(_) => state.push_toast("fetching chapters"),
+            Err(e) => state.status = format!("chapters error: {e}"),
+        }
+    }
+}
+
+fn compile_selected_episode_chapters(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        match runtime.compile_chapters(&id) {
+            Ok(_) => state.push_toast("compiling chapters"),
+            Err(e) => state.status = format!("chapter compile error: {e}"),
+        }
+    }
+}
+
+fn summarize_selected_episode(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        match runtime.summarize_episode(&id) {
+            Ok(_) => state.push_toast("summarizing episode"),
+            Err(e) => state.status = format!("summary error: {e}"),
+        }
+    }
+}
+
+fn fetch_selected_episode_comments(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        state.comments_episode_id = Some(id.clone());
+        match runtime.fetch_comments(&id) {
+            Ok(_) => state.push_toast("fetching comments"),
+            Err(e) => state.status = format!("comments error: {e}"),
+        }
+    }
+}
+
+fn begin_episode_comment(state: &mut AppState) {
+    state.mode = Mode::EpisodeCommentInput;
+    state.episode_comment_input.clear();
+    state.status = "enter comment".to_string();
+}
+
+fn reset_selected_episode_progress(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        match runtime.reset_progress(&id) {
+            Ok(_) => state.push_toast("progress reset"),
+            Err(e) => state.status = format!("reset error: {e}"),
+        }
+    }
+}
+
+fn arm_sleep_timer(state: &mut AppState, runtime: &AppRuntime, secs: u64) {
+    match runtime.set_sleep_timer(Some(secs)) {
+        Ok(_) => state.push_toast("sleep timer armed"),
+        Err(e) => state.status = format!("sleep timer error: {e}"),
+    }
+}
+
+fn cancel_sleep_timer(state: &mut AppState, runtime: &AppRuntime) {
+    match runtime.set_sleep_timer(None) {
+        Ok(_) => state.push_toast("sleep timer cancelled"),
+        Err(e) => state.status = format!("sleep timer error: {e}"),
     }
 }
 

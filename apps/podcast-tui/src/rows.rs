@@ -1,4 +1,8 @@
-use nmp_app_podcast::ffi::{DownloadItemSnapshot, EpisodeSummary, InboxItem, PodcastSummary};
+use nmp_app_podcast::ffi::{
+    ChapterSummary, DownloadItemSnapshot, EpisodeSummary, InboxItem, PodcastSummary,
+    TranscriptEntry,
+};
+use nmp_app_podcast::player::AdSegment;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PodcastRow {
@@ -15,10 +19,21 @@ pub struct EpisodeRow {
     pub podcast_title: Option<String>,
     pub description: Option<String>,
     pub duration_secs: Option<f64>,
+    pub file_size_bytes: i64,
+    pub enclosure_url: Option<String>,
     pub playback_position_secs: Option<f64>,
     pub played: bool,
     pub starred: bool,
     pub download_path: Option<String>,
+    pub transcript_url: Option<String>,
+    pub transcript_entries: Vec<TranscriptEntry>,
+    pub transcript: Option<String>,
+    pub summary: Option<String>,
+    pub ai_categories: Vec<String>,
+    pub ad_segments: Vec<AdSegment>,
+    pub transcript_status: String,
+    pub transcript_status_message: Option<String>,
+    pub chapters: Vec<ChapterSummary>,
     pub chapters_count: usize,
     pub has_transcript: bool,
 }
@@ -67,22 +82,35 @@ impl From<PodcastSummary> for PodcastRow {
 
 impl From<EpisodeSummary> for EpisodeRow {
     fn from(summary: EpisodeSummary) -> Self {
+        let chapters_count = summary.chapters.len();
+        let has_transcript = summary
+            .transcript
+            .as_deref()
+            .map(|text| !text.is_empty())
+            .unwrap_or(false);
         Self {
             id: summary.id,
             title: summary.title,
             podcast_title: summary.podcast_title,
             description: summary.description,
             duration_secs: summary.duration_secs,
+            file_size_bytes: summary.file_size_bytes,
+            enclosure_url: summary.enclosure_url,
             playback_position_secs: summary.playback_position_secs,
             played: summary.played,
             starred: summary.starred,
             download_path: summary.download_path,
-            chapters_count: summary.chapters.len(),
-            has_transcript: summary
-                .transcript
-                .as_deref()
-                .map(|text| !text.is_empty())
-                .unwrap_or(false),
+            transcript_url: summary.transcript_url,
+            transcript_entries: summary.transcript_entries,
+            transcript: summary.transcript,
+            summary: summary.summary,
+            ai_categories: summary.ai_categories,
+            ad_segments: summary.ad_segments,
+            transcript_status: summary.transcript_status,
+            transcript_status_message: summary.transcript_status_message,
+            chapters: summary.chapters,
+            chapters_count,
+            has_transcript,
         }
     }
 }

@@ -36,6 +36,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, _state: &AppState) {
         Line::from("Enter              — open episode detail"),
         Line::from("j / k              — scroll description"),
         Line::from("p / d / s / a / c  — play / download / star / queue / clip"),
+        Line::from("t/H/u/m/f/C        — transcript / chapters / compile / summarize / comments"),
+        Line::from("R / z / Z / x      — reset progress / 15m sleep / 30m sleep / cancel timer"),
         Line::from("Esc / q / h        — close detail"),
         Line::from(""),
         Line::from(Span::styled(

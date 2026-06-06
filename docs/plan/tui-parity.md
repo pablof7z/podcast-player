@@ -61,12 +61,34 @@ The kernel does not currently project a centralized completed-download history,
 so completed downloads are surfaced through episode rows rather than as a
 standalone completed list.
 
+## 2026-06-06 Episode Detail Slice
+
+The episode detail overlay now renders the richer episode projection and
+dispatches the kernel actions available today:
+
+- Detail rows retain transcript URL/status/text/entries, chapter rows, summary,
+  AI categories, ad segments, enclosure URL, file size, and download metadata.
+- The overlay renders sections for summary, chapters, transcript, ad segments,
+  comments, and description.
+- Detail controls dispatch fetch transcript, fetch chapters, compile AI
+  chapters, summarize episode, fetch/post comments, reset progress, and 15/30
+  minute sleep timer arm/cancel actions.
+- Comments are guarded by a TUI-side selected episode marker because the kernel
+  projection exposes only the current comments slice, not the owning episode id.
+- Headless integration smoke-tests the routing for the new detail actions
+  without asserting network transcript/chapter fetches, LLM completion, or
+  signed-in Nostr comment publishing.
+
+Transcript fetch, chapter fetch/compile, summary generation, and comments still
+depend on their existing kernel/platform/LLM/identity prerequisites; the TUI now
+exposes the controls and projection state consistently.
+
 ## Parity Matrix
 
 | Surface | TUI status | Notes |
 |---|---|---|
 | Subscribe/search/library/show episodes | Partial | Core flow works; needs OPML, feed refresh controls, empty/error polish, and terminal validation. |
-| Playback/player controls | Partial | Play/pause/seek/speed exist; sleep timer, chapters controls, route/platform surfaces remain absent or read-only. |
+| Playback/player controls | Partial | Play/pause/seek/speed and sleep-timer arm/cancel exist; route/platform surfaces remain absent or read-only. |
 | Queue | Partial | Selection, play, remove, clear, add-last, and play-next are wired; reorder/persistence validation remains. |
 | Bookmarks | Partial | Starred episodes now have a tab and unstar/play/queue actions; filtering/search is still absent. |
 | Downloads | TUI wired / executor-dependent | Active queue rows, progress, pause/resume/cancel/cancel-all, delete-file routing, and per-episode badges are wired. A completed-download history needs a richer kernel projection. |
@@ -77,17 +99,15 @@ standalone completed list.
 | Wiki/RAG | Read-only/Scaffold | Articles and search results render; generate/search controls and real RAG synthesis remain. |
 | Inbox triage | Partial | Triage rows and in-progress state render; dismiss/retriage controls need wiring. |
 | Nostr/social/relays/comments | Read-only/Scaffold | Account, contacts, relays, and comments project; identity, relay editing, comments publish, and social graph completion remain. |
-| Voice/transcripts/chapters/ad-skip | Not started/Read-only | Some episode metadata is visible; terminal controls for these flows need dedicated slices. |
+| Voice/transcripts/chapters/ad-skip | Partial | Detail renders transcript/chapter/ad-segment projections and dispatches fetch/compile controls; voice capture, transcript authoring, and platform validation remain. |
 
 ## Next Slices
 
-1. Add episode-detail parity controls for transcripts, chapters, summaries,
-   comments fetch, ad-skip metadata, reset progress, and sleep timer.
-2. Add full settings editors for relays, provider metadata, playback intervals,
+1. Add full settings editors for relays, provider metadata, playback intervals,
    STT/TTS selections, local models, and notifications.
-3. Add wiki generation/search plus richer agent note trust/conversation flows
+2. Add wiki generation/search plus richer agent note trust/conversation flows
    once the corresponding kernel behavior is real.
-4. Add a completed-download history once the kernel projects durable completed
+3. Add a completed-download history once the kernel projects durable completed
    download rows beyond per-episode `download_path`.
-5. Add focused TUI integration scenarios for queue, bookmarks, clips, settings,
+4. Add focused TUI integration scenarios for queue, bookmarks, clips, settings,
    and agent actions, then broaden to network-backed subscribe/search smoke.

@@ -162,6 +162,34 @@ fn run_body(data_dir: &str) -> Result<(), String> {
         .map_err(|e| format!("delete_download dispatch failed: {e}"))?;
     println!("[integration] PASS: download controls dispatched");
 
+    // ---- 14. Episode detail control routing smoke ------------------------
+    println!("[integration] dispatching episode detail controls...");
+    runtime
+        .fetch_transcript(&episode_id)
+        .map_err(|e| format!("fetch_transcript dispatch failed: {e}"))?;
+    runtime
+        .fetch_chapters(&episode_id)
+        .map_err(|e| format!("fetch_chapters dispatch failed: {e}"))?;
+    runtime
+        .compile_chapters(&episode_id)
+        .map_err(|e| format!("compile_chapters dispatch failed: {e}"))?;
+    runtime
+        .fetch_comments(&episode_id)
+        .map_err(|e| format!("fetch_comments dispatch failed: {e}"))?;
+    runtime
+        .summarize_episode(&episode_id)
+        .map_err(|e| format!("summarize_episode dispatch failed: {e}"))?;
+    runtime
+        .reset_progress(&episode_id)
+        .map_err(|e| format!("reset_progress dispatch failed: {e}"))?;
+    runtime
+        .set_sleep_timer(Some(15 * 60))
+        .map_err(|e| format!("set_sleep_timer dispatch failed: {e}"))?;
+    runtime
+        .set_sleep_timer(None)
+        .map_err(|e| format!("cancel_sleep_timer dispatch failed: {e}"))?;
+    println!("[integration] PASS: episode detail controls dispatched");
+
     // ---- 13 + 14. set_default_playback_rate 1.5, assert speed 1.5 --------
     println!("[integration] dispatching settings set_default_playback_rate 1.5…");
     let action = json!({ "op": "set_default_playback_rate", "rate": 1.5 });

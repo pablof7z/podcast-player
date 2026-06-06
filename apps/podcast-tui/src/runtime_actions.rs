@@ -98,6 +98,62 @@ impl AppRuntime {
         )
     }
 
+    pub fn fetch_transcript(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "fetch_transcript", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn fetch_chapters(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "fetch_chapters", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn compile_chapters(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.chapters",
+            &json!({"op": "compile", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn fetch_comments(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "fetch_comments", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn post_comment(&self, episode_id: &str, content: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "post_comment", "episode_id": episode_id, "content": content}),
+        )
+    }
+
+    pub fn summarize_episode(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "summarize_episode", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn reset_progress(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.player",
+            &json!({"op": "reset_progress", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn set_sleep_timer(&self, secs: Option<u64>) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.player",
+            &json!({"op": "set_sleep_timer", "secs": secs}),
+        )
+    }
+
     pub fn add_to_queue(&self, episode_id: &str) -> Result<String> {
         self.dispatch_action_value(
             "podcast.queue",

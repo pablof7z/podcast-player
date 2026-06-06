@@ -119,14 +119,15 @@ worktrees currently in flight.
   picks, task CRUD/run, memory CRUD, and agent-note fetch/publish where the
   kernel has real actions. The downloads slice now wires active queue rows,
   progress/detail rendering, pause/resume/cancel/cancel-all, delete-file
-  routing, and per-episode active/completed badges. Remaining terminal-client
-  slices: episode-detail controls for transcripts, chapters, summaries,
-  comments, ad-skip, reset progress, and sleep timer; full settings editors for
-  relays/provider/STT/TTS/local models; wiki generation/search and richer
-  agent note trust/conversation workflows once the corresponding kernel
-  behavior is real; centralized completed-download history when the kernel
-  projects it; and focused TUI integration scenarios beyond the current
-  subscribe/queue/settings/agent/download smoke.
+  routing, and per-episode active/completed badges. The episode-detail slice
+  now renders transcript/chapter/summary/comment/ad-segment projections and
+  dispatches fetch transcript, fetch/compile chapters, summarize, fetch/post
+  comments, reset progress, and sleep timer actions. Remaining terminal-client
+  slices: full settings editors for relays/provider/STT/TTS/local models; wiki
+  generation/search and richer agent note trust/conversation workflows once the
+  corresponding kernel behavior is real; centralized completed-download
+  history when the kernel projects it; and focused TUI integration scenarios
+  beyond the current subscribe/queue/settings/agent/download/detail smoke.
 - **bunker-isconnecting-reactive.** `RemoteSignerView.connect()` sets
   `isConnecting = false` immediately after dispatching `signInBunker` (fire-
   and-forget). Should clear when `activeAccount` appears in snapshot (or on a

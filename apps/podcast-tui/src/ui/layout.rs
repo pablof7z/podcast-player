@@ -37,6 +37,7 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
             | Mode::AgentMemoryInput
             | Mode::AgentTaskInput
             | Mode::AgentNoteInput
+            | Mode::EpisodeCommentInput
     ) {
         render_input_bar(frame, area, state);
     }
@@ -147,6 +148,7 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Mode::AgentMemoryInput => "Memory key=value: ",
         Mode::AgentTaskInput => "Task: ",
         Mode::AgentNoteInput => "Note: ",
+        Mode::EpisodeCommentInput => "Comment: ",
         _ => return,
     };
     let value = match state.mode {
@@ -156,6 +158,7 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Mode::AgentMemoryInput => &state.agent_memory_input,
         Mode::AgentTaskInput => &state.agent_task_input,
         Mode::AgentNoteInput => &state.agent_note_input,
+        Mode::EpisodeCommentInput => &state.episode_comment_input,
         _ => return,
     };
 
