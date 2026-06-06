@@ -88,6 +88,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Tab::Queue => ui::queue::render(frame, area, state),
         Tab::Inbox => ui::inbox::render(frame, area, state),
         Tab::Search => ui::search::render(frame, area, state),
+        Tab::Downloads => ui::downloads::render(frame, area, state),
         Tab::Bookmarks => ui::bookmarks::render(frame, area, state),
         Tab::Clips => ui::clips::render(frame, area, state),
         Tab::Agent => ui::agent::render(frame, area, state),

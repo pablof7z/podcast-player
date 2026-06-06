@@ -1,3 +1,5 @@
+#[path = "input_downloads.rs"]
+mod downloads;
 #[path = "input_tabs.rs"]
 mod tabs;
 
@@ -57,6 +59,7 @@ pub fn handle_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> 
         Tab::Queue => tabs::handle_queue_keys(state, runtime, key),
         Tab::Inbox => tabs::handle_inbox_keys(state, runtime, key),
         Tab::Search => tabs::handle_search_keys(state, runtime, key),
+        Tab::Downloads => downloads::handle_downloads_keys(state, runtime, key),
         Tab::Bookmarks => tabs::handle_bookmark_keys(state, runtime, key),
         Tab::Clips => tabs::handle_clips_keys(state, runtime, key),
         Tab::Agent => tabs::handle_agent_keys(state, runtime, key),
@@ -248,6 +251,7 @@ fn handle_episode_detail_key(state: &mut AppState, runtime: &AppRuntime, key: Ke
         KeyCode::Char('g') | KeyCode::Home => state.episode_detail_scroll_top(),
         KeyCode::Char('p') => play_selected_episode(state, runtime),
         KeyCode::Char('d') => download_selected_episode(state, runtime),
+        KeyCode::Char('D') => delete_selected_episode_download(state, runtime),
         KeyCode::Char('s') => star_selected_episode(state, runtime),
         KeyCode::Char('S') => unstar_selected_episode(state, runtime),
         KeyCode::Char('a') => queue_selected_episode(state, runtime, false),
@@ -269,6 +273,19 @@ fn download_selected_episode(state: &mut AppState, runtime: &AppRuntime) {
     if let Some(id) = state.selected_episode_id() {
         let _ = runtime.download_episode(&id);
         state.push_toast("download queued");
+    }
+}
+
+fn delete_selected_episode_download(state: &mut AppState, runtime: &AppRuntime) {
+    if let Some(id) = state.selected_episode_id() {
+        delete_download_for_episode_id(state, runtime, &id);
+    }
+}
+
+fn delete_download_for_episode_id(state: &mut AppState, runtime: &AppRuntime, episode_id: &str) {
+    match runtime.delete_download(episode_id) {
+        Ok(_) => state.push_toast("download deleted"),
+        Err(e) => state.status = format!("delete download error: {e}"),
     }
 }
 

@@ -5,6 +5,7 @@ use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
+use crate::ui::format;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = Block::default()
@@ -36,9 +37,23 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 Span::styled(format!("{}. ", i + 1), Style::default().fg(Color::DarkGray)),
                 Span::styled(&ep.title, base_style),
             ];
+            let mut meta = Vec::new();
             if let Some(dur) = ep.duration_secs {
+                meta.push(format::duration(dur));
+            }
+            let active_download = state
+                .downloads
+                .iter()
+                .find(|download| download.episode_id == ep.id)
+                .map(|download| download.state.as_str());
+            if let Some(download_status) =
+                format::download_status(ep.download_path.as_deref(), active_download)
+            {
+                meta.push(download_status);
+            }
+            if !meta.is_empty() {
                 spans.push(Span::styled(
-                    format!("  {}", format_duration(dur)),
+                    format!("  {}", meta.join(" | ")),
                     Style::default().fg(Color::DarkGray),
                 ));
             }
@@ -48,16 +63,4 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 
     let list = List::new(items).block(block);
     frame.render_widget(list, area);
-}
-
-fn format_duration(secs: f64) -> String {
-    let total = secs as u64;
-    let hours = total / 3600;
-    let minutes = (total % 3600) / 60;
-    let seconds = total % 60;
-    if hours > 0 {
-        format!("{}:{:02}:{:02}", hours, minutes, seconds)
-    } else {
-        format!("{}:{:02}", minutes, seconds)
-    }
 }

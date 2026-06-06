@@ -28,6 +28,7 @@ pub(super) fn handle_library_keys(state: &mut AppState, runtime: &AppRuntime, ke
         KeyCode::Char('G') | KeyCode::End => jump_library_selection(state, true),
         KeyCode::Char(' ') => toggle_pause(state, runtime),
         KeyCode::Char('d') => super::download_selected_episode(state, runtime),
+        KeyCode::Char('D') => super::delete_selected_episode_download(state, runtime),
         KeyCode::Char('s') => super::star_selected_episode(state, runtime),
         KeyCode::Char('S') => super::unstar_selected_episode(state, runtime),
         KeyCode::Char('a') => super::queue_selected_episode(state, runtime, false),
@@ -59,6 +60,11 @@ pub(super) fn handle_queue_keys(state: &mut AppState, runtime: &AppRuntime, key:
                 state.push_toast("removed from queue");
             }
         }
+        KeyCode::Char('D') => {
+            if let Some(id) = state.selected_queue_episode_id() {
+                super::delete_download_for_episode_id(state, runtime, &id);
+            }
+        }
         KeyCode::Char('x') => {
             let _ = runtime.clear_queue();
             state.push_toast("queue cleared");
@@ -85,6 +91,11 @@ pub(super) fn handle_inbox_keys(state: &mut AppState, runtime: &AppRuntime, key:
             if let Some(id) = state.selected_inbox_episode_id() {
                 let _ = runtime.download_episode(&id);
                 state.push_toast("download queued");
+            }
+        }
+        KeyCode::Char('D') => {
+            if let Some(id) = state.selected_inbox_episode_id() {
+                super::delete_download_for_episode_id(state, runtime, &id);
             }
         }
         KeyCode::Char('m') => {
@@ -137,6 +148,11 @@ pub(super) fn handle_bookmark_keys(state: &mut AppState, runtime: &AppRuntime, k
             if let Some(id) = state.selected_bookmark_episode_id() {
                 let _ = runtime.unstar(&id);
                 state.push_toast("bookmark removed");
+            }
+        }
+        KeyCode::Char('D') => {
+            if let Some(id) = state.selected_bookmark_episode_id() {
+                super::delete_download_for_episode_id(state, runtime, &id);
             }
         }
         KeyCode::Char('a') => {

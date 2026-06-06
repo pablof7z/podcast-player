@@ -143,6 +143,25 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     .ok_or_else(|| format!("timed out waiting for episode {episode_id} to read played == false"))?;
     println!("[integration] PASS: episode.played == false");
 
+    // ---- 13. Download control routing smoke ------------------------------
+    println!("[integration] dispatching download control no-ops...");
+    runtime
+        .pause_download(&episode_id)
+        .map_err(|e| format!("pause_download dispatch failed: {e}"))?;
+    runtime
+        .resume_download(&episode_id)
+        .map_err(|e| format!("resume_download dispatch failed: {e}"))?;
+    runtime
+        .cancel_download(&episode_id)
+        .map_err(|e| format!("cancel_download dispatch failed: {e}"))?;
+    runtime
+        .cancel_all_downloads()
+        .map_err(|e| format!("cancel_all_downloads dispatch failed: {e}"))?;
+    runtime
+        .delete_download(&episode_id)
+        .map_err(|e| format!("delete_download dispatch failed: {e}"))?;
+    println!("[integration] PASS: download controls dispatched");
+
     // ---- 13 + 14. set_default_playback_rate 1.5, assert speed 1.5 --------
     println!("[integration] dispatching settings set_default_playback_rate 1.5…");
     let action = json!({ "op": "set_default_playback_rate", "rate": 1.5 });

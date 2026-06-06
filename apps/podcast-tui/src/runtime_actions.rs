@@ -66,6 +66,38 @@ impl AppRuntime {
         )
     }
 
+    pub fn pause_download(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.player",
+            &json!({"op": "pause_download", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn resume_download(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.player",
+            &json!({"op": "resume_download", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn cancel_download(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.player",
+            &json!({"op": "cancel_download", "episode_id": episode_id}),
+        )
+    }
+
+    pub fn cancel_all_downloads(&self) -> Result<String> {
+        self.dispatch_action_value("podcast.player", &json!({"op": "cancel_all_downloads"}))
+    }
+
+    pub fn delete_download(&self, episode_id: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast",
+            &json!({"op": "delete_download", "episode_id": episode_id}),
+        )
+    }
+
     pub fn add_to_queue(&self, episode_id: &str) -> Result<String> {
         self.dispatch_action_value(
             "podcast.queue",

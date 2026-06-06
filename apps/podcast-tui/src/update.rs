@@ -130,6 +130,7 @@ impl AppState {
             .into_iter()
             .map(DownloadRow::from)
             .collect();
+        clamp_index(&mut self.selected_download, self.downloads.len());
 
         for previous_id in &previous_ids {
             if !self

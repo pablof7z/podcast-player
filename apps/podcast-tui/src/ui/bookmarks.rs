@@ -45,6 +45,16 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             if episode.played {
                 meta.push("played".to_string());
             }
+            let active_download = state
+                .downloads
+                .iter()
+                .find(|download| download.episode_id == episode.id)
+                .map(|download| download.state.as_str());
+            if let Some(download_status) =
+                format::download_status(episode.download_path.as_deref(), active_download)
+            {
+                meta.push(download_status);
+            }
             if !meta.is_empty() {
                 spans.push(Span::styled(
                     format!("  {}", meta.join(" | ")),

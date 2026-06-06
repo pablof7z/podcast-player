@@ -17,3 +17,27 @@ pub fn short_id(value: &str) -> String {
         format!("{}...{}", &value[..6], &value[value.len() - 6..])
     }
 }
+
+pub fn bytes(value: u64) -> String {
+    const KIB: f64 = 1024.0;
+    const MIB: f64 = KIB * 1024.0;
+    const GIB: f64 = MIB * 1024.0;
+    let value = value as f64;
+    if value >= GIB {
+        format!("{:.1} GiB", value / GIB)
+    } else if value >= MIB {
+        format!("{:.1} MiB", value / MIB)
+    } else if value >= KIB {
+        format!("{:.1} KiB", value / KIB)
+    } else {
+        format!("{value:.0} B")
+    }
+}
+
+pub fn download_status(download_path: Option<&str>, active_state: Option<&str>) -> Option<String> {
+    if download_path.is_some() {
+        Some("downloaded".to_string())
+    } else {
+        active_state.map(|state| format!("download {state}"))
+    }
+}

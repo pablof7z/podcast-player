@@ -42,6 +42,25 @@ The Agent tab now behaves as a sectioned workspace:
 Headless TUI integration now asserts agent chat projection, memory CRUD, and
 agent task create/enable/disable/run/delete round trips through the kernel.
 
+## 2026-06-06 Downloads Slice
+
+The TUI now has a dedicated Downloads tab backed by the kernel download-queue
+projection:
+
+- Active, queued, paused, and failed rows render with progress, state, type,
+  total byte count when available, URL, and error detail.
+- Keyboard actions dispatch existing kernel download controls: pause, resume,
+  cancel selected, cancel all, and delete a completed local episode file.
+- Library, queue, inbox, and bookmarks rows now show active download state;
+  episode-backed rows also show completed local files through `download_path`.
+- Headless integration smoke-tests the runtime action routing for pause,
+  resume, cancel, cancel-all, and delete without requiring a platform
+  background-download executor.
+
+The kernel does not currently project a centralized completed-download history,
+so completed downloads are surfaced through episode rows rather than as a
+standalone completed list.
+
 ## Parity Matrix
 
 | Surface | TUI status | Notes |
@@ -50,7 +69,7 @@ agent task create/enable/disable/run/delete round trips through the kernel.
 | Playback/player controls | Partial | Play/pause/seek/speed exist; sleep timer, chapters controls, route/platform surfaces remain absent or read-only. |
 | Queue | Partial | Selection, play, remove, clear, add-last, and play-next are wired; reorder/persistence validation remains. |
 | Bookmarks | Partial | Starred episodes now have a tab and unstar/play/queue actions; filtering/search is still absent. |
-| Downloads | Partial | Active download status is shown; manager actions for pause/resume/cancel/delete are not yet exposed. |
+| Downloads | TUI wired / executor-dependent | Active queue rows, progress, pause/resume/cancel/cancel-all, delete-file routing, and per-episode badges are wired. A completed-download history needs a richer kernel projection. |
 | Settings | Partial | Common playback/AI/Nostr toggles render and dispatch; provider credential editing and relay editing are not exposed. |
 | Clips | Partial | Clip projection, AutoSnip, play-from-start, and delete are wired; composer/export/share flows are absent. |
 | Agent chat | TUI wired / kernel scaffold | TUI send/clear is wired and tested; real LLM loop remains governed by the existing NMP backlog. |
@@ -62,13 +81,13 @@ agent task create/enable/disable/run/delete round trips through the kernel.
 
 ## Next Slices
 
-1. Add a downloads manager surface: pause/resume/cancel/delete, completed rows,
-   and per-episode download state in every episode list.
-2. Add episode-detail parity controls for transcripts, chapters, summaries,
+1. Add episode-detail parity controls for transcripts, chapters, summaries,
    comments fetch, ad-skip metadata, reset progress, and sleep timer.
-3. Add full settings editors for relays, provider metadata, playback intervals,
+2. Add full settings editors for relays, provider metadata, playback intervals,
    STT/TTS selections, local models, and notifications.
-4. Add wiki generation/search plus richer agent note trust/conversation flows
+3. Add wiki generation/search plus richer agent note trust/conversation flows
    once the corresponding kernel behavior is real.
+4. Add a completed-download history once the kernel projects durable completed
+   download rows beyond per-episode `download_path`.
 5. Add focused TUI integration scenarios for queue, bookmarks, clips, settings,
    and agent actions, then broaden to network-backed subscribe/search smoke.

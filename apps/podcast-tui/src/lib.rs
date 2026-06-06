@@ -9,6 +9,7 @@ mod agent_state;
 pub mod app;
 pub mod audio_host;
 pub mod bridge;
+mod download_state;
 pub mod input;
 pub mod rows;
 pub mod runtime;

@@ -2,6 +2,7 @@ pub mod agent;
 pub mod bookmarks;
 pub mod clips;
 pub mod detail;
+pub mod downloads;
 pub mod episodes;
 pub mod format;
 pub mod help;

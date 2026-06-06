@@ -46,8 +46,11 @@ pub struct InboxRow {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DownloadRow {
     pub episode_id: String,
+    pub kind: String,
+    pub url: String,
     pub progress: f32,
     pub state: String,
+    pub total_bytes: Option<u64>,
     pub error: Option<String>,
 }
 
@@ -112,10 +115,18 @@ impl From<InboxItem> for InboxRow {
 
 impl From<DownloadItemSnapshot> for DownloadRow {
     fn from(item: DownloadItemSnapshot) -> Self {
+        let kind = if item.kind.is_episode() {
+            "episode"
+        } else {
+            "local_model"
+        };
         Self {
             episode_id: item.episode_id,
+            kind: kind.to_string(),
+            url: item.url,
             progress: item.progress,
             state: item.state,
+            total_bytes: item.total_bytes,
             error: item.error,
         }
     }

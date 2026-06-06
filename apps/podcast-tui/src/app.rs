@@ -21,6 +21,7 @@ pub enum Tab {
     Queue,
     Inbox,
     Search,
+    Downloads,
     Bookmarks,
     Clips,
     Agent,
@@ -36,6 +37,7 @@ impl Tab {
             Self::Queue,
             Self::Inbox,
             Self::Search,
+            Self::Downloads,
             Self::Bookmarks,
             Self::Clips,
             Self::Agent,
@@ -51,6 +53,7 @@ impl Tab {
             Self::Queue => "queue",
             Self::Inbox => "inbox",
             Self::Search => "search",
+            Self::Downloads => "downloads",
             Self::Bookmarks => "stars",
             Self::Clips => "clips",
             Self::Agent => "agent",
@@ -157,6 +160,7 @@ pub struct AppState {
     pub status: String,
     pub toasts: Vec<Toast>,
     pub downloads: Vec<DownloadRow>,
+    pub selected_download: usize,
     pub playback_error: Option<String>,
 }
 
@@ -214,6 +218,7 @@ impl Default for AppState {
             selected_setting: 0,
             status: "starting kernel".to_string(),
             downloads: Vec::new(),
+            selected_download: 0,
             toasts: Vec::new(),
             playback_error: None,
         }
