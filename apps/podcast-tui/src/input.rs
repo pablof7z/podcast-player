@@ -1,5 +1,7 @@
 #[path = "input_downloads.rs"]
 mod downloads;
+#[path = "input_settings.rs"]
+mod settings;
 #[path = "input_tabs.rs"]
 mod tabs;
 
@@ -39,7 +41,7 @@ pub fn handle_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> 
     match key.code {
         KeyCode::Tab => state.next_tab(),
         KeyCode::BackTab => state.previous_tab(),
-        KeyCode::Char('n') => {
+        KeyCode::Char('n') if !matches!(state.tab, Tab::Agent | Tab::Settings) => {
             state.mode = Mode::SubscribeInput;
             state.subscribe_input.clear();
             state.status = "enter feed URL to subscribe".to_string();
@@ -65,7 +67,7 @@ pub fn handle_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> 
         Tab::Agent => tabs::handle_agent_keys(state, runtime, key),
         Tab::Wiki => tabs::handle_wiki_keys(state, runtime, key),
         Tab::Social => tabs::handle_social_keys(state, runtime, key),
-        Tab::Settings => tabs::handle_settings_keys(state, runtime, key),
+        Tab::Settings => settings::handle_settings_keys(state, runtime, key),
     }
 
     InputFlow::Continue
@@ -75,6 +77,7 @@ fn handle_mode_key(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) ->
     match state.mode {
         Mode::SearchInput => handle_search_input(state, runtime, key),
         Mode::SubscribeInput => handle_subscribe_input(state, runtime, key),
+        Mode::RelayInput => handle_relay_input(state, runtime, key),
         Mode::AgentInput => handle_agent_input(state, runtime, key),
         Mode::AgentMemoryInput => handle_agent_memory_input(state, runtime, key),
         Mode::AgentTaskInput => handle_agent_task_input(state, runtime, key),
@@ -125,6 +128,35 @@ fn handle_subscribe_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEv
             state.subscribe_input.pop();
         }
         KeyCode::Char(c) => state.subscribe_input.push(c),
+        _ => {}
+    }
+    true
+}
+
+fn handle_relay_input(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Esc => state.mode = Mode::Normal,
+        KeyCode::Enter => {
+            let input = state.relay_input.trim().to_string();
+            state.relay_input.clear();
+            state.mode = Mode::Normal;
+            state.tab = Tab::Settings;
+            state.settings_section = crate::app::SettingsSection::Relays;
+            if input.is_empty() {
+                return true;
+            }
+            let mut parts = input.split_whitespace();
+            let url = parts.next().unwrap_or_default();
+            let role = parts.next().unwrap_or("both");
+            match runtime.add_relay(url, role) {
+                Ok(_) => state.push_toast("relay added"),
+                Err(e) => state.status = format!("relay add error: {e}"),
+            }
+        }
+        KeyCode::Backspace => {
+            state.relay_input.pop();
+        }
+        KeyCode::Char(c) => state.relay_input.push(c),
         _ => {}
     }
     true

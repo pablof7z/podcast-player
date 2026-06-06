@@ -71,6 +71,7 @@ impl AppState {
         self.comments = update.comments;
         self.categories = update.categories;
         self.configured_relays = update.configured_relays;
+        clamp_index(&mut self.selected_relay, self.configured_relays.len());
         self.active_account = update.active_account;
         if let Some(social) = update.social {
             self.social_following_count = social.following_count;

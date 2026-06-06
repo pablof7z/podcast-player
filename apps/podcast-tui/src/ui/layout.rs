@@ -33,6 +33,7 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
         state.mode,
         Mode::SearchInput
             | Mode::SubscribeInput
+            | Mode::RelayInput
             | Mode::AgentInput
             | Mode::AgentMemoryInput
             | Mode::AgentTaskInput
@@ -144,6 +145,7 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let label = match state.mode {
         Mode::SearchInput => "Search: ",
         Mode::SubscribeInput => "Subscribe: ",
+        Mode::RelayInput => "Relay: ",
         Mode::AgentInput => "Agent: ",
         Mode::AgentMemoryInput => "Memory key=value: ",
         Mode::AgentTaskInput => "Task: ",
@@ -154,6 +156,7 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let value = match state.mode {
         Mode::SearchInput => &state.search_input,
         Mode::SubscribeInput => &state.subscribe_input,
+        Mode::RelayInput => &state.relay_input,
         Mode::AgentInput => &state.agent_input,
         Mode::AgentMemoryInput => &state.agent_memory_input,
         Mode::AgentTaskInput => &state.agent_task_input,

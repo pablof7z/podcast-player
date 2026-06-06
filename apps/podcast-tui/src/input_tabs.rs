@@ -2,7 +2,6 @@ use crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::{AgentSection, AppState, Mode, Pane};
 use crate::runtime::AppRuntime;
-use crate::settings_catalog::SETTINGS_ITEMS;
 
 pub(super) fn handle_library_keys(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) {
     match key.code {
@@ -397,26 +396,6 @@ pub(super) fn handle_social_keys(state: &mut AppState, runtime: &AppRuntime, key
         KeyCode::Char('n') => {
             let _ = runtime.fetch_agent_notes();
             state.push_toast("refreshing agent notes");
-        }
-        _ => {}
-    }
-}
-
-pub(super) fn handle_settings_keys(state: &mut AppState, runtime: &AppRuntime, key: KeyEvent) {
-    match key.code {
-        KeyCode::Char('j') | KeyCode::Down => state.next_setting(SETTINGS_ITEMS.len()),
-        KeyCode::Char('k') | KeyCode::Up => state.previous_setting(),
-        KeyCode::Char('g') | KeyCode::Home => state.selected_setting = 0,
-        KeyCode::Char('G') | KeyCode::End => {
-            state.selected_setting = SETTINGS_ITEMS.len().saturating_sub(1);
-        }
-        KeyCode::Enter | KeyCode::Char(' ') => {
-            if let Some(item) = SETTINGS_ITEMS.get(state.selected_setting) {
-                match item.activate(state, runtime) {
-                    Ok(_) => state.push_toast("setting updated"),
-                    Err(e) => state.status = format!("settings error: {e}"),
-                }
-            }
         }
         _ => {}
     }

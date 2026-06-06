@@ -122,12 +122,15 @@ worktrees currently in flight.
   routing, and per-episode active/completed badges. The episode-detail slice
   now renders transcript/chapter/summary/comment/ad-segment projections and
   dispatches fetch transcript, fetch/compile chapters, summarize, fetch/post
-  comments, reset progress, and sleep timer actions. Remaining terminal-client
-  slices: full settings editors for relays/provider/STT/TTS/local models; wiki
-  generation/search and richer agent note trust/conversation workflows once the
-  corresponding kernel behavior is real; centralized completed-download
-  history when the kernel projects it; and focused TUI integration scenarios
-  beyond the current subscribe/queue/settings/agent/download/detail smoke.
+  comments, reset progress, and sleep timer actions. The settings relay slice
+  now wires configured relay add/remove/role editing and validates projection
+  updates. Remaining terminal-client slices: settings editors for provider
+  metadata, playback intervals, STT/TTS/local models, notifications, and Nostr
+  profile/public relay fields; wiki generation/search and richer agent note
+  trust/conversation workflows once the corresponding kernel behavior is real;
+  centralized completed-download history when the kernel projects it; and
+  focused TUI integration scenarios beyond the current
+  subscribe/queue/settings/agent/download/detail/relay smoke.
 - **bunker-isconnecting-reactive.** `RemoteSignerView.connect()` sets
   `isConnecting = false` immediately after dispatching `signInBunker` (fire-
   and-forget). Should clear when `activeAccount` appears in snapshot (or on a

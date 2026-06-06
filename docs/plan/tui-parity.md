@@ -83,6 +83,20 @@ Transcript fetch, chapter fetch/compile, summary generation, and comments still
 depend on their existing kernel/platform/LLM/identity prerequisites; the TUI now
 exposes the controls and projection state consistently.
 
+## 2026-06-06 Settings Relay Slice
+
+The Settings tab now has a relay-editor section backed by
+`PodcastUpdate.configured_relays` and `podcast.settings` relay actions:
+
+- `app.rs` navigation/input enums moved to `navigation.rs` to keep file sizes
+  under the 500-line hard limit before adding more settings state.
+- Settings now switches between `general` and `relays` sections with `h/l`.
+- Relay rows render URL + role, support add via `url [role]`, remove selected
+  relay, and cycle roles through `read`, `write`, `both`, `indexer`, and
+  `both,indexer`.
+- Headless integration asserts add, role update, and removal through the live
+  configured-relays projection.
+
 ## Parity Matrix
 
 | Surface | TUI status | Notes |
@@ -92,7 +106,7 @@ exposes the controls and projection state consistently.
 | Queue | Partial | Selection, play, remove, clear, add-last, and play-next are wired; reorder/persistence validation remains. |
 | Bookmarks | Partial | Starred episodes now have a tab and unstar/play/queue actions; filtering/search is still absent. |
 | Downloads | TUI wired / executor-dependent | Active queue rows, progress, pause/resume/cancel/cancel-all, delete-file routing, and per-episode badges are wired. A completed-download history needs a richer kernel projection. |
-| Settings | Partial | Common playback/AI/Nostr toggles render and dispatch; provider credential editing and relay editing are not exposed. |
+| Settings | Partial | Common playback/AI/Nostr toggles and configured relay add/remove/role editing are wired; provider credential editing, STT/TTS selectors, and local model management remain. |
 | Clips | Partial | Clip projection, AutoSnip, play-from-start, and delete are wired; composer/export/share flows are absent. |
 | Agent chat | TUI wired / kernel scaffold | TUI send/clear is wired and tested; real LLM loop remains governed by the existing NMP backlog. |
 | Agent tasks/picks/memory/notes | Partial | TUI task CRUD/run, pick play/queue, memory CRUD, note fetch/publish are wired; note trust workflows and the real scheduler/responder loop remain kernel backlog work. |
@@ -103,8 +117,9 @@ exposes the controls and projection state consistently.
 
 ## Next Slices
 
-1. Add full settings editors for relays, provider metadata, playback intervals,
-   STT/TTS selections, local models, and notifications.
+1. Add full settings editors for provider metadata, playback intervals, STT/TTS
+   selections, local models, notification options, and Nostr profile/public
+   relay fields.
 2. Add wiki generation/search plus richer agent note trust/conversation flows
    once the corresponding kernel behavior is real.
 3. Add a completed-download history once the kernel projects durable completed

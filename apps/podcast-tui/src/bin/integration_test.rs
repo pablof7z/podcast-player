@@ -203,6 +203,36 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     .ok_or_else(|| "timed out waiting for settings.default_playback_rate == 1.5".to_string())?;
     println!("[integration] PASS: settings.default_playback_rate == 1.5");
 
+    // ---- 15. Relay editor settings round-trip ----------------------------
+    let relay_url = "wss://tui-integration.invalid";
+    println!("[integration] adding configured relay...");
+    runtime
+        .add_relay(relay_url, "read")
+        .map_err(|e| format!("add_relay dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).as_deref() == Some("read")
+    })
+    .ok_or_else(|| "timed out waiting for relay add".to_string())?;
+    println!("[integration] PASS: relay added");
+
+    runtime
+        .set_relay_role(relay_url, "write")
+        .map_err(|e| format!("set_relay_role dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).as_deref() == Some("write")
+    })
+    .ok_or_else(|| "timed out waiting for relay role update".to_string())?;
+    println!("[integration] PASS: relay role updated");
+
+    runtime
+        .remove_relay(relay_url)
+        .map_err(|e| format!("remove_relay dispatch failed: {e}"))?;
+    wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
+        relay_role(u, relay_url).is_none()
+    })
+    .ok_or_else(|| "timed out waiting for relay removal".to_string())?;
+    println!("[integration] PASS: relay removed");
+
     // ---- 15 + 16. Agent chat round-trip ---------------------------------
     println!("[integration] sending agent chat message…");
     runtime
@@ -394,6 +424,14 @@ fn agent_task_status(update: &PodcastUpdate, task_id: &str) -> Option<String> {
         .iter()
         .find(|task| task.id == task_id)
         .map(|task| task.status.clone())
+}
+
+fn relay_role(update: &PodcastUpdate, url: &str) -> Option<String> {
+    update
+        .configured_relays
+        .iter()
+        .find(|relay| relay.url == url)
+        .map(|relay| relay.role.clone())
 }
 
 /// Create a unique, hermetic temp data dir under the system temp directory.

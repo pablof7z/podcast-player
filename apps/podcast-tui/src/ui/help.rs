@@ -64,7 +64,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, _state: &AppState) {
         Line::from("Agent: h/l          — switch agent section"),
         Line::from("Agent: Enter / n   — compose or create row"),
         Line::from("Agent: r/e/d/x     — run-refresh / toggle / delete / clear"),
-        Line::from("Settings: Enter    — toggle selected setting"),
+        Line::from("Settings: h/l      — switch general / relays"),
+        Line::from("Settings: Enter    — toggle setting or cycle relay role"),
+        Line::from("Relays: n/d/r      — add / remove / cycle role"),
         Line::from(""),
         Line::from(Span::styled(
             "Search tab",

@@ -382,6 +382,27 @@ impl AppRuntime {
         )
     }
 
+    pub fn add_relay(&self, url: &str, role: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.settings",
+            &json!({"op": "add_relay", "url": url, "role": role}),
+        )
+    }
+
+    pub fn remove_relay(&self, url: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.settings",
+            &json!({"op": "remove_relay", "url": url}),
+        )
+    }
+
+    pub fn set_relay_role(&self, url: &str, role: &str) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.settings",
+            &json!({"op": "set_relay_role", "url": url, "role": role}),
+        )
+    }
+
     pub fn set_default_playback_rate(&self, rate: f64) -> Result<String> {
         self.dispatch_action_value(
             "podcast.settings",
