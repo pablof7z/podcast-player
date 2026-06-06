@@ -86,7 +86,7 @@ extension AppStateStore {
     /// NOTE: like the feed-less podcast rows themselves, these episodes live
     /// only in Swift `state`; the kernel has no model for them, so a
     /// projection tick can clobber them — a pre-existing gap tracked in
-    /// `docs/BACKLOG.md` (`m9-tts-persistence`).
+    /// `docs/BACKLOG.md` (`external-feed-ensure-kernel-seed`).
     @discardableResult
     func upsertEpisodes(
         _ incoming: [Episode],

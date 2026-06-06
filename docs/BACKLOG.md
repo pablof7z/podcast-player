@@ -29,33 +29,18 @@ worktrees currently in flight.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
-- **synthetic-podcast-row-kernel-seed.** Two other synthetic-row creators
-  still bypass the kernel store: `AgentGeneratedPodcastService.ensurePodcastID`
-  (the "Agent Generated" singleton) and `LivePlaybackHostAdapter` (the
-  external-play placeholder) both call `store.upsertPodcast` Swift-only with NO
-  kernel dispatch. Because `applyKernelState` rebuilds `state.podcasts`
-  wholesale from the Rust `library` projection on every library-hash change
-  (`next.podcasts = podcasts`), a Swift-only synthetic row is dropped on the
-  next snapshot push — the same wipe bug the owned-podcast lifecycle PR
-  (`feat/owned-podcast-lifecycle`) fixed by making the kernel the SSOT and
-  adding `create_synthetic_podcast`. Reuse that op: dispatch
-  `kernelCreateSyntheticPodcast` from both creation sites so their rows survive
-  a push. Out of scope for the owned-podcast PR (it touched only the agent
-  `LiveAgentOwnedPodcastManager` lifecycle). Verify the "Agent Generated"
-  episodes still resolve after a refresh once the row rides the projection.
-- **synthetic-podcast-episodes-kernel-seed.** Sibling to
-  `synthetic-podcast-row-kernel-seed`: episodes attached to owned / synthetic
-  podcasts are added Swift-only via `AgentGeneratedPodcastService.publishEpisode`
-  (the `generate_tts_episode` agent tool → `AgentTTSComposer`, and
-  `LiveYouTubeIngestionAdapter`) with NO kernel insert. `applyKernelState`
-  rebuilds `state.episodes` from `library[*].episodes` (the kernel store), which
-  holds zero episodes for the owned podcast → the show's non-queued episodes are
-  dropped from the UI on the next content-changing snapshot push. The
-  owned-podcast-lifecycle PR (#211) made the *row* survive a push (kernel SSOT)
-  but the *episodes* still don't. Fix by routing owned-podcast episode
-  publishing through a kernel insert (a `podcast.publish` episode-add op, or a
-  `subscribe`-style upsert) so `library[*].episodes` carries them. Until then an
-  owned podcast resets to 0 episodes after a push.
+- **external-feed-ensure-kernel-seed.** `SubscriptionService.ensurePodcast`
+  remains the live Swift-only feed insertion path. Agent external/listing tools
+  use it to capture an unfollowed RSS feed without subscribing; the method calls
+  `FeedClient.fetch`, then writes the podcast row via `store.upsertPodcast` and
+  the parsed back-catalog via `store.upsertEpisodes`. Because
+  `applyKernelState` rebuilds `state.podcasts` and `store.episodes` from the
+  Rust `library` projection, those unfollowed rows are projection-fragile. Add a
+  kernel action for "ensure known feed without follow" (or make the listing path
+  read-only and not durable) so Rust ingests the row + episodes and projects
+  them back. Already-resolved paths: `AgentGeneratedPodcastService` and
+  `LivePlaybackHostAdapter` now use `kernelCreatePodcast` / `kernelAddEpisode`,
+  not Swift `upsertPodcast` / `upsertEpisodes`.
 - **owned-podcast-episode-backfill-kernel.** The kernel `update_owned_podcast`
   op now carries title/description/author/artwork/visibility and republishes
   the kind:10154 SHOW event itself on a private→public flip. The remaining
@@ -405,44 +390,29 @@ worktrees currently in flight.
   `agent-episodes/<id>.m4a`, and verifying the published `.synthetic` episode
   metadata round-trips the store's disk layer across restart.
 
-  SHARPENED (`feat/appstate-merge-kernel`): the round-trip gap is not just disk
-  persistence — it is the kernel projection itself. `applyKernelState`
-  FULL-REPLACES `state.podcasts` / `state.subscriptions` / `state.episodes`
-  from the Rust library every snapshot tick, and the library only emits
-  `.rss` rows. The agent-synthesized rows inserted by Swift
-  `upsertPodcast` / `upsertEpisodes` (the `Podcast(kind: .synthetic)` "Agent
-  Generated" + agent-owned shows, their TTS / YouTube episodes, and the
-  external-play `.rss` placeholders from `ensurePodcast`) live ONLY in Swift
-  `state`. The kernel has no synthetic-podcast model and no
-  `upsert_podcast` / `add_episode` op, so any projection tick after an insert
-  can clobber these rows. The Swift merge-policy removal in
-  `feat/appstate-merge-kernel` deliberately KEPT those `upsertPodcast` /
-  `upsertEpisodes` / `upsertEpisode` insert seams (they are the only writer
-  for this content) and stripped only the RSS pull-merge branches. The real
-  fix is a kernel synthetic-content subsystem (a new podcast `kind` + ingest
-  op + projection that preserves non-`.rss` rows) — a feature-scale
-  human-decision gate, not a cleanup. Until then agent-synthesized content is
-  projection-fragile.
-- **ai-chapters-real-generation.** Replace equal-length stub chapters with
-  transcript/LLM-grounded chapters, provenance, regeneration/clear behavior,
-  and persistence.
-- **m4-chapters-rust-persistence.** Rust round-trip DONE — the original
-  premise (chapters mutate Swift state only, no Rust action to receive them)
-  was superseded by PR #175, which moved chapter synthesis into the kernel:
-  `ai_chapters` calls `store.set_episode_chapters`, which writes `ep.chapters`
-  (serialized to `podcasts.json` — the field is
-  `serde(skip_serializing_if = "Option::is_none")`, not skipped) and flushes to
-  disk, and `ffi/snapshot.rs` already projects chapters (incl. `is_ai_generated`
-  + `source`) from the store onto `EpisodeSummary`. The remaining live gap —
-  AI chapters flashing empty on a feed-refresh — was that `merge_episodes`
-  (`host_op_handler_helpers.rs`) only carried `position_secs` forward, so a
-  re-parsed RSS episode (chapters=None) clobbered them in memory before
-  `subscribe()` re-persisted. Fixed: `merge_episodes` now carries prior
-  AI-generated chapters forward when the fresh episode supplies none (publisher
-  chapters still win — D7). Remaining follow-up (separate, iOS-only): the now-
-  redundant chapters fallback in `AppStateStore+KernelProjection.swift`
-  (`if episodes[idx].chapters?.isEmpty != false { ... = prior.chapters }`) can
-  be deleted to finish the preserved-state-block removal.
+  Current projection gap: generated episodes now use `kernelCreatePodcast` /
+  `kernelAddEpisode` and ride the Rust projection. The remaining Swift-only
+  insert seam is `SubscriptionService.ensurePodcast` for unfollowed external
+  RSS feeds; that path is tracked under `external-feed-ensure-kernel-seed`.
+  Keep this TTS item scoped to surviving Swift composer follow-ups
+  (NIP-F4 publishing, deletion cleanup, restart verification), not feed-store
+  ownership.
+- **ai-chapters-swift-compiler-delete.** Rust chapter synthesis/persistence now
+  exists (`podcast.chapters.compile` → `ai_chapters.rs` →
+  `store.set_episode_chapters` → `EpisodeSummary.chapters` projection), but the
+  legacy Swift `AIChapterCompiler` is still live from `PlayerView`,
+  `EpisodeDetailView`, and `TranscriptIngestService`. It resolves provider
+  credentials, prompts an LLM, parses chapter/ad decisions, and writes
+  `setEpisodeChapters` / `setEpisodeAdSegments` directly in Swift. Move those
+  call sites to a `kernelCompileChapters` dispatch, keep ad-segment reporting on
+  the Rust-backed `kernelSetAdSegments` path, then delete
+  `AIChapterCompiler.swift` and its Swift parse tests.
+- **m4-chapters-preserved-state-cleanup.** Rust chapter round-trip is done and
+  `merge_episodes` carries prior AI chapters forward when refreshed RSS has no
+  publisher chapters. The remaining preserved-state fallback in
+  `AppStateStore+KernelProjection.swift` exists only for legacy
+  Swift-written chapters from `AIChapterCompiler`. Delete that fallback after
+  `ai-chapters-swift-compiler-delete` lands.
 - **inbox-triage-real-model.** Replace recency heuristic with provider-backed
   triage, persisted dismiss/listened state, explainable reasons, and user
   correction loop. Partially done in PR #123 (rig-core + Ollama LLM scoring
@@ -459,11 +429,19 @@ worktrees currently in flight.
   stale entries when episode metadata changes.
 - **agent-tasks-real-scheduler.** Replace run-now completion stamps with
   actual scheduling, task execution, notifications, persistence, and retries.
-- **agent-picks-real-ranking.** Replace newest-first heuristic with
-  personalized ranking, explainable reasons, refresh policy, and opt-out/reset.
-- **categorization-real-model.** Replace keyword classification with
-  provider/embedding-backed categorization, corrections, persistence, and
-  localization.
+- **agent-picks-controls-validation.** Rust now owns personalized picks
+  ranking (`picks_handler.rs` + `picks_llm.rs`) and Home renders
+  `PodcastUpdate.picks` through `HomeRecommendedSection`. Remaining: explicit
+  opt-out/reset controls, refresh UX validation, and tests that the old Swift
+  curation service cannot re-enter the user-visible path.
+- **categorization-ownership-split.** Rust now owns AI episode tags and
+  category aggregates (`EpisodeSummary.aiCategories` +
+  `PodcastUpdate.categories`), but Settings/Home category management still uses
+  the separate Swift `PodcastCategorizationService` / `AppStateStore+Categories`
+  model keyed by `subscriptionIDs`. Decide whether those Swift categories are a
+  distinct user-curated section model (rename/document accordingly) or migrate
+  category generation, corrections, persistence, and localization into the Rust
+  categorization projection/actions.
 - **autosnip-real-boundaries.** Add boundary refinement, clip persistence,
   export/share guarantees, and media-file handling.
 - **agent-memory-integration.** Wire memory CRUD into the real agent prompt/tool
@@ -527,15 +505,11 @@ worktrees currently in flight.
   `SettingsSnapshot` projection + `SetStreamingOnly` op) if the feature is
   actually wanted. Surfaced during the `settings-completion` (M3) audit;
   Article VII says do not build the feature speculatively — favor deletion.
-- **provider-api-keys-no-kernel-handler.** `AppStateStore.kernelSetProviderApiKeys`
-  dispatches `podcast.settings` `{"op":"set_provider_api_keys", open_router, ollama}`
-  on launch + after credential edits, but there is no matching `SettingsAction`
-  variant or handler in `apps/nmp-app-podcast/src/` — so LLM API keys may never
-  reach the kernel's in-memory provider registry (the dispatch falls through
-  every action enum and is dropped). This is a CREDENTIALS concern (PR #140's
-  domain) and was explicitly out of scope for the `settings-completion` audit;
-  flagged here for the credential owner to verify whether the kernel actually
-  needs the keys or routes LLM calls another way.
+- ~~**provider-api-keys-no-kernel-handler.**~~ Stale audit entry. Live Rust has
+  `SettingsAction::SetProviderApiKeys` and
+  `settings_actions.rs` stores the in-memory OpenRouter/Ollama secrets via
+  `PodcastStore::set_provider_api_keys`. Broader provider ownership remains
+  tracked under `settings-provider-ownership`.
 
 - **observable-granularity-podcasts-subscriptions.** PR for
   `fix/observable-granularity` promoted `episodes` out of the single

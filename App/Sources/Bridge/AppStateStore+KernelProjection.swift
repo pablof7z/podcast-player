@@ -331,23 +331,17 @@ extension AppStateStore {
             }
         }
 
-        // ── Chapters fallback (sole re-derived preserved-state field) ─────
+        // ── Legacy Swift chapters fallback ────────────────────────────────
         // For REUSED episodes this is a no-op — they already carry their merged
         // chapters from the tick that first mapped them. It exists for the
-        // NEW/CHANGED episodes that just came out of `toEpisode` (kernel projects
-        // no chapters), preserving Swift-side AI chapters across a refresh.
-        // M4 deleted the preserved-state merge for transcriptState, AI inbox
-        // triage decisions, and the RAG metadata-index flag: all three now ride
-        // the Rust projection via the capability-report model (D7) and are
-        // derived in `toEpisode`. ad_segments were already projection-only.
+        // NEW/CHANGED episodes that just came out of `toEpisode`.
         //
-        // Chapters remain the sole exception: there is no Rust action to
-        // RECEIVE AI-generated chapters in this milestone — `setEpisodeChapters`
-        // mutates Swift state only (no kernel dispatch), so chapters can't
-        // round-trip. Until the M5.5 chapter-persistence write path lands
-        // (a `SetChapters` action + store side-map + projection, mirroring
-        // ad_segments), we keep the prior Swift chapters when Rust projects
-        // none so AI chapters don't flash empty on a feed-refresh pass.
+        // Rust now has a real `podcast.chapters.compile` path and projects
+        // stored chapters. The remaining exception is the legacy Swift
+        // `AIChapterCompiler`, which still writes through `setEpisodeChapters`
+        // without dispatching to Rust. Until those call sites move to the kernel
+        // action, keep prior Swift-written chapters when Rust projects none so
+        // they do not flash empty after a feed-refresh projection.
         // Tracked in docs/BACKLOG.md.
         //
         // Reuses `priorEpisodesByID` from the diff above. Reused (unchanged)

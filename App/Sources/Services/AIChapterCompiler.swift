@@ -3,6 +3,10 @@ import os.log
 
 // MARK: - AIChapterCompiler
 //
+// Legacy Swift chapter compiler. New chapter compilation belongs in the Rust
+// `podcast.chapters.compile` path; this service remains only until the Player,
+// Episode Detail, and transcript-ingest call sites dispatch that kernel action.
+//
 // Asks the configured LLM (via OpenRouter / Ollama, same provider stack the
 // wiki pipeline uses) to do three things in a single round trip from a ready
 // transcript:

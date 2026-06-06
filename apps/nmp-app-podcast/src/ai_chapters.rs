@@ -1,16 +1,12 @@
-//! AI chapter compilation — synthesizes equal-length stub chapters from a
+//! AI chapter compilation — synthesizes transcript-grounded chapters from the
 //! cached transcript when an episode has no RSS / Podcasting 2.0 chapters.
 //!
-//! Mirrors the legacy `App/Sources/Services/AIChapterCompiler.swift` in
-//! shape (one LLM round-trip per episode) but the *implementation* is
-//! deliberately a local stub for this PR: we don't call OpenRouter, we
-//! just slice the episode duration into `STUB_CHAPTER_COUNT` evenly-
-//! spaced segments labelled `"Chapter 1"`, `"Chapter 2"`, … and stamp
-//! `is_ai_generated = true` on each `podcast_core::Chapter`. The plumbing
-//! (action wire shape, store mutation, projection field, iOS button +
-//! sparkles badge) is what we're shipping; the real LLM round-trip lands
-//! in a follow-up that swaps the body of [`build_stub_chapters`] for a
-//! `dispatch_http` call to OpenRouter and a JSON parse step.
+//! The kernel owns chapter persistence and projection. A `podcast.chapters`
+//! compile action gates synchronously, then runs the LLM synthesis ladder off
+//! the actor thread. When the local model is unavailable, the module degrades to
+//! equal-length stub chapters with explicit [`ChapterSource::Stub`] provenance;
+//! when the model answers but cannot be parsed after retry, it persists nothing
+//! rather than fabricating confidence.
 //!
 //! ## Design notes
 //!
@@ -36,12 +32,11 @@ use tokio::runtime::Runtime;
 use crate::ai_chapters_llm::{self, PromptStyle, SynthesizedChapter};
 use crate::store::PodcastStore;
 
-/// Number of equally-spaced chapters the stub LLM emits.
+/// Number of equally-spaced chapters used by the offline stub fallback.
 ///
 /// Picked to land between [`MIN_CHAPTERS`] and [`MAX_CHAPTERS`] from the
-/// legacy `AIChapterCompiler`. The real LLM round-trip will return between
-/// 4 and 12 per the system prompt; the stub picks the midpoint so the UI
-/// feedback (sparkles badge on five rows) is representative.
+/// legacy `AIChapterCompiler`. The LLM round-trip can return its own count; the
+/// stub picks the midpoint so offline UI feedback stays representative.
 const STUB_CHAPTER_COUNT: usize = 5;
 
 #[derive(Debug, PartialEq)]
