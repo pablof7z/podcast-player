@@ -13,7 +13,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .title(format!(" Inbox ({}) ", state.inbox.len()));
 
     if state.inbox.is_empty() {
-        let text = Paragraph::new("Inbox is empty. Listen to episodes to triage them.").block(block);
+        let text =
+            Paragraph::new("Inbox is empty. Listen to episodes to triage them.").block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -33,9 +34,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 Style::default().fg(Color::White)
             };
 
-            let mut spans = vec![Span::styled(&row.episode_title,
-                base_style,
-            )];
+            let mut spans = vec![Span::styled(&row.episode_title, base_style)];
 
             let mut meta_parts = Vec::new();
             if !row.podcast_title.is_empty() {

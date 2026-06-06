@@ -8,7 +8,11 @@ use crate::app::{AppState, Pane};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let is_focused = state.focused == Pane::Episodes;
-    let border_color = if is_focused { Color::Cyan } else { Color::DarkGray };
+    let border_color = if is_focused {
+        Color::Cyan
+    } else {
+        Color::DarkGray
+    };
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -16,7 +20,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .title(format!(" Episodes ({}) ", state.episodes.len()));
 
     if state.episodes.is_empty() {
-        let text = ratatui::widgets::Paragraph::new("Select a podcast to see episodes.").block(block);
+        let text =
+            ratatui::widgets::Paragraph::new("Select a podcast to see episodes.").block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -51,7 +56,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             }
             if let Some(pos) = ep.playback_position_secs {
                 if pos > 0.0 {
-                    meta_parts.push(format!("{:.0}%", (pos / ep.duration_secs.unwrap_or(1.0)) * 100.0));
+                    meta_parts.push(format!(
+                        "{:.0}%",
+                        (pos / ep.duration_secs.unwrap_or(1.0)) * 100.0
+                    ));
                 }
             }
             if !meta_parts.is_empty() {

@@ -140,9 +140,7 @@ fn run_body(data_dir: &str) -> Result<(), String> {
     wait_until(&runtime, &rx, CONVERGENCE_TIMEOUT, |u| {
         episode_played(u, &episode_id) == Some(false)
     })
-    .ok_or_else(|| {
-        format!("timed out waiting for episode {episode_id} to read played == false")
-    })?;
+    .ok_or_else(|| format!("timed out waiting for episode {episode_id} to read played == false"))?;
     println!("[integration] PASS: episode.played == false");
 
     // ---- 13 + 14. set_default_playback_rate 1.5, assert speed 1.5 --------

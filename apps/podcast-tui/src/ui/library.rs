@@ -8,7 +8,11 @@ use crate::app::{AppState, Pane};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let is_focused = state.focused == Pane::Library;
-    let border_color = if is_focused { Color::Cyan } else { Color::DarkGray };
+    let border_color = if is_focused {
+        Color::Cyan
+    } else {
+        Color::DarkGray
+    };
 
     let block = Block::default()
         .borders(Borders::ALL)

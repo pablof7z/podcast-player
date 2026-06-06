@@ -1,5 +1,9 @@
+pub mod agent;
+pub mod bookmarks;
+pub mod clips;
 pub mod detail;
 pub mod episodes;
+pub mod format;
 pub mod help;
 pub mod inbox;
 pub mod layout;
@@ -8,3 +12,5 @@ pub mod player;
 pub mod queue;
 pub mod search;
 pub mod settings;
+pub mod social;
+pub mod wiki;

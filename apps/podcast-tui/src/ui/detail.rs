@@ -31,10 +31,13 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     };
 
     let lines = build_detail_lines(ep, state);
-    let visible_lines = if lines.len() > scroll { &lines[scroll..] } else { &[] };
+    let visible_lines = if lines.len() > scroll {
+        &lines[scroll..]
+    } else {
+        &[]
+    };
 
-    let paragraph = Paragraph::new(visible_lines.to_vec())
-        .wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(visible_lines.to_vec()).wrap(Wrap { trim: true });
     frame.render_widget(paragraph, inner);
 }
 
@@ -42,12 +45,10 @@ fn build_detail_lines<'a>(ep: &'a EpisodeRow, state: &'a AppState) -> Vec<Line<'
     let mut lines = Vec::new();
 
     // Title
-    lines.push(Line::from(vec![
-        Span::styled(
-            &ep.title,
-            Style::default().add_modifier(Modifier::BOLD),
-        ),
-    ]));
+    lines.push(Line::from(vec![Span::styled(
+        &ep.title,
+        Style::default().add_modifier(Modifier::BOLD),
+    )]));
 
     // Podcast + meta
     let mut meta_parts = Vec::new();
@@ -84,14 +85,22 @@ fn build_detail_lines<'a>(ep: &'a EpisodeRow, state: &'a AppState) -> Vec<Line<'
     // Now playing indicator
     if let Some(ref np) = state.now_playing {
         if np.episode_id == ep.id {
-            let status = if np.is_playing { "▶ playing" } else { "⏸ paused" };
+            let status = if np.is_playing {
+                "▶ playing"
+            } else {
+                "⏸ paused"
+            };
             lines.push(Line::from(vec![Span::styled(
                 status,
                 Style::default().fg(Color::Green),
             )]));
             if np.duration_secs > 0.0 {
                 lines.push(Line::from(vec![Span::styled(
-                    format!("position: {} / {}", format_time(np.position_secs), format_time(np.duration_secs)),
+                    format!(
+                        "position: {} / {}",
+                        format_time(np.position_secs),
+                        format_time(np.duration_secs)
+                    ),
                     Style::default().fg(Color::DarkGray),
                 )]));
             }

@@ -1,5 +1,5 @@
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use ratatui::Frame;
@@ -23,9 +23,18 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .iter()
         .enumerate()
         .map(|(i, ep)| {
+            let selected = i == state.selected_queue;
+            let base_style = if selected {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::White)
+            };
             let mut spans = vec![
                 Span::styled(format!("{}. ", i + 1), Style::default().fg(Color::DarkGray)),
-                Span::styled(&ep.title, Style::default().fg(Color::White)),
+                Span::styled(&ep.title, base_style),
             ];
             if let Some(dur) = ep.duration_secs {
                 spans.push(Span::styled(
