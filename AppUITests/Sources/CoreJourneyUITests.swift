@@ -7,11 +7,6 @@ import XCTest
 final class CoreJourneyUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
-    private func dumpTree(_ app: XCUIApplication, _ name: String) {
-        let t = XCTAttachment(string: app.debugDescription)
-        t.name = name; t.lifetime = .keepAlways; add(t)
-    }
-
     /// Tap the first subscribed podcast (visible on Home) -> first episode detail. Returns true on success.
     @discardableResult
     private func openFirstEpisodeDetail(_ app: XCUIApplication) -> Bool {

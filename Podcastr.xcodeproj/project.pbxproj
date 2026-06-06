@@ -699,6 +699,7 @@
 		F7C86112F84F937B801D24DA /* NostrPendingApproval.swift in Sources */ = {isa = PBXBuildFile; fileRef = F446D2523A0686D044F5ED5F /* NostrPendingApproval.swift */; };
 		F8454626B6A2FD78117075DD /* KernelBridge+Callbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63CC5FF921482CABC5964DDC /* KernelBridge+Callbacks.swift */; };
 		F8B443F616555BE2EADD8678 /* AssemblyAISettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB700211550DA4FE9D8A7C77 /* AssemblyAISettingsView.swift */; };
+		F9B0BB4F67C66E96C8B67B44 /* RemainingP0P1UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9073E12C619801649B9EA1B2 /* RemainingP0P1UITests.swift */; };
 		FA8E896E9B45192EA98FE69A /* AsyncButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7382E62AF7C4571F4B5511 /* AsyncButton.swift */; };
 		FADF427A29ED99BFD0A00703 /* VoiceNoteRealtimeSTT+Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ADECD9617551B942A2D26B3 /* VoiceNoteRealtimeSTT+Support.swift */; };
 		FAE8E222FD59220E95FADD79 /* PodcastAgentToolDeps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FF1CBA3F84D3FF36B06CAA /* PodcastAgentToolDeps.swift */; };
@@ -1221,6 +1222,7 @@
 		8EE77A2C4BF78899EDEC8BD9 /* AgentSkillRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSkillRegistry.swift; sourceTree = "<group>"; };
 		8F896FC50A1262997CA1A360 /* IdentitySettingsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentitySettingsRow.swift; sourceTree = "<group>"; };
 		8FFF61D6C8FCAEC14C91F298 /* EpisodeDetailHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDetailHeroView.swift; sourceTree = "<group>"; };
+		9073E12C619801649B9EA1B2 /* RemainingP0P1UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemainingP0P1UITests.swift; sourceTree = "<group>"; };
 		9084CB237CC7AB68472A18ED /* EpisodeDetailLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDetailLink.swift; sourceTree = "<group>"; };
 		912CDD0E2D32B88C0B6A07F6 /* PodcastAgentToolDeps+OwnedPodcasts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PodcastAgentToolDeps+OwnedPodcasts.swift"; sourceTree = "<group>"; };
 		914928B50E334BA9BE9AEB12 /* Nip46ConnectCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nip46ConnectCard.swift; sourceTree = "<group>"; };
@@ -2212,6 +2214,7 @@
 			children = (
 				9E9EAB70510DB8AEB8539962 /* ClippingsFixUITests.swift */,
 				73E40182385F6635C6E7E1B3 /* CoreJourneyUITests.swift */,
+				9073E12C619801649B9EA1B2 /* RemainingP0P1UITests.swift */,
 				2367EECEADB5A6A3DDD55441 /* SetupSubscribeUITests.swift */,
 				C319AA7E37EC938B51799652 /* SmokeUITests.swift */,
 				4D6DCC04DC0CE6E3621F60EE /* SurveyUITests.swift */,
@@ -3656,6 +3659,7 @@
 			files = (
 				D7DB26AADA6EBE4CE461E90F /* ClippingsFixUITests.swift in Sources */,
 				28B51B0DF4A6AF8AA8F5CA3E /* CoreJourneyUITests.swift in Sources */,
+				F9B0BB4F67C66E96C8B67B44 /* RemainingP0P1UITests.swift in Sources */,
 				7F761FB09615EF1B59A3D580 /* SetupSubscribeUITests.swift in Sources */,
 				57A4CFA3CE7B216A605A277F /* SmokeUITests.swift in Sources */,
 				D2D54D3179907500C2BFE6A0 /* SurveyUITests.swift in Sources */,

@@ -58,4 +58,10 @@ extension XCTestCase {
         let btn = app.buttons[label]
         return btn.exists ? btn : app.staticTexts[label]
     }
+
+    /// Attach the full accessibility tree as a kept string attachment.
+    func dumpTree(_ app: XCUIApplication, _ name: String) {
+        let t = XCTAttachment(string: app.debugDescription)
+        t.name = name; t.lifetime = .keepAlways; add(t)
+    }
 }
