@@ -33,10 +33,17 @@ import os.log
 /// "Episode e1" was caused by both contexts writing to the same App Group key.
 final class Persistence: Sendable {
 
+    /// Set to `true` before `Persistence.shared` is first accessed to switch the
+    /// shared instance to immediate (synchronous) writes. Only used by
+    /// UITestSeeder so that position flushes are guaranteed on disk before a
+    /// force-quit (SIGKILL) during automated UI tests — the background Task-based
+    /// writer can be killed before it executes.
+    nonisolated(unsafe) static var forceImmediateWriteForUITests = false
+
     /// Shared, production-default instance writing to the App Group container.
     static let shared = Persistence(
         fileURL: Persistence.appGroupStateFileURL,
-        writeMode: .background
+        writeMode: forceImmediateWriteForUITests ? .immediate : .background
     )
 
     enum WriteMode: Sendable {
