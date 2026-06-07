@@ -41,29 +41,23 @@ pub struct ToolCall {
 /// Human-readable description block injected into the system prompt so the
 /// model knows which tools exist and how to invoke them.
 pub const TOOL_INSTRUCTIONS: &str = "\
-You have access to these tools. To use one, respond ONLY with a single JSON \
-object and nothing else: {\"tool\":\"<name>\",\"args\":{...}}\n\
-Tools:\n\
-- search_library: {\"query\":\"<string>\"} — search the podcast library by \
-title/author and return matching episodes with their episode_id and podcast_id.\n\
-- get_transcript: {\"episode_id\":\"<uuid>\"} — get the transcript text for an episode.\n\
-- get_podcast_info: {\"podcast_id\":\"<uuid>\"} — get a podcast's title, episode count, and latest publish date.\n\
-- get_memory_facts: {} — list everything the user has asked you to remember (their stored key:value memory facts).\n\
-After a tool returns, use its result to answer. If you need no tools, respond normally with plain text.";
+Use a tool only when needed. Tool call format, with no extra text: \
+{\"tool\":\"<name>\",\"args\":{...}}\n\
+Available tools: search_library {\"query\":\"text\"}; get_transcript \
+{\"episode_id\":\"uuid\"}; get_podcast_info {\"podcast_id\":\"uuid\"}; \
+get_memory_facts {}.\n\
+After a tool result, answer the original question in plain text. If no tool is \
+needed, answer normally.";
 
 /// Tool instructions for the background inbox-triage agent. Restricted to
 /// read tools + the batch write tool; no transcript/mutating tools exposed.
 pub const TRIAGE_TOOL_INSTRUCTIONS: &str = "\
-You have access to these tools. To use one, respond ONLY with a single JSON \
-object and nothing else: {\"tool\":\"<name>\",\"args\":{...}}\n\
-Tools:\n\
-- get_memory_facts: {} — list the user's stored preferences and interests.\n\
-- search_library: {\"query\":\"<string>\"} — search the library to understand what the user has listened to.\n\
-- set_episode_priorities: {\"scores\":[{\"episode_id\":\"<uuid>\",\"score\":<0.0-1.0>,\
-\"reason\":\"<one sentence>\",\"categories\":[\"<tag>\"]}]} \
-— record priority scores for episodes. Call this ONCE with ALL episodes in the array.\n\
-Use get_memory_facts and search_library to understand the user, then call \
-set_episode_priorities with scores for every episode listed. Do not respond with plain text.";
+Use tools by replying with only JSON: {\"tool\":\"<name>\",\"args\":{...}}\n\
+Available tools: get_memory_facts {}; search_library {\"query\":\"text\"}; \
+set_episode_priorities {\"scores\":[{\"episode_id\":\"uuid\",\"score\":0.0,\
+\"reason\":\"one sentence\",\"categories\":[\"tag\"]}]}.\n\
+For triage, inspect memory/library if useful, then call set_episode_priorities \
+once with every listed episode. Do not answer in plain text.";
 
 /// State held by [`ToolRegistry`] when operating in triage mode.
 struct TriageSink {
@@ -80,7 +74,10 @@ pub struct ToolRegistry {
 impl ToolRegistry {
     /// Chat path — no triage write access.
     pub fn new(store: Arc<Mutex<PodcastStore>>) -> Self {
-        Self { store, triage: None }
+        Self {
+            store,
+            triage: None,
+        }
     }
 
     /// Triage path — gains `set_episode_priorities` write access.
@@ -89,7 +86,10 @@ impl ToolRegistry {
         cache: Arc<Mutex<HashMap<String, TriageResult>>>,
         rev: Arc<AtomicU64>,
     ) -> Self {
-        Self { store, triage: Some(TriageSink { cache, rev }) }
+        Self {
+            store,
+            triage: Some(TriageSink { cache, rev }),
+        }
     }
 
     /// Execute a named tool with the given JSON args, returning a plain-text
@@ -107,7 +107,11 @@ impl ToolRegistry {
     }
 
     fn search_library(&self, args: &Value) -> String {
-        let query = args.get("query").and_then(Value::as_str).unwrap_or("").trim();
+        let query = args
+            .get("query")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
         if query.is_empty() {
             return "search_library: missing 'query' argument".to_owned();
         }
@@ -129,10 +133,7 @@ impl ToolRegistry {
                 if matches {
                     hits.push(format!(
                         "- \"{}\" (podcast: \"{}\", episode_id: {}, podcast_id: {})",
-                        ep.title,
-                        podcast.title,
-                        ep.id.0,
-                        podcast_id
+                        ep.title, podcast.title, ep.id.0, podcast_id
                     ));
                     if hits.len() >= SEARCH_RESULT_LIMIT {
                         break;
@@ -152,7 +153,11 @@ impl ToolRegistry {
     }
 
     fn get_transcript(&self, args: &Value) -> String {
-        let episode_id = args.get("episode_id").and_then(Value::as_str).unwrap_or("").trim();
+        let episode_id = args
+            .get("episode_id")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
         if episode_id.is_empty() {
             return "get_transcript: missing 'episode_id' argument".to_owned();
         }
@@ -196,7 +201,11 @@ impl ToolRegistry {
     }
 
     fn get_podcast_info(&self, args: &Value) -> String {
-        let podcast_id = args.get("podcast_id").and_then(Value::as_str).unwrap_or("").trim();
+        let podcast_id = args
+            .get("podcast_id")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim();
         if podcast_id.is_empty() {
             return "get_podcast_info: missing 'podcast_id' argument".to_owned();
         }
@@ -222,7 +231,11 @@ impl ToolRegistry {
         format!(
             "Title: {}\nAuthor: {}\nEpisode count: {episode_count}\nLatest episode published: {last_published}",
             podcast.title,
-            if podcast.author.is_empty() { "unknown" } else { &podcast.author },
+            if podcast.author.is_empty() {
+                "unknown"
+            } else {
+                &podcast.author
+            },
         )
     }
 
@@ -300,7 +313,10 @@ pub fn parse_tool_call(response: &str) -> Option<ToolCall> {
     }
     // Default to an empty object when args is omitted so tools can report
     // their own missing-argument errors rather than failing to parse.
-    let args = value.get("args").cloned().unwrap_or_else(|| Value::Object(Default::default()));
+    let args = value
+        .get("args")
+        .cloned()
+        .unwrap_or_else(|| Value::Object(Default::default()));
     Some(ToolCall { name, args })
 }
 

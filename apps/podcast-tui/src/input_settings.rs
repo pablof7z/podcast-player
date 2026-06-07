@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::{AppState, Mode, SettingsSection, Tab};
 use crate::provider_settings_catalog::PROVIDER_SETTINGS_ITEMS;
@@ -94,6 +94,9 @@ pub(super) fn handle_settings_input(
         KeyCode::Backspace => {
             state.settings_input.pop();
         }
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            state.settings_input.clear();
+        }
         KeyCode::Char(c) => state.settings_input.push(c),
         _ => {}
     }
@@ -126,6 +129,9 @@ pub(super) fn handle_relay_input(
         }
         KeyCode::Backspace => {
             state.relay_input.pop();
+        }
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            state.relay_input.clear();
         }
         KeyCode::Char(c) => state.relay_input.push(c),
         _ => {}

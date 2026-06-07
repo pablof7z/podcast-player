@@ -37,6 +37,7 @@ use tokio::runtime::Runtime;
 
 use crate::categorization_llm::categorize_episode;
 use crate::ffi::actions::categorization_module::categorize_text;
+use crate::llm::is_missing_credential_error;
 use crate::store::PodcastStore;
 
 /// Re-run categorization over every episode in `store`.
@@ -173,7 +174,9 @@ async fn categorize_in_background(
                 rev.fetch_add(1, Ordering::Relaxed);
             }
             Ok(Err(e)) => {
-                eprintln!("[categorization] LLM categorize failed for {ep_id}: {e}");
+                if !is_missing_credential_error(&e) {
+                    eprintln!("[categorization] LLM categorize failed for {ep_id}: {e}");
+                }
             }
             Err(e) => {
                 eprintln!("[categorization] spawn_blocking panicked for {ep_id}: {e}");
@@ -201,7 +204,7 @@ pub(crate) fn handle_categorize_episode(
                 return serde_json::json!({
                     "ok": false,
                     "error": format!("episode not found: {episode_id}")
-                })
+                });
             }
         },
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),

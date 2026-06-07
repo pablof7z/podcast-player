@@ -6,7 +6,12 @@ use crate::store::PodcastStore;
 #[test]
 fn system_prompt_includes_memory_facts_when_store_has_facts() {
     let mut store = PodcastStore::new();
-    store.set_memory_fact("preferred_genre".into(), "true crime".into(), "user".into(), 1);
+    store.set_memory_fact(
+        "preferred_genre".into(),
+        "true crime".into(),
+        "user".into(),
+        1,
+    );
     let store = Arc::new(Mutex::new(store));
 
     let prompt = build_system_prompt_with_memory(Some(&store));
@@ -30,7 +35,10 @@ fn system_prompt_includes_memory_facts_when_store_has_facts() {
 #[test]
 fn system_prompt_is_base_when_no_facts() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
-    assert_eq!(build_system_prompt_with_memory(Some(&store)), AGENT_SYSTEM_PROMPT);
+    assert_eq!(
+        build_system_prompt_with_memory(Some(&store)),
+        AGENT_SYSTEM_PROMPT
+    );
     // No store at all (scaffold path) also yields just the base prompt.
     assert_eq!(build_system_prompt_with_memory(None), AGENT_SYSTEM_PROMPT);
 }
@@ -58,7 +66,10 @@ fn send_appends_user_and_assistant() {
     assert!(!c[0].is_generating);
     assert_eq!(c[1].role, "assistant");
     // Without a runtime the handler falls back to the scaffold reply.
-    assert!(!c[1].content.is_empty(), "assistant content must not be empty");
+    assert!(
+        !c[1].content.is_empty(),
+        "assistant content must not be empty"
+    );
     assert!(!c[1].is_generating);
     assert!(h.touched.load(Ordering::Relaxed));
     assert!(!h.busy.load(Ordering::Relaxed));
@@ -143,4 +154,52 @@ fn rev_bumps_on_each_mutation() {
     let after_clear = h.rev.load(Ordering::Relaxed);
     assert!(after_send > start);
     assert!(after_clear > after_send);
+}
+
+#[test]
+#[ignore]
+fn live_production_handler_completes_glm_cloud_turn() {
+    let conversation = Arc::new(Mutex::new(Vec::new()));
+    let busy = Arc::new(AtomicBool::new(false));
+    let touched = Arc::new(AtomicBool::new(false));
+    let rev = Arc::new(AtomicU64::new(0));
+    let runtime = Arc::new(tokio::runtime::Runtime::new().unwrap());
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    {
+        let mut s = store.lock().unwrap();
+        s.set_agent_initial_model(
+            "ollama:glm-5.1:cloud".to_owned(),
+            "GLM 5.1 Cloud".to_owned(),
+        );
+        s.set_ollama_chat_url("http://localhost:11434/api/chat".to_owned());
+    }
+    let h = AgentChatHandler::new(
+        conversation.clone(),
+        busy.clone(),
+        touched,
+        rev,
+        runtime,
+        store,
+    );
+
+    let res = h.handle(AgentChatAction::Send {
+        message:
+            "In one short sentence, confirm this live TUI agent model call succeeded using GLM 5.1 cloud."
+                .into(),
+    });
+    assert_eq!(res["ok"], true);
+
+    for _ in 0..80 {
+        if !busy.load(Ordering::Relaxed) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+
+    assert!(!busy.load(Ordering::Relaxed), "handler stayed busy");
+    let c = conversation.lock().unwrap();
+    assert_eq!(c.len(), 2);
+    eprintln!("{}", c[1].content);
+    assert!(c[1].content.to_lowercase().contains("succeeded"));
+    assert!(!c[1].is_generating);
 }

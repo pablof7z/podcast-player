@@ -12,9 +12,8 @@
 //! The send path drives a real synchronous, tool-calling Ollama loop via
 //! `agent_llm::chat_with_tools` (M5.4), giving the agent access to the podcast
 //! store through `search_library` / `get_transcript` / `get_podcast_info`.
-//! When Ollama is unreachable the handler falls back to
-//! `SCAFFOLD_ASSISTANT_REPLY` so the UI always receives a non-empty assistant
-//! message.
+//! When the selected model is unreachable, the handler writes the concrete
+//! provider error into the assistant row so the TUI does not imply success.
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -50,7 +49,6 @@ pub struct AgentChatHandler {
 /// Also used in unit tests that don't supply a Tokio runtime.
 pub const SCAFFOLD_ASSISTANT_REPLY: &str = "I'm thinking about your question…";
 
-
 impl AgentChatHandler {
     /// Create a handler with a live Tokio runtime (production path).
     pub fn new(
@@ -61,7 +59,14 @@ impl AgentChatHandler {
         runtime: Arc<tokio::runtime::Runtime>,
         store: Arc<Mutex<PodcastStore>>,
     ) -> Self {
-        Self { conversation, busy, touched, rev, runtime: Some(runtime), store: Some(store) }
+        Self {
+            conversation,
+            busy,
+            touched,
+            rev,
+            runtime: Some(runtime),
+            store: Some(store),
+        }
     }
 
     /// Create a handler without a runtime (test / scaffold path).
@@ -72,7 +77,14 @@ impl AgentChatHandler {
         touched: Arc<AtomicBool>,
         rev: Arc<AtomicU64>,
     ) -> Self {
-        Self { conversation, busy, touched, rev, runtime: None, store: None }
+        Self {
+            conversation,
+            busy,
+            touched,
+            rev,
+            runtime: None,
+            store: None,
+        }
     }
 
     /// Route a typed [`AgentChatAction`] to the right entry point.
@@ -97,7 +109,10 @@ impl AgentChatHandler {
 
         // Read the current history snapshot WITHOUT holding the mutex across the LLM call.
         let history_snapshot: Vec<(String, String)> = match self.conversation.lock() {
-            Ok(c) => c.iter().map(|m| (m.role.clone(), m.content.clone())).collect(),
+            Ok(c) => c
+                .iter()
+                .map(|m| (m.role.clone(), m.content.clone()))
+                .collect(),
             Err(_) => return serde_json::json!({"ok": false, "error": "conversation poisoned"}),
         };
 
@@ -145,26 +160,24 @@ impl AgentChatHandler {
                 let conversation = Arc::clone(&self.conversation);
                 let busy = Arc::clone(&self.busy);
                 let rev = Arc::clone(&self.rev);
-                let runtime_clone = Arc::clone(rt);
                 let store_c = Arc::clone(store);
                 let message_owned = trimmed.to_owned();
 
                 rt.spawn(async move {
-                    let reply = tokio::task::spawn_blocking(move || {
-                        // Build the system prompt from current memory facts BEFORE
-                        // `store_c` is moved into `chat_with_tools` below (M5.6).
-                        let system_prompt = agent_llm::build_system_prompt_with_memory(Some(&store_c));
-                        agent_llm::chat_with_tools(
-                            &system_prompt,
-                            &history_snapshot,
-                            &message_owned,
-                            store_c,
-                            &runtime_clone,
-                        )
-                        .unwrap_or_else(|_| SCAFFOLD_ASSISTANT_REPLY.to_owned())
-                    })
+                    // Build the system prompt from current memory facts before
+                    // `store_c` is moved into the async tool loop below (M5.6).
+                    let system_prompt = agent_llm::build_system_prompt_with_memory(Some(&store_c));
+                    let reply = match agent_llm::chat_with_tools_async(
+                        &system_prompt,
+                        &history_snapshot,
+                        &message_owned,
+                        store_c,
+                    )
                     .await
-                    .unwrap_or_else(|_| SCAFFOLD_ASSISTANT_REPLY.to_owned());
+                    {
+                        Ok(reply) => reply,
+                        Err(e) => format!("Agent request failed: {e}"),
+                    };
 
                     // Find the placeholder by id — NOT last_mut() — so that a
                     // concurrent Clear or second Send doesn't clobber the wrong row.
