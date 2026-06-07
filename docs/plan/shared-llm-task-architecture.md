@@ -19,13 +19,16 @@ The shared Rust backend owns:
 - Provider routing for OpenRouter, Ollama, and local models.
 - HTTP request and response shape for provider chat/completions.
 - HTTP request and response shape for provider embeddings.
+- HTTP request, multipart upload, and response shape for provider speech-to-text
+  when the provider is network-owned rather than platform-native.
 - Provider credential requirements and error messages.
 - Role-to-model resolution and validation.
 - Agent task intent resolution and dispatch payload construction.
 
 Platform code must not construct OpenRouter or Ollama chat/embedding request
-bodies, provider URLs, provider-specific auth headers, or raw backend task
-namespace/body JSON for normal user workflows.
+bodies, OpenRouter speech-to-text multipart requests, provider URLs,
+provider-specific auth headers, or raw backend task namespace/body JSON for
+normal user workflows.
 
 ## Provider Transport
 
@@ -46,6 +49,10 @@ Immediate targets:
   through Rust.
 - Android should expose the same Rust provider functions through JNI once the
   shared FFI exists.
+- OpenRouter Whisper/STT now uses `nmp_app_podcast_openrouter_whisper_transcribe`;
+  platform callers submit a typed audio-source intent and Rust owns the
+  selected model lookup, OpenRouter auth, remote-source staging, multipart
+  upload, status handling, and response parsing.
 
 Provider model-list discovery can remain UI-owned temporarily if it is only a
 catalog/browser concern, but any provider inference call must use Rust.

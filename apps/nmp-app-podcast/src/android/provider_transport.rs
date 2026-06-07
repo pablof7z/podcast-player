@@ -10,9 +10,9 @@ use nmp_ffi::nmp_app_free_string;
 
 use super::session_ref;
 use crate::ffi::{
-    nmp_app_podcast_generate_image, nmp_app_podcast_provider_complete,
-    nmp_app_podcast_provider_embed, nmp_app_podcast_provider_model_catalog, nmp_app_podcast_rerank,
-    PodcastHandle,
+    nmp_app_podcast_generate_image, nmp_app_podcast_openrouter_whisper_transcribe,
+    nmp_app_podcast_provider_complete, nmp_app_podcast_provider_embed,
+    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_rerank, PodcastHandle,
 };
 
 type PodcastJsonFn = extern "C" fn(*mut PodcastHandle, *const c_char) -> *mut c_char;
@@ -122,6 +122,23 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeProviderModelCatal
     handle: jlong,
 ) -> jstring {
     call_podcast_catalog_ffi(&env, handle, nmp_app_podcast_provider_model_catalog)
+}
+
+/// `nativeOpenRouterWhisperTranscribe(handle, intentJson)` — shared OpenRouter STT.
+/// Returns Rust's JSON envelope unchanged, or null on FFI failure.
+#[no_mangle]
+pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeOpenRouterWhisperTranscribe<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    handle: jlong,
+    intent_json: JString<'l>,
+) -> jstring {
+    call_podcast_json_ffi(
+        &mut env,
+        handle,
+        intent_json,
+        nmp_app_podcast_openrouter_whisper_transcribe,
+    )
 }
 
 /// `nativeGenerateImage(handle, requestJson)` — shared image generation.

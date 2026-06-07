@@ -3,19 +3,19 @@ import os.log
 
 // MARK: - OpenRouterWhisperClient
 
-/// REST client for Whisper transcription via OpenRouter's OpenAI-compatible
-/// audio transcription endpoint (`POST /api/v1/audio/transcriptions`).
+/// Thin adapter for shared Rust-owned OpenRouter Whisper transcription.
 ///
-/// Unlike ElevenLabs Scribe, OpenRouter's endpoint only accepts file uploads —
-/// there is no `source_url` option. For local files (downloaded episodes) the
-/// bytes are uploaded directly. For remote HTTPS URLs, the audio is first
-/// downloaded to a temp file, uploaded, then cleaned up.
+/// Swift supplies the typed audio-source intent and converts the normalized
+/// Rust response into the app's `Transcript` domain model. Rust owns OpenRouter
+/// credentials, selected model lookup, request headers, multipart upload,
+/// remote-audio staging, provider status handling, and response parsing.
 actor OpenRouterWhisperClient {
 
     enum WhisperError: Swift.Error, LocalizedError, Sendable {
         case missingAPIKey
         case invalidAudioURL
         case downloadFailed(String)
+        case kernelUnavailable
         case invalidResponse
         case http(status: Int, body: String?)
         case decoding(String)
@@ -30,6 +30,8 @@ actor OpenRouterWhisperClient {
                 return "Couldn't find the episode audio to transcribe."
             case .downloadFailed(let msg):
                 return "Couldn't download audio for transcription: \(msg)"
+            case .kernelUnavailable:
+                return "Transcription backend is unavailable. Restart the app and try again."
             case .invalidResponse:
                 return "OpenRouter returned an unexpected response. Try again in a moment."
             case .http(let status, _) where status == 401 || status == 403:
@@ -51,99 +53,23 @@ actor OpenRouterWhisperClient {
     }
 
     private static let logger = Logger.app("OpenRouterWhisperClient")
+    private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
-
-    /// 10 minutes — large audio files can take several minutes server-side.
-    static let requestTimeout: TimeInterval = 600
-
-    private let baseURL: URL
-    private let session: URLSession
-    private let model: String
-    private let credential: @Sendable () throws -> String?
-
-    init(
-        baseURL: URL = URL(string: "https://openrouter.ai")!,
-        model: String = "openai/whisper-1",
-        session: URLSession = .shared,
-        credential: @escaping @Sendable () throws -> String? = { try OpenRouterCredentialStore.apiKey() }
-    ) {
-        self.baseURL = baseURL
-        self.model = model
-        self.session = session
-        self.credential = credential
-    }
 
     // MARK: - API
 
     func transcribe(audioURL: URL, episodeID: UUID, languageHint: String? = nil) async throws -> Transcript {
         try Task.checkCancellation()
-        guard let key = try credential(), !key.isEmpty else { throw WhisperError.missingAPIKey }
-
-        let fileURL = try await resolveLocalFile(from: audioURL)
-        let isTemp = !audioURL.isFileURL
-        defer {
-            if isTemp { try? FileManager.default.removeItem(at: fileURL) }
-        }
-
-        let endpoint = baseURL.appendingPathComponent("api/v1/audio/transcriptions")
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = Self.requestTimeout
-
-        let body = try buildBody(boundary: boundary, fileURL: fileURL, languageHint: languageHint)
-
+        let raw = try await transcribeViaRust(audioURL: audioURL, languageHint: languageHint)
         try Task.checkCancellation()
-        Self.logger.info(
-            "submitting Whisper request — model=\(self.model, privacy: .public) bytes=\(body.count, privacy: .public)"
-        )
 
-        let submitStart = Date()
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await session.upload(for: request, from: body)
-        } catch is CancellationError {
-            throw WhisperError.cancelled
-        } catch let error as URLError where error.code == .cancelled {
-            throw WhisperError.cancelled
-        } catch let error as URLError where error.code == .timedOut {
-            throw WhisperError.timedOut
-        }
-
-        try Task.checkCancellation()
-        guard let http = response as? HTTPURLResponse else { throw WhisperError.invalidResponse }
-        guard (200..<300).contains(http.statusCode) else {
-            let body = String(data: data, encoding: .utf8)
-            Self.logger.error("Whisper HTTP \(http.statusCode, privacy: .public): \(body ?? "", privacy: .public)")
-            throw WhisperError.http(status: http.statusCode, body: body)
-        }
-
-        let raw: WhisperVerboseResponse
-        do {
-            raw = try Self.decoder.decode(WhisperVerboseResponse.self, from: data)
-        } catch {
-            let preview = String(data: data.prefix(500), encoding: .utf8) ?? "<binary>"
-            Self.logger.error("Whisper decode failed: \(String(describing: error), privacy: .public) body=\(preview, privacy: .public)")
-            throw WhisperError.decoding("Could not decode transcription response: \(error)")
-        }
-
-        // OpenRouter Whisper response has no `cost` field; the gateway strips
-        // upstream billing detail. Log activity + duration so the Usage view
-        // shows the call; user's OpenRouter dashboard is the source of truth
-        // for $$ cost.
-        let latencyMs = Int(Date().timeIntervalSince(submitStart) * 1000)
-        let modelLabel = self.model
-        let durationSeconds = raw.duration
         Task { @MainActor in
             CostLedger.shared.logSTT(
                 feature: CostFeature.sttOpenRouterWhisper,
-                model: modelLabel,
+                model: raw.model ?? "openai/whisper-1",
                 costUSD: 0,
-                audioDurationSeconds: durationSeconds,
-                latencyMs: latencyMs
+                audioDurationSeconds: raw.duration,
+                latencyMs: raw.latencyMs ?? 0
             )
         }
 
@@ -152,66 +78,109 @@ actor OpenRouterWhisperClient {
 
     // MARK: - Private
 
-    private func resolveLocalFile(from audioURL: URL) async throws -> URL {
-        if audioURL.isFileURL {
-            guard FileManager.default.fileExists(atPath: audioURL.path) else {
-                throw WhisperError.invalidAudioURL
+    private func transcribeViaRust(audioURL: URL, languageHint: String?) async throws -> WhisperVerboseResponse {
+        guard let handleBits = await MainActor.run(body: {
+            KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
+        }) else {
+            throw WhisperError.kernelUnavailable
+        }
+
+        let intent = OpenRouterWhisperIntent(
+            audioURL: audioURL.absoluteString,
+            languageHint: languageHint?.isEmpty == false ? languageHint : nil
+        )
+        let requestData = try Self.encoder.encode(intent)
+        guard let requestJSON = String(data: requestData, encoding: .utf8) else {
+            throw WhisperError.decoding("Could not encode transcription request.")
+        }
+
+        Self.logger.info("submitting Whisper request through Rust provider transport")
+        let responseJSON = await Task.detached(priority: .userInitiated) {
+            guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
+                return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
-            return audioURL
+            return requestJSON.withCString { cRequest in
+                guard let ptr = nmp_app_podcast_openrouter_whisper_transcribe(handle, cRequest) else {
+                    return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
+                }
+                defer { nmp_app_free_string(ptr) }
+                return String(cString: ptr)
+            }
+        }.value
+
+        guard let responseData = responseJSON.data(using: .utf8) else {
+            throw WhisperError.invalidResponse
         }
-        // OpenRouter Whisper only accepts file uploads — download to temp first.
-        Self.logger.info("downloading remote audio for Whisper upload: \(audioURL.host ?? "", privacy: .public)")
-        let tempURL: URL
         do {
-            let (downloaded, _) = try await session.download(from: audioURL)
-            tempURL = downloaded
-        } catch is CancellationError {
-            throw WhisperError.cancelled
+            let envelope = try Self.decoder.decode(OpenRouterWhisperEnvelope.self, from: responseData)
+            if let error = envelope.error {
+                throw Self.whisperError(from: error)
+            }
+            guard let result = envelope.result else {
+                throw WhisperError.invalidResponse
+            }
+            return result
+        } catch let error as WhisperError {
+            throw error
         } catch {
-            throw WhisperError.downloadFailed(error.localizedDescription)
+            Self.logger.error("Whisper FFI decode failed: \(String(describing: error), privacy: .public)")
+            throw WhisperError.decoding("Could not decode transcription response: \(error)")
         }
-        let ext = audioURL.pathExtension.isEmpty ? "mp3" : audioURL.pathExtension
-        let stableURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension(ext)
-        do {
-            try FileManager.default.moveItem(at: tempURL, to: stableURL)
-        } catch {
-            throw WhisperError.downloadFailed("Could not stage temp file: \(error.localizedDescription)")
-        }
-        return stableURL
     }
 
-    private func buildBody(boundary: String, fileURL: URL, languageHint: String?) throws -> Data {
-        let crlf = "\r\n"
-        var body = Data()
-
-        func field(_ name: String, _ value: String) {
-            body.append("--\(boundary)\(crlf)".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(name)\"\(crlf)\(crlf)".data(using: .utf8)!)
-            body.append("\(value)\(crlf)".data(using: .utf8)!)
+    private static func whisperError(from error: OpenRouterWhisperBackendError) -> WhisperError {
+        switch error.kind {
+        case "missing_api_key":
+            return .missingAPIKey
+        case "invalid_audio_url":
+            return .invalidAudioURL
+        case "download_failed":
+            return .downloadFailed(error.message ?? "Unknown download error.")
+        case "timed_out":
+            return .timedOut
+        case "invalid_key":
+            return .http(status: error.statusCode ?? 401, body: error.message)
+        case "rate_limited":
+            return .http(status: error.statusCode ?? 429, body: error.message)
+        case "server_error":
+            return .http(status: error.statusCode ?? 500, body: error.message)
+        case "decoding_error":
+            return .decoding(error.message ?? "Could not decode transcription response.")
+        case "store_unavailable":
+            return .kernelUnavailable
+        default:
+            return .http(status: error.statusCode ?? 500, body: error.message)
         }
-
-        field("model", model)
-        field("response_format", "verbose_json")
-        field("timestamp_granularities[]", "segment")
-        if let hint = languageHint, !hint.isEmpty {
-            field("language", hint)
-        }
-
-        let filename = fileURL.lastPathComponent
-        let ct = ElevenLabsScribeClient.contentType(for: fileURL.pathExtension)
-        body.append("--\(boundary)\(crlf)".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\(crlf)".data(using: .utf8)!)
-        body.append("Content-Type: \(ct)\(crlf)\(crlf)".data(using: .utf8)!)
-        body.append(try Data(contentsOf: fileURL, options: .mappedIfSafe))
-        body.append(crlf.data(using: .utf8)!)
-        body.append("--\(boundary)--\(crlf)".data(using: .utf8)!)
-        return body
     }
 }
 
 // MARK: - DTOs
+
+private struct OpenRouterWhisperIntent: Encodable {
+    let audioURL: String
+    let languageHint: String?
+
+    enum CodingKeys: String, CodingKey {
+        case audioURL = "audio_url"
+        case languageHint = "language_hint"
+    }
+}
+
+private struct OpenRouterWhisperEnvelope: Decodable {
+    var result: WhisperVerboseResponse?
+    var error: OpenRouterWhisperBackendError?
+}
+
+private struct OpenRouterWhisperBackendError: Decodable {
+    var kind: String
+    var message: String?
+    var statusCode: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case kind, message
+        case statusCode = "status_code"
+    }
+}
 
 struct WhisperVerboseResponse: Codable, Sendable {
     let task: String?
@@ -219,6 +188,13 @@ struct WhisperVerboseResponse: Codable, Sendable {
     let duration: Double?
     let text: String?
     let segments: [WhisperSegment]?
+    let model: String?
+    let latencyMs: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case task, language, duration, text, segments, model
+        case latencyMs = "latency_ms"
+    }
 }
 
 struct WhisperSegment: Codable, Sendable {

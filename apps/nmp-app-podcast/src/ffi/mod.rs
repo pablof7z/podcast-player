@@ -42,6 +42,7 @@ pub(crate) mod handle;
 mod helpers;
 mod image_generation;
 mod local_llm;
+mod openrouter_whisper;
 pub mod projections;
 #[cfg(test)]
 mod projections_tests;
@@ -124,5 +125,6 @@ pub use snapshot::{
 };
 pub use local_llm::{nmp_app_register_local_llm, nmp_app_clear_local_llm};
 pub use network_report::nmp_app_podcast_network_report;
+pub use openrouter_whisper::nmp_app_podcast_openrouter_whisper_transcribe;
 pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use voice_report::nmp_app_podcast_voice_report;

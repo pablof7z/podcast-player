@@ -37,7 +37,7 @@ required-features = ["headless"]
 
 [dependencies]
 async-trait = "0.1"
-reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
+reqwest = { version = "0.12", features = ["blocking", "json", "multipart", "rustls-tls"] }
 tempfile = { version = "3", optional = true }
 # WebSocket client used by the production social-graph relay subscriptions
 # (FetchContacts → kind:3 + kind:0) and by the headless relay_client.
