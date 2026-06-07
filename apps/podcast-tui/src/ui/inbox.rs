@@ -30,7 +30,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
 
-            let mut spans = vec![Span::styled(&row.episode_title, base_style)];
+            let mut spans = vec![
+                theme::selected_prefix(is_selected, state.motion_tick),
+                Span::styled(&row.episode_title, base_style),
+            ];
 
             let mut meta_parts = Vec::new();
             if !row.podcast_title.is_empty() {

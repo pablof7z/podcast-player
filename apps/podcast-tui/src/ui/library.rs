@@ -31,7 +31,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
 
-            let mut spans = vec![Span::styled(&podcast.title, title_style)];
+            let mut spans = vec![
+                theme::selected_prefix(is_selected, state.motion_tick),
+                Span::styled(&podcast.title, title_style),
+            ];
             if podcast.unplayed_count > 0 {
                 spans.push(Span::styled(
                     format!(" ({})", podcast.unplayed_count),

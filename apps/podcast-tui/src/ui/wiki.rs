@@ -36,7 +36,10 @@ fn render_articles(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             } else {
                 theme::text()
             };
-            let mut spans = vec![Span::styled(&article.topic, base)];
+            let mut spans = vec![
+                theme::selected_prefix(selected, state.motion_tick),
+                Span::styled(&article.topic, base),
+            ];
             if article.is_generating {
                 spans.push(Span::styled(
                     "  generating",

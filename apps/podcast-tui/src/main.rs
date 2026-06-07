@@ -30,6 +30,9 @@ enum UiEvent {
     Tick,
 }
 
+const UI_TICK_MS: u64 = 125;
+const AUDIO_POLL_EVERY_TICKS: u64 = 2;
+
 fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Args::parse();
@@ -67,9 +70,11 @@ fn run(args: Args) -> Result<()> {
                 }
             }
             UiEvent::Tick => {
-                state.tick_toasts();
                 state.tick_motion();
-                runtime.poll_audio_position();
+                if state.motion_tick % AUDIO_POLL_EVERY_TICKS == 0 {
+                    state.tick_toasts();
+                    runtime.poll_audio_position();
+                }
             }
         }
         draw(&mut terminal, &state)?;
@@ -108,7 +113,7 @@ fn spawn_nmp_forwarder(rx: mpsc::Receiver<NmpEvent>, tx: mpsc::Sender<UiEvent>) 
 
 fn spawn_tick_timer(tx: mpsc::Sender<UiEvent>) {
     thread::spawn(move || {
-        let duration = std::time::Duration::from_millis(250);
+        let duration = std::time::Duration::from_millis(UI_TICK_MS);
         loop {
             thread::sleep(duration);
             if tx.send(UiEvent::Tick).is_err() {

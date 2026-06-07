@@ -28,7 +28,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             } else {
                 theme::text()
             };
-            let mut spans = vec![Span::styled(&episode.title, base)];
+            let mut spans = vec![
+                theme::selected_prefix(selected, state.motion_tick),
+                Span::styled(&episode.title, base),
+            ];
             let mut meta = Vec::new();
             if let Some(show) = &episode.podcast_title {
                 meta.push(show.clone());

@@ -31,7 +31,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
 
-            let mut spans = Vec::new();
+            let mut spans = vec![theme::selected_prefix(is_selected, state.motion_tick)];
             if ep.played {
                 spans.push(Span::styled("  ", base_style));
             } else {

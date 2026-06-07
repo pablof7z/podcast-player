@@ -9,11 +9,62 @@ use crate::rows::DownloadRow;
 use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
+    let rows = Layout::vertical([Constraint::Length(1), Constraint::Min(4)]).split(area);
+    render_summary(frame, rows[0], state);
+
     let cols =
-        Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)]).split(area);
+        Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)]).split(rows[1]);
 
     render_list(frame, cols[0], state);
     render_detail(frame, cols[1], state);
+}
+
+fn render_summary(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
+    let active = count_downloads(state, "active");
+    let queued = count_downloads(state, "queued");
+    let paused = count_downloads(state, "paused");
+    let failed = count_downloads(state, "failed");
+    let wave = if active > 0 {
+        theme::wave(state.motion_tick, 10)
+    } else {
+        "──────────".to_owned()
+    };
+    let line = Line::from(vec![
+        theme::badge("Downloads", theme::ACCENT_ALT),
+        Span::styled(" ", Style::default().bg(theme::BG)),
+        Span::styled(
+            wave,
+            Style::default().fg(theme::pulse_color(state.motion_tick)),
+        ),
+        theme::separator(),
+        theme::quiet_badge(format!("active {active}")),
+        Span::raw(" "),
+        theme::quiet_badge(format!("queued {queued}")),
+        Span::raw(" "),
+        theme::quiet_badge(format!("paused {paused}")),
+        Span::raw(" "),
+        failed_badge(failed),
+    ]);
+    frame.render_widget(
+        Paragraph::new(line).style(Style::default().bg(theme::BG)),
+        area,
+    );
+}
+
+fn failed_badge(failed: usize) -> Span<'static> {
+    if failed > 0 {
+        theme::badge(format!("failed {failed}"), theme::DANGER)
+    } else {
+        theme::quiet_badge("failed 0")
+    }
+}
+
+fn count_downloads(state: &AppState, value: &str) -> usize {
+    state
+        .downloads
+        .iter()
+        .filter(|download| download.state == value)
+        .count()
 }
 
 fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
@@ -42,13 +93,14 @@ fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             let progress = format!("{:>3}%", (download.progress.clamp(0.0, 1.0) * 100.0) as u8);
             let active = download.state == "active";
             let mut spans = vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(
                     format!("{:<10}", status_label(download, state.motion_tick)),
                     status_style(download, state.motion_tick),
                 ),
                 Span::styled(format!(" {progress} "), theme::muted()),
                 Span::styled(
-                    progress_bar(download.progress, 14, state.motion_tick, active),
+                    theme::progress_bar(download.progress, 14, state.motion_tick, active),
                     Style::default().fg(if active {
                         theme::pulse_color(state.motion_tick)
                     } else {
@@ -117,7 +169,7 @@ fn render_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Line::from(vec![
             Span::styled("progress: ", theme::muted()),
             Span::styled(
-                progress_bar(
+                theme::progress_bar(
                     download.progress,
                     22,
                     state.motion_tick,
@@ -187,19 +239,4 @@ fn status_color(download: &DownloadRow, tick: u64) -> Color {
         "failed" => theme::DANGER,
         _ => theme::MUTED,
     }
-}
-
-fn progress_bar(progress: f32, width: usize, tick: u64, active: bool) -> String {
-    let clamped = progress.clamp(0.0, 1.0);
-    let filled = (clamped * width as f32).round() as usize;
-    let filled = filled.min(width);
-    let mut cells = vec!["░"; width];
-    for cell in cells.iter_mut().take(filled) {
-        *cell = "█";
-    }
-    if active && filled < width {
-        let shimmer = (tick as usize % width).max(filled);
-        cells[shimmer.min(width - 1)] = "▒";
-    }
-    cells.join("")
 }

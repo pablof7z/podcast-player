@@ -1,7 +1,7 @@
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Gauge, Paragraph};
+use ratatui::widgets::{Gauge, Paragraph, Sparkline};
 use ratatui::Frame;
 
 use crate::app::AppState;
@@ -9,11 +9,27 @@ use crate::ui::theme;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let Some(ref np) = state.now_playing else {
-        let block = theme::panel("Player", false);
+        let block = theme::panel_with_footer("Player", "Select an episode and press p", false);
         let inner = block.inner(area);
         frame.render_widget(block, area);
-        let empty = Paragraph::new("Nothing playing").alignment(Alignment::Center);
-        frame.render_widget(empty, inner);
+        let rows = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Min(1),
+        ])
+        .split(inner);
+        frame.render_widget(
+            Paragraph::new("Nothing playing")
+                .alignment(Alignment::Center)
+                .style(theme::muted()),
+            rows[0],
+        );
+        frame.render_widget(
+            Paragraph::new(theme::wave(state.motion_tick / 2, 24))
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(theme::TRACK)),
+            rows[1],
+        );
         return;
     };
 
@@ -22,13 +38,15 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     } else {
         "Now Playing paused".to_owned()
     };
-    let block = theme::panel(activity, np.is_playing);
+    let footer = "Space play/pause  ←/→ seek  +/- volume";
+    let block = theme::panel_with_footer(activity, footer, np.is_playing);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
     let rows = Layout::vertical([
         Constraint::Length(1), // title
         Constraint::Length(1), // context
+        Constraint::Length(1), // waveform
         Constraint::Length(1), // progress
     ])
     .split(inner);
@@ -69,6 +87,20 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     ]);
     frame.render_widget(Paragraph::new(context_line), rows[1]);
 
+    let sample_count = rows[2].width.saturating_sub(2).clamp(12, 80) as usize;
+    let tick = if np.is_playing { state.motion_tick } else { 0 };
+    let samples = theme::waveform_samples(tick, sample_count);
+    let waveform_style = if np.is_playing {
+        Style::default().fg(theme::pulse_color(state.motion_tick))
+    } else {
+        theme::muted()
+    };
+    let waveform = Sparkline::default()
+        .data(&samples)
+        .max(8)
+        .style(waveform_style);
+    frame.render_widget(waveform, rows[2]);
+
     let (pos_label, dur_label) = (format_time(np.position_secs), format_time(np.duration_secs));
     let ratio = if np.duration_secs > 0.0 {
         np.position_secs / np.duration_secs
@@ -80,8 +112,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let gauge = Gauge::default()
         .ratio(ratio.clamp(0.0, 1.0))
         .label(label)
-        .gauge_style(Style::default().fg(theme::ACCENT).bg(theme::TRACK));
-    frame.render_widget(gauge, rows[2]);
+        .gauge_style(
+            Style::default()
+                .fg(theme::pulse_color(state.motion_tick))
+                .bg(theme::TRACK),
+        );
+    frame.render_widget(gauge, rows[3]);
 }
 
 fn format_time(secs: f64) -> String {

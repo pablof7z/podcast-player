@@ -35,6 +35,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 format::duration(clip.end_secs)
             );
             let spans = vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(title, base),
                 Span::styled(
                     format!(

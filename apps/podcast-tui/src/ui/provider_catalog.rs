@@ -56,7 +56,11 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             .enumerate()
             .map(|(offset, (_, model))| {
                 let index = start + offset;
-                model_row(model, index == state.selected_provider_catalog_model)
+                model_row(
+                    model,
+                    index == state.selected_provider_catalog_model,
+                    state.motion_tick,
+                )
             })
             .collect::<Vec<_>>();
         frame.render_widget(
@@ -70,7 +74,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     frame.render_widget(footer, rows[2]);
 }
 
-fn model_row(model: &ProviderCatalogModel, selected: bool) -> ListItem<'static> {
+fn model_row(model: &ProviderCatalogModel, selected: bool, tick: u64) -> ListItem<'static> {
     let base = if selected {
         theme::selected()
     } else {
@@ -78,6 +82,7 @@ fn model_row(model: &ProviderCatalogModel, selected: bool) -> ListItem<'static> 
     };
     let provider = format::short_id(&model.provider_name);
     ListItem::new(Line::from(vec![
+        theme::selected_prefix(selected, tick),
         Span::styled(model.display_name().to_owned(), base),
         Span::styled(format!("  {provider}"), theme::accent()),
         Span::styled(format!("  {}", model.id), theme::muted()),

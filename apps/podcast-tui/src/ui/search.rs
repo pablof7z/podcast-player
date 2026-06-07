@@ -32,7 +32,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
 
-            let mut spans = vec![Span::styled(&result.title, base_style)];
+            let mut spans = vec![
+                theme::selected_prefix(is_selected, state.motion_tick),
+                Span::styled(&result.title, base_style),
+            ];
             if let Some(ref author) = result.author {
                 spans.push(Span::styled(format!(" — {author}"), theme::muted()));
             }
