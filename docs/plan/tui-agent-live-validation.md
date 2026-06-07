@@ -8,8 +8,13 @@ substitutes count for this pass.
 ## Preconditions
 
 - The TUI must run from a dedicated data directory so test state is isolated.
-- The terminal process must have `OLLAMA_API_KEY` set before launch.
-- The TUI Settings `providers` section must load provider keys from env.
+- The terminal process must either have `OLLAMA_API_KEY` set before launch or
+  a locally authenticated Ollama daemon with `:cloud` models available.
+- For local Ollama Cloud validation, `ollama ls` must show the selected
+  `:cloud` model and the TUI Ollama chat URL must point at that daemon.
+- The TUI Settings `providers` section should load provider keys from env when
+  cloud providers need explicit keys; authenticated local Ollama does not need
+  a raw key in the TUI settings projection.
 - All LLM role rows should be set to Ollama Cloud-compatible model IDs:
   agent initial, agent thinking, memory compilation, wiki, categorization,
   chapter compilation, embeddings, and image generation where the kernel can
@@ -272,3 +277,62 @@ substitutes count for this pass.
   disabled tasks cannot claim they were dispatched.
 - TUI dispatch parsing now recognizes nested `{ok:false}` result envelopes when
   they are present.
+
+### 2026-06-07T10:32Z-11:23Z
+
+- Worktree: `/Users/customer/podcast-player-tui-agent-validation`
+- Branch: `feat/tui-agent-live-validation`
+- Tmux session: `podcast-tui-glm-live`
+- Data directory: `/tmp/podcast-tui-glm-live`
+- Local Ollama:
+  - `ollama ls` showed `glm-5.1:cloud` plus other `:cloud` models.
+  - Direct `ollama run glm-5.1:cloud` returned the requested
+    `tui-live-ok` smoke response.
+  - Direct `/api/chat` calls confirmed `stream:false` + `think:false` works
+    against the local daemon.
+
+### Scenarios Executed
+
+- Settings > Providers:
+  - Verified the live TUI projection showed all visible LLM role rows as
+    `GLM 5.1 Cloud (ollama:glm-5.1:cloud)`.
+  - Verified `Ollama chat URL` showed `http://localhost:11434/api/chat`.
+  - Verified OpenRouter/Ollama credential rows remained `none`, matching the
+    authenticated local Ollama Cloud path rather than env-key injection.
+- Agent chat, no-tool turn:
+  - Sent through tmux: `In one short sentence, confirm this live TUI agent
+    model call succeeded using GLM 5.1 cloud.`
+  - The assistant row completed with:
+    `This live TUI agent model call using GLM 5.1 cloud has succeeded.`
+- Agent memory + memory-aware chat:
+  - Entered `favorite_topic=ancient history podcasts` in Agent > Memory.
+  - Verified the Memory projection showed the saved fact.
+  - Asked through chat what topic should be prioritized based on memory.
+  - The assistant row completed with:
+    `You should prioritize ancient history podcasts for me.`
+- Agent tool loop, empty library:
+  - Sent through tmux: `Use your library search tool to look for economics
+    podcasts in my library, then tell me what you found.`
+  - The assistant row completed with:
+    `I searched your library for economics podcasts, but no matches were found.`
+- Agent tasks:
+  - Created `Live GLM Memory Task | once | podcast.memory |
+    {"op":"remember","key":"task_live","value":"ran","source":"user"} |
+    writes memory through live TUI`.
+  - Disabled it, attempted a run, re-enabled it, and ran it.
+  - Verified the task row reached `completed` and Memory showed
+    `task_live = ran (user)`.
+
+### Additional Fixes From GLM Live TUI Use
+
+- Replaced the Rig Ollama chat path with direct `/api/chat` requests so local
+  Ollama Cloud models complete reliably from the app backend.
+- Normalized `http://localhost:*` Ollama URLs to `http://127.0.0.1:*` before
+  request dispatch to avoid IPv6-first localhost connection failures.
+- Added a direct async agent chat path so the production handler no longer
+  nests a Tokio runtime inside a spawned blocking task.
+- Shortened tool instructions so GLM cloud models reliably emit tool-call JSON
+  and final prose within the TUI request budget.
+- Added a TUI snapshot-revision probe on the 250 ms tick so host-side async
+  completions, including agent replies and task-memory writes, refresh the
+  visible terminal projection even when no new NMP actor callback arrives.

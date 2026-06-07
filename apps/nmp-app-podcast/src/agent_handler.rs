@@ -160,29 +160,24 @@ impl AgentChatHandler {
                 let conversation = Arc::clone(&self.conversation);
                 let busy = Arc::clone(&self.busy);
                 let rev = Arc::clone(&self.rev);
-                let runtime_clone = Arc::clone(rt);
                 let store_c = Arc::clone(store);
                 let message_owned = trimmed.to_owned();
 
                 rt.spawn(async move {
-                    let reply = tokio::task::spawn_blocking(move || {
-                        // Build the system prompt from current memory facts BEFORE
-                        // `store_c` is moved into `chat_with_tools` below (M5.6).
-                        let system_prompt =
-                            agent_llm::build_system_prompt_with_memory(Some(&store_c));
-                        match agent_llm::chat_with_tools(
-                            &system_prompt,
-                            &history_snapshot,
-                            &message_owned,
-                            store_c,
-                            &runtime_clone,
-                        ) {
-                            Ok(reply) => reply,
-                            Err(e) => format!("Agent request failed: {e}"),
-                        }
-                    })
+                    // Build the system prompt from current memory facts before
+                    // `store_c` is moved into the async tool loop below (M5.6).
+                    let system_prompt = agent_llm::build_system_prompt_with_memory(Some(&store_c));
+                    let reply = match agent_llm::chat_with_tools_async(
+                        &system_prompt,
+                        &history_snapshot,
+                        &message_owned,
+                        store_c,
+                    )
                     .await
-                    .unwrap_or_else(|e| format!("Agent request failed: {e}"));
+                    {
+                        Ok(reply) => reply,
+                        Err(e) => format!("Agent request failed: {e}"),
+                    };
 
                     // Find the placeholder by id — NOT last_mut() — so that a
                     // concurrent Clear or second Send doesn't clobber the wrong row.

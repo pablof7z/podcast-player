@@ -12,8 +12,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::agent_tools::{self, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS, ToolRegistry};
-use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
+use crate::agent_tools::{self, ToolRegistry, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS};
+use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
 use crate::store::PodcastStore;
 
 /// Maximum tool-call round-trips for interactive chat turns.
@@ -29,7 +29,8 @@ const MAX_TRIAGE_TOOL_TURNS: usize = 6;
 const AGENT_TURN_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// Agent identity shared by chat and all background tasks.
-pub(crate) const AGENT_SYSTEM_PROMPT: &str = "You are a helpful podcast assistant. Answer questions about podcasts, episodes, \
+pub(crate) const AGENT_SYSTEM_PROMPT: &str =
+    "You are a helpful podcast assistant. Answer questions about podcasts, episodes, \
      RSS feeds, and related topics concisely and accurately.";
 
 /// Build the per-turn system prompt, prepending any stored MemoryFacts so the
@@ -126,57 +127,67 @@ pub fn chat_with_tools(
     store: Arc<Mutex<PodcastStore>>,
     runtime: &tokio::runtime::Runtime,
 ) -> Result<String, String> {
+    runtime.block_on(chat_with_tools_async(
+        system_prompt,
+        history,
+        user_message,
+        store,
+    ))
+}
+
+pub(crate) async fn chat_with_tools_async(
+    system_prompt: &str,
+    history: &[(String, String)],
+    user_message: &str,
+    store: Arc<Mutex<PodcastStore>>,
+) -> Result<String, String> {
     let registry = ToolRegistry::new(store.clone());
     let full_prompt = format!("{system_prompt}\n\n{TOOL_INSTRUCTIONS}");
 
-    runtime.block_on(async {
-        // Working history that grows with tool calls/results across turns.
-        let mut convo: Vec<(String, String)> = history.to_vec();
-        // The first turn sends the real user message; subsequent turns re-prompt
-        // with the accumulated tool results already folded into `convo`.
-        let mut next_user_message = user_message.to_owned();
-        let mut used_a_tool = false;
+    // Working history that grows with tool calls/results across turns.
+    let mut convo: Vec<(String, String)> = history.to_vec();
+    // The first turn sends the real user message; subsequent turns re-prompt
+    // with the accumulated tool results already folded into `convo`.
+    let mut next_user_message = user_message.to_owned();
+    let mut used_a_tool = false;
 
-        for _ in 0..MAX_TOOL_TURNS {
-            let reply = match single_turn(&full_prompt, &convo, &next_user_message, &store).await {
-                Ok(r) => r,
-                Err(e) => {
-                    // First model call failing means the model is down — propagate so
-                    // the handler uses its scaffold fallback. If we've already run a
-                    // tool, force a clean plain-text summary instead of leaking the
-                    // internal "Tool X returned…" scaffolding to the user.
-                    if !used_a_tool {
-                        return Err(e);
-                    }
-                    return Ok(
-                        force_final_answer(system_prompt, &convo, user_message, &store).await,
-                    );
+    for _ in 0..MAX_TOOL_TURNS {
+        let reply = match single_turn(&full_prompt, &convo, &next_user_message, &store).await {
+            Ok(r) => r,
+            Err(e) => {
+                // First model call failing means the model is down — propagate so
+                // the handler uses its scaffold fallback. If we've already run a
+                // tool, force a clean plain-text summary instead of leaking the
+                // internal "Tool X returned…" scaffolding to the user.
+                if !used_a_tool {
+                    return Err(e);
                 }
-            };
-
-            match agent_tools::parse_tool_call(&reply) {
-                Some(call) => {
-                    used_a_tool = true;
-                    let result = registry.execute(&call.name, &call.args);
-                    // Record this turn's request + tool result so the next model
-                    // turn can see them. The user turn we just sent is recorded as
-                    // a user message; the model's tool-call request as assistant.
-                    convo.push(("user".to_owned(), std::mem::take(&mut next_user_message)));
-                    convo.push(("assistant".to_owned(), reply));
-                    next_user_message = format!(
-                        "Tool `{}` returned:\n{}\n\nUse this to answer the original question.",
-                        call.name, result
-                    );
-                }
-                // Plain-text response: this is the final answer.
-                None => return Ok(reply),
+                return Ok(force_final_answer(system_prompt, &convo, user_message, &store).await);
             }
-        }
+        };
 
-        // Tool-call budget exhausted and the model still wants a tool. Make one
-        // final tools-suppressed call so the user gets prose, never raw JSON.
-        Ok(force_final_answer(system_prompt, &convo, user_message, &store).await)
-    })
+        match agent_tools::parse_tool_call(&reply) {
+            Some(call) => {
+                used_a_tool = true;
+                let result = registry.execute(&call.name, &call.args);
+                // Record this turn's request + tool result so the next model
+                // turn can see them. The user turn we just sent is recorded as
+                // a user message; the model's tool-call request as assistant.
+                convo.push(("user".to_owned(), std::mem::take(&mut next_user_message)));
+                convo.push(("assistant".to_owned(), reply));
+                next_user_message = format!(
+                    "Tool `{}` returned:\n{}\n\nUse this to answer the original question.",
+                    call.name, result
+                );
+            }
+            // Plain-text response: this is the final answer.
+            None => return Ok(reply),
+        }
+    }
+
+    // Tool-call budget exhausted and the model still wants a tool. Make one
+    // final tools-suppressed call so the user gets prose, never raw JSON.
+    Ok(force_final_answer(system_prompt, &convo, user_message, &store).await)
 }
 
 /// Make a final, tools-suppressed model call to summarize the accumulated tool
