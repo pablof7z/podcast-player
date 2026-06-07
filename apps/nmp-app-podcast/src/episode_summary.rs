@@ -26,6 +26,7 @@ use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
 use crate::episode_summary_llm::summarize_episode;
+use crate::llm::is_missing_credential_error;
 use crate::store::PodcastStore;
 
 /// Kick off a background summarization pass for one episode.
@@ -46,7 +47,7 @@ pub(crate) fn handle_summarize_episode(
                 return serde_json::json!({
                     "ok": false,
                     "error": format!("episode not found: {episode_id}")
-                })
+                });
             }
         },
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -95,7 +96,9 @@ async fn summarize_in_background(
             }
         }
         Ok(Err(e)) => {
-            eprintln!("[episode_summary] LLM summarize failed for {episode_id}: {e}");
+            if !is_missing_credential_error(&e) {
+                eprintln!("[episode_summary] LLM summarize failed for {episode_id}: {e}");
+            }
         }
         Err(e) => {
             eprintln!("[episode_summary] spawn_blocking panicked for {episode_id}: {e}");

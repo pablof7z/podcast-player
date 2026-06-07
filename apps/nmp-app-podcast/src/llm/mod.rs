@@ -6,11 +6,15 @@
 //! for a single async turn.
 
 pub mod backend;
+pub mod factory;
+pub mod local_model_backend;
 pub mod ollama_backend;
 pub mod openrouter_backend;
-pub mod local_model_backend;
-pub mod factory;
 
-pub use backend::{LlmBackend, LlmRequest, LlmError};
-pub use factory::{backend_for, role_model_or_default};
+pub use backend::{LlmBackend, LlmError, LlmRequest};
+pub use factory::{backend_for, role_model_or_default, validate_model_credentials};
 pub use local_model_backend::LocalModelBackend;
+
+pub fn is_missing_credential_error(error: &str) -> bool {
+    error.contains("Missing credential:")
+}

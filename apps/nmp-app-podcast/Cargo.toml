@@ -28,7 +28,7 @@ lmdb-backend = ["nmp-core/lmdb-backend"]
 # tokio-tungstenite and futures-util are now non-optional (production social
 # graph relay subscriptions use them). Gated deps here are only the test-only
 # build utilities; the relay client is a production dependency.
-headless = ["dep:reqwest", "dep:tempfile", "nmp-core/test-support", "nmp-ffi/test-support"]
+headless = ["dep:tempfile", "nmp-core/test-support", "nmp-ffi/test-support"]
 
 [[bin]]
 name = "headless"
@@ -37,7 +37,7 @@ required-features = ["headless"]
 
 [dependencies]
 async-trait = "0.1"
-reqwest = { version = "0.12", features = ["blocking", "rustls-tls"], optional = true }
+reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"] }
 tempfile = { version = "3", optional = true }
 # WebSocket client used by the production social-graph relay subscriptions
 # (FetchContacts → kind:3 + kind:0) and by the headless relay_client.

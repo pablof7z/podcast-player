@@ -11,6 +11,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 | NIP-F4 publishing/signing completion for owned publishing/discovery. | P0 | `docs/plan/pod0-nostr-publishing.md` |
 | Android feature wave 1 (subscribe/search/episode detail) + parity matrix. | Active | `docs/plan/android-parity.md` |
 | TUI feature parity foundation and terminal surface expansion. | Active | `docs/plan/tui-parity.md` |
+| TUI live agent validation with Ollama Cloud. | Active | `docs/plan/tui-agent-live-validation.md` |
 
 ## Planning Files
 
@@ -21,6 +22,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 - `docs/plan/pod0-nostr-publishing.md` - NIP-F4 protocol correction and publishing/discovery plan.
 - `docs/plan/android-parity.md` - Android feature-parity status matrix (Tier 1-4) and the subscribe/search/episode-detail wave.
 - `docs/plan/tui-parity.md` - Terminal-client parity matrix and staged implementation plan.
+- `docs/plan/tui-agent-live-validation.md` - live tmux scenario inventory and validation log for agentic TUI workflows.
 
 ## Active State
 

@@ -30,7 +30,7 @@ use std::time::Duration;
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{LlmRequest, backend_for, role_model_or_default};
+use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
 use crate::store::PodcastStore;
 
 const CHAPTERS_MODEL: &str = "deepseek-v4-flash:cloud";
@@ -140,14 +140,16 @@ pub(crate) fn synthesize_chapters_styled(
     );
 
     runtime.block_on(async {
-        // Honor a `local:` selection for the Chapter Compilation role;
-        // otherwise the cloud chapters model, unchanged.
+        // Honor explicit provider-prefixed selections for the Chapter
+        // Compilation role; otherwise keep the historical cloud chapters model.
         let chapters_cfg = store
             .lock()
             .ok()
             .map(|s| s.chapter_compilation_model().to_owned())
             .unwrap_or_default();
         let chapters_model = role_model_or_default(&chapters_cfg, CHAPTERS_MODEL);
+        validate_model_credentials(store, &chapters_model)
+            .map_err(|e| SynthError::Unavailable(e.to_string()))?;
         let backend = backend_for(store, &chapters_model);
         let req = LlmRequest {
             system: preamble,
@@ -159,18 +161,19 @@ pub(crate) fn synthesize_chapters_styled(
         // Wrap the round-trip in a timeout: a hung backend would otherwise pin
         // the spawn_blocking worker indefinitely and never reach the stub
         // fallback. A timeout is treated as definitively-unavailable.
-        let response: String = match tokio::time::timeout(REQUEST_TIMEOUT, backend.complete(&req)).await {
-            Ok(Ok(resp)) => resp,
-            // The transport failed / model errored → unreachable.
-            Ok(Err(e)) => return Err(SynthError::Unavailable(e.to_string())),
-            // Deadline elapsed → treat as unavailable.
-            Err(_) => {
-                return Err(SynthError::Unavailable(format!(
-                    "request exceeded {}s budget",
-                    REQUEST_TIMEOUT.as_secs()
-                )))
-            }
-        };
+        let response: String =
+            match tokio::time::timeout(REQUEST_TIMEOUT, backend.complete(&req)).await {
+                Ok(Ok(resp)) => resp,
+                // The transport failed / model errored → unreachable.
+                Ok(Err(e)) => return Err(SynthError::Unavailable(e.to_string())),
+                // Deadline elapsed → treat as unavailable.
+                Err(_) => {
+                    return Err(SynthError::Unavailable(format!(
+                        "request exceeded {}s budget",
+                        REQUEST_TIMEOUT.as_secs()
+                    )));
+                }
+            };
 
         // The model is present; any failure from here is a parse problem.
         parse_chapters(&response).map_err(SynthError::Parse)
@@ -209,9 +212,7 @@ fn system_prompt(chapter_count: usize, style: PromptStyle) -> String {
 pub(crate) fn parse_chapters(response: &str) -> Result<Vec<SynthesizedChapter>, String> {
     let json_str = extract_json_array(response)?;
     let v: serde_json::Value = serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
-    let arr = v
-        .as_array()
-        .ok_or("LLM response was not a JSON array")?;
+    let arr = v.as_array().ok_or("LLM response was not a JSON array")?;
     if arr.is_empty() {
         return Err("LLM returned an empty chapter array".into());
     }
@@ -226,7 +227,9 @@ pub(crate) fn parse_chapters(response: &str) -> Result<Vec<SynthesizedChapter>, 
             .as_f64()
             .ok_or("chapter missing numeric `start_secs`")?;
         if start_secs < 0.0 {
-            return Err(format!("chapter '{title}' has negative start_secs ({start_secs})"));
+            return Err(format!(
+                "chapter '{title}' has negative start_secs ({start_secs})"
+            ));
         }
         chapters.push(SynthesizedChapter { title, start_secs });
     }
@@ -234,7 +237,11 @@ pub(crate) fn parse_chapters(response: &str) -> Result<Vec<SynthesizedChapter>, 
     // Enforce monotonic ordering: a hallucinating model may return inverted
     // timestamps which break chapter-seek behavior. Sort rather than reject
     // so a small model reordering is corrected rather than discarded.
-    chapters.sort_by(|a, b| a.start_secs.partial_cmp(&b.start_secs).unwrap_or(std::cmp::Ordering::Equal));
+    chapters.sort_by(|a, b| {
+        a.start_secs
+            .partial_cmp(&b.start_secs)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     // First chapter must start at 0.0 (per the system prompt contract).
     if let Some(first) = chapters.first_mut() {

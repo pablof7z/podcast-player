@@ -10,9 +10,10 @@
 //! - [`FAST_MODEL`] is the fallback when the primary model is unavailable.
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use crate::agent_tools::{self, ToolRegistry, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS};
-use crate::llm::{LlmRequest, backend_for, role_model_or_default};
+use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
 use crate::store::PodcastStore;
 
 /// Maximum tool-call round-trips for interactive chat turns.
@@ -21,6 +22,11 @@ const MAX_TOOL_TURNS: usize = 3;
 /// Maximum tool-call round-trips for background agent tasks (triage).
 /// Allows: get_memory_facts (1) + search_library (1-2) + set_episode_priorities (1) + headroom.
 const MAX_TRIAGE_TOOL_TURNS: usize = 6;
+
+/// Wall-clock budget for a single agent model turn. The UI can show the busy
+/// placeholder while a real cloud call runs, but a hung provider should become
+/// an actionable error instead of leaving the TUI pinned indefinitely.
+const AGENT_TURN_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// Agent identity shared by chat and all background tasks.
 pub(crate) const AGENT_SYSTEM_PROMPT: &str =
@@ -72,8 +78,8 @@ async fn single_turn(
     user_message: &str,
     store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<String, String> {
-    // The "Agent (Initial)" role. A `local:` selection runs on-device; anything
-    // else routes to its cloud backend. If unset, default to the cloud thinking
+    // The "Agent (Initial)" role. Explicit provider-prefixed selections route
+    // through their selected backend. If unset, default to the cloud thinking
     // model.
     let initial_cfg = store
         .lock()
@@ -81,6 +87,7 @@ async fn single_turn(
         .map(|s| s.agent_initial_model().to_owned())
         .unwrap_or_default();
     let model = role_model_or_default(&initial_cfg, THINKING_MODEL);
+    validate_model_credentials(store, &model).map_err(|e| format!("{model} failed: {e}"))?;
     let backend = backend_for(store, &model);
     let req = LlmRequest {
         system: system_prompt.to_owned(),
@@ -88,10 +95,14 @@ async fn single_turn(
         user: user_message.to_owned(),
         model: model.clone(),
     };
-    backend
-        .complete(&req)
-        .await
-        .map_err(|e| format!("{model} failed: {e}"))
+    match tokio::time::timeout(AGENT_TURN_TIMEOUT, backend.complete(&req)).await {
+        Ok(Ok(response)) => Ok(response),
+        Ok(Err(e)) => Err(format!("{model} failed: {e}")),
+        Err(_) => Err(format!(
+            "{model} failed: request exceeded {}s budget",
+            AGENT_TURN_TIMEOUT.as_secs()
+        )),
+    }
 }
 
 /// Drive a chat turn with podcast-domain tools available (M5.4).
@@ -116,55 +127,67 @@ pub fn chat_with_tools(
     store: Arc<Mutex<PodcastStore>>,
     runtime: &tokio::runtime::Runtime,
 ) -> Result<String, String> {
+    runtime.block_on(chat_with_tools_async(
+        system_prompt,
+        history,
+        user_message,
+        store,
+    ))
+}
+
+pub(crate) async fn chat_with_tools_async(
+    system_prompt: &str,
+    history: &[(String, String)],
+    user_message: &str,
+    store: Arc<Mutex<PodcastStore>>,
+) -> Result<String, String> {
     let registry = ToolRegistry::new(store.clone());
     let full_prompt = format!("{system_prompt}\n\n{TOOL_INSTRUCTIONS}");
 
-    runtime.block_on(async {
-        // Working history that grows with tool calls/results across turns.
-        let mut convo: Vec<(String, String)> = history.to_vec();
-        // The first turn sends the real user message; subsequent turns re-prompt
-        // with the accumulated tool results already folded into `convo`.
-        let mut next_user_message = user_message.to_owned();
-        let mut used_a_tool = false;
+    // Working history that grows with tool calls/results across turns.
+    let mut convo: Vec<(String, String)> = history.to_vec();
+    // The first turn sends the real user message; subsequent turns re-prompt
+    // with the accumulated tool results already folded into `convo`.
+    let mut next_user_message = user_message.to_owned();
+    let mut used_a_tool = false;
 
-        for _ in 0..MAX_TOOL_TURNS {
-            let reply = match single_turn(&full_prompt, &convo, &next_user_message, &store).await {
-                Ok(r) => r,
-                Err(e) => {
-                    // First model call failing means the model is down — propagate so
-                    // the handler uses its scaffold fallback. If we've already run a
-                    // tool, force a clean plain-text summary instead of leaking the
-                    // internal "Tool X returned…" scaffolding to the user.
-                    if !used_a_tool {
-                        return Err(e);
-                    }
-                    return Ok(force_final_answer(system_prompt, &convo, user_message, &store).await);
+    for _ in 0..MAX_TOOL_TURNS {
+        let reply = match single_turn(&full_prompt, &convo, &next_user_message, &store).await {
+            Ok(r) => r,
+            Err(e) => {
+                // First model call failing means the model is down — propagate so
+                // the handler uses its scaffold fallback. If we've already run a
+                // tool, force a clean plain-text summary instead of leaking the
+                // internal "Tool X returned…" scaffolding to the user.
+                if !used_a_tool {
+                    return Err(e);
                 }
-            };
-
-            match agent_tools::parse_tool_call(&reply) {
-                Some(call) => {
-                    used_a_tool = true;
-                    let result = registry.execute(&call.name, &call.args);
-                    // Record this turn's request + tool result so the next model
-                    // turn can see them. The user turn we just sent is recorded as
-                    // a user message; the model's tool-call request as assistant.
-                    convo.push(("user".to_owned(), std::mem::take(&mut next_user_message)));
-                    convo.push(("assistant".to_owned(), reply));
-                    next_user_message = format!(
-                        "Tool `{}` returned:\n{}\n\nUse this to answer the original question.",
-                        call.name, result
-                    );
-                }
-                // Plain-text response: this is the final answer.
-                None => return Ok(reply),
+                return Ok(force_final_answer(system_prompt, &convo, user_message, &store).await);
             }
-        }
+        };
 
-        // Tool-call budget exhausted and the model still wants a tool. Make one
-        // final tools-suppressed call so the user gets prose, never raw JSON.
-        Ok(force_final_answer(system_prompt, &convo, user_message, &store).await)
-    })
+        match agent_tools::parse_tool_call(&reply) {
+            Some(call) => {
+                used_a_tool = true;
+                let result = registry.execute(&call.name, &call.args);
+                // Record this turn's request + tool result so the next model
+                // turn can see them. The user turn we just sent is recorded as
+                // a user message; the model's tool-call request as assistant.
+                convo.push(("user".to_owned(), std::mem::take(&mut next_user_message)));
+                convo.push(("assistant".to_owned(), reply));
+                next_user_message = format!(
+                    "Tool `{}` returned:\n{}\n\nUse this to answer the original question.",
+                    call.name, result
+                );
+            }
+            // Plain-text response: this is the final answer.
+            None => return Ok(reply),
+        }
+    }
+
+    // Tool-call budget exhausted and the model still wants a tool. Make one
+    // final tools-suppressed call so the user gets prose, never raw JSON.
+    Ok(force_final_answer(system_prompt, &convo, user_message, &store).await)
 }
 
 /// Make a final, tools-suppressed model call to summarize the accumulated tool
@@ -213,6 +236,9 @@ pub fn run_background_agent_task(
                 Ok(r) => r,
                 Err(e) => {
                     if convo.is_empty() {
+                        if crate::llm::is_missing_credential_error(&e) {
+                            return Ok(String::new());
+                        }
                         return Err(e);
                     }
                     // Already made progress — return what we have.

@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use nmp_app_podcast::ffi::PodcastUpdate;
 use nmp_app_podcast::{
-    nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_unregister,
-    nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
+    nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_snapshot_rev,
+    nmp_app_podcast_unregister, nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
 };
 use nmp_ffi::{
     nmp_app_dispatch_action, nmp_app_free, nmp_app_free_string, nmp_app_new,
@@ -105,6 +105,20 @@ impl AppRuntime {
             return None;
         }
         Some(unsafe { (*self.podcast).update() })
+    }
+
+    /// Cheaply read the podcast snapshot revision.
+    ///
+    /// The NMP actor pushes callbacks for kernel events, but host-side async
+    /// work such as agent replies can finish by mutating app-owned state and
+    /// bumping this revision without another actor callback. The TUI tick loop
+    /// uses this probe to pull those completed projections without rebuilding
+    /// the snapshot on every frame.
+    pub fn podcast_snapshot_rev(&self) -> u64 {
+        if self.podcast.is_null() {
+            return 0;
+        }
+        nmp_app_podcast_snapshot_rev(self.podcast)
     }
 }
 
@@ -237,12 +251,58 @@ fn parse_dispatch_envelope(value: &Value) -> Result<String> {
     if let Some(error) = value.get("error").and_then(Value::as_str) {
         return Err(error.to_string());
     }
+    if value.get("ok").is_some() {
+        parse_action_result(value)?;
+    }
+    if let Some(result_json) = value.get("result_json").and_then(Value::as_str) {
+        parse_result_json(result_json)?;
+    }
     value
         .get("correlation_id")
         .and_then(Value::as_str)
         .filter(|id| !id.is_empty())
         .map(str::to_string)
         .ok_or_else(|| "action dispatch envelope missing correlation_id".to_string())
+}
+
+fn parse_result_json(result_json: &str) -> Result<()> {
+    let trimmed = result_json.trim();
+    if trimmed.is_empty() {
+        return Ok(());
+    }
+    let value: Value = serde_json::from_str(trimmed)
+        .map_err(|e| format!("action result returned invalid JSON: {e}"))?;
+    parse_action_result(&value)
+}
+
+fn parse_action_result(value: &Value) -> Result<()> {
+    if value.get("ok").and_then(Value::as_bool) == Some(false) {
+        return Err(action_error_message(value));
+    }
+    if let Some(error) = value.get("error").and_then(Value::as_str) {
+        return Err(error.to_string());
+    }
+    Ok(())
+}
+
+fn action_error_message(value: &Value) -> String {
+    value
+        .get("error")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .or_else(|| {
+            value
+                .get("message")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .or_else(|| {
+            value
+                .get("status")
+                .and_then(Value::as_str)
+                .map(|status| format!("action failed: {status}"))
+        })
+        .unwrap_or_else(|| "action failed".to_owned())
 }
 
 impl Drop for AppRuntime {
@@ -261,3 +321,7 @@ impl Drop for AppRuntime {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "runtime_tests.rs"]
+mod tests;
