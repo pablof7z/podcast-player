@@ -244,10 +244,8 @@ final class TranscriptIngestService {
             return
         }
         appStore.setEpisodeTranscriptState(episode.id, state: .transcribing(progress: 0))
-        // Prefer the on-disk download when present. ElevenLabs Scribe can also
-        // use a `source_url` for remote audio; OpenRouter Whisper only accepts
-        // file uploads so the client downloads the audio to a temp file when
-        // a remote URL is supplied.
+        // Prefer the on-disk download when present. Provider-specific upload
+        // and remote-source handling lives behind each provider client.
         let audioURL: URL
         if EpisodeDownloadStore.shared.exists(for: episode) {
             audioURL = EpisodeDownloadStore.shared.localFileURL(for: episode)
@@ -280,6 +278,7 @@ final class TranscriptIngestService {
                 )
                 transcript = try await assemblyAI.pollResult(job)
             case .openRouterWhisper:
+                appStore.kernelSetProviderApiKeys()
                 transcript = try await whisper.transcribe(audioURL: effectiveAudioURL, episodeID: episode.id)
             case .appleNative:
                 transcript = try await appleSTT.transcribe(audioFileURL: effectiveAudioURL, episodeID: episode.id)

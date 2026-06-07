@@ -269,6 +269,16 @@ char *nmp_app_podcast_provider_model_catalog(void *handle);
 // Threading: this call BLOCKS; call from a background thread / detached Task.
 char *nmp_app_podcast_validate_openrouter_key(void *handle);
 
+// Shared OpenRouter Whisper speech-to-text transport. Swift passes a typed
+// intent JSON:
+//   {"audio_url":"file:///.../episode.mp3","language_hint":"en"?}
+// Rust owns OpenRouter auth, model selection, upload/download shaping, and
+// response parsing. Returns {"result":...} or
+// {"error":{"kind":"...","message":"...","status_code":...}}.
+// The caller MUST free the returned pointer via `nmp_app_free_string`.
+// Threading: this call BLOCKS; call from a background thread / detached Task.
+char *nmp_app_podcast_openrouter_whisper_transcribe(void *handle, const char *intent_json);
+
 // ── Provider-blind image generation ─────────────────────────────────────
 //
 // Drives OpenRouter image generation through shared Rust provider transport.

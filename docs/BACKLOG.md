@@ -67,10 +67,12 @@ worktrees currently in flight.
   Rust-owned settings projections/actions. Delete Keychain-only UI fallbacks
   once the kernel can represent the state. Provider HTTP transport is part of
   this ownership boundary: OpenRouter/Ollama chat/completion, embeddings,
-  model catalog discovery, and OpenRouter credential validation now live in
-  the shared Rust backend, with iOS/Android/TUI only supplying credentials,
-  selected models, and UI. Remaining Swift-owned provider transport includes
-  OpenRouter Whisper/STT multipart upload.
+  model catalog discovery, OpenRouter credential validation, and OpenRouter
+  Whisper/STT multipart upload now live in the shared Rust backend, with
+  iOS/Android/TUI only supplying credentials, selected models, typed audio
+  source intent, and UI. Remaining provider-ownership work is Android secure
+  provider-key reload/full credential settings UI plus deleting any stale
+  Keychain-only UI fallbacks after kernel projections cover them.
 - **typed-agent-task-intents.** Backend `AgentTaskIntent` creation exists and
   the TUI task editor now submits typed/natural task requests instead of raw
   dispatch namespace/body JSON. Keep raw `create` as compatibility/internal

@@ -19,6 +19,7 @@ pub struct ProviderSettings {
     pub openrouter_key: Option<String>,
     pub ollama_key: Option<String>,
     pub ollama_base_url: String,
+    pub openrouter_whisper_model: String,
 }
 
 impl ProviderSettings {
@@ -30,6 +31,7 @@ impl ProviderSettings {
             openrouter_key: store.open_router_api_key().map(str::to_owned),
             ollama_key: store.ollama_api_key().map(str::to_owned),
             ollama_base_url: ollama_base_url_from_chat_url(store.ollama_chat_url()),
+            openrouter_whisper_model: store.open_router_whisper_model().to_owned(),
         })
     }
 }

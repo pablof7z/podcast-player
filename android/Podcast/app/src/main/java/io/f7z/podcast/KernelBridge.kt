@@ -157,6 +157,13 @@ class KernelBridge {
     fun providerModelCatalog(): String? =
         if (handle != 0L) nativeProviderModelCatalog(handle) else null
 
+    /**
+     * Shared OpenRouter Whisper transcription transport. Android supplies only
+     * the typed audio-source intent; Rust owns OpenRouter HTTP and credentials.
+     */
+    fun openRouterWhisperTranscribe(intentJson: String): String? =
+        if (handle != 0L) nativeOpenRouterWhisperTranscribe(handle, intentJson) else null
+
     /** Shared provider image generation transport; returns Rust's JSON envelope. */
     fun generateImage(requestJson: String): String? =
         if (handle != 0L) nativeGenerateImage(handle, requestJson) else null
@@ -192,6 +199,7 @@ class KernelBridge {
     private external fun nativeProviderComplete(handle: Long, intentJson: String): String?
     private external fun nativeProviderEmbed(handle: Long, intentJson: String): String?
     private external fun nativeProviderModelCatalog(handle: Long): String?
+    private external fun nativeOpenRouterWhisperTranscribe(handle: Long, intentJson: String): String?
     private external fun nativeGenerateImage(handle: Long, requestJson: String): String?
     private external fun nativeRerank(handle: Long, requestJson: String): String?
     private external fun nativeFree(handle: Long)
