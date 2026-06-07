@@ -140,10 +140,11 @@ struct PlayerShareSheet: View {
 
     /// Load the persisted transcript for this episode, ask the LLM to pick
     /// semantic boundaries around the playhead, and present `QuoteShareView`
-    /// for the resulting span. On any failure (no key, network blip, malformed
-    /// response, no transcript) we fall back to today's single-segment behavior
-    /// so the share affordance still works — same defensive path the previous
-    /// implementation took, just preceded by an LLM round-trip when possible.
+    /// for the resulting span. On any failure (provider error, network blip,
+    /// malformed response, no transcript) we fall back to today's
+    /// single-segment behavior so the share affordance still works — same
+    /// defensive path the previous implementation took, just preceded by an
+    /// LLM round-trip when possible.
     private func presentQuoteAtPlayhead() {
         guard let transcript = EpisodeDetailView.readyTranscript(for: episode) else {
             Haptics.error()
@@ -151,14 +152,6 @@ struct PlayerShareSheet: View {
         }
         Haptics.light()
         let modelID = store.state.settings.wikiModel
-        let modelReference = LLMModelReference(storedID: modelID)
-        // Surface the one-time hint when we'd otherwise silently degrade.
-        // Falls through to the mechanical fallback below regardless.
-        if !LLMProviderCredentialResolver.hasAPIKey(for: modelReference.provider) {
-            AutoSnipController.shared.noLLMKeyHintPending = true
-            quotingSegment = transcript.segment(at: state.currentTime)
-            return
-        }
         quoteResolving = true
         let playhead = state.currentTime
         Task { @MainActor in

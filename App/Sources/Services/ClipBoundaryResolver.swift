@@ -21,7 +21,7 @@ import os.log
 //
 // Boundaries are validated against transcript span before the value is
 // returned. Caller is responsible for fallback when this returns nil
-// (no transcript, no key, network failure, malformed response).
+// (no transcript, provider error, network failure, malformed response).
 
 @MainActor
 final class ClipBoundaryResolver {
@@ -56,8 +56,8 @@ final class ClipBoundaryResolver {
     // MARK: Dependencies
 
     /// Client factory — overridable so tests can inject a stubbed client.
-    /// Returning `nil` signals "no usable client right now" (no API key) and
-    /// the resolver bails to nil without an LLM round-trip.
+    /// Returning `nil` signals "no usable client right now" and the resolver
+    /// bails to nil without an LLM round-trip.
     var clientFactory: (LLMModelReference) -> WikiOpenRouterClient? = ClipBoundaryResolver.defaultClientFactory
 
     private init() {}
@@ -82,8 +82,8 @@ final class ClipBoundaryResolver {
     // MARK: - API
 
     /// Resolve refined boundaries for the given `intent` anchored at
-    /// `playheadSeconds`. Returns `nil` when there's nothing usable — no
-    /// API key, transcript window too thin, malformed response, or LLM
+    /// `playheadSeconds`. Returns `nil` when there's nothing usable —
+    /// provider error, transcript window too thin, malformed response, or LLM
     /// boundaries that don't validate.
     func resolveBoundaries(
         transcript: Transcript,
@@ -101,7 +101,7 @@ final class ClipBoundaryResolver {
         }
         let modelReference = LLMModelReference(storedID: modelID)
         guard let client = clientFactory(modelReference) else {
-            Self.logger.info("resolveBoundaries: no client (likely no API key)")
+            Self.logger.info("resolveBoundaries: no client")
             return nil
         }
         let userPrompt = userPrompt(
@@ -266,14 +266,6 @@ final class ClipBoundaryResolver {
 
 private extension ClipBoundaryResolver {
     static let defaultClientFactory: (LLMModelReference) -> WikiOpenRouterClient? = { modelReference in
-        do {
-            guard let key = try LLMProviderCredentialResolver.apiKey(for: modelReference.provider),
-                  !key.isEmpty else {
-                return nil
-            }
-            return WikiOpenRouterClient.live(apiKey: key, model: modelReference.storedID)
-        } catch {
-            return nil
-        }
+        WikiOpenRouterClient.live(model: modelReference.storedID)
     }
 }

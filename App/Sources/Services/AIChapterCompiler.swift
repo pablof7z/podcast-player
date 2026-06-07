@@ -87,22 +87,6 @@ final class AIChapterCompiler {
             return
         }
         let modelReference = LLMModelReference(storedID: store.state.settings.chapterCompilationModel)
-        let apiKey: String
-        do {
-            guard let resolved = try LLMProviderCredentialResolver.apiKey(for: modelReference.provider),
-                  !resolved.isEmpty else {
-                Self.logger.info(
-                    "compileIfNeeded(\(episodeID, privacy: .public)): no \(modelReference.provider.displayName, privacy: .public) key configured — skipping"
-                )
-                return
-            }
-            apiKey = resolved
-        } catch {
-            Self.logger.error(
-                "compileIfNeeded(\(episodeID, privacy: .public)): credential resolve failed: \(String(describing: error), privacy: .public)"
-            )
-            return
-        }
 
         let hasExistingChapters = (episode.chapters?.isEmpty == false)
         let systemPrompt = hasExistingChapters ? Self.systemPromptEnrichOnly : Self.systemPromptFull
@@ -110,7 +94,7 @@ final class AIChapterCompiler {
             ? enrichOnlyUserPrompt(transcript: transcript, episode: episode)
             : fullUserPrompt(transcript: transcript, episode: episode)
 
-        let client = WikiOpenRouterClient.live(apiKey: apiKey, model: modelReference.storedID)
+        let client = WikiOpenRouterClient.live(model: modelReference.storedID)
         let raw: String
         do {
             raw = try await client.compile(

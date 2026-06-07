@@ -125,13 +125,6 @@ final class WikiRefreshExecutor {
             return
         }
         let model = appStore.state.settings.wikiModel
-        let reference = LLMModelReference(storedID: model)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            Self.logger.info(
-                "skipping refresh of \(job.slug, privacy: .public): no API key for \(reference.provider.displayName, privacy: .public)"
-            )
-            return
-        }
         let prior: WikiPage?
         do {
             prior = try storage.read(slug: job.slug, scope: job.scope)
