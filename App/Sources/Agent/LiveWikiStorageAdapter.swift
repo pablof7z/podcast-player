@@ -5,8 +5,8 @@ import os.log
 
 /// Wraps `WikiStorage.shared` so the agent's wiki tools can query, create,
 /// list, and delete wiki pages. Converted to a class so it can hold a weak
-/// reference to `AppStateStore` for the model setting and API-key check
-/// required by `createWikiPage`.
+/// reference to `AppStateStore` for the model setting required by
+/// `createWikiPage`.
 final class LiveWikiStorageAdapter: WikiStorageProtocol, @unchecked Sendable {
 
     let storage: WikiStorage
@@ -61,17 +61,12 @@ final class LiveWikiStorageAdapter: WikiStorageProtocol, @unchecked Sendable {
             throw WikiAdapterError.invalidTitle
         }
 
-        // Read model setting and check API key on MainActor (AppStateStore is @MainActor-isolated).
+        // Read model setting on MainActor (AppStateStore is @MainActor-isolated).
         // Fall back to Settings() default initializer so the canonical default lives in one place
         // and a nil store never silently overrides a user-configured model with a hardcoded literal.
         let model: String = await MainActor.run { [weak self] in
             (self?.store?.state.settings ?? Settings()).wikiModel
         }
-        let reference = LLMModelReference(storedID: model)
-        guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-            throw WikiAdapterError.noAPIKey(reference.provider.displayName)
-        }
-
         // WikiGenerator accesses RAGService.shared.wikiRAG which is @MainActor-isolated.
         let storage = self.storage
         let generator: WikiGenerator = await MainActor.run {
@@ -190,14 +185,11 @@ final class LiveWikiStorageAdapter: WikiStorageProtocol, @unchecked Sendable {
 
 enum WikiAdapterError: LocalizedError {
     case invalidTitle
-    case noAPIKey(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidTitle:
             return "Title must not be empty."
-        case .noAPIKey(let provider):
-            return "No API key for \(provider). Add a key under Settings → AI Keys."
         }
     }
 }

@@ -5,7 +5,6 @@ import os.log
 // MARK: - Errors
 
 enum CategorizationError: LocalizedError {
-    case noAPIKey(provider: String)
     case noSubscriptions
     case noModelSelected
     case invalidResponse
@@ -13,8 +12,6 @@ enum CategorizationError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noAPIKey(let provider):
-            return "\(provider) is not connected. Add a key in Settings → Intelligence → Providers."
         case .noSubscriptions:
             return "Add at least one podcast subscription before generating categories."
         case .noModelSelected:
@@ -37,9 +34,8 @@ enum CategorizationError: LocalizedError {
 /// `isRunning` before starting; `recompute(store:)` returns immediately
 /// if a run is already in progress.
 ///
-/// Networking goes through `WikiOpenRouterClient`, which already owns the
-/// provider-specific OpenRouter/Ollama request shape. `BYOKConnectService`
-/// only handles key acquisition.
+/// Networking goes through `WikiOpenRouterClient`, whose live mode delegates
+/// provider request shaping and credential checks to Rust.
 @MainActor
 @Observable
 final class PodcastCategorizationService {
@@ -67,9 +63,8 @@ final class PodcastCategorizationService {
     /// Sends one prompt to the configured model/provider, validates the
     /// response, and persists the resulting categories on the store.
     ///
-    /// Throws `.noAPIKey` if the selected provider isn't connected, `.noSubscriptions`
-    /// if the library is empty, `.invalidResponse` for any parser/validation
-    /// failure, and `.httpError` for non-2xx responses.
+    /// Throws `.noSubscriptions` if the library is empty, `.invalidResponse`
+    /// for any parser/validation failure, and `.httpError` for non-2xx responses.
     func recompute(store: AppStateStore) async throws {
         // Single-flight: a second concurrent caller silently no-ops rather
         // than queueing or throwing. The only entry-point today is the
@@ -89,20 +84,6 @@ final class PodcastCategorizationService {
             throw CategorizationError.noModelSelected
         }
 
-        let apiKey: String
-        do {
-            guard let key = try LLMProviderCredentialResolver.apiKey(for: modelReference.provider),
-                  !key.isEmpty else {
-                throw CategorizationError.noAPIKey(provider: modelReference.provider.displayName)
-            }
-            apiKey = key
-        } catch let error as CategorizationError {
-            throw error
-        } catch {
-            Self.logger.error("credential resolve failed: \(error, privacy: .public)")
-            throw CategorizationError.noAPIKey(provider: modelReference.provider.displayName)
-        }
-
         let requestedModel = modelReference.storedID
         Self.logger.info("recompute starting subs=\(podcasts.count, privacy: .public) model=\(requestedModel, privacy: .public)")
 
@@ -110,7 +91,7 @@ final class PodcastCategorizationService {
         defer { isRunning = false }
 
         let client = WikiOpenRouterClient(
-            mode: .live(apiKey: apiKey, modelReference: modelReference),
+            mode: .live(modelReference: modelReference),
             urlSession: urlSession
         )
         let rawContent = try await client.compile(

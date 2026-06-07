@@ -63,11 +63,10 @@ final class AutoSnipController {
     /// identical-payload back-to-back snip still re-fires the animation.
     private(set) var captureGeneration: Int = 0
 
-    /// Set to `true` when a snip / quote action ran but no LLM API key was
-    /// configured, so we couldn't refine the boundaries. Triggers the
-    /// one-time "Add an AI key" hint banner. The banner clears this back
-    /// to `false` after showing once (also persists to UserDefaults so the
-    /// hint doesn't re-fire across sessions).
+    /// Set to `true` when a snip / quote action needs a user-facing provider
+    /// setup hint. The banner clears this back to `false` after showing once
+    /// (also persists to UserDefaults so the hint doesn't re-fire across
+    /// sessions).
     var noLLMKeyHintPending: Bool = false
 
     static let bannerVisibleSeconds: TimeInterval = 1.5
@@ -189,7 +188,7 @@ final class AutoSnipController {
     // MARK: - Refinement
 
     /// Ask `ClipBoundaryResolver` for semantic boundaries and apply them in
-    /// place. Best-effort — any failure (no transcript yet, no API key,
+    /// place. Best-effort — any failure (no transcript yet, provider error,
     /// network blip, malformed response) leaves the mechanical clip intact.
     private func refine(
         clipID: UUID,
@@ -200,14 +199,6 @@ final class AutoSnipController {
     ) async {
         guard let transcript = TranscriptStore.shared.load(episodeID: episodeID) else {
             Self.logger.debug("refine: no transcript yet for \(episodeID, privacy: .public)")
-            return
-        }
-        // Surface the no-key hint before the network call — the credential
-        // resolver inside the client factory will short-circuit when no key
-        // is present, but the user-visible signal needs to fire here.
-        let modelReference = LLMModelReference(storedID: modelID)
-        if !LLMProviderCredentialResolver.hasAPIKey(for: modelReference.provider) {
-            noLLMKeyHintPending = true
             return
         }
         let resolved = await ClipBoundaryResolver.shared.resolveBoundaries(

@@ -72,7 +72,10 @@ worktrees currently in flight.
   iOS/Android/TUI only supplying credentials, selected models, typed audio
   source intent, and UI. Android now reloads encrypted OpenRouter/Ollama keys
   into Rust, exposes typed credential settings for those providers, and calls
-  shared Rust OpenRouter key validation through JNI. Remaining
+  shared Rust OpenRouter key validation through JNI. Swift live
+  wiki/title/categorization/chapter/clip completion callers no longer
+  preflight OpenRouter/Ollama Keychain keys before invoking the shared Rust
+  provider transport. Remaining
   provider-ownership work is Android ElevenLabs/STT credential parity once
   those fields are mirrored plus deleting any stale Keychain-only UI fallbacks
   after kernel projections cover them.

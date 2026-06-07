@@ -15,8 +15,8 @@ struct WikiOpenRouterClient: Sendable {
     // MARK: - Modes
 
     enum Mode: Sendable {
-        /// Live mode — POSTs to the provider encoded in `modelReference`.
-        case live(apiKey: String?, modelReference: LLMModelReference)
+        /// Live mode — routes through Rust provider transport for `modelReference`.
+        case live(modelReference: LLMModelReference)
 
         /// Stub mode — returns the supplied JSON string verbatim. Used
         /// by tests, previews, and the lane-7 stubbed pipeline path.
@@ -41,12 +41,8 @@ struct WikiOpenRouterClient: Sendable {
 
     // MARK: - Convenience constructors
 
-    static func live(apiKey: String, model: String = "openai/gpt-4o-mini") -> WikiOpenRouterClient {
-        WikiOpenRouterClient(mode: .live(apiKey: apiKey, modelReference: LLMModelReference(storedID: model)))
-    }
-
     static func live(model: String = "openai/gpt-4o-mini") -> WikiOpenRouterClient {
-        WikiOpenRouterClient(mode: .live(apiKey: nil, modelReference: LLMModelReference(storedID: model)))
+        WikiOpenRouterClient(mode: .live(modelReference: LLMModelReference(storedID: model)))
     }
 
     static func stubbed(json: String) -> WikiOpenRouterClient {
@@ -68,12 +64,11 @@ struct WikiOpenRouterClient: Sendable {
         switch mode {
         case .stubbed(let json):
             return json
-        case .live(let apiKey, let modelReference):
+        case .live(let modelReference):
             return try await compileLive(
                 systemPrompt: systemPrompt,
                 userPrompt: userPrompt,
                 feature: feature,
-                apiKey: apiKey,
                 modelReference: modelReference
             )
         }
@@ -85,10 +80,8 @@ struct WikiOpenRouterClient: Sendable {
         systemPrompt: String,
         userPrompt: String,
         feature: String,
-        apiKey: String?,
         modelReference: LLMModelReference
     ) async throws -> String {
-        _ = apiKey
         guard modelReference.provider != .local else {
             throw WikiClientError.missingCredential(provider: modelReference.provider.displayName)
         }

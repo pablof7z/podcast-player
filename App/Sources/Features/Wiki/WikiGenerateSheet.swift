@@ -148,18 +148,11 @@ struct WikiGenerateSheet: View {
             switch phase {
             case .input:
                 if !hasAPIKey {
-                    // Tap-through deep link rather than plain text — the user
-                    // is already in the right mental model ("I want to compile
-                    // a page"), so requiring them to back out, find Settings,
-                    // find AI, find the provider sub-screen burns the moment.
-                    // The link pushes onto the sheet's own NavigationStack so
-                    // they configure-and-come-back without losing the topic
-                    // they typed.
                     NavigationLink {
-                        OpenRouterSettingsView()
+                        providerSettingsDestination
                     } label: {
                         Label(
-                            "Connect \(wikiProvider.displayName) in Settings to compile pages.",
+                            "\(wikiProvider.displayName) is not connected. You can still try; the backend will report provider errors.",
                             systemImage: "key"
                         )
                         .font(.callout)
@@ -254,7 +247,6 @@ struct WikiGenerateSheet: View {
     }
 
     private var canGenerate: Bool {
-        guard hasAPIKey else { return false }
         if phase == .compiling { return false }
         if topic.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         if scopeChoice == .podcast && selectedPodcastID == nil { return false }
@@ -280,11 +272,6 @@ struct WikiGenerateSheet: View {
         phase = .compiling
 
         do {
-            let reference = LLMModelReference(storedID: model)
-            guard LLMProviderCredentialResolver.hasAPIKey(for: reference.provider) else {
-                phase = .failed(LLMProviderCredentialResolver.missingCredentialMessage(for: reference.provider))
-                return
-            }
             let generator = WikiGenerator(
                 rag: RAGService.shared.wikiRAG,
                 client: .live(model: model),
@@ -330,6 +317,18 @@ struct WikiGenerateSheet: View {
 
     private var wikiProvider: LLMProvider {
         LLMModelReference(storedID: store.state.settings.wikiModel).provider
+    }
+
+    @ViewBuilder
+    private var providerSettingsDestination: some View {
+        switch wikiProvider {
+        case .openRouter:
+            OpenRouterSettingsView()
+        case .ollama:
+            OllamaSettingsView()
+        case .local:
+            AISettingsView()
+        }
     }
 
     private func refreshProviderStatus() {

@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-07T15:58:24Z",
+      "lines": [
+        "AI provider errors for wiki pages, chapters, categories, and clips now come from the shared backend, so OpenRouter and Ollama setup feedback is more consistent."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T08:00:00Z",
       "lines": [
         "Auto-download now actually works — shows you’ve enabled it for pull their latest episodes on launch and the moment you turn the toggle on, instead of waiting for a manual refresh.",

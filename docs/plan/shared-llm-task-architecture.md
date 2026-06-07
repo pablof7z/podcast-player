@@ -32,24 +32,22 @@ normal user workflows.
 
 ## Provider Transport
 
-Current shared Rust provider entry points already cover agent chat through
-`nmp_app_podcast_chat_complete`, which hides OpenRouter/Ollama/local routing
-from Swift. The remaining work is to make all other provider-backed features
-use the same shared transport layer.
+Current shared Rust provider entry points cover agent chat through
+`nmp_app_podcast_chat_complete`, provider-blind single-turn completions through
+`nmp_app_podcast_provider_complete`, embeddings through
+`nmp_app_podcast_provider_embed`, OpenRouter key validation, provider model
+catalog discovery, image generation, reranking, and OpenRouter Whisper/STT.
+Swift live wiki/title/categorization/chapter/clip completion callers now route
+through `WikiOpenRouterClient` without preflighting Keychain keys, so missing
+provider credentials are reported by Rust.
 
 Immediate targets:
 
-- Wiki/title/categorization-style single-turn completions need a provider-blind
-  Rust FFI that accepts system prompt, user prompt, model role or model id, and
-  optional structured-output intent.
-- Embeddings need a Rust FFI that accepts texts plus a selected embedding model
-  and returns vectors. Both Ollama and OpenRouter embedding HTTP should be
-  behind this shared endpoint.
-- Swift clients should keep stubbed test modes but route live provider calls
-  through Rust.
-- Android should expose the same Rust provider functions through JNI once the
-  shared FFI exists.
-- OpenRouter Whisper/STT now uses `nmp_app_podcast_openrouter_whisper_transcribe`;
+- Swift clients should keep stubbed test modes, but every live provider
+  inference call should route through Rust.
+- Android should expose every shared Rust provider function through JNI when a
+  user-facing Android feature needs it.
+- OpenRouter Whisper/STT uses `nmp_app_podcast_openrouter_whisper_transcribe`;
   platform callers submit a typed audio-source intent and Rust owns the
   selected model lookup, OpenRouter auth, remote-source staging, multipart
   upload, status handling, and response parsing.
@@ -95,8 +93,8 @@ Immediate targets:
 
 ## PR Sequencing
 
-1. Provider transport PR: move OpenRouter/Ollama inference and embeddings HTTP
-   into shared Rust APIs, then migrate Swift live paths to those APIs.
+1. Provider transport PR: keep migrating any remaining live provider inference
+   paths to shared Rust APIs and delete platform-side credential preflights.
 2. Typed task intent follow-up: migrate any remaining Swift/Android task
    creation surfaces to the shared `AgentTaskIntent` contract.
 3. Android/JNI parity PR: expose any new shared provider/task APIs through the
