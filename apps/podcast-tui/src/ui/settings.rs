@@ -1,13 +1,12 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::widgets::{List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::{AppState, SettingsSection};
 use crate::provider_settings_catalog::PROVIDER_SETTINGS_ITEMS;
 use crate::settings_catalog::SETTINGS_ITEMS;
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let columns =
@@ -21,15 +20,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_interactive_settings(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let border = if state.settings_section == SettingsSection::General {
-        Color::Cyan
-    } else {
-        Color::DarkGray
-    };
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border))
-        .title(format!(" Settings ({}) ", state.settings_section.label()));
+    let block = theme::panel(
+        format!("Settings ({})", state.settings_section.label()),
+        state.settings_section == SettingsSection::General,
+    );
 
     let items = SETTINGS_ITEMS
         .iter()
@@ -37,19 +31,13 @@ fn render_interactive_settings(frame: &mut Frame<'_>, area: Rect, state: &AppSta
         .map(|(index, item)| {
             let selected = index == state.selected_setting;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             ListItem::new(Line::from(vec![
                 Span::styled(item.label(), base),
-                Span::styled(
-                    format!("  {}", item.value(state)),
-                    Style::default().fg(Color::DarkGray),
-                ),
+                Span::styled(format!("  {}", item.value(state)), theme::muted()),
             ]))
         })
         .collect::<Vec<_>>();
@@ -58,18 +46,10 @@ fn render_interactive_settings(frame: &mut Frame<'_>, area: Rect, state: &AppSta
 }
 
 fn render_provider_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let border = if state.settings_section == SettingsSection::Providers {
-        Color::Cyan
-    } else {
-        Color::DarkGray
-    };
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border))
-        .title(format!(
-            " Models And Providers ({}) ",
-            state.settings_section.label()
-        ));
+    let block = theme::panel(
+        format!("Models And Providers ({})", state.settings_section.label()),
+        state.settings_section == SettingsSection::Providers,
+    );
 
     let visible_rows = area.height.saturating_sub(2).max(1) as usize;
     let start = visible_start(
@@ -87,19 +67,13 @@ fn render_provider_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             let selected = state.settings_section == SettingsSection::Providers
                 && index == state.selected_provider_setting;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             ListItem::new(Line::from(vec![
                 Span::styled(item.label(), base),
-                Span::styled(
-                    format!("  {}", item.value(&state.settings)),
-                    Style::default().fg(Color::DarkGray),
-                ),
+                Span::styled(format!("  {}", item.value(&state.settings)), theme::muted()),
             ]))
         })
         .collect::<Vec<_>>();
@@ -116,19 +90,15 @@ fn visible_start(selected: usize, len: usize, visible_rows: usize) -> usize {
 }
 
 fn render_relay_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let border = if state.settings_section == SettingsSection::Relays {
-        Color::Cyan
-    } else {
-        Color::DarkGray
-    };
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border))
-        .title(format!(" App Relays ({}) ", state.configured_relays.len()));
+    let block = theme::panel(
+        format!("App Relays ({})", state.configured_relays.len()),
+        state.settings_section == SettingsSection::Relays,
+    );
 
     if state.configured_relays.is_empty() {
-        let text =
-            Paragraph::new("No configured relays. Press n to add wss://relay [role].").block(block);
+        let text = Paragraph::new("No configured relays. Press n to add wss://relay [role].")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -141,19 +111,13 @@ fn render_relay_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             let selected =
                 state.settings_section == SettingsSection::Relays && index == state.selected_relay;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             ListItem::new(Line::from(vec![
                 Span::styled(format::short_id(&relay.url), base),
-                Span::styled(
-                    format!("  {}", relay.role),
-                    Style::default().fg(Color::DarkGray),
-                ),
+                Span::styled(format!("  {}", relay.role), theme::muted()),
             ]))
         })
         .collect::<Vec<_>>();

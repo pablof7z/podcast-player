@@ -14,4 +14,5 @@ pub mod queue;
 pub mod search;
 pub mod settings;
 pub mod social;
+pub mod theme;
 pub mod wiki;
