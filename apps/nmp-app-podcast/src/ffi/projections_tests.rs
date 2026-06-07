@@ -358,10 +358,20 @@ fn episode_summary_round_trips_with_playback_position() {
 fn settings_snapshot_round_trips() {
     let s = SettingsSnapshot {
         has_completed_onboarding: true,
+        open_router_key_present: true,
+        ollama_key_present: true,
+        eleven_labs_key_present: true,
+        assembly_ai_key_present: true,
+        perplexity_key_present: true,
         ..SettingsSnapshot::default()
     };
     let json = serde_json::to_string(&s).expect("encode");
     assert!(json.contains("\"has_completed_onboarding\":true"));
+    assert!(json.contains("\"open_router_key_present\":true"));
+    assert!(json.contains("\"ollama_key_present\":true"));
+    assert!(json.contains("\"eleven_labs_key_present\":true"));
+    assert!(json.contains("\"assembly_ai_key_present\":true"));
+    assert!(json.contains("\"perplexity_key_present\":true"));
     let decoded: SettingsSnapshot = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, s);
 }

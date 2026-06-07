@@ -327,6 +327,7 @@ impl PodcastHostOpHandler {
                         perplexity,
                     );
                 }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
             // Relay edits mutate kernel-owned state (the `AppRelaySlot`), not

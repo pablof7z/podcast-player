@@ -18,6 +18,10 @@ use super::snapshot_owned::collect_owned_podcasts;
 use super::snapshot_queue::resolve_queue_rows;
 use crate::inbox_handler::{build_inbox, maybe_enqueue_triage_with_signal};
 
+fn provider_key_present(key: Option<&str>) -> bool {
+    key.is_some_and(|value| !value.trim().is_empty())
+}
+
 /// Build the typed [`PodcastUpdate`] directly from the handle state.
 ///
 /// Rust-native path — no JSON round-trip. Used by the TUI and other
@@ -90,15 +94,18 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                 image_generation_model_name: s.image_generation_model_name().to_owned(),
                 reranker_enabled: s.reranker_enabled(),
                 open_router_credential_source: s.open_router_credential_source().to_owned(),
+                open_router_key_present: provider_key_present(s.open_router_api_key()),
                 open_router_byok_key_id: s.open_router_byok_key_id().map(|s| s.to_owned()),
                 open_router_byok_key_label: s.open_router_byok_key_label().map(|s| s.to_owned()),
                 open_router_connected_at: s.open_router_connected_at(),
                 ollama_credential_source: s.ollama_credential_source().to_owned(),
+                ollama_key_present: provider_key_present(s.ollama_api_key()),
                 ollama_byok_key_id: s.ollama_byok_key_id().map(|s| s.to_owned()),
                 ollama_byok_key_label: s.ollama_byok_key_label().map(|s| s.to_owned()),
                 ollama_connected_at: s.ollama_connected_at(),
                 ollama_chat_url: s.ollama_chat_url().to_owned(),
                 eleven_labs_credential_source: s.eleven_labs_credential_source().to_owned(),
+                eleven_labs_key_present: provider_key_present(s.eleven_labs_api_key()),
                 eleven_labs_byok_key_id: s.eleven_labs_byok_key_id().map(|s| s.to_owned()),
                 eleven_labs_byok_key_label: s.eleven_labs_byok_key_label().map(|s| s.to_owned()),
                 eleven_labs_connected_at: s.eleven_labs_connected_at(),
@@ -107,6 +114,8 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
                 effective_stt_provider_requires_key: crate::store::stt_policy::requires_key(
                     s.effective_stt_provider(),
                 ),
+                assembly_ai_key_present: provider_key_present(s.assembly_ai_api_key()),
+                perplexity_key_present: provider_key_present(s.perplexity_api_key()),
                 open_router_whisper_model: s.open_router_whisper_model().to_owned(),
                 assembly_ai_stt_model: s.assembly_ai_stt_model().to_owned(),
                 eleven_labs_stt_model: s.eleven_labs_stt_model().to_owned(),
