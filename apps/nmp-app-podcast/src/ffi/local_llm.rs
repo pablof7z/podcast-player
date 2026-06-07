@@ -8,7 +8,7 @@
 use std::ffi::c_void;
 
 use super::handle::PodcastHandle;
-use crate::llm::local_model_backend::{LocalLlmRegistration, NmpLocalLlmFn, set_registration};
+use crate::llm::local_model_backend::{set_registration, LocalLlmRegistration, NmpLocalLlmFn};
 
 /// Register the local LLM callback globally.
 ///

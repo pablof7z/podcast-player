@@ -55,62 +55,62 @@
 //! Each domain owns its wire format; this module is the single import path the
 //! iOS shell links against.
 
-pub mod chapters_module;
-pub mod picks_module;
-pub mod identity_module;
-pub mod knowledge_module;
-pub mod memory_module;
-pub mod clip_module;
-pub mod inbox_module;
 pub mod agent_module;
 pub(crate) mod categorization_keywords;
 pub mod categorization_module;
+pub mod chapters_module;
+pub mod clip_module;
+pub mod identity_module;
+pub mod inbox_module;
+pub mod knowledge_module;
+pub mod memory_module;
+pub mod picks_module;
 pub mod player_module;
 pub mod podcast_module;
-pub mod queue_module;
-pub mod tasks_module;
 pub mod publish_module;
+pub mod queue_module;
 pub mod settings_module;
-pub mod voice;
-pub mod wiki_module;
 pub mod siri_module;
 pub mod social_module;
+pub mod tasks_module;
+pub mod voice;
 pub mod voice_module;
+pub mod wiki_module;
 
-pub use chapters_module::{ChaptersAction, ChaptersActionModule};
-pub use social_module::{
-    SocialAction, SocialActionModule, ACTION_SOCIAL_PUBLISH_HIGHLIGHT,
-    ACTION_SOCIAL_PUBLISH_NOTE, ACTION_SOCIAL_PUBLISH_PROFILE,
-};
-pub use identity_module::{IdentityAction, IdentityActionModule};
-pub use picks_module::{AgentPicksModule, PicksAction, PICKS_LIMIT, PICKS_PER_SHOW_CAP};
-pub use knowledge_module::{
-    KnowledgeAction, KnowledgeActionModule, ACTION_KNOWLEDGE_CLEAR_RESULTS,
-    ACTION_KNOWLEDGE_INDEX_EPISODE, ACTION_KNOWLEDGE_SEARCH,
-};
-pub use memory_module::{MemoryAction, MemoryActionModule};
-pub use clip_module::{
-    ClipAction, ClipActionModule, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
-};
-pub use inbox_module::{InboxAction, InboxActionModule};
 pub use agent_module::{AgentActionModule, AgentChatAction};
 pub use categorization_module::{
     categorize_text, CategorizationAction, CategorizationModule, ACTION_CATEGORIZE_EPISODE,
     ACTION_CATEGORIZE_RUN, CATEGORY_KEYWORDS, MAX_CATEGORIES_PER_EPISODE,
 };
+pub use chapters_module::{ChaptersAction, ChaptersActionModule};
+pub use clip_module::{
+    ClipAction, ClipActionModule, ACTION_CLIP_AUTO_SNIP, ACTION_CLIP_CREATE, ACTION_CLIP_DELETE,
+};
+pub use identity_module::{IdentityAction, IdentityActionModule};
+pub use inbox_module::{InboxAction, InboxActionModule};
+pub use knowledge_module::{
+    KnowledgeAction, KnowledgeActionModule, ACTION_KNOWLEDGE_CLEAR_RESULTS,
+    ACTION_KNOWLEDGE_INDEX_EPISODE, ACTION_KNOWLEDGE_SEARCH,
+};
+pub use memory_module::{MemoryAction, MemoryActionModule};
+pub use picks_module::{AgentPicksModule, PicksAction, PICKS_LIMIT, PICKS_PER_SHOW_CAP};
 pub use player_module::{PlayerAction, PlayerActionModule};
 pub use podcast_module::{PodcastAction, PodcastActionModule};
-pub use queue_module::{QueueAction, QueueActionModule};
-pub use wiki_module::{WikiAction, WikiActionModule};
-pub use tasks_module::{AgentTaskIntent, AgentTasksAction, AgentTasksModule};
 pub use publish_module::{
     NipF4PublishModule, PublishAction, ACTION_PUBLISH_CREATE_OWNED,
     ACTION_PUBLISH_PUBLISH_AUTHOR_CLAIM, ACTION_PUBLISH_PUBLISH_EPISODE,
     ACTION_PUBLISH_PUBLISH_SHOW, ACTION_PUBLISH_REMOVE_OWNED,
 };
-pub use voice_module::{VoiceAction, VoiceActionModule};
+pub use queue_module::{QueueAction, QueueActionModule};
 pub use settings_module::{SettingsAction, SettingsActionModule};
 pub use siri_module::{SiriAction, SiriActionModule};
+pub use social_module::{
+    SocialAction, SocialActionModule, ACTION_SOCIAL_PUBLISH_HIGHLIGHT, ACTION_SOCIAL_PUBLISH_NOTE,
+    ACTION_SOCIAL_PUBLISH_PROFILE,
+};
+pub use tasks_module::{AgentTaskIntent, AgentTasksAction, AgentTasksModule};
+pub use voice_module::{VoiceAction, VoiceActionModule};
+pub use wiki_module::{WikiAction, WikiActionModule};
 
 use serde::{Deserialize, Serialize};
 

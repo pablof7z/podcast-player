@@ -1,11 +1,15 @@
 use super::*;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicU64 as SeqCounter;
+use std::sync::{Arc, Mutex};
 
 use crate::store::PodcastStore;
 
-fn fresh() -> (Arc<Mutex<PlaybackQueue>>, Arc<Mutex<PodcastStore>>, Arc<AtomicU64>) {
+fn fresh() -> (
+    Arc<Mutex<PlaybackQueue>>,
+    Arc<Mutex<PodcastStore>>,
+    Arc<AtomicU64>,
+) {
     (
         Arc::new(Mutex::new(PlaybackQueue::new())),
         // No data dir — persist is a silent no-op (D6), keeps tests hermetic.
@@ -22,8 +26,8 @@ impl TempDir {
     fn new() -> Self {
         static SEQ: SeqCounter = SeqCounter::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir()
-            .join(format!("nmp-queue-test-{}-{}", std::process::id(), n));
+        let path =
+            std::env::temp_dir().join(format!("nmp-queue-test-{}-{}", std::process::id(), n));
         std::fs::create_dir_all(&path).expect("create temp dir");
         Self { path }
     }
@@ -41,7 +45,9 @@ fn add_next_pushes_front_and_bumps_rev() {
         &q,
         &store,
         &rev,
-        QueueAction::AddNext { episode_id: "ep-1".into() },
+        QueueAction::AddNext {
+            episode_id: "ep-1".into(),
+        },
     );
     assert_eq!(result, serde_json::json!({"ok": true}));
     assert_eq!(q.lock().unwrap().items(), &["ep-1".to_owned()]);
@@ -54,13 +60,17 @@ fn add_last_pushes_back_and_bumps_rev() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-1".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-1".into(),
+        },
     );
     handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-2".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-2".into(),
+        },
     );
     assert_eq!(
         q.lock().unwrap().items(),
@@ -75,20 +85,26 @@ fn remove_drops_episode_and_bumps_rev() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-1".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-1".into(),
+        },
     );
     handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-2".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-2".into(),
+        },
     );
     let pre_rev = rev.load(Ordering::Relaxed);
     let result = handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::Remove { episode_id: "ep-1".into() },
+        QueueAction::Remove {
+            episode_id: "ep-1".into(),
+        },
     );
     assert_eq!(result, serde_json::json!({"ok": true}));
     assert_eq!(q.lock().unwrap().items(), &["ep-2".to_owned()]);
@@ -101,13 +117,17 @@ fn clear_empties_queue_and_bumps_rev() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-1".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-1".into(),
+        },
     );
     handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-2".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-2".into(),
+        },
     );
     let pre_rev = rev.load(Ordering::Relaxed);
     let result = handle_queue_action(&q, &store, &rev, QueueAction::Clear);
@@ -132,13 +152,17 @@ fn queue_persists_across_restart() {
         &q1,
         &store1,
         &rev1,
-        QueueAction::AddLast { episode_id: "ep-a".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-a".into(),
+        },
     );
     handle_queue_action(
         &q1,
         &store1,
         &rev1,
-        QueueAction::AddLast { episode_id: "ep-b".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-b".into(),
+        },
     );
     assert_eq!(
         q1.lock().unwrap().items(),
@@ -168,7 +192,9 @@ fn clear_persists_empty_queue() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-x".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-x".into(),
+        },
     );
     handle_queue_action(&q, &store, &rev, QueueAction::Clear);
 
@@ -188,19 +214,25 @@ fn add_next_on_non_empty_queue_inserts_at_front() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-1".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-1".into(),
+        },
     );
     handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: "ep-2".into() },
+        QueueAction::AddLast {
+            episode_id: "ep-2".into(),
+        },
     );
     let result = handle_queue_action(
         &q,
         &store,
         &rev,
-        QueueAction::AddNext { episode_id: "ep-urgent".into() },
+        QueueAction::AddNext {
+            episode_id: "ep-urgent".into(),
+        },
     );
     assert_eq!(result, serde_json::json!({"ok": true}));
     assert_eq!(
@@ -240,24 +272,25 @@ fn queue_survives_unsubscribe_of_the_owning_podcast() {
         &q,
         &store,
         &rev,
-        QueueAction::AddLast { episode_id: ep_id.clone() },
+        QueueAction::AddLast {
+            episode_id: ep_id.clone(),
+        },
     );
     store.lock().unwrap().unsubscribe(pid);
 
     // The queue holds opaque ids (D0) — it must still carry the now-orphaned
     // id without panicking; the store simply no longer resolves it.
     assert_eq!(q.lock().unwrap().items(), &[ep_id.clone()]);
-    assert!(store.lock().unwrap().episode_playback_info(&ep_id).is_none());
+    assert!(store
+        .lock()
+        .unwrap()
+        .episode_playback_info(&ep_id)
+        .is_none());
 
     // Mutating the queue after the unsubscribe still works (remove the stale
     // id cleanly), proving the queue handler is decoupled from the store's
     // library state.
-    let result = handle_queue_action(
-        &q,
-        &store,
-        &rev,
-        QueueAction::Remove { episode_id: ep_id },
-    );
+    let result = handle_queue_action(&q, &store, &rev, QueueAction::Remove { episode_id: ep_id });
     assert_eq!(result, serde_json::json!({"ok": true}));
     assert!(q.lock().unwrap().items().is_empty());
 }

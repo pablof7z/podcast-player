@@ -71,16 +71,27 @@ fn build_inbox_ignores_pending_entry_and_uses_heuristic() {
     let old_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Old").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Old")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
-    cache.lock().unwrap().insert(old_id.clone(), TriageResult::pending(now));
+    cache
+        .lock()
+        .unwrap()
+        .insert(old_id.clone(), TriageResult::pending(now));
 
     let items = build_inbox(&store, &dismissed, &cache);
     let old_item = items.iter().find(|i| i.episode_id == old_id).unwrap();
     // Heuristic for a 60-day-old episode is the long-tail floor (0.15), with
     // its "From your library" reason — NOT the Pending placeholder's 0.0.
     assert!((old_item.priority_score - 0.15).abs() < 0.001);
-    assert_eq!(old_item.priority_reason.as_deref(), Some("From your library"));
+    assert_eq!(
+        old_item.priority_reason.as_deref(),
+        Some("From your library")
+    );
     assert!(old_item.ai_categories.is_empty());
 }
 
@@ -235,7 +246,11 @@ fn stamp_pending_leaves_ready_entries_untouched() {
 
     let c = cache.lock().unwrap();
     let tr = c.get("ep-1").unwrap();
-    assert_eq!(tr.status, TriageStatus::Ready, "Ready must not be downgraded");
+    assert_eq!(
+        tr.status,
+        TriageStatus::Ready,
+        "Ready must not be downgraded"
+    );
     assert!((tr.priority_score - 0.9).abs() < 0.001);
     assert_eq!(tr.priority_reason, "graded");
     assert_eq!(tr.categories, vec!["tech".to_owned()]);
@@ -264,5 +279,8 @@ fn stamp_pending_writes_placeholder_when_missing_or_pending() {
     let c = cache.lock().unwrap();
     let tr = c.get("ep-2").unwrap();
     assert_eq!(tr.status, TriageStatus::Pending);
-    assert!(tr.attempted_at > 1_000, "cooldown clock must reset on retry-failure");
+    assert!(
+        tr.attempted_at > 1_000,
+        "cooldown clock must reset on retry-failure"
+    );
 }

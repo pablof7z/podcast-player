@@ -13,7 +13,10 @@ fn url_encode_percent_encodes_other_chars() {
 }
 #[test]
 fn parse_itunes_results_returns_empty_on_garbage() {
-    assert_eq!(parse_itunes_results("not json"), Vec::<PodcastSummary>::new());
+    assert_eq!(
+        parse_itunes_results("not json"),
+        Vec::<PodcastSummary>::new()
+    );
 }
 #[test]
 fn parse_itunes_results_decodes_minimal_response() {
@@ -30,7 +33,9 @@ fn parse_itunes_results_decodes_minimal_response() {
     assert_eq!(out.len(), 1);
     assert_eq!(out[0].id, "1234567");
     assert_eq!(out[0].title, "Some Show");
-    assert_eq!(out[0].feed_url.as_deref(), Some("https://feed.example.com/r.rss"));
+    assert_eq!(
+        out[0].feed_url.as_deref(),
+        Some("https://feed.example.com/r.rss")
+    );
     assert_eq!(out[0].author.as_deref(), Some("Host Name"));
 }
-

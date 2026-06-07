@@ -20,12 +20,16 @@ fn set_and_clear_owner_pubkey_hex_round_trip() {
     store.subscribe(podcast, vec![]);
     store.set_owner_pubkey_hex(&id_str, "abc123".into());
     assert_eq!(
-        store.podcast_by_id_str(&id_str).and_then(|p| p.owner_pubkey_hex.clone()),
+        store
+            .podcast_by_id_str(&id_str)
+            .and_then(|p| p.owner_pubkey_hex.clone()),
         Some("abc123".into())
     );
     store.clear_owner_pubkey_hex(&id_str);
     assert_eq!(
-        store.podcast_by_id_str(&id_str).and_then(|p| p.owner_pubkey_hex.clone()),
+        store
+            .podcast_by_id_str(&id_str)
+            .and_then(|p| p.owner_pubkey_hex.clone()),
         None
     );
 }
@@ -45,16 +49,16 @@ fn episode_with_podcast_clone_returns_pair_for_known_episode() {
     let ep = fixture_episode(pid, "Pilot");
     let eid_str = ep.id.0.to_string();
     store.subscribe(podcast, vec![ep]);
-    let (p_out, e_out) = store
-        .episode_with_podcast_clone(&eid_str)
-        .expect("found");
+    let (p_out, e_out) = store.episode_with_podcast_clone(&eid_str).expect("found");
     assert_eq!(p_out.id, pid);
     assert_eq!(e_out.title, "Pilot");
 }
 #[test]
 fn episode_with_podcast_clone_returns_none_for_unknown_episode() {
     let store = PodcastStore::new();
-    assert!(store.episode_with_podcast_clone("no-such-episode").is_none());
+    assert!(store
+        .episode_with_podcast_clone("no-such-episode")
+        .is_none());
 }
 
 #[test]
@@ -79,7 +83,10 @@ fn create_podcast_creates_feedless_row() {
     assert_eq!(p.author, "Agent");
     assert!(p.feed_url.is_none());
     assert!(!p.title_is_placeholder);
-    assert_eq!(p.image_url.as_ref().map(|u| u.as_str()), Some("https://img/a.png"));
+    assert_eq!(
+        p.image_url.as_ref().map(|u| u.as_str()),
+        Some("https://img/a.png")
+    );
     assert_eq!(p.categories, vec!["Tech".to_string()]);
 }
 
@@ -177,7 +184,10 @@ fn update_owned_metadata_ignores_unparseable_artwork() {
     store.update_owned_metadata(&id, None, None, None, Some("::::not a url".into()), None);
     let p = store.podcast_by_id_str(&id).unwrap();
     // Prior artwork preserved, not blanked.
-    assert_eq!(p.image_url.as_ref().map(|u| u.as_str()), Some("https://old/a.png"));
+    assert_eq!(
+        p.image_url.as_ref().map(|u| u.as_str()),
+        Some("https://old/a.png")
+    );
 }
 
 #[test]
@@ -265,7 +275,10 @@ fn add_episode_local_file_is_downloaded() {
     let chapters = ep.chapters.as_ref().expect("chapters present");
     assert_eq!(chapters.len(), 2);
     assert!(chapters.iter().all(|c| c.is_ai_generated));
-    assert_eq!(chapters[1].source_episode_id.as_deref(), Some("source-ep-id"));
+    assert_eq!(
+        chapters[1].source_episode_id.as_deref(),
+        Some("source-ep-id")
+    );
     assert_eq!(
         chapters[1].image_url.as_ref().map(|u| u.as_str()),
         Some("https://img/clip.png")
@@ -309,10 +322,7 @@ fn add_episode_http_enclosure_is_not_downloaded() {
     let ep = &eps[0];
     assert_eq!(ep.title, "Remote Episode");
     assert_eq!(ep.description, "Remote description");
-    assert_eq!(
-        ep.enclosure_url.as_str(),
-        "https://example.com/audio.mp3"
-    );
+    assert_eq!(ep.enclosure_url.as_str(), "https://example.com/audio.mp3");
     assert!(matches!(
         ep.download_state,
         podcast_core::types::download::DownloadState::NotDownloaded
@@ -405,4 +415,3 @@ fn remove_podcast_and_episodes_clears_row_and_episodes() {
     assert!(store.podcast_by_id_str(&id).is_none());
     assert!(store.episodes_for(pid).is_empty());
 }
-

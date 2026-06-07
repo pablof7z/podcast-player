@@ -136,8 +136,7 @@ fn dispatch_nmp_publish(app: *mut nmp_ffi::NmpApp, body: serde_json::Value) -> &
         return "signed";
     };
     // SAFETY: app is non-null (callers check before calling this).
-    let raw =
-        unsafe { nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr()) };
+    let raw = unsafe { nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr()) };
     if !raw.is_null() {
         // SAFETY: NMP allocated this string; we free it immediately.
         unsafe { nmp_ffi::nmp_app_free_string(raw) };

@@ -46,4 +46,3 @@ fn item_round_trips_through_serde() {
     let decoded: DownloadItem = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, item);
 }
-

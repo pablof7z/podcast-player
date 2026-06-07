@@ -92,10 +92,7 @@ fn mixed_ops_preserve_ordering() {
         &["ep-3".to_owned(), "ep-1".to_owned(), "ep-2".to_owned()]
     );
     assert_eq!(q.next(), Some("ep-3".to_owned()));
-    assert_eq!(
-        q.items(),
-        &["ep-1".to_owned(), "ep-2".to_owned()]
-    );
+    assert_eq!(q.items(), &["ep-1".to_owned(), "ep-2".to_owned()]);
 }
 #[test]
 fn default_is_empty() {
@@ -103,4 +100,3 @@ fn default_is_empty() {
     assert_eq!(q, PlaybackQueue::new());
     assert!(q.items().is_empty());
 }
-

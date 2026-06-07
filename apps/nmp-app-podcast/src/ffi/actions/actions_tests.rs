@@ -11,13 +11,28 @@ fn action_ids_match_documented_strings() {
     assert_eq!(ACTION_PLAYER_SEEK, "podcast.player.seek");
     assert_eq!(ACTION_PLAYER_SET_SPEED, "podcast.player.set_speed");
     assert_eq!(ACTION_PLAYER_SET_VOLUME, "podcast.player.set_volume");
-    assert_eq!(ACTION_PLAYER_SET_SLEEP_TIMER, "podcast.player.set_sleep_timer");
+    assert_eq!(
+        ACTION_PLAYER_SET_SLEEP_TIMER,
+        "podcast.player.set_sleep_timer"
+    );
     assert_eq!(ACTION_PLAYER_STOP, "podcast.player.stop");
     assert_eq!(ACTION_PLAYER_DOWNLOAD, "podcast.player.download");
-    assert_eq!(ACTION_PLAYER_CANCEL_DOWNLOAD, "podcast.player.cancel_download");
-    assert_eq!(ACTION_PLAYER_PAUSE_DOWNLOAD, "podcast.player.pause_download");
-    assert_eq!(ACTION_PLAYER_RESUME_DOWNLOAD, "podcast.player.resume_download");
-    assert_eq!(ACTION_PLAYER_CANCEL_ALL_DOWNLOADS, "podcast.player.cancel_all_downloads");
+    assert_eq!(
+        ACTION_PLAYER_CANCEL_DOWNLOAD,
+        "podcast.player.cancel_download"
+    );
+    assert_eq!(
+        ACTION_PLAYER_PAUSE_DOWNLOAD,
+        "podcast.player.pause_download"
+    );
+    assert_eq!(
+        ACTION_PLAYER_RESUME_DOWNLOAD,
+        "podcast.player.resume_download"
+    );
+    assert_eq!(
+        ACTION_PLAYER_CANCEL_ALL_DOWNLOADS,
+        "podcast.player.cancel_all_downloads"
+    );
     assert_eq!(ACTION_PLAYER_SKIP_FORWARD, "podcast.player.skip_forward");
     assert_eq!(ACTION_PLAYER_SKIP_BACKWARD, "podcast.player.skip_backward");
 }
@@ -42,7 +57,9 @@ fn download_episode_action_serde_roundtrips() {
 
 #[test]
 fn cancel_download_action_serde_roundtrips() {
-    let a = CancelDownloadAction { episode_id: "ep-7".into() };
+    let a = CancelDownloadAction {
+        episode_id: "ep-7".into(),
+    };
     let json = serde_json::to_string(&a).expect("encode");
     assert_eq!(json, r#"{"episode_id":"ep-7"}"#);
     let decoded: CancelDownloadAction = serde_json::from_str(&json).expect("decode");
@@ -51,8 +68,12 @@ fn cancel_download_action_serde_roundtrips() {
 
 #[test]
 fn pause_resume_download_actions_round_trip() {
-    let pause = PauseDownloadAction { episode_id: "ep-7".into() };
-    let resume = ResumeDownloadAction { episode_id: "ep-7".into() };
+    let pause = PauseDownloadAction {
+        episode_id: "ep-7".into(),
+    };
+    let resume = ResumeDownloadAction {
+        episode_id: "ep-7".into(),
+    };
     let pj = serde_json::to_string(&pause).expect("encode");
     let rj = serde_json::to_string(&resume).expect("encode");
     let pd: PauseDownloadAction = serde_json::from_str(&pj).expect("decode");
@@ -70,7 +91,9 @@ fn cancel_all_downloads_action_is_unit_struct() {
 
 #[test]
 fn play_action_serde_roundtrips() {
-    let a = PlayAction { episode_id: "ep-7".into() };
+    let a = PlayAction {
+        episode_id: "ep-7".into(),
+    };
     let json = serde_json::to_string(&a).expect("encode");
     assert_eq!(json, r#"{"episode_id":"ep-7"}"#);
     let decoded: PlayAction = serde_json::from_str(&json).expect("decode");
@@ -93,7 +116,9 @@ fn sleep_timer_action_handles_some_and_none() {
 
 #[test]
 fn seek_action_serde_roundtrips() {
-    let a = SeekAction { position_secs: 42.5 };
+    let a = SeekAction {
+        position_secs: 42.5,
+    };
     let json = serde_json::to_string(&a).expect("encode");
     let decoded: SeekAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, a);
@@ -109,7 +134,9 @@ fn siri_action_ids_match_documented_strings() {
 
 #[test]
 fn siri_play_latest_action_round_trips_with_podcast_id() {
-    let a = SiriPlayLatestAction { podcast_id: Some("pod-1".into()) };
+    let a = SiriPlayLatestAction {
+        podcast_id: Some("pod-1".into()),
+    };
     let json = serde_json::to_string(&a).expect("encode");
     assert_eq!(json, r#"{"podcast_id":"pod-1"}"#);
     let decoded: SiriPlayLatestAction = serde_json::from_str(&json).expect("decode");

@@ -42,7 +42,9 @@ fn agent_notes_interest(my_pubkey_hex: &str) -> LogicalInterest {
         ..Default::default()
     }
     .into_logical_interest(
-        InterestId(stable_hash64(&format!("podcast.agent_notes.{my_pubkey_hex}"))),
+        InterestId(stable_hash64(&format!(
+            "podcast.agent_notes.{my_pubkey_hex}"
+        ))),
         InterestScope::Global,
         InterestLifecycle::OneShot,
     )
@@ -87,13 +89,23 @@ pub(crate) fn build_agent_note_tags(
     }
     // NIP-10 root marker.
     if let Some(root) = root_event_id.filter(|s| !s.is_empty()) {
-        tags.push(vec!["e".to_string(), root.to_string(), String::new(), "root".to_string()]);
+        tags.push(vec![
+            "e".to_string(),
+            root.to_string(),
+            String::new(),
+            "root".to_string(),
+        ]);
     }
     // NIP-10 reply marker (only when different from root).
     if let Some(inbound) = inbound_event_id.filter(|s| !s.is_empty()) {
         let is_new = root_event_id.map_or(true, |r| r != inbound);
         if is_new {
-            tags.push(vec!["e".to_string(), inbound.to_string(), String::new(), "reply".to_string()]);
+            tags.push(vec![
+                "e".to_string(),
+                inbound.to_string(),
+                String::new(),
+                "reply".to_string(),
+            ]);
         }
     }
     // Recipient.
@@ -122,7 +134,12 @@ pub fn handle_publish_agent_note(
         Err(_) => return serde_json::json!({"ok": false, "error": "identity poisoned"}),
         _ => {}
     }
-    let tags = match build_agent_note_tags(recipient_pubkey_hex, root_event_id, inbound_event_id, root_a_tags) {
+    let tags = match build_agent_note_tags(
+        recipient_pubkey_hex,
+        root_event_id,
+        inbound_event_id,
+        root_a_tags,
+    ) {
         Ok(t) => t,
         Err(e) => return serde_json::json!({"ok": false, "error": e}),
     };
@@ -167,7 +184,10 @@ impl KernelEventObserver for AgentNotesObserver {
             return;
         }
         // Drop self-authored notes.
-        let my_pubkey = self.identity.lock().ok()
+        let my_pubkey = self
+            .identity
+            .lock()
+            .ok()
             .and_then(|id| id.pubkey_hex.clone())
             .unwrap_or_default();
         if event.author == my_pubkey {

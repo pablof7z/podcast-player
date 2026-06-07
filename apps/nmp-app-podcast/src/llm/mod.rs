@@ -5,9 +5,10 @@
 //! the model string and stored credential state, then invoke [`LlmBackend::complete`]
 //! for a single async turn.
 
+pub mod assemblyai_transcript;
 pub mod backend;
-pub mod elevenlabs_scribe;
 pub mod elevenlabs_key_validation;
+pub mod elevenlabs_scribe;
 pub mod factory;
 pub mod image_generation;
 pub mod local_model_backend;

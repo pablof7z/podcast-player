@@ -36,11 +36,14 @@ fn execute_emits_dispatch_host_op() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-siri");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
     assert_eq!(v["op"], "resume");
 }
-

@@ -5,8 +5,8 @@
 //! `projections_tests_ext.rs`.
 
 use super::projections::{
-    AgentMessageSummary, AgentSnapshot, ChapterSummary, EpisodeSummary,
-    NostrShowSummary, SettingsSnapshot, TranscriptEntry, WidgetSnapshot,
+    AgentMessageSummary, AgentSnapshot, ChapterSummary, EpisodeSummary, NostrShowSummary,
+    SettingsSnapshot, TranscriptEntry, WidgetSnapshot,
 };
 use crate::player::AdSegment;
 
@@ -356,7 +356,10 @@ fn episode_summary_round_trips_with_playback_position() {
 
 #[test]
 fn settings_snapshot_round_trips() {
-    let s = SettingsSnapshot { has_completed_onboarding: true, ..SettingsSnapshot::default() };
+    let s = SettingsSnapshot {
+        has_completed_onboarding: true,
+        ..SettingsSnapshot::default()
+    };
     let json = serde_json::to_string(&s).expect("encode");
     assert!(json.contains("\"has_completed_onboarding\":true"));
     let decoded: SettingsSnapshot = serde_json::from_str(&json).expect("decode");

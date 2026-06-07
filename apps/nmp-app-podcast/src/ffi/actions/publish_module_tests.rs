@@ -9,14 +9,23 @@ fn action_ids_match_documented_strings() {
         ACTION_PUBLISH_DELETE_OWNED,
         "podcast.publish.delete_owned_podcast"
     );
-    assert_eq!(ACTION_PUBLISH_CREATE_OWNED, "podcast.publish.create_owned_podcast");
+    assert_eq!(
+        ACTION_PUBLISH_CREATE_OWNED,
+        "podcast.publish.create_owned_podcast"
+    );
     assert_eq!(ACTION_PUBLISH_PUBLISH_SHOW, "podcast.publish.publish_show");
-    assert_eq!(ACTION_PUBLISH_PUBLISH_EPISODE, "podcast.publish.publish_episode");
+    assert_eq!(
+        ACTION_PUBLISH_PUBLISH_EPISODE,
+        "podcast.publish.publish_episode"
+    );
     assert_eq!(
         ACTION_PUBLISH_PUBLISH_AUTHOR_CLAIM,
         "podcast.publish.publish_author_claim"
     );
-    assert_eq!(ACTION_PUBLISH_REMOVE_OWNED, "podcast.publish.remove_owned_podcast");
+    assert_eq!(
+        ACTION_PUBLISH_REMOVE_OWNED,
+        "podcast.publish.remove_owned_podcast"
+    );
 }
 
 #[test]
@@ -116,7 +125,11 @@ fn execute_emits_dispatch_host_op() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-1");
@@ -124,4 +137,3 @@ fn execute_emits_dispatch_host_op() {
     assert_eq!(v["op"], "create_owned_podcast");
     assert_eq!(v["podcast_id"], "pod-1");
 }
-

@@ -42,40 +42,34 @@ impl IdentityHandler {
 
     pub fn handle(&self, action: IdentityAction) -> serde_json::Value {
         match action {
-            IdentityAction::ImportNsec { nsec } => {
-                match self.identity.lock() {
-                    Ok(mut id) => match id.import_nsec(&nsec) {
-                        Ok(()) => {
-                            self.rev.fetch_add(1, Ordering::Relaxed);
-                            serde_json::json!({"ok": true})
-                        }
-                        Err(e) => serde_json::json!({"ok": false, "error": e}),
-                    },
-                    Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
-                }
-            }
-            IdentityAction::Generate => {
-                match self.identity.lock() {
-                    Ok(mut id) => match id.generate() {
-                        Ok(()) => {
-                            self.rev.fetch_add(1, Ordering::Relaxed);
-                            serde_json::json!({"ok": true})
-                        }
-                        Err(e) => serde_json::json!({"ok": false, "error": e}),
-                    },
-                    Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
-                }
-            }
-            IdentityAction::Clear => {
-                match self.identity.lock() {
-                    Ok(mut id) => {
-                        id.clear();
+            IdentityAction::ImportNsec { nsec } => match self.identity.lock() {
+                Ok(mut id) => match id.import_nsec(&nsec) {
+                    Ok(()) => {
                         self.rev.fetch_add(1, Ordering::Relaxed);
                         serde_json::json!({"ok": true})
                     }
-                    Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
+                    Err(e) => serde_json::json!({"ok": false, "error": e}),
+                },
+                Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
+            },
+            IdentityAction::Generate => match self.identity.lock() {
+                Ok(mut id) => match id.generate() {
+                    Ok(()) => {
+                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        serde_json::json!({"ok": true})
+                    }
+                    Err(e) => serde_json::json!({"ok": false, "error": e}),
+                },
+                Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
+            },
+            IdentityAction::Clear => match self.identity.lock() {
+                Ok(mut id) => {
+                    id.clear();
+                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    serde_json::json!({"ok": true})
                 }
-            }
+                Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),
+            },
             IdentityAction::FetchProfile => {
                 // Stub — relay wiring tracked in docs/BACKLOG.md
                 serde_json::json!({"ok": true, "status": "nostr_pending"})

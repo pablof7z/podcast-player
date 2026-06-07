@@ -68,7 +68,9 @@ impl PodcastStore {
 
     /// Set the auto-play-next toggle and persist. Idempotent.
     pub fn set_auto_play_next(&mut self, value: bool) {
-        if self.auto_play_next == value { return; }
+        if self.auto_play_next == value {
+            return;
+        }
         self.auto_play_next = value;
         self.persist();
     }
@@ -81,7 +83,9 @@ impl PodcastStore {
 
     /// Set the auto-mark-played toggle and persist. Idempotent.
     pub fn set_auto_mark_played_at_end(&mut self, value: bool) {
-        if self.auto_mark_played_at_end == value { return; }
+        if self.auto_mark_played_at_end == value {
+            return;
+        }
         self.auto_mark_played_at_end = value;
         self.persist();
     }
@@ -177,7 +181,9 @@ impl PodcastStore {
     /// Set the default playback rate and persist. Clamped to `[0.5, 3.0]`.
     pub fn set_default_playback_rate(&mut self, rate: f64) {
         let clamped = rate.clamp(0.5, 3.0);
-        if (self.default_playback_rate - clamped).abs() < f64::EPSILON { return; }
+        if (self.default_playback_rate - clamped).abs() < f64::EPSILON {
+            return;
+        }
         self.default_playback_rate = clamped;
         self.persist();
     }
@@ -189,7 +195,9 @@ impl PodcastStore {
 
     /// Set the auto-delete-after-played toggle and persist. Idempotent.
     pub fn set_auto_delete_downloads_after_played(&mut self, value: bool) {
-        if self.auto_delete_downloads_after_played == value { return; }
+        if self.auto_delete_downloads_after_played == value {
+            return;
+        }
         self.auto_delete_downloads_after_played = value;
         self.persist();
     }
@@ -261,7 +269,9 @@ impl PodcastStore {
 
     /// Set both the model ID and name for memory compilation. Idempotent.
     pub fn set_memory_compilation_model(&mut self, model: String, model_name: String) {
-        if self.memory_compilation_model == model && self.memory_compilation_model_name == model_name {
+        if self.memory_compilation_model == model
+            && self.memory_compilation_model_name == model_name
+        {
             return;
         }
         self.memory_compilation_model = model;
@@ -321,7 +331,9 @@ impl PodcastStore {
 
     /// Set both the model ID and name for chapter compilation. Idempotent.
     pub fn set_chapter_compilation_model(&mut self, model: String, model_name: String) {
-        if self.chapter_compilation_model == model && self.chapter_compilation_model_name == model_name {
+        if self.chapter_compilation_model == model
+            && self.chapter_compilation_model_name == model_name
+        {
             return;
         }
         self.chapter_compilation_model = model;
@@ -376,7 +388,9 @@ impl PodcastStore {
 
     /// Set the reranker-enabled toggle and persist. Idempotent.
     pub fn set_reranker_enabled(&mut self, value: bool) {
-        if self.reranker_enabled == value { return; }
+        if self.reranker_enabled == value {
+            return;
+        }
         self.reranker_enabled = value;
         self.persist();
     }
@@ -474,7 +488,9 @@ impl PodcastStore {
 
     /// Set Ollama chat URL and persist. Idempotent.
     pub fn set_ollama_chat_url(&mut self, url: String) {
-        if self.ollama_chat_url == url { return; }
+        if self.ollama_chat_url == url {
+            return;
+        }
         self.ollama_chat_url = url;
         self.persist();
     }
@@ -530,7 +546,9 @@ impl PodcastStore {
 
     /// Set the STT provider and persist. Idempotent.
     pub fn set_stt_provider(&mut self, value: String) {
-        if self.stt_provider == value { return; }
+        if self.stt_provider == value {
+            return;
+        }
         self.stt_provider = value;
         self.persist();
     }
@@ -542,7 +560,9 @@ impl PodcastStore {
 
     /// Set the OpenRouter Whisper model and persist. Idempotent.
     pub fn set_open_router_whisper_model(&mut self, value: String) {
-        if self.open_router_whisper_model == value { return; }
+        if self.open_router_whisper_model == value {
+            return;
+        }
         self.open_router_whisper_model = value;
         self.persist();
     }
@@ -554,7 +574,9 @@ impl PodcastStore {
 
     /// Set the AssemblyAI STT model and persist. Idempotent.
     pub fn set_assembly_ai_stt_model(&mut self, value: String) {
-        if self.assembly_ai_stt_model == value { return; }
+        if self.assembly_ai_stt_model == value {
+            return;
+        }
         self.assembly_ai_stt_model = value;
         self.persist();
     }
@@ -606,7 +628,9 @@ impl PodcastStore {
 
     /// Set the Blossom server URL and persist. Idempotent.
     pub fn set_blossom_server_url(&mut self, value: String) {
-        if self.blossom_server_url == value { return; }
+        if self.blossom_server_url == value {
+            return;
+        }
         self.blossom_server_url = value;
         self.persist();
     }
@@ -618,7 +642,9 @@ impl PodcastStore {
 
     /// Set the YouTube extractor URL and persist. Idempotent.
     pub fn set_youtube_extractor_url(&mut self, value: Option<String>) {
-        if self.youtube_extractor_url == value { return; }
+        if self.youtube_extractor_url == value {
+            return;
+        }
         self.youtube_extractor_url = value;
         self.persist();
     }
@@ -631,7 +657,9 @@ impl PodcastStore {
 
     /// Set the local model ID and persist. Idempotent.
     pub fn set_local_model_id(&mut self, value: Option<String>) {
-        if self.local_model_id == value { return; }
+        if self.local_model_id == value {
+            return;
+        }
         self.local_model_id = value;
         self.persist();
     }
@@ -643,7 +671,9 @@ impl PodcastStore {
 
     /// Set the wiki-auto-generate-on-transcript-ingest toggle and persist. Idempotent.
     pub fn set_wiki_auto_generate_on_transcript_ingest(&mut self, value: bool) {
-        if self.wiki_auto_generate_on_transcript_ingest == value { return; }
+        if self.wiki_auto_generate_on_transcript_ingest == value {
+            return;
+        }
         self.wiki_auto_generate_on_transcript_ingest = value;
         self.persist();
     }
@@ -655,7 +685,9 @@ impl PodcastStore {
 
     /// Set the auto-ingest-publisher-transcripts toggle and persist. Idempotent.
     pub fn set_auto_ingest_publisher_transcripts(&mut self, value: bool) {
-        if self.auto_ingest_publisher_transcripts == value { return; }
+        if self.auto_ingest_publisher_transcripts == value {
+            return;
+        }
         self.auto_ingest_publisher_transcripts = value;
         self.persist();
     }
@@ -667,7 +699,9 @@ impl PodcastStore {
 
     /// Set the auto-fallback-to-scribe toggle and persist. Idempotent.
     pub fn set_auto_fallback_to_scribe(&mut self, value: bool) {
-        if self.auto_fallback_to_scribe == value { return; }
+        if self.auto_fallback_to_scribe == value {
+            return;
+        }
         self.auto_fallback_to_scribe = value;
         self.persist();
     }
@@ -679,7 +713,9 @@ impl PodcastStore {
 
     /// Set the notify-on-new-episodes toggle and persist. Idempotent.
     pub fn set_notify_on_new_episodes(&mut self, value: bool) {
-        if self.notify_on_new_episodes == value { return; }
+        if self.notify_on_new_episodes == value {
+            return;
+        }
         self.notify_on_new_episodes = value;
         self.persist();
     }
@@ -691,7 +727,9 @@ impl PodcastStore {
 
     /// Set the nostr-enabled toggle and persist. Idempotent.
     pub fn set_nostr_enabled(&mut self, value: bool) {
-        if self.nostr_enabled == value { return; }
+        if self.nostr_enabled == value {
+            return;
+        }
         self.nostr_enabled = value;
         self.persist();
     }
@@ -703,7 +741,9 @@ impl PodcastStore {
 
     /// Set the Nostr relay URL and persist. Idempotent.
     pub fn set_nostr_relay_url(&mut self, url: String) {
-        if self.nostr_relay_url == url { return; }
+        if self.nostr_relay_url == url {
+            return;
+        }
         self.nostr_relay_url = url;
         self.persist();
     }
@@ -715,7 +755,9 @@ impl PodcastStore {
 
     /// Set the list of public Nostr relays and persist. Idempotent.
     pub fn set_nostr_public_relays(&mut self, relays: Vec<String>) {
-        if self.nostr_public_relays == relays { return; }
+        if self.nostr_public_relays == relays {
+            return;
+        }
         self.nostr_public_relays = relays;
         self.persist();
     }
@@ -774,6 +816,11 @@ impl PodcastStore {
         self.eleven_labs_api_key.as_deref()
     }
 
+    /// AssemblyAI API key (in-memory only; never persisted to disk).
+    pub fn assembly_ai_api_key(&self) -> Option<&str> {
+        self.assembly_ai_api_key.as_deref()
+    }
+
     /// Set provider API keys in-memory. Does NOT call `persist()`; these keys
     /// never touch disk. Idempotent.
     pub fn set_provider_api_keys(
@@ -781,10 +828,12 @@ impl PodcastStore {
         open_router: Option<String>,
         ollama: Option<String>,
         eleven_labs: Option<String>,
+        assembly_ai: Option<String>,
     ) {
         self.open_router_api_key = open_router;
         self.ollama_api_key = ollama;
         self.eleven_labs_api_key = eleven_labs;
+        self.assembly_ai_api_key = assembly_ai;
     }
 }
 

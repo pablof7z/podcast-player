@@ -108,10 +108,7 @@ pub fn nostr_discovery_interest() -> LogicalInterest {
 #[must_use]
 pub fn nostr_discovery_identity(consumer_id: &str) -> SubIdentity {
     SubIdentity::new(
-        SubOwnerKey::new((
-            "podcast.discover_nostr.owner",
-            consumer_id,
-        )),
+        SubOwnerKey::new(("podcast.discover_nostr.owner", consumer_id)),
         SubKey::new(NOSTR_DISCOVERY_NAMESPACE),
         SubScope::Global,
     )
@@ -188,10 +185,7 @@ pub struct NostrDiscoveryObserver {
 
 impl NostrDiscoveryObserver {
     #[must_use]
-    pub fn new(
-        nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
-        rev: Arc<AtomicU64>,
-    ) -> Self {
+    pub fn new(nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>, rev: Arc<AtomicU64>) -> Self {
         Self {
             nostr_results,
             rev,

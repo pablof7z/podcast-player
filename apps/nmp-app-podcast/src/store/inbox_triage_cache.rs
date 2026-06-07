@@ -52,10 +52,7 @@ pub const INBOX_TRIAGE_CACHE_FILE: &str = "inbox-triage-cache.json";
 /// Returns `Err` with a human-readable message on a serialization or write
 /// failure so the caller can log it; persistence failure is non-fatal (the
 /// in-memory cache stays authoritative for the session).
-pub fn save_triage_cache(
-    dir: &Path,
-    cache: &HashMap<String, TriageResult>,
-) -> Result<(), String> {
+pub fn save_triage_cache(dir: &Path, cache: &HashMap<String, TriageResult>) -> Result<(), String> {
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let json = serde_json::to_vec_pretty(cache).map_err(|e| e.to_string())?;
     let final_path = dir.join(INBOX_TRIAGE_CACHE_FILE);

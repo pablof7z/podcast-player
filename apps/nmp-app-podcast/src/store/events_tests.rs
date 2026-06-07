@@ -27,7 +27,10 @@ fn timestamp_is_iso8601_seconds_with_z() {
     let ts = store.episode_events(EP)[0].timestamp.clone();
     // Swift's `.iso8601` strategy rejects fractional seconds and requires `Z`.
     assert!(ts.ends_with('Z'), "timestamp must end with Z: {ts}");
-    assert!(!ts.contains('.'), "timestamp must not carry fractional seconds: {ts}");
+    assert!(
+        !ts.contains('.'),
+        "timestamp must not carry fractional seconds: {ts}"
+    );
     assert_eq!(ts.len(), 20, "expected YYYY-MM-DDTHH:MM:SSZ: {ts}");
 }
 
@@ -73,10 +76,19 @@ fn uppercase_emit_matches_lowercase_read() {
     // emits with the Rust lowercase `Uuid` form. Both must hit one log.
     let mut store = PodcastStore::new();
     let upper = EP.to_ascii_uppercase();
-    store.emit_event_simple(&upper, stage::AUTO_DOWNLOAD_QUEUED, EventSeverity::Info, "q");
+    store.emit_event_simple(
+        &upper,
+        stage::AUTO_DOWNLOAD_QUEUED,
+        EventSeverity::Info,
+        "q",
+    );
     // Read back with the lowercase form.
     let events = store.episode_events(EP);
-    assert_eq!(events.len(), 1, "uppercase emit must be visible to lowercase read");
+    assert_eq!(
+        events.len(),
+        1,
+        "uppercase emit must be visible to lowercase read"
+    );
     // And the stored episodeID is canonical (lowercase) regardless of input.
     assert_eq!(events[0].episode_id, EP);
 }

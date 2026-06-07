@@ -12,7 +12,10 @@ use crate::feedback_handler::{
 };
 
 fn cache() -> (Arc<Mutex<Vec<serde_json::Value>>>, Arc<AtomicU64>) {
-    (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicU64::new(0)))
+    (
+        Arc::new(Mutex::new(Vec::new())),
+        Arc::new(AtomicU64::new(0)),
+    )
 }
 
 fn feedback_event(id: &str, author: &str, kind: u32, with_anchor: bool) -> KernelEvent {
@@ -35,15 +38,23 @@ fn feedback_event(id: &str, author: &str, kind: u32, with_anchor: bool) -> Kerne
 #[test]
 fn root_tags_carry_anchor_category_and_protected_marker() {
     let tags = build_feedback_tags("bug", None, None);
-    assert!(tags.iter().any(|t| t.first().map(|s| s == "a").unwrap_or(false)
-        && t.get(1).map(|s| s == PROJECT_COORDINATE).unwrap_or(false)));
-    assert!(tags.iter().any(|t| t.first().map(|s| s == "t").unwrap_or(false)
-        && t.get(1).map(|s| s == "bug").unwrap_or(false)));
+    assert!(tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "a").unwrap_or(false)
+            && t.get(1).map(|s| s == PROJECT_COORDINATE).unwrap_or(false)));
+    assert!(tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "t").unwrap_or(false)
+            && t.get(1).map(|s| s == "bug").unwrap_or(false)));
     // NIP-70 protected marker.
     assert!(tags.iter().any(|t| t.len() == 1 && t[0] == "-"));
     // A thread-opener has no e/p tags.
-    assert!(!tags.iter().any(|t| t.first().map(|s| s == "e").unwrap_or(false)));
-    assert!(!tags.iter().any(|t| t.first().map(|s| s == "p").unwrap_or(false)));
+    assert!(!tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "e").unwrap_or(false)));
+    assert!(!tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "p").unwrap_or(false)));
 }
 
 #[test]
@@ -57,15 +68,21 @@ fn reply_tags_carry_nip10_root_and_recipient() {
         .expect("reply must have e tag");
     assert_eq!(e_tag.get(1).map(|s| s.as_str()), Some(parent));
     assert_eq!(e_tag.get(3).map(|s| s.as_str()), Some("root"));
-    assert!(tags.iter().any(|t| t.first().map(|s| s == "p").unwrap_or(false)
-        && t.get(1).map(|s| s == pubkey).unwrap_or(false)));
+    assert!(tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "p").unwrap_or(false)
+            && t.get(1).map(|s| s == pubkey).unwrap_or(false)));
 }
 
 #[test]
 fn empty_parent_and_recipient_produce_no_e_or_p_tags() {
     let tags = build_feedback_tags("praise", Some(""), Some(""));
-    assert!(!tags.iter().any(|t| t.first().map(|s| s == "e").unwrap_or(false)));
-    assert!(!tags.iter().any(|t| t.first().map(|s| s == "p").unwrap_or(false)));
+    assert!(!tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "e").unwrap_or(false)));
+    assert!(!tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "p").unwrap_or(false)));
 }
 
 // ── publish ───────────────────────────────────────────────────────────
@@ -156,5 +173,9 @@ fn observer_dedupes_by_event_id() {
     obs.on_kernel_event(&feedback_event("dup", "authorhex", 1, true));
     obs.on_kernel_event(&feedback_event("dup", "authorhex", 1, true));
     assert_eq!(slot.lock().unwrap().len(), 1);
-    assert_eq!(rev.load(Ordering::Relaxed), 1, "duplicate must not bump rev");
+    assert_eq!(
+        rev.load(Ordering::Relaxed),
+        1,
+        "duplicate must not bump rev"
+    );
 }

@@ -147,13 +147,8 @@ pub fn handle_publish_feedback(
         return serde_json::json!({"ok": false, "error": "empty feedback"});
     }
     let tags = build_feedback_tags(category, parent_event_id, reply_to_pubkey);
-    let status = publish_raw_explicit_via_nmp(
-        app,
-        KIND_TEXT_NOTE,
-        &tags,
-        content,
-        &[FEEDBACK_RELAY],
-    );
+    let status =
+        publish_raw_explicit_via_nmp(app, KIND_TEXT_NOTE, &tags, content, &[FEEDBACK_RELAY]);
     serde_json::json!({"ok": true, "status": status})
 }
 

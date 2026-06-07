@@ -38,7 +38,7 @@ use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
 use crate::ffi::actions::categorization_module::MAX_CATEGORIES_PER_EPISODE;
-use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
+use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
 use crate::store::PodcastStore;
 
 const CATEGORIZE_MODEL: &str = "deepseek-v4-flash:cloud";

@@ -11,10 +11,7 @@ fn skips_unknown_ids() {
         }],
         ..PodcastSummary::default()
     }];
-    let rows = resolve_queue_rows(
-        &["ep-1".to_owned(), "ep-missing".to_owned()],
-        &library,
-    );
+    let rows = resolve_queue_rows(&["ep-1".to_owned(), "ep-missing".to_owned()], &library);
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].id, "ep-1");
 }
@@ -37,10 +34,7 @@ fn preserves_order() {
         ],
         ..PodcastSummary::default()
     }];
-    let rows = resolve_queue_rows(
-        &["ep-b".to_owned(), "ep-a".to_owned()],
-        &library,
-    );
+    let rows = resolve_queue_rows(&["ep-b".to_owned(), "ep-a".to_owned()], &library);
     assert_eq!(rows.len(), 2);
     assert_eq!(rows[0].id, "ep-b");
     assert_eq!(rows[1].id, "ep-a");
@@ -71,8 +65,6 @@ fn podcast_update_queue_round_trips_via_serde() {
     assert_eq!(decoded.queue.len(), 1);
     assert_eq!(decoded.queue[0].id, "ep-1");
     // Empty queue must not appear on the wire.
-    let default_json =
-        serde_json::to_string(&PodcastUpdate::default()).expect("encode");
+    let default_json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
     assert!(!default_json.contains("\"queue\""));
 }
-

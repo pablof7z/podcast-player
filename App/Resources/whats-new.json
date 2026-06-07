@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-07T19:05:00Z",
+      "lines": [
+        "AssemblyAI transcription now uses the shared backend for credential lookup, model routing, and error handling — consistent with all other STT providers."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T18:37:36Z",
       "lines": [
         "ElevenLabs Scribe transcription now uses the shared backend, including your selected Scribe model and consistent provider errors."

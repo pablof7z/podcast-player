@@ -455,9 +455,10 @@ impl HostOpHandler for PodcastHostOpHandler {
                 if app.is_null() {
                     return false;
                 }
-                let (Ok(ns_c), Ok(body_c)) =
-                    (std::ffi::CString::new(namespace), std::ffi::CString::new(body))
-                else {
+                let (Ok(ns_c), Ok(body_c)) = (
+                    std::ffi::CString::new(namespace),
+                    std::ffi::CString::new(body),
+                ) else {
                     return false;
                 };
                 let raw = nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr());

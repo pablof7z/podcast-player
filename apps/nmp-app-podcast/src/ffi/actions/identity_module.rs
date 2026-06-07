@@ -26,8 +26,7 @@ impl ActionModule for IdentityActionModule {
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),
     ) -> Result<(), String> {
-        let action_json =
-            serde_json::to_string(&action).map_err(|e| e.to_string())?;
+        let action_json = serde_json::to_string(&action).map_err(|e| e.to_string())?;
         send(ActorCommand::DispatchHostOp {
             action_json,
             correlation_id: correlation_id.to_owned(),

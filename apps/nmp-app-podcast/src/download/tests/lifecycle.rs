@@ -28,8 +28,10 @@ fn completed_frees_slot_and_starts_next_queued() {
         q.get("ep-1").map(|i| i.state),
         Some(DownloadItemState::Completed)
     );
-    assert_eq!(q.get("ep-1").and_then(|i| i.local_path.as_deref()),
-               Some("/tmp/ep-1.mp3"));
+    assert_eq!(
+        q.get("ep-1").and_then(|i| i.local_path.as_deref()),
+        Some("/tmp/ep-1.mp3")
+    );
     assert_eq!(
         q.get("ep-4").map(|i| i.state),
         Some(DownloadItemState::Active)

@@ -65,4 +65,3 @@ fn execute_emits_dispatch_host_op() {
     assert_eq!(v["op"], "search");
     assert_eq!(v["query"], "nostr");
 }
-

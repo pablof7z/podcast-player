@@ -60,7 +60,11 @@ impl PodcastStore {
     pub fn set_episode_summary(&mut self, id_str: &str, summary: Option<String>) -> bool {
         let cleaned = summary.and_then(|s| {
             let t = s.trim().to_owned();
-            if t.is_empty() { None } else { Some(t) }
+            if t.is_empty() {
+                None
+            } else {
+                Some(t)
+            }
         });
         for episodes in self.episodes.values_mut() {
             if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {

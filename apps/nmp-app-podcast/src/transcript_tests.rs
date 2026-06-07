@@ -7,9 +7,18 @@ use super::*;
 
 #[test]
 fn accept_header_per_kind() {
-    assert_eq!(accept_header(&TranscriptKind::Vtt), "text/vtt, text/plain, */*");
-    assert_eq!(accept_header(&TranscriptKind::Srt), "application/x-subrip, text/plain, */*");
-    assert_eq!(accept_header(&TranscriptKind::Json), "application/json, */*");
+    assert_eq!(
+        accept_header(&TranscriptKind::Vtt),
+        "text/vtt, text/plain, */*"
+    );
+    assert_eq!(
+        accept_header(&TranscriptKind::Srt),
+        "application/x-subrip, text/plain, */*"
+    );
+    assert_eq!(
+        accept_header(&TranscriptKind::Json),
+        "application/json, */*"
+    );
     assert_eq!(accept_header(&TranscriptKind::Html), "text/html, */*");
     assert_eq!(accept_header(&TranscriptKind::Text), "text/plain, */*");
 }
@@ -86,14 +95,20 @@ fn text_kind_wraps_body_into_single_entry() {
 
 #[test]
 fn html_kind_is_rejected_with_clear_message() {
-    let err = parse_transcript_body("<p>hi</p>", &TranscriptKind::Html, "ep-1", "https://ex.com/t.html")
-        .expect_err("html should fail");
+    let err = parse_transcript_body(
+        "<p>hi</p>",
+        &TranscriptKind::Html,
+        "ep-1",
+        "https://ex.com/t.html",
+    )
+    .expect_err("html should fail");
     assert!(err.contains("html"));
 }
 
 #[test]
 fn vtt_round_trip_via_parse_and_project() {
-    let body = "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello\n\n00:00:01.000 --> 00:00:02.000\nworld.\n";
+    let body =
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello\n\n00:00:01.000 --> 00:00:02.000\nworld.\n";
     let transcript =
         parse_transcript_body(body, &TranscriptKind::Vtt, "ep-1", "https://ex.com/t.vtt")
             .expect("vtt parse");
@@ -121,24 +136,19 @@ fn handle_fetch_transcript_stores_entries_and_bumps_rev() {
         url::Url::parse("https://example.com/audio.mp3").unwrap(),
         chrono::Utc::now(),
     );
-    episode.publisher_transcript_url =
-        Some(url::Url::parse("https://example.com/t.vtt").unwrap());
+    episode.publisher_transcript_url = Some(url::Url::parse("https://example.com/t.vtt").unwrap());
     episode.publisher_transcript_type = Some(TranscriptKind::Vtt);
     let id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
 
     let body = "WEBVTT\n\n00:00:00.000 --> 00:00:01.500\nHello\n";
-    let result = handle_fetch_transcript(
-        &store,
-        &transcripts,
-        &rev,
-        id.clone(),
-        |_req| Ok(HttpResult::Ok {
+    let result = handle_fetch_transcript(&store, &transcripts, &rev, id.clone(), |_req| {
+        Ok(HttpResult::Ok {
             status_code: 200,
             headers: vec![],
             body: body.to_owned(),
-        }),
-    );
+        })
+    });
 
     assert_eq!(result["ok"], true);
     assert_eq!(result["status"], "fetched");
@@ -170,13 +180,9 @@ fn handle_fetch_transcript_returns_not_available_when_no_url() {
     let id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
 
-    let result = handle_fetch_transcript(
-        &store,
-        &transcripts,
-        &rev,
-        id,
-        |_req| panic!("fetch must not run when no URL is available"),
-    );
+    let result = handle_fetch_transcript(&store, &transcripts, &rev, id, |_req| {
+        panic!("fetch must not run when no URL is available")
+    });
 
     assert_eq!(result["ok"], true);
     assert_eq!(result["status"], "not_available");

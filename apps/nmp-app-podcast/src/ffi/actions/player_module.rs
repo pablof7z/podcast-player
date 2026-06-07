@@ -22,19 +22,29 @@ use crate::player::AdSegment;
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum PlayerAction {
-    Play { episode_id: String },
+    Play {
+        episode_id: String,
+    },
     /// Stage an episode for playback without starting audio. Rust looks up
     /// the URL and position, calls `actor.stage_load`, and dispatches
     /// `AudioCommand::Load` — but NOT `AudioCommand::Play`. iOS follows
     /// with a `Resume` action (or a `Play { episode_id }` to restart).
-    Load { episode_id: String },
+    Load {
+        episode_id: String,
+    },
     /// Resume playback of the currently-staged episode. Dispatches
     /// `AudioCommand::Play` only — no reload, no position reset.
     Resume,
     Pause,
-    Seek { position_secs: f64 },
-    SetSpeed { speed: f32 },
-    SetVolume { volume: f32 },
+    Seek {
+        position_secs: f64,
+    },
+    SetSpeed {
+        speed: f32,
+    },
+    SetVolume {
+        volume: f32,
+    },
     SetSleepTimer {
         #[serde(default)]
         secs: Option<u64>,
@@ -43,9 +53,13 @@ pub enum PlayerAction {
     /// Append `episode_id` to the end of the playback queue if not
     /// already present (dedup by id). Kernel-owned ordered list of
     /// episode ids surfaced via `PodcastUpdate.queue`.
-    Enqueue { episode_id: String },
+    Enqueue {
+        episode_id: String,
+    },
     /// Remove the first occurrence of `episode_id` from the queue.
-    Dequeue { episode_id: String },
+    Dequeue {
+        episode_id: String,
+    },
     /// Empty the entire playback queue.
     ClearQueue,
     /// Pop the front of the queue and `Play` it. No-op when the queue
@@ -67,22 +81,37 @@ pub enum PlayerAction {
     /// Advance the playhead by `secs` seconds from the current position.
     /// The kernel reads the live `PlayerActor` position so the iOS/Android
     /// shell never needs to know the current time (D0 — policy in Rust).
-    SkipForward { secs: f64 },
+    SkipForward {
+        secs: f64,
+    },
     /// Step the playhead back by `secs` seconds (clamped to 0).
-    SkipBackward { secs: f64 },
+    SkipBackward {
+        secs: f64,
+    },
     /// Enqueue an episode audio file for offline download.
-    Download { episode_id: String, url: String },
+    Download {
+        episode_id: String,
+        url: String,
+    },
     /// Cancel an active, paused, or queued download.
-    CancelDownload { episode_id: String },
+    CancelDownload {
+        episode_id: String,
+    },
     /// Pause an active download while retaining resume data.
-    PauseDownload { episode_id: String },
+    PauseDownload {
+        episode_id: String,
+    },
     /// Resume a paused download.
-    ResumeDownload { episode_id: String },
+    ResumeDownload {
+        episode_id: String,
+    },
     /// Cancel every active, paused, and queued download.
     CancelAllDownloads,
     /// Reset the playback position of an episode to zero. Clears the
     /// "Continue Listening" resume point without marking the episode played.
-    ResetProgress { episode_id: String },
+    ResetProgress {
+        episode_id: String,
+    },
     /// Pop the front of the queue and play it. Equivalent to `PlayNext`
     /// but named for auto-advance semantics — fired by Rust's `ItemEnd`
     /// handler; never synthesized by the iOS shell.
@@ -90,7 +119,10 @@ pub enum PlayerAction {
     /// Write a playback position to the store without going through the
     /// audio-report path. Used for deep-link warm-resume and mini-player
     /// restore where no `Playing` report is in flight.
-    PersistPosition { episode_id: String, position_secs: f64 },
+    PersistPosition {
+        episode_id: String,
+        position_secs: f64,
+    },
 }
 
 /// Action module for the `"podcast.player"` namespace.
@@ -115,8 +147,7 @@ impl ActionModule for PlayerActionModule {
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),
     ) -> Result<(), String> {
-        let action_json =
-            serde_json::to_string(&action).map_err(|e| e.to_string())?;
+        let action_json = serde_json::to_string(&action).map_err(|e| e.to_string())?;
         send(ActorCommand::DispatchHostOp {
             action_json,
             correlation_id: correlation_id.to_owned(),

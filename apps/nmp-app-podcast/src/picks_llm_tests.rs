@@ -22,8 +22,13 @@ fn prompt_includes_listening_profile_when_present() {
     let profile_pos = prompt
         .find("Backend Banter (3 in progress)")
         .expect("profile present");
-    let candidate_pos = prompt.find("Candidate episode:").expect("candidate present");
-    assert!(profile_pos < candidate_pos, "profile must precede candidate");
+    let candidate_pos = prompt
+        .find("Candidate episode:")
+        .expect("candidate present");
+    assert!(
+        profile_pos < candidate_pos,
+        "profile must precede candidate"
+    );
     assert!(prompt.contains("Episode: Rate limiting at scale"));
 }
 
@@ -56,7 +61,8 @@ fn parses_bare_score_and_reason() {
 
 #[test]
 fn parses_score_with_markdown_fence_and_preamble() {
-    let s = "Sure! Here is the result:\n```json\n{\"score\": 0.42, \"reason\": \"Niche topic.\"}\n```";
+    let s =
+        "Sure! Here is the result:\n```json\n{\"score\": 0.42, \"reason\": \"Niche topic.\"}\n```";
     let (score, reason) = parse_picks_response(s).expect("parse ok");
     assert!((score - 0.42).abs() < 1e-6);
     assert_eq!(reason, "Niche topic.");
@@ -141,8 +147,7 @@ fn ok_result_overrides_heuristic_in_fallback_select() {
     let heuristic_score = 0.65_f32;
     let heuristic_reason = "New from Stratechery".to_string();
 
-    let llm_result: Result<(f32, String), String> =
-        Ok((0.93, "Standout interview.".into()));
+    let llm_result: Result<(f32, String), String> = Ok((0.93, "Standout interview.".into()));
     let (score, reason) = match llm_result {
         Ok((s, r)) => (s, r),
         Err(_) => (heuristic_score, heuristic_reason),

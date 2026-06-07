@@ -78,7 +78,11 @@ fn carry_forward_ai_chapters(ep: &mut Episode, prev: &Episode) {
         return; // Fresh chapters (publisher or otherwise) win — D7.
     }
     if let Some(prev_chapters) = prev.chapters.as_ref() {
-        let ai: Vec<_> = prev_chapters.iter().filter(|c| c.is_ai_generated).cloned().collect();
+        let ai: Vec<_> = prev_chapters
+            .iter()
+            .filter(|c| c.is_ai_generated)
+            .cloned()
+            .collect();
         if !ai.is_empty() {
             ep.chapters = Some(ai);
         }

@@ -15,7 +15,8 @@ use super::backend::{LlmBackend, LlmError, LlmRequest};
 
 /// FFI callback function type: takes context pointer and JSON prompt (C string),
 /// returns JSON response (malloc-compatible C string that Rust must free).
-pub type NmpLocalLlmFn = extern "C" fn(*mut c_void, *const std::ffi::c_char) -> *mut std::ffi::c_char;
+pub type NmpLocalLlmFn =
+    extern "C" fn(*mut c_void, *const std::ffi::c_char) -> *mut std::ffi::c_char;
 
 /// Global registration for the local LLM callback.
 /// The context is a usize-encoded Unmanaged<LocalLLMService> pointer owned by Swift
@@ -75,7 +76,11 @@ impl LlmBackend for LocalModelBackend {
         // Lock the slot and check if a callback is registered.
         let slot_guard = match slot().lock() {
             Ok(guard) => guard,
-            Err(_) => return Err(LlmError::Unavailable("Failed to acquire callback slot lock".into())),
+            Err(_) => {
+                return Err(LlmError::Unavailable(
+                    "Failed to acquire callback slot lock".into(),
+                ))
+            }
         };
 
         let reg = match &*slot_guard {
@@ -88,7 +93,9 @@ impl LlmBackend for LocalModelBackend {
 
         // Check for null response (error case).
         if response_ptr.is_null() {
-            return Err(LlmError::Unavailable("Local model call returned null".into()));
+            return Err(LlmError::Unavailable(
+                "Local model call returned null".into(),
+            ));
         }
 
         // Convert the returned C string to Rust String.
@@ -97,7 +104,9 @@ impl LlmBackend for LocalModelBackend {
             Err(_) => {
                 // Free the pointer before returning error.
                 unsafe { nmp_ffi::nmp_app_free_string(response_ptr) };
-                return Err(LlmError::Unavailable("Local model response not valid UTF-8".into()));
+                return Err(LlmError::Unavailable(
+                    "Local model response not valid UTF-8".into(),
+                ));
             }
         };
 
@@ -113,10 +122,14 @@ impl LlmBackend for LocalModelBackend {
                     // Treat model errors as Unavailable (model-not-loaded is unavailable, not provider error).
                     Err(LlmError::Unavailable(error.to_string()))
                 } else {
-                    Err(LlmError::Unavailable("Local model response missing 'text' or 'error'".into()))
+                    Err(LlmError::Unavailable(
+                        "Local model response missing 'text' or 'error'".into(),
+                    ))
                 }
             }
-            Err(_) => Err(LlmError::Unavailable("Failed to parse local model response JSON".into())),
+            Err(_) => Err(LlmError::Unavailable(
+                "Failed to parse local model response JSON".into(),
+            )),
         }
     }
 }

@@ -5,8 +5,7 @@
 
 use super::projections::{
     AgentPickSummary, AgentTaskSummary, CategoryBrowseItem, ChapterSummary, ClipSummary,
-    CommentSummary, EpisodeSummary, KnowledgeSearchResult, MemoryFact,
-    SocialSnapshot, WikiArticle,
+    CommentSummary, EpisodeSummary, KnowledgeSearchResult, MemoryFact, SocialSnapshot, WikiArticle,
 };
 
 #[test]
@@ -70,7 +69,10 @@ fn chapter_summary_omits_publisher_source_on_wire() {
         ..ChapterSummary::default()
     };
     let json = serde_json::to_string(&pub_chapter).expect("encode");
-    assert!(!json.contains("source"), "publisher source must be skipped: {json}");
+    assert!(
+        !json.contains("source"),
+        "publisher source must be skipped: {json}"
+    );
 }
 
 #[test]
@@ -83,7 +85,10 @@ fn chapter_summary_serializes_llm_and_stub_source() {
     };
     let json = serde_json::to_string(&llm).expect("encode");
     assert!(json.contains("\"source\":\"llm\""), "got: {json}");
-    assert_eq!(serde_json::from_str::<ChapterSummary>(&json).expect("decode"), llm);
+    assert_eq!(
+        serde_json::from_str::<ChapterSummary>(&json).expect("decode"),
+        llm
+    );
 
     let stub = ChapterSummary {
         start_secs: 0.0,
@@ -92,7 +97,10 @@ fn chapter_summary_serializes_llm_and_stub_source() {
         ..ChapterSummary::default()
     };
     let stub_json = serde_json::to_string(&stub).expect("encode");
-    assert!(stub_json.contains("\"source\":\"stub\""), "got: {stub_json}");
+    assert!(
+        stub_json.contains("\"source\":\"stub\""),
+        "got: {stub_json}"
+    );
 }
 
 #[test]
@@ -390,9 +398,16 @@ fn category_browse_item_round_trips() {
 
 #[test]
 fn episode_summary_played_omitted_when_false() {
-    let ep = EpisodeSummary { id: "ep-1".into(), title: "Ep".into(), ..EpisodeSummary::default() };
+    let ep = EpisodeSummary {
+        id: "ep-1".into(),
+        title: "Ep".into(),
+        ..EpisodeSummary::default()
+    };
     let json = serde_json::to_string(&ep).expect("encode");
-    assert!(!json.contains("played"), "played=false must be omitted per D5");
+    assert!(
+        !json.contains("played"),
+        "played=false must be omitted per D5"
+    );
 }
 
 #[test]

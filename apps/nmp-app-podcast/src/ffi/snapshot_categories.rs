@@ -36,7 +36,9 @@ pub(super) fn build_category_aggregate(library: &[PodcastSummary]) -> Vec<Catego
                     podcast_ids: BTreeSet::new(),
                     latest: i64::MIN,
                 });
-                entry.episode_ids_by_recency.push((published, ep.id.clone()));
+                entry
+                    .episode_ids_by_recency
+                    .push((published, ep.id.clone()));
                 entry.podcast_ids.insert(podcast.id.clone());
                 if published > entry.latest {
                     entry.latest = published;
@@ -49,9 +51,7 @@ pub(super) fn build_category_aggregate(library: &[PodcastSummary]) -> Vec<Catego
         .into_iter()
         .map(|(category, mut bucket)| {
             // Newest-first; tie-break by insertion order via stable sort.
-            bucket
-                .episode_ids_by_recency
-                .sort_by(|a, b| b.0.cmp(&a.0));
+            bucket.episode_ids_by_recency.sort_by(|a, b| b.0.cmp(&a.0));
             let top_episode_ids = bucket
                 .episode_ids_by_recency
                 .iter()

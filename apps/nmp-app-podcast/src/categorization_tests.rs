@@ -71,7 +71,9 @@ fn handle_categorize_episode_missing_episode_returns_error() {
     let bogus = uuid::Uuid::new_v4().to_string();
     let result = handle_categorize_episode(&store, &cache, &rev, bogus);
     assert_eq!(result["ok"], false);
-    assert!(result["error"].as_str().unwrap().contains("episode not found"));
+    assert!(result["error"]
+        .as_str()
+        .unwrap()
+        .contains("episode not found"));
     assert_eq!(rev.load(Ordering::Relaxed), 0);
 }
-

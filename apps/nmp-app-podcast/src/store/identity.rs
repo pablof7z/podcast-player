@@ -79,8 +79,7 @@ impl IdentityStore {
     /// `pubkey_hex`, and `npub` are all populated and the identity is
     /// persisted to disk (if a `data_dir` has been set).
     pub fn import_nsec(&mut self, nsec_or_hex: &str) -> Result<(), String> {
-        let keys = nostr::Keys::parse(nsec_or_hex)
-            .map_err(|e| format!("invalid key: {e}"))?;
+        let keys = nostr::Keys::parse(nsec_or_hex).map_err(|e| format!("invalid key: {e}"))?;
         self.populate_from_keys(&keys);
         self.save_to_disk();
         Ok(())
@@ -158,12 +157,13 @@ impl IdentityStore {
     /// instance. Silently leaves the fields as `None` if bech32 encoding
     /// fails (that branch is unreachable with a valid key in practice).
     fn populate_from_keys(&mut self, keys: &nostr::Keys) {
-        self.secret_hex = Some(keys.secret_key().to_secret_bytes()
-            .iter()
-            .fold(String::with_capacity(64), |mut s, b| {
+        self.secret_hex = Some(keys.secret_key().to_secret_bytes().iter().fold(
+            String::with_capacity(64),
+            |mut s, b| {
                 s.push_str(&format!("{:02x}", b));
                 s
-            }));
+            },
+        ));
         let pubkey = keys.public_key();
         self.pubkey_hex = Some(pubkey.to_hex());
         // `ToBech32::to_bech32()` returns `Result<String, Infallible>` for
@@ -184,7 +184,8 @@ mod tests {
     use tempfile::TempDir;
 
     const TEST_NSEC: &str = "nsec1cdxlq0ckkqeuauhzqaduugmrjpwuk3cgwq37ef2nvzje8at26lwqapk9us";
-    const TEST_PUBKEY_HEX: &str = "c7f5c9fc41894086a2fd8c3e542c1d6e6beeb2175ba41813de38bd02936bd4ff";
+    const TEST_PUBKEY_HEX: &str =
+        "c7f5c9fc41894086a2fd8c3e542c1d6e6beeb2175ba41813de38bd02936bd4ff";
     const TEST_NPUB: &str = "npub1cl6unlzp39qgdgha3sl9gtqade47avshtwjpsy778z7s9ymt6nls2thmtl";
 
     #[test]

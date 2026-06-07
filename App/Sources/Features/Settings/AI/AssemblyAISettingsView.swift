@@ -97,6 +97,7 @@ struct AssemblyAISettingsView: View {
             try AssemblyAICredentialStore.saveAPIKey(token.apiKey)
             manualAPIKey = ""
             refreshCredentialState()
+            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI connected with BYOK."
             Haptics.success()
         } catch BYOKConnectError.cancelled {
@@ -114,6 +115,7 @@ struct AssemblyAISettingsView: View {
             try AssemblyAICredentialStore.saveAPIKey(manualAPIKey)
             manualAPIKey = ""
             refreshCredentialState()
+            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI key saved in Keychain."
             Haptics.success()
         } catch {
@@ -129,6 +131,7 @@ struct AssemblyAISettingsView: View {
             try AssemblyAICredentialStore.deleteAPIKey()
             manualAPIKey = ""
             refreshCredentialState()
+            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI disconnected."
             Haptics.success()
         } catch {

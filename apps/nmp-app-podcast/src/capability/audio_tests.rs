@@ -65,4 +65,3 @@ fn audio_report_sleep_timer_fired_has_no_payload() {
 fn namespace_matches_canonical_capability_plan() {
     assert_eq!(AUDIO_CAPABILITY_NAMESPACE, "nmp.audio.capability");
 }
-

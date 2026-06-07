@@ -45,4 +45,3 @@ fn episode_duration_secs_returns_published_duration() {
     assert_eq!(store.episode_duration_secs(&ep_id), Some(1800.0));
     assert_eq!(store.episode_duration_secs("missing"), None);
 }
-

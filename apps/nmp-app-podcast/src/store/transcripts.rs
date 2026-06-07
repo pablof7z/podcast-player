@@ -36,9 +36,7 @@ impl PodcastStore {
         for episodes in self.episodes.values() {
             if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
                 let url = ep.publisher_transcript_url.as_ref()?;
-                let kind = ep
-                    .publisher_transcript_type
-                    .unwrap_or(TranscriptKind::Json);
+                let kind = ep.publisher_transcript_type.unwrap_or(TranscriptKind::Json);
                 return Some((url.to_string(), kind));
             }
         }

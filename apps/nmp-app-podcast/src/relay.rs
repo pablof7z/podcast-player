@@ -45,7 +45,11 @@ pub async fn subscribe_until_eose(
     for handle in handles {
         if let Ok(events) = handle.await {
             for ev in events {
-                let id = ev.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let id = ev
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
                 if seen.insert(id) {
                     all.push(ev);
                 }
@@ -67,7 +71,11 @@ async fn subscribe_on_relay(
     };
 
     let (mut write, mut read) = ws.split();
-    if write.send(Message::Text(req_msg.to_string().into())).await.is_err() {
+    if write
+        .send(Message::Text(req_msg.to_string().into()))
+        .await
+        .is_err()
+    {
         return vec![];
     }
 

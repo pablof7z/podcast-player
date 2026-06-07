@@ -477,7 +477,8 @@ impl PodcastHostOpHandler {
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
         for (episode_id, url) in &ready {
-            let _ = self.start_episode_download(&episode_id.0.to_string(), url, correlation_id, true);
+            let _ =
+                self.start_episode_download(&episode_id.0.to_string(), url, correlation_id, true);
         }
         if !deferred.is_empty() {
             if let Ok(mut s) = self.store.lock() {

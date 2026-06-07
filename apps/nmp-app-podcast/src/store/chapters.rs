@@ -31,7 +31,11 @@ impl PodcastStore {
     pub fn set_episode_chapters(&mut self, id_str: &str, chapters: Vec<Chapter>) -> bool {
         for episodes in self.episodes.values_mut() {
             if let Some(ep) = episodes.iter_mut().find(|e| e.id.0.to_string() == id_str) {
-                ep.chapters = if chapters.is_empty() { None } else { Some(chapters) };
+                ep.chapters = if chapters.is_empty() {
+                    None
+                } else {
+                    Some(chapters)
+                };
                 self.persist();
                 return true;
             }

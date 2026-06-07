@@ -70,8 +70,8 @@ pub fn upload_to_blossom(
     secret_bytes: &[u8; 32],
     fetch: impl FnOnce(&HttpRequest) -> Result<HttpResult, String>,
 ) -> Result<BlossomUploadResult, String> {
-    let bytes = std::fs::read(local_path)
-        .map_err(|e| format!("read local file {local_path}: {e}"))?;
+    let bytes =
+        std::fs::read(local_path).map_err(|e| format!("read local file {local_path}: {e}"))?;
     if bytes.is_empty() {
         return Err(format!("local file is empty: {local_path}"));
     }
@@ -103,7 +103,9 @@ pub fn upload_to_blossom(
 
     let result = fetch(&req)?;
     let body = match result {
-        HttpResult::Ok { status_code, body, .. } => {
+        HttpResult::Ok {
+            status_code, body, ..
+        } => {
             if !(200..300).contains(&status_code) {
                 return Err(format!("blossom upload http {status_code}: {body}"));
             }
@@ -133,14 +135,10 @@ fn build_auth_event(
     created_at_secs: i64,
 ) -> Result<String, String> {
     let tags = auth_event_tags(file_hash_hex, byte_count, created_at_secs);
-    let sk = SecretKey::from_slice(secret_bytes)
-        .map_err(|e| format!("invalid secret key: {e}"))?;
+    let sk = SecretKey::from_slice(secret_bytes).map_err(|e| format!("invalid secret key: {e}"))?;
     let keys = Keys::new(sk);
 
-    let nostr_tags: Vec<Tag> = tags
-        .iter()
-        .filter_map(|t| Tag::parse(t).ok())
-        .collect();
+    let nostr_tags: Vec<Tag> = tags.iter().filter_map(|t| Tag::parse(t).ok()).collect();
 
     let event = EventBuilder::new(Kind::from(KIND_BLOSSOM_AUTH), "Upload audio")
         .tags(nostr_tags)
@@ -176,8 +174,8 @@ fn auth_event_tags(
 /// `url` field is mandatory; `sha256` / `size` / `type` fall back to sensible
 /// defaults when a server omits them.
 fn parse_blossom_response(body: &str) -> Result<BlossomUploadResult, String> {
-    let json: serde_json::Value = serde_json::from_str(body)
-        .map_err(|e| format!("blossom response not JSON: {e}"))?;
+    let json: serde_json::Value =
+        serde_json::from_str(body).map_err(|e| format!("blossom response not JSON: {e}"))?;
 
     let url = json
         .get("url")
@@ -191,7 +189,10 @@ fn parse_blossom_response(body: &str) -> Result<BlossomUploadResult, String> {
         .and_then(|v| v.as_str())
         .unwrap_or_default()
         .to_string();
-    let size = json.get("size").and_then(serde_json::Value::as_u64).unwrap_or(0);
+    let size = json
+        .get("size")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
     let mime_type = json
         .get("type")
         .and_then(|v| v.as_str())

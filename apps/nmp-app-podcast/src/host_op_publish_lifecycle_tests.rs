@@ -226,14 +226,25 @@ fn update_owned_republishes_when_public_and_nostr_enabled() {
     assert_eq!(out["status"], "republished");
     // The nested publish result signed an event (null app → "signed").
     assert_eq!(out["publish"]["ok"], true);
-    assert_eq!(store.lock().unwrap().podcast_by_id_str(&id).unwrap().title, "Renamed");
+    assert_eq!(
+        store.lock().unwrap().podcast_by_id_str(&id).unwrap().title,
+        "Renamed"
+    );
 }
 
 #[test]
 fn update_owned_returns_error_for_unknown_podcast() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let handler = handler_with_store(store);
-    let out = update_owned(&handler, "nope".into(), Some("x".into()), None, None, None, None);
+    let out = update_owned(
+        &handler,
+        "nope".into(),
+        Some("x".into()),
+        None,
+        None,
+        None,
+        None,
+    );
     assert_eq!(out["ok"], false);
 }
 

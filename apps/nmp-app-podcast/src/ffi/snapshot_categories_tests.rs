@@ -59,4 +59,3 @@ fn top_episode_ids_capped_at_three() {
     let result = build_category_aggregate(&library);
     assert_eq!(result[0].top_episode_ids.len(), 3);
 }
-

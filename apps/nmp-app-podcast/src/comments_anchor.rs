@@ -26,9 +26,9 @@ pub fn episode_nip73_anchor(store: &PodcastStore, episode_id: &str) -> Option<St
 #[cfg(test)]
 mod tests {
     use super::*;
-    use podcast_core::{Episode, EpisodeId, Podcast};
     use crate::store::PodcastStore;
     use chrono::Utc;
+    use podcast_core::{Episode, EpisodeId, Podcast};
     use url::Url;
 
     fn make_store_with_episode(guid: &str) -> (PodcastStore, String) {

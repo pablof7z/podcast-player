@@ -146,9 +146,7 @@ final class TranscriptIngestService {
             // The Diagnostics "Retry with…" override is an explicit user pick,
             // NOT the fallback policy — so it bypasses the kernel-resolved
             // provider and runs exactly what was chosen. Shared-backend-owned
-            // providers report missing-key/provider errors from Rust. Swift
-            // still preflights AssemblyAI because that STT client remains
-            // Swift-owned until its shared transport lands.
+            // providers report missing-key/provider errors from Rust.
             guard forcedProviderHasKey(forced) else {
                 Self.logger.info(
                     "forceProvider=\(forced.displayName, privacy: .public) but no key configured — leaving transcriptState=.none"
@@ -264,18 +262,8 @@ final class TranscriptIngestService {
                 let job = try await scribe.submit(audioURL: effectiveAudioURL, episodeID: episode.id)
                 transcript = try await scribe.pollResult(job)
             case .assemblyAI:
-                let raw = appStore.state.settings.assemblyAISTTModel
-                let models = raw
-                    .split(separator: ",")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-                let job = try await assemblyAI.submit(
-                    audioURL: effectiveAudioURL,
-                    episodeID: episode.id,
-                    speechModels: models.isEmpty ? ["universal-3-pro", "universal-2"] : models,
-                    speakerLabels: true,
-                    languageDetection: true
-                )
+                appStore.kernelSetProviderApiKeys()
+                let job = try await assemblyAI.submit(audioURL: effectiveAudioURL, episodeID: episode.id)
                 transcript = try await assemblyAI.pollResult(job)
             case .openRouterWhisper:
                 appStore.kernelSetProviderApiKeys()
@@ -319,7 +307,7 @@ final class TranscriptIngestService {
         switch provider {
         case .elevenLabsScribe: return true
         case .openRouterWhisper: return true
-        case .assemblyAI: return !(assemblyAIKey() ?? "").isEmpty
+        case .assemblyAI: return true
         case .appleNative: return true
         }
     }

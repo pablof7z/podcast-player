@@ -17,9 +17,7 @@ use std::sync::{Arc, Mutex};
 
 use podcast_core::TranscriptKind;
 use podcast_feeds::http::{HttpRequest, HttpResult};
-use podcast_transcripts::{
-    parse_podcasting_json, parse_srt, parse_vtt, Transcript,
-};
+use podcast_transcripts::{parse_podcasting_json, parse_srt, parse_vtt, Transcript};
 
 use crate::ffi::projections::TranscriptEntry;
 use crate::store::PodcastStore;
@@ -80,7 +78,9 @@ fn fetch_and_store_transcript(
     let transcript = parse_transcript_body(&body, &kind, &episode_id, &url)?;
     let entries = project_entries(&transcript);
 
-    let mut cache = transcripts.lock().map_err(|_| "transcripts poisoned".to_owned())?;
+    let mut cache = transcripts
+        .lock()
+        .map_err(|_| "transcripts poisoned".to_owned())?;
     cache.insert(episode_id, entries);
     Ok(FetchTranscriptOutcome::Stored)
 }
@@ -96,10 +96,12 @@ pub(crate) fn parse_transcript_body(
     source_url: &str,
 ) -> Result<Transcript, String> {
     match kind {
-        TranscriptKind::Vtt => parse_vtt(body, episode_id, source_url)
-            .map_err(|e| format!("transcript parse: {e}")),
-        TranscriptKind::Srt => parse_srt(body, episode_id, source_url)
-            .map_err(|e| format!("transcript parse: {e}")),
+        TranscriptKind::Vtt => {
+            parse_vtt(body, episode_id, source_url).map_err(|e| format!("transcript parse: {e}"))
+        }
+        TranscriptKind::Srt => {
+            parse_srt(body, episode_id, source_url).map_err(|e| format!("transcript parse: {e}"))
+        }
         TranscriptKind::Json => parse_podcasting_json(body.as_bytes(), episode_id, source_url)
             .map_err(|e| format!("transcript parse: {e}")),
         // HTML transcripts are not yet supported by the parsing layer.
@@ -135,7 +137,11 @@ pub(crate) fn project_entries(transcript: &Transcript) -> Vec<TranscriptEntry> {
         .iter()
         .map(|e| TranscriptEntry {
             start_secs: e.start_secs,
-            end_secs: if e.end_secs > e.start_secs { Some(e.end_secs) } else { None },
+            end_secs: if e.end_secs > e.start_secs {
+                Some(e.end_secs)
+            } else {
+                None
+            },
             speaker: e.speaker.clone(),
             text: e.text.clone(),
         })

@@ -114,10 +114,9 @@ impl PlayerActor {
         if !self.auto_skip_ads || self.ad_segments.is_empty() {
             return None;
         }
-        let segment = self
-            .ad_segments
-            .iter()
-            .find(|s| ad_segment_contains(s, position_secs) && !self.skipped_ad_ids.contains(&s.id))?;
+        let segment = self.ad_segments.iter().find(|s| {
+            ad_segment_contains(s, position_secs) && !self.skipped_ad_ids.contains(&s.id)
+        })?;
         let target = segment.end_secs;
         self.skipped_ad_ids.insert(segment.id);
         Some(AudioCommand::seek(target))

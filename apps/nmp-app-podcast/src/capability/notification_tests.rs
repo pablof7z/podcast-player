@@ -8,11 +8,7 @@ fn namespace_matches_canonical_capability_plan() {
 }
 #[test]
 fn schedule_new_episode_serde_roundtrips() {
-    let cmd = NotificationCommand::schedule_new_episode(
-        "The Big Reveal",
-        "Mystery Hour",
-        "ep-42",
-    );
+    let cmd = NotificationCommand::schedule_new_episode("The Big Reveal", "Mystery Hour", "ep-42");
     let json = serde_json::to_string(&cmd).expect("encode");
     assert!(json.contains("\"type\":\"schedule_new_episode\""));
     assert!(json.contains("\"episode_title\":\"The Big Reveal\""));
@@ -23,11 +19,7 @@ fn schedule_new_episode_serde_roundtrips() {
 }
 #[test]
 fn notification_command_json_helper_round_trips() {
-    let cmd = NotificationCommand::schedule_new_episode(
-        "Episode Two",
-        "Podcast One",
-        "ep-2",
-    );
+    let cmd = NotificationCommand::schedule_new_episode("Episode Two", "Podcast One", "ep-2");
     let json = notification_command_json(&cmd);
     let decoded: NotificationCommand = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, cmd);
@@ -43,4 +35,3 @@ fn wire_keys_are_snake_case() {
     assert!(!json.contains("podcastTitle"));
     assert!(!json.contains("episodeId"));
 }
-

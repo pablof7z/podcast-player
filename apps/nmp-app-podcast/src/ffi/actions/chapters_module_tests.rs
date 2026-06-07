@@ -1,7 +1,9 @@
 use super::*;
 #[test]
 fn compile_action_round_trips() {
-    let action = ChaptersAction::Compile { episode_id: "ep-1".into() };
+    let action = ChaptersAction::Compile {
+        episode_id: "ep-1".into(),
+    };
     let json = serde_json::to_string(&action).expect("encode");
     assert!(json.contains(r#""op":"compile""#));
     assert!(json.contains(r#""episode_id":"ep-1""#));
@@ -10,7 +12,9 @@ fn compile_action_round_trips() {
 }
 #[test]
 fn execute_emits_dispatch_host_op_with_payload() {
-    let action = ChaptersAction::Compile { episode_id: "ep-2".into() };
+    let action = ChaptersAction::Compile {
+        episode_id: "ep-2".into(),
+    };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
     ChaptersActionModule::execute(action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
@@ -18,7 +22,11 @@ fn execute_emits_dispatch_host_op_with_payload() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-1");
@@ -26,4 +34,3 @@ fn execute_emits_dispatch_host_op_with_payload() {
     assert_eq!(v["op"], "compile");
     assert_eq!(v["episode_id"], "ep-2");
 }
-

@@ -275,7 +275,8 @@ impl PodcastHostOpHandler {
             // Route through the canonical queue-backed path so fresh-feed
             // auto-downloads share concurrency control, the download-queue
             // snapshot, and the per-episode event log with every other download.
-            let _ = self.start_episode_download(&episode_id.0.to_string(), url, correlation_id, true);
+            let _ =
+                self.start_episode_download(&episode_id.0.to_string(), url, correlation_id, true);
         }
     }
 }

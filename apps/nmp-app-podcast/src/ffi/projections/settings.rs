@@ -1,36 +1,98 @@
 use serde::{Deserialize, Serialize};
 
-fn default_skip_forward_secs() -> f64 { 30.0 }
-fn default_skip_backward_secs() -> f64 { 15.0 }
-fn default_one() -> f64 { 1.0 }
-fn default_true() -> bool { true }
-fn default_skip_forward_action() -> String { "skipForward".to_owned() }
-fn default_clip_now_action() -> String { "clipNow".to_owned() }
-fn default_agent_initial_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_agent_initial_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_agent_thinking_model() -> String { "deepseek-v4-pro:cloud".to_owned() }
-fn default_agent_thinking_model_name() -> String { "DeepSeek Pro".to_owned() }
-fn default_memory_compilation_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_memory_compilation_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_wiki_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_wiki_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_categorization_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_categorization_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_chapter_compilation_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_chapter_compilation_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_embeddings_model() -> String { "deepseek-v4-flash:cloud".to_owned() }
-fn default_embeddings_model_name() -> String { "DeepSeek Flash".to_owned() }
-fn default_image_generation_model() -> String { "google/gemini-2.5-flash-image".to_owned() }
-fn default_image_generation_model_name() -> String { "Gemini 2.5 Flash".to_owned() }
-fn default_false() -> bool { false }
-fn default_empty_string() -> String { String::new() }
-fn default_empty_array() -> Vec<String> { Vec::new() }
-fn default_stt_provider() -> String { "apple_native".to_owned() }
-fn default_open_router_whisper_model() -> String { "openai/whisper-1".to_owned() }
-fn default_assembly_ai_stt_model() -> String { "universal-3-pro,universal-2".to_owned() }
-fn default_eleven_labs_stt_model() -> String { "scribe_v1".to_owned() }
-fn default_eleven_labs_tts_model() -> String { "eleven_turbo_v2_5".to_owned() }
-fn default_blossom_server_url() -> String { "https://blossom.primal.net".to_owned() }
+fn default_skip_forward_secs() -> f64 {
+    30.0
+}
+fn default_skip_backward_secs() -> f64 {
+    15.0
+}
+fn default_one() -> f64 {
+    1.0
+}
+fn default_true() -> bool {
+    true
+}
+fn default_skip_forward_action() -> String {
+    "skipForward".to_owned()
+}
+fn default_clip_now_action() -> String {
+    "clipNow".to_owned()
+}
+fn default_agent_initial_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_agent_initial_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_agent_thinking_model() -> String {
+    "deepseek-v4-pro:cloud".to_owned()
+}
+fn default_agent_thinking_model_name() -> String {
+    "DeepSeek Pro".to_owned()
+}
+fn default_memory_compilation_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_memory_compilation_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_wiki_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_wiki_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_categorization_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_categorization_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_chapter_compilation_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_chapter_compilation_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_embeddings_model() -> String {
+    "deepseek-v4-flash:cloud".to_owned()
+}
+fn default_embeddings_model_name() -> String {
+    "DeepSeek Flash".to_owned()
+}
+fn default_image_generation_model() -> String {
+    "google/gemini-2.5-flash-image".to_owned()
+}
+fn default_image_generation_model_name() -> String {
+    "Gemini 2.5 Flash".to_owned()
+}
+fn default_false() -> bool {
+    false
+}
+fn default_empty_string() -> String {
+    String::new()
+}
+fn default_empty_array() -> Vec<String> {
+    Vec::new()
+}
+fn default_stt_provider() -> String {
+    "apple_native".to_owned()
+}
+fn default_open_router_whisper_model() -> String {
+    "openai/whisper-1".to_owned()
+}
+fn default_assembly_ai_stt_model() -> String {
+    "universal-3-pro,universal-2".to_owned()
+}
+fn default_eleven_labs_stt_model() -> String {
+    "scribe_v1".to_owned()
+}
+fn default_eleven_labs_tts_model() -> String {
+    "eleven_turbo_v2_5".to_owned()
+}
+fn default_blossom_server_url() -> String {
+    "https://blossom.primal.net".to_owned()
+}
 
 /// App-settings projection surfaced via
 /// [`super::snapshot::PodcastUpdate::settings`].

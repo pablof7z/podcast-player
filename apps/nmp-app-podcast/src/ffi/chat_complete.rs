@@ -76,10 +76,7 @@ fn decode_messages(value: &serde_json::Value) -> Option<(String, Vec<(String, St
             "assistant" => {
                 // Prefer text content; if absent (tool-call-only turn),
                 // stringify the tool calls so the model sees context.
-                let text = msg
-                    .get("content")
-                    .and_then(|c| c.as_str())
-                    .unwrap_or("");
+                let text = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
                 if !text.is_empty() {
                     history.push(("assistant".to_owned(), text.to_owned()));
                 } else if let Some(calls) = msg.get("tool_calls").and_then(|tc| tc.as_array()) {
@@ -103,10 +100,7 @@ fn decode_messages(value: &serde_json::Value) -> Option<(String, Vec<(String, St
                     .get("tool_call_id")
                     .and_then(|id| id.as_str())
                     .unwrap_or("unknown");
-                let content = msg
-                    .get("content")
-                    .and_then(|c| c.as_str())
-                    .unwrap_or("");
+                let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
                 let text = format!("[tool result for {call_id}]: {content}");
                 history.push(("user".to_owned(), text));
             }
@@ -165,9 +159,7 @@ pub extern "C" fn nmp_app_podcast_chat_complete(
     // turn — split the last user entry off into `user_message` so the backend
     // sees a well-formed (history, new_user_msg) pair.
     let (history_without_last, user_message) = match history.split_last() {
-        Some((last, rest)) if last.0 == "user" => {
-            (rest.to_vec(), last.1.clone())
-        }
+        Some((last, rest)) if last.0 == "user" => (rest.to_vec(), last.1.clone()),
         _ => {
             // No user turn found — pass history as-is with empty user message.
             // This is degenerate but we degrade gracefully (D6).
@@ -184,7 +176,13 @@ pub extern "C" fn nmp_app_podcast_chat_complete(
     // turn-loop receives only the final prose answer — it never sees raw
     // tool_calls from this path, so Swift dispatches upgrade_thinking /
     // use_skill in its own intercept layer before calling here.
-    let result = match chat_with_tools(&system, &history_without_last, &user_message, store, &runtime) {
+    let result = match chat_with_tools(
+        &system,
+        &history_without_last,
+        &user_message,
+        store,
+        &runtime,
+    ) {
         Ok(text) => text,
         Err(e) => return err_envelope(&e).into_raw(),
     };

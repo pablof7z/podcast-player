@@ -17,8 +17,14 @@ fn parse_valid_json_chapters() {
     assert_eq!(
         chapters,
         vec![
-            SynthesizedChapter { title: "Intro and welcome".into(), start_secs: 0.0 },
-            SynthesizedChapter { title: "Deep dive on Rust".into(), start_secs: 120.5 },
+            SynthesizedChapter {
+                title: "Intro and welcome".into(),
+                start_secs: 0.0
+            },
+            SynthesizedChapter {
+                title: "Deep dive on Rust".into(),
+                start_secs: 120.5
+            },
         ]
     );
 }

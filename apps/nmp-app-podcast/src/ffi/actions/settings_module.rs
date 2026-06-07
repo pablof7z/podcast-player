@@ -25,7 +25,10 @@ pub enum SettingsAction {
     SetAutoSkipAds { enabled: bool },
     /// Update both skip intervals. Clamped server-side to `[1, 120]` seconds.
     /// iOS dispatches this when the user changes the skip interval in Settings.
-    SetSkipIntervals { forward_secs: f64, backward_secs: f64 },
+    SetSkipIntervals {
+        forward_secs: f64,
+        backward_secs: f64,
+    },
     /// Toggle auto-play-next: when `true`, the kernel auto-advances to
     /// the next queued episode on natural `ItemEnd`.
     SetAutoPlayNext { enabled: bool },
@@ -34,7 +37,10 @@ pub enum SettingsAction {
     SetAutoMarkPlayedAtEnd { enabled: bool },
     /// Update both headphone gesture action strings. The raw values must
     /// match a `HeadphoneGestureAction` case on the iOS side.
-    SetHeadphoneGestureActions { double_tap: String, triple_tap: String },
+    SetHeadphoneGestureActions {
+        double_tap: String,
+        triple_tap: String,
+    },
     /// Set the default playback rate. Clamped server-side to `[0.5, 3.0]`.
     SetDefaultPlaybackRate { rate: f64 },
     /// Toggle delete-downloaded-file-after-played. When `true`, the kernel
@@ -101,9 +107,15 @@ pub enum SettingsAction {
     /// Set the AssemblyAI STT model string.
     SetAssemblyAiSttModel { model: String },
     /// Set both ElevenLabs STT and TTS models. Atomic update.
-    SetElevenLabsModels { stt_model: String, tts_model: String },
+    SetElevenLabsModels {
+        stt_model: String,
+        tts_model: String,
+    },
     /// Set both ElevenLabs voice ID and name. Atomic update.
-    SetElevenLabsVoice { voice_id: String, voice_name: String },
+    SetElevenLabsVoice {
+        voice_id: String,
+        voice_name: String,
+    },
     /// Set the Blossom server URL.
     SetBlossomServerUrl { url: String },
     /// Set the YouTube extractor URL (optional).
@@ -126,7 +138,11 @@ pub enum SettingsAction {
     /// Set the list of public Nostr relays.
     SetNostrPublicRelays { relays: Vec<String> },
     /// Set Nostr profile metadata (name, about, picture).
-    SetNostrProfile { name: String, about: String, picture: String },
+    SetNostrProfile {
+        name: String,
+        about: String,
+        picture: String,
+    },
     /// Set the Nostr public key hex (read-only, for projection only).
     SetNostrPublicKeyHex { hex: Option<String> },
     /// Add (or upsert the role of) a configured app relay. `role` is one of
@@ -151,6 +167,7 @@ pub enum SettingsAction {
         open_router: Option<String>,
         ollama: Option<String>,
         eleven_labs: Option<String>,
+        assembly_ai: Option<String>,
     },
 }
 
@@ -203,8 +220,7 @@ impl ActionModule for SettingsActionModule {
             _ => {}
         }
 
-        let action_json =
-            serde_json::to_string(&action).map_err(|e| e.to_string())?;
+        let action_json = serde_json::to_string(&action).map_err(|e| e.to_string())?;
         send(ActorCommand::DispatchHostOp {
             action_json,
             correlation_id: correlation_id.to_owned(),

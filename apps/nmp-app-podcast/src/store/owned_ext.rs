@@ -169,8 +169,7 @@ impl PodcastStore {
                         let mut ch = Chapter::new(c.title.clone(), c.start_secs);
                         ch.is_ai_generated = true;
                         ch.source = ChapterSource::Llm;
-                        ch.image_url =
-                            c.image_url.as_deref().and_then(|u| url::Url::parse(u).ok());
+                        ch.image_url = c.image_url.as_deref().and_then(|u| url::Url::parse(u).ok());
                         ch.source_episode_id = c.source_episode_id.clone();
                         ch
                     })
@@ -311,12 +310,12 @@ impl PodcastStore {
     /// Resolve an episode UUID string to a cloned `(Podcast, Episode)`
     /// pair. Used by the NIP-F4 publish module to build a `kind:54`
     /// event without holding the store lock across the tag construction.
-    pub fn episode_with_podcast_clone(
-        &self,
-        episode_id_str: &str,
-    ) -> Option<(Podcast, Episode)> {
+    pub fn episode_with_podcast_clone(&self, episode_id_str: &str) -> Option<(Podcast, Episode)> {
         for (podcast_id, episodes) in &self.episodes {
-            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == episode_id_str) {
+            if let Some(ep) = episodes
+                .iter()
+                .find(|e| e.id.0.to_string() == episode_id_str)
+            {
                 if let Some(p) = self.podcasts.get(podcast_id) {
                     return Some((p.clone(), ep.clone()));
                 }

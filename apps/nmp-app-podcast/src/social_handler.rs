@@ -55,24 +55,21 @@ pub fn handle_fetch_contacts(handler: &PodcastHostOpHandler) -> serde_json::Valu
             json!({"kinds": [3], "authors": [&pubkey_hex], "limit": 1}),
             &relay_urls,
             8_000,
-        ).await;
+        )
+        .await;
 
         // 3. Parse follow pubkeys from `p` tags.
         let follow_pubkeys: Vec<String> = kind3_events
             .iter()
             .flat_map(|ev| {
-                ev["tags"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|t| {
-                        let arr = t.as_array()?;
-                        if arr.first()?.as_str()? == "p" {
-                            arr.get(1)?.as_str().map(str::to_string)
-                        } else {
-                            None
-                        }
-                    })
+                ev["tags"].as_array().into_iter().flatten().filter_map(|t| {
+                    let arr = t.as_array()?;
+                    if arr.first()?.as_str()? == "p" {
+                        arr.get(1)?.as_str().map(str::to_string)
+                    } else {
+                        None
+                    }
+                })
             })
             .collect();
 
@@ -81,56 +78,49 @@ pub fn handle_fetch_contacts(handler: &PodcastHostOpHandler) -> serde_json::Valu
         // 4. Batch-fetch kind:0 metadata for follows (cap at 50 for speed).
         let batch: Vec<String> = follow_pubkeys.iter().take(50).cloned().collect();
         let kind0_events = if !batch.is_empty() {
-            fetch_relay_events_async(
-                json!({"kinds": [0], "authors": batch}),
-                &relay_urls,
-                8_000,
-            ).await
+            fetch_relay_events_async(json!({"kinds": [0], "authors": batch}), &relay_urls, 8_000)
+                .await
         } else {
             vec![]
         };
 
-    // 5. Build ContactSummary list with bech32-encoded npub.
-    let contacts: Vec<ContactSummary> = follow_pubkeys
-        .iter()
-        .map(|pk| {
-            let npub = nostr::PublicKey::parse(pk)
-                .ok()
-                .and_then(|pub_key| pub_key.to_bech32().ok())
-                .unwrap_or_else(|| pk.clone());
+        // 5. Build ContactSummary list with bech32-encoded npub.
+        let contacts: Vec<ContactSummary> = follow_pubkeys
+            .iter()
+            .map(|pk| {
+                let npub = nostr::PublicKey::parse(pk)
+                    .ok()
+                    .and_then(|pub_key| pub_key.to_bech32().ok())
+                    .unwrap_or_else(|| pk.clone());
 
-            let meta = kind0_events
-                .iter()
-                .find(|ev| ev["pubkey"].as_str() == Some(pk.as_str()));
+                let meta = kind0_events
+                    .iter()
+                    .find(|ev| ev["pubkey"].as_str() == Some(pk.as_str()));
 
-            let profile = meta.and_then(|ev| {
-                serde_json::from_str::<serde_json::Value>(
-                    ev["content"].as_str().unwrap_or("{}"),
-                )
-                .ok()
-            });
+                let profile = meta.and_then(|ev| {
+                    serde_json::from_str::<serde_json::Value>(
+                        ev["content"].as_str().unwrap_or("{}"),
+                    )
+                    .ok()
+                });
 
-            let display_name = profile
-                .as_ref()
-                .and_then(|p| {
-                    p["display_name"]
-                        .as_str()
-                        .or_else(|| p["name"].as_str())
-                })
-                .map(str::to_string);
+                let display_name = profile
+                    .as_ref()
+                    .and_then(|p| p["display_name"].as_str().or_else(|| p["name"].as_str()))
+                    .map(str::to_string);
 
-            let picture_url = profile
-                .as_ref()
-                .and_then(|p| p["picture"].as_str())
-                .map(str::to_string);
+                let picture_url = profile
+                    .as_ref()
+                    .and_then(|p| p["picture"].as_str())
+                    .map(str::to_string);
 
-            ContactSummary {
-                npub,
-                display_name,
-                picture_url,
-            }
-        })
-        .collect();
+                ContactSummary {
+                    npub,
+                    display_name,
+                    picture_url,
+                }
+            })
+            .collect();
 
         // 6. Store the snapshot and bump rev.
         if let Ok(mut s) = social.lock() {

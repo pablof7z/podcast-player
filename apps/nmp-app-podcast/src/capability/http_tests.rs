@@ -27,4 +27,3 @@ fn re_export_round_trips_result_ok_with_headers() {
     assert_eq!(back, result);
     assert_eq!(back.header("etag"), Some("\"abc\""));
 }
-

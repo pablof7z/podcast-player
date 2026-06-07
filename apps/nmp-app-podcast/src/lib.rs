@@ -33,10 +33,9 @@
 
 pub(crate) mod ad_skip_handler;
 pub mod agent_handler;
-pub(crate) mod agent_note_handler;
 pub(crate) mod agent_llm;
+pub(crate) mod agent_note_handler;
 pub(crate) mod agent_tools;
-pub(crate) mod identity_handler;
 pub(crate) mod ai_chapters;
 pub(crate) mod ai_chapters_llm;
 pub(crate) mod blossom;
@@ -48,7 +47,6 @@ pub(crate) mod clip_handler;
 pub(crate) mod comments_anchor;
 pub(crate) mod comments_handler;
 pub(crate) mod discover_nostr;
-pub(crate) mod nmp_dispatch;
 pub mod download;
 pub(crate) mod episode_summary;
 pub(crate) mod episode_summary_llm;
@@ -59,12 +57,14 @@ pub(crate) mod host_op_handler_helpers;
 pub(crate) mod host_op_handler_queue;
 pub(crate) mod host_op_publish;
 pub(crate) mod host_op_publish_lifecycle;
+pub(crate) mod identity_handler;
 pub(crate) mod inbox_handler;
 pub(crate) mod inbox_llm;
 pub(crate) mod itunes;
 pub mod knowledge;
 pub mod llm;
 pub(crate) mod memory_handler;
+pub(crate) mod nmp_dispatch;
 pub(crate) mod picks_handler;
 pub(crate) mod picks_llm;
 pub mod player;
@@ -93,15 +93,14 @@ pub use capability::{
 };
 pub use download::{DownloadItem, DownloadItemState, DownloadQueue, DEFAULT_MAX_CONCURRENT};
 pub use ffi::{
-    nmp_app_podcast_audio_report, nmp_app_podcast_download_report,
-    nmp_app_podcast_elevenlabs_scribe_transcribe,
+    nmp_app_podcast_assemblyai_transcribe, nmp_app_podcast_audio_report,
+    nmp_app_podcast_download_report, nmp_app_podcast_elevenlabs_scribe_transcribe,
     nmp_app_podcast_episode_events, nmp_app_podcast_generate_image,
-    nmp_app_podcast_openrouter_whisper_transcribe,
-    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_register, nmp_app_podcast_rerank,
-    nmp_app_podcast_set_data_dir, nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free,
-    nmp_app_podcast_snapshot_rev,
-    nmp_app_podcast_unregister, nmp_app_podcast_voice_report, PodcastHandle,
-    nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
+    nmp_app_podcast_openrouter_whisper_transcribe, nmp_app_podcast_provider_model_catalog,
+    nmp_app_podcast_register, nmp_app_podcast_rerank, nmp_app_podcast_set_data_dir,
+    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
+    nmp_app_podcast_unregister, nmp_app_podcast_validate_elevenlabs_key,
+    nmp_app_podcast_validate_openrouter_key, nmp_app_podcast_voice_report, PodcastHandle,
 };
 pub use nmp_ffi::{
     nmp_app_cancel_bunker_handshake, nmp_app_nostrconnect_uri, nmp_broker_free_string,
