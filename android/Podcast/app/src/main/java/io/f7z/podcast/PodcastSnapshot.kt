@@ -351,16 +351,18 @@ data class SettingsSnapshot(
 
 /**
  * Mirror of `ffi/projections/agent.rs::AgentTaskSummary`. The Android shell
- * treats `actionNamespace`, `actionBody`, and `schedule` as opaque kernel-owned
- * strings and mutates rows through the `podcast.tasks` action namespace.
+ * renders user-facing intent metadata and mutates rows through the
+ * `podcast.tasks` action namespace. Internal dispatch namespace/body JSON is
+ * intentionally not part of this public projection.
  */
 @Serializable
 data class AgentTaskSummary(
     val id: String = "",
     val title: String = "",
     val description: String? = null,
-    @SerialName("action_namespace") val actionNamespace: String = "",
-    @SerialName("action_body") val actionBody: String = "",
+    @SerialName("intent_type") val intentType: String = "custom",
+    @SerialName("intent_label") val intentLabel: String = "Custom task",
+    @SerialName("intent_detail") val intentDetail: String? = null,
     val schedule: String = "",
     @SerialName("next_run_at") val nextRunAt: Long? = null,
     @SerialName("last_run_at") val lastRunAt: Long? = null,

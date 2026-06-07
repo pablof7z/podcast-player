@@ -158,6 +158,9 @@ fn snapshot_with_agent_tasks_round_trips() {
         id: "task-1".into(),
         title: "Inbox Triage".into(),
         description: Some("Surface new episodes worth your time".into()),
+        intent_type: "inbox_triage".into(),
+        intent_label: "Triage inbox".into(),
+        intent_detail: Some("Prioritize new episodes".into()),
         action_namespace: "podcast.inbox.triage".into(),
         action_body: "{}".into(),
         schedule: "daily".into(),
@@ -172,8 +175,14 @@ fn snapshot_with_agent_tasks_round_trips() {
     };
     let json = serde_json::to_string(&snap).expect("encode");
     assert!(json.contains("\"agent_tasks\":["));
+    assert!(json.contains("\"intent_type\":\"inbox_triage\""));
+    assert!(!json.contains("action_namespace"));
+    assert!(!json.contains("action_body"));
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
-    assert_eq!(decoded.agent_tasks, tasks);
+    assert_eq!(decoded.agent_tasks.len(), 1);
+    assert_eq!(decoded.agent_tasks[0].intent_type, "inbox_triage");
+    assert_eq!(decoded.agent_tasks[0].action_namespace, "");
+    assert_eq!(decoded.agent_tasks[0].action_body, "");
     assert!(decoded.memory_facts.is_empty());
 }
 

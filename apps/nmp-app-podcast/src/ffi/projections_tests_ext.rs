@@ -117,6 +117,9 @@ fn agent_task_summary_round_trips_with_all_fields() {
         id: "task-1".into(),
         title: "Inbox Triage".into(),
         description: Some("Triage the inbox every morning".into()),
+        intent_type: "inbox_triage".into(),
+        intent_label: "Triage inbox".into(),
+        intent_detail: Some("Prioritize new episodes".into()),
         action_namespace: "podcast.inbox.triage".into(),
         action_body: "{}".into(),
         schedule: "daily".into(),
@@ -126,8 +129,13 @@ fn agent_task_summary_round_trips_with_all_fields() {
         is_enabled: true,
     };
     let json = serde_json::to_string(&task).expect("encode");
+    assert!(!json.contains("action_namespace"));
+    assert!(!json.contains("action_body"));
     let decoded: AgentTaskSummary = serde_json::from_str(&json).expect("decode");
-    assert_eq!(decoded, task);
+    assert_eq!(decoded.intent_type, "inbox_triage");
+    assert_eq!(decoded.intent_label, "Triage inbox");
+    assert_eq!(decoded.action_namespace, "");
+    assert_eq!(decoded.action_body, "");
 }
 
 #[test]
@@ -136,6 +144,9 @@ fn agent_task_summary_omits_none_optionals() {
         id: "task-1".into(),
         title: "Inbox Triage".into(),
         description: None,
+        intent_type: "inbox_triage".into(),
+        intent_label: "Triage inbox".into(),
+        intent_detail: None,
         action_namespace: "podcast.inbox.triage".into(),
         action_body: "{}".into(),
         schedule: "daily".into(),
@@ -146,10 +157,16 @@ fn agent_task_summary_omits_none_optionals() {
     };
     let json = serde_json::to_string(&task).expect("encode");
     assert!(!json.contains("description"));
+    assert!(!json.contains("intent_detail"));
+    assert!(!json.contains("action_namespace"));
+    assert!(!json.contains("action_body"));
     assert!(!json.contains("next_run_at"));
     assert!(!json.contains("last_run_at"));
     let decoded: AgentTaskSummary = serde_json::from_str(&json).expect("decode");
-    assert_eq!(decoded, task);
+    assert_eq!(decoded.intent_type, "inbox_triage");
+    assert_eq!(decoded.intent_label, "Triage inbox");
+    assert_eq!(decoded.action_namespace, "");
+    assert_eq!(decoded.action_body, "");
 }
 
 #[test]

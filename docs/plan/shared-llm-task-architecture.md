@@ -97,14 +97,24 @@ Current state:
 - Rust owns `AgentTaskIntent`, typed task creation, and intent-to-dispatch
   resolution inside `tasks_handler.rs`.
 - Raw `create` remains for compatibility/internal callers only.
+- Agent task snapshots project `intent_type`, `intent_label`, and
+  `intent_detail` for UI rendering while keeping raw dispatch
+  namespace/body fields Rust-internal.
 - The TUI task editor accepts typed/natural input such as
   `daily | triage inbox` or `weekly | remember topic=rust` and submits
   `AgentTaskIntent` through the shared backend action.
+- Android task creation now uses `create_from_intent` with a variant-backed
+  `AgentTaskIntent` payload instead of raw action namespace/body JSON.
+- The parked `ios/Podcast` shell mirrors typed task creation so it does not
+  reintroduce raw task dispatch JSON if that tree is revived.
+- Swift and Android snapshot mirrors no longer require raw dispatch fields for
+  agent task rows.
 
 Remaining targets:
 
-- Audit Swift and Android task-creation surfaces and migrate any raw task
-  creation to `AgentTaskIntent`.
+- Audit Swift scheduled-task/prompt surfaces separately; they appear to be a
+  different prompt scheduler and should either remain distinct or migrate to
+  shared `AgentTaskIntent` only if they are meant to run through `podcast.tasks`.
 - Keep raw dispatch namespace/body JSON out of all normal user-facing task
   creation workflows.
 

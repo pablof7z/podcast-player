@@ -123,6 +123,13 @@ private struct AgentTaskRow: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
+                    if let intentLabel = task.intentDetail ?? task.intentLabel,
+                       !intentLabel.isEmpty {
+                        Text(intentLabel)
+                            .font(PodcastFont.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 0)
                 Toggle("", isOn: Binding(

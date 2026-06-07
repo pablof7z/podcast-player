@@ -200,11 +200,18 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, task)| {
             let base = row_style(index == state.selected_agent_task);
             let enabled = if task.is_enabled { "on" } else { "off" };
+            let intent = task
+                .intent_detail
+                .as_deref()
+                .unwrap_or(task.intent_label.as_str());
             ListItem::new(Line::from(vec![
                 theme::selected_prefix(index == state.selected_agent_task, state.motion_tick),
                 Span::styled(&task.title, base),
                 Span::styled(
-                    format!("  {} | {} | {}", enabled, task.status, task.schedule),
+                    format!(
+                        "  {} | {} | {} | {}",
+                        enabled, task.status, task.schedule, intent
+                    ),
                     theme::muted(),
                 ),
             ]))

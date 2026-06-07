@@ -17,6 +17,8 @@ fn default_seed_has_inbox_triage_task() {
     let seed = default_seed();
     assert_eq!(seed.len(), 1);
     assert_eq!(seed[0].title, "Inbox Triage");
+    assert_eq!(seed[0].intent_type, "inbox_triage");
+    assert_eq!(seed[0].intent_label, "Triage inbox");
     // Seed namespaces MUST match a *registered* `ActionModule::NAMESPACE`
     // (exact `modules.get(namespace)` lookup) so `RunNow` actually
     // dispatches. Bind to the real consts so future drift fails loudly.
@@ -52,6 +54,8 @@ fn create_appends_and_returns_task_id() {
     assert_eq!(guard.len(), 1);
     assert_eq!(guard[0].title, "Triage");
     assert_eq!(guard[0].id, task_id);
+    assert_eq!(guard[0].intent_type, "inbox_triage");
+    assert_eq!(guard[0].intent_label, "Triage inbox");
     assert_eq!(guard[0].action_namespace, "podcast.inbox");
     assert_eq!(guard[0].action_body, r#"{"op":"triage"}"#);
     assert_eq!(rev.load(Ordering::Relaxed), 1);
@@ -74,6 +78,8 @@ fn create_raw_payload_still_appends_for_compatibility() {
     );
     assert_eq!(result["ok"], true);
     let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].intent_type, "custom");
+    assert_eq!(guard[0].intent_label, "Custom task");
     assert_eq!(guard[0].action_namespace, "podcast.research");
     assert_eq!(guard[0].action_body, "{\"topic\":\"x\"}");
     assert_eq!(rev.load(Ordering::Relaxed), 1);
@@ -98,6 +104,9 @@ fn create_from_memory_intent_resolves_memory_action() {
     );
     assert_eq!(result["ok"], true);
     let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].intent_type, "remember_memory");
+    assert_eq!(guard[0].intent_label, "Remember memory");
+    assert_eq!(guard[0].intent_detail.as_deref(), Some("topic = rust"));
     assert_eq!(guard[0].action_namespace, "podcast.memory");
     assert_eq!(
         guard[0].action_body,

@@ -63,12 +63,16 @@ use crate::ffi::projections::AgentTaskSummary;
 /// render before the user has scheduled anything. Returned by value so
 /// `register.rs` can hand it directly to `Arc::new(Mutex::new(...))`.
 pub fn default_seed() -> Vec<AgentTaskSummary> {
-    let payload = task_payload_from_intent(&AgentTaskIntent::InboxTriage)
-        .expect("inbox triage intent must resolve");
+    let intent = AgentTaskIntent::InboxTriage;
+    let payload = task_payload_from_intent(&intent).expect("inbox triage intent must resolve");
+    let metadata = task_intent_metadata(Some(&intent));
     vec![AgentTaskSummary {
         id: Uuid::new_v4().to_string(),
         title: "Inbox Triage".into(),
         description: Some("Surface new episodes worth your time".into()),
+        intent_type: metadata.intent_type,
+        intent_label: metadata.intent_label,
+        intent_detail: metadata.intent_detail,
         action_namespace: payload.action_namespace,
         action_body: payload.action_body,
         schedule: "daily".into(),
@@ -120,6 +124,7 @@ pub fn handle_tasks_action(
             rev,
             title,
             description,
+            None,
             TaskPayload {
                 action_namespace,
                 action_body,
@@ -132,7 +137,15 @@ pub fn handle_tasks_action(
             intent,
             schedule,
         } => match task_payload_from_intent(&intent) {
-            Ok(payload) => create_task(&mut guard, rev, title, description, payload, schedule),
+            Ok(payload) => create_task(
+                &mut guard,
+                rev,
+                title,
+                description,
+                Some(intent),
+                payload,
+                schedule,
+            ),
             Err(error) => serde_json::json!({"ok": false, "error": error}),
         },
         AgentTasksAction::Delete { task_id } => {
@@ -195,19 +208,30 @@ struct TaskPayload {
     action_body: String,
 }
 
+struct TaskIntentMetadata {
+    intent_type: String,
+    intent_label: String,
+    intent_detail: Option<String>,
+}
+
 fn create_task(
     guard: &mut Vec<AgentTaskSummary>,
     rev: &Arc<AtomicU64>,
     title: String,
     description: Option<String>,
+    intent: Option<AgentTaskIntent>,
     payload: TaskPayload,
     schedule: String,
 ) -> serde_json::Value {
     let task_id = Uuid::new_v4().to_string();
+    let metadata = task_intent_metadata(intent.as_ref());
     guard.push(AgentTaskSummary {
         id: task_id.clone(),
         title,
         description,
+        intent_type: metadata.intent_type,
+        intent_label: metadata.intent_label,
+        intent_detail: metadata.intent_detail,
         action_namespace: payload.action_namespace,
         action_body: payload.action_body,
         schedule,
@@ -218,6 +242,31 @@ fn create_task(
     });
     rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": true, "task_id": task_id})
+}
+
+fn task_intent_metadata(intent: Option<&AgentTaskIntent>) -> TaskIntentMetadata {
+    match intent {
+        Some(AgentTaskIntent::InboxTriage) => TaskIntentMetadata {
+            intent_type: "inbox_triage".to_owned(),
+            intent_label: "Triage inbox".to_owned(),
+            intent_detail: Some("Prioritize new episodes".to_owned()),
+        },
+        Some(AgentTaskIntent::ClearAgent) => TaskIntentMetadata {
+            intent_type: "clear_agent".to_owned(),
+            intent_label: "Clear agent chat".to_owned(),
+            intent_detail: None,
+        },
+        Some(AgentTaskIntent::RememberMemory { key, value }) => TaskIntentMetadata {
+            intent_type: "remember_memory".to_owned(),
+            intent_label: "Remember memory".to_owned(),
+            intent_detail: Some(format!("{key} = {value}")),
+        },
+        None => TaskIntentMetadata {
+            intent_type: "custom".to_owned(),
+            intent_label: "Custom task".to_owned(),
+            intent_detail: None,
+        },
+    }
 }
 
 fn task_payload_from_intent(intent: &AgentTaskIntent) -> Result<TaskPayload, String> {

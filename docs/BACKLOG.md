@@ -104,8 +104,13 @@ worktrees currently in flight.
   fallbacks after kernel projections cover them.
 - **typed-agent-task-intents.** Backend `AgentTaskIntent` creation exists and
   the TUI task editor now submits typed/natural task requests instead of raw
-  dispatch namespace/body JSON. Keep raw `create` as compatibility/internal
-  only; remaining platform task-creation surfaces should use the shared
+  dispatch namespace/body JSON. Agent task snapshots now expose user-facing
+  intent metadata and hide raw dispatch namespace/body fields from serialized
+  projection JSON. Android task creation now uses `create_from_intent` with an
+  variant-backed `AgentTaskIntent` payload, and the parked `ios/Podcast` shell's
+  task sheet mirrors the same typed creation path. Keep raw `create` as
+  compatibility/internal only; remaining work is auditing Swift's separate
+  scheduled prompt surface and keeping all normal user workflows on the shared
   `AgentTaskIntent` contract.
 - **relay-list-ownership.** Replace `@AppStorage("nip65.relays")` seed state
   with NMP relay-list store reads/writes and real NIP-65 publish/refresh flow.
