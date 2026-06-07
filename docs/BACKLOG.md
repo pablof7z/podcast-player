@@ -114,9 +114,9 @@ worktrees currently in flight.
   stale Swift-side OpenRouter/Ollama RAG key probes plus online-search endpoint
   aliases have been removed. Rust settings snapshots now project non-secret
   provider key-presence booleans for OpenRouter/Ollama/ElevenLabs/AssemblyAI/
-  Perplexity, Android mirrors those fields, and Swift provider/transcript/wiki
-  readiness UI consumes the shared projection instead of Keychain-only status
-  fallbacks.
+  Perplexity, Android mirrors those fields and uses them for credential-card and
+  speech-provider readiness, and Swift provider/transcript/wiki readiness UI
+  consumes the shared projection instead of Keychain-only status fallbacks.
   Remaining provider-ownership work is streaming voice-mode STT/TTS once the
   canonical NMP capability seam lands upstream
   (`pablof7z/nostr-multi-platform#954`).

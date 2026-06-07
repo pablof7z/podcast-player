@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.f7z.podcast.KernelBridge
@@ -19,7 +18,6 @@ import io.f7z.podcast.STT_APPLE_NATIVE
 import io.f7z.podcast.STT_ASSEMBLY_AI
 import io.f7z.podcast.STT_ELEVEN_LABS_SCRIBE
 import io.f7z.podcast.STT_OPENROUTER_WHISPER
-import io.f7z.podcast.security.ProviderCredentialStore
 
 @Composable
 fun SpeechProviderSettingsSection(
@@ -27,11 +25,6 @@ fun SpeechProviderSettingsSection(
     bridge: KernelBridge,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val hasElevenLabsKey = ProviderCredentialStore.hasElevenLabsApiKey(context)
-    val hasAssemblyAiKey = ProviderCredentialStore.hasAssemblyAiApiKey(context)
-    val hasOpenRouterKey = ProviderCredentialStore.hasOpenRouterApiKey(context)
-
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -73,7 +66,7 @@ fun SpeechProviderSettingsSection(
                     detail = "Cloud speech-to-text using the ElevenLabs key.",
                     provider = STT_ELEVEN_LABS_SCRIBE,
                     selectedProvider = settings.sttProvider,
-                    keyPresent = hasElevenLabsKey,
+                    keyPresent = settings.elevenLabsKeyPresent,
                     bridge = bridge,
                 )
                 SttProviderButton(
@@ -81,7 +74,7 @@ fun SpeechProviderSettingsSection(
                     detail = "Cloud transcription with speaker labels and word timestamps.",
                     provider = STT_ASSEMBLY_AI,
                     selectedProvider = settings.sttProvider,
-                    keyPresent = hasAssemblyAiKey,
+                    keyPresent = settings.assemblyAiKeyPresent,
                     bridge = bridge,
                 )
                 SttProviderButton(
@@ -89,7 +82,7 @@ fun SpeechProviderSettingsSection(
                     detail = "Whisper transcription through the shared OpenRouter transport.",
                     provider = STT_OPENROUTER_WHISPER,
                     selectedProvider = settings.sttProvider,
-                    keyPresent = hasOpenRouterKey,
+                    keyPresent = settings.openRouterKeyPresent,
                     bridge = bridge,
                 )
 

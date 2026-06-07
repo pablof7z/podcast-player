@@ -22,7 +22,6 @@ import io.f7z.podcast.OpenRouterKeyValidationService
 import io.f7z.podcast.ProviderCredentialActions
 import io.f7z.podcast.ProviderCredentialActionResult
 import io.f7z.podcast.SettingsSnapshot
-import io.f7z.podcast.security.ProviderCredentialStore
 import kotlinx.coroutines.launch
 
 @Composable
@@ -33,11 +32,11 @@ fun ProviderCredentialSettingsSection(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var hasOpenRouterKey by remember { mutableStateOf(ProviderCredentialStore.hasOpenRouterApiKey(context)) }
-    var hasOllamaKey by remember { mutableStateOf(ProviderCredentialStore.hasOllamaApiKey(context)) }
-    var hasElevenLabsKey by remember { mutableStateOf(ProviderCredentialStore.hasElevenLabsApiKey(context)) }
-    var hasAssemblyAiKey by remember { mutableStateOf(ProviderCredentialStore.hasAssemblyAiApiKey(context)) }
-    var hasPerplexityKey by remember { mutableStateOf(ProviderCredentialStore.hasPerplexityApiKey(context)) }
+    val hasOpenRouterKey = settings.openRouterKeyPresent
+    val hasOllamaKey = settings.ollamaKeyPresent
+    val hasElevenLabsKey = settings.elevenLabsKeyPresent
+    val hasAssemblyAiKey = settings.assemblyAiKeyPresent
+    val hasPerplexityKey = settings.perplexityKeyPresent
     var openRouterInput by remember { mutableStateOf("") }
     var ollamaInput by remember { mutableStateOf("") }
     var elevenLabsInput by remember { mutableStateOf("") }
@@ -85,14 +84,12 @@ fun ProviderCredentialSettingsSection(
                 val result = ProviderCredentialActions.saveOpenRouterManual(context, bridge, openRouterInput)
                 openRouterResult = result
                 openRouterValidationResult = null
-                hasOpenRouterKey = ProviderCredentialStore.hasOpenRouterApiKey(context)
                 if (result.ok) openRouterInput = ""
             },
             onDisconnect = {
                 val result = ProviderCredentialActions.clearOpenRouter(context, bridge)
                 openRouterResult = result
                 openRouterValidationResult = null
-                hasOpenRouterKey = ProviderCredentialStore.hasOpenRouterApiKey(context)
                 if (result.ok) openRouterInput = ""
             },
             validationResult = openRouterValidationResult,
@@ -139,13 +136,11 @@ fun ProviderCredentialSettingsSection(
             onSave = {
                 val result = ProviderCredentialActions.saveOllamaManual(context, bridge, ollamaInput)
                 ollamaResult = result
-                hasOllamaKey = ProviderCredentialStore.hasOllamaApiKey(context)
                 if (result.ok) ollamaInput = ""
             },
             onDisconnect = {
                 val result = ProviderCredentialActions.clearOllama(context, bridge)
                 ollamaResult = result
-                hasOllamaKey = ProviderCredentialStore.hasOllamaApiKey(context)
                 if (result.ok) ollamaInput = ""
             },
             onSaveUrl = {
@@ -180,14 +175,12 @@ fun ProviderCredentialSettingsSection(
                 val result = ProviderCredentialActions.saveElevenLabsManual(context, bridge, elevenLabsInput)
                 elevenLabsResult = result
                 elevenLabsValidationResult = null
-                hasElevenLabsKey = ProviderCredentialStore.hasElevenLabsApiKey(context)
                 if (result.ok) elevenLabsInput = ""
             },
             onDisconnect = {
                 val result = ProviderCredentialActions.clearElevenLabs(context, bridge)
                 elevenLabsResult = result
                 elevenLabsValidationResult = null
-                hasElevenLabsKey = ProviderCredentialStore.hasElevenLabsApiKey(context)
                 if (result.ok) elevenLabsInput = ""
             },
             validationResult = elevenLabsValidationResult,
@@ -223,13 +216,11 @@ fun ProviderCredentialSettingsSection(
             onSave = {
                 val result = ProviderCredentialActions.saveAssemblyAiManual(context, bridge, assemblyAiInput)
                 assemblyAiResult = result
-                hasAssemblyAiKey = ProviderCredentialStore.hasAssemblyAiApiKey(context)
                 if (result.ok) assemblyAiInput = ""
             },
             onDisconnect = {
                 val result = ProviderCredentialActions.clearAssemblyAi(context, bridge)
                 assemblyAiResult = result
-                hasAssemblyAiKey = ProviderCredentialStore.hasAssemblyAiApiKey(context)
                 if (result.ok) assemblyAiInput = ""
             },
         )
@@ -244,13 +235,11 @@ fun ProviderCredentialSettingsSection(
             onSave = {
                 val result = ProviderCredentialActions.savePerplexityManual(context, bridge, perplexityInput)
                 perplexityResult = result
-                hasPerplexityKey = ProviderCredentialStore.hasPerplexityApiKey(context)
                 if (result.ok) perplexityInput = ""
             },
             onDisconnect = {
                 val result = ProviderCredentialActions.clearPerplexity(context, bridge)
                 perplexityResult = result
-                hasPerplexityKey = ProviderCredentialStore.hasPerplexityApiKey(context)
                 if (result.ok) perplexityInput = ""
             },
         )
