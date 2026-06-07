@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-07T21:10:00Z",
+      "lines": [
+        "ElevenLabs voice discovery now uses the shared backend, so voice lists load consistently across iOS and Android."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T20:42:20Z",
       "lines": [
         "Provider model picks now save the backend-routed model ID, so OpenRouter and Ollama selections run through the intended shared provider."

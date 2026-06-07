@@ -13,16 +13,6 @@ extension AgentTools {
     static let listAvailableVoicesMaxLimit = 50
 
     static func listAvailableVoicesTool(args: [String: Any]) async -> String {
-        let apiKey: String
-        do {
-            guard let key = try ElevenLabsCredentialStore.apiKey(), !key.isEmpty else {
-                return toolError("ElevenLabs API key is not configured. Add it in Settings → AI.")
-            }
-            apiKey = key
-        } catch {
-            return toolError("Could not read ElevenLabs API key: \(error.localizedDescription)")
-        }
-
         let query = (args["query"] as? String)?.trimmed.nilIfEmpty?.lowercased()
         let limit = clampedLimit(
             args["limit"],
@@ -32,7 +22,9 @@ extension AgentTools {
 
         let voices: [ElevenLabsVoice]
         do {
-            voices = try await ElevenLabsVoicesService().fetchVoices(apiKey: apiKey)
+            voices = try await ElevenLabsVoicesService().fetchVoices()
+        } catch ElevenLabsVoicesError.missingAPIKey {
+            return toolError("ElevenLabs API key is not configured. Add it in Settings → AI.")
         } catch {
             return toolError("Could not fetch voices from ElevenLabs: \(error.localizedDescription)")
         }

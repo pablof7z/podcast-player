@@ -1,13 +1,10 @@
 import AVFoundation
 import Observation
 import SwiftUI
-import os.log
 
 @MainActor
 @Observable
 final class ElevenLabsVoiceBrowserViewModel {
-    private let logger = Logger.app("ElevenLabsVoiceBrowserViewModel")
-
     enum Phase: Equatable {
         case idle
         case loading
@@ -40,24 +37,14 @@ final class ElevenLabsVoiceBrowserViewModel {
     }
 
     func reload() async {
-        let apiKey: String?
-        do {
-            apiKey = try ElevenLabsCredentialStore.apiKey()
-        } catch {
-            logger.error("ElevenLabsVoiceBrowserViewModel: Keychain read failed — \(error, privacy: .public)")
-            apiKey = nil
-        }
-        guard let apiKey, !apiKey.isEmpty else {
-            phase = .needsAPIKey
-            voices = []
-            return
-        }
-
         phase = .loading
         do {
-            let result = try await service.fetchVoices(apiKey: apiKey)
+            let result = try await service.fetchVoices()
             voices = result
             phase = .loaded
+        } catch ElevenLabsVoicesError.missingAPIKey {
+            phase = .needsAPIKey
+            voices = []
         } catch ElevenLabsVoicesError.unauthorized {
             phase = .needsAPIKey
             voices = []
