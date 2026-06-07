@@ -94,14 +94,19 @@ worktrees currently in flight.
   status handling, and source parsing. iOS/Android/TUI mirror ElevenLabs,
   AssemblyAI, and Perplexity credentials into the same in-memory provider-key
   action as OpenRouter/Ollama. Android now mirrors ElevenLabs/STT provider
-  settings, stores ElevenLabs/AssemblyAI/Perplexity keys in its encrypted host
-  store, reports STT key presence to Rust, exposes shared ElevenLabs validation
-  plus Scribe/AssemblyAI/online-search JNI calls, and exposes STT/TTS model and
-  ElevenLabs voice settings through typed settings actions. The TUI env loader
-  now forwards `ASSEMBLYAI_API_KEY` and `PERPLEXITY_API_KEY` into the shared
-  provider-key cache.
+  settings, stores OpenRouter/Ollama/ElevenLabs/AssemblyAI/Perplexity keys in
+  its encrypted host store, reloads them into Rust on app start, reports STT
+  key presence to Rust, exposes shared agent chat, ElevenLabs validation,
+  Scribe/AssemblyAI/online-search JNI calls, and exposes STT/TTS model and
+  ElevenLabs voice settings through typed settings actions. Shared provider
+  catalog rows now expose a routed `selection_model_id`, and iOS/Android/TUI
+  selectors store that value so OpenRouter/Ollama selections run the intended
+  provider/model. The TUI env loader now forwards `ASSEMBLYAI_API_KEY` and
+  `PERPLEXITY_API_KEY` into the shared provider-key cache.
   Remaining provider-ownership work is deleting any stale Keychain-only UI
-  fallbacks after kernel projections cover them.
+  fallbacks after kernel projections cover them, plus streaming voice-mode
+  STT/TTS once the canonical NMP capability seam lands upstream
+  (`pablof7z/nostr-multi-platform#954`).
 - **typed-agent-task-intents.** Backend `AgentTaskIntent` creation exists and
   the TUI task editor now submits typed/natural task requests instead of raw
   dispatch namespace/body JSON. Agent task snapshots now expose user-facing

@@ -340,31 +340,31 @@ struct AIModelsSettingsView: View {
     private func backfillModelNames() {
         var s = store.state.settings
         var changed = false
-        if s.agentInitialModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.agentInitialModel }) {
+        if s.agentInitialModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.agentInitialModel) }) {
             s.agentInitialModelName = match.name
             changed = true
         }
-        if s.agentThinkingModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.agentThinkingModel }) {
+        if s.agentThinkingModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.agentThinkingModel) }) {
             s.agentThinkingModelName = match.name
             changed = true
         }
-        if s.memoryCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.memoryCompilationModel }) {
+        if s.memoryCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.memoryCompilationModel) }) {
             s.memoryCompilationModelName = match.name
             changed = true
         }
-        if s.wikiModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.wikiModel }) {
+        if s.wikiModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.wikiModel) }) {
             s.wikiModelName = match.name
             changed = true
         }
-        if s.categorizationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.categorizationModel }) {
+        if s.categorizationModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.categorizationModel) }) {
             s.categorizationModelName = match.name
             changed = true
         }
-        if s.chapterCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.chapterCompilationModel }) {
+        if s.chapterCompilationModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.chapterCompilationModel) }) {
             s.chapterCompilationModelName = match.name
             changed = true
         }
-        if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.id == s.embeddingsModel }) {
+        if s.embeddingsModelName.isEmpty, let match = catalog.models.first(where: { $0.matchesStoredID(s.embeddingsModel) }) {
             s.embeddingsModelName = match.name
             changed = true
         }
@@ -386,7 +386,7 @@ struct AIModelsSettingsView: View {
     private func catalogModel(for modelID: String) -> OpenRouterModelOption? {
         let id = modelID.trimmed
         guard !id.isEmpty else { return nil }
-        return catalog.models.first { $0.id == id }
+        return catalog.models.first { $0.matchesStoredID(id) }
     }
 
     // MARK: - ModelPreviewCard

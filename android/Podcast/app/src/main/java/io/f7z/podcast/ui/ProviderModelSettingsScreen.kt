@@ -126,7 +126,9 @@ fun ProviderModelSettingsScreen(
             ProviderModelRoleRow(
                 role = role,
                 settings = settings,
-                catalogModel = models.firstOrNull { it.id == role.modelId(settings) },
+                catalogModel = models.firstOrNull {
+                    it.settingModelId == role.modelId(settings) || it.id == role.modelId(settings)
+                },
                 onClick = { selectedRole = role },
             )
         }

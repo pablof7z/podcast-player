@@ -45,7 +45,7 @@ struct OpenRouterModelRow: View {
                     }
                 }
 
-                Text(model.id)
+                Text(model.displayModelID)
                     .font(AppTheme.Typography.monoCaption)
                     .foregroundStyle(.secondary)
                     .truncatedMiddle()

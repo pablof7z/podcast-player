@@ -21,6 +21,8 @@ data class ProviderModelCatalogResult(
 data class ProviderModelOption(
     val provider: String = "",
     val id: String = "",
+    @SerialName("provider_model_id") val providerModelId: String = "",
+    @SerialName("selection_model_id") val selectionModelId: String = "",
     val name: String = "",
     @SerialName("provider_id") val providerId: String = "",
     @SerialName("provider_name") val providerName: String = "",
@@ -53,6 +55,12 @@ data class ProviderModelOption(
     val displayName: String
         get() = name.ifBlank { id }
 
+    val settingModelId: String
+        get() = selectionModelId.ifBlank { id }
+
+    val displayModelId: String
+        get() = providerModelId.ifBlank { id }
+
     val isCompatible: Boolean
         get() {
             val textOutput = outputModalities.isEmpty() || outputModalities.contains("text")
@@ -80,6 +88,8 @@ data class ProviderModelOption(
         val haystack = searchText.ifBlank {
             listOf(
                 id,
+                providerModelId,
+                settingModelId,
                 name,
                 provider,
                 providerId,

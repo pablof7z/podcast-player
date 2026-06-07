@@ -1,6 +1,7 @@
 package io.f7z.podcast.ui
 
 import io.f7z.podcast.KernelBridge
+import io.f7z.podcast.ProviderModelOption
 import io.f7z.podcast.SettingsSnapshot
 
 enum class ProviderModelRole(val title: String) {
@@ -45,6 +46,15 @@ enum class ProviderModelRole(val title: String) {
             ChapterCompilation -> dispatchModel(bridge, SetChapterCompilationModelPayload(modelId, modelName))
             Embeddings -> dispatchModel(bridge, SetEmbeddingsModelPayload(modelId, modelName))
             ImageGeneration -> dispatchModel(bridge, SetImageGenerationModelPayload(modelId, modelName))
+        }
+    }
+
+    fun accepts(model: ProviderModelOption): Boolean {
+        val textOutput = model.outputModalities.isEmpty() || model.outputModalities.contains("text")
+        val imageOutput = model.outputModalities.contains("image")
+        return when (this) {
+            ImageGeneration -> imageOutput
+            else -> textOutput
         }
     }
 }

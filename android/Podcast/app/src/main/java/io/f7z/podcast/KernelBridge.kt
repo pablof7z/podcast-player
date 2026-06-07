@@ -139,6 +139,14 @@ class KernelBridge {
     fun podcastSnapshot(): String? = if (handle != 0L) nativePodcastSnapshot(handle) else null
 
     /**
+     * Shared agent chat completion transport. Android sends the same message
+     * array contract as iOS; Rust owns provider/model routing, credentials,
+     * tool-loop handling, and error reporting.
+     */
+    fun chatComplete(messagesJson: String): String? =
+        if (handle != 0L) nativeChatComplete(handle, messagesJson) else null
+
+    /**
      * Shared provider completion transport. The JSON intent and JSON envelope
      * are the same provider-neutral contract iOS passes through
      * `nmp_app_podcast_provider_complete`; Android owns no provider HTTP here.
@@ -232,6 +240,7 @@ class KernelBridge {
     private external fun nativeSigninNsec(handle: Long, nsec: String)
     private external fun nativeNextUpdate(handle: Long): String?
     private external fun nativePodcastSnapshot(handle: Long): String?
+    private external fun nativeChatComplete(handle: Long, messagesJson: String): String?
     private external fun nativeProviderComplete(handle: Long, intentJson: String): String?
     private external fun nativeProviderEmbed(handle: Long, intentJson: String): String?
     private external fun nativePerplexitySearch(handle: Long, intentJson: String): String?

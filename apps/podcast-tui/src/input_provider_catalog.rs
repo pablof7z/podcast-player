@@ -108,7 +108,7 @@ fn apply_selected_provider_model(state: &mut AppState, runtime: &AppRuntime) {
         state.status = "provider model target missing".to_owned();
         return;
     };
-    match target.apply_model_selection(&model.id, model.display_name(), runtime) {
+    match target.apply_model_selection(model.selection_id(), model.display_name(), runtime) {
         Ok(message) => {
             state.push_toast(&message);
             close_provider_catalog(state);

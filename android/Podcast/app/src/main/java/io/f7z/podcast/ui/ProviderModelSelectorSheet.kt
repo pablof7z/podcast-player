@@ -51,7 +51,9 @@ fun ProviderModelSelectorSheet(
 ) {
     var searchText by remember(role) { mutableStateOf("") }
     var manualModelId by remember(role, currentModelId) { mutableStateOf(currentModelId) }
-    val visibleModels = models.filter { it.matches(searchText) }.take(MAX_VISIBLE_MODELS)
+    val visibleModels = models
+        .filter { role.accepts(it) && it.matches(searchText) }
+        .take(MAX_VISIBLE_MODELS)
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -119,11 +121,11 @@ fun ProviderModelSelectorSheet(
                     }
                 }
 
-                items(visibleModels, key = { it.id }) { model ->
+                items(visibleModels, key = { it.settingModelId }) { model ->
                     ProviderModelCatalogRow(
                         model = model,
-                        isSelected = model.id == currentModelId,
-                        onClick = { onSelect(model.id, model.displayName) },
+                        isSelected = model.settingModelId == currentModelId || model.id == currentModelId,
+                        onClick = { onSelect(model.settingModelId, model.displayName) },
                     )
                     HorizontalDivider()
                 }
@@ -186,7 +188,7 @@ private fun ProviderModelCatalogRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = model.id,
+                text = model.displayModelId,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
