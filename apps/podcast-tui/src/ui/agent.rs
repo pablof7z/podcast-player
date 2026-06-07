@@ -8,7 +8,7 @@ use crate::app::{AgentSection, AppState};
 use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let rows = Layout::vertical([Constraint::Length(1), Constraint::Min(6)]).split(area);
+    let rows = Layout::vertical([Constraint::Length(2), Constraint::Min(6)]).split(area);
     render_section_bar(frame, rows[0], state);
     let columns =
         Layout::horizontal([Constraint::Percentage(58), Constraint::Percentage(42)]).split(rows[1]);
@@ -23,6 +23,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_section_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
+    let rows = Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).split(area);
     let spans = AgentSection::all()
         .iter()
         .map(|section| {
@@ -35,8 +36,48 @@ fn render_section_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         })
         .collect::<Vec<_>>();
     frame.render_widget(
-        Paragraph::new(Line::from(spans)).style(Style::default().bg(theme::BG)),
-        area,
+        Paragraph::new(Line::from(spans)).style(Style::default().bg(theme::SURFACE)),
+        rows[0],
+    );
+
+    let pulse = if state.agent_is_busy {
+        Span::styled(
+            format!(
+                "{} thinking {}",
+                theme::spinner(state.motion_tick),
+                theme::wave(state.motion_tick, 12)
+            ),
+            Style::default()
+                .fg(theme::pulse_color(state.motion_tick))
+                .bg(theme::BG)
+                .add_modifier(Modifier::BOLD),
+        )
+    } else {
+        Span::styled("ready", theme::muted())
+    };
+    let telemetry = Line::from(vec![
+        theme::badge("Agent", theme::ACCENT_ALT),
+        Span::styled(" ", Style::default().bg(theme::BG)),
+        pulse,
+        theme::separator(),
+        Span::styled(
+            format!("{} messages", state.agent_messages.len()),
+            Style::default().fg(theme::TEXT).bg(theme::BG),
+        ),
+        theme::separator(),
+        Span::styled(
+            format!("{} tasks", state.agent_tasks.len()),
+            Style::default().fg(theme::TEXT).bg(theme::BG),
+        ),
+        theme::separator(),
+        Span::styled(
+            format!("{} facts", state.memory_facts.len()),
+            Style::default().fg(theme::TEXT).bg(theme::BG),
+        ),
+    ]);
+    frame.render_widget(
+        Paragraph::new(telemetry).style(Style::default().bg(theme::BG)),
+        rows[1],
     );
 }
 
@@ -61,18 +102,15 @@ fn render_conversation(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .agent_messages
         .iter()
         .flat_map(|message| {
-            let role_style = if message.role == "user" {
-                Style::default()
-                    .fg(theme::ACCENT)
-                    .add_modifier(Modifier::BOLD)
+            let role = if message.role == "user" {
+                theme::badge("You", theme::ACCENT)
             } else {
-                Style::default()
-                    .fg(theme::WARN)
-                    .add_modifier(Modifier::BOLD)
+                theme::badge("Agent", theme::WARN)
             };
             [
                 Line::from(vec![
-                    Span::styled(format!("{}: ", message.role), role_style),
+                    role,
+                    Span::raw(" "),
                     Span::styled(message.content.clone(), theme::text()),
                 ]),
                 Line::from(""),
@@ -88,14 +126,23 @@ fn render_conversation(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 
 fn render_agent_help(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let lines = vec![
-        Line::from("h/l switch agent section"),
-        Line::from("Enter or i compose chat"),
-        Line::from("c or x clear chat"),
+        Line::from(vec![
+            theme::quiet_badge("h/l"),
+            Span::styled(" switch section", theme::text()),
+        ]),
+        Line::from(vec![
+            theme::quiet_badge("Enter"),
+            Span::styled(" compose chat", theme::text()),
+        ]),
+        Line::from(vec![
+            theme::quiet_badge("c/x"),
+            Span::styled(" clear chat", theme::text()),
+        ]),
         Line::from(""),
-        Line::from(format!("Picks: {}", state.agent_picks.len())),
-        Line::from(format!("Tasks: {}", state.agent_tasks.len())),
-        Line::from(format!("Notes: {}", state.agent_notes.len())),
-        Line::from(format!("Memory facts: {}", state.memory_facts.len())),
+        metric_line("Picks", state.agent_picks.len(), theme::ACCENT),
+        metric_line("Tasks", state.agent_tasks.len(), theme::WARN),
+        metric_line("Notes", state.agent_notes.len(), theme::ACCENT_ALT),
+        metric_line("Memory", state.memory_facts.len(), theme::GOOD),
     ];
     frame.render_widget(
         Paragraph::new(lines)
@@ -123,6 +170,7 @@ fn render_picks(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, pick)| {
             let base = row_style(index == state.selected_agent_pick);
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(index == state.selected_agent_pick, state.motion_tick),
                 Span::styled(&pick.episode_title, base),
                 Span::styled(
                     format!("  {:.0}% {}", pick.pick_score * 100.0, pick.pick_reason),
@@ -153,6 +201,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             let base = row_style(index == state.selected_agent_task);
             let enabled = if task.is_enabled { "on" } else { "off" };
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(index == state.selected_agent_task, state.motion_tick),
                 Span::styled(&task.title, base),
                 Span::styled(
                     format!("  {} | {} | {}", enabled, task.status, task.schedule),
@@ -183,6 +232,7 @@ fn render_notes(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             let trust = if note.trusted { "trusted" } else { "untrusted" };
             let base = row_style(index == state.selected_agent_note);
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(index == state.selected_agent_note, state.motion_tick),
                 Span::styled(format::short_id(&note.author_npub), base),
                 Span::styled(format!("  {}  {}", trust, note.content), theme::text()),
             ]))
@@ -209,6 +259,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, fact)| {
             let base = row_style(index == state.selected_memory_fact);
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(index == state.selected_memory_fact, state.motion_tick),
                 Span::styled(&fact.key, base),
                 Span::styled(
                     format!(" = {}  ({})", fact.value, fact.source),
@@ -218,6 +269,13 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         })
         .collect::<Vec<_>>();
     frame.render_widget(List::new(items).block(block), area);
+}
+
+fn metric_line(label: &str, count: usize, color: ratatui::style::Color) -> Line<'static> {
+    Line::from(vec![
+        theme::badge(label, color),
+        Span::styled(format!(" {count}"), theme::text()),
+    ])
 }
 
 fn row_style(selected: bool) -> Style {

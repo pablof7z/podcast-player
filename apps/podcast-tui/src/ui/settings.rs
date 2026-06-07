@@ -36,6 +36,7 @@ fn render_interactive_settings(frame: &mut Frame<'_>, area: Rect, state: &AppSta
                 theme::text()
             };
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(item.label(), base),
                 Span::styled(format!("  {}", item.value(state)), theme::muted()),
             ]))
@@ -72,6 +73,7 @@ fn render_provider_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(item.label(), base),
                 Span::styled(format!("  {}", item.value(&state.settings)), theme::muted()),
             ]))
@@ -116,6 +118,7 @@ fn render_relay_editor(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
             ListItem::new(Line::from(vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(format::short_id(&relay.url), base),
                 Span::styled(format!("  {}", relay.role), theme::muted()),
             ]))

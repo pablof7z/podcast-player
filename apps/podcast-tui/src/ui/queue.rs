@@ -30,6 +30,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 theme::text()
             };
             let mut spans = vec![
+                theme::selected_prefix(selected, state.motion_tick),
                 Span::styled(format!("{}. ", i + 1), Style::default().fg(theme::MUTED)),
                 Span::styled(&ep.title, base_style),
             ];

@@ -147,8 +147,11 @@ worktrees currently in flight.
   updates. The provider/model settings slice now wires LLM role model
   selection, provider credential metadata, env-backed in-memory OpenRouter/
   Ollama credentials, STT key-presence reporting, STT/TTS model selectors,
-  ElevenLabs voice selection, and the local model hint. Remaining
-  live validation now covers GLM 5.1 Cloud agent chat, memory-aware replies,
+  ElevenLabs voice selection, and the local model hint. The terminal shell now
+  has shared animated chrome, focused row rails, player waveform motion,
+  download activity strips, and themed detail/input overlays without changing
+  kernel/provider behavior. Remaining live validation now covers GLM 5.1 Cloud
+  agent chat, memory-aware replies,
   library tool calls, task run-now, and provider/model settings in tmux.
   Remaining terminal-client slices: settings editors for playback intervals,
   notifications, onboarding, and Nostr profile/public relay fields; wiki

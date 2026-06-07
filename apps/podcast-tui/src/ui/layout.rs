@@ -1,7 +1,7 @@
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{Clear, Paragraph};
 use ratatui::Frame;
 
 use crate::app::{AppState, Mode, Tab};
@@ -9,18 +9,22 @@ use crate::ui::{self, theme};
 
 pub fn render(frame: &mut Frame<'_>, state: &AppState) {
     let area = frame.area();
+    frame.render_widget(
+        Paragraph::new("").style(Style::default().bg(theme::BG)),
+        area,
+    );
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1), // title bar
+            Constraint::Length(2), // title bar
             Constraint::Min(6),    // body
-            Constraint::Length(5), // player
+            Constraint::Length(6), // player
             Constraint::Length(1), // status
         ])
         .split(area);
 
-    render_title(frame, rows[0], state);
+    ui::topbar::render(frame, rows[0], state);
     render_body(frame, rows[1], state);
     ui::player::render(frame, rows[2], state);
     render_status(frame, rows[3], state);
@@ -65,82 +69,6 @@ pub fn render(frame: &mut Frame<'_>, state: &AppState) {
     }
 }
 
-fn render_title(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let compact = area.width < 100;
-    let mut tabs = vec![
-        Span::styled(
-            " Pod0 ",
-            Style::default()
-                .fg(Color::Black)
-                .bg(theme::ACCENT)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(" ", Style::default().bg(theme::BG)),
-    ];
-
-    tabs.extend(
-        Tab::all()
-            .iter()
-            .map(|tab| tab_chip(tab, state, compact))
-            .collect::<Vec<_>>(),
-    );
-
-    if let Some(dl_status) = state.download_status_line() {
-        tabs.push(Span::styled("  ", Style::default().bg(theme::BG)));
-        tabs.push(Span::styled(
-            theme::spinner(state.motion_tick),
-            Style::default().fg(theme::pulse_color(state.motion_tick)),
-        ));
-        tabs.push(Span::styled(
-            format!(" {dl_status}"),
-            Style::default()
-                .fg(theme::GOOD)
-                .bg(theme::BG)
-                .add_modifier(Modifier::BOLD),
-        ));
-    }
-
-    let line = Line::from(tabs);
-    let paragraph = Paragraph::new(vec![line])
-        .alignment(Alignment::Left)
-        .style(Style::default().bg(theme::BG));
-    frame.render_widget(paragraph, area);
-}
-
-fn tab_chip(tab: &Tab, state: &AppState, compact: bool) -> Span<'static> {
-    let mut label = if compact && *tab != state.tab {
-        compact_tab_label(tab).to_owned()
-    } else {
-        tab.label().to_owned()
-    };
-    if *tab == Tab::Agent && state.agent_is_busy {
-        label.push(' ');
-        label.push_str(theme::spinner(state.motion_tick));
-    }
-    let label = format!(" {label} ");
-    if *tab == state.tab {
-        Span::styled(label, theme::selected())
-    } else {
-        Span::styled(label, Style::default().fg(theme::MUTED).bg(theme::BG))
-    }
-}
-
-fn compact_tab_label(tab: &Tab) -> &'static str {
-    match tab {
-        Tab::Library => "lib",
-        Tab::Queue => "q",
-        Tab::Inbox => "in",
-        Tab::Search => "find",
-        Tab::Downloads => "dl",
-        Tab::Bookmarks => "stars",
-        Tab::Clips => "clip",
-        Tab::Agent => "ai",
-        Tab::Wiki => "wiki",
-        Tab::Social => "soc",
-        Tab::Settings => "cfg",
-    }
-}
-
 fn render_body(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     match state.tab {
         Tab::Library => render_library_body(frame, area, state),
@@ -180,7 +108,7 @@ fn render_status(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
                 .fg(theme::GOOD)
                 .add_modifier(Modifier::BOLD),
         ));
-        spans.push(separator());
+        spans.push(theme::separator());
     }
 
     if state.agent_is_busy {
@@ -189,14 +117,14 @@ fn render_status(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             Style::default().fg(theme::ACCENT_ALT),
         ));
         spans.push(Span::styled(" agent busy", theme::accent()));
-        spans.push(separator());
+        spans.push(theme::separator());
     }
 
     spans.push(Span::styled(&state.status, theme::muted()));
 
     if let Some(ref toast) = state.toasts.last() {
-        spans.push(separator());
-        spans.push(Span::styled("notice ", Style::default().fg(theme::WARN)));
+        spans.push(theme::separator());
+        spans.push(Span::styled("notice ", theme::warn()));
         spans.push(Span::styled(
             &toast.message,
             Style::default().fg(theme::TEXT),
@@ -206,10 +134,6 @@ fn render_status(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let line = Line::from(spans);
     let paragraph = Paragraph::new(vec![line]).style(Style::default().bg(theme::BG));
     frame.render_widget(paragraph, area);
-}
-
-fn separator() -> Span<'static> {
-    Span::styled(" | ", Style::default().fg(theme::TRACK).bg(theme::BG))
 }
 
 fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
@@ -253,7 +177,8 @@ fn render_input_bar(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     .split(popup[1])[1];
 
     let text = format!("{}{}", label, value);
-    let block = theme::panel("Input", true);
+    let block = theme::panel_with_footer("Input", "Enter submit  Esc cancel", true);
     let paragraph = Paragraph::new(text).style(theme::text()).block(block);
+    frame.render_widget(Clear, input_area);
     frame.render_widget(paragraph, input_area);
 }

@@ -1,17 +1,18 @@
 use ratatui::layout::{Alignment, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
+use ratatui::widgets::{Clear, Paragraph, Wrap};
 use ratatui::Frame;
 
 use crate::app::{AppState, EpisodeRow, Mode};
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan))
-        .title(" Episode Detail ");
+    let block = theme::panel_with_footer(
+        "Episode Detail",
+        "p play  d download  t transcript  f comments  Esc close",
+        true,
+    );
 
     let inner = block.inner(area);
     frame.render_widget(Clear, area);
@@ -20,7 +21,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let ep = match state.episodes.get(state.selected_episode) {
         Some(e) => e,
         None => {
-            let empty = Paragraph::new("No episode selected").alignment(Alignment::Center);
+            let empty = Paragraph::new("No episode selected")
+                .alignment(Alignment::Center)
+                .style(theme::muted());
             frame.render_widget(empty, inner);
             return;
         }
@@ -38,7 +41,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         &[]
     };
 
-    let paragraph = Paragraph::new(visible_lines.to_vec()).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(visible_lines.to_vec())
+        .style(theme::text())
+        .wrap(Wrap { trim: true });
     frame.render_widget(paragraph, inner);
 }
 
@@ -47,7 +52,7 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
 
     lines.push(Line::from(vec![Span::styled(
         ep.title.clone(),
-        Style::default().add_modifier(Modifier::BOLD),
+        theme::text().add_modifier(Modifier::BOLD),
     )]));
 
     let mut meta_parts = Vec::new();
@@ -91,7 +96,7 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
     if !meta_parts.is_empty() {
         lines.push(Line::from(vec![Span::styled(
             meta_parts.join(" | "),
-            Style::default().fg(Color::DarkGray),
+            theme::muted(),
         )]));
     }
 
@@ -106,7 +111,9 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
             };
             lines.push(Line::from(vec![Span::styled(
                 status,
-                Style::default().fg(Color::Green),
+                Style::default()
+                    .fg(theme::GOOD)
+                    .add_modifier(Modifier::BOLD),
             )]));
             if np.duration_secs > 0.0 {
                 lines.push(Line::from(vec![Span::styled(
@@ -115,7 +122,7 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
                         format::duration(np.position_secs),
                         format::duration(np.duration_secs)
                     ),
-                    Style::default().fg(Color::DarkGray),
+                    theme::muted(),
                 )]));
             }
             lines.push(Line::from(""));
@@ -158,19 +165,13 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
     push_section(&mut lines, "Transcript");
     if let Some(message) = &ep.transcript_status_message {
         lines.push(Line::from(vec![
-            Span::styled(
-                format!("status: {}", ep.transcript_status),
-                Style::default().fg(Color::Yellow),
-            ),
-            Span::styled(
-                format!(" | {message}"),
-                Style::default().fg(Color::DarkGray),
-            ),
+            Span::styled(format!("status: {}", ep.transcript_status), theme::warn()),
+            Span::styled(format!(" | {message}"), theme::muted()),
         ]));
     } else if !ep.transcript_status.is_empty() {
         lines.push(Line::from(vec![Span::styled(
             format!("status: {}", ep.transcript_status),
-            Style::default().fg(Color::Yellow),
+            theme::warn(),
         )]));
     }
     if let Some(url) = &ep.transcript_url {
@@ -253,7 +254,7 @@ fn build_detail_lines(ep: &EpisodeRow, state: &AppState) -> Vec<Line<'static>> {
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::styled(
         "p play | d download | D delete | s/S star | a/A queue | c clip | t transcript | H chapters | u compile | m summary | f comments | C post | R reset | z/Z sleep | x cancel timer | Esc close",
-        Style::default().fg(Color::DarkGray),
+        theme::muted(),
     )]));
 
     lines
@@ -263,9 +264,7 @@ fn push_section(lines: &mut Vec<Line<'static>>, title: &str) {
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::styled(
         title.to_string(),
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
+        theme::accent(),
     )]));
 }
 
@@ -279,8 +278,5 @@ fn push_paragraph(lines: &mut Vec<Line<'static>>, text: &str) {
 }
 
 fn dim_line(text: &str) -> Line<'static> {
-    Line::from(vec![Span::styled(
-        text.to_string(),
-        Style::default().fg(Color::DarkGray),
-    )])
+    Line::from(vec![Span::styled(text.to_string(), theme::muted())])
 }
