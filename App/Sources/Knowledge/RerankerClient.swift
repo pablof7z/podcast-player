@@ -1,11 +1,10 @@
 import Foundation
-import os.log
 
-// Lane 6 — RAG: Cohere `rerank-v3.5` passthrough via OpenRouter.
+// Lane 6 — RAG: provider-backed Cohere `rerank-v3.5` passthrough.
 //
-// OpenRouter exposes Cohere's rerank endpoint at `/api/v1/rerank` using the
-// Cohere-compatible schema (model + query + documents). Returns relevance
-// scores per document; we reorder the candidate indices client-side.
+// Provider HTTP is Rust-owned. Swift keeps only a small async facade over the
+// `nmp_app_podcast_rerank` FFI call and maps the returned error envelope to the
+// app's existing `RerankerError` cases.
 //
 // Used as the optional final stage of `RAGSearch`: take the top-K hybrid
 // results, rerank, take the top-N. Skipped under "rapid voice" latency
@@ -52,25 +51,12 @@ struct SettingsAwareRerankerClient<Base: RerankerClient>: RerankerClient {
 struct OpenRouterRerankerClient: RerankerClient {
     static let defaultModel = "cohere/rerank-v3.5"
 
-    private static let logger = Logger.app("OpenRouterRerankerClient")
-    private static let endpoint = URL(string: "https://openrouter.ai/api/v1/rerank")!
-    private static let xTitle = "Podcastr"
-
-    private let apiKeyProvider: @Sendable () throws -> String?
     private let model: String
-    private let session: URLSession
-    private let timeout: TimeInterval
 
     init(
-        apiKeyProvider: @Sendable @escaping () throws -> String? = { try OpenRouterCredentialStore.apiKey() },
-        model: String = OpenRouterRerankerClient.defaultModel,
-        session: URLSession = .shared,
-        timeout: TimeInterval = 30
+        model: String = OpenRouterRerankerClient.defaultModel
     ) {
-        self.apiKeyProvider = apiKeyProvider
         self.model = model
-        self.session = session
-        self.timeout = timeout
     }
 
     func rerank(
@@ -79,70 +65,55 @@ struct OpenRouterRerankerClient: RerankerClient {
         topN: Int? = nil
     ) async throws -> [Int] {
         guard !documents.isEmpty else { return [] }
-        guard let apiKey = try apiKeyProvider(), !apiKey.isEmpty else {
-            throw RerankerError.missingAPIKey
+
+        guard let handleBits = await MainActor.run(body: {
+            KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
+        }) else {
+            throw RerankerError.transport(detail: "kernel handle unavailable")
         }
 
-        var req = URLRequest(url: Self.endpoint, timeoutInterval: timeout)
-        req.httpMethod = "POST"
-        req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(Self.xTitle, forHTTPHeaderField: "X-Title")
-
-        let payload = RequestPayload(
+        let request = RerankFFIRequest(
             model: model,
             query: query,
             documents: documents,
-            top_n: topN ?? documents.count
+            top_n: topN
         )
-        req.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse else {
-            throw RerankerError.transport(detail: "no HTTPURLResponse")
-        }
-        switch http.statusCode {
-        case 200..<300:
-            break
-        case 401, 403:
-            throw RerankerError.unauthorized
-        case 429:
-            throw RerankerError.rateLimited
-        default:
-            let body = String(data: data, encoding: .utf8) ?? "<binary>"
-            Self.logger.warning("OpenRouter rerank HTTP \(http.statusCode, privacy: .public): \(body, privacy: .public)")
-            throw RerankerError.serverError(statusCode: http.statusCode)
-        }
-
-        do {
-            let decoded = try JSONDecoder().decode(ResponsePayload.self, from: data)
-            // Cohere returns results sorted by relevance descending; we
-            // just extract the original `index` field. Defensive sort by
-            // score in case OpenRouter ever changes upstream behaviour.
-            return decoded.results
-                .sorted { $0.relevance_score > $1.relevance_score }
-                .map(\.index)
-        } catch {
-            Self.logger.error("OpenRouter rerank decode failed: \(error, privacy: .public)")
+        let requestData = try JSONEncoder().encode(request)
+        guard let requestJSON = String(data: requestData, encoding: .utf8) else {
             throw RerankerError.decoding
         }
+
+        let responseJSON: String = await Task.detached(priority: .userInitiated) {
+            guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
+                return #"{"error":{"kind":"transport","message":"null kernel handle"}}"#
+            }
+            return requestJSON.withCString { requestPtr in
+                guard let ptr = nmp_app_podcast_rerank(handle, requestPtr) else {
+                    return #"{"error":{"kind":"transport","message":"null response from Rust"}}"#
+                }
+                defer { nmp_app_free_string(ptr) }
+                return String(cString: ptr)
+            }
+        }.value
+
+        guard let responseData = responseJSON.data(using: .utf8) else {
+            throw RerankerError.decoding
+        }
+        let envelope = try JSONDecoder().decode(RerankFFIResponse.self, from: responseData)
+        if let error = envelope.error {
+            throw RerankerError(rustError: error)
+        }
+        guard let indices = envelope.indices else {
+            throw RerankerError.decoding
+        }
+        return indices
     }
 
-    // MARK: - DTOs
-
-    private struct RequestPayload: Encodable {
+    private struct RerankFFIRequest: Encodable {
         let model: String
         let query: String
         let documents: [String]
-        let top_n: Int
-    }
-
-    private struct ResponsePayload: Decodable {
-        let results: [ResultItem]
-        struct ResultItem: Decodable {
-            let index: Int
-            let relevance_score: Double
-        }
+        let top_n: Int?
     }
 }
 
@@ -155,6 +126,7 @@ enum RerankerError: LocalizedError {
     case serverError(statusCode: Int)
     case transport(detail: String)
     case decoding
+    case invalidRequest(detail: String)
 
     var errorDescription: String? {
         switch self {
@@ -170,6 +142,46 @@ enum RerankerError: LocalizedError {
             return "Network error contacting OpenRouter: \(detail)."
         case .decoding:
             return "Could not decode the OpenRouter rerank response."
+        case let .invalidRequest(detail):
+            return "Invalid rerank request: \(detail)."
+        }
+    }
+}
+
+private struct RerankFFIResponse: Decodable {
+    let indices: [Int]?
+    let error: RerankFFIError?
+}
+
+private struct RerankFFIError: Decodable {
+    let kind: String
+    let message: String
+    let statusCode: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case message
+        case statusCode = "status_code"
+    }
+}
+
+private extension RerankerError {
+    init(rustError: RerankFFIError) {
+        switch rustError.kind {
+        case "missing_api_key":
+            self = .missingAPIKey
+        case "unauthorized":
+            self = .unauthorized
+        case "rate_limited":
+            self = .rateLimited
+        case "server_error":
+            self = .serverError(statusCode: rustError.statusCode ?? -1)
+        case "decoding":
+            self = .decoding
+        case "invalid_request":
+            self = .invalidRequest(detail: rustError.message)
+        default:
+            self = .transport(detail: rustError.message)
         }
     }
 }

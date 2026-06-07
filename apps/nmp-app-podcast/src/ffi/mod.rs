@@ -47,6 +47,7 @@ mod projections_tests;
 mod projections_tests_ext;
 mod register;
 pub(crate) mod relay_persist;
+mod rerank;
 pub(crate) mod snapshot;
 mod snapshot_categories;
 mod snapshot_downloads;
@@ -112,6 +113,7 @@ pub use projections::{
     SocialSnapshot, TranscriptEntry, VoiceState, WidgetSnapshot, WikiArticle,
 };
 pub use register::nmp_app_podcast_register;
+pub use rerank::nmp_app_podcast_rerank;
 pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
     nmp_app_podcast_unregister, AppRelayRow, PodcastUpdate,

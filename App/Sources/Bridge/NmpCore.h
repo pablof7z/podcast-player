@@ -266,6 +266,22 @@ char *nmp_app_podcast_provider_embed(void *handle, const char *intent_json);
 // Threading: this call BLOCKS; call from a background thread / detached Task.
 char *nmp_app_podcast_generate_image(void *handle, const char *request_json);
 
+// ── RAG reranking ───────────────────────────────────────────────────────
+//
+// Provider-owned reranking transport. Swift sends a provider-neutral JSON
+// request:
+//   {"model":"cohere/rerank-v3.5","query":"...","documents":["..."],"top_n":10}
+// Rust owns the OpenRouter endpoint, auth headers, HTTP body DTO, status
+// handling, and response parsing.
+//
+// Returns a heap-allocated JSON string:
+//   {"indices":[0,2,1]}                                    on success
+//   {"error":{"kind":"missing_api_key","message":"..."}}   on failure
+// The caller MUST free the returned pointer via `nmp_app_free_string`.
+// Threading: this call BLOCKS while the network round-trip completes. Swift
+// MUST call it from a background thread / detached Task.
+char *nmp_app_podcast_rerank(void *handle, const char *request_json);
+
 // ── Local LLM registration ──────────────────────────────────────────────
 //
 // Register a local LLM backend callback. The callback receives a context pointer

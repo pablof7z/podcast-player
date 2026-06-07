@@ -12,10 +12,12 @@ pub mod local_model_backend;
 pub mod ollama_backend;
 pub mod openrouter_backend;
 pub mod provider_transport;
+pub mod rerank_backend;
 
 pub use backend::{LlmBackend, LlmError, LlmRequest};
 pub use factory::{backend_for, role_model_or_default, validate_model_credentials};
 pub use local_model_backend::LocalModelBackend;
+pub use rerank_backend::{rerank_openrouter, RerankError, RerankRequest};
 
 pub fn is_missing_credential_error(error: &str) -> bool {
     error.contains("Missing credential:")
