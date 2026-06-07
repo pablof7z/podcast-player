@@ -485,8 +485,8 @@ extension AppStateStore {
             mergeResolvedProfiles(identity.resolvedProfiles)
             self.identity.applyKernelIdentity(
                 handshake: identity.bunkerHandshake,
-                activeAccount: identity.activeAccount,
-                pubkeyHex: identity.activeAccountPubkeyHex,
+                activeNpub: identity.activeNpub,
+                pubkeyHex: identity.activeAccount,
                 isRemoteSigner: identity.isRemoteSigner)
         }
 
@@ -559,8 +559,8 @@ extension AppStateStore {
             mergeResolvedProfiles(identity.resolvedProfiles)
             self.identity.applyKernelIdentity(
                 handshake: identity.bunkerHandshake,
-                activeAccount: identity.activeAccount,
-                pubkeyHex: identity.activeAccountPubkeyHex,
+                activeNpub: identity.activeNpub,
+                pubkeyHex: identity.activeAccount,
                 isRemoteSigner: identity.isRemoteSigner)
         }
         onNowPlayingSnapshot?(snapshot, library)
