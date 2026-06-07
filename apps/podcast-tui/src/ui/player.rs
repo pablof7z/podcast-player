@@ -1,48 +1,74 @@
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Gauge, Paragraph};
+use ratatui::widgets::{Gauge, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
+use crate::ui::theme;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(" Player ");
-
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-
     let Some(ref np) = state.now_playing else {
+        let block = theme::panel("Player", false);
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
         let empty = Paragraph::new("Nothing playing").alignment(Alignment::Center);
         frame.render_widget(empty, inner);
         return;
     };
 
+    let activity = if np.is_playing {
+        format!("Now Playing {}", theme::meter(state.motion_tick))
+    } else {
+        "Now Playing paused".to_owned()
+    };
+    let block = theme::panel(activity, np.is_playing);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
     let rows = Layout::vertical([
         Constraint::Length(1), // title
+        Constraint::Length(1), // context
         Constraint::Length(1), // progress
     ])
     .split(inner);
 
-    // Title line
     let status_indicator = if np.is_playing {
-        Span::styled("▶ ", Style::default().fg(Color::Green))
+        Span::styled(
+            format!("{} ▶ ", theme::spinner(state.motion_tick)),
+            Style::default().fg(theme::pulse_color(state.motion_tick)),
+        )
     } else {
-        Span::styled("⏸ ", Style::default().fg(Color::Yellow))
+        Span::styled("⏸ ", Style::default().fg(theme::WARN))
     };
     let title_line = Line::from(vec![
         status_indicator,
         Span::styled(
-            format!("{} — {}", np.podcast_title, np.episode_title),
-            Style::default().add_modifier(Modifier::BOLD),
+            &np.episode_title,
+            theme::text().add_modifier(Modifier::BOLD),
         ),
     ]);
     frame.render_widget(Paragraph::new(title_line), rows[0]);
 
-    // Progress
+    let pct = if np.duration_secs > 0.0 {
+        (np.position_secs / np.duration_secs * 100.0).clamp(0.0, 100.0)
+    } else {
+        0.0
+    };
+    let context_line = Line::from(vec![
+        Span::styled(&np.podcast_title, theme::accent()),
+        Span::styled(
+            format!(
+                "  {:.0}%  {:.1}x  volume {:.0}%",
+                pct,
+                np.speed,
+                np.volume * 100.0
+            ),
+            theme::muted(),
+        ),
+    ]);
+    frame.render_widget(Paragraph::new(context_line), rows[1]);
+
     let (pos_label, dur_label) = (format_time(np.position_secs), format_time(np.duration_secs));
     let ratio = if np.duration_secs > 0.0 {
         np.position_secs / np.duration_secs
@@ -54,8 +80,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let gauge = Gauge::default()
         .ratio(ratio.clamp(0.0, 1.0))
         .label(label)
-        .gauge_style(Style::default().fg(Color::Cyan).bg(Color::Black));
-    frame.render_widget(gauge, rows[1]);
+        .gauge_style(Style::default().fg(theme::ACCENT).bg(theme::TRACK));
+    frame.render_widget(gauge, rows[2]);
 }
 
 fn format_time(secs: f64) -> String {

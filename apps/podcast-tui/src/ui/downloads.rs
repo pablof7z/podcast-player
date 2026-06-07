@@ -1,12 +1,12 @@
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
 use ratatui::Frame;
 
 use crate::app::AppState;
 use crate::rows::DownloadRow;
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let cols =
@@ -17,13 +17,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" Downloads ({}) ", state.downloads.len()));
+    let block = theme::panel(format!("Downloads ({})", state.downloads.len()), true);
 
     if state.downloads.is_empty() {
-        let text = Paragraph::new("No active, queued, paused, or failed downloads.").block(block);
+        let text = Paragraph::new("No active, queued, paused, or failed downloads.")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -35,24 +34,26 @@ fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, download)| {
             let selected = index == state.selected_download;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             let title = title_for_download(state, download);
             let progress = format!("{:>3}%", (download.progress.clamp(0.0, 1.0) * 100.0) as u8);
+            let active = download.state == "active";
             let mut spans = vec![
-                Span::styled(format!("{:<7}", download.state), status_style(download)),
                 Span::styled(
-                    format!(" {progress} "),
-                    Style::default().fg(Color::DarkGray),
+                    format!("{:<10}", status_label(download, state.motion_tick)),
+                    status_style(download, state.motion_tick),
                 ),
+                Span::styled(format!(" {progress} "), theme::muted()),
                 Span::styled(
-                    progress_bar(download.progress, 12),
-                    Style::default().fg(Color::Cyan),
+                    progress_bar(download.progress, 14, state.motion_tick, active),
+                    Style::default().fg(if active {
+                        theme::pulse_color(state.motion_tick)
+                    } else {
+                        theme::ACCENT_ALT
+                    }),
                 ),
                 Span::styled("  ", Style::default()),
                 Span::styled(title, base),
@@ -60,7 +61,7 @@ fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             if download.kind != "episode" {
                 spans.push(Span::styled(
                     format!("  {}", download.kind),
-                    Style::default().fg(Color::Magenta),
+                    Style::default().fg(theme::ACCENT_ALT),
                 ));
             }
             ListItem::new(Line::from(spans))
@@ -71,13 +72,25 @@ fn render_list(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(" Download Detail ");
+    let title = state
+        .downloads
+        .get(state.selected_download)
+        .map(|download| {
+            format!(
+                "Download Detail {}",
+                status_label(download, state.motion_tick)
+            )
+        })
+        .unwrap_or_else(|| "Download Detail".to_owned());
+    let block = theme::panel(title, false);
 
     let Some(download) = state.downloads.get(state.selected_download) else {
-        frame.render_widget(Paragraph::new("No download selected.").block(block), area);
+        frame.render_widget(
+            Paragraph::new("No download selected.")
+                .style(theme::muted())
+                .block(block),
+            area,
+        );
         return;
     };
 
@@ -101,10 +114,22 @@ fn render_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Line::from(format!("id: {}", download.episode_id)),
         Line::from(format!("kind: {}", download.kind)),
         Line::from(format!("state: {}", download.state)),
-        Line::from(format!(
-            "progress: {:.0}%",
-            download.progress.clamp(0.0, 1.0) * 100.0
-        )),
+        Line::from(vec![
+            Span::styled("progress: ", theme::muted()),
+            Span::styled(
+                progress_bar(
+                    download.progress,
+                    22,
+                    state.motion_tick,
+                    download.state == "active",
+                ),
+                Style::default().fg(status_color(download, state.motion_tick)),
+            ),
+            Span::styled(
+                format!(" {:.0}%", download.progress.clamp(0.0, 1.0) * 100.0),
+                theme::text(),
+            ),
+        ]),
         Line::from(format!("size: {size}")),
         Line::from(format!("url: {url}")),
         Line::from(""),
@@ -114,13 +139,16 @@ fn render_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     if let Some(error) = &download.error {
         lines.push(Line::from(""));
         lines.push(Line::from(vec![
-            Span::styled("error: ", Style::default().fg(Color::Red)),
-            Span::styled(error, Style::default().fg(Color::Red)),
+            Span::styled("error: ", Style::default().fg(theme::DANGER)),
+            Span::styled(error, Style::default().fg(theme::DANGER)),
         ]));
     }
 
     frame.render_widget(
-        Paragraph::new(lines).block(block).wrap(Wrap { trim: true }),
+        Paragraph::new(lines)
+            .style(theme::text())
+            .block(block)
+            .wrap(Wrap { trim: true }),
         area,
     );
 }
@@ -135,19 +163,43 @@ fn title_for_download(state: &AppState, download: &DownloadRow) -> String {
         .unwrap_or_else(|| format::short_id(&download.episode_id))
 }
 
-fn status_style(download: &DownloadRow) -> Style {
-    let color = match download.state.as_str() {
-        "active" => Color::Green,
-        "queued" => Color::Yellow,
-        "paused" => Color::Blue,
-        "failed" => Color::Red,
-        _ => Color::DarkGray,
-    };
-    Style::default().fg(color)
+fn status_label(download: &DownloadRow, tick: u64) -> String {
+    match download.state.as_str() {
+        "active" => format!("{} active", theme::spinner(tick)),
+        "queued" => "queued".to_owned(),
+        "paused" => "paused".to_owned(),
+        "failed" => "failed".to_owned(),
+        other => other.to_owned(),
+    }
 }
 
-fn progress_bar(progress: f32, width: usize) -> String {
+fn status_style(download: &DownloadRow, tick: u64) -> Style {
+    Style::default()
+        .fg(status_color(download, tick))
+        .add_modifier(Modifier::BOLD)
+}
+
+fn status_color(download: &DownloadRow, tick: u64) -> Color {
+    match download.state.as_str() {
+        "active" => theme::pulse_color(tick),
+        "queued" => theme::WARN,
+        "paused" => theme::ACCENT_ALT,
+        "failed" => theme::DANGER,
+        _ => theme::MUTED,
+    }
+}
+
+fn progress_bar(progress: f32, width: usize, tick: u64, active: bool) -> String {
     let clamped = progress.clamp(0.0, 1.0);
     let filled = (clamped * width as f32).round() as usize;
-    format!("{}{}", "#".repeat(filled), "-".repeat(width - filled))
+    let filled = filled.min(width);
+    let mut cells = vec!["░"; width];
+    for cell in cells.iter_mut().take(filled) {
+        *cell = "█";
+    }
+    if active && filled < width {
+        let shimmer = (tick as usize % width).max(filled);
+        cells[shimmer.min(width - 1)] = "▒";
+    }
+    cells.join("")
 }

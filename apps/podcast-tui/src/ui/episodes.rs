@@ -1,28 +1,20 @@
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{List, ListItem};
 use ratatui::Frame;
 
 use crate::app::{AppState, Pane};
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let is_focused = state.focused == Pane::Episodes;
-    let border_color = if is_focused {
-        Color::Cyan
-    } else {
-        Color::DarkGray
-    };
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color))
-        .title(format!(" Episodes ({}) ", state.episodes.len()));
+    let block = theme::panel(format!("Episodes ({})", state.episodes.len()), is_focused);
 
     if state.episodes.is_empty() {
-        let text =
-            ratatui::widgets::Paragraph::new("Select a podcast to see episodes.").block(block);
+        let text = ratatui::widgets::Paragraph::new("Select a podcast to see episodes.")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -34,19 +26,16 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(i, ep)| {
             let is_selected = i == state.selected_episode;
             let base_style = if is_selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
 
             let mut spans = Vec::new();
             if ep.played {
                 spans.push(Span::styled("  ", base_style));
             } else {
-                spans.push(Span::styled("● ", Style::default().fg(Color::Cyan)));
+                spans.push(Span::styled("● ", Style::default().fg(theme::ACCENT)));
             }
 
             spans.push(Span::styled(&ep.title, base_style));
@@ -76,7 +65,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             if !meta_parts.is_empty() {
                 spans.push(Span::styled(
                     format!("  {}", meta_parts.join(" | ")),
-                    Style::default().fg(Color::DarkGray),
+                    theme::muted(),
                 ));
             }
 

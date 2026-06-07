@@ -1,21 +1,19 @@
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::widgets::{List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" Inbox ({}) ", state.inbox.len()));
+    let block = theme::panel(format!("Inbox ({})", state.inbox.len()), true);
 
     if state.inbox.is_empty() {
-        let text =
-            Paragraph::new("Inbox is empty. Listen to episodes to triage them.").block(block);
+        let text = Paragraph::new("Inbox is empty. Listen to episodes to triage them.")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -27,12 +25,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(i, row)| {
             let is_selected = i == state.selected_inbox;
             let base_style = if is_selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
 
             let mut spans = vec![Span::styled(&row.episode_title, base_style)];
@@ -60,14 +55,14 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             if !meta_parts.is_empty() {
                 spans.push(Span::styled(
                     format!("  {}", meta_parts.join(" | ")),
-                    Style::default().fg(Color::DarkGray),
+                    theme::muted(),
                 ));
             }
 
             if let Some(ref reason) = row.priority_reason {
                 spans.push(Span::styled(
                     format!("  — {reason}"),
-                    Style::default().fg(Color::Yellow),
+                    Style::default().fg(theme::WARN),
                 ));
             }
 

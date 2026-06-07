@@ -1,20 +1,17 @@
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::widgets::{List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" Bookmarks ({}) ", state.bookmarks.len()));
+    let block = theme::panel(format!("Bookmarks ({})", state.bookmarks.len()), true);
 
     if state.bookmarks.is_empty() {
         let text = Paragraph::new("No starred episodes. Press 's' on an episode to bookmark it.")
+            .style(theme::muted())
             .block(block);
         frame.render_widget(text, area);
         return;
@@ -27,12 +24,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, episode)| {
             let selected = index == state.selected_bookmark;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             let mut spans = vec![Span::styled(&episode.title, base)];
             let mut meta = Vec::new();
@@ -58,7 +52,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
             if !meta.is_empty() {
                 spans.push(Span::styled(
                     format!("  {}", meta.join(" | ")),
-                    Style::default().fg(Color::DarkGray),
+                    theme::muted(),
                 ));
             }
             ListItem::new(Line::from(spans))
