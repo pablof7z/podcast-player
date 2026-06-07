@@ -29,13 +29,13 @@ use nostr::nips::nip19::ToBech32;
 
 use nmp_core::planner::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_core::stable_hash::stable_hash64;
-use nmp_core::subs::{SubIdentity, SubKey, SubOwnerKey, SubScope};
 use nmp_core::substrate::{KernelEvent, ViewDependencies};
 use nmp_core::KernelEventObserver;
 
 use crate::comments_anchor::episode_nip73_anchor;
 use crate::ffi::projections::CommentSummary;
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::{identity::IdentityStore, PodcastStore};
 use nmp_ffi::NmpApp;
 
@@ -143,6 +143,7 @@ pub struct CommentsObserver {
     store: Arc<Mutex<PodcastStore>>,
     comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 impl CommentsObserver {
@@ -151,7 +152,17 @@ impl CommentsObserver {
         comments_cache: Arc<Mutex<HashMap<String, Vec<CommentSummary>>>>,
         rev: Arc<AtomicU64>,
     ) -> Self {
-        Self { store, comments_cache, rev }
+        Self {
+            store,
+            comments_cache,
+            rev,
+            snapshot_signal: None,
+        }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 }
 
@@ -193,7 +204,11 @@ impl KernelEventObserver for CommentsObserver {
             if !entry.iter().any(|c| c.id == comment.id) {
                 entry.push(comment);
                 entry.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                if let Some(signal) = &self.snapshot_signal {
+                    signal.bump();
+                } else {
+                    self.rev.fetch_add(1, Ordering::Relaxed);
+                }
             }
         }
     }

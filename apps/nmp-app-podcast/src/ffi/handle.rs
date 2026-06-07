@@ -2,23 +2,23 @@
 //! `nmp_app_podcast_snapshot` / `nmp_app_podcast_unregister`.
 
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use nmp_ffi::NmpApp;
 use tokio::runtime::Runtime;
 
 use crate::clip_handler::ClipRecord;
-use crate::inbox_llm::TriageResult;
+use crate::download::DownloadQueue;
 use crate::ffi::projections::{
-    AgentMessageSummary, AgentNoteSummary, AgentPickSummary, AgentTaskSummary,
-    CommentSummary,
+    AgentMessageSummary, AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
     KnowledgeSearchResult, NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry,
     VoiceState, WikiArticle,
 };
-use crate::download::DownloadQueue;
+use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
 
@@ -42,6 +42,7 @@ pub struct PodcastHandle {
     pub(super) store: Arc<Mutex<PodcastStore>>,
     pub(super) identity: Arc<Mutex<IdentityStore>>,
     pub(super) rev: Arc<AtomicU64>,
+    pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
     /// Transient iTunes search results. Written by `handle_search_itunes` on
     /// the actor thread; read by `build_snapshot_payload` on the main thread.
     pub(super) search_results: Arc<Mutex<Vec<PodcastSummary>>>,
@@ -246,6 +247,22 @@ unsafe impl Sync for PodcastHandle {}
 const CLEAN_HTML_CACHE_CAP: usize = 16_384;
 
 impl PodcastHandle {
+    pub(crate) fn bump_snapshot_rev(&self) {
+        if let Some(signal) = &self.snapshot_signal {
+            signal.bump();
+        } else {
+            self.rev.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub(crate) fn bump_snapshot_rev_if(&self, changed: bool) {
+        if let Some(signal) = &self.snapshot_signal {
+            signal.bump_if(changed);
+        } else if changed {
+            self.rev.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
     /// Memoized [`super::helpers::strip_html`]. The snapshot projection calls
     /// this once per podcast/episode description on every rebuild; since the
     /// raw text is immutable per content, the first call strips-and-caches and

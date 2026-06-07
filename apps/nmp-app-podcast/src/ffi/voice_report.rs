@@ -68,17 +68,15 @@ pub extern "C" fn nmp_app_podcast_voice_report(
         Ok(mut state) => apply_report(&mut state, report),
         Err(_) => false,
     };
-    if changed {
-        handle_ref
-            .rev
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    }
+    handle_ref.bump_snapshot_rev_if(changed);
 
     // Lock released — now close the STT→LLM→TTS loop. The manager no-ops
     // on an empty transcript and spawns the LLM turn off the actor thread
     // otherwise, dispatching the spoken reply back to iOS asynchronously.
     if let Some(transcript) = final_transcript {
-        handle_ref.voice_conversation.on_transcript_final(transcript);
+        handle_ref
+            .voice_conversation
+            .on_transcript_final(transcript);
     }
 
     std::ptr::null_mut()

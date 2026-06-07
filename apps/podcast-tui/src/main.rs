@@ -50,7 +50,6 @@ fn run(args: Args) -> Result<()> {
     spawn_tick_timer(ui_tx);
 
     let mut state = AppState::default();
-    let mut last_podcast_rev = runtime.podcast_snapshot_rev();
 
     draw(&mut terminal, &state)?;
 
@@ -65,20 +64,12 @@ fn run(args: Args) -> Result<()> {
             UiEvent::Nmp(_event) => {
                 if let Some(update) = runtime.podcast_update() {
                     state.apply_podcast_update(update);
-                    last_podcast_rev = runtime.podcast_snapshot_rev();
                 }
             }
             UiEvent::Tick => {
                 state.tick_toasts();
                 state.tick_motion();
                 runtime.poll_audio_position();
-                let rev = runtime.podcast_snapshot_rev();
-                if rev != last_podcast_rev {
-                    if let Some(update) = runtime.podcast_update() {
-                        state.apply_podcast_update(update);
-                        last_podcast_rev = rev;
-                    }
-                }
             }
         }
         draw(&mut terminal, &state)?;

@@ -50,6 +50,7 @@ use nmp_core::KernelEventObserver;
 use podcast_discovery::{parse_kind_10154, NipF4Show};
 
 use crate::ffi::projections::NostrShowSummary;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 
 /// NIP-F4 podcast show event kind.
 pub const KIND_NIP_F4_SHOW: u32 = 10154;
@@ -141,6 +142,7 @@ fn upsert_show(
     show: NostrShowSummary,
     slot: &Arc<Mutex<Vec<NostrShowSummary>>>,
     rev: &Arc<AtomicU64>,
+    snapshot_signal: Option<&SnapshotUpdateSignal>,
 ) -> bool {
     let Ok(mut guard) = slot.lock() else {
         // D6 — poisoned slot is a silent no-op.
@@ -159,7 +161,11 @@ fn upsert_show(
         None => guard.push(show),
     }
     drop(guard);
-    rev.fetch_add(1, Ordering::Relaxed);
+    if let Some(signal) = snapshot_signal {
+        signal.bump();
+    } else {
+        rev.fetch_add(1, Ordering::Relaxed);
+    }
     true
 }
 
@@ -177,6 +183,7 @@ pub struct NostrDiscoveryObserver {
     /// Shared monotonic snapshot revision; bumped when the slot changes so the
     /// next push frame reflects the new show.
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 impl NostrDiscoveryObserver {
@@ -188,7 +195,13 @@ impl NostrDiscoveryObserver {
         Self {
             nostr_results,
             rev,
+            snapshot_signal: None,
         }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 }
 
@@ -210,7 +223,12 @@ impl KernelEventObserver for NostrDiscoveryObserver {
         ) else {
             return; // D6 — unparseable event is dropped silently.
         };
-        let _ = upsert_show(project_show(&show), &self.nostr_results, &self.rev);
+        let _ = upsert_show(
+            project_show(&show),
+            &self.nostr_results,
+            &self.rev,
+            self.snapshot_signal.as_ref(),
+        );
     }
 }
 

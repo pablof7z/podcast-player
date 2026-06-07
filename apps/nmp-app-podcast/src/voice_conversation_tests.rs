@@ -38,6 +38,7 @@ fn manager_with_null_app() -> VoiceConversationManager {
         voice_state,
         runtime,
         rev,
+        None,
     )
 }
 
@@ -68,7 +69,10 @@ fn conversation_history_accumulates() {
 
     // Two successive final transcripts → history grows to u + a + u + a.
     let first = run_turn(&history, "what should I listen to?", &store, &runtime);
-    assert!(first.is_some(), "non-empty transcript yields a speakable reply");
+    assert!(
+        first.is_some(),
+        "non-empty transcript yields a speakable reply"
+    );
 
     let second = run_turn(&history, "tell me more", &store, &runtime);
     assert!(second.is_some());
@@ -187,7 +191,9 @@ fn shutdown_aborts_genuinely_inflight_task() {
     // This `block_on` completes before `shutdown` runs its own `block_on`, so
     // there is no nested-runtime panic.
     rt.block_on(async {
-        started_rx.await.expect("in-flight task must reach its park point");
+        started_rx
+            .await
+            .expect("in-flight task must reach its park point");
     });
 
     mgr.shutdown();

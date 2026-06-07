@@ -20,7 +20,6 @@
 //! `NULL`. Nothing panics across the FFI.
 
 use std::ffi::{c_char, CStr};
-use std::sync::atomic::Ordering;
 
 use serde::Deserialize;
 
@@ -76,7 +75,7 @@ pub extern "C" fn nmp_app_podcast_transcript_report(
     }
     // Bump rev so the next snapshot tick surfaces the new transcript_entries
     // and transcript fields on EpisodeSummary.
-    handle_ref.rev.fetch_add(1, Ordering::Relaxed);
+    handle_ref.bump_snapshot_rev();
 
     std::ptr::null_mut()
 }

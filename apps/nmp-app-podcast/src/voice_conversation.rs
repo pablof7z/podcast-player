@@ -48,6 +48,7 @@ use crate::agent_handler::SCAFFOLD_ASSISTANT_REPLY;
 use crate::agent_llm;
 use crate::capability::voice::{VoiceCommand, VOICE_CAPABILITY_NAMESPACE};
 use crate::ffi::projections::VoiceState;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// System prompt for voice-mode turns. Kept terse on purpose: TTS replies
@@ -159,6 +160,7 @@ pub(crate) struct VoiceConversationManager {
     voice_state: Arc<Mutex<VoiceState>>,
     runtime: Arc<Runtime>,
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
     /// Outer-task join handles for in-flight turns. Drained by
     /// [`Self::shutdown`] (abort + join) so no spawned task can dereference
     /// `app` after the app begins freeing. Pruned opportunistically on each
@@ -194,6 +196,7 @@ impl VoiceConversationManager {
         voice_state: Arc<Mutex<VoiceState>>,
         runtime: Arc<Runtime>,
         rev: Arc<AtomicU64>,
+        snapshot_signal: Option<SnapshotUpdateSignal>,
     ) -> Self {
         Self {
             app,
@@ -202,6 +205,7 @@ impl VoiceConversationManager {
             voice_state,
             runtime,
             rev,
+            snapshot_signal,
             inflight: Arc::new(Mutex::new(Vec::new())),
             shutting_down: Arc::new(AtomicBool::new(false)),
         }
@@ -262,6 +266,7 @@ impl VoiceConversationManager {
         let voice_state = Arc::clone(&self.voice_state);
         let runtime_for_blocking = Arc::clone(&self.runtime);
         let rev = Arc::clone(&self.rev);
+        let snapshot_signal = self.snapshot_signal.clone();
         let shutting_down = Arc::clone(&self.shutting_down);
         // `*mut NmpApp` is not `Send`; move it through a `usize` so the
         // spawned future captures a plain integer and re-materializes the
@@ -324,7 +329,11 @@ impl VoiceConversationManager {
                     let _ = unsafe { &*app }.dispatch_capability(&req);
                 }
             }
-            rev.fetch_add(1, Ordering::Relaxed);
+            if let Some(signal) = snapshot_signal {
+                signal.bump();
+            } else {
+                rev.fetch_add(1, Ordering::Relaxed);
+            }
         });
 
         // Retain the outer handle so `shutdown` can abort/join it, and prune

@@ -36,6 +36,7 @@ use crate::download::DownloadQueue;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
 use crate::tasks_handler;
@@ -140,6 +141,11 @@ pub extern "C" fn nmp_app_podcast_register(
             .expect("tokio runtime"),
     );
 
+    // Install the host-op handler (requires &self, so take the ref AFTER the
+    // &mut borrow above is released by the block end).
+    let app_ref = unsafe { &*app };
+    let snapshot_signal = SnapshotUpdateSignal::new(rev.clone(), app_ref.actor_sender());
+
     let agent_chat = AgentChatHandler::new(
         conversation.clone(),
         agent_busy.clone(),
@@ -147,11 +153,8 @@ pub extern "C" fn nmp_app_podcast_register(
         rev.clone(),
         runtime.clone(),
         store.clone(),
-    );
-
-    // Install the host-op handler (requires &self, so take the ref AFTER the
-    // &mut borrow above is released by the block end).
-    let app_ref = unsafe { &*app };
+    )
+    .with_snapshot_signal(snapshot_signal.clone());
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
     //
@@ -213,38 +216,41 @@ pub extern "C" fn nmp_app_podcast_register(
         ("wss://relay.tenex.chat".to_string(), "read".to_string()),
     ]);
 
-    app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(
-        app,
-        store.clone(),
-        identity.clone(),
-        player_actor.clone(),
-        search_results.clone(),
-        nostr_results.clone(),
-        queue.clone(),
-        download_queue.clone(),
-        wiki_articles.clone(),
-        wiki_search_results.clone(),
-        picks.clone(),
-        agent_tasks.clone(),
-        knowledge_search_results.clone(),
-        knowledge_store.clone(),
-        clips.clone(),
-        transcripts.clone(),
-        dismissed_episode_ids.clone(),
-        voice_state.clone(),
-        categories.clone(),
-        rev.clone(),
-        podcast_keys.clone(),
-        publish_state.clone(),
-        agent_chat,
-        comments_cache.clone(),
-        viewed_comments_episode_id.clone(),
-        runtime.clone(),
-        inbox_triage_cache.clone(),
-        Arc::clone(&inbox_triage_in_progress),
-        social.clone(),
-        agent_notes.clone(),
-    )));
+    app_ref.set_host_op_handler(Arc::new(
+        PodcastHostOpHandler::new(
+            app,
+            store.clone(),
+            identity.clone(),
+            player_actor.clone(),
+            search_results.clone(),
+            nostr_results.clone(),
+            queue.clone(),
+            download_queue.clone(),
+            wiki_articles.clone(),
+            wiki_search_results.clone(),
+            picks.clone(),
+            agent_tasks.clone(),
+            knowledge_search_results.clone(),
+            knowledge_store.clone(),
+            clips.clone(),
+            transcripts.clone(),
+            dismissed_episode_ids.clone(),
+            voice_state.clone(),
+            categories.clone(),
+            rev.clone(),
+            podcast_keys.clone(),
+            publish_state.clone(),
+            agent_chat,
+            comments_cache.clone(),
+            viewed_comments_episode_id.clone(),
+            runtime.clone(),
+            inbox_triage_cache.clone(),
+            Arc::clone(&inbox_triage_in_progress),
+            social.clone(),
+            agent_notes.clone(),
+        )
+        .with_snapshot_signal(snapshot_signal.clone()),
+    ));
 
     // NIP-F4 discovery observer (canonical EnsureInterest + KernelEventObserver
     // pattern). The `podcast.discover_nostr` action emits
@@ -260,7 +266,8 @@ pub extern "C" fn nmp_app_podcast_register(
             crate::discover_nostr::NostrDiscoveryObserver::new(
                 nostr_results.clone(),
                 rev.clone(),
-            ),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
         ));
 
     // kind:1111 comments observer — receives events from push_interest_via_nmp
@@ -271,7 +278,8 @@ pub extern "C" fn nmp_app_podcast_register(
                 store.clone(),
                 comments_cache.clone(),
                 rev.clone(),
-            ),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
         ));
 
     // kind:1 agent-notes observer — receives events from push_interest_via_nmp
@@ -282,7 +290,8 @@ pub extern "C" fn nmp_app_podcast_register(
                 identity.clone(),
                 agent_notes.clone(),
                 rev.clone(),
-            ),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
         ));
 
     // In-app feedback observer — receives kind:1 + kind:513 events bearing the
@@ -296,7 +305,8 @@ pub extern "C" fn nmp_app_podcast_register(
             crate::feedback_handler::FeedbackObserver::new(
                 feedback_events_cache.clone(),
                 rev.clone(),
-            ),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
         ));
 
     // Keep a clone for the handle before the runtime Arc is moved into the
@@ -318,6 +328,7 @@ pub extern "C" fn nmp_app_podcast_register(
         voice_state.clone(),
         runtime,
         rev.clone(),
+        Some(snapshot_signal.clone()),
     );
 
     let handle = Arc::new(PodcastHandle {
@@ -326,6 +337,7 @@ pub extern "C" fn nmp_app_podcast_register(
         store,
         identity,
         rev,
+        snapshot_signal: Some(snapshot_signal.clone()),
         search_results,
         nostr_results,
         snapshot_cache: Arc::new(Mutex::new(None)),

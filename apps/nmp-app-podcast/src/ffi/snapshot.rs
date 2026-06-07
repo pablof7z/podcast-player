@@ -18,7 +18,7 @@ use super::snapshot_categories::build_category_aggregate;
 use super::snapshot_downloads::build_downloads_snapshot;
 use super::snapshot_owned::collect_owned_podcasts;
 use super::snapshot_queue::resolve_queue_rows;
-use crate::inbox_handler::{build_inbox, maybe_enqueue_triage};
+use crate::inbox_handler::{build_inbox, maybe_enqueue_triage_with_signal};
 
 /// Build the JSON payload for one snapshot tick.
 ///
@@ -222,13 +222,24 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     // spawn a background pass off the actor thread so the cache fills without
     // an explicit user `Triage` action. Cheap no-op when nothing needs triage
     // or a pass is already running (re-entrancy-guarded internally).
-    maybe_enqueue_triage(
-        &handle.store,
-        &handle.inbox_triage_cache,
-        &handle.rev,
-        &handle.runtime,
-        &handle.inbox_triage_in_progress,
-    );
+    if let Some(signal) = handle.snapshot_signal.clone() {
+        maybe_enqueue_triage_with_signal(
+            &handle.store,
+            &handle.inbox_triage_cache,
+            &handle.rev,
+            &handle.runtime,
+            &handle.inbox_triage_in_progress,
+            signal,
+        );
+    } else {
+        crate::inbox_handler::maybe_enqueue_triage(
+            &handle.store,
+            &handle.inbox_triage_cache,
+            &handle.rev,
+            &handle.runtime,
+            &handle.inbox_triage_in_progress,
+        );
+    }
     let inbox_triage_in_progress = handle
         .inbox_triage_in_progress
         .load(std::sync::atomic::Ordering::Relaxed);

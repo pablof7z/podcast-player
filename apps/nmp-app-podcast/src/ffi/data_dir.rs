@@ -11,7 +11,6 @@
 
 use std::ffi::c_char;
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
 
 use super::handle::PodcastHandle;
 use super::helpers::c_string_opt;
@@ -35,7 +34,9 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(
     if handle.is_null() {
         return;
     }
-    let Some(path_str) = c_string_opt(path) else { return; };
+    let Some(path_str) = c_string_opt(path) else {
+        return;
+    };
     if path_str.is_empty() {
         return;
     }
@@ -139,7 +140,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(
         // Force the next snapshot poll to pick up the restored library,
         // queue, identity, and/or owned-podcast keys even though no write
         // happened here.
-        handle.rev.fetch_add(1, Ordering::Relaxed);
+        handle.bump_snapshot_rev();
     }
 }
 
