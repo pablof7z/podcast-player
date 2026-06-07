@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-07T20:42:20Z",
+      "lines": [
+        "Provider model picks now save the backend-routed model ID, so OpenRouter and Ollama selections run through the intended shared provider."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T19:24:00Z",
       "lines": [
         "Agent web search now uses the shared backend for Perplexity and OpenRouter fallback, with provider setup errors handled consistently."

@@ -26,7 +26,14 @@ pub struct ProviderModelCatalog {
 #[serde(rename_all = "snake_case")]
 pub struct ProviderModelOption {
     pub provider: &'static str,
+    /// Catalog/provider-native identifier. For OpenRouter this is the raw
+    /// `provider/model` id; for Ollama this is the tag/model name without the
+    /// app routing prefix.
     pub id: String,
+    /// Provider-native id suitable for provider API calls.
+    pub provider_model_id: String,
+    /// App settings id that preserves the provider routing target.
+    pub selection_model_id: String,
     pub name: String,
     pub provider_id: String,
     pub provider_name: String,

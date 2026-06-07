@@ -49,6 +49,8 @@ enum CatalogError: LocalizedError {
 struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
     var provider: LLMProvider
     var id: String
+    var providerModelID: String
+    var selectionModelID: String
     var name: String
     var providerID: String
     var providerName: String
@@ -79,8 +81,12 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
     let searchText: String
 
     init(remote model: ProviderModelOptionDTO) {
+        let providerModelID = model.providerModelID ?? model.id
+        let selectionModelID = model.selectionModelID ?? model.id
         self.provider = model.provider
-        self.id = model.id
+        self.id = selectionModelID
+        self.providerModelID = providerModelID
+        self.selectionModelID = selectionModelID
         self.name = model.name
         self.providerID = model.providerID
         self.providerName = model.providerName
@@ -116,8 +122,11 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
     /// A downloaded on-device model, surfaced in the per-role selector as the
     /// "Local" provider alongside OpenRouter/Ollama.
     init(local spec: LocalModelSpec) {
+        let selectionModelID = LLMModelReference(provider: .local, modelID: spec.id).storedID
         self.provider = .local
-        self.id = LLMModelReference(provider: .local, modelID: spec.id).storedID
+        self.id = selectionModelID
+        self.providerModelID = spec.id
+        self.selectionModelID = selectionModelID
         self.name = spec.displayName
         self.providerID = "local"
         self.providerName = LLMProvider.local.displayName
@@ -147,6 +156,8 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         self.lastUpdated = nil
         self.searchText = Self.makeSearchText(
             id: self.id,
+            providerModelID: self.providerModelID,
+            selectionModelID: self.selectionModelID,
             name: self.name,
             providerName: self.providerName,
             providerID: self.providerID,
@@ -159,6 +170,8 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
 
     private static func makeSearchText(
         id: String,
+        providerModelID: String,
+        selectionModelID: String,
         name: String,
         providerName: String,
         providerID: String,
@@ -167,7 +180,7 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
         inputModalities: [String],
         outputModalities: [String]
     ) -> String {
-        [id, name, providerName, providerID,
+        [id, providerModelID, selectionModelID, name, providerName, providerID,
          modelDescription ?? "", tokenizer ?? "",
          inputModalities.joined(separator: " "),
          outputModalities.joined(separator: " ")]
@@ -176,6 +189,15 @@ struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
 
     var isFree: Bool {
         promptCostPerMillion == 0 && completionCostPerMillion == 0
+    }
+
+    func matchesStoredID(_ storedID: String) -> Bool {
+        let id = storedID.trimmed
+        return self.id == id || selectionModelID == id || providerModelID == id
+    }
+
+    var displayModelID: String {
+        providerModelID.isEmpty ? id : providerModelID
     }
 
     var isTextOutput: Bool {

@@ -12,6 +12,8 @@ struct ProviderModelCatalogResult: Decodable, Sendable {
 struct ProviderModelOptionDTO: Decodable, Sendable {
     var provider: LLMProvider
     var id: String
+    var providerModelID: String? = nil
+    var selectionModelID: String? = nil
     var name: String
     var providerID: String
     var providerName: String
@@ -43,6 +45,8 @@ struct ProviderModelOptionDTO: Decodable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case provider, id, name
+        case providerModelID = "provider_model_id"
+        case selectionModelID = "selection_model_id"
         case providerID = "provider_id"
         case providerName = "provider_name"
         case providerIconURL = "provider_icon_url"

@@ -6,6 +6,10 @@ use crate::provider_settings_catalog::ProviderSettingItem;
 pub(crate) struct ProviderCatalogModel {
     pub provider: String,
     pub id: String,
+    #[serde(default)]
+    pub provider_model_id: String,
+    #[serde(default)]
+    pub selection_model_id: String,
     pub name: String,
     pub provider_name: String,
     pub model_description: Option<String>,
@@ -40,11 +44,21 @@ impl ProviderCatalogModel {
         }
     }
 
+    pub(crate) fn selection_id(&self) -> &str {
+        if self.selection_model_id.trim().is_empty() {
+            &self.id
+        } else {
+            &self.selection_model_id
+        }
+    }
+
     pub(crate) fn matches_query(&self, query: &str) -> bool {
         let query = query.trim().to_lowercase();
         query.is_empty()
             || self.search_text.contains(&query)
             || self.id.to_lowercase().contains(&query)
+            || self.provider_model_id.to_lowercase().contains(&query)
+            || self.selection_id().to_lowercase().contains(&query)
             || self.name.to_lowercase().contains(&query)
             || self.provider_name.to_lowercase().contains(&query)
     }
@@ -132,6 +146,8 @@ mod tests {
         let json = r#"{"result":{"models":[{
             "provider":"openrouter",
             "id":"openai/gpt-4o",
+            "provider_model_id":"openai/gpt-4o",
+            "selection_model_id":"openrouter:openai/gpt-4o",
             "name":"GPT-4o",
             "provider_name":"OpenAI",
             "model_description":"Fast",
@@ -147,6 +163,8 @@ mod tests {
         }]}}"#;
         let models = decode_provider_catalog(json).unwrap();
         assert_eq!(models[0].display_name(), "GPT-4o");
+        assert_eq!(models[0].selection_id(), "openrouter:openai/gpt-4o");
         assert!(models[0].matches_query("openai"));
+        assert!(models[0].matches_query("openrouter"));
     }
 }

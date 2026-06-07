@@ -66,10 +66,13 @@ Android mirrors the shared STT/ElevenLabs settings projection, stores
 ElevenLabs/AssemblyAI/Perplexity keys in encrypted host storage, reports STT
 key presence to Rust, reloads ElevenLabs, AssemblyAI, and Perplexity into the
 shared provider-key cache, calls shared Rust ElevenLabs validation plus
-Scribe/AssemblyAI transcription and online search through JNI, and updates
-STT/TTS/voice selections through typed settings actions. The TUI loads
-OpenRouter/Ollama/ElevenLabs/AssemblyAI/Perplexity env credentials into the
-same shared key-cache action.
+Scribe/AssemblyAI transcription and online search through JNI, exposes the
+shared agent chat completion path through JNI, and updates STT/TTS/voice
+selections through typed settings actions. The provider catalog now exposes
+both provider-native IDs and `selection_model_id`; iOS, Android, and TUI model
+selectors store the selection ID so OpenRouter/Ollama routing survives the
+settings round trip. The TUI loads OpenRouter/Ollama/ElevenLabs/AssemblyAI/
+Perplexity env credentials into the same shared key-cache action.
 
 Immediate targets:
 
@@ -82,6 +85,10 @@ Immediate targets:
   platform callers submit a typed audio-source intent and Rust owns the
   selected model lookup, OpenRouter auth, remote-source staging, multipart
   upload, status handling, and response parsing.
+- Streaming voice-mode STT/TTS remains blocked on the canonical NMP capability
+  seam tracked upstream in
+  `pablof7z/nostr-multi-platform#954`; do not invent an app-local streaming
+  provider protocol as a workaround.
 
 Provider model-list discovery can remain UI-owned temporarily if it is only a
 catalog/browser concern, but any provider inference call must use Rust.

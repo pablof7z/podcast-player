@@ -92,9 +92,12 @@ impl OrModel {
         let provider_name = provider
             .map(|provider| provider.name.clone())
             .unwrap_or_else(|| provider_name_from_model_name(&self.name, &provider_id));
+        let raw_model_id = self.id.clone();
         let mut option = ProviderModelOption {
             provider: "openrouter",
-            id: self.id.clone(),
+            id: raw_model_id.clone(),
+            provider_model_id: raw_model_id.clone(),
+            selection_model_id: format!("openrouter:{raw_model_id}"),
             name: self.name,
             provider_id,
             provider_name,
@@ -265,9 +268,12 @@ impl OllamaTagModel {
         } else {
             format!("Cloud model available through Ollama's hosted API. {detail_parts}.")
         };
+        let selection_model_id = format!("ollama:{raw_id}");
         let mut option = ProviderModelOption {
             provider: "ollama",
-            id: format!("ollama:{raw_id}"),
+            id: raw_id.clone(),
+            provider_model_id: raw_id.clone(),
+            selection_model_id,
             name: self.name,
             provider_id: "ollama-cloud".to_owned(),
             provider_name: "Ollama Cloud".to_owned(),
@@ -347,6 +353,8 @@ fn parse_ollama_date(value: &str) -> Option<DateTime<FixedOffset>> {
 fn make_search_text(option: &ProviderModelOption) -> String {
     [
         option.id.as_str(),
+        option.provider_model_id.as_str(),
+        option.selection_model_id.as_str(),
         option.name.as_str(),
         option.provider_name.as_str(),
         option.provider_id.as_str(),
@@ -425,6 +433,8 @@ mod tests {
 
         assert_eq!(option.provider, "openrouter");
         assert_eq!(option.id, "openai/gpt-4o");
+        assert_eq!(option.provider_model_id, "openai/gpt-4o");
+        assert_eq!(option.selection_model_id, "openrouter:openai/gpt-4o");
         assert_eq!(option.provider_name, "OpenAI");
         assert_eq!(
             option.provider_icon_url.as_deref(),
@@ -437,7 +447,7 @@ mod tests {
     }
 
     #[test]
-    fn ollama_option_uses_provider_prefix_and_reasoning_flags() {
+    fn ollama_option_exposes_raw_and_selection_ids() {
         let option = OllamaTagModel {
             name: "qwen3:cloud".to_owned(),
             model: None,
@@ -452,7 +462,9 @@ mod tests {
         .into_option();
 
         assert_eq!(option.provider, "ollama");
-        assert_eq!(option.id, "ollama:qwen3:cloud");
+        assert_eq!(option.id, "qwen3:cloud");
+        assert_eq!(option.provider_model_id, "qwen3:cloud");
+        assert_eq!(option.selection_model_id, "ollama:qwen3:cloud");
         assert_eq!(option.tokenizer.as_deref(), Some("qwen"));
         assert!(option.supports_reasoning);
         assert_eq!(option.last_updated.as_deref(), Some("2025-05-01"));

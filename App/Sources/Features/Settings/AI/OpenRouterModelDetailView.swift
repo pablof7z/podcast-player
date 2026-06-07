@@ -109,7 +109,7 @@ struct OpenRouterModelDetailView: View {
             VStack(alignment: .leading, spacing: Layout.heroInnerSpacing) {
                 Text(model.name)
                     .font(AppTheme.Typography.title3)
-                Text(model.id)
+                Text(model.displayModelID)
                     .font(AppTheme.Typography.monoCaption)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -121,9 +121,9 @@ struct OpenRouterModelDetailView: View {
     }
 
     private var selectButton: some View {
-        let alreadySelected = selectedModelID == model.id
+        let alreadySelected = model.matchesStoredID(selectedModelID)
         return Button {
-            selectedModelID = model.id
+            selectedModelID = model.selectionModelID
             selectedModelName = model.name
             dismiss()
         } label: {

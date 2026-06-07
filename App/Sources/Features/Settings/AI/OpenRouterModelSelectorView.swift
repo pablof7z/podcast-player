@@ -87,7 +87,7 @@ struct OpenRouterModelSelectorView: View {
 
     private var currentSection: some View {
         Section("Current") {
-            if let current = viewModel.models.first(where: { $0.id == selectedModelID }) {
+            if let current = viewModel.models.first(where: { $0.matchesStoredID(selectedModelID) }) {
                 NavigationLink(value: current) {
                     OpenRouterModelRow(model: current, isSelected: true)
                 }
@@ -188,7 +188,11 @@ struct OpenRouterModelSelectorView: View {
             } else {
                 ForEach(visibleModels) { model in
                     NavigationLink(value: model) {
-                        OpenRouterModelRow(model: model, isSelected: model.id == selectedModelID, query: searchText)
+                        OpenRouterModelRow(
+                            model: model,
+                            isSelected: model.matchesStoredID(selectedModelID),
+                            query: searchText
+                        )
                     }
                 }
             }
