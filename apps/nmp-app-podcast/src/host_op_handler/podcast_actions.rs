@@ -152,8 +152,49 @@ impl PodcastHostOpHandler {
     ) -> serde_json::Value {
         match self.store.lock() {
             Ok(mut s) => {
-                let changed = s.set_transcript_status(episode_id, &status, message);
+                use crate::store::events::{stage, EventDetail, EventSeverity};
+                let changed = s.set_transcript_status(episode_id.clone(), &status, message.clone());
                 if changed {
+                    // Mirror the iOS-reported transcript stage into the episode
+                    // pipeline log so the Diagnostics sheet shows the attempt,
+                    // its provider stage, and any failure. The kernel never runs
+                    // STT itself — it records what the iOS capability reports.
+                    match status.as_str() {
+                        "none" | "" => {} // status cleared — not a pipeline event
+                        "failed" => s.emit_event(
+                            &episode_id,
+                            stage::TRANSCRIPT_FAILED,
+                            EventSeverity::Failure,
+                            "Transcription failed",
+                            message
+                                .map(|m| vec![EventDetail::new("Error", m)])
+                                .unwrap_or_default(),
+                        ),
+                        "fetching_publisher" => s.emit_event_simple(
+                            &episode_id,
+                            stage::TRANSCRIPT_ATTEMPT,
+                            EventSeverity::Info,
+                            "Fetching publisher transcript",
+                        ),
+                        "transcribing" => s.emit_event_simple(
+                            &episode_id,
+                            stage::TRANSCRIPT_ATTEMPT,
+                            EventSeverity::Info,
+                            "Transcribing audio",
+                        ),
+                        "queued" => s.emit_event_simple(
+                            &episode_id,
+                            stage::TRANSCRIPT_ATTEMPT,
+                            EventSeverity::Info,
+                            "Transcription queued",
+                        ),
+                        other => s.emit_event_simple(
+                            &episode_id,
+                            stage::TRANSCRIPT_ATTEMPT,
+                            EventSeverity::Info,
+                            format!("Transcription: {other}"),
+                        ),
+                    }
                     self.rev.fetch_add(1, Ordering::Relaxed);
                 }
                 serde_json::json!({"ok": true})
