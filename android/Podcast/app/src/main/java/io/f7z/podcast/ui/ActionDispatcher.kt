@@ -11,14 +11,15 @@ import kotlinx.serialization.json.Json
  *
  * **The wire model is `(namespace, op-tagged body)` — not flat action ids.**
  *
- * The Rust kernel registers exactly two podcast-domain `ActionModule`
- * namespaces:
+ * The Rust kernel registers podcast-domain `ActionModule` namespaces including:
  *
  *  * `"podcast"`        — subscribe, unsubscribe, refresh_all, search_itunes,
  *                         download, delete_download, star_episode, …
  *  * `"podcast.player"` — play, pause, resume, seek, set_speed,
  *                         set_sleep_timer, stop, …
  *  * `"podcast.queue"`  — add_next, add_last, remove, clear.
+ *  * `"podcast.settings"` — playback preferences, provider/model metadata.
+ *  * `"podcast.tasks"`  — create/delete/enable/disable/run scheduled tasks.
  *
  * Each action is encoded as `{"op":"<variant>", …fields}` and the Rust
  * `#[serde(tag = "op", rename_all = "snake_case")]` discriminator routes it.
@@ -43,6 +44,7 @@ object PodcastNamespace {
     const val PLAYER = "podcast.player"
     const val QUEUE = "podcast.queue"
     const val SETTINGS = "podcast.settings"
+    const val TASKS = "podcast.tasks"
 }
 
 // ── `podcast` namespace payloads ──────────────────────────────────────────
@@ -164,6 +166,42 @@ data class QueueRemovePayload(
 @Serializable
 data class QueueClearPayload(val op: String = "clear")
 
+// ── `podcast.tasks` namespace payloads ────────────────────────────────────
+
+@Serializable
+data class TaskCreatePayload(
+    val title: String,
+    val description: String? = null,
+    @SerialName("action_namespace") val actionNamespace: String,
+    @SerialName("action_body") val actionBody: String,
+    val schedule: String,
+    val op: String = "create",
+)
+
+@Serializable
+data class TaskDeletePayload(
+    @SerialName("task_id") val taskId: String,
+    val op: String = "delete",
+)
+
+@Serializable
+data class TaskEnablePayload(
+    @SerialName("task_id") val taskId: String,
+    val op: String = "enable",
+)
+
+@Serializable
+data class TaskDisablePayload(
+    @SerialName("task_id") val taskId: String,
+    val op: String = "disable",
+)
+
+@Serializable
+data class TaskRunNowPayload(
+    @SerialName("task_id") val taskId: String,
+    val op: String = "run_now",
+)
+
 // ── `podcast.settings` namespace payloads ─────────────────────────────────
 
 /**
@@ -186,6 +224,63 @@ data class SetDefaultPlaybackRatePayload(
 data class SetAutoDeleteDownloadsPayload(
     val enabled: Boolean,
     val op: String = "set_auto_delete_downloads_after_played",
+)
+
+@Serializable
+data class SetAgentInitialModelPayload(
+    val model: String,
+    @SerialName("model_name") val modelName: String,
+    val op: String = "set_agent_initial_model",
+)
+
+@Serializable
+data class SetAgentThinkingModelPayload(
+    val model: String,
+    @SerialName("model_name") val modelName: String,
+    val op: String = "set_agent_thinking_model",
+)
+
+@Serializable
+data class SetEmbeddingsModelPayload(
+    val model: String,
+    @SerialName("model_name") val modelName: String,
+    val op: String = "set_embeddings_model",
+)
+
+@Serializable
+data class SetOpenRouterCredentialPayload(
+    val source: String,
+    @SerialName("key_id") val keyId: String? = null,
+    @SerialName("key_label") val keyLabel: String? = null,
+    @SerialName("connected_at") val connectedAt: Long? = null,
+    val op: String = "set_open_router_credential",
+)
+
+@Serializable
+data class SetOllamaCredentialPayload(
+    val source: String,
+    @SerialName("key_id") val keyId: String? = null,
+    @SerialName("key_label") val keyLabel: String? = null,
+    @SerialName("connected_at") val connectedAt: Long? = null,
+    val op: String = "set_ollama_credential",
+)
+
+@Serializable
+data class SetOllamaChatUrlPayload(
+    val url: String,
+    val op: String = "set_ollama_chat_url",
+)
+
+/**
+ * Load provider secrets into the Rust store's in-memory provider cache.
+ * Secrets are intentionally not projected and must not be persisted by the
+ * kernel; the Android host owns secure storage.
+ */
+@Serializable
+data class SetProviderApiKeysPayload(
+    @SerialName("open_router") val openRouter: String? = null,
+    val ollama: String? = null,
+    val op: String = "set_provider_api_keys",
 )
 
 /**

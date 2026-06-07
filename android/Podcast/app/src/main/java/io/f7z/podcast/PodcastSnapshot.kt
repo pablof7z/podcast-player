@@ -81,6 +81,8 @@ data class PodcastSnapshot(
     val queue: List<EpisodeSummary> = emptyList(),
     /** AI-triaged inbox, highest-priority first. Mirror of `PodcastUpdate.inbox`. */
     val inbox: List<InboxItem> = emptyList(),
+    /** Agent-scheduled task rows. Mirror of `PodcastUpdate.agent_tasks`. */
+    @SerialName("agent_tasks") val agentTasks: List<AgentTaskSummary> = emptyList(),
 ) {
     /**
      * Effective subscription list — prefer the new `podcasts` projection, fall
@@ -298,17 +300,47 @@ data class ChapterSummary(
 )
 
 /**
- * Minimal slice of the Rust `ffi/projections/settings.rs::SettingsSnapshot`.
- *
- * The full Rust struct carries ~50 fields (model ids, credential sources, …).
- * The Android shell only needs playback-relevant settings today; the
- * `ignoreUnknownKeys = true` decoder drops the rest. When a screen needs more
- * fields, add them here against the verified snake_case wire names.
+ * Android mirror of the settings fields currently consumed by playback and
+ * provider/model configuration surfaces.
  */
 @Serializable
 data class SettingsSnapshot(
     @SerialName("default_playback_rate") val defaultPlaybackRate: Float = 1.0f,
     @SerialName("auto_delete_downloads_after_played") val autoDeleteDownloads: Boolean = false,
+    @SerialName("agent_initial_model") val agentInitialModel: String = "deepseek-v4-flash:cloud",
+    @SerialName("agent_initial_model_name") val agentInitialModelName: String = "DeepSeek Flash",
+    @SerialName("agent_thinking_model") val agentThinkingModel: String = "deepseek-v4-flash:cloud",
+    @SerialName("agent_thinking_model_name") val agentThinkingModelName: String = "DeepSeek Flash",
+    @SerialName("embeddings_model") val embeddingsModel: String = "deepseek-v4-flash:cloud",
+    @SerialName("embeddings_model_name") val embeddingsModelName: String = "DeepSeek Flash",
+    @SerialName("open_router_credential_source") val openRouterCredentialSource: String = "",
+    @SerialName("open_router_byok_key_id") val openRouterByokKeyId: String? = null,
+    @SerialName("open_router_byok_key_label") val openRouterByokKeyLabel: String? = null,
+    @SerialName("open_router_connected_at") val openRouterConnectedAt: Long? = null,
+    @SerialName("ollama_credential_source") val ollamaCredentialSource: String = "",
+    @SerialName("ollama_byok_key_id") val ollamaByokKeyId: String? = null,
+    @SerialName("ollama_byok_key_label") val ollamaByokKeyLabel: String? = null,
+    @SerialName("ollama_connected_at") val ollamaConnectedAt: Long? = null,
+    @SerialName("ollama_chat_url") val ollamaChatUrl: String = "",
+)
+
+/**
+ * Mirror of `ffi/projections/agent.rs::AgentTaskSummary`. The Android shell
+ * treats `actionNamespace`, `actionBody`, and `schedule` as opaque kernel-owned
+ * strings and mutates rows through the `podcast.tasks` action namespace.
+ */
+@Serializable
+data class AgentTaskSummary(
+    val id: String = "",
+    val title: String = "",
+    val description: String? = null,
+    @SerialName("action_namespace") val actionNamespace: String = "",
+    @SerialName("action_body") val actionBody: String = "",
+    val schedule: String = "",
+    @SerialName("next_run_at") val nextRunAt: Long? = null,
+    @SerialName("last_run_at") val lastRunAt: Long? = null,
+    val status: String = "pending",
+    @SerialName("is_enabled") val isEnabled: Boolean = false,
 )
 
 /**
