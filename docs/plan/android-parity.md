@@ -94,3 +94,34 @@ podcast business rules.
   need explicit validation that every remote command routes through Rust
   playback policy. Key generation is not exposed yet; Android supports
   imported nsec persistence only.
+
+## Shared Provider / Task Bridge Contract
+
+Android should use the existing generic bridge for all stateful provider
+settings and task-intent APIs:
+
+- Task rows arrive via `PodcastSnapshot.agent_tasks`; Android dispatches
+  `create`, `delete`, `enable`, `disable`, and `run_now` to the
+  `podcast.tasks` namespace with the op-tagged payloads in
+  `ui/ActionDispatcher.kt`.
+- Provider/model settings arrive via `PodcastSnapshot.settings`; Android
+  dispatches provider model and credential metadata changes to the
+  `podcast.settings` namespace. API-key values use
+  `set_provider_api_keys` as in-memory-only input; Android remains responsible
+  for secure storage and reloading those values on app start.
+- No provider-specific JNI wrapper is needed for these action/snapshot flows.
+  `KernelBridge.dispatchAction(namespace, payloadJson)` already routes through
+  the same Rust `ActionModule` registry that iOS uses.
+
+Direct shared-provider transport still needs Android JNI parity after the
+provider transport PR lands. The provider worker branch
+`feat/shared-provider-transport` currently exposes C ABI symbols:
+
+- `nmp_app_podcast_provider_complete(handle, intent_json) -> char*`
+- `nmp_app_podcast_provider_embed(handle, intent_json) -> char*`
+
+Once those symbols are on the integration branch, Android should add matching
+handle-scoped JNI methods on `KernelBridge`, returning the JSON envelope and
+freeing the Rust string with `nmp_app_free_string`. Do not add Android wrappers
+before the symbols land; broken speculative JNI exports would compile only on
+the worker branch and leave `main` behind.
