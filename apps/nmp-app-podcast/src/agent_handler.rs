@@ -24,6 +24,7 @@ use uuid::Uuid;
 use crate::agent_llm;
 use crate::ffi::actions::AgentChatAction;
 use crate::ffi::projections::AgentMessageSummary;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Owns the agent-chat conversation transcript and the `is_busy` /
@@ -43,6 +44,7 @@ pub struct AgentChatHandler {
     /// `search_library` / `get_transcript` / `get_podcast_info` can read it.
     /// `None` in unit tests that exercise transcript bookkeeping without a store.
     store: Option<Arc<Mutex<PodcastStore>>>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 /// Fallback assistant reply used when Ollama is offline or the model errors.
@@ -66,7 +68,13 @@ impl AgentChatHandler {
             rev,
             runtime: Some(runtime),
             store: Some(store),
+            snapshot_signal: None,
         }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 
     /// Create a handler without a runtime (test / scaffold path).
@@ -84,6 +92,7 @@ impl AgentChatHandler {
             rev,
             runtime: None,
             store: None,
+            snapshot_signal: None,
         }
     }
 
@@ -159,6 +168,7 @@ impl AgentChatHandler {
                 // the podcast store via `chat_with_tools`.
                 let conversation = Arc::clone(&self.conversation);
                 let busy = Arc::clone(&self.busy);
+                let signal = self.snapshot_signal.clone();
                 let rev = Arc::clone(&self.rev);
                 let store_c = Arc::clone(store);
                 let message_owned = trimmed.to_owned();
@@ -188,7 +198,11 @@ impl AgentChatHandler {
                         }
                     }
                     busy.store(false, Ordering::Relaxed);
-                    rev.fetch_add(1, Ordering::Relaxed);
+                    if let Some(signal) = signal {
+                        signal.bump();
+                    } else {
+                        rev.fetch_add(1, Ordering::Relaxed);
+                    }
                 });
             }
             _ => {

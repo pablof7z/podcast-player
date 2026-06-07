@@ -27,6 +27,7 @@ use tokio::runtime::Runtime;
 
 use crate::episode_summary_llm::summarize_episode;
 use crate::llm::is_missing_credential_error;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Kick off a background summarization pass for one episode.
@@ -39,6 +40,26 @@ pub(crate) fn handle_summarize_episode(
     rev: &Arc<AtomicU64>,
     runtime: &Arc<Runtime>,
     episode_id: String,
+) -> serde_json::Value {
+    handle_summarize_episode_inner(store, rev, runtime, episode_id, None)
+}
+
+pub(crate) fn handle_summarize_episode_with_signal(
+    store: &Arc<Mutex<PodcastStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    episode_id: String,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_summarize_episode_inner(store, rev, runtime, episode_id, Some(snapshot_signal))
+}
+
+fn handle_summarize_episode_inner(
+    store: &Arc<Mutex<PodcastStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    episode_id: String,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) -> serde_json::Value {
     let inputs = match store.lock() {
         Ok(s) => match s.episode_summary_inputs(&episode_id) {
@@ -58,7 +79,15 @@ pub(crate) fn handle_summarize_episode(
     let runtime_c = Arc::clone(runtime);
 
     runtime.spawn(async move {
-        summarize_in_background(store_c, rev_c, runtime_c, episode_id, inputs).await;
+        summarize_in_background(
+            store_c,
+            rev_c,
+            runtime_c,
+            episode_id,
+            inputs,
+            snapshot_signal,
+        )
+        .await;
     });
 
     serde_json::json!({"ok": true, "status": "summarizing"})
@@ -73,6 +102,7 @@ async fn summarize_in_background(
     runtime: Arc<Runtime>,
     episode_id: String,
     inputs: crate::store::summary::EpisodeSummaryInputs,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) {
     let runtime2 = Arc::clone(&runtime);
     let store2 = Arc::clone(&store);
@@ -91,7 +121,11 @@ async fn summarize_in_background(
         Ok(Ok(summary)) => {
             if let Ok(mut s) = store.lock() {
                 if s.set_episode_summary(&episode_id, Some(summary)) {
-                    rev.fetch_add(1, Ordering::Relaxed);
+                    if let Some(signal) = snapshot_signal {
+                        signal.bump();
+                    } else {
+                        rev.fetch_add(1, Ordering::Relaxed);
+                    }
                 }
             }
         }

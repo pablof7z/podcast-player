@@ -8,7 +8,7 @@ use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
 use std::collections::HashSet;
 use std::ffi::CString;
-use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 /// Build a `PodcastHandle` with a NULL `app` pointer — these tests only
 /// exercise the data-dir path, which never touches `app`.
@@ -20,6 +20,7 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         store: store.clone(),
         identity: Arc::new(Mutex::new(IdentityStore::new())),
         rev: rev.clone(),
+        snapshot_signal: None,
         search_results: Arc::new(Mutex::new(Vec::<PodcastSummary>::new())),
         nostr_results: Arc::new(Mutex::new(Vec::<NostrShowSummary>::new())),
         snapshot_cache: Arc::new(Mutex::new(None)),
@@ -45,6 +46,7 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
             Arc::new(Mutex::new(VoiceState::default())),
             Arc::new(tokio::runtime::Runtime::new().unwrap()),
             rev.clone(),
+            None,
         ),
         conversation: Arc::new(Mutex::new(Vec::new())),
         agent_busy: Arc::new(AtomicBool::new(false)),
@@ -60,7 +62,9 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }
-struct TempDir { path: PathBuf }
+struct TempDir {
+    path: PathBuf,
+}
 impl TempDir {
     fn new(tag: &str) -> Self {
         use std::sync::atomic::AtomicU64;
@@ -76,7 +80,11 @@ impl TempDir {
         Self { path }
     }
 }
-impl Drop for TempDir { fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.path); } }
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
 #[test]
 fn null_handle_is_silent_noop() {
     let path = CString::new("/tmp/whatever").unwrap();
@@ -158,7 +166,12 @@ fn cold_load_restores_inbox_triage_cache_through_set_data_dir() {
     let mut persisted: HashMap<String, TriageResult> = HashMap::new();
     persisted.insert(
         "ep-1".to_string(),
-        TriageResult::ready(0.91, "Highly relevant".to_string(), vec!["tech".to_string()], 1_700_000_000),
+        TriageResult::ready(
+            0.91,
+            "Highly relevant".to_string(),
+            vec!["tech".to_string()],
+            1_700_000_000,
+        ),
     );
     persisted.insert("ep-2".to_string(), TriageResult::pending(1_700_000_500));
     crate::store::inbox_triage_cache::save_triage_cache(&dir.path, &persisted)

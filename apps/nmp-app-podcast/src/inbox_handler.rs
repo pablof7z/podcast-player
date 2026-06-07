@@ -50,6 +50,7 @@ use crate::agent_tools::ToolRegistry;
 use crate::ffi::actions::inbox_module::InboxAction;
 use crate::ffi::projections::InboxItem;
 use crate::inbox_llm::{TriageResult, TriageStatus};
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// A `Ready` triage entry older than this is considered stale and re-triaged
@@ -114,9 +115,11 @@ pub fn build_inbox(
             // exactly as a missing entry does.
             let (priority_score, priority_reason, ai_categories) = match triage_snapshot.get(&ep_id)
             {
-                Some(tr) if tr.status == TriageStatus::Ready => {
-                    (tr.priority_score, tr.priority_reason.clone(), tr.categories.clone())
-                }
+                Some(tr) if tr.status == TriageStatus::Ready => (
+                    tr.priority_score,
+                    tr.priority_reason.clone(),
+                    tr.categories.clone(),
+                ),
                 _ => {
                     let (s, r) = score(now, published_at);
                     (s, r.to_owned(), vec![])
@@ -205,6 +208,35 @@ pub fn maybe_enqueue_triage(
     runtime: &Arc<Runtime>,
     in_progress: &Arc<AtomicBool>,
 ) {
+    maybe_enqueue_triage_inner(store, triage_cache, rev, runtime, in_progress, None);
+}
+
+pub fn maybe_enqueue_triage_with_signal(
+    store: &Arc<Mutex<PodcastStore>>,
+    triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: SnapshotUpdateSignal,
+) {
+    maybe_enqueue_triage_inner(
+        store,
+        triage_cache,
+        rev,
+        runtime,
+        in_progress,
+        Some(snapshot_signal),
+    );
+}
+
+fn maybe_enqueue_triage_inner(
+    store: &Arc<Mutex<PodcastStore>>,
+    triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
+) {
     // Cheap pre-check: if a pass is already running, the in-flight task will
     // populate the cache. Skip the store walk entirely.
     if in_progress.load(Ordering::Relaxed) {
@@ -255,7 +287,15 @@ pub fn maybe_enqueue_triage(
     let in_progress_c = Arc::clone(in_progress);
 
     runtime.spawn(async move {
-        triage_episodes_in_background(store_c, cache_c, runtime_c, rev_c, in_progress_c).await;
+        triage_episodes_in_background(
+            store_c,
+            cache_c,
+            runtime_c,
+            rev_c,
+            in_progress_c,
+            snapshot_signal,
+        )
+        .await;
     });
 }
 
@@ -313,17 +353,65 @@ pub fn handle_inbox_action(
     runtime: &Arc<Runtime>,
     in_progress: &Arc<std::sync::atomic::AtomicBool>,
 ) -> serde_json::Value {
+    handle_inbox_action_inner(
+        action,
+        store,
+        dismissed,
+        rev,
+        triage_cache,
+        runtime,
+        in_progress,
+        None,
+    )
+}
+
+pub fn handle_inbox_action_with_signal(
+    action: InboxAction,
+    store: &Arc<Mutex<PodcastStore>>,
+    dismissed: &Arc<Mutex<HashSet<String>>>,
+    rev: &Arc<AtomicU64>,
+    triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<std::sync::atomic::AtomicBool>,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_inbox_action_inner(
+        action,
+        store,
+        dismissed,
+        rev,
+        triage_cache,
+        runtime,
+        in_progress,
+        Some(snapshot_signal),
+    )
+}
+
+fn handle_inbox_action_inner(
+    action: InboxAction,
+    store: &Arc<Mutex<PodcastStore>>,
+    dismissed: &Arc<Mutex<HashSet<String>>>,
+    rev: &Arc<AtomicU64>,
+    triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<std::sync::atomic::AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
+) -> serde_json::Value {
     match action {
         InboxAction::Triage => {
             // Guard against concurrent triage passes (re-entrancy: user double-tap,
             // or an auto-trigger while the first pass is still running). If the flag
             // is already `true` a pass is in flight — return early rather than
             // spawning a second one that would race on the shared triage_cache.
-            if in_progress.compare_exchange(
-                false, true,
-                std::sync::atomic::Ordering::Acquire,
-                std::sync::atomic::Ordering::Relaxed,
-            ).is_err() {
+            if in_progress
+                .compare_exchange(
+                    false,
+                    true,
+                    std::sync::atomic::Ordering::Acquire,
+                    std::sync::atomic::Ordering::Relaxed,
+                )
+                .is_err()
+            {
                 return serde_json::json!({"ok": true, "status": "already_running"});
             }
 
@@ -338,7 +426,15 @@ pub fn handle_inbox_action(
             let in_progress_c = Arc::clone(in_progress);
 
             runtime.spawn(async move {
-                triage_episodes_in_background(store_c, cache_c, runtime_c, rev_c, in_progress_c).await;
+                triage_episodes_in_background(
+                    store_c,
+                    cache_c,
+                    runtime_c,
+                    rev_c,
+                    in_progress_c,
+                    snapshot_signal,
+                )
+                .await;
             });
 
             serde_json::json!({"ok": true, "status": "triage_started"})
@@ -399,6 +495,7 @@ async fn triage_episodes_in_background(
     runtime: Arc<Runtime>,
     rev: Arc<AtomicU64>,
     in_progress: Arc<std::sync::atomic::AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) {
     // Collect needy episode metadata + cold-start signals under a brief store lock.
     struct EpisodeInput {
@@ -418,7 +515,8 @@ async fn triage_episodes_in_background(
 
         let has_memory = !guard.all_memory_facts().is_empty();
         let has_history = guard.subscribed_podcasts().into_iter().any(|(_, eps)| {
-            eps.iter().any(|e| e.played || e.is_starred || e.position_secs > 0.0)
+            eps.iter()
+                .any(|e| e.played || e.is_starred || e.position_secs > 0.0)
         });
 
         let eps: Vec<EpisodeInput> = guard
@@ -452,11 +550,13 @@ async fn triage_episodes_in_background(
         let now = Utc::now().timestamp();
         if let Ok(mut cache) = triage_cache.lock() {
             for ep in &episodes {
-                cache.entry(ep.ep_id.clone()).or_insert_with(|| TriageResult::pending(now));
+                cache
+                    .entry(ep.ep_id.clone())
+                    .or_insert_with(|| TriageResult::pending(now));
             }
         }
         in_progress.store(false, std::sync::atomic::Ordering::Relaxed);
-        rev.fetch_add(1, Ordering::Relaxed);
+        bump_background_rev(&rev, snapshot_signal.as_ref());
         return;
     }
 
@@ -487,11 +587,19 @@ async fn triage_episodes_in_background(
 
     // Build the system prompt using the same agent identity + memory facts.
     let system_prompt = agent_llm::build_system_prompt_with_memory(Some(&store));
-    let registry = ToolRegistry::for_triage(
-        Arc::clone(&store),
-        Arc::clone(&triage_cache),
-        Arc::clone(&rev),
-    );
+    let registry = match snapshot_signal.clone() {
+        Some(signal) => ToolRegistry::for_triage_with_signal(
+            Arc::clone(&store),
+            Arc::clone(&triage_cache),
+            Arc::clone(&rev),
+            signal,
+        ),
+        None => ToolRegistry::for_triage(
+            Arc::clone(&store),
+            Arc::clone(&triage_cache),
+            Arc::clone(&rev),
+        ),
+    };
 
     let store_c = Arc::clone(&store);
     let runtime_c = Arc::clone(&runtime);
@@ -523,14 +631,25 @@ async fn triage_episodes_in_background(
     crate::store::inbox_triage_cache::persist_from_store(&store, &triage_cache);
 
     in_progress.store(false, std::sync::atomic::Ordering::Relaxed);
-    rev.fetch_add(1, Ordering::Relaxed);
+    bump_background_rev(&rev, snapshot_signal.as_ref());
+}
+
+fn bump_background_rev(rev: &AtomicU64, snapshot_signal: Option<&SnapshotUpdateSignal>) {
+    if let Some(signal) = snapshot_signal {
+        signal.bump();
+    } else {
+        rev.fetch_add(1, Ordering::Relaxed);
+    }
 }
 
 /// Stamp `Pending` for every episode in `needy_ids` that still lacks a fresh
 /// `Ready` entry. Preserves existing `Ready` entries (including ones just
 /// written by `set_episode_priorities`) and updates their `attempted_at` only
 /// when the entry is already `Pending` (avoids downgrading a good score).
-fn reconcile_pending(triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>, needy_ids: &[String]) {
+fn reconcile_pending(
+    triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>,
+    needy_ids: &[String],
+) {
     for ep_id in needy_ids {
         stamp_pending(triage_cache, ep_id.clone());
     }
@@ -555,7 +674,6 @@ fn stamp_pending(triage_cache: &Arc<Mutex<HashMap<String, TriageResult>>>, ep_id
         }
     }
 }
-
 
 #[cfg(test)]
 #[path = "inbox_handler_tests.rs"]

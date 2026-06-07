@@ -177,12 +177,22 @@ impl PodcastHostOpHandler {
                 message,
             } => self.handle_set_episode_transcript_status(episode_id, status, message),
             PodcastAction::SummarizeEpisode { episode_id } => {
-                crate::episode_summary::handle_summarize_episode(
-                    &self.store,
-                    &self.rev,
-                    &self.runtime,
-                    episode_id,
-                )
+                if let Some(signal) = self.snapshot_signal.clone() {
+                    crate::episode_summary::handle_summarize_episode_with_signal(
+                        &self.store,
+                        &self.rev,
+                        &self.runtime,
+                        episode_id,
+                        signal,
+                    )
+                } else {
+                    crate::episode_summary::handle_summarize_episode(
+                        &self.store,
+                        &self.rev,
+                        &self.runtime,
+                        episode_id,
+                    )
+                }
             }
             PodcastAction::FetchFeedback => {
                 crate::feedback_handler::handle_fetch_feedback(self.app)

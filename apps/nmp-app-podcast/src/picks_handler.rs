@@ -33,10 +33,11 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::ffi::actions::picks_module::{CandidateEpisode, compute_picks, compute_picks_scored};
+use crate::ffi::actions::picks_module::{compute_picks, compute_picks_scored, CandidateEpisode};
 use crate::ffi::projections::AgentPickSummary;
 use crate::llm::is_missing_credential_error;
 use crate::picks_llm::score_episode_for_picks;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Recompute the picks slot from the current `PodcastStore` contents using the
@@ -219,6 +220,35 @@ pub fn handle_refresh(
     runtime: &Arc<Runtime>,
     in_progress: &Arc<AtomicBool>,
 ) -> serde_json::Value {
+    handle_refresh_inner(store, picks_slot, rev, runtime, in_progress, None)
+}
+
+pub fn handle_refresh_with_signal(
+    store: &Arc<Mutex<PodcastStore>>,
+    picks_slot: &Arc<Mutex<Vec<AgentPickSummary>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_refresh_inner(
+        store,
+        picks_slot,
+        rev,
+        runtime,
+        in_progress,
+        Some(snapshot_signal),
+    )
+}
+
+fn handle_refresh_inner(
+    store: &Arc<Mutex<PodcastStore>>,
+    picks_slot: &Arc<Mutex<Vec<AgentPickSummary>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
+) -> serde_json::Value {
     // 1. Immediate heuristic stamp — the rail fills with zero latency.
     refresh_picks_into_slot(store, picks_slot, rev);
 
@@ -238,7 +268,15 @@ pub fn handle_refresh(
     let in_progress_c = Arc::clone(in_progress);
 
     runtime.spawn(async move {
-        score_picks_in_background(store_c, picks_c, rev_c, runtime_c, in_progress_c).await;
+        score_picks_in_background(
+            store_c,
+            picks_c,
+            rev_c,
+            runtime_c,
+            in_progress_c,
+            snapshot_signal,
+        )
+        .await;
     });
 
     serde_json::json!({"ok": true, "status": "scoring_started"})
@@ -258,6 +296,7 @@ async fn score_picks_in_background(
     rev: Arc<AtomicU64>,
     runtime: Arc<Runtime>,
     in_progress: Arc<AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) {
     // Snapshot candidates + score inputs + listening profile under a brief
     // store lock, then release. The profile is computed once per pass and
@@ -315,7 +354,11 @@ async fn score_picks_in_background(
     if let Ok(mut slot) = picks_slot.lock() {
         *slot = upgraded;
     }
-    rev.fetch_add(1, Ordering::Relaxed);
+    if let Some(signal) = snapshot_signal {
+        signal.bump();
+    } else {
+        rev.fetch_add(1, Ordering::Relaxed);
+    }
     in_progress.store(false, Ordering::Relaxed);
 }
 

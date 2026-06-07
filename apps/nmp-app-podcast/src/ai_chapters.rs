@@ -30,6 +30,7 @@ use podcast_core::{Chapter, ChapterSource};
 use tokio::runtime::Runtime;
 
 use crate::ai_chapters_llm::{self, PromptStyle, SynthesizedChapter};
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Number of equally-spaced chapters used by the offline stub fallback.
@@ -63,6 +64,26 @@ pub(crate) fn handle_compile_chapters(
     runtime: &Arc<Runtime>,
     episode_id: String,
 ) -> serde_json::Value {
+    handle_compile_chapters_inner(store, rev, runtime, episode_id, None)
+}
+
+pub(crate) fn handle_compile_chapters_with_signal(
+    store: &Arc<Mutex<PodcastStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    episode_id: String,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_compile_chapters_inner(store, rev, runtime, episode_id, Some(snapshot_signal))
+}
+
+fn handle_compile_chapters_inner(
+    store: &Arc<Mutex<PodcastStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    episode_id: String,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
+) -> serde_json::Value {
     // Gate checks run synchronously (fast, no I/O) so errors surface immediately.
     let snapshot = match store.lock() {
         Ok(s) => read_episode_inputs(&s, &episode_id),
@@ -75,7 +96,11 @@ pub(crate) fn handle_compile_chapters(
         EpisodeInputs::HasChapters => {
             return serde_json::json!({"ok": true, "status": "already_has_chapters"})
         }
-        EpisodeInputs::Ready { duration_secs, transcript, episode_title } => {
+        EpisodeInputs::Ready {
+            duration_secs,
+            transcript,
+            episode_title,
+        } => {
             let Some(transcript) = transcript else {
                 return serde_json::json!({"ok": false, "error": "no_transcript"});
             };
@@ -98,7 +123,13 @@ pub(crate) fn handle_compile_chapters(
 
     runtime.spawn(async move {
         let outcome = tokio::task::spawn_blocking(move || {
-            synthesize_with_fallback(&episode_title, &transcript, duration_secs, &runtime_c, &store_c)
+            synthesize_with_fallback(
+                &episode_title,
+                &transcript,
+                duration_secs,
+                &runtime_c,
+                &store_c,
+            )
         })
         .await
         // A join error (panic in the blocking worker) is itself a definitive
@@ -136,7 +167,11 @@ pub(crate) fn handle_compile_chapters(
                         ],
                     );
                 }
-                rev_c.fetch_add(1, Ordering::Relaxed);
+                if let Some(signal) = snapshot_signal {
+                    signal.bump();
+                } else {
+                    rev_c.fetch_add(1, Ordering::Relaxed);
+                }
             }
             SynthOutcome::GaveUp(err) => {
                 eprintln!(
@@ -310,7 +345,11 @@ fn read_episode_inputs(store: &PodcastStore, episode_id: &str) -> EpisodeInputs 
         .episode_titles_and_duration(episode_id)
         .map(|(ep_title, _pod_title, _dur)| ep_title)
         .unwrap_or_default();
-    EpisodeInputs::Ready { duration_secs, transcript, episode_title }
+    EpisodeInputs::Ready {
+        duration_secs,
+        transcript,
+        episode_title,
+    }
 }
 
 /// Slice the episode duration into `count` evenly-spaced AI chapters, stamped

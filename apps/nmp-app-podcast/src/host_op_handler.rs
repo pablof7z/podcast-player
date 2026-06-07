@@ -23,11 +23,14 @@ use tokio::runtime::Runtime;
 use nmp_core::substrate::HostOpHandler;
 use nmp_ffi::NmpApp;
 
-use crate::inbox_llm::TriageResult;
 use crate::agent_handler::AgentChatHandler;
-use crate::ai_chapters::handle_compile_chapters;
-use crate::categorization::{handle_categorize_episode, handle_run as categorization_run};
+use crate::ai_chapters::{handle_compile_chapters, handle_compile_chapters_with_signal};
+use crate::categorization::{
+    handle_categorize_episode, handle_run as categorization_run,
+    handle_run_with_signal as categorization_run_with_signal,
+};
 use crate::clip_handler::{ClipHandler, ClipRecord};
+use crate::download::DownloadQueue;
 use crate::ffi::actions::agent_module::AgentChatAction;
 use crate::ffi::actions::categorization_module::CategorizationAction;
 use crate::ffi::actions::chapters_module::ChaptersAction;
@@ -42,31 +45,34 @@ use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::ffi::actions::publish_module::PublishAction;
 use crate::ffi::actions::queue_module::QueueAction;
 use crate::ffi::actions::settings_module::SettingsAction;
-use crate::ffi::actions::tasks_module::AgentTasksAction;
-use crate::ffi::actions::voice_module::VoiceAction;
 use crate::ffi::actions::siri_module::SiriAction;
 use crate::ffi::actions::social_module::SocialAction;
+use crate::ffi::actions::tasks_module::AgentTasksAction;
+use crate::ffi::actions::voice_module::VoiceAction;
 use crate::ffi::actions::wiki_module::WikiAction;
 use crate::ffi::handle::OwnedPublishState;
 use crate::ffi::projections::{
-    AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
-    KnowledgeSearchResult, NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry,
-    VoiceState, WikiArticle,
+    AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary, KnowledgeSearchResult,
+    NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState, WikiArticle,
 };
 use crate::host_op_handler_queue::handle_queue_action;
 use crate::host_op_publish::handle_publish_action;
 use crate::identity_handler::IdentityHandler;
-use crate::inbox_handler::handle_inbox_action;
-use crate::store::identity::IdentityStore;
+use crate::inbox_handler::{handle_inbox_action, handle_inbox_action_with_signal};
+use crate::inbox_llm::TriageResult;
 use crate::memory_handler;
-use crate::picks_handler::handle_refresh as picks_handle_refresh;
+use crate::picks_handler::{
+    handle_refresh as picks_handle_refresh,
+    handle_refresh_with_signal as picks_handle_refresh_with_signal,
+};
 use crate::player::PlayerActor;
-use crate::download::DownloadQueue;
 use crate::queue::PlaybackQueue;
+use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
 use crate::tasks_handler;
 use crate::voice_handler;
-use crate::wiki::handle_wiki_action;
+use crate::wiki::{handle_wiki_action, handle_wiki_action_with_signal};
 
 mod dispatch;
 mod player_actions;
@@ -165,6 +171,7 @@ pub struct PodcastHostOpHandler {
     /// `PodcastUpdate.agent_notes` (reactive push seam — no polling).
     /// In-memory only; re-fetched on the next `FetchAgentNotes` dispatch.
     pub(crate) agent_notes: Arc<Mutex<Vec<AgentNoteSummary>>>,
+    pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the
@@ -242,19 +249,36 @@ impl PodcastHostOpHandler {
             inbox_triage_in_progress,
             social,
             agent_notes,
+            snapshot_signal: None,
         }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 
     /// Re-run the categorizer after a successful refresh so newly-
     /// arrived episodes pick up labels automatically.
     pub(super) fn auto_categorize(&self) {
-        let _ = categorization_run(
-            &self.store,
-            &self.categories,
-            &self.rev,
-            &self.runtime,
-            &self.categorization_in_progress,
-        );
+        let _ = if let Some(signal) = self.snapshot_signal.clone() {
+            categorization_run_with_signal(
+                &self.store,
+                &self.categories,
+                &self.rev,
+                &self.runtime,
+                &self.categorization_in_progress,
+                signal,
+            )
+        } else {
+            categorization_run(
+                &self.store,
+                &self.categories,
+                &self.rev,
+                &self.runtime,
+                &self.categorization_in_progress,
+            )
+        };
     }
 
     /// Re-run the AI picks pass after a successful refresh so newly-arrived
@@ -268,13 +292,24 @@ impl PodcastHostOpHandler {
     /// `picks_score_in_progress` guard coalesces the repeated calls that a
     /// `refresh_all` batch would otherwise produce into a single scoring pass.
     pub(super) fn auto_refresh_picks(&self) {
-        let _ = picks_handle_refresh(
-            &self.store,
-            &self.picks,
-            &self.rev,
-            &self.runtime,
-            &self.picks_score_in_progress,
-        );
+        let _ = if let Some(signal) = self.snapshot_signal.clone() {
+            picks_handle_refresh_with_signal(
+                &self.store,
+                &self.picks,
+                &self.rev,
+                &self.runtime,
+                &self.picks_score_in_progress,
+                signal,
+            )
+        } else {
+            picks_handle_refresh(
+                &self.store,
+                &self.picks,
+                &self.rev,
+                &self.runtime,
+                &self.picks_score_in_progress,
+            )
+        };
     }
 }
 
@@ -285,13 +320,26 @@ impl HostOpHandler for PodcastHostOpHandler {
         }
         if let Ok(action) = serde_json::from_str::<CategorizationAction>(action_json) {
             return match action {
-                CategorizationAction::Run => categorization_run(
-                    &self.store,
-                    &self.categories,
-                    &self.rev,
-                    &self.runtime,
-                    &self.categorization_in_progress,
-                ),
+                CategorizationAction::Run => {
+                    if let Some(signal) = self.snapshot_signal.clone() {
+                        categorization_run_with_signal(
+                            &self.store,
+                            &self.categories,
+                            &self.rev,
+                            &self.runtime,
+                            &self.categorization_in_progress,
+                            signal,
+                        )
+                    } else {
+                        categorization_run(
+                            &self.store,
+                            &self.categories,
+                            &self.rev,
+                            &self.runtime,
+                            &self.categorization_in_progress,
+                        )
+                    }
+                }
                 CategorizationAction::CategorizeEpisode { episode_id } => {
                     handle_categorize_episode(&self.store, &self.categories, &self.rev, episode_id)
                 }
@@ -307,15 +355,28 @@ impl HostOpHandler for PodcastHostOpHandler {
             return self.handle_player_action(action, correlation_id);
         }
         if let Ok(action) = serde_json::from_str::<InboxAction>(action_json) {
-            return handle_inbox_action(
-                action,
-                &self.store,
-                &self.dismissed_episode_ids,
-                &self.rev,
-                &self.inbox_triage_cache,
-                &self.runtime,
-                &self.inbox_triage_in_progress,
-            );
+            return if let Some(signal) = self.snapshot_signal.clone() {
+                handle_inbox_action_with_signal(
+                    action,
+                    &self.store,
+                    &self.dismissed_episode_ids,
+                    &self.rev,
+                    &self.inbox_triage_cache,
+                    &self.runtime,
+                    &self.inbox_triage_in_progress,
+                    signal,
+                )
+            } else {
+                handle_inbox_action(
+                    action,
+                    &self.store,
+                    &self.dismissed_episode_ids,
+                    &self.rev,
+                    &self.inbox_triage_cache,
+                    &self.runtime,
+                    &self.inbox_triage_in_progress,
+                )
+            };
         }
         if let Ok(action) = serde_json::from_str::<QueueAction>(action_json) {
             return handle_queue_action(&self.queue, &self.store, &self.rev, action);
@@ -323,24 +384,58 @@ impl HostOpHandler for PodcastHostOpHandler {
         if let Ok(action) = serde_json::from_str::<ChaptersAction>(action_json) {
             return match action {
                 ChaptersAction::Compile { episode_id } => {
-                    handle_compile_chapters(&self.store, &self.rev, &self.runtime, episode_id)
+                    if let Some(signal) = self.snapshot_signal.clone() {
+                        handle_compile_chapters_with_signal(
+                            &self.store,
+                            &self.rev,
+                            &self.runtime,
+                            episode_id,
+                            signal,
+                        )
+                    } else {
+                        handle_compile_chapters(&self.store, &self.rev, &self.runtime, episode_id)
+                    }
                 }
             };
         }
         if let Ok(action) = serde_json::from_str::<WikiAction>(action_json) {
-            return handle_wiki_action(
-                &self.wiki_articles,
-                &self.wiki_search_results,
-                &self.store,
-                &self.knowledge_store,
-                &self.rev,
-                &self.runtime,
-                action,
-            );
+            return if let Some(signal) = self.snapshot_signal.clone() {
+                handle_wiki_action_with_signal(
+                    &self.wiki_articles,
+                    &self.wiki_search_results,
+                    &self.store,
+                    &self.knowledge_store,
+                    &self.rev,
+                    &self.runtime,
+                    action,
+                    signal,
+                )
+            } else {
+                handle_wiki_action(
+                    &self.wiki_articles,
+                    &self.wiki_search_results,
+                    &self.store,
+                    &self.knowledge_store,
+                    &self.rev,
+                    &self.runtime,
+                    action,
+                )
+            };
         }
         if let Ok(PicksAction::Refresh) = serde_json::from_str::<PicksAction>(action_json) {
             let p = &self.picks_score_in_progress;
-            return picks_handle_refresh(&self.store, &self.picks, &self.rev, &self.runtime, p);
+            return if let Some(signal) = self.snapshot_signal.clone() {
+                picks_handle_refresh_with_signal(
+                    &self.store,
+                    &self.picks,
+                    &self.rev,
+                    &self.runtime,
+                    p,
+                    signal,
+                )
+            } else {
+                picks_handle_refresh(&self.store, &self.picks, &self.rev, &self.runtime, p)
+            };
         }
         if let Ok(action) = serde_json::from_str::<AgentTasksAction>(action_json) {
             // `RunNow` re-dispatches the task's (namespace, body) through the

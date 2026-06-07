@@ -137,11 +137,7 @@ pub extern "C" fn nmp_app_podcast_audio_report(
             None
         };
         drop(actor); // release before rev bump and store lock
-        if durable_changed {
-            handle_ref
-                .rev
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        }
+        handle_ref.bump_snapshot_rev_if(durable_changed);
         (follow_up_json, now_playing, episode_id)
     };
 
@@ -286,7 +282,10 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
     }
 
     // Dispatch Load + Play. Failures degrade silently per D6.
-    dispatch_audio_cmd(handle, &AudioCommand::load_with_id(&url, position_secs, &episode_id));
+    dispatch_audio_cmd(
+        handle,
+        &AudioCommand::load_with_id(&url, position_secs, &episode_id),
+    );
     dispatch_audio_cmd(handle, &AudioCommand::Play);
 
     // Enqueue a background download for un-downloaded episodes (mirrors
@@ -305,7 +304,7 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
         }
     }
 
-    handle.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    handle.bump_snapshot_rev();
 }
 
 fn dispatch_audio_cmd(handle: &PodcastHandle, cmd: &AudioCommand) {
@@ -333,7 +332,6 @@ fn dispatch_download_cmd(handle: &PodcastHandle, cmd: &DownloadCommand) {
     };
     let _ = unsafe { &*handle.app }.dispatch_capability(&req);
 }
-
 
 // Tests split into audio_report_tests.rs; #[path] keeps private items in scope.
 #[cfg(test)]

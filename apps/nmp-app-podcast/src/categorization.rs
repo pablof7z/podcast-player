@@ -38,6 +38,7 @@ use tokio::runtime::Runtime;
 use crate::categorization_llm::categorize_episode;
 use crate::ffi::actions::categorization_module::categorize_text;
 use crate::llm::is_missing_credential_error;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Re-run categorization over every episode in `store`.
@@ -62,6 +63,35 @@ pub(crate) fn handle_run(
     rev: &Arc<AtomicU64>,
     runtime: &Arc<Runtime>,
     in_progress: &Arc<AtomicBool>,
+) -> serde_json::Value {
+    handle_run_inner(store, cache, rev, runtime, in_progress, None)
+}
+
+pub(crate) fn handle_run_with_signal(
+    store: &Arc<Mutex<PodcastStore>>,
+    cache: &Arc<Mutex<HashMap<String, Vec<String>>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_run_inner(
+        store,
+        cache,
+        rev,
+        runtime,
+        in_progress,
+        Some(snapshot_signal),
+    )
+}
+
+fn handle_run_inner(
+    store: &Arc<Mutex<PodcastStore>>,
+    cache: &Arc<Mutex<HashMap<String, Vec<String>>>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    in_progress: &Arc<AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) -> serde_json::Value {
     let snapshot: Vec<(String, String, String)> = match store.lock() {
         Ok(s) => s
@@ -114,7 +144,15 @@ pub(crate) fn handle_run(
         let in_progress_c = Arc::clone(in_progress);
 
         runtime.spawn(async move {
-            categorize_in_background(store_c, cache_c, rev_c, runtime_c, in_progress_c).await;
+            categorize_in_background(
+                store_c,
+                cache_c,
+                rev_c,
+                runtime_c,
+                in_progress_c,
+                snapshot_signal,
+            )
+            .await;
         });
     }
 
@@ -132,6 +170,7 @@ async fn categorize_in_background(
     rev: Arc<AtomicU64>,
     runtime: Arc<Runtime>,
     in_progress: Arc<AtomicBool>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) {
     // Collect episode metadata under a brief store lock then release it.
     let episodes: Vec<(String, String, String)> = {
@@ -171,7 +210,7 @@ async fn categorize_in_background(
                 if let Ok(mut c) = cache.lock() {
                     c.insert(ep_id, cats);
                 }
-                rev.fetch_add(1, Ordering::Relaxed);
+                bump_background_rev(&rev, snapshot_signal.as_ref());
             }
             Ok(Err(e)) => {
                 if !is_missing_credential_error(&e) {
@@ -185,7 +224,15 @@ async fn categorize_in_background(
     }
 
     in_progress.store(false, Ordering::Relaxed);
-    rev.fetch_add(1, Ordering::Relaxed);
+    bump_background_rev(&rev, snapshot_signal.as_ref());
+}
+
+fn bump_background_rev(rev: &AtomicU64, snapshot_signal: Option<&SnapshotUpdateSignal>) {
+    if let Some(signal) = snapshot_signal {
+        signal.bump();
+    } else {
+        rev.fetch_add(1, Ordering::Relaxed);
+    }
 }
 
 /// Categorize a single episode, identified by its hyphenated UUID string.

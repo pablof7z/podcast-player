@@ -45,6 +45,7 @@ use nmp_core::substrate::{KernelEvent, ViewDependencies};
 use nmp_core::KernelEventObserver;
 
 use crate::nmp_dispatch::{publish_raw_explicit_via_nmp, push_interest_via_nmp};
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use nmp_ffi::NmpApp;
 
 /// Feedback relay (TENEX project). The one relay feedback fetch/publish pins to.
@@ -164,6 +165,7 @@ pub fn handle_publish_feedback(
 pub struct FeedbackObserver {
     feedback_events_cache: Arc<Mutex<Vec<serde_json::Value>>>,
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 impl FeedbackObserver {
@@ -172,7 +174,16 @@ impl FeedbackObserver {
         feedback_events_cache: Arc<Mutex<Vec<serde_json::Value>>>,
         rev: Arc<AtomicU64>,
     ) -> Self {
-        Self { feedback_events_cache, rev }
+        Self {
+            feedback_events_cache,
+            rev,
+            snapshot_signal: None,
+        }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 }
 
@@ -225,7 +236,11 @@ impl KernelEventObserver for FeedbackObserver {
                 cache.drain(0..overflow);
             }
             drop(cache);
-            self.rev.fetch_add(1, Ordering::Relaxed);
+            if let Some(signal) = &self.snapshot_signal {
+                signal.bump();
+            } else {
+                self.rev.fetch_add(1, Ordering::Relaxed);
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ use chrono::Utc;
 use serde_json::Value;
 
 use crate::inbox_llm::TriageResult;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 
 /// Maximum transcript characters returned by `get_transcript`. Keeps a single
@@ -63,6 +64,7 @@ once with every listed episode. Do not answer in plain text.";
 struct TriageSink {
     cache: Arc<Mutex<HashMap<String, TriageResult>>>,
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 /// Holds the shared store and executes named tool calls against it.
@@ -88,7 +90,27 @@ impl ToolRegistry {
     ) -> Self {
         Self {
             store,
-            triage: Some(TriageSink { cache, rev }),
+            triage: Some(TriageSink {
+                cache,
+                rev,
+                snapshot_signal: None,
+            }),
+        }
+    }
+
+    pub fn for_triage_with_signal(
+        store: Arc<Mutex<PodcastStore>>,
+        cache: Arc<Mutex<HashMap<String, TriageResult>>>,
+        rev: Arc<AtomicU64>,
+        snapshot_signal: SnapshotUpdateSignal,
+    ) -> Self {
+        Self {
+            store,
+            triage: Some(TriageSink {
+                cache,
+                rev,
+                snapshot_signal: Some(snapshot_signal),
+            }),
         }
     }
 
@@ -290,7 +312,11 @@ impl ToolRegistry {
         }
 
         if written > 0 {
-            sink.rev.fetch_add(1, Ordering::Relaxed);
+            if let Some(signal) = &sink.snapshot_signal {
+                signal.bump();
+            } else {
+                sink.rev.fetch_add(1, Ordering::Relaxed);
+            }
         }
 
         format!("Recorded {written} score(s).")

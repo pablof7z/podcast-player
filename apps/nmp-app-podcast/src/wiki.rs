@@ -29,6 +29,7 @@ use podcast_knowledge::KnowledgeStore;
 use crate::ffi::actions::wiki_module::WikiAction;
 use crate::ffi::projections::WikiArticle;
 use crate::knowledge::collect_chunk_texts_for_topic;
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 use crate::wiki_llm;
 
@@ -49,10 +50,61 @@ pub(crate) fn handle_wiki_action(
     runtime: &Arc<Runtime>,
     action: WikiAction,
 ) -> serde_json::Value {
+    handle_wiki_action_inner(
+        articles,
+        search_results,
+        store,
+        knowledge_store,
+        rev,
+        runtime,
+        action,
+        None,
+    )
+}
+
+pub(crate) fn handle_wiki_action_with_signal(
+    articles: &Arc<Mutex<Vec<WikiArticle>>>,
+    search_results: &Arc<Mutex<Vec<WikiArticle>>>,
+    store: &Arc<Mutex<PodcastStore>>,
+    knowledge_store: &Arc<Mutex<KnowledgeStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    action: WikiAction,
+    snapshot_signal: SnapshotUpdateSignal,
+) -> serde_json::Value {
+    handle_wiki_action_inner(
+        articles,
+        search_results,
+        store,
+        knowledge_store,
+        rev,
+        runtime,
+        action,
+        Some(snapshot_signal),
+    )
+}
+
+fn handle_wiki_action_inner(
+    articles: &Arc<Mutex<Vec<WikiArticle>>>,
+    search_results: &Arc<Mutex<Vec<WikiArticle>>>,
+    store: &Arc<Mutex<PodcastStore>>,
+    knowledge_store: &Arc<Mutex<KnowledgeStore>>,
+    rev: &Arc<AtomicU64>,
+    runtime: &Arc<Runtime>,
+    action: WikiAction,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
+) -> serde_json::Value {
     match action {
-        WikiAction::Generate { podcast_id, topic } => {
-            handle_generate(articles, store, knowledge_store, rev, runtime, podcast_id, topic)
-        }
+        WikiAction::Generate { podcast_id, topic } => handle_generate(
+            articles,
+            store,
+            knowledge_store,
+            rev,
+            runtime,
+            podcast_id,
+            topic,
+            snapshot_signal,
+        ),
         WikiAction::Delete { article_id } => {
             handle_delete(articles, search_results, rev, article_id)
         }
@@ -68,6 +120,7 @@ fn handle_generate(
     runtime: &Arc<Runtime>,
     podcast_id: String,
     topic: String,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 ) -> serde_json::Value {
     let topic_trimmed = topic.trim();
     if topic_trimmed.is_empty() {
@@ -84,9 +137,7 @@ fn handle_generate(
             Ok(s) => {
                 use podcast_core::PodcastId;
                 use uuid::Uuid;
-                let pid = Uuid::parse_str(&podcast_id)
-                    .ok()
-                    .map(PodcastId::new);
+                let pid = Uuid::parse_str(&podcast_id).ok().map(PodcastId::new);
                 let title = pid
                     .and_then(|id| s.podcast(id))
                     .map(|p| p.title.clone())
@@ -96,14 +147,10 @@ fn handle_generate(
                 let eps = pid
                     .map(|id| s.episodes_for(id).to_vec())
                     .unwrap_or_default();
-                let ep_ids: Vec<String> =
-                    eps.iter().map(|ep| ep.id.0.to_string()).collect();
+                let ep_ids: Vec<String> = eps.iter().map(|ep| ep.id.0.to_string()).collect();
                 let txs: Vec<String> = eps
                     .iter()
-                    .filter_map(|ep| {
-                        s.transcript_for(&ep.id.0.to_string())
-                            .map(|t| t.to_owned())
-                    })
+                    .filter_map(|ep| s.transcript_for(&ep.id.0.to_string()).map(|t| t.to_owned()))
                     .filter(|t| !t.is_empty())
                     .collect();
                 (title, txs, ep_ids)
@@ -133,14 +180,12 @@ fn handle_generate(
     // chunks entered the LLM context window (the truncated top-N hits), not
     // the broad per-podcast scope. Deduped and sorted for snapshot stability.
     let source_episode_ids: Vec<String> = {
-        let mut ids: Vec<String> =
-            chunk_hits.iter().map(|(ep, _)| ep.clone()).collect();
+        let mut ids: Vec<String> = chunk_hits.iter().map(|(ep, _)| ep.clone()).collect();
         ids.sort();
         ids.dedup();
         ids
     };
-    let context_chunks: Vec<String> =
-        chunk_hits.into_iter().map(|(_, text)| text).collect();
+    let context_chunks: Vec<String> = chunk_hits.into_iter().map(|(_, text)| text).collect();
 
     let article_id = uuid::Uuid::new_v4().to_string();
     let now = Utc::now().timestamp();
@@ -195,7 +240,10 @@ fn handle_generate(
         let (summary, error) = match result {
             Ok(Ok(body)) => (body, None),
             Ok(Err(e)) => (placeholder_fallback, Some(e)),
-            Err(_) => (placeholder_fallback, Some("synthesis task panicked".to_owned())),
+            Err(_) => (
+                placeholder_fallback,
+                Some("synthesis task panicked".to_owned()),
+            ),
         };
 
         if let Ok(mut w) = articles_c.lock() {
@@ -206,7 +254,11 @@ fn handle_generate(
                 a.last_updated_at = Utc::now().timestamp();
             }
         }
-        rev_c.fetch_add(1, Ordering::Relaxed);
+        if let Some(signal) = snapshot_signal {
+            signal.bump();
+        } else {
+            rev_c.fetch_add(1, Ordering::Relaxed);
+        }
     });
 
     serde_json::json!({"ok": true, "article_id": article_id})

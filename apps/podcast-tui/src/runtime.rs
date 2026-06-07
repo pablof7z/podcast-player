@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use nmp_app_podcast::ffi::PodcastUpdate;
 use nmp_app_podcast::{
-    nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_snapshot_rev,
-    nmp_app_podcast_unregister, nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
+    nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_unregister,
+    nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
 };
 use nmp_ffi::{
     nmp_app_dispatch_action, nmp_app_free, nmp_app_free_string, nmp_app_new,
@@ -105,20 +105,6 @@ impl AppRuntime {
             return None;
         }
         Some(unsafe { (*self.podcast).update() })
-    }
-
-    /// Cheaply read the podcast snapshot revision.
-    ///
-    /// The NMP actor pushes callbacks for kernel events, but host-side async
-    /// work such as agent replies can finish by mutating app-owned state and
-    /// bumping this revision without another actor callback. The TUI tick loop
-    /// uses this probe to pull those completed projections without rebuilding
-    /// the snapshot on every frame.
-    pub fn podcast_snapshot_rev(&self) -> u64 {
-        if self.podcast.is_null() {
-            return 0;
-        }
-        nmp_app_podcast_snapshot_rev(self.podcast)
     }
 }
 

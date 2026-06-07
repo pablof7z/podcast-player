@@ -126,11 +126,7 @@ pub extern "C" fn nmp_app_podcast_download_report(
         drop(store);
         // Only durable library changes (completion/cancellation) bump the
         // global `rev`; progress ticks ride the inline `downloads` field.
-        if dispatch.durable_changed {
-            handle_ref
-                .rev
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        }
+        handle_ref.bump_snapshot_rev_if(dispatch.durable_changed);
         DownloadReportResponse {
             follow_up: dispatch.follow_up_json,
             downloads,

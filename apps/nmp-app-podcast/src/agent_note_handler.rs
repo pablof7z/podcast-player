@@ -18,7 +18,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use nostr::nips::nip19::ToBech32;
-use nostr::{Tag};
 
 use nmp_core::planner::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_core::stable_hash::stable_hash64;
@@ -27,6 +26,7 @@ use nmp_core::KernelEventObserver;
 
 use crate::ffi::projections::AgentNoteSummary;
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use nmp_ffi::NmpApp;
 
@@ -138,6 +138,7 @@ pub struct AgentNotesObserver {
     identity: Arc<Mutex<IdentityStore>>,
     agent_notes_cache: Arc<Mutex<Vec<AgentNoteSummary>>>,
     rev: Arc<AtomicU64>,
+    snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 impl AgentNotesObserver {
@@ -146,7 +147,17 @@ impl AgentNotesObserver {
         agent_notes_cache: Arc<Mutex<Vec<AgentNoteSummary>>>,
         rev: Arc<AtomicU64>,
     ) -> Self {
-        Self { identity, agent_notes_cache, rev }
+        Self {
+            identity,
+            agent_notes_cache,
+            rev,
+            snapshot_signal: None,
+        }
+    }
+
+    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(snapshot_signal);
+        self
     }
 }
 
@@ -186,7 +197,11 @@ impl KernelEventObserver for AgentNotesObserver {
                 if cache.len() > MAX_INBOUND_NOTES {
                     cache.truncate(MAX_INBOUND_NOTES);
                 }
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                if let Some(signal) = &self.snapshot_signal {
+                    signal.bump();
+                } else {
+                    self.rev.fetch_add(1, Ordering::Relaxed);
+                }
             }
         }
     }
