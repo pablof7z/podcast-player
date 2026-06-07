@@ -10,9 +10,10 @@
 //! - [`FAST_MODEL`] is the fallback when the primary model is unavailable.
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use crate::agent_tools::{self, ToolRegistry, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS};
-use crate::llm::{LlmRequest, backend_for, role_model_or_default};
+use crate::agent_tools::{self, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS, ToolRegistry};
+use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
 use crate::store::PodcastStore;
 
 /// Maximum tool-call round-trips for interactive chat turns.
@@ -22,9 +23,13 @@ const MAX_TOOL_TURNS: usize = 3;
 /// Allows: get_memory_facts (1) + search_library (1-2) + set_episode_priorities (1) + headroom.
 const MAX_TRIAGE_TOOL_TURNS: usize = 6;
 
+/// Wall-clock budget for a single agent model turn. The UI can show the busy
+/// placeholder while a real cloud call runs, but a hung provider should become
+/// an actionable error instead of leaving the TUI pinned indefinitely.
+const AGENT_TURN_TIMEOUT: Duration = Duration::from_secs(45);
+
 /// Agent identity shared by chat and all background tasks.
-pub(crate) const AGENT_SYSTEM_PROMPT: &str =
-    "You are a helpful podcast assistant. Answer questions about podcasts, episodes, \
+pub(crate) const AGENT_SYSTEM_PROMPT: &str = "You are a helpful podcast assistant. Answer questions about podcasts, episodes, \
      RSS feeds, and related topics concisely and accurately.";
 
 /// Build the per-turn system prompt, prepending any stored MemoryFacts so the
@@ -72,8 +77,8 @@ async fn single_turn(
     user_message: &str,
     store: &Arc<Mutex<PodcastStore>>,
 ) -> Result<String, String> {
-    // The "Agent (Initial)" role. A `local:` selection runs on-device; anything
-    // else routes to its cloud backend. If unset, default to the cloud thinking
+    // The "Agent (Initial)" role. Explicit provider-prefixed selections route
+    // through their selected backend. If unset, default to the cloud thinking
     // model.
     let initial_cfg = store
         .lock()
@@ -81,6 +86,7 @@ async fn single_turn(
         .map(|s| s.agent_initial_model().to_owned())
         .unwrap_or_default();
     let model = role_model_or_default(&initial_cfg, THINKING_MODEL);
+    validate_model_credentials(store, &model).map_err(|e| format!("{model} failed: {e}"))?;
     let backend = backend_for(store, &model);
     let req = LlmRequest {
         system: system_prompt.to_owned(),
@@ -88,10 +94,14 @@ async fn single_turn(
         user: user_message.to_owned(),
         model: model.clone(),
     };
-    backend
-        .complete(&req)
-        .await
-        .map_err(|e| format!("{model} failed: {e}"))
+    match tokio::time::timeout(AGENT_TURN_TIMEOUT, backend.complete(&req)).await {
+        Ok(Ok(response)) => Ok(response),
+        Ok(Err(e)) => Err(format!("{model} failed: {e}")),
+        Err(_) => Err(format!(
+            "{model} failed: request exceeded {}s budget",
+            AGENT_TURN_TIMEOUT.as_secs()
+        )),
+    }
 }
 
 /// Drive a chat turn with podcast-domain tools available (M5.4).
@@ -138,7 +148,9 @@ pub fn chat_with_tools(
                     if !used_a_tool {
                         return Err(e);
                     }
-                    return Ok(force_final_answer(system_prompt, &convo, user_message, &store).await);
+                    return Ok(
+                        force_final_answer(system_prompt, &convo, user_message, &store).await,
+                    );
                 }
             };
 
@@ -213,6 +225,9 @@ pub fn run_background_agent_task(
                 Ok(r) => r,
                 Err(e) => {
                     if convo.is_empty() {
+                        if crate::llm::is_missing_credential_error(&e) {
+                            return Ok(String::new());
+                        }
                         return Err(e);
                     }
                     // Already made progress — return what we have.

@@ -370,7 +370,6 @@ impl ProviderSettingItem {
 fn load_env_credentials(runtime: &AppRuntime) -> Result<String> {
     let open_router = env_key("OPENROUTER_API_KEY");
     let ollama = env_key("OLLAMA_API_KEY");
-    runtime.set_provider_api_keys(open_router.clone(), ollama.clone())?;
 
     let mut stt = Vec::new();
     if env_key("ELEVENLABS_API_KEY").is_some() {
@@ -382,6 +381,14 @@ fn load_env_credentials(runtime: &AppRuntime) -> Result<String> {
     if open_router.is_some() {
         stt.push("openrouter_whisper".to_owned());
     }
+    if open_router.is_none() && ollama.is_none() && stt.is_empty() {
+        return Err(
+            "no provider env keys set; set OLLAMA_API_KEY, OPENROUTER_API_KEY, ELEVENLABS_API_KEY, or ASSEMBLYAI_API_KEY"
+                .to_owned(),
+        );
+    }
+
+    runtime.set_provider_api_keys(open_router.clone(), ollama.clone())?;
     runtime.set_stt_keys_present(stt)?;
     Ok(format!(
         "env credentials loaded ({})",

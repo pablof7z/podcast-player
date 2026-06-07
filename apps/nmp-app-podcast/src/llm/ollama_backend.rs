@@ -13,6 +13,10 @@ pub struct OllamaBackend {
     pub api_key: Option<String>,
 }
 
+fn ollama_model_id(model: &str) -> &str {
+    model.strip_prefix("ollama:").unwrap_or(model)
+}
+
 /// Convert stored `(role, content)` pairs into rig-core chat history.
 /// The `Chat` trait prepends the new user turn itself — we only pass prior turns.
 fn make_history(pairs: &[(String, String)]) -> Vec<Message> {
@@ -40,7 +44,10 @@ impl LlmBackend for OllamaBackend {
             .map_err(|e| LlmError::Unavailable(e.to_string()))?;
 
         // Build the agent with the system prompt.
-        let agent = client.agent(&req.model).preamble(&req.system).build();
+        let agent = client
+            .agent(ollama_model_id(&req.model))
+            .preamble(&req.system)
+            .build();
 
         // Convert history and chat.
         let mut history = make_history(&req.history);
@@ -61,5 +68,17 @@ mod tests {
         ];
         let history = make_history(&pairs);
         assert_eq!(history.len(), 2);
+    }
+
+    #[test]
+    fn test_ollama_model_id_strips_provider_prefix() {
+        assert_eq!(
+            ollama_model_id("ollama:gpt-oss:120b-cloud"),
+            "gpt-oss:120b-cloud"
+        );
+        assert_eq!(
+            ollama_model_id("deepseek-v4-pro:cloud"),
+            "deepseek-v4-pro:cloud"
+        );
     }
 }

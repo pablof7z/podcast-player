@@ -296,6 +296,10 @@ fn run_or_refresh_agent_section(state: &mut AppState, runtime: &AppRuntime) {
     match state.agent_section {
         AgentSection::Tasks => {
             if let Some(task_id) = state.selected_agent_task_id() {
+                if state.selected_agent_task_enabled() == Some(false) {
+                    state.status = "task run error: task disabled".to_string();
+                    return;
+                }
                 match runtime.run_agent_task_now(&task_id) {
                     Ok(_) => state.push_toast("task dispatched"),
                     Err(e) => state.status = format!("task run error: {e}"),

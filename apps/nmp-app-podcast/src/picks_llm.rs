@@ -29,7 +29,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{LlmRequest, backend_for};
+use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
 use crate::store::PodcastStore;
 
 /// Same fast model the inbox triage path uses.
@@ -66,12 +66,21 @@ pub fn score_episode_for_picks(
         let prompt =
             build_picks_prompt(episode_title, podcast_title, description, listening_profile);
 
-        let backend = backend_for(store, PICKS_MODEL);
+        // Picks are episode-metadata scoring, so they share the visible
+        // Categorization model setting instead of hiding another model choice.
+        let picks_cfg = store
+            .lock()
+            .ok()
+            .map(|s| s.categorization_model().to_owned())
+            .unwrap_or_default();
+        let picks_model = role_model_or_default(&picks_cfg, PICKS_MODEL);
+        validate_model_credentials(store, &picks_model).map_err(|e| e.to_string())?;
+        let backend = backend_for(store, &picks_model);
         let req = LlmRequest {
             system: PICKS_PREAMBLE.to_owned(),
             history: Vec::new(),
             user: prompt,
-            model: PICKS_MODEL.to_owned(),
+            model: picks_model,
         };
 
         let response: String = backend.complete(&req).await?;

@@ -28,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{LlmRequest, backend_for};
+use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
 use crate::store::PodcastStore;
 
 const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
@@ -37,8 +37,7 @@ const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
 /// deleted Swift adapter applied to transcript / show-note text.
 const MAX_BODY_CHARS: usize = 16_000;
 
-const SUMMARIZE_PREAMBLE: &str =
-    "Summarize this podcast episode in 2-3 sentences. Be concise and factual. \
+const SUMMARIZE_PREAMBLE: &str = "Summarize this podcast episode in 2-3 sentences. Be concise and factual. \
      Do not invent facts not present in the supplied content. Output only the \
      summary text, with no preamble, labels, or markdown.";
 
@@ -56,12 +55,21 @@ pub fn summarize_episode(
 ) -> Result<String, String> {
     let prompt = build_prompt(title, description, transcript);
     runtime.block_on(async {
-        let backend = backend_for(store, SUMMARIZE_MODEL);
+        // Episode summaries are prose synthesis, so they share the visible
+        // Wiki model setting instead of hiding another model choice.
+        let summary_cfg = store
+            .lock()
+            .ok()
+            .map(|s| s.wiki_model().to_owned())
+            .unwrap_or_default();
+        let summary_model = role_model_or_default(&summary_cfg, SUMMARIZE_MODEL);
+        validate_model_credentials(store, &summary_model).map_err(|e| e.to_string())?;
+        let backend = backend_for(store, &summary_model);
         let req = LlmRequest {
             system: SUMMARIZE_PREAMBLE.to_owned(),
             history: Vec::new(),
             user: prompt,
-            model: SUMMARIZE_MODEL.to_owned(),
+            model: summary_model,
         };
 
         let response: String = backend.complete(&req).await?;

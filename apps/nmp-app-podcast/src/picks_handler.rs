@@ -33,8 +33,9 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::ffi::actions::picks_module::{compute_picks, compute_picks_scored, CandidateEpisode};
+use crate::ffi::actions::picks_module::{CandidateEpisode, compute_picks, compute_picks_scored};
 use crate::ffi::projections::AgentPickSummary;
+use crate::llm::is_missing_credential_error;
 use crate::picks_llm::score_episode_for_picks;
 use crate::store::PodcastStore;
 
@@ -298,7 +299,9 @@ async fn score_picks_in_background(
                 scores.insert(ep_id, (score, reason));
             }
             Ok(Err(e)) => {
-                eprintln!("[picks_llm] scoring failed for {ep_id}: {e}");
+                if !is_missing_credential_error(&e) {
+                    eprintln!("[picks_llm] scoring failed for {ep_id}: {e}");
+                }
             }
             Err(e) => {
                 eprintln!("[picks_llm] spawn_blocking panicked for {ep_id}: {e}");
