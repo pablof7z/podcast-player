@@ -76,11 +76,8 @@ impl TempDir {
         use std::sync::atomic::{AtomicU64, Ordering};
         static SEQ: AtomicU64 = AtomicU64::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
-            "nmp-settings-test-{}-{}",
-            std::process::id(),
-            n
-        ));
+        let path =
+            std::env::temp_dir().join(format!("nmp-settings-test-{}-{}", std::process::id(), n));
         std::fs::create_dir_all(&path).expect("create temp dir");
         Self { path }
     }
@@ -172,4 +169,3 @@ fn auto_skip_ads_persists_through_store_reload() {
     store2.set_data_dir(dir.path.clone());
     assert!(store2.auto_skip_ads_enabled());
 }
-

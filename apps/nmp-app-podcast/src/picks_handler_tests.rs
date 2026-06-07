@@ -23,10 +23,13 @@ fn collect_candidates_returns_all_episodes() {
     let p1_id = p1.id;
     let p2 = make_podcast("Show B");
     let p2_id = p2.id;
-    store.subscribe(p1, vec![
-        make_episode(p1_id, "A-1", 100),
-        make_episode(p1_id, "A-2", 200),
-    ]);
+    store.subscribe(
+        p1,
+        vec![
+            make_episode(p1_id, "A-1", 100),
+            make_episode(p1_id, "A-2", 200),
+        ],
+    );
     store.subscribe(p2, vec![make_episode(p2_id, "B-1", 300)]);
     let cands = collect_candidates(&store);
     assert_eq!(cands.len(), 3);
@@ -200,4 +203,3 @@ fn listening_profile_counts_starred_episodes() {
     assert!(profile.contains("Starred Show"));
     assert!(profile.contains("1 starred"));
 }
-

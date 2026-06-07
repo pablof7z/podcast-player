@@ -2,10 +2,10 @@
 //!
 //! Extracted from `ai_chapters.rs` to keep that file under the 500-line hard limit.
 
-use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
 use super::*;
 use podcast_core::{Episode, Podcast};
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 fn test_runtime() -> Arc<Runtime> {
@@ -70,7 +70,10 @@ fn build_stub_chapters_treats_zero_count_as_one() {
 fn chapter_from_synthesized_marks_llm_provenance() {
     // LLM-synthesized chapters must be tagged `Llm` (high confidence), not the
     // default publisher provenance, and flagged ai-generated.
-    let synth = SynthesizedChapter { title: "Real topic shift".into(), start_secs: 42.0 };
+    let synth = SynthesizedChapter {
+        title: "Real topic shift".into(),
+        start_secs: 42.0,
+    };
     let chapter = chapter_from_synthesized(&synth);
     assert_eq!(chapter.source, ChapterSource::Llm);
     assert!(chapter.is_ai_generated);
@@ -85,7 +88,10 @@ fn chapter_from_synthesized_marks_llm_provenance() {
 use crate::ai_chapters_llm::SynthError;
 
 fn one_chapter() -> Vec<SynthesizedChapter> {
-    vec![SynthesizedChapter { title: "Topic A".into(), start_secs: 0.0 }]
+    vec![SynthesizedChapter {
+        title: "Topic A".into(),
+        start_secs: 0.0,
+    }]
 }
 
 #[test]
@@ -117,7 +123,10 @@ fn first_attempt_parse_signals_retry() {
     // A reachable-but-unparseable model must NOT stub on the first attempt —
     // it returns None so the ladder retries with a simpler prompt.
     let outcome = first_attempt_outcome(Err(SynthError::Parse("bad json".into())), 600.0, 5);
-    assert!(outcome.is_none(), "parse failure must signal retry, got {outcome:?}");
+    assert!(
+        outcome.is_none(),
+        "parse failure must signal retry, got {outcome:?}"
+    );
 }
 
 #[test]
@@ -160,7 +169,10 @@ fn compile_emits_compiling_status_and_persists_chapters() {
     let (podcast, episode) = make_episode_with_duration(Some(600.0));
     let ep_id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
-    store.lock().unwrap().set_transcript(ep_id.clone(), "hello world".to_owned());
+    store
+        .lock()
+        .unwrap()
+        .set_transcript(ep_id.clone(), "hello world".to_owned());
 
     let rt = test_runtime();
     let rev = test_rev();
@@ -172,21 +184,29 @@ fn compile_emits_compiling_status_and_persists_chapters() {
     // completes. We drive the spawned task to completion via block_on with a
     // short sleep so the test exercises the async path end-to-end.
     // Rev starts at 0, background task bumps it after storing chapters.
-    assert_eq!(rev.load(std::sync::atomic::Ordering::Relaxed), 0,
-        "rev must NOT be primed synchronously (async dispatch)");
+    assert_eq!(
+        rev.load(std::sync::atomic::Ordering::Relaxed),
+        0,
+        "rev must NOT be primed synchronously (async dispatch)"
+    );
     // Wait for background task on the multi-thread runtime.
     rt.block_on(async {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     });
-    assert!(rev.load(std::sync::atomic::Ordering::Relaxed) >= 1,
-        "rev must be bumped after background compile completes");
+    assert!(
+        rev.load(std::sync::atomic::Ordering::Relaxed) >= 1,
+        "rev must be bumped after background compile completes"
+    );
 
     let (_url, loaded) = store
         .lock()
         .unwrap()
         .episode_chapters_state(&ep_id)
         .expect("episode present");
-    assert!(loaded, "compiled chapters must be persisted after background task");
+    assert!(
+        loaded,
+        "compiled chapters must be persisted after background task"
+    );
 }
 
 #[test]
@@ -196,7 +216,10 @@ fn compile_is_idempotent_when_episode_has_chapters() {
     let ep_id = episode.id.0.to_string();
     episode.chapters = Some(vec![Chapter::new("Existing", 0.0)]);
     store.lock().unwrap().subscribe(podcast, vec![episode]);
-    store.lock().unwrap().set_transcript(ep_id.clone(), "hi".to_owned());
+    store
+        .lock()
+        .unwrap()
+        .set_transcript(ep_id.clone(), "hi".to_owned());
 
     let rt = test_runtime();
     let rev = test_rev();
@@ -228,7 +251,10 @@ fn compile_refuses_when_transcript_is_whitespace_only() {
     let (podcast, episode) = make_episode_with_duration(Some(600.0));
     let ep_id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
-    store.lock().unwrap().set_transcript(ep_id.clone(), "   \n  ".to_owned());
+    store
+        .lock()
+        .unwrap()
+        .set_transcript(ep_id.clone(), "   \n  ".to_owned());
 
     let rt = test_runtime();
     let rev = test_rev();
@@ -243,7 +269,10 @@ fn compile_refuses_when_no_duration() {
     let (podcast, episode) = make_episode_with_duration(None);
     let ep_id = episode.id.0.to_string();
     store.lock().unwrap().subscribe(podcast, vec![episode]);
-    store.lock().unwrap().set_transcript(ep_id.clone(), "hi".to_owned());
+    store
+        .lock()
+        .unwrap()
+        .set_transcript(ep_id.clone(), "hi".to_owned());
 
     let rt = test_runtime();
     let rev = test_rev();
@@ -260,7 +289,10 @@ fn compile_reports_episode_not_found() {
     let result = handle_compile_chapters(&store, &rev, &rt, "missing-episode".to_owned());
     assert_eq!(result["ok"], false);
     assert!(
-        result["error"].as_str().unwrap_or_default().contains("episode not found"),
+        result["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("episode not found"),
         "got: {}",
         result["error"]
     );

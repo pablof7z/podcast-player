@@ -59,7 +59,10 @@ pub fn handle_publish_action(
 /// `podcast.publish.create_owned_podcast` — generate a per-podcast
 /// keypair, stamp `owner_pubkey_hex` onto the podcast row, and bump
 /// `rev` so the iOS snapshot poll picks it up.
-pub(crate) fn create_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde_json::Value {
+pub(crate) fn create_owned(
+    handler: &PodcastHostOpHandler,
+    podcast_id: String,
+) -> serde_json::Value {
     let exists = match handler.store.lock() {
         Ok(s) => s.podcast_by_id_str(&podcast_id).is_some(),
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -94,14 +97,19 @@ pub(crate) fn create_owned(handler: &PodcastHostOpHandler, podcast_id: String) -
 /// `podcast.publish.publish_show` — build and sign a `kind:10154` show event,
 /// then hand it to NMP for relay routing via `nmp.publish`. The signed event
 /// JSON is stamped onto `publish_state[podcast_id].show_event_json`.
-pub(crate) fn publish_show(handler: &PodcastHostOpHandler, podcast_id: String) -> serde_json::Value {
+pub(crate) fn publish_show(
+    handler: &PodcastHostOpHandler,
+    podcast_id: String,
+) -> serde_json::Value {
     let podcast_clone = match handler.store.lock() {
         Ok(s) => match s.podcast_by_id_str(&podcast_id) {
             Some(p) => p.clone(),
-            None => return serde_json::json!({
-                "ok": false,
-                "error": format!("podcast not found: {podcast_id}")
-            }),
+            None => {
+                return serde_json::json!({
+                    "ok": false,
+                    "error": format!("podcast not found: {podcast_id}")
+                })
+            }
         },
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
     };
@@ -109,17 +117,21 @@ pub(crate) fn publish_show(handler: &PodcastHostOpHandler, podcast_id: String) -
         Ok(keys) => {
             let pk = match keys.pubkey_hex(&podcast_id) {
                 Some(pk) => pk,
-                None => return serde_json::json!({
-                    "ok": false,
-                    "error": "podcast not owned (run create_owned_podcast first)"
-                }),
+                None => {
+                    return serde_json::json!({
+                        "ok": false,
+                        "error": "podcast not owned (run create_owned_podcast first)"
+                    })
+                }
             };
             let sk = match keys.get_key(&podcast_id) {
                 Some(b) => *b,
-                None => return serde_json::json!({
-                    "ok": false,
-                    "error": "key vanished between pubkey_hex and get_key"
-                }),
+                None => {
+                    return serde_json::json!({
+                        "ok": false,
+                        "error": "key vanished between pubkey_hex and get_key"
+                    })
+                }
             };
             (pk, sk)
         }
@@ -130,7 +142,8 @@ pub(crate) fn publish_show(handler: &PodcastHostOpHandler, podcast_id: String) -
     let content = show_content(&podcast_clone);
     let created_at = Utc::now().timestamp();
 
-    let (event, event_id) = match sign_event(&secret_bytes, KIND_SHOW, &tags, &content, created_at) {
+    let (event, event_id) = match sign_event(&secret_bytes, KIND_SHOW, &tags, &content, created_at)
+    {
         Ok(pair) => pair,
         Err(e) => return serde_json::json!({"ok": false, "error": format!("signing failed: {e}")}),
     };
@@ -163,10 +176,12 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
                 let blossom_url = s.blossom_server_url().to_owned();
                 (podcast, episode, local_path, blossom_url)
             }
-            None => return serde_json::json!({
-                "ok": false,
-                "error": format!("episode not found: {episode_id}")
-            }),
+            None => {
+                return serde_json::json!({
+                    "ok": false,
+                    "error": format!("episode not found: {episode_id}")
+                })
+            }
         },
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
     };
@@ -175,17 +190,21 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
         Ok(keys) => {
             let pk = match keys.pubkey_hex(&podcast_id_str) {
                 Some(pk) => pk,
-                None => return serde_json::json!({
-                    "ok": false,
-                    "error": "podcast not owned (run create_owned_podcast first)"
-                }),
+                None => {
+                    return serde_json::json!({
+                        "ok": false,
+                        "error": "podcast not owned (run create_owned_podcast first)"
+                    })
+                }
             };
             let sk = match keys.get_key(&podcast_id_str) {
                 Some(b) => *b,
-                None => return serde_json::json!({
-                    "ok": false,
-                    "error": "key vanished between pubkey_hex and get_key"
-                }),
+                None => {
+                    return serde_json::json!({
+                        "ok": false,
+                        "error": "key vanished between pubkey_hex and get_key"
+                    })
+                }
             };
             (pk, sk)
         }
@@ -202,8 +221,7 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
     // requires a live `app` pointer. In unit tests / pre-login the pointer is
     // null and there is no executor to dispatch through, so we skip the upload
     // entirely and publish with the enclosure URL.
-    let (tags, blossom_url_used, blossom_error) = if local_path.is_some()
-        && !handler.app.is_null()
+    let (tags, blossom_url_used, blossom_error) = if local_path.is_some() && !handler.app.is_null()
     {
         let correlation_id = uuid::Uuid::new_v4().to_string();
         resolve_episode_tags(
@@ -219,10 +237,13 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
     let content = episode.description.clone();
     let created_at = Utc::now().timestamp();
 
-    let (event, event_id) = match sign_event(&secret_bytes, KIND_EPISODE, &tags, &content, created_at) {
-        Ok(pair) => pair,
-        Err(e) => return serde_json::json!({"ok": false, "error": format!("signing failed: {e}")}),
-    };
+    let (event, event_id) =
+        match sign_event(&secret_bytes, KIND_EPISODE, &tags, &content, created_at) {
+            Ok(pair) => pair,
+            Err(e) => {
+                return serde_json::json!({"ok": false, "error": format!("signing failed: {e}")})
+            }
+        };
 
     handler.rev.fetch_add(1, Ordering::Relaxed);
     let status = publish_via_nmp(handler.app, &event);
@@ -280,7 +301,9 @@ fn resolve_episode_tags(
             )
         }
         Err(e) => {
-            eprintln!("[host_op_publish] blossom upload failed, falling back to enclosure URL: {e}");
+            eprintln!(
+                "[host_op_publish] blossom upload failed, falling back to enclosure URL: {e}"
+            );
             (episode_to_episode_tags(episode), None, Some(e))
         }
     }
@@ -300,7 +323,10 @@ fn publish_author_claim(
         Ok(keys) => keys.iter_pubkeys(),
         Err(_) => return serde_json::json!({"ok": false, "error": "podcast_keys poisoned"}),
     };
-    let tags: Vec<Vec<String>> = pairs.iter().map(|(_, pk)| vec!["p".into(), pk.clone()]).collect();
+    let tags: Vec<Vec<String>> = pairs
+        .iter()
+        .map(|(_, pk)| vec!["p".into(), pk.clone()])
+        .collect();
     handler.rev.fetch_add(1, Ordering::Relaxed);
     let status = publish_raw_via_nmp(handler.app, KIND_AUTHOR_CLAIM, &tags, "");
     serde_json::json!({
@@ -340,19 +366,16 @@ pub(crate) fn sign_event(
     content: &str,
     created_at_secs: i64,
 ) -> Result<(Event, String), String> {
-    let sk = SecretKey::from_slice(secret_bytes)
-        .map_err(|e| format!("invalid secret key: {e}"))?;
+    let sk = SecretKey::from_slice(secret_bytes).map_err(|e| format!("invalid secret key: {e}"))?;
     let keys = Keys::new(sk);
 
     let nostr_tags: Vec<Tag> = tags
         .iter()
-        .filter_map(|t| {
-            match Tag::parse(t) {
-                Ok(tag) => Some(tag),
-                Err(e) => {
-                    eprintln!("[host_op_publish] dropping malformed tag {:?}: {e}", t);
-                    None
-                }
+        .filter_map(|t| match Tag::parse(t) {
+            Ok(tag) => Some(tag),
+            Err(e) => {
+                eprintln!("[host_op_publish] dropping malformed tag {:?}: {e}", t);
+                None
             }
         })
         .collect();

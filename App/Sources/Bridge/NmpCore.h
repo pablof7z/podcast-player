@@ -295,6 +295,15 @@ char *nmp_app_podcast_openrouter_whisper_transcribe(void *handle, const char *in
 // Threading: this call BLOCKS; call from a background thread / detached Task.
 char *nmp_app_podcast_elevenlabs_scribe_transcribe(void *handle, const char *intent_json);
 
+// Shared AssemblyAI speech-to-text transport. Swift passes a typed intent JSON:
+//   {"audio_url":"https://.../episode.mp3","language_hint":"en"?}
+// Rust owns AssemblyAI auth, selected model fallback list, submit/poll HTTP,
+// provider status handling, and response parsing. Returns {"result":...} or
+// {"error":{"kind":"...","message":"...","status_code":...}}.
+// The caller MUST free the returned pointer via `nmp_app_free_string`.
+// Threading: this call BLOCKS; call from a background thread / detached Task.
+char *nmp_app_podcast_assemblyai_transcribe(void *handle, const char *intent_json);
+
 // ── Provider-blind image generation ─────────────────────────────────────
 //
 // Drives OpenRouter image generation through shared Rust provider transport.

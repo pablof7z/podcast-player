@@ -38,10 +38,7 @@ fn remember_with_explicit_agent_source_is_recorded() {
         &rev,
     );
     assert_eq!(resp["ok"], true);
-    assert_eq!(
-        store.lock().unwrap().all_memory_facts()[0].source,
-        "agent"
-    );
+    assert_eq!(store.lock().unwrap().all_memory_facts()[0].source, "agent");
 }
 #[test]
 fn remember_rejects_empty_key() {
@@ -104,4 +101,3 @@ fn forget_all_on_empty_store_is_noop_without_rev_bump() {
     assert_eq!(resp["ok"], true);
     assert_eq!(rev.load(Ordering::Relaxed), 0);
 }
-

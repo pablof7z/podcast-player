@@ -5,7 +5,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
 
-
 use nmp_ffi::NmpApp;
 
 use super::snapshot::build_snapshot_payload;
@@ -49,9 +48,7 @@ use crate::tasks_handler;
 /// [`nmp_app_podcast_unregister`] before `nmp_app_free`.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_register(
-    app: *mut NmpApp,
-) -> *mut PodcastHandle {
+pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHandle {
     if app.is_null() {
         return std::ptr::null_mut();
     }
@@ -112,8 +109,7 @@ pub extern "C" fn nmp_app_podcast_register(
     let conversation = Arc::new(Mutex::new(Vec::new()));
     let agent_busy = Arc::new(AtomicBool::new(false));
     let agent_touched = Arc::new(AtomicBool::new(false));
-    let categories: Arc<Mutex<HashMap<String, Vec<String>>>> =
-        Arc::new(Mutex::new(HashMap::new()));
+    let categories: Arc<Mutex<HashMap<String, Vec<String>>>> = Arc::new(Mutex::new(HashMap::new()));
     let comments_cache: Arc<Mutex<HashMap<String, Vec<crate::ffi::projections::CommentSummary>>>> =
         Arc::new(Mutex::new(HashMap::new()));
     let viewed_comments_episode_id: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
@@ -129,7 +125,6 @@ pub extern "C" fn nmp_app_podcast_register(
 
     let inbox_triage_cache = Arc::new(Mutex::new(HashMap::new()));
     let inbox_triage_in_progress = Arc::new(AtomicBool::new(false));
-
 
     // Shared Tokio runtime — multi-thread scheduler so async LLM/relay
     // work in future PRs can `.spawn` without a per-handler executor.
@@ -203,7 +198,10 @@ pub extern "C" fn nmp_app_podcast_register(
     // relay-config sidecar persistence into the C-ABI start path; tracked in
     // BACKLOG (`relay-config-c-abi-persistence`).
     app_ref.set_initial_relays_for_start(vec![
-        ("wss://relay.primal.net".to_string(), "both,indexer".to_string()),
+        (
+            "wss://relay.primal.net".to_string(),
+            "both,indexer".to_string(),
+        ),
         ("wss://purplepag.es".to_string(), "indexer".to_string()),
         // In-app feedback source relay (TENEX project notes). Seeded as a
         // read-only relay so NMP opens + NIP-42-AUTHs the connection used by
@@ -261,38 +259,32 @@ pub extern "C" fn nmp_app_podcast_register(
     // the slot Arcs are moved into the handle. The returned id is dropped: the
     // observer lives for the app's lifetime (mirrors the snapshot projection),
     // and `nmp_app_free` joins the actor before dropping the slot.
-    let _discovery_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(
-            crate::discover_nostr::NostrDiscoveryObserver::new(
-                nostr_results.clone(),
-                rev.clone(),
-            )
+    let _discovery_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
+        crate::discover_nostr::NostrDiscoveryObserver::new(nostr_results.clone(), rev.clone())
             .with_snapshot_signal(snapshot_signal.clone()),
-        ));
+    ));
 
     // kind:1111 comments observer — receives events from push_interest_via_nmp
     // subscriptions opened by handle_fetch_comments. No iOS WebSocket.
-    let _comments_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(
-            crate::comments_handler::CommentsObserver::new(
-                store.clone(),
-                comments_cache.clone(),
-                rev.clone(),
-            )
-            .with_snapshot_signal(snapshot_signal.clone()),
-        ));
+    let _comments_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
+        crate::comments_handler::CommentsObserver::new(
+            store.clone(),
+            comments_cache.clone(),
+            rev.clone(),
+        )
+        .with_snapshot_signal(snapshot_signal.clone()),
+    ));
 
     // kind:1 agent-notes observer — receives events from push_interest_via_nmp
     // subscriptions opened by handle_fetch_agent_notes. No iOS WebSocket.
-    let _agent_notes_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(
-            crate::agent_note_handler::AgentNotesObserver::new(
-                identity.clone(),
-                agent_notes.clone(),
-                rev.clone(),
-            )
-            .with_snapshot_signal(snapshot_signal.clone()),
-        ));
+    let _agent_notes_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
+        crate::agent_note_handler::AgentNotesObserver::new(
+            identity.clone(),
+            agent_notes.clone(),
+            rev.clone(),
+        )
+        .with_snapshot_signal(snapshot_signal.clone()),
+    ));
 
     // In-app feedback observer — receives kind:1 + kind:513 events bearing the
     // TENEX project `["a"]` coord from the relay-pinned subscription opened by
@@ -300,14 +292,10 @@ pub extern "C" fn nmp_app_podcast_register(
     // the snapshot. No iOS WebSocket (replaces the deleted FeedbackRelayClient
     // fetch path). Unlike agent-notes, it does NOT self-filter — the Feedback
     // UI shows the user's own threads.
-    let _feedback_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(
-            crate::feedback_handler::FeedbackObserver::new(
-                feedback_events_cache.clone(),
-                rev.clone(),
-            )
+    let _feedback_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
+        crate::feedback_handler::FeedbackObserver::new(feedback_events_cache.clone(), rev.clone())
             .with_snapshot_signal(snapshot_signal.clone()),
-        ));
+    ));
 
     // Keep a clone for the handle before the runtime Arc is moved into the
     // voice manager below. The snapshot path's proactive triage trigger

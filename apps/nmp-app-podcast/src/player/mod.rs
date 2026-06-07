@@ -190,7 +190,6 @@ impl PlayerActor {
     pub fn set_auto_mark_played_at_end(&mut self, enabled: bool) {
         self.auto_mark_played_at_end = enabled;
     }
-
 }
 
 #[cfg(test)]

@@ -28,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
+use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
 use crate::store::PodcastStore;
 
 const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
@@ -37,7 +37,8 @@ const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
 /// deleted Swift adapter applied to transcript / show-note text.
 const MAX_BODY_CHARS: usize = 16_000;
 
-const SUMMARIZE_PREAMBLE: &str = "Summarize this podcast episode in 2-3 sentences. Be concise and factual. \
+const SUMMARIZE_PREAMBLE: &str =
+    "Summarize this podcast episode in 2-3 sentences. Be concise and factual. \
      Do not invent facts not present in the supplied content. Output only the \
      summary text, with no preamble, labels, or markdown.";
 

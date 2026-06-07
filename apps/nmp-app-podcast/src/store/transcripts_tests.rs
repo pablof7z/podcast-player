@@ -21,7 +21,9 @@ fn episode_publisher_transcript_returns_url_and_kind() {
     let episode = make_episode(podcast.id);
     let id = episode.id.0.to_string();
     store.subscribe(podcast, vec![episode]);
-    let (url, kind) = store.episode_publisher_transcript(&id).expect("transcript info");
+    let (url, kind) = store
+        .episode_publisher_transcript(&id)
+        .expect("transcript info");
     assert_eq!(url, "https://example.com/transcript.vtt");
     assert_eq!(kind, TranscriptKind::Vtt);
 }
@@ -61,4 +63,3 @@ fn episode_publisher_transcript_defaults_kind_to_json() {
     let (_url, kind) = store.episode_publisher_transcript(&id).expect("info");
     assert_eq!(kind, TranscriptKind::Json);
 }
-

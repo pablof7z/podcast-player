@@ -1,7 +1,10 @@
 use super::*;
 #[test]
 fn set_skip_intervals_round_trips() {
-    let action = SettingsAction::SetSkipIntervals { forward_secs: 45.0, backward_secs: 10.0 };
+    let action = SettingsAction::SetSkipIntervals {
+        forward_secs: 45.0,
+        backward_secs: 10.0,
+    };
     let json = serde_json::to_string(&action).expect("encode");
     assert!(json.contains(r#""op":"set_skip_intervals""#));
     assert!(json.contains(r#""forward_secs":45.0"#) || json.contains(r#""forward_secs":45"#));
@@ -27,7 +30,11 @@ fn execute_emits_dispatch_host_op() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-1");
@@ -98,7 +105,11 @@ fn execute_add_relay_emits_add_relay_then_dispatch_host_op() {
     assert_eq!(url, "wss://relay.example");
     assert_eq!(role, "write");
     // 2) Rev-bump companion.
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[1] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[1]
+    else {
         panic!("expected DispatchHostOp second, got {:?}", commands[1]);
     };
     assert_eq!(correlation_id, "corr-2");
@@ -155,4 +166,3 @@ fn execute_remove_relay_emits_remove_relay_then_dispatch_host_op() {
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
     assert_eq!(v["op"], "remove_relay");
 }
-

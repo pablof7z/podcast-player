@@ -28,7 +28,8 @@ fn auto_dl(
 fn auto_download_off_does_not_queue_download() {
     let pid = PodcastId::generate();
     let fresh = vec![make_episode(pid, "g1", "https://ex.com/a.mp3")];
-    let (ready, deferred) = episodes_to_auto_download(&fresh, &HashSet::new(), &HashMap::new(), false, false, true);
+    let (ready, deferred) =
+        episodes_to_auto_download(&fresh, &HashSet::new(), &HashMap::new(), false, false, true);
     assert!(ready.is_empty());
     assert!(deferred.is_empty());
 }
@@ -41,7 +42,8 @@ fn auto_download_on_queues_new_episodes() {
     let fresh = vec![ep_known.clone(), ep_new.clone()];
     let mut existing = HashSet::new();
     existing.insert("known".to_string());
-    let (ready, deferred) = episodes_to_auto_download(&fresh, &existing, &HashMap::new(), true, false, true);
+    let (ready, deferred) =
+        episodes_to_auto_download(&fresh, &existing, &HashMap::new(), true, false, true);
     assert_eq!(ready.len(), 1);
     assert_eq!(ready[0].0, ep_new.id);
     assert_eq!(ready[0].1, "https://ex.com/new.mp3");
@@ -105,7 +107,12 @@ fn wifi_only_on_wifi_queues_episodes() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "new", "https://ex.com/new.mp3");
     let (ready, deferred) = episodes_to_auto_download(
-        &[ep.clone()], &HashSet::new(), &HashMap::new(), true, true, true,
+        &[ep.clone()],
+        &HashSet::new(),
+        &HashMap::new(),
+        true,
+        true,
+        true,
     );
     assert_eq!(ready.len(), 1);
     assert!(deferred.is_empty());
@@ -116,10 +123,22 @@ fn wifi_only_on_cellular_defers_not_discards() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "new", "https://ex.com/new.mp3");
     let (ready, deferred) = episodes_to_auto_download(
-        &[ep.clone()], &HashSet::new(), &HashMap::new(), true, true, false,
+        &[ep.clone()],
+        &HashSet::new(),
+        &HashMap::new(),
+        true,
+        true,
+        false,
     );
-    assert!(ready.is_empty(), "must not dispatch on cellular when wifi-only");
-    assert_eq!(deferred.len(), 1, "must defer (not discard) for later Wi-Fi dispatch");
+    assert!(
+        ready.is_empty(),
+        "must not dispatch on cellular when wifi-only"
+    );
+    assert_eq!(
+        deferred.len(),
+        1,
+        "must defer (not discard) for later Wi-Fi dispatch"
+    );
     assert_eq!(deferred[0].0, ep.id);
 }
 
@@ -128,9 +147,18 @@ fn cellular_allowed_queues_on_cellular() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "new", "https://ex.com/new.mp3");
     let (ready, deferred) = episodes_to_auto_download(
-        &[ep.clone()], &HashSet::new(), &HashMap::new(), true, false, false,
+        &[ep.clone()],
+        &HashSet::new(),
+        &HashMap::new(),
+        true,
+        false,
+        false,
     );
-    assert_eq!(ready.len(), 1, "cellular-allowed must queue even without Wi-Fi");
+    assert_eq!(
+        ready.len(),
+        1,
+        "cellular-allowed must queue even without Wi-Fi"
+    );
     assert!(deferred.is_empty());
 }
 
@@ -138,9 +166,8 @@ fn cellular_allowed_queues_on_cellular() {
 fn auto_download_off_with_wifi_still_returns_empty() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "new", "https://ex.com/new.mp3");
-    let (ready, deferred) = episodes_to_auto_download(
-        &[ep], &HashSet::new(), &HashMap::new(), false, true, true,
-    );
+    let (ready, deferred) =
+        episodes_to_auto_download(&[ep], &HashSet::new(), &HashMap::new(), false, true, true);
     assert!(ready.is_empty());
     assert!(deferred.is_empty());
 }
@@ -178,7 +205,11 @@ fn backfill_queues_undownloaded_for_enabled_show() {
     let (mut store, pid) = store_with_show(&["g1", "g2"]);
     store.set_auto_download(pid, true);
     let (ready, deferred) = store.auto_download_backfill_candidates(true, 10);
-    assert_eq!(ready.len(), 2, "both undownloaded episodes should be candidates");
+    assert_eq!(
+        ready.len(),
+        2,
+        "both undownloaded episodes should be candidates"
+    );
     assert!(deferred.is_empty());
 }
 
@@ -187,7 +218,11 @@ fn backfill_honours_limit_per_show() {
     let (mut store, pid) = store_with_show(&["g1", "g2", "g3", "g4"]);
     store.set_auto_download(pid, true);
     let (ready, _deferred) = store.auto_download_backfill_candidates(true, 2);
-    assert_eq!(ready.len(), 2, "limit caps how many a single show contributes");
+    assert_eq!(
+        ready.len(),
+        2,
+        "limit caps how many a single show contributes"
+    );
 }
 
 #[test]
@@ -206,6 +241,9 @@ fn backfill_defers_wifi_only_show_on_cellular() {
     let (mut store, pid) = store_with_show(&["g1"]);
     store.set_auto_download(pid, true); // wifi_only defaults to true
     let (ready, deferred) = store.auto_download_backfill_candidates(false, 10);
-    assert!(ready.is_empty(), "wifi-only show must not download on cellular");
+    assert!(
+        ready.is_empty(),
+        "wifi-only show must not download on cellular"
+    );
     assert_eq!(deferred.len(), 1, "deferred for later Wi-Fi dispatch");
 }

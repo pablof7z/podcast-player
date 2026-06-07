@@ -17,11 +17,8 @@ impl TempDir {
     fn new() -> Self {
         static SEQ: AtomicU64 = AtomicU64::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
-            "nmp-podcast-triage-{}-{}",
-            std::process::id(),
-            n,
-        ));
+        let path =
+            std::env::temp_dir().join(format!("nmp-podcast-triage-{}-{}", std::process::id(), n,));
         std::fs::create_dir_all(&path).expect("create temp dir");
         Self { path }
     }
@@ -209,7 +206,9 @@ fn side_maps_persist_and_reload() {
     assert!(reloaded.is_metadata_indexed("ep-3"));
     assert!(!reloaded.is_metadata_indexed("ep-2"));
 
-    let ts = reloaded.transcript_status_for("ep-1").expect("ep-1 status present");
+    let ts = reloaded
+        .transcript_status_for("ep-1")
+        .expect("ep-1 status present");
     assert_eq!(ts.0, "failed");
     assert_eq!(ts.1.as_deref(), Some("boom"));
 }

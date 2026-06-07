@@ -96,7 +96,11 @@ fn bm25_matches_reordered_query_terms_substring_would_miss() {
 
     // BM25 finds it.
     let results = collect_knowledge_matches(&store, "distributed consensus");
-    assert_eq!(results.len(), 1, "BM25 matches what substring search misses");
+    assert_eq!(
+        results.len(),
+        1,
+        "BM25 matches what substring search misses"
+    );
     assert_eq!(results[0].episode_id, ep_id);
     assert!(results[0].relevance_score > 0.0);
 }
@@ -269,7 +273,10 @@ fn index_episode_chunks_stored_transcript() {
 fn reindex_same_transcript_does_not_duplicate_chunks() {
     let store = shared(PodcastStore::new());
     let text = "alpha beta gamma".to_owned();
-    store.lock().unwrap().set_transcript("ep-1".to_owned(), text);
+    store
+        .lock()
+        .unwrap()
+        .set_transcript("ep-1".to_owned(), text);
     let ks = empty_knowledge();
     let rev = Arc::new(AtomicU64::new(1));
     handle_index_episode("ep-1".to_owned(), &store, &ks, &rev);
@@ -284,7 +291,10 @@ fn reindex_shorter_transcript_removes_stale_trailing_chunks() {
     let store = shared(PodcastStore::new());
     // Synthesize a long first transcript that produces ≥2 chunks.
     let long_text = "word ".repeat(500); // ~2500 chars → ~2-3 chunks
-    store.lock().unwrap().set_transcript("ep-2".to_owned(), long_text);
+    store
+        .lock()
+        .unwrap()
+        .set_transcript("ep-2".to_owned(), long_text);
     let ks = empty_knowledge();
     let rev = Arc::new(AtomicU64::new(1));
     handle_index_episode("ep-2".to_owned(), &store, &ks, &rev);
@@ -292,11 +302,17 @@ fn reindex_shorter_transcript_removes_stale_trailing_chunks() {
     assert!(first_count >= 2, "expected ≥2 chunks from long transcript");
 
     // Now replace with a short transcript that fits in one chunk.
-    store.lock().unwrap().set_transcript("ep-2".to_owned(), "short".to_owned());
+    store
+        .lock()
+        .unwrap()
+        .set_transcript("ep-2".to_owned(), "short".to_owned());
     handle_index_episode("ep-2".to_owned(), &store, &ks, &rev);
     let second_count = ks.lock().unwrap().len();
     // Stale trailing chunks must be gone — only the new single chunk remains.
-    assert_eq!(second_count, 1, "reindex must clear stale trailing chunks (got {second_count}, had {first_count})");
+    assert_eq!(
+        second_count, 1,
+        "reindex must clear stale trailing chunks (got {second_count}, had {first_count})"
+    );
 }
 
 #[test]
@@ -310,10 +326,10 @@ fn search_finds_term_only_in_transcript_chunk() {
     raw.subscribe(podcast, vec![ep]);
     let store = shared(raw);
 
-    store
-        .lock()
-        .unwrap()
-        .set_transcript(ep_id.clone(), "we explore distributed consensus protocols".to_owned());
+    store.lock().unwrap().set_transcript(
+        ep_id.clone(),
+        "we explore distributed consensus protocols".to_owned(),
+    );
 
     let ks = empty_knowledge();
     let slot = Arc::new(Mutex::new(Vec::new()));
@@ -324,7 +340,11 @@ fn search_finds_term_only_in_transcript_chunk() {
     assert_eq!(out["ok"], true);
 
     let results = slot.lock().unwrap();
-    assert_eq!(results.len(), 1, "transcript-only term must be found via chunk search");
+    assert_eq!(
+        results.len(),
+        1,
+        "transcript-only term must be found via chunk search"
+    );
     assert_eq!(results[0].episode_id, ep_id);
     assert_eq!(results[0].episode_title, "Pilot");
     assert_eq!(results[0].podcast_title, "Tech Talk");
@@ -467,8 +487,15 @@ fn collect_chunk_texts_scopes_to_supplied_episode_ids() {
     // Only ep-mine is in scope; the unrelated podcast's chunk must not leak.
     let scope = vec!["ep-mine".to_owned()];
     let hits = collect_chunk_texts_for_topic(&ks, "halving", &scope, 5);
-    assert_eq!(hits.len(), 1, "chunk search must stay scoped to the podcast");
-    assert_eq!(hits[0].0, "ep-mine", "hit attributed to the in-scope episode");
+    assert_eq!(
+        hits.len(),
+        1,
+        "chunk search must stay scoped to the podcast"
+    );
+    assert_eq!(
+        hits[0].0, "ep-mine",
+        "hit attributed to the in-scope episode"
+    );
 
     // Empty scope yields nothing even when chunks match.
     assert!(collect_chunk_texts_for_topic(&ks, "halving", &[], 5).is_empty());

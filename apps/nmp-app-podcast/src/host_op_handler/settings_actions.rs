@@ -15,7 +15,10 @@ impl PodcastHostOpHandler {
             SettingsAction::SetAutoSkipAds { enabled } => {
                 handle_set_auto_skip_ads(&self.store, &self.player_actor, &self.rev, enabled)
             }
-            SettingsAction::SetSkipIntervals { forward_secs, backward_secs } => {
+            SettingsAction::SetSkipIntervals {
+                forward_secs,
+                backward_secs,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_skip_intervals(forward_secs, backward_secs);
                 }
@@ -42,7 +45,10 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetHeadphoneGestureActions { double_tap, triple_tap } => {
+            SettingsAction::SetHeadphoneGestureActions {
+                double_tap,
+                triple_tap,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_headphone_gesture_actions(double_tap, triple_tap);
                 }
@@ -126,14 +132,24 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetOpenRouterCredential { source, key_id, key_label, connected_at } => {
+            SettingsAction::SetOpenRouterCredential {
+                source,
+                key_id,
+                key_label,
+                connected_at,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_open_router_credential(source, key_id, key_label, connected_at);
                 }
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetOllamaCredential { source, key_id, key_label, connected_at } => {
+            SettingsAction::SetOllamaCredential {
+                source,
+                key_id,
+                key_label,
+                connected_at,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_ollama_credential(source, key_id, key_label, connected_at);
                 }
@@ -147,7 +163,12 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetElevenLabsCredential { source, key_id, key_label, connected_at } => {
+            SettingsAction::SetElevenLabsCredential {
+                source,
+                key_id,
+                key_label,
+                connected_at,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_eleven_labs_credential(source, key_id, key_label, connected_at);
                 }
@@ -182,14 +203,20 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetElevenLabsModels { stt_model, tts_model } => {
+            SettingsAction::SetElevenLabsModels {
+                stt_model,
+                tts_model,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_eleven_labs_models(stt_model, tts_model);
                 }
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetElevenLabsVoice { voice_id, voice_name } => {
+            SettingsAction::SetElevenLabsVoice {
+                voice_id,
+                voice_name,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_eleven_labs_voice(voice_id, voice_name);
                 }
@@ -266,7 +293,11 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
-            SettingsAction::SetNostrProfile { name, about, picture } => {
+            SettingsAction::SetNostrProfile {
+                name,
+                about,
+                picture,
+            } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_nostr_profile(name, about, picture);
                 }
@@ -284,9 +315,10 @@ impl PodcastHostOpHandler {
                 open_router,
                 ollama,
                 eleven_labs,
+                assembly_ai,
             } => {
                 if let Ok(mut s) = self.store.lock() {
-                    s.set_provider_api_keys(open_router, ollama, eleven_labs);
+                    s.set_provider_api_keys(open_router, ollama, eleven_labs, assembly_ai);
                 }
                 serde_json::json!({"ok": true})
             }

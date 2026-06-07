@@ -21,16 +21,16 @@ use std::path::{Path, PathBuf};
 use podcast_core::{Episode, EpisodeId, Podcast, PodcastId};
 
 mod ad_segments;
-mod chapters;
 pub mod auto_download;
+mod chapters;
 pub mod events;
 pub mod identity;
 pub mod inbox_triage_cache;
 mod library;
 mod memory;
 pub(crate) mod owned_ext;
-mod playback;
 mod persistence;
+mod playback;
 pub mod podcast_keys;
 pub mod relay_config;
 mod settings;
@@ -46,8 +46,8 @@ mod triage_state;
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
 pub use auto_download::episodes_to_auto_download;
-pub use podcast_keys::PodcastKeyStore;
 use persistence::{PersistedPodcast, PersistedSettings, PersistedStore, PERSIST_SCHEMA_VERSION};
+pub use podcast_keys::PodcastKeyStore;
 
 /// Backing store for known podcasts, follow membership and episode lists.
 ///
@@ -298,6 +298,9 @@ pub struct PodcastStore {
     /// ElevenLabs API key (in-memory only, never persisted to disk).
     /// Set via `set_provider_api_keys`; credential never touches disk.
     eleven_labs_api_key: Option<String>,
+    /// AssemblyAI API key (in-memory only, never persisted to disk).
+    /// Set via `set_provider_api_keys`; credential never touches disk.
+    assembly_ai_api_key: Option<String>,
 }
 
 impl PodcastStore {
@@ -388,6 +391,7 @@ impl PodcastStore {
             open_router_api_key: None,
             ollama_api_key: None,
             eleven_labs_api_key: None,
+            assembly_ai_api_key: None,
         }
     }
 
@@ -412,7 +416,9 @@ impl PodcastStore {
     /// Reload from `data_dir/podcasts.json`. Returns the number of podcasts
     /// hydrated. Silent no-op when no data dir is set or the file is missing.
     fn load_from_disk(&mut self) -> usize {
-        let Some(dir) = self.data_dir.as_ref() else { return 0; };
+        let Some(dir) = self.data_dir.as_ref() else {
+            return 0;
+        };
         let loaded = match persistence::load(dir) {
             Ok(Some(payload)) => payload,
             Ok(None) => return 0,
@@ -530,11 +536,12 @@ impl PodcastStore {
         } else {
             "deepseek-v4-flash:cloud".to_owned()
         };
-        self.memory_compilation_model_name = if !loaded.settings.memory_compilation_model_name.is_empty() {
-            loaded.settings.memory_compilation_model_name
-        } else {
-            "DeepSeek Flash".to_owned()
-        };
+        self.memory_compilation_model_name =
+            if !loaded.settings.memory_compilation_model_name.is_empty() {
+                loaded.settings.memory_compilation_model_name
+            } else {
+                "DeepSeek Flash".to_owned()
+            };
         self.wiki_model = if !loaded.settings.wiki_model.is_empty() {
             loaded.settings.wiki_model
         } else {
@@ -560,11 +567,12 @@ impl PodcastStore {
         } else {
             "deepseek-v4-flash:cloud".to_owned()
         };
-        self.chapter_compilation_model_name = if !loaded.settings.chapter_compilation_model_name.is_empty() {
-            loaded.settings.chapter_compilation_model_name
-        } else {
-            "DeepSeek Flash".to_owned()
-        };
+        self.chapter_compilation_model_name =
+            if !loaded.settings.chapter_compilation_model_name.is_empty() {
+                loaded.settings.chapter_compilation_model_name
+            } else {
+                "DeepSeek Flash".to_owned()
+            };
         self.embeddings_model = if !loaded.settings.embeddings_model.is_empty() {
             loaded.settings.embeddings_model
         } else {
@@ -580,11 +588,12 @@ impl PodcastStore {
         } else {
             "google/gemini-2.5-flash-image".to_owned()
         };
-        self.image_generation_model_name = if !loaded.settings.image_generation_model_name.is_empty() {
-            loaded.settings.image_generation_model_name
-        } else {
-            "Gemini 2.5 Flash".to_owned()
-        };
+        self.image_generation_model_name =
+            if !loaded.settings.image_generation_model_name.is_empty() {
+                loaded.settings.image_generation_model_name
+            } else {
+                "Gemini 2.5 Flash".to_owned()
+            };
         self.reranker_enabled = loaded.settings.reranker_enabled;
         self.open_router_credential_source = loaded.settings.open_router_credential_source;
         self.open_router_byok_key_id = loaded.settings.open_router_byok_key_id;
@@ -632,7 +641,8 @@ impl PodcastStore {
             "https://blossom.primal.net".to_owned()
         };
         self.youtube_extractor_url = loaded.settings.youtube_extractor_url;
-        self.wiki_auto_generate_on_transcript_ingest = loaded.settings.wiki_auto_generate_on_transcript_ingest;
+        self.wiki_auto_generate_on_transcript_ingest =
+            loaded.settings.wiki_auto_generate_on_transcript_ingest;
         self.auto_ingest_publisher_transcripts = loaded.settings.auto_ingest_publisher_transcripts;
         self.auto_fallback_to_scribe = loaded.settings.auto_fallback_to_scribe;
         self.notify_on_new_episodes = loaded.settings.notify_on_new_episodes;
@@ -665,7 +675,9 @@ impl PodcastStore {
     /// no-op when no data dir is set. Errors are intentionally swallowed
     /// (D6) — the in-memory store stays authoritative.
     pub(super) fn persist(&self) {
-        let Some(dir) = self.data_dir.as_ref() else { return; };
+        let Some(dir) = self.data_dir.as_ref() else {
+            return;
+        };
         let mut payload = self.to_persisted();
         payload.queue = self.cached_queue.clone();
         let _ = persistence::save(dir, &payload);
@@ -788,7 +800,8 @@ impl PodcastStore {
                 blossom_server_url: self.blossom_server_url.clone(),
                 youtube_extractor_url: self.youtube_extractor_url.clone(),
                 local_model_id: self.local_model_id.clone(),
-                wiki_auto_generate_on_transcript_ingest: self.wiki_auto_generate_on_transcript_ingest,
+                wiki_auto_generate_on_transcript_ingest: self
+                    .wiki_auto_generate_on_transcript_ingest,
                 auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
                 auto_fallback_to_scribe: self.auto_fallback_to_scribe,
                 notify_on_new_episodes: self.notify_on_new_episodes,

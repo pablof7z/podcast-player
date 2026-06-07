@@ -79,7 +79,10 @@ fn create_owned_then_publish_show_round_trip() {
     // Step 1: create_owned_podcast → returns a pubkey and stamps it on the row.
     let out = create_owned(&handler, podcast_id.clone());
     assert_eq!(out["ok"], true);
-    let pubkey = out["pubkey_hex"].as_str().expect("pubkey present").to_owned();
+    let pubkey = out["pubkey_hex"]
+        .as_str()
+        .expect("pubkey present")
+        .to_owned();
     assert_eq!(pubkey.len(), 64);
     // The podcast row now carries the owner pubkey.
     let stored_pk = store
@@ -94,7 +97,10 @@ fn create_owned_then_publish_show_round_trip() {
     // With a null app pointer relay dispatch is skipped, so status is "signed".
     let out2 = publish_show(&handler, podcast_id.clone());
     assert_eq!(out2["ok"], true);
-    assert_eq!(out2["status"], "signed", "null-app pointer must yield status=signed");
+    assert_eq!(
+        out2["status"], "signed",
+        "null-app pointer must yield status=signed"
+    );
     let tags = out2["event_tags"].as_array().expect("event_tags array");
     // NIP-F4 shows have no `d` tag — first tag is the title.
     assert_eq!(tags[0][0], "title");
@@ -109,7 +115,10 @@ fn create_owned_then_publish_show_round_trip() {
     let sig = event["sig"].as_str().expect("event.sig present");
     assert_eq!(sig.len(), 128, "sig must be 128-char hex");
     let id_in_event = event["id"].as_str().expect("event.id present");
-    assert_eq!(id_in_event, event_id, "event_id in envelope matches event.id field");
+    assert_eq!(
+        id_in_event, event_id,
+        "event_id in envelope matches event.id field"
+    );
 }
 
 #[test]
@@ -131,10 +140,7 @@ fn publish_show_rejects_unowned_podcast() {
     // No create_owned first ⇒ no key ⇒ error.
     let out = publish_show(&handler, pid);
     assert_eq!(out["ok"], false);
-    assert!(out["error"]
-        .as_str()
-        .unwrap()
-        .contains("podcast not owned"));
+    assert!(out["error"].as_str().unwrap().contains("podcast not owned"));
 }
 
 #[test]
@@ -232,13 +238,10 @@ fn audio_url(tags: &[Vec<String>]) -> &str {
 fn resolve_episode_tags_no_local_file_uses_enclosure() {
     let episode = test_episode();
     let secret = [9u8; 32];
-    let (tags, blossom_url_used, blossom_error) = resolve_episode_tags(
-        &episode,
-        None,
-        "https://blossom.example",
-        &secret,
-        |_req| panic!("fetch must not be called when there is no local file"),
-    );
+    let (tags, blossom_url_used, blossom_error) =
+        resolve_episode_tags(&episode, None, "https://blossom.example", &secret, |_req| {
+            panic!("fetch must not be called when there is no local file")
+        });
     assert_eq!(audio_url(&tags), "https://feed.example/enclosure.mp3");
     assert_eq!(blossom_url_used, None, "no Blossom URL when no local file");
     assert_eq!(blossom_error, None, "no error when no upload attempted");
@@ -260,7 +263,13 @@ fn resolve_episode_tags_upload_error_falls_back_to_enclosure() {
         "https://blossom.example",
         &secret,
         // Server rejects the upload — non-2xx status.
-        |_req| Ok(HttpResult::Ok { status_code: 500, headers: vec![], body: "boom".into() }),
+        |_req| {
+            Ok(HttpResult::Ok {
+                status_code: 500,
+                headers: vec![],
+                body: "boom".into(),
+            })
+        },
     );
 
     assert_eq!(
@@ -270,7 +279,10 @@ fn resolve_episode_tags_upload_error_falls_back_to_enclosure() {
     );
     assert_eq!(blossom_url_used, None, "no Blossom URL on failed upload");
     let err = blossom_error.expect("blossom_error must be populated on upload error");
-    assert!(err.contains("500"), "error should surface the http status: {err}");
+    assert!(
+        err.contains("500"),
+        "error should surface the http status: {err}"
+    );
 }
 
 /// Success → the Blossom blob URL appears in the `audio` tag,

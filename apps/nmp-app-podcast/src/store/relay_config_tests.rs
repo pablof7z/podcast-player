@@ -90,8 +90,8 @@ fn on_disk_shape_is_url_role_objects() {
         &[("wss://r.example".to_string(), "both".to_string())],
     )
     .expect("save succeeds");
-    let raw = std::fs::read_to_string(dir.path().join(RELAY_CONFIG_FILENAME))
-        .expect("sidecar readable");
+    let raw =
+        std::fs::read_to_string(dir.path().join(RELAY_CONFIG_FILENAME)).expect("sidecar readable");
     let parsed: serde_json::Value = serde_json::from_str(&raw).expect("valid json");
     assert_eq!(parsed[0]["url"], "wss://r.example");
     assert_eq!(parsed[0]["role"], "both");

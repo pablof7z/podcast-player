@@ -107,10 +107,7 @@ impl DownloadQueue {
     /// (Active or Paused).
     #[must_use]
     pub fn active_count(&self) -> usize {
-        self.items
-            .values()
-            .filter(|i| i.state.holds_slot())
-            .count()
+        self.items.values().filter(|i| i.state.holds_slot()).count()
     }
 
     /// Number of items currently in `Queued` state.
@@ -170,7 +167,9 @@ impl DownloadQueue {
         if self.active_count() < self.max_concurrent {
             item.state = DownloadItemState::Active;
             self.items.insert(episode_id.clone(), item);
-            Some(DownloadCommand::start_with_kind(url, episode_id, None, kind))
+            Some(DownloadCommand::start_with_kind(
+                url, episode_id, None, kind,
+            ))
         } else {
             self.items.insert(episode_id.clone(), item);
             self.queue_order.push(episode_id);
@@ -191,9 +190,9 @@ impl DownloadQueue {
     pub fn cancel(&mut self, episode_id: &str) -> Option<DownloadCommand> {
         let item = self.items.get_mut(episode_id)?;
         match item.state {
-            DownloadItemState::Active | DownloadItemState::Paused => Some(
-                DownloadCommand::cancel(episode_id.to_owned()),
-            ),
+            DownloadItemState::Active | DownloadItemState::Paused => {
+                Some(DownloadCommand::cancel(episode_id.to_owned()))
+            }
             DownloadItemState::Queued => {
                 item.state = DownloadItemState::Cancelled;
                 self.queue_order.retain(|e| e != episode_id);

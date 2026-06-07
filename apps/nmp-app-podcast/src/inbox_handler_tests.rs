@@ -72,7 +72,12 @@ fn build_inbox_skips_dismissed_episodes() {
     let fresh_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Fresh").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Fresh")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
     dismissed.lock().unwrap().insert(fresh_id);
 
@@ -92,7 +97,12 @@ fn build_inbox_skips_played_episodes() {
     let fresh_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Fresh").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Fresh")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
     store.lock().unwrap().mark_episode_played(&fresh_id);
 
@@ -115,22 +125,35 @@ fn build_inbox_uses_llm_score_when_cache_hit() {
     let old_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Old").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Old")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
-    cache.lock().unwrap().insert(old_id.clone(), TriageResult::ready(
-        0.99,
-        "Exceptional episode".to_owned(),
-        vec!["tech".to_owned()],
-        Utc::now().timestamp(),
-    ));
+    cache.lock().unwrap().insert(
+        old_id.clone(),
+        TriageResult::ready(
+            0.99,
+            "Exceptional episode".to_owned(),
+            vec!["tech".to_owned()],
+            Utc::now().timestamp(),
+        ),
+    );
 
     let items = build_inbox(&store, &dismissed, &cache);
     assert_eq!(items.len(), 3);
 
     // The "Old" item should carry LLM-sourced reason and categories.
-    let old_item = items.iter().find(|i| i.episode_id == old_id)
+    let old_item = items
+        .iter()
+        .find(|i| i.episode_id == old_id)
         .expect("Old episode should be in inbox");
-    assert_eq!(old_item.priority_reason.as_deref(), Some("Exceptional episode"));
+    assert_eq!(
+        old_item.priority_reason.as_deref(),
+        Some("Exceptional episode")
+    );
     assert_eq!(old_item.ai_categories, vec!["tech"]);
     assert!((old_item.priority_score - 0.99).abs() < 0.001);
 
@@ -154,7 +177,9 @@ fn handle_dismiss_records_in_set_and_bumps_rev() {
 
     let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let result = handle_inbox_action(
-        InboxAction::Dismiss { episode_id: "ep-7".into() },
+        InboxAction::Dismiss {
+            episode_id: "ep-7".into(),
+        },
         &store,
         &dismissed,
         &rev,
@@ -187,13 +212,28 @@ fn handle_triage_primes_spinner_and_returns_immediately() {
             .unwrap(),
     );
     let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let result = handle_inbox_action(InboxAction::Triage, &store, &dismissed, &rev, &cache, &runtime, &in_progress);
+    let result = handle_inbox_action(
+        InboxAction::Triage,
+        &store,
+        &dismissed,
+        &rev,
+        &cache,
+        &runtime,
+        &in_progress,
+    );
     assert_eq!(result["ok"], true);
     assert_eq!(result["status"], "triage_started");
     // Spinner prime: exactly one synchronous rev bump before the background task runs.
-    assert_eq!(rev.load(Ordering::Relaxed), 1, "spinner prime must bump rev exactly once");
+    assert_eq!(
+        rev.load(Ordering::Relaxed),
+        1,
+        "spinner prime must bump rev exactly once"
+    );
     // in_progress must be set immediately (background task may not have run yet).
-    assert!(in_progress.load(Ordering::Relaxed), "in_progress must be true after dispatch");
+    assert!(
+        in_progress.load(Ordering::Relaxed),
+        "in_progress must be true after dispatch"
+    );
     assert!(dismissed.lock().unwrap().is_empty());
 }
 
@@ -214,14 +254,34 @@ fn handle_triage_double_dispatch_is_noop() {
     );
     let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
     // First dispatch.
-    let r1 = handle_inbox_action(InboxAction::Triage, &store, &dismissed, &rev, &cache, &runtime, &in_progress);
+    let r1 = handle_inbox_action(
+        InboxAction::Triage,
+        &store,
+        &dismissed,
+        &rev,
+        &cache,
+        &runtime,
+        &in_progress,
+    );
     assert_eq!(r1["status"], "triage_started");
     assert_eq!(rev.load(Ordering::Relaxed), 1);
     // Second dispatch while in_progress is still true.
-    let r2 = handle_inbox_action(InboxAction::Triage, &store, &dismissed, &rev, &cache, &runtime, &in_progress);
+    let r2 = handle_inbox_action(
+        InboxAction::Triage,
+        &store,
+        &dismissed,
+        &rev,
+        &cache,
+        &runtime,
+        &in_progress,
+    );
     assert_eq!(r2["status"], "already_running");
     // Rev must NOT have been bumped a second time.
-    assert_eq!(rev.load(Ordering::Relaxed), 1, "double-dispatch must not prime rev again");
+    assert_eq!(
+        rev.load(Ordering::Relaxed),
+        1,
+        "double-dispatch must not prime rev again"
+    );
 }
 
 #[test]
@@ -240,12 +300,19 @@ fn handle_mark_listened_flips_store_flag() {
     let fresh_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Fresh").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Fresh")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
 
     let in_progress = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let result = handle_inbox_action(
-        InboxAction::MarkListened { episode_id: fresh_id.clone() },
+        InboxAction::MarkListened {
+            episode_id: fresh_id.clone(),
+        },
         &store,
         &dismissed,
         &rev,
@@ -288,10 +355,8 @@ fn mark_listened_deletes_download_when_auto_delete_on() {
 
     // Stage a real downloaded file for the "Fresh" episode and enable the
     // auto-delete setting.
-    let tmp = std::env::temp_dir().join(format!(
-        "nmp-inbox-autodelete-{}.mp3",
-        uuid::Uuid::new_v4()
-    ));
+    let tmp =
+        std::env::temp_dir().join(format!("nmp-inbox-autodelete-{}.mp3", uuid::Uuid::new_v4()));
     std::fs::write(&tmp, b"audio bytes").expect("write fixture file");
     let (fresh_id, typed_id) = {
         let mut s = store.lock().unwrap();
@@ -305,7 +370,9 @@ fn mark_listened_deletes_download_when_auto_delete_on() {
     };
 
     let result = handle_inbox_action(
-        InboxAction::MarkListened { episode_id: fresh_id },
+        InboxAction::MarkListened {
+            episode_id: fresh_id,
+        },
         &store,
         &dismissed,
         &rev,
@@ -320,7 +387,10 @@ fn mark_listened_deletes_download_when_auto_delete_on() {
         s.local_path_for(&typed_id).is_none(),
         "local-path mapping must be cleared after manual mark-played with auto-delete on"
     );
-    assert!(!tmp.exists(), "the downloaded file must be removed from disk");
+    assert!(
+        !tmp.exists(),
+        "the downloaded file must be removed from disk"
+    );
 }
 
 #[test]
@@ -361,7 +431,12 @@ fn mark_episode_played_flips_flag_then_idempotent() {
     let fresh_id = {
         let s = store.lock().unwrap();
         let (_, eps) = s.all_podcasts()[0];
-        eps.iter().find(|e| e.title == "Fresh").unwrap().id.0.to_string()
+        eps.iter()
+            .find(|e| e.title == "Fresh")
+            .unwrap()
+            .id
+            .0
+            .to_string()
     };
     let mut guard = store.lock().unwrap();
     assert!(guard.mark_episode_played(&fresh_id));

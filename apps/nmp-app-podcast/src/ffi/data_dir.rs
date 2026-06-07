@@ -27,10 +27,7 @@ use super::helpers::c_string_opt;
 /// and reloads from it.
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_set_data_dir(
-    handle: *mut PodcastHandle,
-    path: *const c_char,
-) {
+pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path: *const c_char) {
     if handle.is_null() {
         return;
     }
@@ -131,11 +128,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(
         }
     };
 
-    if loaded > 0
-        || !loaded_queue.is_empty()
-        || identity_loaded
-        || keys_loaded > 0
-        || triage_loaded
+    if loaded > 0 || !loaded_queue.is_empty() || identity_loaded || keys_loaded > 0 || triage_loaded
     {
         // Force the next snapshot poll to pick up the restored library,
         // queue, identity, and/or owned-podcast keys even though no write

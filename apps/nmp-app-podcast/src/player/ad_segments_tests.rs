@@ -28,4 +28,3 @@ fn round_trips_through_json() {
     let decoded: AdSegment = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, s);
 }
-

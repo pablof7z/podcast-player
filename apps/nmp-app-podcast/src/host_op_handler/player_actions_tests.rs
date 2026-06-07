@@ -6,8 +6,8 @@
 
 use super::*;
 use crate::agent_handler::AgentChatHandler;
-use crate::ffi::actions::settings_module::SettingsAction;
 use crate::download::DownloadQueue;
+use crate::ffi::actions::settings_module::SettingsAction;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
@@ -173,13 +173,21 @@ fn relay_settings_actions_bump_rev() {
         role: "read".into(),
     });
     let after_role = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(after_role, after_add + 1, "set_relay_role companion must bump rev");
+    assert_eq!(
+        after_role,
+        after_add + 1,
+        "set_relay_role companion must bump rev"
+    );
 
     handler.handle_settings_action(SettingsAction::RemoveRelay {
         url: "wss://relay.example".into(),
     });
     let after_remove = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(after_remove, after_role + 1, "remove_relay companion must bump rev");
+    assert_eq!(
+        after_remove,
+        after_role + 1,
+        "remove_relay companion must bump rev"
+    );
 }
 
 // ---- podcast.player queue-op routing (player-actor-queue-unification) -------
@@ -208,11 +216,15 @@ fn enqueue_op_appends_to_canonical_playback_queue() {
     let (handler, ids) = handler_with_episodes(&["A", "B"]);
 
     let r1 = handler.handle_player_action(
-        PlayerAction::Enqueue { episode_id: ids[0].clone() },
+        PlayerAction::Enqueue {
+            episode_id: ids[0].clone(),
+        },
         "corr-enq-1",
     );
     let r2 = handler.handle_player_action(
-        PlayerAction::Enqueue { episode_id: ids[1].clone() },
+        PlayerAction::Enqueue {
+            episode_id: ids[1].clone(),
+        },
         "corr-enq-2",
     );
     assert_eq!(r1["ok"], serde_json::json!(true));
@@ -230,7 +242,9 @@ fn enqueue_op_appends_to_canonical_playback_queue() {
 fn enqueue_op_rejects_unknown_episode() {
     let (handler, _ids) = handler_with_episodes(&["A"]);
     let r = handler.handle_player_action(
-        PlayerAction::Enqueue { episode_id: "ghost".into() },
+        PlayerAction::Enqueue {
+            episode_id: "ghost".into(),
+        },
         "corr-enq-x",
     );
     assert_eq!(r["ok"], serde_json::json!(false));
@@ -242,12 +256,16 @@ fn dequeue_op_removes_from_canonical_queue() {
     let (handler, ids) = handler_with_episodes(&["A", "B"]);
     for id in &ids {
         let _ = handler.handle_player_action(
-            PlayerAction::Enqueue { episode_id: id.clone() },
+            PlayerAction::Enqueue {
+                episode_id: id.clone(),
+            },
             "corr-seed",
         );
     }
     let r = handler.handle_player_action(
-        PlayerAction::Dequeue { episode_id: ids[0].clone() },
+        PlayerAction::Dequeue {
+            episode_id: ids[0].clone(),
+        },
         "corr-deq-1",
     );
     assert_eq!(r["ok"], serde_json::json!(true));
@@ -259,7 +277,9 @@ fn clear_queue_op_empties_canonical_queue() {
     let (handler, ids) = handler_with_episodes(&["A", "B"]);
     for id in &ids {
         let _ = handler.handle_player_action(
-            PlayerAction::Enqueue { episode_id: id.clone() },
+            PlayerAction::Enqueue {
+                episode_id: id.clone(),
+            },
             "corr-seed",
         );
     }
@@ -273,12 +293,18 @@ fn play_next_op_pops_canonical_queue_front() {
     let (handler, ids) = handler_with_episodes(&["A", "B"]);
     for id in &ids {
         let _ = handler.handle_player_action(
-            PlayerAction::Enqueue { episode_id: id.clone() },
+            PlayerAction::Enqueue {
+                episode_id: id.clone(),
+            },
             "corr-seed",
         );
     }
     let r = handler.handle_player_action(PlayerAction::PlayNext, "corr-next-1");
-    assert_eq!(r["ok"], serde_json::json!(true), "play_next plays the front id");
+    assert_eq!(
+        r["ok"],
+        serde_json::json!(true),
+        "play_next plays the front id"
+    );
     // Front popped; the remaining entry stays queued.
     assert_eq!(handler.queue.lock().unwrap().items(), &[ids[1].clone()]);
 }
@@ -295,7 +321,9 @@ fn advance_op_is_play_next_alias() {
     let (handler, ids) = handler_with_episodes(&["A", "B"]);
     for id in &ids {
         let _ = handler.handle_player_action(
-            PlayerAction::Enqueue { episode_id: id.clone() },
+            PlayerAction::Enqueue {
+                episode_id: id.clone(),
+            },
             "corr-seed",
         );
     }

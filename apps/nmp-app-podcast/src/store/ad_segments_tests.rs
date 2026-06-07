@@ -40,4 +40,3 @@ fn idempotent_toggle_is_safe() {
     store.set_auto_skip_ads_enabled(true);
     assert!(store.auto_skip_ads_enabled());
 }
-

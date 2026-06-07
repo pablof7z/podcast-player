@@ -224,10 +224,7 @@ pub const KNOWLEDGE_SNIPPET_MAX_CHARS: usize = 200;
 /// other is [`merge_chunk_matches`] over the indexed transcript chunks.
 /// Kept as a standalone function (read-only `&PodcastStore`, owned
 /// `Vec<KnowledgeSearchResult>`) so it stays directly unit-testable.
-pub fn collect_knowledge_matches(
-    store: &PodcastStore,
-    query: &str,
-) -> Vec<KnowledgeSearchResult> {
+pub fn collect_knowledge_matches(store: &PodcastStore, query: &str) -> Vec<KnowledgeSearchResult> {
     let query_terms = tokenize(query);
     if query_terms.is_empty() {
         return Vec::new();
@@ -266,9 +263,9 @@ pub fn collect_knowledge_matches(
             let row = &rows[doc];
             // Title hits weigh more than description-only hits.
             let title_hit = !tokenize(row.episode_title).is_empty()
-                && query_terms.iter().any(|t| {
-                    row.episode_title.to_lowercase().contains(t.as_str())
-                });
+                && query_terms
+                    .iter()
+                    .any(|t| row.episode_title.to_lowercase().contains(t.as_str()));
             let score = (base + if title_hit { 0.2 } else { 0.0 }).clamp(0.0, 1.0);
             // Anchor the snippet on the first matched term in whichever
             // field carries it: prefer the description (longer, more
@@ -323,8 +320,7 @@ pub(crate) fn collect_chunk_texts_for_topic(
     if query_terms.is_empty() || episode_ids.is_empty() {
         return Vec::new();
     }
-    let scope: std::collections::HashSet<&str> =
-        episode_ids.iter().map(String::as_str).collect();
+    let scope: std::collections::HashSet<&str> = episode_ids.iter().map(String::as_str).collect();
     // Build the BM25 corpus from the in-scope chunks only, so IDF and
     // length normalisation are computed against the same set we rank (a
     // per-podcast wiki article must only weigh that podcast's episodes).

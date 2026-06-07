@@ -14,7 +14,9 @@ fn pubkey_hex_is_64_chars_lowercase_hex() {
     store.generate_key("pod-1");
     let pk = store.pubkey_hex("pod-1").expect("derived");
     assert_eq!(pk.len(), 64);
-    assert!(pk.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+    assert!(pk
+        .chars()
+        .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 }
 #[test]
 fn pubkey_hex_is_deterministic_per_secret() {
@@ -80,7 +82,9 @@ fn secret_hex_round_trips_through_hex_to_secret() {
     let sk = store.generate_key("pod-1");
     let hex = secret_to_hex(&sk);
     assert_eq!(hex.len(), 64);
-    assert!(hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+    assert!(hex
+        .chars()
+        .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
     assert_eq!(hex_to_secret(&hex), Some(sk));
 }
 
@@ -113,7 +117,11 @@ fn keys_persist_and_reload() {
     // Second "session": fresh store bound to the same dir reloads both keys
     // and re-derives the identical pubkeys.
     let mut reloaded = PodcastKeyStore::new();
-    assert_eq!(reloaded.set_data_dir(dir.path().to_path_buf()), 2, "loaded 2");
+    assert_eq!(
+        reloaded.set_data_dir(dir.path().to_path_buf()),
+        2,
+        "loaded 2"
+    );
     assert_eq!(reloaded.pubkey_hex("pod-a").as_deref(), Some(pk_a.as_str()));
     assert_eq!(reloaded.pubkey_hex("pod-b").as_deref(), Some(pk_b.as_str()));
 }
@@ -129,7 +137,10 @@ fn save_creates_missing_data_dir_so_key_survives_reload() {
     // (that path already exists), so we bind to a not-yet-created subdir.
     let root = tempfile::tempdir().expect("tempdir");
     let data_dir = root.path().join("not").join("yet").join("created");
-    assert!(!data_dir.exists(), "precondition: data dir must not exist yet");
+    assert!(
+        !data_dir.exists(),
+        "precondition: data dir must not exist yet"
+    );
 
     let pk = {
         let mut store = PodcastKeyStore::new();
@@ -147,7 +158,11 @@ fn save_creates_missing_data_dir_so_key_survives_reload() {
     // Fresh "session": a new store bound to the same (now-existing) dir must
     // reload the key the first session minted.
     let mut reloaded = PodcastKeyStore::new();
-    assert_eq!(reloaded.set_data_dir(data_dir), 1, "reloaded the persisted key");
+    assert_eq!(
+        reloaded.set_data_dir(data_dir),
+        1,
+        "reloaded the persisted key"
+    );
     assert_eq!(reloaded.pubkey_hex("pod-a").as_deref(), Some(pk.as_str()));
 }
 
@@ -162,7 +177,11 @@ fn remove_key_persists_deletion() {
         store.remove_key("pod-a");
     }
     let mut reloaded = PodcastKeyStore::new();
-    assert_eq!(reloaded.set_data_dir(dir.path().to_path_buf()), 1, "only pod-b");
+    assert_eq!(
+        reloaded.set_data_dir(dir.path().to_path_buf()),
+        1,
+        "only pod-b"
+    );
     assert!(reloaded.get_key("pod-a").is_none());
     assert!(reloaded.get_key("pod-b").is_some());
 }
@@ -186,7 +205,9 @@ fn persisted_file_matches_swift_wire_contract() {
     assert_eq!(keys[0]["podcast_id"], "pod-a");
     let secret_hex = keys[0]["secret_hex"].as_str().expect("secret_hex string");
     assert_eq!(secret_hex.len(), 64);
-    assert!(secret_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+    assert!(secret_hex
+        .chars()
+        .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 }
 
 #[test]
@@ -211,7 +232,11 @@ fn malformed_row_is_dropped_but_batch_survives() {
     );
     std::fs::write(dir.path().join(PODCAST_KEYS_FILE), body).expect("write");
     let mut store = PodcastKeyStore::new();
-    assert_eq!(store.set_data_dir(dir.path().to_path_buf()), 1, "only good row");
+    assert_eq!(
+        store.set_data_dir(dir.path().to_path_buf()),
+        1,
+        "only good row"
+    );
     assert!(store.get_key("bad").is_none());
     assert!(store.get_key("good").is_some());
 }

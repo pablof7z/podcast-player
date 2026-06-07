@@ -12,10 +12,7 @@ fn play_action_round_trips() {
 }
 #[test]
 fn pause_stop_are_unit_variants() {
-    for (action, expected_op) in [
-        (PlayerAction::Pause, "pause"),
-        (PlayerAction::Stop, "stop"),
-    ] {
+    for (action, expected_op) in [(PlayerAction::Pause, "pause"), (PlayerAction::Stop, "stop")] {
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(&format!(r#""op":"{expected_op}""#)));
         let decoded: PlayerAction = serde_json::from_str(&json).expect("decode");
@@ -24,7 +21,9 @@ fn pause_stop_are_unit_variants() {
 }
 #[test]
 fn seek_encodes_position() {
-    let action = PlayerAction::Seek { position_secs: 42.5 };
+    let action = PlayerAction::Seek {
+        position_secs: 42.5,
+    };
     let json = serde_json::to_string(&action).expect("encode");
     assert_eq!(json, r#"{"op":"seek","position_secs":42.5}"#);
     let decoded: PlayerAction = serde_json::from_str(&json).expect("decode");
@@ -45,8 +44,18 @@ fn set_sleep_timer_handles_some_and_none() {
 #[test]
 fn enqueue_dequeue_round_trip() {
     for (action, expected_op) in [
-        (PlayerAction::Enqueue { episode_id: "ep-1".into() }, "enqueue"),
-        (PlayerAction::Dequeue { episode_id: "ep-1".into() }, "dequeue"),
+        (
+            PlayerAction::Enqueue {
+                episode_id: "ep-1".into(),
+            },
+            "enqueue",
+        ),
+        (
+            PlayerAction::Dequeue {
+                episode_id: "ep-1".into(),
+            },
+            "dequeue",
+        ),
     ] {
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(&format!(r#""op":"{expected_op}""#)));
@@ -92,7 +101,11 @@ fn execute_emits_dispatch_host_op() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-1");
@@ -135,9 +148,24 @@ fn download_action_round_trips() {
 #[test]
 fn download_control_actions_round_trip() {
     for (action, expected_op) in [
-        (PlayerAction::CancelDownload { episode_id: "ep-1".into() }, "cancel_download"),
-        (PlayerAction::PauseDownload { episode_id: "ep-1".into() }, "pause_download"),
-        (PlayerAction::ResumeDownload { episode_id: "ep-1".into() }, "resume_download"),
+        (
+            PlayerAction::CancelDownload {
+                episode_id: "ep-1".into(),
+            },
+            "cancel_download",
+        ),
+        (
+            PlayerAction::PauseDownload {
+                episode_id: "ep-1".into(),
+            },
+            "pause_download",
+        ),
+        (
+            PlayerAction::ResumeDownload {
+                episode_id: "ep-1".into(),
+            },
+            "resume_download",
+        ),
     ] {
         let json = serde_json::to_string(&action).expect("encode");
         assert!(json.contains(&format!(r#""op":"{expected_op}""#)));
@@ -156,7 +184,9 @@ fn cancel_all_downloads_is_unit_variant() {
 }
 #[test]
 fn reset_progress_round_trips() {
-    let action = PlayerAction::ResetProgress { episode_id: "ep-1".into() };
+    let action = PlayerAction::ResetProgress {
+        episode_id: "ep-1".into(),
+    };
     let json = serde_json::to_string(&action).expect("encode");
     assert!(json.contains(r#""op":"reset_progress""#));
     assert!(json.contains(r#""episode_id":"ep-1""#));

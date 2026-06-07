@@ -35,9 +35,18 @@ mod tests {
 
     #[test]
     fn connectivity_changed_round_trips() {
-        let r = NetworkReport::ConnectivityChanged { is_wifi: true, is_connected: true };
+        let r = NetworkReport::ConnectivityChanged {
+            is_wifi: true,
+            is_connected: true,
+        };
         let json = serde_json::to_string(&r).unwrap();
         let back: NetworkReport = serde_json::from_str(&json).unwrap();
-        assert!(matches!(back, NetworkReport::ConnectivityChanged { is_wifi: true, is_connected: true }));
+        assert!(matches!(
+            back,
+            NetworkReport::ConnectivityChanged {
+                is_wifi: true,
+                is_connected: true
+            }
+        ));
     }
 }

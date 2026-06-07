@@ -503,6 +503,9 @@ extension AppStateStore {
             if let key = try ElevenLabsCredentialStore.apiKey() {
                 body["eleven_labs"] = key
             }
+            if let key = try AssemblyAICredentialStore.apiKey() {
+                body["assembly_ai"] = key
+            }
         } catch {
             os_log(.error, log: OSLog(subsystem: "io.f7z.podcast", category: "AppStateStore"),
                    "Failed to resolve provider credentials for kernel: %{public}@", error.localizedDescription)

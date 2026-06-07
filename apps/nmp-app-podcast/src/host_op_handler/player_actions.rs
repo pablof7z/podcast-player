@@ -126,7 +126,9 @@ impl PodcastHostOpHandler {
             PlayerAction::SetSleepTimer { secs } => {
                 if let Ok(mut a) = self.player_actor.lock() {
                     match secs {
-                        Some(s) if s > 0 => a.arm_sleep_timer(Duration::from_secs(s), SystemTime::now()),
+                        Some(s) if s > 0 => {
+                            a.arm_sleep_timer(Duration::from_secs(s), SystemTime::now())
+                        }
                         _ => a.cancel_sleep_timer(),
                     }
                 }
@@ -138,9 +140,16 @@ impl PodcastHostOpHandler {
             PlayerAction::Dequeue { episode_id } => self.handle_dequeue(episode_id),
             PlayerAction::ClearQueue => self.handle_clear_queue(),
             PlayerAction::PlayNext => self.handle_play_next(correlation_id),
-            PlayerAction::SetAdSegments { episode_id, segments } => {
-                handle_set_ad_segments(&self.store, &self.player_actor, &self.rev, episode_id, segments)
-            }
+            PlayerAction::SetAdSegments {
+                episode_id,
+                segments,
+            } => handle_set_ad_segments(
+                &self.store,
+                &self.player_actor,
+                &self.rev,
+                episode_id,
+                segments,
+            ),
             PlayerAction::SkipForward { secs } => self.handle_skip(secs, correlation_id),
             PlayerAction::SkipBackward { secs } => self.handle_skip(-secs, correlation_id),
             PlayerAction::Download { episode_id, url } => {
@@ -167,17 +176,18 @@ impl PodcastHostOpHandler {
                 Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
             },
             PlayerAction::Advance => self.handle_play_next(correlation_id),
-            PlayerAction::PersistPosition { episode_id, position_secs } => {
-                match self.store.lock() {
-                    Ok(mut s) => {
-                        s.set_episode_position(&episode_id, position_secs);
-                        s.flush_positions();
-                        self.rev.fetch_add(1, Ordering::Relaxed);
-                        serde_json::json!({"ok": true})
-                    }
-                    Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
+            PlayerAction::PersistPosition {
+                episode_id,
+                position_secs,
+            } => match self.store.lock() {
+                Ok(mut s) => {
+                    s.set_episode_position(&episode_id, position_secs);
+                    s.flush_positions();
+                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    serde_json::json!({"ok": true})
                 }
-            }
+                Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
+            },
         }
     }
 
@@ -262,10 +272,7 @@ impl PodcastHostOpHandler {
     /// ordering to `podcasts.json`, and bump `rev` so the next snapshot tick
     /// surfaces it. Mirrors `host_op_handler_queue::handle_queue_action` so the
     /// `podcast.player` queue ops stay byte-identical to `podcast.queue`.
-    fn mutate_queue(
-        &self,
-        f: impl FnOnce(&mut crate::queue::PlaybackQueue),
-    ) -> serde_json::Value {
+    fn mutate_queue(&self, f: impl FnOnce(&mut crate::queue::PlaybackQueue)) -> serde_json::Value {
         let items = match self.queue.lock() {
             Ok(mut q) => {
                 f(&mut q);

@@ -44,10 +44,8 @@ fn filters_off_taxonomy_labels() {
 
 #[test]
 fn caps_at_max_categories() {
-    let r = parse_category_array(
-        r#"["Technology", "Science", "Business", "Health", "Politics"]"#,
-    )
-    .unwrap();
+    let r = parse_category_array(r#"["Technology", "Science", "Business", "Health", "Politics"]"#)
+        .unwrap();
     assert_eq!(r.len(), MAX_CATEGORIES_PER_EPISODE);
     assert_eq!(
         r,

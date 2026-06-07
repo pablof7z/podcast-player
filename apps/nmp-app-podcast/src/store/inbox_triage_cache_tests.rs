@@ -40,7 +40,11 @@ fn save_then_reload_preserves_entries() {
     save_triage_cache(&dir, &cache).expect("save should succeed");
 
     let reloaded = load_triage_cache(&dir);
-    assert_eq!(reloaded.len(), 2, "both entries must survive the round-trip");
+    assert_eq!(
+        reloaded.len(),
+        2,
+        "both entries must survive the round-trip"
+    );
 
     let ready = reloaded.get("ep-ready").expect("ready entry present");
     assert_eq!(ready.status, TriageStatus::Ready);
@@ -84,6 +88,9 @@ fn save_is_atomic_no_tmp_left() {
     save_triage_cache(&dir, &cache).expect("save empty cache");
     let tmp = dir.join(format!("{INBOX_TRIAGE_CACHE_FILE}.tmp"));
     assert!(!tmp.exists(), "tmp file must be renamed away");
-    assert!(dir.join(INBOX_TRIAGE_CACHE_FILE).exists(), "final file present");
+    assert!(
+        dir.join(INBOX_TRIAGE_CACHE_FILE).exists(),
+        "final file present"
+    );
     let _ = std::fs::remove_dir_all(&dir);
 }

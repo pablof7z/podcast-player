@@ -3,11 +3,10 @@
 //! Split from `snapshot_tests.rs` to keep both files under the 500-line
 //! AGENTS.md hard limit.
 
-use crate::ffi::projections::{
-    AgentPickSummary, ClipSummary, CommentSummary,
-    InboxItem, MemoryFact, WikiArticle,
-};
 use super::PodcastUpdate;
+use crate::ffi::projections::{
+    AgentPickSummary, ClipSummary, CommentSummary, InboxItem, MemoryFact, WikiArticle,
+};
 
 #[test]
 fn snapshot_with_comments_round_trips() {
@@ -54,7 +53,11 @@ fn empty_queue_is_omitted_from_wire_payload() {
 #[test]
 fn snapshot_with_queue_round_trips() {
     use crate::ffi::projections::EpisodeSummary;
-    let ep = EpisodeSummary { id: "ep-1".into(), title: "Episode 1".into(), ..EpisodeSummary::default() };
+    let ep = EpisodeSummary {
+        id: "ep-1".into(),
+        title: "Episode 1".into(),
+        ..EpisodeSummary::default()
+    };
     let snap = PodcastUpdate {
         queue: vec![ep.clone()],
         ..PodcastUpdate::default()
@@ -133,10 +136,12 @@ fn snapshot_picks_round_trips_and_default_omits_field() {
         pick_score: 1.0,
         ..AgentPickSummary::default()
     };
-    let snap = PodcastUpdate { picks: vec![pick.clone()], ..PodcastUpdate::default() };
+    let snap = PodcastUpdate {
+        picks: vec![pick.clone()],
+        ..PodcastUpdate::default()
+    };
     let decoded: PodcastUpdate =
-        serde_json::from_str(&serde_json::to_string(&snap).expect("encode"))
-            .expect("decode");
+        serde_json::from_str(&serde_json::to_string(&snap).expect("encode")).expect("decode");
     assert_eq!(decoded.picks, vec![pick]);
 }
 

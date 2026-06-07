@@ -38,7 +38,9 @@ fn fetch_and_store_chapters(
             .episode_chapters_state(&episode_id)
             .ok_or_else(|| format!("episode not found: {episode_id}"))?
     };
-    let Some(url) = chapters_url else { return Ok(FetchChaptersOutcome::NoOp); };
+    let Some(url) = chapters_url else {
+        return Ok(FetchChaptersOutcome::NoOp);
+    };
     if already_loaded {
         return Ok(FetchChaptersOutcome::NoOp);
     }

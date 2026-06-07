@@ -99,16 +99,16 @@ fn does_not_re_skip_same_segment_within_session() {
 
     // User scrubs back into the same ad; we must NOT skip again.
     let cmd2 = actor.handle_audio_report(playing(40.0), t0());
-    assert!(cmd2.is_none(), "scrub-back into already-skipped ad is a deliberate listen");
+    assert!(
+        cmd2.is_none(),
+        "scrub-back into already-skipped ad is a deliberate listen"
+    );
 }
 
 #[test]
 fn skips_each_distinct_segment_once() {
     let mut actor = PlayerActor::new();
-    actor.set_ad_segments(vec![
-        seg(30.0, 60.0),
-        seg(120.0, 150.0),
-    ]);
+    actor.set_ad_segments(vec![seg(30.0, 60.0), seg(120.0, 150.0)]);
     actor.set_auto_skip_ads(true);
 
     let cmd1 = actor.handle_audio_report(playing(45.0), t0());
@@ -189,7 +189,10 @@ fn toggle_off_after_skip_does_not_replay_skip_on_re_enable() {
     // User toggles back on; cursor still inside the same (already-skipped) ad.
     actor.set_auto_skip_ads(true);
     let cmd_on = actor.handle_audio_report(playing(40.0), t0());
-    assert!(cmd_on.is_none(), "re-enable must not replay an already-dismissed skip");
+    assert!(
+        cmd_on.is_none(),
+        "re-enable must not replay an already-dismissed skip"
+    );
 }
 
 #[test]
@@ -200,6 +203,9 @@ fn ad_segment_at_zero_start_is_handled() {
     actor.set_auto_skip_ads(true);
 
     // SystemTime is a fixed instant — only the actor's own state matters.
-    let cmd = actor.handle_audio_report(playing(0.0), SystemTime::UNIX_EPOCH + Duration::from_secs(1));
+    let cmd = actor.handle_audio_report(
+        playing(0.0),
+        SystemTime::UNIX_EPOCH + Duration::from_secs(1),
+    );
     assert!(matches!(cmd, Some(AudioCommand::Seek { position_secs }) if position_secs == 15.0));
 }

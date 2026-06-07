@@ -30,7 +30,7 @@ use std::time::Duration;
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{LlmRequest, backend_for, role_model_or_default, validate_model_credentials};
+use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
 use crate::store::PodcastStore;
 
 const CHAPTERS_MODEL: &str = "deepseek-v4-flash:cloud";

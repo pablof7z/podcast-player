@@ -1,14 +1,13 @@
-/// Unit tests for `agent_note_handler` (feature #44).
-
-use std::sync::{Arc, Mutex};
-use crate::agent_note_handler::{build_agent_note_tags, handle_fetch_agent_notes, handle_publish_agent_note};
+use crate::agent_note_handler::{
+    build_agent_note_tags, handle_fetch_agent_notes, handle_publish_agent_note,
+};
 use crate::store::identity::IdentityStore;
+/// Unit tests for `agent_note_handler` (feature #44).
+use std::sync::{Arc, Mutex};
 
 const TEST_NSEC: &str = "nsec1cdxlq0ckkqeuauhzqaduugmrjpwuk3cgwq37ef2nvzje8at26lwqapk9us";
-const TEST_PUBKEY_HEX: &str =
-    "c7f5c9fc41894086a2fd8c3e542c1d6e6beeb2175ba41813de38bd02936bd4ff";
-const PEER_PUBKEY_HEX: &str =
-    "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+const TEST_PUBKEY_HEX: &str = "c7f5c9fc41894086a2fd8c3e542c1d6e6beeb2175ba41813de38bd02936bd4ff";
+const PEER_PUBKEY_HEX: &str = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
 
 fn signed_in_identity() -> Arc<Mutex<IdentityStore>> {
     let mut id = IdentityStore::new();
@@ -22,7 +21,13 @@ fn signed_in_identity() -> Arc<Mutex<IdentityStore>> {
 fn publish_rejects_empty_content() {
     let identity = signed_in_identity();
     let v = handle_publish_agent_note(
-        std::ptr::null_mut(), &identity, PEER_PUBKEY_HEX, "   ", None, None, &[],
+        std::ptr::null_mut(),
+        &identity,
+        PEER_PUBKEY_HEX,
+        "   ",
+        None,
+        None,
+        &[],
     );
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"], "empty note");
@@ -32,7 +37,13 @@ fn publish_rejects_empty_content() {
 fn publish_rejects_when_no_identity() {
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     let v = handle_publish_agent_note(
-        std::ptr::null_mut(), &identity, PEER_PUBKEY_HEX, "hello", None, None, &[],
+        std::ptr::null_mut(),
+        &identity,
+        PEER_PUBKEY_HEX,
+        "hello",
+        None,
+        None,
+        &[],
     );
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"], "not signed in");
@@ -42,7 +53,13 @@ fn publish_rejects_when_no_identity() {
 fn publish_rejects_bad_recipient() {
     let identity = signed_in_identity();
     let v = handle_publish_agent_note(
-        std::ptr::null_mut(), &identity, "not-a-pubkey", "hello", None, None, &[],
+        std::ptr::null_mut(),
+        &identity,
+        "not-a-pubkey",
+        "hello",
+        None,
+        None,
+        &[],
     );
     assert_eq!(v["ok"], false);
     assert!(v["error"].as_str().unwrap().contains("recipient"));
@@ -53,7 +70,13 @@ fn publish_rejects_bad_recipient() {
 fn publish_returns_signed_with_null_app() {
     let identity = signed_in_identity();
     let v = handle_publish_agent_note(
-        std::ptr::null_mut(), &identity, PEER_PUBKEY_HEX, "check this ep", None, None, &[],
+        std::ptr::null_mut(),
+        &identity,
+        PEER_PUBKEY_HEX,
+        "check this ep",
+        None,
+        None,
+        &[],
     );
     assert_eq!(v["ok"], true);
     assert_eq!(v["status"], "signed");
@@ -64,10 +87,14 @@ fn publish_returns_signed_with_null_app() {
 #[test]
 fn tags_include_p_tag_for_recipient() {
     let tags = build_agent_note_tags(PEER_PUBKEY_HEX, None, None, &[]).unwrap();
-    let has_p = tags.iter().any(|t| t.first().map(|s| s == "p").unwrap_or(false)
-        && t.get(1).map(|s| s == PEER_PUBKEY_HEX).unwrap_or(false));
+    let has_p = tags.iter().any(|t| {
+        t.first().map(|s| s == "p").unwrap_or(false)
+            && t.get(1).map(|s| s == PEER_PUBKEY_HEX).unwrap_or(false)
+    });
     assert!(has_p, "missing p tag");
-    let has_e = tags.iter().any(|t| t.first().map(|s| s == "e").unwrap_or(false));
+    let has_e = tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "e").unwrap_or(false));
     assert!(!has_e, "thread-opener must not have e tag");
 }
 
@@ -75,7 +102,9 @@ fn tags_include_p_tag_for_recipient() {
 fn reply_tags_carry_nip10_root_marker() {
     let root = "abc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abcd";
     let tags = build_agent_note_tags(PEER_PUBKEY_HEX, Some(root), None, &[]).unwrap();
-    let e_tag = tags.iter().find(|t| t.first().map(|s| s == "e").unwrap_or(false));
+    let e_tag = tags
+        .iter()
+        .find(|t| t.first().map(|s| s == "e").unwrap_or(false));
     let e_tag = e_tag.expect("reply must have e tag");
     assert_eq!(e_tag.get(1).map(|s| s.as_str()), Some(root));
     assert_eq!(e_tag.get(3).map(|s| s.as_str()), Some("root"));
@@ -84,7 +113,9 @@ fn reply_tags_carry_nip10_root_marker() {
 #[test]
 fn empty_root_produces_no_e_tag() {
     let tags = build_agent_note_tags(PEER_PUBKEY_HEX, Some(""), None, &[]).unwrap();
-    let has_e = tags.iter().any(|t| t.first().map(|s| s == "e").unwrap_or(false));
+    let has_e = tags
+        .iter()
+        .any(|t| t.first().map(|s| s == "e").unwrap_or(false));
     assert!(!has_e);
 }
 

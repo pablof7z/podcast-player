@@ -26,22 +26,20 @@ pub mod dispatch;
 pub mod download;
 pub mod http;
 pub mod network;
-pub mod notification;
 pub mod nostr_relay;
+pub mod notification;
 pub mod voice;
 
 pub use audio::{AudioCommand, AudioReport, AUDIO_CAPABILITY_NAMESPACE};
-pub use network::{NetworkReport, NETWORK_CAPABILITY_NAMESPACE};
 pub use dispatch::{
     dispatch_audio_report_json, dispatch_download_report_json, encode_audio_command,
     DispatchOutcome,
 };
 pub use download::{DownloadCommand, DownloadKind, DownloadReport, DOWNLOAD_CAPABILITY_NAMESPACE};
 pub use http::{HttpMethod, HttpRequest, HttpResult, HTTP_CAPABILITY_NAMESPACE};
+pub use network::{NetworkReport, NETWORK_CAPABILITY_NAMESPACE};
+pub use nostr_relay::{NostrRelayRequest, NostrRelayResult, NOSTR_RELAY_CAPABILITY_NAMESPACE};
 pub use notification::{
     notification_command_json, NotificationCommand, NOTIFICATION_CAPABILITY_NAMESPACE,
-};
-pub use nostr_relay::{
-    NostrRelayRequest, NostrRelayResult, NOSTR_RELAY_CAPABILITY_NAMESPACE,
 };
 pub use voice::{VoiceCommand, VoiceReport, VOICE_CAPABILITY_NAMESPACE};

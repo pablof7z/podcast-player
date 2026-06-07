@@ -15,19 +15,22 @@ fn build_auth_event_has_correct_tags() {
 
     // t=upload
     assert!(
-        tags.iter().any(|t| t.as_slice() == ["t".to_string(), "upload".to_string()]),
+        tags.iter()
+            .any(|t| t.as_slice() == ["t".to_string(), "upload".to_string()]),
         "missing t=upload tag: {tags:?}"
     );
     // x=<file hash>
     assert!(
-        tags.iter().any(|t| t.first().map(String::as_str) == Some("x")
-            && t.get(1).map(String::as_str) == Some(hash.as_str())),
+        tags.iter()
+            .any(|t| t.first().map(String::as_str) == Some("x")
+                && t.get(1).map(String::as_str) == Some(hash.as_str())),
         "missing x=<hash> tag: {tags:?}"
     );
     // size=<byte count> (BUD-01 recommended)
     assert!(
-        tags.iter().any(|t| t.first().map(String::as_str) == Some("size")
-            && t.get(1).map(String::as_str) == Some(byte_count.to_string().as_str())),
+        tags.iter()
+            .any(|t| t.first().map(String::as_str) == Some("size")
+                && t.get(1).map(String::as_str) == Some(byte_count.to_string().as_str())),
         "missing size=<byte_count> tag: {tags:?}"
     );
     // expiration is in the future relative to created_at
@@ -38,14 +41,20 @@ fn build_auth_event_has_correct_tags() {
         .expect("missing expiration tag")
         .parse::<i64>()
         .expect("expiration not an integer");
-    assert!(exp > created_at, "expiration {exp} not after created_at {created_at}");
+    assert!(
+        exp > created_at,
+        "expiration {exp} not after created_at {created_at}"
+    );
 
     // And the signed event really is kind 24242 with those tags.
     let secret = [7u8; 32];
     let json = build_auth_event(&secret, &hash, byte_count, created_at).expect("sign auth event");
     let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
     assert_eq!(parsed["kind"].as_u64(), Some(KIND_BLOSSOM_AUTH as u64));
-    assert!(parsed["sig"].as_str().is_some_and(|s| !s.is_empty()), "event not signed");
+    assert!(
+        parsed["sig"].as_str().is_some_and(|s| !s.is_empty()),
+        "event not signed"
+    );
 }
 
 #[test]
@@ -73,7 +82,10 @@ fn parse_blossom_response_missing_url_errors() {
 #[test]
 fn parse_blossom_response_empty_url_errors() {
     let body = r#"{"url":"","sha256":"x"}"#;
-    assert!(parse_blossom_response(body).is_err(), "empty url must error");
+    assert!(
+        parse_blossom_response(body).is_err(),
+        "empty url must error"
+    );
 }
 
 #[test]
@@ -150,7 +162,9 @@ fn upload_to_blossom_happy_path_with_injected_fetch() {
     assert_eq!(result.size, 16);
     // The base64 auth payload decodes to a kind:24242 event.
     let b64 = seen_auth.strip_prefix("Nostr ").unwrap();
-    let decoded = base64::engine::general_purpose::STANDARD.decode(b64).unwrap();
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(b64)
+        .unwrap();
     let event: serde_json::Value = serde_json::from_slice(&decoded).unwrap();
     assert_eq!(event["kind"].as_u64(), Some(KIND_BLOSSOM_AUTH as u64));
 }
@@ -166,7 +180,13 @@ fn upload_to_blossom_http_error_propagates() {
         path.to_str().unwrap(),
         "https://blossom.example",
         &secret,
-        |_req| Ok(HttpResult::Ok { status_code: 500, headers: vec![], body: "boom".into() }),
+        |_req| {
+            Ok(HttpResult::Ok {
+                status_code: 500,
+                headers: vec![],
+                body: "boom".into(),
+            })
+        },
     )
     .expect_err("500 must error");
     assert!(err.contains("500"), "err: {err}");

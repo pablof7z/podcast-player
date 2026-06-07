@@ -114,8 +114,7 @@ pub fn compute_picks(mut candidates: Vec<CandidateEpisode>) -> Vec<AgentPickSumm
     // Newest first. `sort_by` is stable, so ties keep input order.
     candidates.sort_by(|a, b| b.published_at.cmp(&a.published_at));
 
-    let mut per_show: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
+    let mut per_show: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     let mut picks: Vec<AgentPickSummary> = Vec::with_capacity(PICKS_LIMIT);
 
     for cand in candidates {
@@ -194,8 +193,7 @@ pub fn compute_picks_scored(
             .then_with(|| b.0.published_at.cmp(&a.0.published_at))
     });
 
-    let mut per_show: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
+    let mut per_show: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     let mut picks: Vec<AgentPickSummary> = Vec::with_capacity(PICKS_LIMIT);
 
     for (cand, score, reason) in resolved {

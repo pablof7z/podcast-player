@@ -31,6 +31,7 @@ object ProviderCredentialActions {
                 openRouter = ProviderCredentialStore.loadOpenRouterApiKey(context),
                 ollama = ProviderCredentialStore.loadOllamaApiKey(context),
                 elevenLabs = ProviderCredentialStore.loadElevenLabsApiKey(context),
+                assemblyAi = ProviderCredentialStore.loadAssemblyAiApiKey(context),
             ),
         )
 
@@ -197,8 +198,9 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.saveAssemblyAiApiKey(context, apiKey)) {
             return ProviderCredentialActionResult(false, "AssemblyAI key could not be saved.")
         }
+        val reload = reloadProviderApiKeys(context, bridge)
         val stt = syncSttKeysPresent(context, bridge)
-        return if (stt != null) {
+        return if (reload != null && stt != null) {
             ProviderCredentialActionResult(true, "AssemblyAI connected.")
         } else {
             ProviderCredentialActionResult(false, "AssemblyAI key saved, but provider state did not update.")
@@ -212,8 +214,9 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.clearAssemblyAiApiKey(context)) {
             return ProviderCredentialActionResult(false, "AssemblyAI key could not be deleted.")
         }
+        val reload = reloadProviderApiKeys(context, bridge)
         val stt = syncSttKeysPresent(context, bridge)
-        return if (stt != null) {
+        return if (reload != null && stt != null) {
             ProviderCredentialActionResult(true, "AssemblyAI disconnected.")
         } else {
             ProviderCredentialActionResult(false, "AssemblyAI key deleted, but provider state did not update.")

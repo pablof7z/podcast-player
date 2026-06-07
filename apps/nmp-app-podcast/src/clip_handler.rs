@@ -220,7 +220,6 @@ fn lookup_titles(library: &[PodcastSummary], episode_id: &str) -> Option<(String
     None
 }
 
-
 // Tests split into clip_handler_tests.rs; #[path] keeps private items in scope.
 #[cfg(test)]
 #[path = "clip_handler_tests.rs"]

@@ -31,7 +31,11 @@ fn execute_emits_dispatch_host_op() {
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 1);
-    let ActorCommand::DispatchHostOp { action_json, correlation_id } = &commands[0] else {
+    let ActorCommand::DispatchHostOp {
+        action_json,
+        correlation_id,
+    } = &commands[0]
+    else {
         panic!("expected DispatchHostOp");
     };
     assert_eq!(correlation_id, "corr-1");
@@ -121,4 +125,3 @@ fn compute_picks_diversity_across_three_shows() {
     let daily_count = picks.iter().filter(|p| p.podcast_id == "pod-daily").count();
     assert_eq!(daily_count, PICKS_PER_SHOW_CAP);
 }
-

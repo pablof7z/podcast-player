@@ -2,8 +2,8 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use super::*;
 
-use chrono::Utc;
 use crate::download::{DownloadItemState, DownloadQueue};
+use chrono::Utc;
 use podcast_core::{Episode, Podcast};
 use url::Url;
 
@@ -46,8 +46,7 @@ fn playing_report_json_round_trip_no_follow_up() {
 fn sleep_timer_fired_emits_stop_command_json() {
     let mut actor = crate::player::PlayerActor::new();
     actor.arm_sleep_timer(Duration::from_secs(60), t0());
-    let outcome =
-        dispatch_audio_report_json(&mut actor, r#"{"type":"sleep_timer_fired"}"#, t0());
+    let outcome = dispatch_audio_report_json(&mut actor, r#"{"type":"sleep_timer_fired"}"#, t0());
     match outcome {
         DispatchOutcome::Ok { follow_up_json } => {
             assert_eq!(follow_up_json.as_deref(), Some(r#"{"type":"stop"}"#));
@@ -145,8 +144,7 @@ fn completed_report_with_missing_file_caches_zero() {
 #[test]
 fn completed_report_for_unknown_episode_is_noop() {
     let (mut store, _) = store_with_one_episode();
-    let report =
-        r#"{"type":"completed","episode_id":"00000000-0000-0000-0000-000000000000","local_path":"/tmp/x.mp3"}"#;
+    let report = r#"{"type":"completed","episode_id":"00000000-0000-0000-0000-000000000000","local_path":"/tmp/x.mp3"}"#;
     let outcome = dispatch_download_report_json(&mut store, report);
     assert!(matches!(outcome, DispatchOutcome::Ok { .. }));
 }
@@ -189,7 +187,10 @@ fn progress_failed_paused_decode_without_mutating_store() {
             "{report} should decode cleanly"
         );
     }
-    assert_eq!(store.local_path_for(&typed_id), Some("/var/mobile/seeded.mp3"));
+    assert_eq!(
+        store.local_path_for(&typed_id),
+        Some("/var/mobile/seeded.mp3")
+    );
 }
 
 #[test]
@@ -248,7 +249,10 @@ fn completed_report_updates_store_queue_and_returns_next_start() {
         store.local_path_for(&typed_id),
         Some(&*format!("/var/mobile/Downloads/{id_str}.mp3"))
     );
-    assert_eq!(queue.get(&id_str).unwrap().state, DownloadItemState::Completed);
+    assert_eq!(
+        queue.get(&id_str).unwrap().state,
+        DownloadItemState::Completed
+    );
     assert_eq!(queue.get("ep-2").unwrap().state, DownloadItemState::Active);
 }
 

@@ -95,18 +95,16 @@ fn project_show_preserves_every_field() {
 // --- NostrDiscoveryObserver ---
 
 fn make_slots() -> (Arc<Mutex<Vec<NostrShowSummary>>>, Arc<AtomicU64>) {
-    (Arc::new(Mutex::new(Vec::new())), Arc::new(AtomicU64::new(0)))
+    (
+        Arc::new(Mutex::new(Vec::new())),
+        Arc::new(AtomicU64::new(0)),
+    )
 }
 
 /// Build a synthetic kernel event. Note the field is `author` (not `pubkey`)
 /// and there is no `sig` — exactly the substrate `KernelEvent` shape the
 /// observer receives on the ingest fan-out.
-fn kernel_event(
-    id: &str,
-    author: &str,
-    kind: u32,
-    tags: Vec<Vec<String>>,
-) -> KernelEvent {
+fn kernel_event(id: &str, author: &str, kind: u32, tags: Vec<Vec<String>>) -> KernelEvent {
     KernelEvent {
         id: id.to_string(),
         author: author.to_string(),
@@ -144,7 +142,10 @@ fn observer_projects_kind_10154_into_slot() {
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].title, "My Show");
     assert_eq!(rows[0].author_pubkey, "author-pk-1");
-    assert_eq!(rows[0].feed_url.as_deref(), Some("https://feeds.example/a.rss"));
+    assert_eq!(
+        rows[0].feed_url.as_deref(),
+        Some("https://feeds.example/a.rss")
+    );
     assert_eq!(rows[0].description.as_deref(), Some("A great show"));
     assert_eq!(rev.load(Ordering::Relaxed), 1);
 }
@@ -206,8 +207,18 @@ fn observer_keeps_distinct_pubkeys_as_separate_rows() {
     let (slot, rev) = make_slots();
     let obs = NostrDiscoveryObserver::new(slot.clone(), rev.clone());
 
-    obs.on_kernel_event(&kernel_event("e1", "pk-1", KIND_NIP_F4_SHOW, vec![title_tag("A")]));
-    obs.on_kernel_event(&kernel_event("e2", "pk-2", KIND_NIP_F4_SHOW, vec![title_tag("B")]));
+    obs.on_kernel_event(&kernel_event(
+        "e1",
+        "pk-1",
+        KIND_NIP_F4_SHOW,
+        vec![title_tag("A")],
+    ));
+    obs.on_kernel_event(&kernel_event(
+        "e2",
+        "pk-2",
+        KIND_NIP_F4_SHOW,
+        vec![title_tag("B")],
+    ));
 
     assert_eq!(slot.lock().unwrap().len(), 2);
     assert_eq!(rev.load(Ordering::Relaxed), 2);
@@ -224,11 +235,18 @@ fn observer_identical_rearrival_is_a_noop() {
         "ev",
         "pk",
         KIND_NIP_F4_SHOW,
-        vec![title_tag("Stable"), vec!["feed".into(), "https://f.example/x.rss".into()]],
+        vec![
+            title_tag("Stable"),
+            vec!["feed".into(), "https://f.example/x.rss".into()],
+        ],
     );
     obs.on_kernel_event(&ev);
     obs.on_kernel_event(&ev);
 
     assert_eq!(slot.lock().unwrap().len(), 1);
-    assert_eq!(rev.load(Ordering::Relaxed), 1, "identical re-arrival does not bump rev");
+    assert_eq!(
+        rev.load(Ordering::Relaxed),
+        1,
+        "identical re-arrival does not bump rev"
+    );
 }

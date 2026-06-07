@@ -83,8 +83,7 @@ fn decode_numeric_entities(input: &str) -> String {
     while i < bytes.len() {
         if bytes[i] == b'&' && i + 2 < bytes.len() && bytes[i + 1] == b'#' {
             // Scan up to 12 chars ahead for the closing `;`
-            let end = (i + 2..bytes.len().min(i + 14))
-                .find(|&j| bytes[j] == b';');
+            let end = (i + 2..bytes.len().min(i + 14)).find(|&j| bytes[j] == b';');
             if let Some(semi) = end {
                 let body = &input[i + 2..semi];
                 let scalar = if body.starts_with('x') || body.starts_with('X') {

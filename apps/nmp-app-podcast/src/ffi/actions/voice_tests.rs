@@ -44,4 +44,3 @@ fn set_voice_action_round_trips() {
     let decoded: SetVoiceAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, a);
 }
-

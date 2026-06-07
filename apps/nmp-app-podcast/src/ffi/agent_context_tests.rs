@@ -27,7 +27,11 @@ fn ep(title: &str, published_at: i64, position: Option<f64>, played: bool) -> Ep
 
 #[test]
 fn subscriptions_sorted_case_insensitively_and_total_tracks_precap() {
-    let library = vec![show("Zebra", vec![]), show("apple", vec![]), show("Mango", vec![])];
+    let library = vec![
+        show("Zebra", vec![]),
+        show("apple", vec![]),
+        show("Mango", vec![]),
+    ];
     let ctx = build_agent_context(&library, NOW);
     assert_eq!(ctx.subscriptions, vec!["apple", "Mango", "Zebra"]);
     assert_eq!(ctx.subscriptions_total, 3);
@@ -54,9 +58,9 @@ fn in_progress_requires_position_and_excludes_played_and_archived() {
         "Show",
         vec![
             ep("Started", NOW - DAY, Some(60.0), false),
-            ep("Fresh", NOW - DAY, None, false),         // position 0 → not in-progress
+            ep("Fresh", NOW - DAY, None, false), // position 0 → not in-progress
             ep("Finished", NOW - DAY, Some(90.0), true), // played → excluded
-            archived,                                    // archived → excluded
+            archived,                            // archived → excluded
         ],
     )];
     let ctx = build_agent_context(&library, NOW);
@@ -69,14 +73,18 @@ fn recent_unplayed_respects_window_and_zero_position() {
     let library = vec![show(
         "Show",
         vec![
-            ep("Today", NOW - DAY, None, false),     // in window, unplayed, fresh
-            ep("Old", NOW - 30 * DAY, None, false),  // outside 7-day window
+            ep("Today", NOW - DAY, None, false), // in window, unplayed, fresh
+            ep("Old", NOW - 30 * DAY, None, false), // outside 7-day window
             ep("Resumed", NOW - DAY, Some(30.0), false), // started → not "unplayed/fresh"
-            ep("Done", NOW - DAY, None, true),       // played
+            ep("Done", NOW - DAY, None, true),   // played
         ],
     )];
     let ctx = build_agent_context(&library, NOW);
-    let titles: Vec<&str> = ctx.recent_unplayed.iter().map(|e| e.title.as_str()).collect();
+    let titles: Vec<&str> = ctx
+        .recent_unplayed
+        .iter()
+        .map(|e| e.title.as_str())
+        .collect();
     assert_eq!(titles, vec!["Today"]);
     assert_eq!(ctx.recent_window_days, cap::RECENT_WINDOW_DAYS);
 }
@@ -87,7 +95,14 @@ fn recent_unplayed_sorted_newest_first_across_shows_then_capped() {
     // the 10 newest, globally sorted, regardless of which show they're in.
     let make = |prefix: &str| -> Vec<EpisodeSummary> {
         (0..6)
-            .map(|i| ep(&format!("{prefix}-{i}"), NOW - DAY - i64::from(i) * 3_600, None, false))
+            .map(|i| {
+                ep(
+                    &format!("{prefix}-{i}"),
+                    NOW - DAY - i64::from(i) * 3_600,
+                    None,
+                    false,
+                )
+            })
             .collect()
     };
     let library = vec![show("A", make("a")), show("B", make("b"))];
@@ -95,7 +110,11 @@ fn recent_unplayed_sorted_newest_first_across_shows_then_capped() {
     assert_eq!(ctx.recent_unplayed.len(), cap::RECENT_UNPLAYED);
     // Newest two are a-0 (NOW-DAY) and b-0 (NOW-DAY) — equal timestamps keep
     // library order (show A before show B). The oldest two (a-5, b-5) drop.
-    let titles: Vec<&str> = ctx.recent_unplayed.iter().map(|e| e.title.as_str()).collect();
+    let titles: Vec<&str> = ctx
+        .recent_unplayed
+        .iter()
+        .map(|e| e.title.as_str())
+        .collect();
     assert!(!titles.contains(&"a-5"));
     assert!(!titles.contains(&"b-5"));
     assert_eq!(titles[0], "a-0");
@@ -104,7 +123,10 @@ fn recent_unplayed_sorted_newest_first_across_shows_then_capped() {
 
 #[test]
 fn episode_rows_carry_resolved_show_title() {
-    let library = vec![show("My Show", vec![ep("Ep", NOW - DAY, Some(10.0), false)])];
+    let library = vec![show(
+        "My Show",
+        vec![ep("Ep", NOW - DAY, Some(10.0), false)],
+    )];
     let ctx = build_agent_context(&library, NOW);
     assert_eq!(ctx.in_progress[0].show_title, "My Show");
     assert_eq!(ctx.in_progress[0].title, "Ep");

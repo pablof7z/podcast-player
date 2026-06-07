@@ -55,4 +55,3 @@ fn multibyte_chars_pass_through() {
     assert_eq!(strip_html("café & résumé"), "café & résumé");
     assert_eq!(strip_html("<p>日本語</p>"), "日本語");
 }
-

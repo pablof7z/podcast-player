@@ -133,13 +133,19 @@ mod tests {
     #[test]
     fn apple_native_always_wins_even_with_no_keys() {
         let keys = present(&[]);
-        assert_eq!(effective_stt_provider("apple_native", &keys), "apple_native");
+        assert_eq!(
+            effective_stt_provider("apple_native", &keys),
+            "apple_native"
+        );
     }
 
     #[test]
     fn apple_native_wins_even_when_other_keys_present() {
         let keys = present(&["elevenlabs_scribe", "assemblyai", "openrouter_whisper"]);
-        assert_eq!(effective_stt_provider("apple_native", &keys), "apple_native");
+        assert_eq!(
+            effective_stt_provider("apple_native", &keys),
+            "apple_native"
+        );
     }
 
     #[test]

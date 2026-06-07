@@ -221,7 +221,7 @@ mod tests {
         store
             .lock()
             .unwrap()
-            .set_provider_api_keys(None, Some("test-key".to_owned()), None);
+            .set_provider_api_keys(None, Some("test-key".to_owned()), None, None);
 
         assert!(validate_model_credentials(&store, "ollama:gpt-oss:120b-cloud").is_ok());
     }

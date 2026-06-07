@@ -31,11 +31,14 @@ fn publisher_chapter(title: &str, start: f64) -> Chapter {
 #[test]
 fn merge_preserves_existing_position_for_matching_ids() {
     let existing = vec![ep("A", 42.0), ep("B", 100.0)];
-    let mut fresh = existing.iter().map(|e| {
-        let mut e2 = e.clone();
-        e2.position_secs = 0.0;
-        e2
-    }).collect::<Vec<_>>();
+    let mut fresh = existing
+        .iter()
+        .map(|e| {
+            let mut e2 = e.clone();
+            e2.position_secs = 0.0;
+            e2
+        })
+        .collect::<Vec<_>>();
     fresh.push(ep("C", 0.0));
     let merged = merge_episodes(fresh, existing);
     assert_eq!(merged[0].position_secs, 42.0);
@@ -161,8 +164,8 @@ fn changed_metadata_reports_description_and_pubdate_changes() {
         meta_ep("g2", "Title2", "desc2", t),
     ];
     let fresh = vec![
-        meta_ep("g1", "Title", "new desc", t),       // description changed
-        meta_ep("g2", "Title2", "desc2", later),     // pub_date changed
+        meta_ep("g1", "Title", "new desc", t),   // description changed
+        meta_ep("g2", "Title2", "desc2", later), // pub_date changed
     ];
     let mut got = changed_metadata_ids(&fresh, &existing);
     got.sort();
@@ -182,4 +185,3 @@ fn changed_metadata_ignores_unchanged_and_new_episodes() {
     ];
     assert!(changed_metadata_ids(&fresh, &existing).is_empty());
 }
-

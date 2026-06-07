@@ -120,7 +120,11 @@ fn categorize_text_orders_by_match_count() {
     // outrank Technology (1 hit: ai).
     let sci_idx = cats.iter().position(|c| c == "Science").unwrap();
     let tech_idx = cats.iter().position(|c| c == "Technology").unwrap();
-    assert!(sci_idx < tech_idx, "expected Science before Technology in {:?}", cats);
+    assert!(
+        sci_idx < tech_idx,
+        "expected Science before Technology in {:?}",
+        cats
+    );
 }
 
 #[test]

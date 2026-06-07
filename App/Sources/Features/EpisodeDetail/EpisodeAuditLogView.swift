@@ -158,17 +158,14 @@ struct EpisodeAuditLogView: View {
     /// Providers we can actually hand to their owner right now. Apple needs the
     /// episode downloaded (Apple's `SpeechTranscriber` requires a local file).
     /// Shared-backend providers stay visible and let Rust report missing-key
-    /// or provider errors. AssemblyAI is still Swift-owned and needs a key
-    /// before retry until its shared transport lands.
+    /// or provider errors.
     private var availableRetryProviders: [STTProvider] {
         var out: [STTProvider] = []
         if case .downloaded = episode.downloadState {
             out.append(.appleNative)
         }
         out.append(.elevenLabsScribe)
-        if AssemblyAICredentialStore.hasAPIKey() {
-            out.append(.assemblyAI)
-        }
+        out.append(.assemblyAI)
         out.append(.openRouterWhisper)
         return out
     }

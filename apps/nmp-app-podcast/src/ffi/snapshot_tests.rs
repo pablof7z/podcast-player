@@ -5,12 +5,12 @@
 //! limit. Comments, queue, wiki, picks, memory, clips, and inbox
 //! tests live in `snapshot_tests_ext.rs`.
 
-use crate::ffi::projections::{
-    AgentMessageSummary, AgentSnapshot, AgentTaskSummary,
-    ConversationsSnapshot, DownloadItemSnapshot, DownloadQueueSnapshot,
-    EpisodeSummary, PendingApprovalSnapshot, SettingsSnapshot, VoiceState, WidgetSnapshot,
-};
 use super::PodcastUpdate;
+use crate::ffi::projections::{
+    AgentMessageSummary, AgentSnapshot, AgentTaskSummary, ConversationsSnapshot,
+    DownloadItemSnapshot, DownloadQueueSnapshot, EpisodeSummary, PendingApprovalSnapshot,
+    SettingsSnapshot, VoiceState, WidgetSnapshot,
+};
 use crate::player::PlayerState;
 
 #[test]
@@ -31,7 +31,10 @@ fn episode_summary_field_round_trips() {
     assert_eq!(decoded.summary.as_deref(), Some("A concise summary."));
 
     // None ⇒ omitted from the wire (byte-compat with pre-summary snapshots).
-    let bare = EpisodeSummary { id: "ep-2".into(), ..Default::default() };
+    let bare = EpisodeSummary {
+        id: "ep-2".into(),
+        ..Default::default()
+    };
     let json = serde_json::to_string(&bare).expect("encode");
     assert!(!json.contains("summary"));
 }
@@ -85,8 +88,14 @@ fn configured_relays_round_trips_with_role() {
     use super::AppRelayRow;
     let snap = PodcastUpdate {
         configured_relays: vec![
-            AppRelayRow { url: "wss://relay.primal.net".into(), role: "both,indexer".into() },
-            AppRelayRow { url: "wss://purplepag.es".into(), role: "indexer".into() },
+            AppRelayRow {
+                url: "wss://relay.primal.net".into(),
+                role: "both,indexer".into(),
+            },
+            AppRelayRow {
+                url: "wss://purplepag.es".into(),
+                role: "indexer".into(),
+            },
         ],
         ..PodcastUpdate::default()
     };
@@ -118,7 +127,10 @@ fn snapshot_decoder_tolerates_unknown_fields() {
 #[test]
 fn snapshot_with_settings_round_trips() {
     let snap = PodcastUpdate {
-        settings: SettingsSnapshot { has_completed_onboarding: true, ..SettingsSnapshot::default() },
+        settings: SettingsSnapshot {
+            has_completed_onboarding: true,
+            ..SettingsSnapshot::default()
+        },
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&snap).expect("encode");
@@ -168,7 +180,10 @@ fn snapshot_with_agent_tasks_round_trips() {
 #[test]
 fn snapshot_with_auto_skip_ads_round_trips() {
     let snap = PodcastUpdate {
-        settings: SettingsSnapshot { auto_skip_ads_enabled: true, ..SettingsSnapshot::default() },
+        settings: SettingsSnapshot {
+            auto_skip_ads_enabled: true,
+            ..SettingsSnapshot::default()
+        },
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&snap).expect("encode");
@@ -359,7 +374,9 @@ fn settings_snapshot_skip_intervals_round_trip() {
         ..PodcastUpdate::default()
     };
     let json = serde_json::to_string(&snap).expect("encode");
-    assert!(json.contains("\"skip_forward_secs\":45.0") || json.contains("\"skip_forward_secs\":45"));
+    assert!(
+        json.contains("\"skip_forward_secs\":45.0") || json.contains("\"skip_forward_secs\":45")
+    );
     let decoded: PodcastUpdate = serde_json::from_str(&json).expect("decode");
     assert!((decoded.settings.skip_forward_secs - 45.0).abs() < f64::EPSILON);
     assert!((decoded.settings.skip_backward_secs - 10.0).abs() < f64::EPSILON);

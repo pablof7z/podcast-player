@@ -49,7 +49,9 @@ fn voice_command_set_voice_serde_roundtrips() {
 
 #[test]
 fn voice_report_started_serde_roundtrips() {
-    let rep = VoiceReport::Started { request_id: "req-1".into() };
+    let rep = VoiceReport::Started {
+        request_id: "req-1".into(),
+    };
     let json = serde_json::to_string(&rep).expect("encode");
     assert_eq!(json, r#"{"type":"started","request_id":"req-1"}"#);
     let decoded: VoiceReport = serde_json::from_str(&json).expect("decode");
@@ -58,7 +60,9 @@ fn voice_report_started_serde_roundtrips() {
 
 #[test]
 fn voice_report_finished_serde_roundtrips() {
-    let rep = VoiceReport::Finished { request_id: "req-1".into() };
+    let rep = VoiceReport::Finished {
+        request_id: "req-1".into(),
+    };
     let json = serde_json::to_string(&rep).expect("encode");
     assert_eq!(json, r#"{"type":"finished","request_id":"req-1"}"#);
     let decoded: VoiceReport = serde_json::from_str(&json).expect("decode");
@@ -90,7 +94,12 @@ fn voice_report_stopped_has_no_payload() {
 fn voice_report_unknown_field_tolerated() {
     let json = r#"{"type":"started","request_id":"req-1","future_field":42}"#;
     let decoded: VoiceReport = serde_json::from_str(json).expect("decode");
-    assert_eq!(decoded, VoiceReport::Started { request_id: "req-1".into() });
+    assert_eq!(
+        decoded,
+        VoiceReport::Started {
+            request_id: "req-1".into()
+        }
+    );
 }
 
 #[test]
@@ -130,7 +139,9 @@ fn voice_report_listening_started_stopped_round_trip() {
 
 #[test]
 fn voice_report_transcript_partial_round_trips() {
-    let rep = VoiceReport::TranscriptPartial { text: "hello world".into() };
+    let rep = VoiceReport::TranscriptPartial {
+        text: "hello world".into(),
+    };
     let json = serde_json::to_string(&rep).expect("encode");
     assert!(json.contains("\"type\":\"transcript_partial\""));
     assert!(json.contains("\"text\":\"hello world\""));
@@ -140,7 +151,9 @@ fn voice_report_transcript_partial_round_trips() {
 
 #[test]
 fn voice_report_transcript_final_round_trips() {
-    let rep = VoiceReport::TranscriptFinal { text: "play the latest episode".into() };
+    let rep = VoiceReport::TranscriptFinal {
+        text: "play the latest episode".into(),
+    };
     let json = serde_json::to_string(&rep).expect("encode");
     assert!(json.contains("\"type\":\"transcript_final\""));
     let decoded: VoiceReport = serde_json::from_str(&json).expect("decode");
@@ -149,7 +162,9 @@ fn voice_report_transcript_final_round_trips() {
 
 #[test]
 fn voice_report_error_carries_message() {
-    let rep = VoiceReport::Error { message: "speech recognition denied".into() };
+    let rep = VoiceReport::Error {
+        message: "speech recognition denied".into(),
+    };
     let json = serde_json::to_string(&rep).expect("encode");
     assert!(json.contains("\"type\":\"error\""));
     assert!(json.contains("speech recognition denied"));

@@ -64,4 +64,3 @@ fn execute_emits_dispatch_host_op() {
     assert_eq!(v["op"], "dismiss");
     assert_eq!(v["episode_id"], "ep-7");
 }
-

@@ -236,7 +236,11 @@ fn item_end_marks_episode_played_and_flushes() {
     // Simulate a Playing tick just before the end.
     apply_writeback(
         &mut store,
-        &AudioReport::Playing { url: "u".into(), position_secs: 59.5, duration_secs: 60.0 },
+        &AudioReport::Playing {
+            url: "u".into(),
+            position_secs: 59.5,
+            duration_secs: 60.0,
+        },
         &ep_id,
     );
 
@@ -255,7 +259,10 @@ fn item_end_marks_episode_played_and_flushes() {
         .find(|e| e.id.0.to_string() == ep_id)
         .map(|e| e.played)
         .expect("episode present");
-    assert!(played_in_memory, "episode must be marked played after ItemEnd");
+    assert!(
+        played_in_memory,
+        "episode must be marked played after ItemEnd"
+    );
 
     // Verify the played flag survives a reload from disk.
     let mut reloaded = PodcastStore::new();
@@ -294,7 +301,11 @@ fn item_end_deletes_download_when_auto_delete_on() {
     store.set_auto_delete_downloads_after_played(true);
     assert!(audio_path.exists());
 
-    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+    apply_writeback(
+        &mut store,
+        &AudioReport::ItemEnd { url: "u".into() },
+        &ep_id,
+    );
 
     assert!(
         store.local_path_for(&typed_id).is_none(),
@@ -326,13 +337,20 @@ fn item_end_keeps_download_when_auto_delete_off() {
     store.set_auto_mark_played_at_end(true);
     // auto_delete_downloads_after_played defaults to false.
 
-    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+    apply_writeback(
+        &mut store,
+        &AudioReport::ItemEnd { url: "u".into() },
+        &ep_id,
+    );
 
     assert!(
         store.local_path_for(&typed_id).is_some(),
         "local-path mapping must survive when auto-delete is off"
     );
-    assert!(audio_path.exists(), "the downloaded file must remain on disk");
+    assert!(
+        audio_path.exists(),
+        "the downloaded file must remain on disk"
+    );
 }
 
 #[test]
@@ -350,15 +368,26 @@ fn item_end_rewinds_position_to_zero() {
     // ItemEnd — mirroring the real report sequence the regression came from.
     apply_writeback(
         &mut store,
-        &AudioReport::Playing { url: "u".into(), position_secs: 59.5, duration_secs: 60.0 },
+        &AudioReport::Playing {
+            url: "u".into(),
+            position_secs: 59.5,
+            duration_secs: 60.0,
+        },
         &ep_id,
     );
     apply_writeback(
         &mut store,
-        &AudioReport::Paused { url: "u".into(), position_secs: 60.0 },
+        &AudioReport::Paused {
+            url: "u".into(),
+            position_secs: 60.0,
+        },
         &ep_id,
     );
-    apply_writeback(&mut store, &AudioReport::ItemEnd { url: "u".into() }, &ep_id);
+    apply_writeback(
+        &mut store,
+        &AudioReport::ItemEnd { url: "u".into() },
+        &ep_id,
+    );
 
     // `position_for` returns `None` for a zero position (the canonical
     // "start from the beginning" sentinel — see `position_for_returns_none_when_zero`).
@@ -372,7 +401,9 @@ fn item_end_rewinds_position_to_zero() {
 
 #[test]
 fn item_end_serde_round_trips() {
-    let report = AudioReport::ItemEnd { url: "https://ex.com/ep.mp3".into() };
+    let report = AudioReport::ItemEnd {
+        url: "https://ex.com/ep.mp3".into(),
+    };
     let json = serde_json::to_string(&report).expect("encode");
     assert!(json.contains("\"type\":\"item_end\""));
     let decoded: AudioReport = serde_json::from_str(&json).expect("decode");

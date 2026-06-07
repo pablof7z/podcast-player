@@ -60,8 +60,14 @@ fn generate_inserts_placeholder_and_primes_rev() {
     assert_eq!(stored[0].topic, "Bitcoin halvings");
     assert_eq!(stored[0].podcast_id, "pod-1");
     // Placeholder is inserted with is_generating=true; background task fills it.
-    assert!(stored[0].is_generating, "placeholder must be is_generating=true");
-    assert!(!stored[0].summary.is_empty(), "placeholder summary must not be empty");
+    assert!(
+        stored[0].is_generating,
+        "placeholder must be is_generating=true"
+    );
+    assert!(
+        !stored[0].summary.is_empty(),
+        "placeholder summary must not be empty"
+    );
     // Exactly one synchronous rev prime before the background task runs.
     assert_eq!(rev.load(Ordering::Relaxed), 1);
 }

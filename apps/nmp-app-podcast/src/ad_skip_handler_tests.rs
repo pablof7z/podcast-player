@@ -58,4 +58,3 @@ fn hydrate_actor_for_play_copies_store_into_actor() {
     assert_eq!(a.ad_segments().len(), 1);
     assert!(a.auto_skip_ads());
 }
-

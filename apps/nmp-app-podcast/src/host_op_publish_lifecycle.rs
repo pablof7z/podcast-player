@@ -155,7 +155,11 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
         .publish_state
         .lock()
         .ok()
-        .and_then(|state| state.get(&podcast_id).and_then(|s| s.show_event_json.clone()))
+        .and_then(|state| {
+            state
+                .get(&podcast_id)
+                .and_then(|s| s.show_event_json.clone())
+        })
         .and_then(|json| event_id_from_json(&json));
 
     // Step 1: NIP-09 deletion (only when there is a published show event AND
@@ -219,9 +223,7 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
 /// `None` for unsigned placeholders (the `create_owned`/pre-login path) or
 /// malformed JSON.
 fn event_id_from_json(json: &str) -> Option<String> {
-    nostr::Event::from_json(json)
-        .ok()
-        .map(|e| e.id.to_hex())
+    nostr::Event::from_json(json).ok().map(|e| e.id.to_hex())
 }
 
 #[cfg(test)]
