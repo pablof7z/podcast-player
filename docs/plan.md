@@ -12,6 +12,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 | Android feature wave 1 (subscribe/search/episode detail) + parity matrix. | Active | `docs/plan/android-parity.md` |
 | TUI feature parity foundation and terminal surface expansion. | Active | `docs/plan/tui-parity.md` |
 | TUI live agent validation with Ollama Cloud. | Active | `docs/plan/tui-agent-live-validation.md` |
+| Shared LLM provider transport and typed task intents. | Active | `docs/plan/shared-llm-task-architecture.md` |
 
 ## Planning Files
 
@@ -23,6 +24,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 - `docs/plan/android-parity.md` - Android feature-parity status matrix (Tier 1-4) and the subscribe/search/episode-detail wave.
 - `docs/plan/tui-parity.md` - Terminal-client parity matrix and staged implementation plan.
 - `docs/plan/tui-agent-live-validation.md` - live tmux scenario inventory and validation log for agentic TUI workflows.
+- `docs/plan/shared-llm-task-architecture.md` - provider transport, model routing, and typed task-intent ownership contract across platforms.
 
 ## Active State
 
