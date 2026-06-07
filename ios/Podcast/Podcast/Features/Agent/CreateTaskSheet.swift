@@ -2,14 +2,10 @@ import SwiftUI
 
 // MARK: - CreateTaskSheet
 //
-// Sheet presented from `AgentTasksView` toolbar `+`. Collects the four
-// fields `podcast.tasks.create` needs and dispatches the action when
+// Sheet presented from `AgentTasksView` toolbar `+`. Collects a typed
+// task intent and dispatches `podcast.tasks.create_from_intent` when
 // Save is tapped. The action's reducer mints the task UUID; this view
 // never invents an id locally.
-//
-// Action presets are kept simple: "Inbox Triage", "Categorize",
-// and "Custom" (free-form namespace). Real receiver action modules
-// don't exist yet — see `tasks_handler.rs::run_now` comment.
 
 struct CreateTaskSheet: View {
 
@@ -19,8 +15,9 @@ struct CreateTaskSheet: View {
     @State private var title: String = ""
     @State private var description: String = ""
     @State private var schedule: ScheduleOption = .daily
-    @State private var actionPreset: ActionPreset = .inboxTriage
-    @State private var customNamespace: String = ""
+    @State private var intentPreset: IntentPreset = .inboxTriage
+    @State private var memoryKey: String = ""
+    @State private var memoryValue: String = ""
 
     var body: some View {
         NavigationStack {
@@ -42,18 +39,20 @@ struct CreateTaskSheet: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("Action") {
-                    Picker("Action", selection: $actionPreset) {
-                        ForEach(ActionPreset.allCases, id: \.self) { preset in
+                Section("Intent") {
+                    Picker("Intent", selection: $intentPreset) {
+                        ForEach(IntentPreset.allCases, id: \.self) { preset in
                             Text(preset.label).tag(preset)
                         }
                     }
-                    if actionPreset == .custom {
-                        TextField("Namespace (e.g. podcast.research)",
-                                  text: $customNamespace)
+                    if intentPreset == .rememberMemory {
+                        TextField("Memory key", text: $memoryKey)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .accessibilityLabel("Custom action namespace")
+                            .accessibilityLabel("Memory key")
+                        TextField("Memory value", text: $memoryValue, axis: .vertical)
+                            .lineLimit(2...4)
+                            .accessibilityLabel("Memory value")
                     }
                 }
             }
@@ -77,8 +76,10 @@ struct CreateTaskSheet: View {
     private var canSave: Bool {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         guard !trimmedTitle.isEmpty else { return false }
-        if actionPreset == .custom {
-            return !customNamespace.trimmingCharacters(in: .whitespaces).isEmpty
+        if intentPreset == .rememberMemory {
+            let hasKey = !memoryKey.trimmingCharacters(in: .whitespaces).isEmpty
+            let hasValue = !memoryValue.trimmingCharacters(in: .whitespaces).isEmpty
+            return hasKey && hasValue
         }
         return true
     }
@@ -86,28 +87,10 @@ struct CreateTaskSheet: View {
     private func save() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         let trimmedDescription = description.trimmingCharacters(in: .whitespaces)
-        // Namespace + serialized action body must match the registered
-        // receiver action modules in the Rust kernel. `action_body` is a
-        // JSON *string* (the reducer re-parses it), so each preset carries
-        // its own `{"op":…}` payload rather than an empty `{}`.
-        let namespace: String
-        let actionBody: String
-        switch actionPreset {
-        case .inboxTriage:
-            namespace = "podcast.inbox"
-            actionBody = #"{"op":"triage"}"#
-        case .categorize:
-            namespace = "podcast.categorize"
-            actionBody = #"{"op":"run"}"#
-        case .custom:
-            namespace = customNamespace.trimmingCharacters(in: .whitespaces)
-            actionBody = "{}"
-        }
         var body: [String: Any] = [
-            "op": "create",
+            "op": "create_from_intent",
             "title": trimmedTitle,
-            "action_namespace": namespace,
-            "action_body": actionBody,
+            "intent": intentBody,
             "schedule": schedule.rawValue,
         ]
         if !trimmedDescription.isEmpty {
@@ -115,6 +98,21 @@ struct CreateTaskSheet: View {
         }
         model.dispatch(namespace: "podcast.tasks", body: body)
         dismiss()
+    }
+
+    private var intentBody: [String: Any] {
+        switch intentPreset {
+        case .inboxTriage:
+            return ["type": "inbox_triage"]
+        case .clearAgent:
+            return ["type": "clear_agent"]
+        case .rememberMemory:
+            return [
+                "type": "remember_memory",
+                "key": memoryKey.trimmingCharacters(in: .whitespaces),
+                "value": memoryValue.trimmingCharacters(in: .whitespaces),
+            ]
+        }
     }
 }
 
@@ -131,13 +129,13 @@ private enum ScheduleOption: String, CaseIterable {
     }
 }
 
-private enum ActionPreset: CaseIterable {
-    case inboxTriage, categorize, custom
+private enum IntentPreset: CaseIterable {
+    case inboxTriage, clearAgent, rememberMemory
     var label: String {
         switch self {
         case .inboxTriage: "Inbox Triage"
-        case .categorize: "Categorize"
-        case .custom: "Custom"
+        case .clearAgent: "Clear Agent Chat"
+        case .rememberMemory: "Remember Memory"
         }
     }
 }

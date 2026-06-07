@@ -169,13 +169,41 @@ data class QueueClearPayload(val op: String = "clear")
 // ── `podcast.tasks` namespace payloads ────────────────────────────────────
 
 @Serializable
-data class TaskCreatePayload(
+sealed class AgentTaskIntentPayload {
+    @Serializable
+    @SerialName("inbox_triage")
+    object InboxTriage : AgentTaskIntentPayload()
+
+    @Serializable
+    @SerialName("clear_agent")
+    object ClearAgent : AgentTaskIntentPayload()
+
+    @Serializable
+    @SerialName("remember_memory")
+    data class RememberMemory(
+        val key: String,
+        val value: String,
+    ) : AgentTaskIntentPayload()
+
+    companion object {
+        fun inboxTriage(): AgentTaskIntentPayload =
+            InboxTriage
+
+        fun clearAgent(): AgentTaskIntentPayload =
+            ClearAgent
+
+        fun rememberMemory(key: String, value: String): AgentTaskIntentPayload =
+            RememberMemory(key = key, value = value)
+    }
+}
+
+@Serializable
+data class TaskCreateFromIntentPayload(
     val title: String,
     val description: String? = null,
-    @SerialName("action_namespace") val actionNamespace: String,
-    @SerialName("action_body") val actionBody: String,
+    val intent: AgentTaskIntentPayload,
     val schedule: String,
-    val op: String = "create",
+    val op: String = "create_from_intent",
 )
 
 @Serializable

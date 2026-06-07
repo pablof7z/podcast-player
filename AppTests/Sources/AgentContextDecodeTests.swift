@@ -66,4 +66,30 @@ final class AgentContextDecodeTests: XCTestCase {
         XCTAssertTrue(ctx.recentUnplayed.isEmpty)
         XCTAssertEqual(ctx.recentWindowDays, 7)
     }
+
+    func testAgentTaskSnapshotDecodesWithoutRawDispatchFields() throws {
+        let json = """
+        {
+          "rev": 3,
+          "agent_tasks": [
+            {
+              "id": "task-1",
+              "title": "Inbox Triage",
+              "intent_type": "inbox_triage",
+              "intent_label": "Triage inbox",
+              "intent_detail": "Prioritize new episodes",
+              "schedule": "daily",
+              "status": "pending",
+              "is_enabled": true
+            }
+          ]
+        }
+        """
+        let task = try XCTUnwrap(try decode(json).agentTasks.first)
+        XCTAssertEqual(task.title, "Inbox Triage")
+        XCTAssertEqual(task.intentType, "inbox_triage")
+        XCTAssertEqual(task.intentLabel, "Triage inbox")
+        XCTAssertNil(task.actionNamespace)
+        XCTAssertNil(task.actionBody)
+    }
 }

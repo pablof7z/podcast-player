@@ -149,11 +149,14 @@ pub struct AgentPickSummary {
 /// logic. The kernel-side `AgentTasksModule` owns mutation; the iOS
 /// shell only dispatches actions and re-renders.
 ///
-/// `action_namespace` + `action_body` carry the dispatch payload the
-/// task should fire (e.g. `"podcast.inbox.triage"` + `"{}"`).
-/// Carrying them as opaque string fields keeps the projection
-/// open-ended — new agent capabilities show up as new namespace
-/// strings without changing this struct.
+/// `intent_type` / `intent_label` / `intent_detail` are the user-facing task
+/// intent projection. They are stable UI data and intentionally do not expose
+/// the internal dispatch contract.
+///
+/// `action_namespace` + `action_body` still exist on the Rust struct because
+/// `run_now` needs an internal dispatch payload. They are skipped during
+/// snapshot serialization so platform UI cannot accidentally treat backend
+/// action JSON as a task-creation contract.
 ///
 /// `schedule` is a free-form string (`"daily"`, `"weekly"`, `"once"`,
 /// or a cron-like expression) — interpreted by the future scheduler
@@ -174,11 +177,21 @@ pub struct AgentTaskSummary {
     pub title: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    /// e.g. `"podcast.inbox.triage"` — the action namespace
-    /// `run_now` would (in a future scheduler) dispatch.
+    /// Stable intent discriminator: `"inbox_triage"`, `"clear_agent"`,
+    /// `"remember_memory"`, or `"custom"` for legacy raw-created tasks.
+    #[serde(default = "default_agent_task_intent_type")]
+    pub intent_type: String,
+    /// Short user-facing intent label.
+    #[serde(default = "default_agent_task_intent_label")]
+    pub intent_label: String,
+    /// Optional user-facing detail such as `topic = rust`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent_detail: Option<String>,
+    /// Internal dispatch namespace used by `run_now`.
+    #[serde(default, skip_serializing)]
     pub action_namespace: String,
-    /// JSON payload (already-encoded). Keeps the projection
-    /// schema-agnostic to the receiver's action shape.
+    /// Internal dispatch JSON payload used by `run_now`.
+    #[serde(default, skip_serializing)]
     pub action_body: String,
     /// Free-form schedule label (`"daily"`, `"weekly"`, `"once"`, or
     /// a cron-like expression). The future scheduler runtime parses
@@ -198,4 +211,12 @@ pub struct AgentTaskSummary {
     /// `true` when the scheduler should consider this task; user can
     /// toggle via `enable` / `disable` ops without losing the row.
     pub is_enabled: bool,
+}
+
+fn default_agent_task_intent_type() -> String {
+    "custom".to_owned()
+}
+
+fn default_agent_task_intent_label() -> String {
+    "Custom task".to_owned()
 }
