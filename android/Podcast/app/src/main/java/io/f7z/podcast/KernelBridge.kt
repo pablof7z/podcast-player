@@ -187,6 +187,13 @@ class KernelBridge {
         if (handle != 0L) nativeValidateElevenLabsKey(handle) else null
 
     /**
+     * Shared ElevenLabs voice catalog. Rust owns `/v1/voices`, credentials,
+     * request shaping, status mapping, and response parsing.
+     */
+    fun elevenLabsVoiceCatalog(): String? =
+        if (handle != 0L) nativeElevenLabsVoiceCatalog(handle) else null
+
+    /**
      * Shared OpenRouter Whisper transcription transport. Android supplies only
      * the typed audio-source intent; Rust owns OpenRouter HTTP and credentials.
      */
@@ -247,6 +254,7 @@ class KernelBridge {
     private external fun nativeProviderModelCatalog(handle: Long): String?
     private external fun nativeValidateOpenRouterKey(handle: Long): String?
     private external fun nativeValidateElevenLabsKey(handle: Long): String?
+    private external fun nativeElevenLabsVoiceCatalog(handle: Long): String?
     private external fun nativeOpenRouterWhisperTranscribe(handle: Long, intentJson: String): String?
     private external fun nativeElevenLabsScribeTranscribe(handle: Long, intentJson: String): String?
     private external fun nativeAssemblyAITranscribe(handle: Long, intentJson: String): String?
