@@ -38,6 +38,8 @@ struct UserProfileDisplay {
     /// the deterministic generated profile when the fetch hasn't completed.
     @MainActor
     static func from(identity: UserIdentityStore) -> UserProfileDisplay? {
+        // Use the canonical hex account id as the deterministic seed. The
+        // backend omits activeAccount if the hex id is not available.
         guard let hex = identity.publicKeyHex, !hex.isEmpty else { return nil }
         let generated = UserProfileDisplay(publicKeyHex: hex)
         guard identity.profileDisplayName != nil
