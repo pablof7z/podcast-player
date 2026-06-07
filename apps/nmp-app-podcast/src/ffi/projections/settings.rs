@@ -190,6 +190,10 @@ pub struct SettingsSnapshot {
     /// OpenRouter credential source enum (raw String: "apiKey", "byok", "nostr").
     #[serde(default = "default_empty_string")]
     pub open_router_credential_source: String,
+    /// Whether an OpenRouter API key is currently loaded in the in-memory
+    /// provider cache. The secret never crosses FFI.
+    #[serde(default = "default_false")]
+    pub open_router_key_present: bool,
     /// OpenRouter BYOK key ID (optional).
     #[serde(default)]
     pub open_router_byok_key_id: Option<String>,
@@ -202,6 +206,10 @@ pub struct SettingsSnapshot {
     /// Ollama credential source enum (raw String: "apiKey", "byok", "nostr").
     #[serde(default = "default_empty_string")]
     pub ollama_credential_source: String,
+    /// Whether an Ollama API key is currently loaded in the in-memory provider
+    /// cache. The secret never crosses FFI.
+    #[serde(default = "default_false")]
+    pub ollama_key_present: bool,
     /// Ollama BYOK key ID (optional).
     #[serde(default)]
     pub ollama_byok_key_id: Option<String>,
@@ -217,6 +225,10 @@ pub struct SettingsSnapshot {
     /// ElevenLabs credential source enum (raw String: "apiKey", "byok", "nostr").
     #[serde(default = "default_empty_string")]
     pub eleven_labs_credential_source: String,
+    /// Whether an ElevenLabs API key is currently loaded in the in-memory
+    /// provider cache. The secret never crosses FFI.
+    #[serde(default = "default_false")]
+    pub eleven_labs_key_present: bool,
     /// ElevenLabs BYOK key ID (optional).
     #[serde(default)]
     pub eleven_labs_byok_key_id: Option<String>,
@@ -245,6 +257,14 @@ pub struct SettingsSnapshot {
     /// can read this to know whether transcription will hit the network.
     #[serde(default = "default_false")]
     pub effective_stt_provider_requires_key: bool,
+    /// Whether an AssemblyAI API key is currently loaded in the in-memory
+    /// provider cache. The secret never crosses FFI.
+    #[serde(default = "default_false")]
+    pub assembly_ai_key_present: bool,
+    /// Whether a Perplexity API key is currently loaded in the in-memory
+    /// provider cache. The secret never crosses FFI.
+    #[serde(default = "default_false")]
+    pub perplexity_key_present: bool,
     /// OpenRouter Whisper model string. Default `"openai/whisper-1"`.
     #[serde(default = "default_open_router_whisper_model")]
     pub open_router_whisper_model: String,
@@ -338,21 +358,26 @@ impl Default for SettingsSnapshot {
             image_generation_model_name: "Gemini 2.5 Flash".to_owned(),
             reranker_enabled: false,
             open_router_credential_source: String::new(),
+            open_router_key_present: false,
             open_router_byok_key_id: None,
             open_router_byok_key_label: None,
             open_router_connected_at: None,
             ollama_credential_source: String::new(),
+            ollama_key_present: false,
             ollama_byok_key_id: None,
             ollama_byok_key_label: None,
             ollama_connected_at: None,
             ollama_chat_url: String::new(),
             eleven_labs_credential_source: String::new(),
+            eleven_labs_key_present: false,
             eleven_labs_byok_key_id: None,
             eleven_labs_byok_key_label: None,
             eleven_labs_connected_at: None,
             stt_provider: "apple_native".to_owned(),
             effective_stt_provider: "apple_native".to_owned(),
             effective_stt_provider_requires_key: false,
+            assembly_ai_key_present: false,
+            perplexity_key_present: false,
             open_router_whisper_model: "openai/whisper-1".to_owned(),
             assembly_ai_stt_model: "universal-3-pro,universal-2".to_owned(),
             eleven_labs_stt_model: "scribe_v1".to_owned(),

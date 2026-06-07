@@ -399,3 +399,11 @@ fn settings_snapshot_missing_skip_fields_use_defaults() {
     assert!((s.skip_forward_secs - 30.0).abs() < f64::EPSILON);
     assert!((s.skip_backward_secs - 15.0).abs() < f64::EPSILON);
 }
+
+#[test]
+fn provider_key_presence_is_trimmed() {
+    assert!(!super::provider_key_present(None));
+    assert!(!super::provider_key_present(Some("")));
+    assert!(!super::provider_key_present(Some("   ")));
+    assert!(super::provider_key_present(Some(" sk-live ")));
+}

@@ -162,7 +162,8 @@ pub enum SettingsAction {
     /// the new role, exactly like `AddRelay`.
     SetRelayRole { url: String, role: String },
     /// Set provider API keys in-memory. In-memory only; these keys never
-    /// touch disk. No projection consumes this action.
+    /// touch disk. Settings snapshots project only non-secret key-presence
+    /// booleans.
     SetProviderApiKeys {
         open_router: Option<String>,
         ollama: Option<String>,
