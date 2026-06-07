@@ -268,9 +268,12 @@ final class PodcastHandle: @unchecked Sendable {
                 kbLog.error("snapshot frame missing podcast.snapshot projection bytes=\(data.count)")
                 return nil
             }
-            // Identity projection slice (`projections.active_account` / `accounts`
-            // / `bunker_handshake`) from the same raw envelope.
-            let identity = KernelIdentityProjection.decode(envelopePayload: data)
+            // Build the identity projection from the already-decoded PodcastUpdate.
+            // `active_account` lives inside projections["podcast.snapshot"], not at
+            // the top-level projections dictionary — KernelIdentityProjection.decode
+            // read the wrong path and always produced .empty, causing "No identity"
+            // to persist across app restarts even when the kernel had a valid account.
+            let identity = KernelIdentityProjection.from(podcastUpdate: update)
             // Mandatory NMP v0.1.0 surface (V-67): the kernel sets the
             // top-level `store_open_failure` string when the configured LMDB
             // store failed to open and it fell back to in-memory. It rides the

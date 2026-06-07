@@ -24,8 +24,9 @@ import os.log
 final class UserIdentityStore {
     private let logger = Logger.app("UserIdentityStore")
 
-    /// The user's signing pubkey (32-byte hex x-only), mirrored from the
-    /// kernel's active account. `nil` while no identity is configured.
+    /// The user's public key identifier mirrored from the kernel's active account.
+    /// Currently bech32 npub format (`npub1…`) from `PodcastUpdate.active_account.npub`.
+    /// `nil` while no identity is configured.
     private(set) var publicKeyHex: String?
     private(set) var loginError: String?
 

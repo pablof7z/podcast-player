@@ -2,22 +2,18 @@ import Foundation
 
 // MARK: - Kernel identity projection
 //
-// Narrow Swift mirror of the three NMP-core projection slots the iOS shell
-// needs to drive the Identity surface:
+// Swift mirror of the identity fields surfaced via `PodcastUpdate.activeAccount`
+// (inside `projections["podcast.snapshot"]`). Built by
+// `KernelIdentityProjection.from(podcastUpdate:)` in KernelBridge — NOT by
+// parsing the top-level `projections` dictionary, which has no identity keys.
 //
-//   projections.active_account   String?   — hex pubkey of the active account
-//   projections.accounts         [Account] — every loaded identity (id, npub,
-//                                            signer kind/label/is_remote, etc.)
-//   projections.bunker_handshake DTO?      — NIP-46 broker handshake progress
+// Current wire surface (NMP v0.2.x):
+//   PodcastUpdate.active_account  AccountSummary?  — npub + mode + display_name
 //
-// These keys live under `KernelSnapshot::projections` (see
-// `crates/nmp-core/src/kernel/types.rs` and the inserts in
-// `crates/nmp-core/src/kernel/update.rs`). The wire envelope reaches the iOS
-// shell through `nmp_app_set_update_callback`; `KernelBridge.decode` runs both
-// the existing `PodcastUpdate` decode (for `running`/`rev`/`schema_version`)
-// AND this narrow projection decode (for identity). Two decoders, one parse
-// pass per — keeps the wire types honest without forcing `PodcastUpdate` to
-// model fields it doesn't otherwise consume.
+// Future slots (not yet wired in Rust; degrade to nil/empty gracefully):
+//   accounts         [Account]  — all loaded accounts for multi-identity
+//   bunker_handshake DTO?       — NIP-46 handshake progress
+//   resolved_profiles map       — pubkey→profile cache
 
 /// One identity row from `projections.accounts` (per
 /// `crates/nmp-core/src/kernel/identity_state.rs`'s `AccountSummary`).
@@ -109,7 +105,9 @@ struct ResolvedProfile: Decodable, Equatable {
 /// or `nil` when no identity is loaded and no handshake is in flight — that
 /// is the steady-state for a fresh install.
 struct KernelIdentityProjection: Equatable {
-    /// Hex pubkey of the active account, or `nil` when no account is loaded.
+    /// Bech32 npub of the active account (`npub1…`), or `nil` when no account
+    /// is loaded. Sourced from `PodcastUpdate.active_account.npub`; the kernel
+    /// does not yet surface the raw hex pubkey in the snapshot (follow-up work).
     let activeAccount: String?
     /// All known identity rows, possibly empty.
     let accounts: [KernelAccountSummary]
@@ -138,48 +136,28 @@ struct KernelIdentityProjection: Equatable {
     }
 }
 
-// MARK: - Decode helper
+// MARK: - Factory from decoded PodcastUpdate
 
 extension KernelIdentityProjection {
-    /// Decode the identity projection slice from one already-parsed kernel
-    /// snapshot wire envelope (`{"t":"snapshot","v":<KernelSnapshot>}`).
+    /// Build the identity projection from an already-decoded `PodcastUpdate`.
     ///
-    /// The pruning logic mirrors the doctrine: when `projections.accounts`
-    /// is missing, we still surface whatever subset arrived (forward-compat).
-    /// Decode failures degrade to `.empty` so a malformed projection never
-    /// nukes the surrounding snapshot.
-    static func decode(envelopePayload data: Data) -> KernelIdentityProjection {
-        guard let raw = try? JSONSerialization.jsonObject(with: data),
-              let outer = raw as? [String: Any],
-              let value = outer["v"] as? [String: Any],
-              let projections = value["projections"] as? [String: Any]
-        else { return .empty }
-
-        let active = projections["active_account"] as? String
-
-        let accounts: [KernelAccountSummary] = {
-            guard let arr = projections["accounts"] as? [[String: Any]],
-                  let json = try? JSONSerialization.data(withJSONObject: arr)
-            else { return [] }
-            return (try? JSONDecoder().decode([KernelAccountSummary].self, from: json)) ?? []
-        }()
-
-        let handshake: KernelBunkerHandshake? = {
-            guard let obj = projections["bunker_handshake"] as? [String: Any],
-                  let json = try? JSONSerialization.data(withJSONObject: obj)
-            else { return nil }
-            return try? JSONDecoder().decode(KernelBunkerHandshake.self, from: json)
-        }()
-
-        let resolvedProfiles: [String: ResolvedProfile] = {
-            guard let obj = projections["resolved_profiles"] as? [String: Any],
-                  let json = try? JSONSerialization.data(withJSONObject: obj)
-            else { return [:] }
-            return (try? JSONDecoder().decode([String: ResolvedProfile].self, from: json)) ?? [:]
-        }()
-
-        return KernelIdentityProjection(
-            activeAccount: active, accounts: accounts, bunkerHandshake: handshake,
-            resolvedProfiles: resolvedProfiles)
+    /// `active_account` is a field on `PodcastUpdate` (inside the
+    /// `projections["podcast.snapshot"]` slice), NOT at the top-level
+    /// `projections` dictionary. Constructing from the typed struct avoids
+    /// the raw-JSON path that previously read the wrong level and returned
+    /// `.empty` for every snapshot tick, causing "No identity" to persist
+    /// across restarts even when the kernel had a saved account.
+    ///
+    /// `accounts`, `bunkerHandshake`, and `resolvedProfiles` remain empty
+    /// until the Rust backend adds dedicated top-level projection slots for
+    /// them. Their absence degrades gracefully: NIP-46 handshake UI is
+    /// hidden when `bunkerHandshake == nil`, and resolved-profile lookups
+    /// fall back to relay fetches.
+    static func from(podcastUpdate update: PodcastUpdate) -> KernelIdentityProjection {
+        KernelIdentityProjection(
+            activeAccount: update.activeAccount?.npub,
+            accounts: [],
+            bunkerHandshake: nil,
+            resolvedProfiles: [:])
     }
 }
