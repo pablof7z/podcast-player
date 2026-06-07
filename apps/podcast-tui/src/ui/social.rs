@@ -1,11 +1,11 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::widgets::{Block, List, ListItem, Paragraph};
 use ratatui::Frame;
 
 use crate::app::AppState;
-use crate::ui::format;
+use crate::ui::{format, theme};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let rows = Layout::vertical([
@@ -24,28 +24,30 @@ fn render_account(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let lines = if let Some(account) = &state.active_account {
         vec![
             Line::from(vec![
-                Span::styled("npub ", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    format::short_id(&account.npub),
-                    Style::default().fg(Color::White),
-                ),
+                Span::styled("npub ", theme::muted()),
+                Span::styled(format::short_id(&account.npub), theme::text()),
             ]),
             Line::from(vec![
-                Span::styled("mode ", Style::default().fg(Color::DarkGray)),
-                Span::styled(&account.mode, Style::default().fg(Color::White)),
+                Span::styled("mode ", theme::muted()),
+                Span::styled(&account.mode, theme::text()),
             ]),
         ]
     } else {
         vec![Line::from("No active Nostr account.")]
     };
-    frame.render_widget(Paragraph::new(lines).block(block), area);
+    frame.render_widget(
+        Paragraph::new(lines).style(theme::text()).block(block),
+        area,
+    );
 }
 
 fn render_relays(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = block(format!("Relays ({})", state.configured_relays.len()));
     if state.configured_relays.is_empty() {
         frame.render_widget(
-            Paragraph::new("No configured relays projected.").block(block),
+            Paragraph::new("No configured relays projected.")
+                .style(theme::muted())
+                .block(block),
             area,
         );
         return;
@@ -55,11 +57,8 @@ fn render_relays(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .iter()
         .map(|relay| {
             ListItem::new(Line::from(vec![
-                Span::styled(&relay.role, Style::default().fg(Color::Cyan)),
-                Span::styled(
-                    format!("  {}", relay.url),
-                    Style::default().fg(Color::White),
-                ),
+                Span::styled(&relay.role, theme::accent()),
+                Span::styled(format!("  {}", relay.url), theme::text()),
             ]))
         })
         .collect::<Vec<_>>();
@@ -69,8 +68,9 @@ fn render_relays(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 fn render_contacts(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = block(format!("Contacts ({})", state.social_following_count));
     if state.social_contacts.is_empty() {
-        let text =
-            Paragraph::new("No contacts projected. Press 'r' to fetch contacts.").block(block);
+        let text = Paragraph::new("No contacts projected. Press 'r' to fetch contacts.")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -80,15 +80,10 @@ fn render_contacts(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|contact| {
             let name = contact.display_name.as_deref().unwrap_or(&contact.npub);
             ListItem::new(Line::from(vec![
-                Span::styled(
-                    name,
-                    Style::default()
-                        .fg(Color::White)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled(name, theme::text().add_modifier(Modifier::BOLD)),
                 Span::styled(
                     format!("  {}", format::short_id(&contact.npub)),
-                    Style::default().fg(Color::DarkGray),
+                    theme::muted(),
                 ),
             ]))
         })
@@ -97,9 +92,5 @@ fn render_contacts(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn block(title: impl Into<String>) -> Block<'static> {
-    let title = title.into();
-    Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" {title} "))
+    theme::panel(title, false)
 }

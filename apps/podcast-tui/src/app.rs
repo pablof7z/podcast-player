@@ -35,6 +35,7 @@ pub struct AppState {
     pub mode: Mode,
     pub show_help: bool,
     pub update_count: u64,
+    pub motion_tick: u64,
     pub library: Vec<PodcastRow>,
     pub episodes: Vec<EpisodeRow>,
     pub selected_podcast: usize,
@@ -101,6 +102,7 @@ impl Default for AppState {
             mode: Mode::Normal,
             show_help: false,
             update_count: 0,
+            motion_tick: 0,
             library: Vec::new(),
             episodes: Vec::new(),
             selected_podcast: 0,
@@ -258,6 +260,10 @@ impl AppState {
             toast.ttl_ticks = toast.ttl_ticks.saturating_sub(1);
         }
         self.toasts.retain(|t| t.ttl_ticks > 0);
+    }
+
+    pub fn tick_motion(&mut self) {
+        self.motion_tick = self.motion_tick.wrapping_add(1);
     }
 
     pub fn focus(&mut self, pane: Pane) {

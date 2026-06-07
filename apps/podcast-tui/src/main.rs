@@ -68,6 +68,7 @@ fn run(args: Args) -> Result<()> {
             }
             UiEvent::Tick => {
                 state.tick_toasts();
+                state.tick_motion();
                 runtime.poll_audio_position();
             }
         }

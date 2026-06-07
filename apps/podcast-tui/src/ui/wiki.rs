@@ -1,10 +1,11 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+use ratatui::widgets::{List, ListItem, Paragraph, Wrap};
 use ratatui::Frame;
 
 use crate::app::AppState;
+use crate::ui::theme;
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let columns =
@@ -14,13 +15,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_articles(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(format!(" Wiki ({}) ", state.wiki_articles.len()));
+    let block = theme::panel(format!("Wiki ({})", state.wiki_articles.len()), true);
 
     if state.wiki_articles.is_empty() {
-        let text = Paragraph::new("No wiki articles projected yet.").block(block);
+        let text = Paragraph::new("No wiki articles projected yet.")
+            .style(theme::muted())
+            .block(block);
         frame.render_widget(text, area);
         return;
     }
@@ -32,22 +32,19 @@ fn render_articles(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         .map(|(index, article)| {
             let selected = index == state.selected_wiki;
             let base = if selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
+                theme::selected()
             } else {
-                Style::default().fg(Color::White)
+                theme::text()
             };
             let mut spans = vec![Span::styled(&article.topic, base)];
             if article.is_generating {
                 spans.push(Span::styled(
                     "  generating",
-                    Style::default().fg(Color::Yellow),
+                    Style::default().fg(theme::WARN),
                 ));
             }
             if article.generation_error.is_some() {
-                spans.push(Span::styled("  failed", Style::default().fg(Color::Red)));
+                spans.push(Span::styled("  failed", Style::default().fg(theme::DANGER)));
             }
             ListItem::new(Line::from(spans))
         })
@@ -57,22 +54,22 @@ fn render_articles(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 }
 
 fn render_article_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::DarkGray))
-        .title(" Article ");
+    let block = theme::panel("Article", false);
 
     let Some(article) = state.wiki_articles.get(state.selected_wiki) else {
-        frame.render_widget(Paragraph::new("Select an article.").block(block), area);
+        frame.render_widget(
+            Paragraph::new("Select an article.")
+                .style(theme::muted())
+                .block(block),
+            area,
+        );
         return;
     };
 
     let mut lines = vec![
         Line::from(Span::styled(
             &article.topic,
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
+            theme::text().add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(article.summary.clone()),
@@ -81,19 +78,22 @@ fn render_article_detail(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
             format!("Sources: {}", article.source_episode_ids.len()),
-            Style::default().fg(Color::DarkGray),
+            theme::muted(),
         )));
     }
     if let Some(error) = &article.generation_error {
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
             error,
-            Style::default().fg(Color::Red),
+            Style::default().fg(theme::DANGER),
         )));
     }
 
     frame.render_widget(
-        Paragraph::new(lines).block(block).wrap(Wrap { trim: true }),
+        Paragraph::new(lines)
+            .style(theme::text())
+            .block(block)
+            .wrap(Wrap { trim: true }),
         area,
     );
 }
