@@ -28,8 +28,6 @@ enum RootTab: String, CaseIterable {
 /// The root view of the app. Hosts the main tab bar (hidden), the feedback
 /// shake gesture, onboarding gate, deep-link routing, and the avatar sidebar.
 struct RootView: View {
-    let scheduledTaskRunner: AgentScheduledTaskRunner?
-
     @Environment(AppStateStore.self) var store
     @Environment(AgentAskCoordinator.self) var askCoordinator
     private var userIdentity: UserIdentityStore { store.identity }
@@ -157,7 +155,7 @@ struct RootView: View {
                     .environment(playbackState)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    scheduledTaskRunner?.runDueTasksIfNeeded()
+                    store.runDueScheduledTasksIfNeeded()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .voiceModeRequested)) { _ in
                     showVoiceMode = true

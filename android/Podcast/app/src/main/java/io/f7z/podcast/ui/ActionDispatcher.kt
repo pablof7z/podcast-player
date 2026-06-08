@@ -185,6 +185,12 @@ sealed class AgentTaskIntentPayload {
         val value: String,
     ) : AgentTaskIntentPayload()
 
+    @Serializable
+    @SerialName("agent_prompt")
+    data class AgentPrompt(
+        val prompt: String,
+    ) : AgentTaskIntentPayload()
+
     companion object {
         fun inboxTriage(): AgentTaskIntentPayload =
             InboxTriage
@@ -194,6 +200,9 @@ sealed class AgentTaskIntentPayload {
 
         fun rememberMemory(key: String, value: String): AgentTaskIntentPayload =
             RememberMemory(key = key, value = value)
+
+        fun agentPrompt(prompt: String): AgentTaskIntentPayload =
+            AgentPrompt(prompt = prompt)
     }
 }
 
@@ -204,6 +213,16 @@ data class TaskCreateFromIntentPayload(
     val intent: AgentTaskIntentPayload,
     val schedule: String,
     val op: String = "create_from_intent",
+)
+
+@Serializable
+data class TaskUpdateFromIntentPayload(
+    @SerialName("task_id") val taskId: String,
+    val title: String,
+    val description: String? = null,
+    val intent: AgentTaskIntentPayload,
+    val schedule: String,
+    val op: String = "update_from_intent",
 )
 
 @Serializable
@@ -223,6 +242,9 @@ data class TaskDisablePayload(
     @SerialName("task_id") val taskId: String,
     val op: String = "disable",
 )
+
+@Serializable
+data class TaskRunDuePayload(val op: String = "run_due")
 
 @Serializable
 data class TaskRunNowPayload(

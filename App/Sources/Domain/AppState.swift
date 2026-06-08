@@ -63,10 +63,6 @@ struct AppState: Codable, Sendable {
     /// span. Carries its own `topicID` so adapters can build the mention list
     /// without scanning the topic array.
     var threadingMentions: [ThreadingMention] = []
-    /// Recurring tasks the agent has scheduled via `schedule_task`. Fired by
-    /// `AgentScheduledTaskRunner` on foreground / app-appear. Persisted so
-    /// tasks survive restarts.
-    var agentScheduledTasks: [AgentScheduledTask] = []
     /// Outbound `send_friend_message` events awaiting a reply. When the
     /// friend's kind:1 response arrives, `NostrAgentResponder` claims the
     /// matching entry and re-invokes the originating conversation.
@@ -88,7 +84,6 @@ struct AppState: Codable, Sendable {
         case agentActivity
         case clips
         case threadingTopics, threadingMentions
-        case agentScheduledTasks
         case pendingFriendMessages
         case lastPlayedEpisodeID
     }
@@ -133,7 +128,6 @@ struct AppState: Codable, Sendable {
         clips = try c.decodeIfPresent([Clip].self, forKey: .clips) ?? []
         threadingTopics = try c.decodeIfPresent([ThreadingTopic].self, forKey: .threadingTopics) ?? []
         threadingMentions = try c.decodeIfPresent([ThreadingMention].self, forKey: .threadingMentions) ?? []
-        agentScheduledTasks = try c.decodeIfPresent([AgentScheduledTask].self, forKey: .agentScheduledTasks) ?? []
         pendingFriendMessages = try c.decodeIfPresent([PendingFriendMessage].self, forKey: .pendingFriendMessages) ?? []
         lastPlayedEpisodeID = try c.decodeIfPresent(UUID.self, forKey: .lastPlayedEpisodeID)
     }

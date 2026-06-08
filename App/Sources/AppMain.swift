@@ -7,7 +7,6 @@ struct PodcastrApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var kernelModel = KernelModel()
     @State private var store = AppStateStore()
-    @State private var scheduledTaskRunner: AgentScheduledTaskRunner?
     /// Single global owner-consultation coordinator. Lives here (not on
     /// `AgentChatSession`) so an inbound peer-agent reply flowing through
     /// `AgentRelayBridge` can pop the same sheet even when the user is on
@@ -37,7 +36,7 @@ struct PodcastrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(scheduledTaskRunner: scheduledTaskRunner)
+            RootView()
                 .environment(kernelModel)
                 .environment(store)
                 .environment(askCoordinator)
@@ -51,13 +50,11 @@ struct PodcastrApp: App {
                         platform.applyPositionTick(pos)
                     }
                     store.attachKernel(kernelModel)
+                    store.runDueScheduledTasksIfNeeded()
                     PodcastCapabilities.shared.startICloudSync(kernel: kernelModel, appStore: store)
                 }
                 .task { store.identity.start() }
                 .task { CarPlayController.shared.attach(store: store) }
-                .task {
-                    scheduledTaskRunner = AgentScheduledTaskRunner(store: store)
-                }
                 .task {
                     // Seed a fresh install silently so the first launch
                     // doesn't dump the entire changelog as "new."

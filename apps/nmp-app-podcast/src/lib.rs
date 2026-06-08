@@ -75,6 +75,7 @@ pub(crate) mod social_handler;
 pub(crate) mod social_publish_handler;
 pub mod store;
 pub(crate) mod tasks_handler;
+pub(crate) mod tasks_schedule;
 pub(crate) mod transcript;
 pub(crate) mod voice_conversation;
 pub(crate) mod voice_handler;
@@ -98,10 +99,10 @@ pub use ffi::{
     nmp_app_podcast_elevenlabs_tts_synthesize, nmp_app_podcast_elevenlabs_voice_catalog,
     nmp_app_podcast_episode_events, nmp_app_podcast_generate_image,
     nmp_app_podcast_local_model_catalog, nmp_app_podcast_openrouter_whisper_transcribe,
-    nmp_app_podcast_perplexity_search,
-    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_register, nmp_app_podcast_rerank,
-    nmp_app_podcast_set_data_dir, nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free,
-    nmp_app_podcast_snapshot_rev, nmp_app_podcast_speech_model_catalog, nmp_app_podcast_unregister,
+    nmp_app_podcast_perplexity_search, nmp_app_podcast_provider_model_catalog,
+    nmp_app_podcast_register, nmp_app_podcast_rerank, nmp_app_podcast_set_data_dir,
+    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
+    nmp_app_podcast_speech_model_catalog, nmp_app_podcast_unregister,
     nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
     nmp_app_podcast_voice_report, PodcastHandle,
 };

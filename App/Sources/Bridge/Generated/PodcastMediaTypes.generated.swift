@@ -39,8 +39,6 @@ struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
     var intentType: String? = nil
     var intentLabel: String? = nil
     var intentDetail: String? = nil
-    var actionNamespace: String? = nil
-    var actionBody: String? = nil
     var schedule: String
     var nextRunAt: Int? = nil
     var lastRunAt: Int? = nil

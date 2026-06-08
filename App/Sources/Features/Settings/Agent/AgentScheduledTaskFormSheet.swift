@@ -2,41 +2,35 @@ import SwiftUI
 
 // MARK: - AgentScheduledTaskFormSheet
 
-/// Modal form for creating or editing a scheduled task.
-/// Presents label, prompt, and interval fields.
+/// Modal form for creating or editing an `agent_prompt` task.
 struct AgentScheduledTaskFormSheet: View {
 
     enum Mode {
         case create
-        case edit(AgentScheduledTask)
+        case edit(AgentTaskSummary)
     }
 
-    // MARK: - Constants
-
     private enum Preset {
-        static let options: [(label: String, seconds: TimeInterval)] = [
-            ("Hourly",  3_600),
-            ("Daily",   86_400),
-            ("Weekly",  604_800),
+        static let options: [(label: String, schedule: String)] = [
+            ("Hourly", "hourly"),
+            ("Daily", "daily"),
+            ("Weekly", "weekly"),
+            ("Once", "once"),
         ]
     }
 
-    // MARK: - Properties
-
     let mode: Mode
-    let onSave: (String, String, TimeInterval) -> Void
+    let onSave: (String, String, String) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var label: String = ""
+    @State private var title: String = ""
     @State private var prompt: String = ""
-    @State private var selectedPreset: TimeInterval? = 86_400
+    @State private var selectedSchedule = "daily"
     @State private var customSeconds: String = ""
-    @State private var useCustom: Bool = false
+    @State private var useCustom = false
 
     @FocusState private var promptFocused: Bool
-
-    // MARK: - Derived
 
     private var titleText: String {
         switch mode {
@@ -45,25 +39,24 @@ struct AgentScheduledTaskFormSheet: View {
         }
     }
 
-    private var resolvedInterval: TimeInterval? {
+    private var resolvedSchedule: String? {
         if useCustom {
-            return Double(customSeconds).map { $0 > 0 ? $0 : nil } ?? nil
+            guard let seconds = Int(customSeconds), seconds > 0 else { return nil }
+            return "every \(seconds)s"
         }
-        return selectedPreset
+        return selectedSchedule
     }
 
     private var saveDisabled: Bool {
-        label.trimmed.isEmpty || prompt.trimmed.isEmpty || resolvedInterval == nil
+        title.trimmed.isEmpty || prompt.trimmed.isEmpty || resolvedSchedule == nil
     }
-
-    // MARK: - Body
 
     var body: some View {
         NavigationStack {
             Form {
-                labelSection
+                titleSection
                 promptSection
-                intervalSection
+                scheduleSection
             }
             .navigationTitle(titleText)
             .navigationBarTitleDisplayMode(.inline)
@@ -83,11 +76,9 @@ struct AgentScheduledTaskFormSheet: View {
         .onAppear { seedFromMode() }
     }
 
-    // MARK: - Sections
-
-    private var labelSection: some View {
-        Section("Label") {
-            TextField("Short name for this task", text: $label)
+    private var titleSection: some View {
+        Section("Title") {
+            TextField("Short name for this task", text: $title)
                 .font(AppTheme.Typography.body)
         }
     }
@@ -105,18 +96,18 @@ struct AgentScheduledTaskFormSheet: View {
         }
     }
 
-    private var intervalSection: some View {
-        Section("Interval") {
-            ForEach(Preset.options, id: \.seconds) { option in
+    private var scheduleSection: some View {
+        Section("Schedule") {
+            ForEach(Preset.options, id: \.schedule) { option in
                 Button {
-                    selectedPreset = option.seconds
+                    selectedSchedule = option.schedule
                     useCustom = false
                 } label: {
                     HStack {
                         Text(option.label)
                             .foregroundStyle(.primary)
                         Spacer()
-                        if !useCustom && selectedPreset == option.seconds {
+                        if !useCustom && selectedSchedule == option.schedule {
                             Image(systemName: "checkmark")
                                 .foregroundStyle(.tint)
                                 .font(AppTheme.Typography.caption.weight(.semibold))
@@ -153,26 +144,33 @@ struct AgentScheduledTaskFormSheet: View {
         }
     }
 
-    // MARK: - Helpers
-
     private func seedFromMode() {
-        if case .edit(let task) = mode {
-            label = task.label
-            prompt = task.prompt
-            let knownPreset = Preset.options.first { $0.seconds == task.intervalSeconds }
-            if let preset = knownPreset {
-                selectedPreset = preset.seconds
-                useCustom = false
-            } else {
-                useCustom = true
-                customSeconds = "\(Int(task.intervalSeconds))"
-            }
+        guard case .edit(let task) = mode else { return }
+        title = task.title
+        prompt = task.intentDetail ?? ""
+        let schedule = task.schedule
+        if Preset.options.contains(where: { $0.schedule == schedule }) {
+            selectedSchedule = schedule
+            useCustom = false
+        } else if let seconds = secondsFromCustomSchedule(schedule) {
+            customSeconds = "\(seconds)"
+            useCustom = true
+        } else {
+            selectedSchedule = "daily"
+            useCustom = false
         }
     }
 
+    private func secondsFromCustomSchedule(_ schedule: String) -> Int? {
+        guard schedule.hasPrefix("every "), schedule.hasSuffix("s") else { return nil }
+        let start = schedule.index(schedule.startIndex, offsetBy: 6)
+        let end = schedule.index(before: schedule.endIndex)
+        return Int(schedule[start..<end])
+    }
+
     private func commitSave() {
-        guard let interval = resolvedInterval else { return }
-        onSave(label.trimmed, prompt.trimmed, interval)
+        guard let schedule = resolvedSchedule else { return }
+        onSave(title.trimmed, prompt.trimmed, schedule)
         Haptics.success()
         dismiss()
     }

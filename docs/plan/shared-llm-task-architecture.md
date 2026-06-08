@@ -116,14 +116,18 @@ Current state:
   reintroduce raw task dispatch JSON if that tree is revived.
 - Swift and Android snapshot mirrors no longer require raw dispatch fields for
   agent task rows.
+- Swift's scheduled prompt surface now creates/updates `agent_prompt` tasks
+  through `podcast.tasks`, renders `PodcastUpdate.agentTasks`, and dispatches
+  `run_due` on app foreground so due policy lives in Rust. TUI natural task
+  input also accepts explicit prompt intents (`prompt: ...`).
 
 Remaining targets:
 
-- Audit Swift scheduled-task/prompt surfaces separately; they appear to be a
-  different prompt scheduler and should either remain distinct or migrate to
-  shared `AgentTaskIntent` only if they are meant to run through `podcast.tasks`.
 - Keep raw dispatch namespace/body JSON out of all normal user-facing task
   creation workflows.
+- Persist `agent_tasks` across kernel restarts and add a durable
+  background-agent execution/history model if prompt tasks should stay isolated
+  from the main agent chat transcript.
 
 ## Push Updates
 

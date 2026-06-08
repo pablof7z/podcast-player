@@ -137,10 +137,13 @@ worktrees currently in flight.
   intent metadata and hide raw dispatch namespace/body fields from serialized
   projection JSON. Android task creation now uses `create_from_intent` with an
   variant-backed `AgentTaskIntent` payload, and the parked `ios/Podcast` shell's
-  task sheet mirrors the same typed creation path. Keep raw `create` as
-  compatibility/internal only; remaining work is auditing Swift's separate
-  scheduled prompt surface and keeping all normal user workflows on the shared
-  `AgentTaskIntent` contract.
+  task sheet mirrors the same typed creation path. Swift's scheduled prompt
+  tool/settings surface now creates and edits `agent_prompt` tasks through
+  `podcast.tasks` typed intents, renders the shared `agentTasks` projection,
+  and dispatches Rust-owned `run_due` on foreground instead of scanning a
+  persisted Swift task array. Keep raw `create` as compatibility/internal only;
+  remaining work is a durable background-agent execution/history model for
+  prompt tasks if they should remain isolated from the main agent chat.
 - **relay-list-ownership.** Replace `@AppStorage("nip65.relays")` seed state
   with NMP relay-list store reads/writes and real NIP-65 publish/refresh flow.
   Rust prerequisite SHIPPED (`feat/podcast-relay-ops`): `configured_relays`
@@ -550,8 +553,11 @@ worktrees currently in flight.
   cold launches do not re-triage every episode. Use the existing data-dir
   path convention; serialize as JSON; reload on `set_data_dir`; invalidate
   stale entries when episode metadata changes.
-- **agent-tasks-real-scheduler.** Replace run-now completion stamps with
-  actual scheduling, task execution, notifications, persistence, and retries.
+- **agent-tasks-real-scheduler.** Rust now parses task schedules, projects
+  `next_run_at`, supports `run_due`, and owns Swift foreground catch-up policy
+  for shared task rows. Remaining: persist `agent_tasks` across kernel
+  restarts, add notification/OS wake integration, durable retry policy, and a
+  background-agent execution/history model for arbitrary prompt tasks.
 - **agent-picks-controls-validation.** Rust now owns personalized picks
   ranking (`picks_handler.rs` + `picks_llm.rs`) and Home renders
   `PodcastUpdate.picks` through `HomeRecommendedSection`. Remaining: explicit
