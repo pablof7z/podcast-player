@@ -109,10 +109,11 @@ worktrees currently in flight.
   uses `nmp_app_podcast_elevenlabs_tts_synthesize`, so Rust owns TTS
   credentials, selected-model fallback, request shaping, provider status
   handling, and audio response normalization. Swift auto-ingest candidate
-  selection now consumes the kernel-resolved effective STT provider instead of
-  re-checking OpenRouter/ElevenLabs/AssemblyAI Keychain values locally, and
-  stale Swift-side OpenRouter/Ollama RAG key probes plus online-search endpoint
-  aliases have been removed. Rust settings snapshots now project non-secret
+  selection and transcript readiness UI now consume the kernel-resolved
+  effective STT provider instead of re-checking OpenRouter/ElevenLabs/
+  AssemblyAI Keychain values locally, and stale Swift-side OpenRouter/Ollama
+  RAG key probes plus online-search endpoint aliases have been removed. Rust
+  settings snapshots now project non-secret
   provider key-presence booleans for OpenRouter/Ollama/ElevenLabs/AssemblyAI/
   Perplexity, Android mirrors those fields and uses them for credential-card and
   speech-provider readiness, and Swift provider/transcript/wiki readiness UI

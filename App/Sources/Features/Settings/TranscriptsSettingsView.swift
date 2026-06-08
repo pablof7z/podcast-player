@@ -29,10 +29,8 @@ struct TranscriptsSettingsView: View {
             Toggle(isOn: scribeFallbackBinding) {
                 Label("AI transcription fallback", systemImage: "arrow.triangle.branch")
             }
-            if store.state.settings.autoFallbackToScribe && !selectedProviderReady {
-                // The toggle is on but the active provider key isn't configured —
-                // surface the gap so the fallback doesn't silently no-op.
-                Label("\(activeProviderName) key not configured — connect in Providers.", systemImage: "key.slash")
+            if let message = sttFallbackReadinessMessage {
+                Label(message, systemImage: "key.slash")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(AppTheme.Tint.warning)
                     .padding(.vertical, 2)
@@ -44,17 +42,20 @@ struct TranscriptsSettingsView: View {
         }
     }
 
-    private var activeProvider: STTProvider {
-        store.kernel?.podcastSnapshot?.settings.selectedSTTProvider ?? store.state.settings.sttProvider
-    }
-
-    private var activeProviderName: String {
-        activeProvider.displayName
-    }
-
-    private var selectedProviderReady: Bool {
-        store.kernel?.podcastSnapshot?.settings.hasLoadedKey(for: activeProvider)
-            ?? (activeProvider == .appleNative)
+    private var sttFallbackReadinessMessage: String? {
+        guard store.state.settings.autoFallbackToScribe,
+              let settings = store.kernel?.podcastSnapshot?.settings else {
+            return nil
+        }
+        let selected = settings.selectedSTTProvider
+        let effective = settings.resolvedSTTProvider
+        if selected != effective {
+            return "Selected \(selected.displayName) needs a key; using \(effective.displayName) until connected."
+        }
+        if settings.effectiveSttProviderRequiresKey && !settings.hasLoadedKey(for: effective) {
+            return "\(effective.displayName) key not configured — connect in Providers."
+        }
+        return nil
     }
 
     // MARK: - Bindings
