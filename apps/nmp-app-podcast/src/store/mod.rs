@@ -23,6 +23,7 @@ use podcast_core::{Episode, EpisodeId, Podcast, PodcastId};
 use crate::llm::provider_config::{normalize_ollama_chat_url, DEFAULT_OLLAMA_CHAT_URL};
 
 mod ad_segments;
+pub mod agent_tasks;
 pub mod auto_download;
 mod chapters;
 pub mod events;

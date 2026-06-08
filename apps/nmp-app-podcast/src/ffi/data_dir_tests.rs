@@ -1,7 +1,9 @@
 use super::*;
 use crate::download::DownloadQueue;
 use crate::ffi::handle::PodcastHandle;
-use crate::ffi::projections::{AgentPickSummary, NostrShowSummary, PodcastSummary, VoiceState};
+use crate::ffi::projections::{
+    AgentPickSummary, AgentTaskSummary, NostrShowSummary, PodcastSummary, VoiceState,
+};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
@@ -199,6 +201,67 @@ fn cold_load_restores_inbox_triage_cache_through_set_data_dir() {
     drop(restored);
 
     // ...and the restore bumped rev so the first snapshot poll surfaces it.
+    assert_eq!(rev.load(Ordering::Relaxed), 1);
+
+    let _ = unsafe { Box::from_raw(ptr) };
+}
+
+#[test]
+fn cold_load_restores_agent_tasks_through_set_data_dir() {
+    let dir = TempDir::new("tasks-cold-load");
+    let persisted = vec![AgentTaskSummary {
+        id: "task-1".to_owned(),
+        title: "Remember".to_owned(),
+        description: Some("from disk".to_owned()),
+        intent_type: "remember_memory".to_owned(),
+        intent_label: "Remember memory".to_owned(),
+        intent_detail: Some("topic = rust".to_owned()),
+        action_namespace: "podcast.memory".to_owned(),
+        action_body: r#"{"op":"remember","key":"topic","value":"rust","source":"task"}"#
+            .to_owned(),
+        schedule: "daily".to_owned(),
+        next_run_at: Some(1_700_000_000),
+        last_run_at: Some(1_699_999_000),
+        status: "completed".to_owned(),
+        is_enabled: true,
+    }];
+    crate::store::agent_tasks::save_agent_tasks(&dir.path, &persisted)
+        .expect("seed agent tasks");
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let rev = Arc::new(AtomicU64::new(0));
+    let handle = make_handle(store.clone(), rev.clone());
+    let tasks_arc = handle.agent_tasks.clone();
+    let ptr = Box::into_raw(handle);
+    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
+
+    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+
+    let restored = tasks_arc.lock().unwrap();
+    assert_eq!(*restored, persisted);
+    assert_eq!(restored[0].action_namespace, "podcast.memory");
+    drop(restored);
+    assert_eq!(rev.load(Ordering::Relaxed), 1);
+
+    let _ = unsafe { Box::from_raw(ptr) };
+}
+
+#[test]
+fn cold_load_empty_agent_tasks_overrides_seed() {
+    let dir = TempDir::new("tasks-empty-load");
+    crate::store::agent_tasks::save_agent_tasks(&dir.path, &[]).expect("seed empty tasks");
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let rev = Arc::new(AtomicU64::new(0));
+    let handle = make_handle(store.clone(), rev.clone());
+    let tasks_arc = handle.agent_tasks.clone();
+    *tasks_arc.lock().unwrap() = crate::tasks_handler::default_seed();
+    let ptr = Box::into_raw(handle);
+    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
+
+    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+
+    assert!(tasks_arc.lock().unwrap().is_empty());
     assert_eq!(rev.load(Ordering::Relaxed), 1);
 
     let _ = unsafe { Box::from_raw(ptr) };

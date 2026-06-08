@@ -89,8 +89,8 @@ pub struct PodcastHandle {
     pub(super) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
     /// Agent-scheduled tasks. Mutated by `podcast.tasks.*` action ops
     /// (see `tasks_handler.rs`); read by `build_snapshot_payload`.
-    /// Seeded with two defaults in `register.rs` so the iOS UI has
-    /// rows to render on first launch.
+    /// Seeded with defaults in `register.rs` so the iOS UI has rows to render
+    /// on first launch.
     pub(super) agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
     /// Transient RAG / knowledge-search results. Written by
     /// `handle_knowledge_search` on the actor thread; read by

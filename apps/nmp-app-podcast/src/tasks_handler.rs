@@ -100,6 +100,40 @@ pub fn default_seed() -> Vec<AgentTaskSummary> {
 /// unit-testable without a live kernel.
 pub type TaskDispatchFn<'a> = dyn Fn(&str, &str) -> bool + 'a;
 
+/// Optional persistence callback for callers that have a bound data directory.
+pub type TaskPersistFn<'a> = dyn Fn(&[AgentTaskSummary]) + 'a;
+
+/// Route one task action and persist the final task projection when it changes.
+pub fn handle_tasks_action_with_persist(
+    action: AgentTasksAction,
+    tasks: &Arc<Mutex<Vec<AgentTaskSummary>>>,
+    rev: &Arc<AtomicU64>,
+    dispatch: Option<&TaskDispatchFn<'_>>,
+    persist: Option<&TaskPersistFn<'_>>,
+) -> serde_json::Value {
+    let before = match tasks.lock() {
+        Ok(guard) => Some(guard.clone()),
+        Err(_) => None,
+    };
+    let result = handle_tasks_action(action, tasks, rev, dispatch);
+    let Some(persist) = persist else {
+        return result;
+    };
+    let Ok(guard) = tasks.lock() else {
+        return result;
+    };
+    let snapshot = guard.clone();
+    drop(guard);
+    let changed = match before {
+        Some(before) => before != snapshot,
+        None => true,
+    };
+    if changed {
+        persist(&snapshot);
+    }
+    result
+}
+
 /// Route one `podcast.tasks.*` action against the shared tasks slot.
 /// Returns the JSON envelope the host-op handler forwards back to Swift.
 ///
