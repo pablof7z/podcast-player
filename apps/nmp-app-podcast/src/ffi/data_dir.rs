@@ -128,11 +128,31 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
         }
     };
 
-    if loaded > 0 || !loaded_queue.is_empty() || identity_loaded || keys_loaded > 0 || triage_loaded
+    // Restore shared agent task rows from `agent-tasks.json`, if present.
+    // Missing/corrupt sidecar leaves the register-time seed in place; a valid
+    // empty list is loaded so deleting every task remains durable.
+    let tasks_loaded = match crate::store::agent_tasks::load_agent_tasks(&path_buf) {
+        Some(restored) => {
+            if let Ok(mut tasks) = handle.agent_tasks.lock() {
+                *tasks = restored;
+                true
+            } else {
+                false
+            }
+        }
+        None => false,
+    };
+
+    if loaded > 0
+        || !loaded_queue.is_empty()
+        || identity_loaded
+        || keys_loaded > 0
+        || triage_loaded
+        || tasks_loaded
     {
         // Force the next snapshot poll to pick up the restored library,
-        // queue, identity, and/or owned-podcast keys even though no write
-        // happened here.
+        // queue, identity, owned-podcast keys, triage cache, and/or tasks even
+        // though no write happened here.
         handle.bump_snapshot_rev();
     }
 }

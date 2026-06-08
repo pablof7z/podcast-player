@@ -9,6 +9,7 @@
 //! * Settings-action dispatch -> `host_op_handler/settings_actions.rs`
 //! * Capability dispatch helpers -> `host_op_handler/dispatch.rs`
 //! * Queue-action dispatch    -> `host_op_handler_queue.rs`
+//! * Task-action dispatch     -> `host_op_handler/task_actions.rs`
 //! * iTunes search helpers    -> `itunes.rs`
 //! * `merge_episodes`         -> `host_op_handler_helpers.rs`
 //! * Publish-action dispatch  -> `host_op_publish.rs`
@@ -70,7 +71,6 @@ use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
-use crate::tasks_handler;
 use crate::voice_handler;
 use crate::wiki::{handle_wiki_action, handle_wiki_action_with_signal};
 
@@ -83,6 +83,7 @@ mod podcast_actions_refresh;
 mod settings_actions;
 mod siri_actions;
 mod social_actions;
+mod task_actions;
 
 /// Kernel-side handler owning every `Arc`d state slot the snapshot reader
 /// (in `ffi::handle::PodcastHandle`) projects, plus the `*mut NmpApp` used
@@ -438,54 +439,7 @@ impl HostOpHandler for PodcastHostOpHandler {
             };
         }
         if let Ok(action) = serde_json::from_str::<AgentTasksAction>(action_json) {
-            // `RunNow` re-dispatches the task's (namespace, body) through the
-            // kernel action registry. The closure runs synchronously on this
-            // (actor) thread: `nmp_app_dispatch_action` only validates the
-            // action then `send`s an `ActorCommand::DispatchHostOp` onto the
-            // actor command channel — an UNBOUNDED `std::sync::mpsc` (nmp-ffi
-            // lib.rs:428), whose `send` never blocks. So re-entry from inside
-            // a host-op handler appends to the actor's own queue and returns
-            // immediately: no deadlock, nothing crosses a thread boundary.
-            // (The `dispatch_capability` calls above establish that derefing
-            // `self.app` on the actor thread is sound; the deadlock-freedom
-            // here rests on the unbounded-channel fact, not that precedent.)
-            // A null `app` (unit tests / pre-`nmp_app_start`) skips dispatch.
-            let app = self.app;
-            let dispatch = move |namespace: &str, body: &str| -> bool {
-                if app.is_null() {
-                    return false;
-                }
-                let (Ok(ns_c), Ok(body_c)) = (
-                    std::ffi::CString::new(namespace),
-                    std::ffi::CString::new(body),
-                ) else {
-                    return false;
-                };
-                let raw = nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr());
-                if raw.is_null() {
-                    return false;
-                }
-                // SAFETY: `raw` is a heap-owned NUL-terminated C string minted
-                // by `nmp_app_dispatch_action`; we read it then hand it back
-                // to `nmp_app_free_string` (the documented ownership
-                // contract) to avoid a per-run leak.
-                let envelope = unsafe { std::ffi::CStr::from_ptr(raw) }
-                    .to_string_lossy()
-                    .into_owned();
-                nmp_ffi::nmp_app_free_string(raw);
-                // Accepted dispatches carry a `correlation_id`; rejections are
-                // `{"error":...}` with no id. (A rejected-after-mint envelope
-                // carries both, but the host treats a present id as accepted —
-                // the failure is reported asynchronously via the action-stage
-                // lifecycle, matching `dispatch_action_json`'s own contract.)
-                envelope.contains("\"correlation_id\"")
-            };
-            return tasks_handler::handle_tasks_action(
-                action,
-                &self.agent_tasks,
-                &self.rev,
-                Some(&dispatch),
-            );
+            return self.handle_task_action(action);
         }
         if let Ok(a) = serde_json::from_str::<KnowledgeAction>(action_json) {
             return crate::knowledge::handle_knowledge_action(

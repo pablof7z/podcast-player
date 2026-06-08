@@ -94,8 +94,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let wiki_articles = Arc::new(Mutex::new(Vec::new()));
     let wiki_search_results = Arc::new(Mutex::new(Vec::new()));
     let picks = Arc::new(Mutex::new(Vec::new()));
-    // Seed the tasks slot with the two defaults so the iOS UI has rows
-    // to render before the user has scheduled anything (see
+    // Seed the tasks slot with defaults so the iOS UI has rows to render
+    // before the user has scheduled anything (see
     // `tasks_handler::default_seed`).
     let agent_tasks = Arc::new(Mutex::new(tasks_handler::default_seed()));
     let knowledge_search_results = Arc::new(Mutex::new(Vec::new()));

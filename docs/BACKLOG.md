@@ -144,9 +144,12 @@ worktrees currently in flight.
   tool/settings surface now creates and edits `agent_prompt` tasks through
   `podcast.tasks` typed intents, renders the shared `agentTasks` projection,
   and dispatches Rust-owned `run_due` on foreground instead of scanning a
-  persisted Swift task array. Keep raw `create` as compatibility/internal only;
-  remaining work is a durable background-agent execution/history model for
-  prompt tasks if they should remain isolated from the main agent chat.
+  persisted Swift task array. Agent task rows now persist through the shared
+  Rust sidecar so disabled, edited, deleted, and completed tasks survive kernel
+  restarts across iOS, Android, and TUI. Keep raw `create` as
+  compatibility/internal only; remaining work is a durable background-agent
+  execution/history model for prompt tasks if they should remain isolated from
+  the main agent chat.
 - **relay-list-ownership.** Replace `@AppStorage("nip65.relays")` seed state
   with NMP relay-list store reads/writes and real NIP-65 publish/refresh flow.
   Rust prerequisite SHIPPED (`feat/podcast-relay-ops`): `configured_relays`
@@ -560,8 +563,8 @@ worktrees currently in flight.
   stale entries when episode metadata changes.
 - **agent-tasks-real-scheduler.** Rust now parses task schedules, projects
   `next_run_at`, supports `run_due`, and owns Swift foreground catch-up policy
-  for shared task rows. Remaining: persist `agent_tasks` across kernel
-  restarts, add notification/OS wake integration, durable retry policy, and a
+  for shared task rows. Rust now persists `agent_tasks` across kernel restarts.
+  Remaining: add notification/OS wake integration, durable retry policy, and a
   background-agent execution/history model for arbitrary prompt tasks.
 - **agent-picks-controls-validation.** Rust now owns personalized picks
   ranking (`picks_handler.rs` + `picks_llm.rs`) and Home renders
