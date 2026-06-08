@@ -174,6 +174,35 @@ impl PodcastStore {
         self.emit_event(episode_id, kind, severity, summary, Vec::new());
     }
 
+    /// Record a [`stage::TRANSCRIPT_SKIPPED`] event explaining why the iOS
+    /// pipeline declined to transcribe `episode_id` (per-category opt-out,
+    /// automatic AI transcription off, missing provider key, on-device audio
+    /// not on disk). `reason` rides a single `Reason` detail row; `None`
+    /// records a bare skip.
+    ///
+    /// Idempotent: a no-op when the episode's most recent event is already an
+    /// identical skip (same reason). `ingest()` re-runs on repeatable
+    /// speculative paths (episode-detail appear, library warmup), so without
+    /// this a muted episode would pile duplicate rows onto its capped log.
+    pub fn record_transcript_skip(&mut self, episode_id: &str, reason: Option<String>) {
+        let already_recorded = self.episode_events(episode_id).last().map_or(false, |e| {
+            e.kind == stage::TRANSCRIPT_SKIPPED
+                && e.details.first().map(|d| d.value.as_str()) == reason.as_deref()
+        });
+        if already_recorded {
+            return;
+        }
+        self.emit_event(
+            episode_id,
+            stage::TRANSCRIPT_SKIPPED,
+            EventSeverity::Info,
+            "Transcription skipped",
+            reason
+                .map(|r| vec![EventDetail::new("Reason", r)])
+                .unwrap_or_default(),
+        );
+    }
+
     /// All events for `episode_id`, oldest-first (the iOS view sorts for
     /// display). Reads memory when hydrated, otherwise the on-disk file.
     pub fn episode_events(&mut self, episode_id: &str) -> Vec<EpisodeEvent> {

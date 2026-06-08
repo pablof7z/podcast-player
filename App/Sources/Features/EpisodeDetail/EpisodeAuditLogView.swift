@@ -152,6 +152,12 @@ struct EpisodeAuditLogView: View {
                 episodeID: episodeID,
                 forceProvider: forceProvider
             )
+            // A retry that lands a transcript flips `transcriptState`, which the
+            // `.task(id: reloadToken)` already reloads on. But a retry the
+            // pipeline *skips* (no key, on-device file missing) leaves state
+            // unchanged and only appends a `transcript.skipped` event, so pull
+            // the log once the run settles to surface that explanation.
+            loadEvents()
         }
     }
 

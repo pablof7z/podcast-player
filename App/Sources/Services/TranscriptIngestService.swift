@@ -114,6 +114,10 @@ final class TranscriptIngestService {
             Self.logger.info(
                 "ingest(\(episodeID, privacy: .public)): transcription disabled for category — skipping"
             )
+            appStore.kernelRecordTranscriptSkip(
+                episodeID: episodeID,
+                reason: "Transcription is turned off for this show's category."
+            )
             return
         }
 
@@ -132,10 +136,16 @@ final class TranscriptIngestService {
                 Self.logger.info(
                     "forceProvider=\(forced.displayName, privacy: .public) but no key configured — leaving transcriptState=.none"
                 )
+                appStore.kernelRecordTranscriptSkip(
+                    episodeID: episodeID,
+                    reason: "No API key is configured for \(forced.displayName)."
+                )
                 appStore.setEpisodeTranscriptState(episodeID, state: .none)
                 return
             }
-            await runAITranscription(for: episode, provider: forced, appStore: appStore)
+            await runAITranscription(
+                for: episode, provider: forced, appStore: appStore, explicit: true
+            )
             return
         }
 
@@ -194,6 +204,10 @@ final class TranscriptIngestService {
             Self.logger.info(
                 "publisher transcript missing for \(episodeID, privacy: .public) and AI transcription disabled in settings — leaving transcriptState=.none"
             )
+            appStore.kernelRecordTranscriptSkip(
+                episodeID: episodeID,
+                reason: "No publisher transcript, and automatic AI transcription is off (turn it on in Settings)."
+            )
             appStore.setEpisodeTranscriptState(episodeID, state: .none)
             return
         }
@@ -205,12 +219,19 @@ final class TranscriptIngestService {
         let resolvedRaw = appStore.kernel?.podcastSnapshot?.settings.effectiveSttProvider
             ?? STTProvider.appleNative.rawValue
         let provider = STTProvider(rawValue: resolvedRaw) ?? .appleNative
-        await runAITranscription(for: episode, provider: provider, appStore: appStore)
+        await runAITranscription(
+            for: episode, provider: provider, appStore: appStore, explicit: false
+        )
     }
 
     // MARK: - Private pipeline
 
-    private func runAITranscription(for episode: Episode, provider: STTProvider, appStore: AppStateStore) async {
+    private func runAITranscription(
+        for episode: Episode,
+        provider: STTProvider,
+        appStore: AppStateStore,
+        explicit: Bool
+    ) async {
         // Apple on-device STT requires a local file. Skip silently rather than
         // setting `.failed` — the post-download hook in `DownloadCapability`
         // re-enters `ingest()` once the file lands, at which point this guard
@@ -219,6 +240,17 @@ final class TranscriptIngestService {
         // failed before the user has
         // done anything, which is misleading.
         if provider == .appleNative && !EpisodeDownloadStore.shared.exists(for: episode) {
+            // A speculative (auto-ingest) run stays silent so undownloaded
+            // episodes don't flood the log — the post-download re-entry handles
+            // them. But when the user *explicitly* picked on-device transcription
+            // from the Diagnostics "Retry with…" menu, a missing file is a dead
+            // end they asked about, so surface it in the event log.
+            if explicit {
+                appStore.kernelRecordTranscriptSkip(
+                    episodeID: episode.id,
+                    reason: "On-device transcription needs the episode downloaded, but the audio file wasn't found."
+                )
+            }
             return
         }
         appStore.setEpisodeTranscriptState(episode.id, state: .transcribing(progress: 0))

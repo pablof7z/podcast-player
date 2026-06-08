@@ -123,3 +123,56 @@ fn persists_per_episode_file_and_survives_reload() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn transcript_skipped_event_carries_reason_detail() {
+    // The kernel records a `transcript.skipped` event (event-only, no durable
+    // transcript-status override) when the iOS pipeline deliberately declines to
+    // transcribe — category opt-out, AI transcription off, missing key, or audio
+    // not on disk. The Swift `EpisodeAuditEvent.Kind.transcriptSkipped` decoder
+    // pins this dotted raw value and renders the `Reason` detail row.
+    let mut store = PodcastStore::new();
+    store.emit_event(
+        EP,
+        stage::TRANSCRIPT_SKIPPED,
+        EventSeverity::Info,
+        "Transcription skipped",
+        vec![EventDetail::new("Reason", "Transcription is turned off for this show's category.")],
+    );
+    let events = store.episode_events(EP);
+    assert_eq!(events.len(), 1);
+    let e = &events[0];
+    assert_eq!(e.kind, "transcript.skipped");
+    assert_eq!(e.kind, stage::TRANSCRIPT_SKIPPED);
+    assert_eq!(e.severity, "info");
+    assert_eq!(e.summary, "Transcription skipped");
+    assert_eq!(e.details.len(), 1);
+    assert_eq!(e.details[0].label, "Reason");
+    assert!(e.details[0].value.contains("turned off"));
+    // A skip must never look like a transcript-status override.
+    assert!(store.transcript_status_for(EP).is_none());
+}
+
+#[test]
+fn record_transcript_skip_is_idempotent_per_reason() {
+    let mut store = PodcastStore::new();
+    store.record_transcript_skip(EP, Some("No API key is configured.".to_owned()));
+    // An identical skip (same reason) collapses into the first — `ingest()`
+    // re-runs on speculative paths (episode-detail appear, library warmup).
+    store.record_transcript_skip(EP, Some("No API key is configured.".to_owned()));
+    assert_eq!(store.episode_events(EP).len(), 1);
+    let first = &store.episode_events(EP)[0];
+    assert_eq!(first.kind, stage::TRANSCRIPT_SKIPPED);
+    assert_eq!(first.details[0].value, "No API key is configured.");
+    // A different reason is a distinct decision and IS recorded.
+    store.record_transcript_skip(EP, Some("Category off.".to_owned()));
+    assert_eq!(store.episode_events(EP).len(), 2);
+    // Re-asserting the now-latest reason stays deduped against the last event.
+    store.record_transcript_skip(EP, Some("Category off.".to_owned()));
+    assert_eq!(store.episode_events(EP).len(), 2);
+    // A skip after an intervening non-skip event records again (the last event
+    // is no longer a matching skip).
+    store.emit_event_simple(EP, stage::DOWNLOAD_REQUESTED, EventSeverity::Info, "queued");
+    store.record_transcript_skip(EP, Some("Category off.".to_owned()));
+    assert_eq!(store.episode_events(EP).len(), 4);
+}

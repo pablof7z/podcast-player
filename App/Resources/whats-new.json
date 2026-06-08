@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-08T13:20:00Z",
+      "lines": [
+        "Episode Diagnostics now explains when transcription was deliberately skipped — category turned off, AI transcription disabled, a missing provider key, or audio not downloaded yet."
+      ]
+    },
+    {
       "shipped_at": "2026-06-08T00:01:00Z",
       "lines": [
         "Download now shows a progress bar immediately when queued — no more silent waiting",

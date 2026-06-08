@@ -158,6 +158,20 @@ impl PodcastHostOpHandler {
         match self.store.lock() {
             Ok(mut s) => {
                 use crate::store::events::{stage, EventDetail, EventSeverity};
+                // "skipped" is an event-only signal: the iOS pipeline declined
+                // to transcribe (per-category opt-out, automatic AI transcription
+                // off, no provider key, on-device audio missing). Record *why* in
+                // the Diagnostics log WITHOUT touching `set_transcript_status`
+                // (which would persist a bogus override that projects back into
+                // `transcriptState`), and WITHOUT a `rev` bump — a skip changes no
+                // projected state, and the sheet reads this per-episode log
+                // directly (off the main-thread snapshot path).
+                // `record_transcript_skip` is idempotent (see its docs) so the
+                // repeatable speculative ingests don't pile duplicate rows.
+                if status == "skipped" {
+                    s.record_transcript_skip(&episode_id, message);
+                    return serde_json::json!({"ok": true});
+                }
                 let changed = s.set_transcript_status(episode_id.clone(), &status, message.clone());
                 if changed {
                     // Mirror the iOS-reported transcript stage into the episode

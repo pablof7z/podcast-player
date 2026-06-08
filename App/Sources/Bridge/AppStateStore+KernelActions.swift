@@ -493,6 +493,24 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast", body: body)
     }
 
+    /// Record that the transcript pipeline deliberately *skipped* an episode,
+    /// with a human-readable reason, in the kernel's per-episode Diagnostics
+    /// event log. Unlike `kernelSetEpisodeTranscriptStatus`, this never mutates
+    /// the durable transcript status — it only appends a `transcript.skipped`
+    /// event so the Diagnostics sheet can explain why no transcription ran
+    /// (category opt-out, AI transcription off, missing key, audio not on disk).
+    func kernelRecordTranscriptSkip(episodeID: UUID, reason: String) {
+        kernel?.dispatch(
+            namespace: "podcast",
+            body: [
+                "op": "set_episode_transcript_status",
+                "episode_id": episodeID.uuidString,
+                "status": "skipped",
+                "message": reason,
+            ]
+        )
+    }
+
     // MARK: - LLM provider credentials (podcast.settings namespace)
 
     /// Push the current provider API keys into the Rust kernel so provider
