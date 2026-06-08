@@ -38,11 +38,18 @@ extension AppStateStore {
             throw SubscriptionService.AddError.alreadySubscribed(title: existing.title)
         }
         kern.dispatch(PodcastKernelAction.Subscribe(feedUrl: trimmed))
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if let p = podcast(feedURL: url),
-               subscription(podcastID: p.id) != nil { return p }
-            try await Task.sleep(for: .milliseconds(300))
+        // React to the projected library landing the followed feed instead of
+        // polling on a 300ms timer. `podcast(feedURL:)` /
+        // `subscription(podcastID:)` read `state.podcasts` /
+        // `state.subscriptions`, so the awaiter re-fires the instant
+        // `applyKernelState` writes them.
+        if let podcast = await awaitState(timeout: timeout, body: { [weak self] () -> Podcast? in
+            guard let self,
+                  let p = self.podcast(feedURL: url),
+                  self.subscription(podcastID: p.id) != nil else { return nil }
+            return p
+        }) {
+            return podcast
         }
         throw SubscriptionService.AddError.transport(
             "Feed did not appear in library after \(timeout). It may still arrive.")
@@ -197,14 +204,15 @@ extension AppStateStore {
         kernel?.dispatch(namespace: "podcast",
                          body: ["op": "summarize_episode",
                                 "episode_id": episodeID.uuidString])
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if let summary = episode(id: episodeID)?.summary, !summary.isEmpty {
-                return summary
-            }
-            try? await Task.sleep(for: .milliseconds(300))
-        }
-        return nil
+        // React to the summary landing on the projected episode instead of
+        // polling on a 300ms timer. `episode(id:)` reads `self.episodes`, so
+        // the awaiter re-fires the instant `applyKernelState` stamps the
+        // summary. Returns `nil` on timeout (e.g. Ollama offline).
+        return await awaitState(timeout: timeout, body: { [weak self] () -> String? in
+            guard let summary = self?.episode(id: episodeID)?.summary,
+                  !summary.isEmpty else { return nil }
+            return summary
+        })
     }
 
     // MARK: - Comments (NIP-22 / kind:1111)

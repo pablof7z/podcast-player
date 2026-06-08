@@ -26,6 +26,18 @@ worktrees currently in flight.
   and `App/Sources/AppIntents/PlaybackAppIntents.swift` uses a Notification
   bridge that compiles in the `Podcastr` target. Remaining shortcut hardening
   stays tracked under `appintents-validation`.
+- **p0-ios-test-target-compile-regression.** The `PodcastrTests` target does
+  not compile on `main` (as of `39839742`) due to test files drifting from
+  current source APIs: `LocalModelCatalogMatchTests`/`LocalLLMInferenceTests`
+  use removed `LocalModelCatalog.all`/`.modelID` (catalog moved to
+  `fetch()`/`fetchSpecs()` in #287); `LLMProviderTests` references missing
+  `LLMProviderCredentialResolver`; `ClipBoundaryResolverTests` references
+  missing `WikiOpenRouterClient`; `AgentContextDecodeTests` uses removed
+  `AgentTaskSummary.actionNamespace`/`.actionBody`. The whole unit-test target
+  is unrunnable, so focused `-only-testing` runs of unrelated tests fail to
+  build. Fix: update these five test files to the current source APIs (or
+  delete obsolete cases). Surfaced while validating #321, which temporarily
+  isolated these files to get a clean focused run.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
@@ -392,6 +404,27 @@ worktrees currently in flight.
 - **rag-vector-search-real.** Replace substring search with
   `podcast-knowledge` indexing, embeddings, BM25/KNN retrieval, scoped
   search, provenance, and reindex jobs.
+- **coreml-embeddings-activation (#236).** The on-device Core ML MiniLM
+  embedding path is fully wired but INACTIVE: `CoreMLEmbeddingProvider`
+  (384-dim, `#if os(iOS)`/`@available(iOS 16,*)`) + bundled WordPiece tokenizer
+  (`bert-vocab.txt`) + `LocalEmbeddingsClient` (cloud-fallback adapter) ship in
+  PR for #236 and are composed into `RAGService`, but `LocalEmbeddingsClient`
+  routes to the cloud until BOTH gates clear. Remaining to activate:
+  (1) **Publish the `.mlpackage` asset** — run `coremltools` to convert
+  `sentence-transformers/all-MiniLM-L6-v2`, host it, and add a `LocalModelSpec`
+  for `all-minilm-l6-v2` to the Rust catalog (`apps/nmp-app-podcast/src/llm/
+  local_model_catalog.rs`); note that catalog's test currently pins
+  `.litertlm`/`huggingface.co`, and `DownloadCapability.localModelFileURL`
+  forces `.litertlm` while embedding models use the new `.mlpackage` helper —
+  the unified download executor's `.localModel` destination must learn the
+  embedding-model extension. (2) **Index dimension migration** — the live
+  `VectorIndex` is 1024-dim (`text-embedding-3-large`); MiniLM is 384-dim, so
+  `prefersLocal` stays false on the existing index. Activating on-device
+  embeddings requires opening the index at 384 and re-embedding the corpus (a
+  reindex job), or a side-by-side index. `LocalEmbeddingsClient` deliberately
+  refuses to mix dimensions, so wiring is safe to ship inert. (3) Surface the
+  active/downloading/ready state in the AI settings UI (the readiness plumbing
+  exists via `LocalEmbeddingsClient.prefersLocal` + `EmbeddingProvider.isReady`).
 - **wiki-real-generation.** Replace placeholder wiki articles with RAG-backed
   synthesis, citations, refresh/invalidation, per-podcast storage, and delete
   semantics.
@@ -716,16 +749,38 @@ worktrees currently in flight.
 - **m5-non-utf8-feed-bodies.** Widen HTTP capability body transfer to preserve
   non-UTF8 feed bytes. Update Swift and Rust so XML encoding declarations are
   honored.
-- **m8-blossom-body-base64-rust-side.** The iOS HTTP capability now decodes a
-  `body_base64` request field to raw `Data` before sending it as the HTTP body
-  (`App/Sources/Capabilities/HttpCapability.swift`), so binary uploads survive
-  the UTF-8 bridge. The Rust side on `feat/m8-blossom-upload` does **not** use
-  it yet: `apps/nmp-app-podcast/src/blossom.rs` still puts the base64 string in
-  the existing `body` field, and `apps/podcast-feeds/src/http.rs`'s
-  `HttpRequest` has no `body_base64` field. Until both are updated to emit
-  `body_base64`, the Blossom upload silently sends base64 *text* as the HTTP
-  body and is **not** end-to-end functional. Follow-up: add `body_base64` to the
-  Rust `HttpRequest` struct and have `blossom.rs` set it instead of `body`.
+- ~~**m8-blossom-body-base64-rust-side.**~~ Done (superseded by the
+  `m8-blossom-binary-body` entry below). The Rust side now emits the blob in the
+  dedicated `body_base64` field (`apps/nmp-app-podcast/src/blossom.rs`,
+  `apps/podcast-feeds/src/http.rs`) and the iOS executor decodes it back to raw
+  `Data`, so the Rust audio-upload path is end-to-end functional — the "Rust does
+  not use it yet" status this item described is no longer true.
+- **blossom-active-account-upload-kernel.** The two IN-MEMORY Blossom upload
+  callers — avatar (`App/Sources/Features/Identity/ChangePhotoSheet.swift`) and
+  owned-podcast artwork
+  (`App/Sources/Agent/LiveAgentOwnedPodcastManager.generateAndUploadArtwork`) —
+  still run their HTTP transport in Swift (`App/Sources/Services/BlossomUploader.swift`).
+  Signing is already kernel-owned (D13, via `KernelSigner` →
+  `nmp_app_sign_event_for_return`); only the PUT transport remains in Swift.
+  The AUDIO upload path is by contrast already fully Rust-owned
+  (`host_op_publish::publish_episode` → `blossom::upload_to_blossom`), because
+  it signs the kind:24242 auth event **synchronously** with the per-podcast
+  NIP-F4 key (`secret_bytes`). The blocker for the avatar/artwork path is NOT a
+  missing `file_path` (the original TODO's premise — false; bytes-vs-path is
+  irrelevant) but that these uploads sign with the user's **active account**,
+  which may be a NIP-46 bunker. Active-account signing only goes through the
+  **async** sign-and-return seam (correlation-id + host-side continuation,
+  deliberately host-driven so a remote-signer round-trip never blocks the actor
+  thread). A synchronous Rust host-op handler cannot orchestrate that. Moving
+  these uploads into Rust therefore requires a NEW async-bridging capability: a
+  Rust action that registers a `signed_events` observer, oneshot-bridges the
+  signed kind:24242 event, then dispatches the HTTP upload through the capability
+  executor and stamps the resulting blob URL onto a projection (mirror the
+  `summarize_episode`/`discover_nostr` dispatch-then-await-projection pattern,
+  but for sign-and-return rather than relay publish). Until that lands, keep the
+  Swift transport as one coherent path (do NOT do a Swift-signs/Rust-HTTP split —
+  it fragments auth-event construction across the boundary, AGENTS.md
+  anti-fragmentation).
 - **m5-chirp-headers-parity.** Reconcile podcast-player and Chirp HTTP header
   schemas once the canonical `nmp-core::capability::http` shape lands.
 - ~~**m8-blossom-binary-body.**~~ Done (Rust side): `HttpRequest` now carries

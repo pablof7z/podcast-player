@@ -15,12 +15,10 @@ final class P1SettingsUITests: XCTestCase {
     func testP1_UnsubscribeFromLibrary() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
+        guard openFirstPodcastFromHome(app) else {
             XCTFail("unsubscribe: no podcast row"); return
         }
-        row.tap(); sleep(2)
+        sleep(2)
         snap(app, "unsub-01-show-detail")
         dumpTree(app, "unsub-01-tree")
 
@@ -60,14 +58,9 @@ final class P1SettingsUITests: XCTestCase {
     func testP1_ScrubSeekSlider() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
-            XCTFail("scrub: no podcast row"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("scrub: could not open first episode detail"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8))
         app.buttons["Play"].tap()
         // Wait for the mini-player bar to appear (it has a stable identifier).
@@ -122,14 +115,9 @@ final class P1SettingsUITests: XCTestCase {
     func testP1_PlaybackSpeedChange() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
-            XCTFail("speed: no podcast row"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("speed: could not open first episode detail"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8))
         app.buttons["Play"].tap()
         // Wait for the mini-player bar to appear, then tap it to open the full player.
@@ -197,14 +185,9 @@ final class P1SettingsUITests: XCTestCase {
     func testP1_QueueRemoveItem() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
-            XCTFail("queue-remove: no podcast row"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("queue-remove: could not open first episode detail"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         sleep(2)
         let qBtn = app.buttons.matching(NSPredicate(format: "label == 'Queue' OR label == 'Add to Queue'")).firstMatch
         guard qBtn.waitForExistence(timeout: 5) else {
@@ -342,13 +325,9 @@ final class P1SettingsUITests: XCTestCase {
     func testP1_FeedRefreshNewEpisodes() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
+        guard openFirstPodcastFromHome(app) else {
             XCTFail("feed-refresh: no podcast row"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
         snap(app, "refresh-01-before")
         // Pull to refresh.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))

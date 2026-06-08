@@ -67,6 +67,63 @@ extension XCTestCase {
         return btn.exists ? btn : app.staticTexts[label]
     }
 
+    /// Opens the seeded/visible subscribed podcast from Home.
+    ///
+    /// SwiftUI exposes the row as a combined `library-podcast-row` button, but
+    /// tapping that combined accessibility element can land on the row's trailing
+    /// metadata and not activate the `NavigationLink`. Prefer the visible title,
+    /// then fall back to the row identifier and a frame-based title-area tap.
+    @discardableResult
+    func openFirstPodcastFromHome(_ app: XCUIApplication) -> Bool {
+        let title = staticTextContaining(app, "This American Life")
+        if title.waitForExistence(timeout: 6) {
+            title.tap()
+            if waitForShowDetail(app) { return true }
+        }
+
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier == 'library-podcast-row'")
+        ).firstMatch
+        if row.waitForExistence(timeout: 4) {
+            row.tap()
+            if waitForShowDetail(app) { return true }
+
+            let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+            origin.withOffset(CGVector(dx: row.frame.minX + 72, dy: row.frame.midY)).tap()
+            if waitForShowDetail(app) { return true }
+        }
+
+        return false
+    }
+
+    /// Opens the first episode detail from a show detail screen.
+    @discardableResult
+    func openFirstEpisodeFromShow(_ app: XCUIApplication) -> Bool {
+        let episodeRow = app.buttons.matching(
+            NSPredicate(format: "identifier == 'home-episode-row'")
+        ).firstMatch
+        if episodeRow.waitForExistence(timeout: 8) {
+            episodeRow.tap()
+        } else {
+            let cells = app.cells
+            guard cells.count > 2 else { return false }
+            robustTap(cells.element(boundBy: 2))
+        }
+
+        return app.buttons["Play"].waitForExistence(timeout: 8)
+            || app.buttons["Queue"].waitForExistence(timeout: 4)
+            || app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'resume'")).firstMatch.waitForExistence(timeout: 2)
+    }
+
+    @discardableResult
+    func waitForShowDetail(_ app: XCUIApplication) -> Bool {
+        if staticTextContaining(app, "Episodes").waitForExistence(timeout: 4) { return true }
+        let episodeRow = app.buttons.matching(
+            NSPredicate(format: "identifier == 'home-episode-row'")
+        ).firstMatch
+        return episodeRow.waitForExistence(timeout: 2) || app.cells.count > 2
+    }
+
     /// Attach the full accessibility tree as a kept string attachment.
     func dumpTree(_ app: XCUIApplication, _ name: String) {
         let t = XCTAttachment(string: app.debugDescription)
