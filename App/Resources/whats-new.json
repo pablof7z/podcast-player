@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-07T23:59:00Z",
+      "lines": [
+        "Transcript fallback messages now reflect the backend's resolved speech provider, so missing-key fallbacks are clearer."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T23:32:00Z",
       "lines": [
         "Ollama endpoint settings now normalize through the shared backend, so cloud and local Ollama URLs behave consistently across devices."

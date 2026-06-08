@@ -251,7 +251,7 @@ struct PlayerTranscriptScrollView: View {
 
     private func isIngestActionable(for episode: Episode) -> Bool {
         if episode.publisherTranscriptURL != nil { return true }
-        return hasKey(for: selectedSTTProvider, episode: episode)
+        return providerReady(for: effectiveSTTProvider, episode: episode)
     }
 
     private func isIngestEnabled(for episode: Episode) -> Bool {
@@ -286,8 +286,21 @@ struct PlayerTranscriptScrollView: View {
             if episode.publisherTranscriptURL != nil {
                 return "We can pull the publisher's transcript for this episode."
             }
-            let provider = selectedSTTProvider
-            if hasKey(for: provider, episode: episode) {
+            let selected = selectedSTTProvider
+            let provider = effectiveSTTProvider
+            let ready = providerReady(for: provider, episode: episode)
+            if selected != provider {
+                if ready {
+                    return "Selected \(selected.displayName) needs a key; we'll use \(provider.displayName) instead."
+                }
+                if provider == .appleNative {
+                    return "Selected \(selected.displayName) needs a key. Download the episode for Apple on-device transcription, or connect the provider key."
+                }
+            }
+            if ready {
+                if provider == .appleNative {
+                    return "We'll transcribe with Apple on-device."
+                }
                 return "We'll transcribe with \(provider.displayName) using your stored key."
             }
             if provider == .appleNative {
@@ -301,7 +314,11 @@ struct PlayerTranscriptScrollView: View {
         store.kernel?.podcastSnapshot?.settings.selectedSTTProvider ?? store.state.settings.sttProvider
     }
 
-    private func hasKey(for provider: STTProvider, episode: Episode) -> Bool {
+    private var effectiveSTTProvider: STTProvider {
+        store.kernel?.podcastSnapshot?.settings.resolvedSTTProvider ?? selectedSTTProvider
+    }
+
+    private func providerReady(for provider: STTProvider, episode: Episode) -> Bool {
         switch provider {
         case .appleNative:
             return EpisodeDownloadStore.shared.exists(for: episode)
