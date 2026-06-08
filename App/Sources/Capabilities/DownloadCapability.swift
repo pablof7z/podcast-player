@@ -237,6 +237,13 @@ final class DownloadCapability {
         lastEmittedAt[episodeID] = .distantPast
         task.resume()
         logger.debug("DownloadCapability: resumed URLSessionDownloadTask for \(episodeID)")
+        DiagnosticLog.shared.append(
+            level: .info, category: "download",
+            message: "task started id=\(episodeID)")
+        // Emit an immediate 0-byte progress so Rust transitions the projection
+        // from .queued → .downloading right away. D8 is a throttle for ticks,
+        // not for the start signal — emit directly, bypassing the threshold gate.
+        emit(.progress(episodeID: episodeID, bytesDownloaded: 0, totalBytes: nil))
     }
 
     // MARK: - taskDescription kind encoding

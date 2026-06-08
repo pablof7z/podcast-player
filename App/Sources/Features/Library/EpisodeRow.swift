@@ -192,7 +192,9 @@ struct EpisodeRow: View {
 
     @ViewBuilder
     private var downloadProgressBar: some View {
-        if case .downloading(let persisted, _) = episode.downloadState {
+        if case .queued = episode.downloadState {
+            thinProgressBar(progress: 0, color: Color.primary.opacity(0.35))
+        } else if case .downloading(let persisted, _) = episode.downloadState {
             thinProgressBar(progress: persisted.clamped01, color: Color.primary)
         } else if case .downloaded = episode.downloadState,
                   case .transcribing(let p) = episode.transcriptState {

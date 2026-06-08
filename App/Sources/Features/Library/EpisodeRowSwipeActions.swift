@@ -73,7 +73,7 @@ struct EpisodeRowDownloadSwipeAction: View {
 
     var body: some View {
         switch episode.downloadState {
-        case .notDownloaded, .queued:
+        case .notDownloaded:
             Button {
                 Haptics.light()
                 store.kernelDownload(episode.id)
@@ -81,6 +81,14 @@ struct EpisodeRowDownloadSwipeAction: View {
                 Label("Download", systemImage: "arrow.down.circle")
             }
             .tint(.blue)
+        case .queued:
+            Button {
+                Haptics.light()
+                store.kernelCancelDownload(episode.id)
+            } label: {
+                Label("Cancel", systemImage: "xmark.circle")
+            }
+            .tint(AppTheme.Tint.warning)
         case .downloading:
             Button {
                 Haptics.light()
