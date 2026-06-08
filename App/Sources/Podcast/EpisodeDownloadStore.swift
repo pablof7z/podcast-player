@@ -5,7 +5,7 @@ import os.log
 
 /// Helper that owns the on-disk layout for downloaded episode enclosures.
 ///
-/// Files live under `$applicationSupport/podcastr/downloads/<episodeID>.<ext>`.
+/// Files live under `$applicationSupport/Downloads/<episodeID>.<ext>`.
 /// The path is deterministic in the episode `id` so a re-launched app can
 /// recompute it without trusting any URL we may have persisted in the
 /// `DownloadState.downloaded(localFileURL:)` payload — iOS may rotate the app
@@ -52,8 +52,7 @@ final class EpisodeDownloadStore: @unchecked Sendable {
                 create: true
             )
             self.rootURL = support
-                .appendingPathComponent("podcastr", isDirectory: true)
-                .appendingPathComponent("downloads", isDirectory: true)
+                .appendingPathComponent("Downloads", isDirectory: true)
         }
         try FileManager.default.createDirectory(
             at: rootURL,
