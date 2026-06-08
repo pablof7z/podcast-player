@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-08T02:03:44Z",
+      "lines": [
+        "AssemblyAI and Perplexity settings now show whether keys were connected manually or through BYOK."
+      ]
+    },
+    {
       "shipped_at": "2026-06-08T01:06:00Z",
       "lines": [
         "Agent scheduled tasks now persist across app restarts, including disabled, edited, and deleted task rows."

@@ -84,4 +84,46 @@ extension Settings {
         elevenLabsBYOKKeyLabel = nil
         elevenLabsConnectedAt = nil
     }
+
+    mutating func markAssemblyAIManual(connectedAt: Date = Date()) {
+        assemblyAICredentialSource = .manual
+        assemblyAIBYOKKeyID = nil
+        assemblyAIBYOKKeyLabel = nil
+        assemblyAIConnectedAt = connectedAt
+    }
+
+    mutating func markAssemblyAIBYOK(keyID: String?, keyLabel: String?, connectedAt: Date = Date()) {
+        assemblyAICredentialSource = .byok
+        assemblyAIBYOKKeyID = keyID
+        assemblyAIBYOKKeyLabel = keyLabel
+        assemblyAIConnectedAt = connectedAt
+    }
+
+    mutating func clearAssemblyAICredential() {
+        assemblyAICredentialSource = .none
+        assemblyAIBYOKKeyID = nil
+        assemblyAIBYOKKeyLabel = nil
+        assemblyAIConnectedAt = nil
+    }
+
+    mutating func markPerplexityManual(connectedAt: Date = Date()) {
+        perplexityCredentialSource = .manual
+        perplexityBYOKKeyID = nil
+        perplexityBYOKKeyLabel = nil
+        perplexityConnectedAt = connectedAt
+    }
+
+    mutating func markPerplexityBYOK(keyID: String?, keyLabel: String?, connectedAt: Date = Date()) {
+        perplexityCredentialSource = .byok
+        perplexityBYOKKeyID = keyID
+        perplexityBYOKKeyLabel = keyLabel
+        perplexityConnectedAt = connectedAt
+    }
+
+    mutating func clearPerplexityCredential() {
+        perplexityCredentialSource = .none
+        perplexityBYOKKeyID = nil
+        perplexityBYOKKeyLabel = nil
+        perplexityConnectedAt = nil
+    }
 }

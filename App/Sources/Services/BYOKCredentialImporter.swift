@@ -26,11 +26,13 @@ enum PodcastBYOKCredentialImporter {
                 settings.markElevenLabsBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
             case .assemblyAI:
                 try AssemblyAICredentialStore.saveAPIKey(token.apiKey)
+                settings.markAssemblyAIBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
             case .ollama:
                 try OllamaCredentialStore.saveAPIKey(token.apiKey)
                 settings.markOllamaBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
             case .perplexity:
                 try PerplexityCredentialStore.saveAPIKey(token.apiKey)
+                settings.markPerplexityBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
             }
 
             imported.append(BYOKCredentialImportResult(provider: provider, keyLabel: token.keyLabel))

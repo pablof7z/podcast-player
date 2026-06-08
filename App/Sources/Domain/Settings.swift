@@ -14,6 +14,14 @@ enum OllamaCredentialSource: String, Codable, Hashable, Sendable {
     case none, manual, byok
 }
 
+enum AssemblyAICredentialSource: String, Codable, Hashable, Sendable {
+    case none, manual, byok
+}
+
+enum PerplexityCredentialSource: String, Codable, Hashable, Sendable {
+    case none, manual, byok
+}
+
 /// Action mapped to a headphone-remote multi-tap gesture (AirPods double/triple
 /// tap or stem squeeze, wired earbud inline button). iOS converts these into
 /// standard `MPRemoteCommandCenter.nextTrackCommand` / `.previousTrackCommand`
@@ -154,6 +162,18 @@ struct Settings: Codable, Hashable, Sendable {
     var elevenLabsBYOKKeyLabel: String?
     var elevenLabsConnectedAt: Date?
 
+    // AssemblyAI credentials (secret stored in Keychain; only metadata here)
+    var assemblyAICredentialSource: AssemblyAICredentialSource = .none
+    var assemblyAIBYOKKeyID: String?
+    var assemblyAIBYOKKeyLabel: String?
+    var assemblyAIConnectedAt: Date?
+
+    // Perplexity credentials (secret stored in Keychain; only metadata here)
+    var perplexityCredentialSource: PerplexityCredentialSource = .none
+    var perplexityBYOKKeyID: String?
+    var perplexityBYOKKeyLabel: String?
+    var perplexityConnectedAt: Date?
+
     // STT provider selection
     var sttProvider: STTProvider = .appleNative
     /// Whisper model used when `sttProvider == .openRouterWhisper`. Must be a model
@@ -261,6 +281,10 @@ struct Settings: Codable, Hashable, Sendable {
         case ollamaCredentialSource, ollamaBYOKKeyID, ollamaBYOKKeyLabel, ollamaConnectedAt, ollamaChatURL
         case elevenLabsCredentialSource
         case elevenLabsBYOKKeyID, elevenLabsBYOKKeyLabel, elevenLabsConnectedAt
+        case assemblyAICredentialSource
+        case assemblyAIBYOKKeyID, assemblyAIBYOKKeyLabel, assemblyAIConnectedAt
+        case perplexityCredentialSource
+        case perplexityBYOKKeyID, perplexityBYOKKeyLabel, perplexityConnectedAt
         case sttProvider, openRouterWhisperModel, assemblyAISTTModel
         case elevenLabsSTTModel, elevenLabsTTSModel, elevenLabsVoiceID, elevenLabsVoiceName
         case defaultPlaybackRate, skipForwardSeconds, skipBackwardSeconds, autoMarkPlayedAtEnd
@@ -310,6 +334,14 @@ struct Settings: Codable, Hashable, Sendable {
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
         elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
         elevenLabsConnectedAt = try c.decodeIfPresent(Date.self, forKey: .elevenLabsConnectedAt)
+        assemblyAICredentialSource = try c.decodeIfPresent(AssemblyAICredentialSource.self, forKey: .assemblyAICredentialSource) ?? .none
+        assemblyAIBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyID)
+        assemblyAIBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyLabel)
+        assemblyAIConnectedAt = try c.decodeIfPresent(Date.self, forKey: .assemblyAIConnectedAt)
+        perplexityCredentialSource = try c.decodeIfPresent(PerplexityCredentialSource.self, forKey: .perplexityCredentialSource) ?? .none
+        perplexityBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyID)
+        perplexityBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyLabel)
+        perplexityConnectedAt = try c.decodeIfPresent(Date.self, forKey: .perplexityConnectedAt)
         sttProvider = try c.decodeIfPresent(STTProvider.self, forKey: .sttProvider) ?? .appleNative
         openRouterWhisperModel = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) ?? "openai/whisper-1"
         assemblyAISTTModel = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) ?? "universal-3-pro,universal-2"
@@ -375,6 +407,14 @@ struct Settings: Codable, Hashable, Sendable {
         try c.encodeIfPresent(elevenLabsBYOKKeyID, forKey: .elevenLabsBYOKKeyID)
         try c.encodeIfPresent(elevenLabsBYOKKeyLabel, forKey: .elevenLabsBYOKKeyLabel)
         try c.encodeIfPresent(elevenLabsConnectedAt, forKey: .elevenLabsConnectedAt)
+        try c.encode(assemblyAICredentialSource, forKey: .assemblyAICredentialSource)
+        try c.encodeIfPresent(assemblyAIBYOKKeyID, forKey: .assemblyAIBYOKKeyID)
+        try c.encodeIfPresent(assemblyAIBYOKKeyLabel, forKey: .assemblyAIBYOKKeyLabel)
+        try c.encodeIfPresent(assemblyAIConnectedAt, forKey: .assemblyAIConnectedAt)
+        try c.encode(perplexityCredentialSource, forKey: .perplexityCredentialSource)
+        try c.encodeIfPresent(perplexityBYOKKeyID, forKey: .perplexityBYOKKeyID)
+        try c.encodeIfPresent(perplexityBYOKKeyLabel, forKey: .perplexityBYOKKeyLabel)
+        try c.encodeIfPresent(perplexityConnectedAt, forKey: .perplexityConnectedAt)
         try c.encode(sttProvider, forKey: .sttProvider)
         try c.encode(openRouterWhisperModel, forKey: .openRouterWhisperModel)
         try c.encode(assemblyAISTTModel, forKey: .assemblyAISTTModel)

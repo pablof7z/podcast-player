@@ -106,6 +106,44 @@ impl AppRuntime {
         )
     }
 
+    pub fn set_assembly_ai_credential(
+        &self,
+        source: &str,
+        key_id: Option<String>,
+        key_label: Option<String>,
+        connected_at: Option<i64>,
+    ) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.settings",
+            &json!({
+                "op": "set_assembly_ai_credential",
+                "source": source,
+                "key_id": key_id,
+                "key_label": key_label,
+                "connected_at": connected_at,
+            }),
+        )
+    }
+
+    pub fn set_perplexity_credential(
+        &self,
+        source: &str,
+        key_id: Option<String>,
+        key_label: Option<String>,
+        connected_at: Option<i64>,
+    ) -> Result<String> {
+        self.dispatch_action_value(
+            "podcast.settings",
+            &json!({
+                "op": "set_perplexity_credential",
+                "source": source,
+                "key_id": key_id,
+                "key_label": key_label,
+                "connected_at": connected_at,
+            }),
+        )
+    }
+
     pub fn set_stt_provider(&self, provider: &str) -> Result<String> {
         self.dispatch_action_value(
             "podcast.settings",

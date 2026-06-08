@@ -305,6 +305,8 @@ struct SettingsView: View {
         let connected = [
             s.openRouterCredentialSource != .none,
             s.elevenLabsCredentialSource != .none,
+            s.assemblyAICredentialSource != .none,
+            s.perplexityCredentialSource != .none,
             s.ollamaCredentialSource != .none,
         ].filter { $0 }.count
         return connected == 0 ? "Not set up" : "\(connected) connected"

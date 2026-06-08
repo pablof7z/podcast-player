@@ -21,6 +21,8 @@ pub(crate) enum ProviderSettingItem {
     OllamaCredential,
     OllamaChatUrl,
     ElevenLabsCredential,
+    AssemblyAiCredential,
+    PerplexityCredential,
     SttProvider,
     SttKeysPresent,
     OpenRouterWhisperModel,
@@ -30,7 +32,7 @@ pub(crate) enum ProviderSettingItem {
     LocalModel,
 }
 
-pub(crate) const PROVIDER_SETTINGS_ITEMS: [ProviderSettingItem; 21] = [
+pub(crate) const PROVIDER_SETTINGS_ITEMS: [ProviderSettingItem; 23] = [
     ProviderSettingItem::LoadEnvCredentials,
     ProviderSettingItem::AgentInitialModel,
     ProviderSettingItem::AgentThinkingModel,
@@ -45,6 +47,8 @@ pub(crate) const PROVIDER_SETTINGS_ITEMS: [ProviderSettingItem; 21] = [
     ProviderSettingItem::OllamaCredential,
     ProviderSettingItem::OllamaChatUrl,
     ProviderSettingItem::ElevenLabsCredential,
+    ProviderSettingItem::AssemblyAiCredential,
+    ProviderSettingItem::PerplexityCredential,
     ProviderSettingItem::SttProvider,
     ProviderSettingItem::SttKeysPresent,
     ProviderSettingItem::OpenRouterWhisperModel,
@@ -71,6 +75,8 @@ impl ProviderSettingItem {
             Self::OllamaCredential => "Ollama credential",
             Self::OllamaChatUrl => "Ollama chat URL",
             Self::ElevenLabsCredential => "ElevenLabs credential",
+            Self::AssemblyAiCredential => "AssemblyAI credential",
+            Self::PerplexityCredential => "Perplexity credential",
             Self::SttProvider => "STT provider",
             Self::SttKeysPresent => "STT keys present",
             Self::OpenRouterWhisperModel => "OpenRouter Whisper model",
@@ -137,6 +143,18 @@ impl ProviderSettingItem {
                 settings.eleven_labs_byok_key_label.as_deref(),
                 settings.eleven_labs_connected_at,
             ),
+            Self::AssemblyAiCredential => credential_summary(
+                &settings.assembly_ai_credential_source,
+                settings.assembly_ai_byok_key_id.as_deref(),
+                settings.assembly_ai_byok_key_label.as_deref(),
+                settings.assembly_ai_connected_at,
+            ),
+            Self::PerplexityCredential => credential_summary(
+                &settings.perplexity_credential_source,
+                settings.perplexity_byok_key_id.as_deref(),
+                settings.perplexity_byok_key_label.as_deref(),
+                settings.perplexity_connected_at,
+            ),
             Self::SttProvider => format!(
                 "{} (effective {})",
                 settings.stt_provider, settings.effective_stt_provider
@@ -189,7 +207,11 @@ impl ProviderSettingItem {
             | Self::EmbeddingsModel
             | Self::ImageGenerationModel => "format: model_id | display name".to_owned(),
             Self::RerankerEnabled => "press Enter to toggle".to_owned(),
-            Self::OpenRouterCredential | Self::OllamaCredential | Self::ElevenLabsCredential => {
+            Self::OpenRouterCredential
+            | Self::OllamaCredential
+            | Self::ElevenLabsCredential
+            | Self::AssemblyAiCredential
+            | Self::PerplexityCredential => {
                 "format: source | key_id | key_label | connected_at".to_owned()
             }
             Self::OllamaChatUrl => "format: https://host/api/chat".to_owned(),
@@ -265,6 +287,18 @@ impl ProviderSettingItem {
                 settings.eleven_labs_byok_key_id.as_deref(),
                 settings.eleven_labs_byok_key_label.as_deref(),
                 settings.eleven_labs_connected_at,
+            ),
+            Self::AssemblyAiCredential => credential_input(
+                &settings.assembly_ai_credential_source,
+                settings.assembly_ai_byok_key_id.as_deref(),
+                settings.assembly_ai_byok_key_label.as_deref(),
+                settings.assembly_ai_connected_at,
+            ),
+            Self::PerplexityCredential => credential_input(
+                &settings.perplexity_credential_source,
+                settings.perplexity_byok_key_id.as_deref(),
+                settings.perplexity_byok_key_label.as_deref(),
+                settings.perplexity_connected_at,
             ),
             Self::SttProvider => settings.stt_provider.clone(),
             Self::SttKeysPresent => String::new(),
@@ -359,6 +393,16 @@ impl ProviderSettingItem {
                 let (source, key_id, key_label, connected_at) = parse_credential_input(input)?;
                 runtime.set_eleven_labs_credential(&source, key_id, key_label, connected_at)?;
                 Ok("ElevenLabs metadata updated".to_owned())
+            }
+            Self::AssemblyAiCredential => {
+                let (source, key_id, key_label, connected_at) = parse_credential_input(input)?;
+                runtime.set_assembly_ai_credential(&source, key_id, key_label, connected_at)?;
+                Ok("AssemblyAI metadata updated".to_owned())
+            }
+            Self::PerplexityCredential => {
+                let (source, key_id, key_label, connected_at) = parse_credential_input(input)?;
+                runtime.set_perplexity_credential(&source, key_id, key_label, connected_at)?;
+                Ok("Perplexity metadata updated".to_owned())
             }
             Self::SttProvider => {
                 let provider = require_nonempty(input, "provider")?;

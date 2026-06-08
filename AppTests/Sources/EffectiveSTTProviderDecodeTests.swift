@@ -52,4 +52,38 @@ final class EffectiveSTTProviderDecodeTests: XCTestCase {
         XCTAssertEqual(settings.effectiveSttProvider, "apple_native")
         XCTAssertFalse(settings.effectiveSttProviderRequiresKey)
     }
+
+    func testCredentialMetadataDecodesFromSnakeCaseKeys() throws {
+        let json = """
+        {
+          "open_router_byok_key_id":"openrouter_key",
+          "open_router_byok_key_label":"OpenRouter",
+          "assembly_ai_credential_source":"byok",
+          "assembly_ai_key_present":true,
+          "assembly_ai_byok_key_id":"assembly_key",
+          "assembly_ai_byok_key_label":"AssemblyAI",
+          "assembly_ai_connected_at":1700000000,
+          "perplexity_credential_source":"manual",
+          "perplexity_key_present":true,
+          "perplexity_byok_key_id":"perplexity_key",
+          "perplexity_byok_key_label":"Perplexity",
+          "perplexity_connected_at":1700000100
+        }
+        """
+
+        let settings = try decode(json)
+
+        XCTAssertEqual(settings.openRouterBYOKKeyID, "openrouter_key")
+        XCTAssertEqual(settings.openRouterBYOKKeyLabel, "OpenRouter")
+        XCTAssertEqual(settings.assemblyAICredentialSource, "byok")
+        XCTAssertTrue(settings.assemblyAIKeyPresent)
+        XCTAssertEqual(settings.assemblyAIBYOKKeyID, "assembly_key")
+        XCTAssertEqual(settings.assemblyAIBYOKKeyLabel, "AssemblyAI")
+        XCTAssertEqual(settings.assemblyAIConnectedAt, Date(timeIntervalSince1970: 1_700_000_000))
+        XCTAssertEqual(settings.perplexityCredentialSource, "manual")
+        XCTAssertTrue(settings.perplexityKeyPresent)
+        XCTAssertEqual(settings.perplexityBYOKKeyID, "perplexity_key")
+        XCTAssertEqual(settings.perplexityBYOKKeyLabel, "Perplexity")
+        XCTAssertEqual(settings.perplexityConnectedAt, Date(timeIntervalSince1970: 1_700_000_100))
+    }
 }

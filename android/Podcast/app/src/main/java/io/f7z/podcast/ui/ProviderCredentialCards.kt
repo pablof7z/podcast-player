@@ -149,6 +149,7 @@ fun ElevenLabsCredentialCard(
 fun AssemblyAiCredentialCard(
     input: String,
     hasStoredKey: Boolean,
+    status: String,
     result: ProviderCredentialActionResult?,
     onInputChanged: (String) -> Unit,
     onSave: () -> Unit,
@@ -156,7 +157,7 @@ fun AssemblyAiCredentialCard(
 ) {
     CredentialCard(
         title = "AssemblyAI",
-        status = if (hasStoredKey) "Connected" else "Not connected",
+        status = status,
         input = input,
         inputLabel = "AssemblyAI API key",
         hasStoredKey = hasStoredKey,
@@ -171,6 +172,7 @@ fun AssemblyAiCredentialCard(
 fun PerplexityCredentialCard(
     input: String,
     hasStoredKey: Boolean,
+    status: String,
     result: ProviderCredentialActionResult?,
     onInputChanged: (String) -> Unit,
     onSave: () -> Unit,
@@ -178,7 +180,7 @@ fun PerplexityCredentialCard(
 ) {
     CredentialCard(
         title = "Perplexity",
-        status = if (hasStoredKey) "Connected" else "Not connected",
+        status = status,
         input = input,
         inputLabel = "Perplexity API key",
         hasStoredKey = hasStoredKey,

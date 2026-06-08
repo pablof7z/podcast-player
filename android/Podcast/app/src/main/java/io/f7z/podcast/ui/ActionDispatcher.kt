@@ -372,6 +372,24 @@ data class SetElevenLabsCredentialPayload(
 )
 
 @Serializable
+data class SetAssemblyAiCredentialPayload(
+    val source: String,
+    @SerialName("key_id") val keyId: String? = null,
+    @SerialName("key_label") val keyLabel: String? = null,
+    @SerialName("connected_at") val connectedAt: Long? = null,
+    val op: String = "set_assembly_ai_credential",
+)
+
+@Serializable
+data class SetPerplexityCredentialPayload(
+    val source: String,
+    @SerialName("key_id") val keyId: String? = null,
+    @SerialName("key_label") val keyLabel: String? = null,
+    @SerialName("connected_at") val connectedAt: Long? = null,
+    val op: String = "set_perplexity_credential",
+)
+
+@Serializable
 data class SetSttProviderPayload(
     val provider: String,
     val op: String = "set_stt_provider",

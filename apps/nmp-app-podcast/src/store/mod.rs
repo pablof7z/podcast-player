@@ -26,6 +26,7 @@ mod ad_segments;
 pub mod agent_tasks;
 pub mod auto_download;
 mod chapters;
+mod credential_metadata;
 pub mod events;
 pub mod identity;
 pub mod inbox_triage_cache;
@@ -34,6 +35,7 @@ mod memory;
 pub(crate) mod owned_ext;
 mod persistence;
 mod playback;
+mod provider_settings;
 pub mod podcast_keys;
 pub mod relay_config;
 mod settings;
@@ -49,6 +51,7 @@ mod triage_state;
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
 pub use auto_download::episodes_to_auto_download;
+use credential_metadata::ProviderCredentialMetadata;
 use persistence::{PersistedPodcast, PersistedSettings, PersistedStore, PERSIST_SCHEMA_VERSION};
 pub use podcast_keys::PodcastKeyStore;
 
@@ -198,32 +201,13 @@ pub struct PodcastStore {
     pub(super) image_generation_model_name: String,
     /// Whether the reranker is enabled for search results. Default: `false`.
     pub(super) reranker_enabled: bool,
-    /// OpenRouter credential source enum (raw String: "apiKey", "byok", "nostr").
-    pub(super) open_router_credential_source: String,
-    /// OpenRouter BYOK key ID (optional).
-    pub(super) open_router_byok_key_id: Option<String>,
-    /// OpenRouter BYOK key label (optional).
-    pub(super) open_router_byok_key_label: Option<String>,
-    /// OpenRouter credential connected-at timestamp (epoch seconds, optional).
-    pub(super) open_router_connected_at: Option<i64>,
-    /// Ollama credential source enum (raw String: "apiKey", "byok", "nostr").
-    pub(super) ollama_credential_source: String,
-    /// Ollama BYOK key ID (optional).
-    pub(super) ollama_byok_key_id: Option<String>,
-    /// Ollama BYOK key label (optional).
-    pub(super) ollama_byok_key_label: Option<String>,
-    /// Ollama credential connected-at timestamp (epoch seconds, optional).
-    pub(super) ollama_connected_at: Option<i64>,
+    pub(super) open_router_credential: ProviderCredentialMetadata,
+    pub(super) ollama_credential: ProviderCredentialMetadata,
     /// Ollama chat endpoint URL for LLM inference.
     pub(super) ollama_chat_url: String,
-    /// ElevenLabs credential source enum (raw String: "apiKey", "byok", "nostr").
-    pub(super) eleven_labs_credential_source: String,
-    /// ElevenLabs BYOK key ID (optional).
-    pub(super) eleven_labs_byok_key_id: Option<String>,
-    /// ElevenLabs BYOK key label (optional).
-    pub(super) eleven_labs_byok_key_label: Option<String>,
-    /// ElevenLabs credential connected-at timestamp (epoch seconds, optional).
-    pub(super) eleven_labs_connected_at: Option<i64>,
+    pub(super) eleven_labs_credential: ProviderCredentialMetadata,
+    pub(super) assembly_ai_credential: ProviderCredentialMetadata,
+    pub(super) perplexity_credential: ProviderCredentialMetadata,
     /// STT provider selection. Default `"apple_native"`.
     pub(super) stt_provider: String,
     /// OpenRouter Whisper model string. Default `"openai/whisper-1"`.
@@ -355,19 +339,12 @@ impl PodcastStore {
             image_generation_model: "google/gemini-2.5-flash-image".to_owned(),
             image_generation_model_name: "Gemini 2.5 Flash".to_owned(),
             reranker_enabled: false,
-            open_router_credential_source: String::new(),
-            open_router_byok_key_id: None,
-            open_router_byok_key_label: None,
-            open_router_connected_at: None,
-            ollama_credential_source: String::new(),
-            ollama_byok_key_id: None,
-            ollama_byok_key_label: None,
-            ollama_connected_at: None,
+            open_router_credential: ProviderCredentialMetadata::default(),
+            ollama_credential: ProviderCredentialMetadata::default(),
             ollama_chat_url: DEFAULT_OLLAMA_CHAT_URL.to_owned(),
-            eleven_labs_credential_source: String::new(),
-            eleven_labs_byok_key_id: None,
-            eleven_labs_byok_key_label: None,
-            eleven_labs_connected_at: None,
+            eleven_labs_credential: ProviderCredentialMetadata::default(),
+            assembly_ai_credential: ProviderCredentialMetadata::default(),
+            perplexity_credential: ProviderCredentialMetadata::default(),
             stt_provider: "apple_native".to_owned(),
             open_router_whisper_model: "openai/whisper-1".to_owned(),
             assembly_ai_stt_model: "universal-3-pro,universal-2".to_owned(),
@@ -602,19 +579,37 @@ impl PodcastStore {
                 "Gemini 2.5 Flash".to_owned()
             };
         self.reranker_enabled = loaded.settings.reranker_enabled;
-        self.open_router_credential_source = loaded.settings.open_router_credential_source;
-        self.open_router_byok_key_id = loaded.settings.open_router_byok_key_id;
-        self.open_router_byok_key_label = loaded.settings.open_router_byok_key_label;
-        self.open_router_connected_at = loaded.settings.open_router_connected_at;
-        self.ollama_credential_source = loaded.settings.ollama_credential_source;
-        self.ollama_byok_key_id = loaded.settings.ollama_byok_key_id;
-        self.ollama_byok_key_label = loaded.settings.ollama_byok_key_label;
-        self.ollama_connected_at = loaded.settings.ollama_connected_at;
+        self.open_router_credential = ProviderCredentialMetadata::new(
+            loaded.settings.open_router_credential_source,
+            loaded.settings.open_router_byok_key_id,
+            loaded.settings.open_router_byok_key_label,
+            loaded.settings.open_router_connected_at,
+        );
+        self.ollama_credential = ProviderCredentialMetadata::new(
+            loaded.settings.ollama_credential_source,
+            loaded.settings.ollama_byok_key_id,
+            loaded.settings.ollama_byok_key_label,
+            loaded.settings.ollama_connected_at,
+        );
         self.ollama_chat_url = normalize_ollama_chat_url(&loaded.settings.ollama_chat_url);
-        self.eleven_labs_credential_source = loaded.settings.eleven_labs_credential_source;
-        self.eleven_labs_byok_key_id = loaded.settings.eleven_labs_byok_key_id;
-        self.eleven_labs_byok_key_label = loaded.settings.eleven_labs_byok_key_label;
-        self.eleven_labs_connected_at = loaded.settings.eleven_labs_connected_at;
+        self.eleven_labs_credential = ProviderCredentialMetadata::new(
+            loaded.settings.eleven_labs_credential_source,
+            loaded.settings.eleven_labs_byok_key_id,
+            loaded.settings.eleven_labs_byok_key_label,
+            loaded.settings.eleven_labs_connected_at,
+        );
+        self.assembly_ai_credential = ProviderCredentialMetadata::new(
+            loaded.settings.assembly_ai_credential_source,
+            loaded.settings.assembly_ai_byok_key_id,
+            loaded.settings.assembly_ai_byok_key_label,
+            loaded.settings.assembly_ai_connected_at,
+        );
+        self.perplexity_credential = ProviderCredentialMetadata::new(
+            loaded.settings.perplexity_credential_source,
+            loaded.settings.perplexity_byok_key_id,
+            loaded.settings.perplexity_byok_key_label,
+            loaded.settings.perplexity_connected_at,
+        );
         self.stt_provider = if !loaded.settings.stt_provider.is_empty() {
             loaded.settings.stt_provider
         } else {
@@ -784,19 +779,27 @@ impl PodcastStore {
                 image_generation_model: self.image_generation_model.clone(),
                 image_generation_model_name: self.image_generation_model_name.clone(),
                 reranker_enabled: self.reranker_enabled,
-                open_router_credential_source: self.open_router_credential_source.clone(),
-                open_router_byok_key_id: self.open_router_byok_key_id.clone(),
-                open_router_byok_key_label: self.open_router_byok_key_label.clone(),
-                open_router_connected_at: self.open_router_connected_at,
-                ollama_credential_source: self.ollama_credential_source.clone(),
-                ollama_byok_key_id: self.ollama_byok_key_id.clone(),
-                ollama_byok_key_label: self.ollama_byok_key_label.clone(),
-                ollama_connected_at: self.ollama_connected_at,
+                open_router_credential_source: self.open_router_credential.source().to_owned(),
+                open_router_byok_key_id: self.open_router_credential.byok_key_id_owned(),
+                open_router_byok_key_label: self.open_router_credential.byok_key_label_owned(),
+                open_router_connected_at: self.open_router_credential.connected_at(),
+                ollama_credential_source: self.ollama_credential.source().to_owned(),
+                ollama_byok_key_id: self.ollama_credential.byok_key_id_owned(),
+                ollama_byok_key_label: self.ollama_credential.byok_key_label_owned(),
+                ollama_connected_at: self.ollama_credential.connected_at(),
                 ollama_chat_url: self.ollama_chat_url.clone(),
-                eleven_labs_credential_source: self.eleven_labs_credential_source.clone(),
-                eleven_labs_byok_key_id: self.eleven_labs_byok_key_id.clone(),
-                eleven_labs_byok_key_label: self.eleven_labs_byok_key_label.clone(),
-                eleven_labs_connected_at: self.eleven_labs_connected_at,
+                eleven_labs_credential_source: self.eleven_labs_credential.source().to_owned(),
+                eleven_labs_byok_key_id: self.eleven_labs_credential.byok_key_id_owned(),
+                eleven_labs_byok_key_label: self.eleven_labs_credential.byok_key_label_owned(),
+                eleven_labs_connected_at: self.eleven_labs_credential.connected_at(),
+                assembly_ai_credential_source: self.assembly_ai_credential.source().to_owned(),
+                assembly_ai_byok_key_id: self.assembly_ai_credential.byok_key_id_owned(),
+                assembly_ai_byok_key_label: self.assembly_ai_credential.byok_key_label_owned(),
+                assembly_ai_connected_at: self.assembly_ai_credential.connected_at(),
+                perplexity_credential_source: self.perplexity_credential.source().to_owned(),
+                perplexity_byok_key_id: self.perplexity_credential.byok_key_id_owned(),
+                perplexity_byok_key_label: self.perplexity_credential.byok_key_label_owned(),
+                perplexity_connected_at: self.perplexity_credential.connected_at(),
                 stt_provider: self.stt_provider.clone(),
                 open_router_whisper_model: self.open_router_whisper_model.clone(),
                 assembly_ai_stt_model: self.assembly_ai_stt_model.clone(),

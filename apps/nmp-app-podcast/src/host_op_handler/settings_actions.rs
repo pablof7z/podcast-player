@@ -175,6 +175,30 @@ impl PodcastHostOpHandler {
                 self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 serde_json::json!({"ok": true})
             }
+            SettingsAction::SetAssemblyAiCredential {
+                source,
+                key_id,
+                key_label,
+                connected_at,
+            } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_assembly_ai_credential(source, key_id, key_label, connected_at);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
+            SettingsAction::SetPerplexityCredential {
+                source,
+                key_id,
+                key_label,
+                connected_at,
+            } => {
+                if let Ok(mut s) = self.store.lock() {
+                    s.set_perplexity_credential(source, key_id, key_label, connected_at);
+                }
+                self.rev.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                serde_json::json!({"ok": true})
+            }
             SettingsAction::SetSttProvider { provider } => {
                 if let Ok(mut s) = self.store.lock() {
                     s.set_stt_provider(provider);

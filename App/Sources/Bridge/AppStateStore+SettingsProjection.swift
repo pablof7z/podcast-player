@@ -62,6 +62,14 @@ extension AppStateStore {
         next.settings.elevenLabsBYOKKeyID = ks.elevenLabsBYOKKeyID
         next.settings.elevenLabsBYOKKeyLabel = ks.elevenLabsBYOKKeyLabel
         next.settings.elevenLabsConnectedAt = ks.elevenLabsConnectedAt
+        next.settings.assemblyAICredentialSource = ks.assemblyAISource
+        next.settings.assemblyAIBYOKKeyID = ks.assemblyAIBYOKKeyID
+        next.settings.assemblyAIBYOKKeyLabel = ks.assemblyAIBYOKKeyLabel
+        next.settings.assemblyAIConnectedAt = ks.assemblyAIConnectedAt
+        next.settings.perplexityCredentialSource = ks.perplexitySource
+        next.settings.perplexityBYOKKeyID = ks.perplexityBYOKKeyID
+        next.settings.perplexityBYOKKeyLabel = ks.perplexityBYOKKeyLabel
+        next.settings.perplexityConnectedAt = ks.perplexityConnectedAt
 
         if let sttProvider = STTProvider(rawValue: ks.sttProvider) {
             next.settings.sttProvider = sttProvider

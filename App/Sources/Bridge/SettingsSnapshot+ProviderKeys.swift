@@ -13,6 +13,14 @@ extension SettingsSnapshot {
         OllamaCredentialSource(rawValue: ollamaCredentialSource) ?? .none
     }
 
+    var assemblyAISource: AssemblyAICredentialSource {
+        AssemblyAICredentialSource(rawValue: assemblyAICredentialSource) ?? .none
+    }
+
+    var perplexitySource: PerplexityCredentialSource {
+        PerplexityCredentialSource(rawValue: perplexityCredentialSource) ?? .none
+    }
+
     var selectedSTTProvider: STTProvider {
         STTProvider(rawValue: sttProvider) ?? .appleNative
     }

@@ -445,6 +445,8 @@ final class AppTests: XCTestCase {
     func testSettingsPersistsBYOKMetadataOnly() throws {
         var settings = Settings()
         settings.markOpenRouterBYOK(keyID: "key_123", keyLabel: "Default")
+        settings.markAssemblyAIBYOK(keyID: "key_assembly", keyLabel: "AssemblyAI")
+        settings.markPerplexityBYOK(keyID: "key_perplexity", keyLabel: "Perplexity")
 
         let encoded = try JSONEncoder().encode(settings)
         let encodedString = String(data: encoded, encoding: .utf8) ?? ""
@@ -452,6 +454,10 @@ final class AppTests: XCTestCase {
         XCTAssertTrue(encodedString.contains("byok"))
         XCTAssertTrue(encodedString.contains("key_123"))
         XCTAssertTrue(encodedString.contains("Default"))
+        XCTAssertTrue(encodedString.contains("key_assembly"))
+        XCTAssertTrue(encodedString.contains("AssemblyAI"))
+        XCTAssertTrue(encodedString.contains("key_perplexity"))
+        XCTAssertTrue(encodedString.contains("Perplexity"))
         XCTAssertFalse(encodedString.contains("api_key"))
     }
 

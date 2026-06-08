@@ -20,6 +20,32 @@ fn set_auto_skip_ads_round_trips() {
     let decoded: SettingsAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, action);
 }
+
+#[test]
+fn provider_credential_metadata_round_trips() {
+    let assembly = SettingsAction::SetAssemblyAiCredential {
+        source: "byok".into(),
+        key_id: Some("asm-key".into()),
+        key_label: Some("Assembly work".into()),
+        connected_at: Some(1_710_000_000),
+    };
+    let json = serde_json::to_string(&assembly).expect("encode");
+    assert!(json.contains(r#""op":"set_assembly_ai_credential""#));
+    assert!(json.contains(r#""key_id":"asm-key""#));
+    let decoded: SettingsAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, assembly);
+
+    let perplexity = SettingsAction::SetPerplexityCredential {
+        source: "manual".into(),
+        key_id: None,
+        key_label: None,
+        connected_at: Some(1_710_000_001),
+    };
+    let json = serde_json::to_string(&perplexity).expect("encode");
+    assert!(json.contains(r#""op":"set_perplexity_credential""#));
+    let decoded: SettingsAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, perplexity);
+}
 #[test]
 fn execute_emits_dispatch_host_op() {
     let action = SettingsAction::SetAutoSkipAds { enabled: false };

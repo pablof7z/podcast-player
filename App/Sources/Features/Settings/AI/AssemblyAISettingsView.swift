@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AssemblyAISettingsView: View {
     @Environment(AppStateStore.self) private var store
+    @State private var settings: Settings = Settings()
     @State private var manualAPIKey = ""
     @State private var isConnectingBYOK = false
     @State private var credentialMessage: String?
@@ -15,7 +16,11 @@ struct AssemblyAISettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("AssemblyAI")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: refreshCredentialState)
+        .onAppear {
+            settings = store.state.settings
+            refreshCredentialState()
+        }
+        .onChange(of: settings) { _, new in store.updateSettings(new) }
         .animation(AppTheme.Animation.spring, value: credentialMessage)
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
@@ -32,11 +37,17 @@ struct AssemblyAISettingsView: View {
             Label(statusTitle, systemImage: statusIcon)
                 .foregroundStyle(statusColor)
 
+            if settings.assemblyAICredentialSource == .byok,
+               let label = settings.assemblyAIBYOKKeyLabel,
+               !label.isBlank {
+                LabeledContent("BYOK key", value: label)
+            }
+
             Button {
                 Task { await connectWithBYOK() }
             } label: {
                 HStack {
-                    Label(isConnectingBYOK ? "Connecting..." : "Connect with BYOK", systemImage: "key.viewfinder")
+                    Label(isConnectingBYOK ? "Connecting..." : byokButtonTitle, systemImage: "key.viewfinder")
                     if isConnectingBYOK {
                         Spacer()
                         ProgressView()
@@ -78,15 +89,29 @@ struct AssemblyAISettingsView: View {
     }
 
     private var statusTitle: String {
-        hasStoredKey ? "Connected" : "Not connected"
+        guard hasStoredKey else {
+            return settings.assemblyAICredentialSource == .none ? "Not connected" : "Reconnect required"
+        }
+        switch settings.assemblyAICredentialSource {
+        case .byok:   return "Connected with BYOK"
+        case .manual: return "Manual key saved"
+        case .none:   return "Key stored"
+        }
     }
 
     private var statusIcon: String {
-        hasStoredKey ? "checkmark.seal.fill" : "xmark.seal"
+        guard hasStoredKey else {
+            return settings.assemblyAICredentialSource == .none ? "xmark.seal" : "exclamationmark.triangle"
+        }
+        return "checkmark.seal.fill"
     }
 
     private var statusColor: Color {
         hasStoredKey ? .green : .secondary
+    }
+
+    private var byokButtonTitle: String {
+        settings.assemblyAICredentialSource == .byok ? "Reconnect BYOK" : "Connect with BYOK"
     }
 
     private func connectWithBYOK() async {
@@ -98,9 +123,10 @@ struct AssemblyAISettingsView: View {
         do {
             let token = try await byokConnect.connectAssemblyAI()
             try AssemblyAICredentialStore.saveAPIKey(token.apiKey)
+            settings.markAssemblyAIBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
-            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI connected with BYOK."
             Haptics.success()
         } catch BYOKConnectError.cancelled {
@@ -116,9 +142,10 @@ struct AssemblyAISettingsView: View {
         credentialMessage = nil
         do {
             try AssemblyAICredentialStore.saveAPIKey(manualAPIKey)
+            settings.markAssemblyAIManual()
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
-            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI key saved in Keychain."
             Haptics.success()
         } catch {
@@ -132,9 +159,10 @@ struct AssemblyAISettingsView: View {
         credentialMessage = nil
         do {
             try AssemblyAICredentialStore.deleteAPIKey()
+            settings.clearAssemblyAICredential()
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
-            store.kernelSetProviderApiKeys()
             credentialMessage = "AssemblyAI disconnected."
             Haptics.success()
         } catch {
@@ -147,5 +175,6 @@ struct AssemblyAISettingsView: View {
         // Re-report STT key presence so the kernel's STT fallback policy
         // recomputes `settings.effectiveSttProvider` after a save/delete.
         store.syncSTTKeysPresent()
+        store.kernelSetProviderApiKeys()
     }
 }

@@ -143,6 +143,16 @@ struct AIProvidersSettingsView: View {
         return source == .none ? settings.ollamaCredentialSource : source
     }
 
+    private var assemblyAISource: AssemblyAICredentialSource {
+        let source = kernelSettings.assemblyAISource
+        return source == .none ? settings.assemblyAICredentialSource : source
+    }
+
+    private var perplexitySource: PerplexityCredentialSource {
+        let source = kernelSettings.perplexitySource
+        return source == .none ? settings.perplexityCredentialSource : source
+    }
+
     private var openRouterStatus: String {
         guard kernelSettings.openRouterKeyPresent else {
             return openRouterSource == .none ? "Not set up" : "Reconnect"
@@ -166,11 +176,17 @@ struct AIProvidersSettingsView: View {
     }
 
     private var assemblyAIStatus: String {
-        kernelSettings.assemblyAIKeyPresent ? "Connected" : "Not set up"
+        providerCredentialStatus(
+            source: assemblyAISource.rawValue,
+            hasKey: kernelSettings.assemblyAIKeyPresent
+        )
     }
 
     private var perplexityStatus: String {
-        if kernelSettings.perplexityKeyPresent { return "Connected" }
+        if kernelSettings.perplexityKeyPresent {
+            return providerCredentialStatus(source: perplexitySource.rawValue, hasKey: true)
+        }
+        if perplexitySource != .none { return "Reconnect" }
         if kernelSettings.openRouterKeyPresent { return "Via OpenRouter" }
         return "Not set up"
     }
@@ -204,6 +220,15 @@ struct AIProvidersSettingsView: View {
         return "\(ledger.records.count) calls · \(CostFormatter.usd(total))"
     }
 
+    private func providerCredentialStatus(source: String, hasKey: Bool) -> String {
+        guard hasKey else { return source == "none" || source.isEmpty ? "Not set up" : "Reconnect" }
+        switch source {
+        case "byok":   return "BYOK"
+        case "manual": return "Manual"
+        default:       return "Connected"
+        }
+    }
+
     @MainActor
     private func refreshLocalModelStatus() async {
         let specs: [LocalModelSpec]
@@ -226,6 +251,7 @@ struct AISettingsView: View {
 struct PerplexitySettingsView: View {
     @Environment(AppStateStore.self) private var store
 
+    @State private var settings: Settings = Settings()
     @State private var manualAPIKey = ""
     @State private var isConnectingBYOK = false
     @State private var credentialMessage: String?
@@ -239,7 +265,11 @@ struct PerplexitySettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Perplexity")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: refreshCredentialState)
+        .onAppear {
+            settings = store.state.settings
+            refreshCredentialState()
+        }
+        .onChange(of: settings) { _, new in store.updateSettings(new) }
         .animation(AppTheme.Animation.spring, value: credentialMessage)
         .animation(AppTheme.Animation.spring, value: credentialError)
         .animation(AppTheme.Animation.spring, value: isConnectingBYOK)
@@ -256,11 +286,17 @@ struct PerplexitySettingsView: View {
             Label(statusTitle, systemImage: statusIcon)
                 .foregroundStyle(statusColor)
 
+            if settings.perplexityCredentialSource == .byok,
+               let label = settings.perplexityBYOKKeyLabel,
+               !label.isBlank {
+                LabeledContent("BYOK key", value: label)
+            }
+
             Button {
                 Task { await connectWithBYOK() }
             } label: {
                 HStack {
-                    Label(isConnectingBYOK ? "Connecting..." : "Connect with BYOK", systemImage: "key.viewfinder")
+                    Label(isConnectingBYOK ? "Connecting..." : byokButtonTitle, systemImage: "key.viewfinder")
                     if isConnectingBYOK {
                         Spacer()
                         ProgressView()
@@ -302,15 +338,29 @@ struct PerplexitySettingsView: View {
     }
 
     private var statusTitle: String {
-        hasStoredKey ? "Connected" : "Not connected"
+        guard hasStoredKey else {
+            return settings.perplexityCredentialSource == .none ? "Not connected" : "Reconnect required"
+        }
+        switch settings.perplexityCredentialSource {
+        case .byok:   return "Connected with BYOK"
+        case .manual: return "Manual key saved"
+        case .none:   return "Key stored"
+        }
     }
 
     private var statusIcon: String {
-        hasStoredKey ? "checkmark.seal.fill" : "xmark.seal"
+        guard hasStoredKey else {
+            return settings.perplexityCredentialSource == .none ? "xmark.seal" : "exclamationmark.triangle"
+        }
+        return "checkmark.seal.fill"
     }
 
     private var statusColor: Color {
         hasStoredKey ? .green : .secondary
+    }
+
+    private var byokButtonTitle: String {
+        settings.perplexityCredentialSource == .byok ? "Reconnect BYOK" : "Connect with BYOK"
     }
 
     private func connectWithBYOK() async {
@@ -322,6 +372,8 @@ struct PerplexitySettingsView: View {
         do {
             let token = try await byokConnect.connectPerplexity()
             try PerplexityCredentialStore.saveAPIKey(token.apiKey)
+            settings.markPerplexityBYOK(keyID: token.keyID, keyLabel: token.keyLabel)
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
             credentialMessage = "Perplexity connected with BYOK."
@@ -339,6 +391,8 @@ struct PerplexitySettingsView: View {
         credentialMessage = nil
         do {
             try PerplexityCredentialStore.saveAPIKey(manualAPIKey)
+            settings.markPerplexityManual()
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
             credentialMessage = "Perplexity key saved in Keychain."
@@ -354,6 +408,8 @@ struct PerplexitySettingsView: View {
         credentialMessage = nil
         do {
             try PerplexityCredentialStore.deleteAPIKey()
+            settings.clearPerplexityCredential()
+            store.updateSettings(settings)
             manualAPIKey = ""
             refreshCredentialState()
             credentialMessage = "Perplexity disconnected."
