@@ -26,6 +26,18 @@ worktrees currently in flight.
   and `App/Sources/AppIntents/PlaybackAppIntents.swift` uses a Notification
   bridge that compiles in the `Podcastr` target. Remaining shortcut hardening
   stays tracked under `appintents-validation`.
+- **p0-ios-test-target-compile-regression.** The `PodcastrTests` target does
+  not compile on `main` (as of `39839742`) due to test files drifting from
+  current source APIs: `LocalModelCatalogMatchTests`/`LocalLLMInferenceTests`
+  use removed `LocalModelCatalog.all`/`.modelID` (catalog moved to
+  `fetch()`/`fetchSpecs()` in #287); `LLMProviderTests` references missing
+  `LLMProviderCredentialResolver`; `ClipBoundaryResolverTests` references
+  missing `WikiOpenRouterClient`; `AgentContextDecodeTests` uses removed
+  `AgentTaskSummary.actionNamespace`/`.actionBody`. The whole unit-test target
+  is unrunnable, so focused `-only-testing` runs of unrelated tests fail to
+  build. Fix: update these five test files to the current source APIs (or
+  delete obsolete cases). Surfaced while validating #321, which temporarily
+  isolated these files to get a clean focused run.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
