@@ -34,7 +34,7 @@ enum CategorizationError: LocalizedError {
 /// `isRunning` before starting; `recompute(store:)` returns immediately
 /// if a run is already in progress.
 ///
-/// Networking goes through `WikiOpenRouterClient`, whose live mode delegates
+/// Networking goes through `ProviderCompletionClient`, whose live mode delegates
 /// provider request shaping and credential checks to Rust.
 @MainActor
 @Observable
@@ -90,7 +90,7 @@ final class PodcastCategorizationService {
         isRunning = true
         defer { isRunning = false }
 
-        let client = WikiOpenRouterClient(
+        let client = ProviderCompletionClient(
             mode: .live(modelReference: modelReference),
             urlSession: urlSession
         )

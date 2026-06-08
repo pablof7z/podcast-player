@@ -2,10 +2,10 @@ import Foundation
 
 // MARK: - Catalog service
 
-struct OpenRouterModelCatalogService: Sendable {
+struct ProviderModelCatalogService: Sendable {
     private static let decoder = JSONDecoder()
 
-    func fetchModels() async throws -> [OpenRouterModelOption] {
+    func fetchModels() async throws -> [ProviderModelOption] {
         guard let handleBits = await MainActor.run(body: {
             KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
         }) else {
@@ -33,7 +33,7 @@ struct OpenRouterModelCatalogService: Sendable {
         guard let result = envelope.result else {
             throw CatalogError.decoding("Provider catalog response missing result")
         }
-        return result.models.map(OpenRouterModelOption.init(remote:))
+        return result.models.map(ProviderModelOption.init(remote:))
     }
 }
 
@@ -46,7 +46,7 @@ enum CatalogError: LocalizedError {
 
 // MARK: - Public model type
 
-struct OpenRouterModelOption: Identifiable, Hashable, Sendable {
+struct ProviderModelOption: Identifiable, Hashable, Sendable {
     var provider: LLMProvider
     var id: String
     var providerModelID: String

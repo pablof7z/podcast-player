@@ -58,7 +58,7 @@ final class ClipBoundaryResolver {
     /// Client factory — overridable so tests can inject a stubbed client.
     /// Returning `nil` signals "no usable client right now" and the resolver
     /// bails to nil without an LLM round-trip.
-    var clientFactory: (LLMModelReference) -> WikiOpenRouterClient? = ClipBoundaryResolver.defaultClientFactory
+    var clientFactory: (LLMModelReference) -> ProviderCompletionClient? = ClipBoundaryResolver.defaultClientFactory
 
     private init() {}
 
@@ -265,7 +265,7 @@ final class ClipBoundaryResolver {
 // MARK: - Default client factory
 
 private extension ClipBoundaryResolver {
-    static let defaultClientFactory: (LLMModelReference) -> WikiOpenRouterClient? = { modelReference in
-        WikiOpenRouterClient.live(model: modelReference.storedID)
+    static let defaultClientFactory: (LLMModelReference) -> ProviderCompletionClient? = { modelReference in
+        ProviderCompletionClient.live(model: modelReference.storedID)
     }
 }

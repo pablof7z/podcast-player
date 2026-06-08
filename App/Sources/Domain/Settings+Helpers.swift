@@ -4,7 +4,7 @@ import Foundation
 
 extension Settings {
 
-    /// Returns a human-readable display name for an OpenRouter model.
+    /// Returns a human-readable display name for a provider model.
     ///
     /// Preference order:
     /// 1. `modelName` when non-empty (persisted human-readable name from catalog).

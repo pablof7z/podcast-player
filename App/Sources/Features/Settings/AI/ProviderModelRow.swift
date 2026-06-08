@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A single row in the model browser list.
 /// Shows provider logo, model name + ID + capability badges, and compact pricing.
-struct OpenRouterModelRow: View {
-    var model: OpenRouterModelOption
+struct ProviderModelRow: View {
+    var model: ProviderModelOption
     var isSelected: Bool
     var query: String = ""
 
@@ -17,7 +17,7 @@ struct OpenRouterModelRow: View {
         static let rowVerticalPadding: CGFloat = 4
         /// Maximum number of capability badges to show per row.
         static let maxBadgeCount: Int = 4
-        /// Accessibility: "image" modality key in OpenRouter API responses.
+        /// Accessibility: "image" modality key in provider catalog responses.
         static let imageModality = "image"
     }
 
@@ -94,16 +94,16 @@ struct OpenRouterModelRow: View {
 
 #Preview {
     List {
-        OpenRouterModelRow(
-            model: OpenRouterModelOption.preview,
+        ProviderModelRow(
+            model: ProviderModelOption.preview,
             isSelected: true
         )
     }
     .listStyle(.insetGrouped)
 }
 
-private extension OpenRouterModelOption {
-    static let preview = OpenRouterModelOption(remote: ProviderModelOptionDTO(
+private extension ProviderModelOption {
+    static let preview = ProviderModelOption(remote: ProviderModelOptionDTO(
         provider: .openRouter,
         id: "openai/gpt-4o",
         name: "GPT-4o",

@@ -4,7 +4,7 @@ import Foundation
 /// `memoryCompilationModel`. Designed to run as a fire-and-forget background
 /// task after the first assistant text reply lands.
 ///
-/// Reuses `WikiOpenRouterClient` because it already forces the assistant to
+/// Reuses `ProviderCompletionClient` because it already forces the assistant to
 /// reply in JSON via `response_format: { "type": "json_object" }`, which lets
 /// us parse a `{"title": "..."}` envelope without prompt-jail breaks.
 enum AgentChatTitleGenerator {
@@ -40,7 +40,7 @@ enum AgentChatTitleGenerator {
         guard !trimmed.isEmpty else { return nil }
         // Credential checking is Rust-owned; proceed and let the client
         // fail gracefully if no key is configured.
-        let client = WikiOpenRouterClient.live(model: model)
+        let client = ProviderCompletionClient.live(model: model)
         do {
             let json = try await client.compile(
                 systemPrompt: systemPrompt,

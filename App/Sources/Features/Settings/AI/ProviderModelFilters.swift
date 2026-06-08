@@ -40,7 +40,7 @@ enum ModelCapabilityFilter: String, CaseIterable, Identifiable {
         }
     }
 
-    func matches(_ model: OpenRouterModelOption) -> Bool {
+    func matches(_ model: ProviderModelOption) -> Bool {
         switch self {
         case .compatible:  return model.isCompatible
         case .all:         return true
@@ -97,7 +97,7 @@ func tokenLimit(_ value: Int?) -> String {
     return "\(value) tokens"
 }
 
-extension OpenRouterModelOption {
+extension ProviderModelOption {
     var priceSortValue: Double {
         guard let p = promptCostPerMillion, let c = completionCostPerMillion else {
             return .greatestFiniteMagnitude

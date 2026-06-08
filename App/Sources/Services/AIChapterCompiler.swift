@@ -94,7 +94,7 @@ final class AIChapterCompiler {
             ? enrichOnlyUserPrompt(transcript: transcript, episode: episode)
             : fullUserPrompt(transcript: transcript, episode: episode)
 
-        let client = WikiOpenRouterClient.live(model: modelReference.storedID)
+        let client = ProviderCompletionClient.live(model: modelReference.storedID)
         let raw: String
         do {
             raw = try await client.compile(
