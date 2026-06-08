@@ -193,20 +193,21 @@ struct EpisodeRow: View {
     @ViewBuilder
     private var downloadProgressBar: some View {
         if case .queued = episode.downloadState {
-            thinProgressBar(progress: 0, color: Color.primary.opacity(0.35))
+            // Full-width track at low opacity: shows "something is pending" even at 0%.
+            thinProgressBar(progress: 1.0, color: Color.primary.opacity(0.15))
         } else if case .downloading(let persisted, _) = episode.downloadState {
-            thinProgressBar(progress: persisted.clamped01, color: Color.primary)
+            thinProgressBar(progress: persisted.clamped01, color: Color.primary, minWidth: 8)
         } else if case .downloaded = episode.downloadState,
                   case .transcribing(let p) = episode.transcriptState {
-            thinProgressBar(progress: p.clamped01, color: Color.accentColor)
+            thinProgressBar(progress: p.clamped01, color: Color.accentColor, minWidth: 8)
         }
     }
 
-    private func thinProgressBar(progress: Double, color: Color) -> some View {
+    private func thinProgressBar(progress: Double, color: Color, minWidth: CGFloat = 0) -> some View {
         GeometryReader { geo in
             Rectangle()
                 .fill(color)
-                .frame(width: geo.size.width * progress, height: 2)
+                .frame(width: max(minWidth, geo.size.width * progress), height: 2)
         }
         .frame(height: 2)
     }
