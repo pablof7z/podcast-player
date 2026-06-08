@@ -16,14 +16,9 @@ final class P0PlaybackUITests: XCTestCase {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
         // Open episode detail and start playback.
-        let podcastRow = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard podcastRow.waitForExistence(timeout: 6) || staticTextContaining(app, "This American Life").waitForExistence(timeout: 6) else {
-            XCTFail("skip-forward-back-15: no podcast row visible"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("skip-forward-back-15: could not open first episode detail"); return
         }
-        robustTap(podcastRow.exists ? podcastRow : staticTextContaining(app, "This American Life"))
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8), "no Play button")
         app.buttons["Play"].tap()
         // Open full player.
@@ -72,16 +67,12 @@ final class P0PlaybackUITests: XCTestCase {
     func testP0_QueueAddMultiple() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
+        guard openFirstPodcastFromHome(app) else {
             XCTFail("queue-add-multiple: no podcast row"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
 
         // Queue first episode — verify button toggles to "Queued".
-        robustTap(app.cells.element(boundBy: 2))
+        XCTAssertTrue(openFirstEpisodeFromShow(app), "queue-add-multiple: could not open episode 1 detail")
         sleep(2)
         snap(app, "queue-01-ep1-detail")
         let q1 = app.buttons.matching(NSPredicate(format: "label == 'Queue' OR label == 'Add to Queue'")).firstMatch
@@ -125,14 +116,9 @@ final class P0PlaybackUITests: XCTestCase {
     func testP0_BackgroundPlaybackContinues() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
-            XCTFail("background-playback: no podcast row"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("background-playback: could not open first episode detail"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8), "no Play")
         app.buttons["Play"].tap()
         sleep(4)
@@ -196,14 +182,9 @@ final class P0PlaybackUITests: XCTestCase {
     func testP0_ReactiveUpdateCrossScreen() throws {
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
-        let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")).firstMatch
-        guard row.waitForExistence(timeout: 6) else {
-            XCTFail("reactive: no podcast row"); return
+        guard openFirstPodcastFromHome(app), openFirstEpisodeFromShow(app) else {
+            XCTFail("reactive: could not open first episode detail"); return
         }
-        row.tap()
-        _ = app.cells.element(boundBy: 2).waitForExistence(timeout: 8)
-        robustTap(app.cells.element(boundBy: 2))
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8), "no Play")
         app.buttons["Play"].tap()
         sleep(3)
