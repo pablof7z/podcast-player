@@ -97,8 +97,9 @@ worktrees currently in flight.
   settings, stores OpenRouter/Ollama/ElevenLabs/AssemblyAI/Perplexity keys in
   its encrypted host store, reloads them into Rust on app start, reports STT
   key presence to Rust, exposes shared agent chat, ElevenLabs validation,
-  Scribe/AssemblyAI/online-search JNI calls, and exposes STT/TTS model and
-  ElevenLabs voice settings through typed settings actions. Shared provider
+  Scribe/AssemblyAI/online-search JNI calls, and exposes STT/TTS model
+  settings plus an ElevenLabs voice browser through typed settings actions
+  backed by the shared Rust voice catalog. Shared provider
   catalog rows now expose a routed `selection_model_id`, and iOS/Android/TUI
   selectors store that value so OpenRouter/Ollama selections run the intended
   provider/model. The TUI env loader now forwards `ASSEMBLYAI_API_KEY` and

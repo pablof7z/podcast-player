@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.f7z.podcast.ElevenLabsVoice
 import io.f7z.podcast.KernelBridge
 import io.f7z.podcast.SettingsSnapshot
 
@@ -116,47 +116,96 @@ private fun visibleModelOptions(options: List<ModelOption>, current: String): Li
 }
 
 @Composable
-internal fun ElevenLabsVoiceEditor(settings: SettingsSnapshot, bridge: KernelBridge) {
-    var voiceId by remember(settings.elevenLabsVoiceId) {
-        mutableStateOf(settings.elevenLabsVoiceId)
-    }
-    var voiceName by remember(settings.elevenLabsVoiceName) {
-        mutableStateOf(settings.elevenLabsVoiceName)
-    }
-    val changed = voiceId != settings.elevenLabsVoiceId || voiceName != settings.elevenLabsVoiceName
+internal fun ElevenLabsVoiceEditor(
+    settings: SettingsSnapshot,
+    bridge: KernelBridge,
+    voices: List<ElevenLabsVoice>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onRefresh: () -> Unit,
+) {
+    var showVoiceBrowser by remember { mutableStateOf(false) }
+    val selectedVoice = voices.firstOrNull { it.voiceId == settings.elevenLabsVoiceId }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text = "ElevenLabs voice", style = MaterialTheme.typography.bodyLarge)
-        OutlinedTextField(
-            value = voiceId,
-            onValueChange = { voiceId = it },
-            label = { Text("Voice ID") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+        Text(
+            text = selectedVoiceLabel(settings, selectedVoice),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        OutlinedTextField(
-            value = voiceName,
-            onValueChange = { voiceName = it },
-            label = { Text("Voice name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        val voiceId = settings.elevenLabsVoiceId
+        if (voiceId.isNotBlank()) {
+            Text(
+                text = voiceId,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (isLoading && voices.isEmpty()) {
+            Text(
+                text = "Loading voice catalog",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            OutlinedButton(onClick = onRefresh, enabled = !isLoading) {
+                Text("Refresh")
+            }
             Button(
                 onClick = {
-                    PodcastActionDispatcher.dispatch(
-                        bridge = bridge,
-                        namespace = PodcastNamespace.SETTINGS,
-                        payload = SetElevenLabsVoicePayload(
-                            voiceId = voiceId.trim(),
-                            voiceName = voiceName.trim(),
-                        ),
-                    )
+                    if (voices.isEmpty() && !isLoading) {
+                        onRefresh()
+                    }
+                    showVoiceBrowser = true
                 },
-                enabled = changed,
             ) {
-                Text("Save voice")
+                Text("Browse voices")
             }
         }
     }
+
+    if (showVoiceBrowser) {
+        ElevenLabsVoiceSelectorSheet(
+            voices = voices,
+            currentVoiceId = settings.elevenLabsVoiceId,
+            currentVoiceName = settings.elevenLabsVoiceName,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            onRefresh = onRefresh,
+            onDismiss = { showVoiceBrowser = false },
+            onSelect = { voiceId, voiceName ->
+                PodcastActionDispatcher.dispatch(
+                    bridge = bridge,
+                    namespace = PodcastNamespace.SETTINGS,
+                    payload = SetElevenLabsVoicePayload(
+                        voiceId = voiceId,
+                        voiceName = voiceName,
+                    ),
+                )
+                showVoiceBrowser = false
+            },
+        )
+    }
+}
+
+private fun selectedVoiceLabel(settings: SettingsSnapshot, voice: ElevenLabsVoice?): String {
+    if (settings.elevenLabsVoiceName.isNotBlank()) return settings.elevenLabsVoiceName
+    if (voice != null) return voice.displayName
+    if (settings.elevenLabsVoiceId.isNotBlank()) return settings.elevenLabsVoiceId
+    return "No voice selected"
 }

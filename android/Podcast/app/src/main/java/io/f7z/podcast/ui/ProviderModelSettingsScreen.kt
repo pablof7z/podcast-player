@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.f7z.podcast.ElevenLabsVoice
+import io.f7z.podcast.ElevenLabsVoiceCatalogService
 import io.f7z.podcast.KernelBridge
 import io.f7z.podcast.PodcastSnapshot
 import io.f7z.podcast.ProviderModelCatalogService
@@ -50,21 +52,30 @@ fun ProviderModelSettingsScreen(
     val scope = rememberCoroutineScope()
     var models by remember { mutableStateOf<List<ProviderModelOption>>(emptyList()) }
     var speechCatalog by remember { mutableStateOf(SpeechModelCatalog()) }
+    var voices by remember { mutableStateOf<List<ElevenLabsVoice>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var speechCatalogError by remember { mutableStateOf<String?>(null) }
+    var voiceCatalogError by remember { mutableStateOf<String?>(null) }
     var selectedRole by remember { mutableStateOf<ProviderModelRole?>(null) }
 
     suspend fun loadCatalogs() {
         isLoading = true
         errorMessage = null
         speechCatalogError = null
+        voiceCatalogError = null
         runCatching { ProviderModelCatalogService.fetchModels(bridge) }
             .onSuccess { models = it }
             .onFailure { errorMessage = it.message ?: "Provider catalog failed" }
         runCatching { SpeechModelCatalogService.fetchCatalog(bridge) }
             .onSuccess { speechCatalog = it }
             .onFailure { speechCatalogError = it.message ?: "Speech catalog failed" }
+        runCatching { ElevenLabsVoiceCatalogService.fetchCatalog(bridge) }
+            .onSuccess { voices = it.voices }
+            .onFailure {
+                voices = emptyList()
+                voiceCatalogError = it.message ?: "ElevenLabs voice catalog failed"
+            }
         isLoading = false
     }
 
@@ -120,6 +131,10 @@ fun ProviderModelSettingsScreen(
                 bridge = bridge,
                 speechCatalog = speechCatalog,
                 catalogError = speechCatalogError,
+                voices = voices,
+                voiceCatalogLoading = isLoading,
+                voiceCatalogError = voiceCatalogError,
+                onRefreshVoiceCatalog = { scope.launch { loadCatalogs() } },
             )
         }
 
