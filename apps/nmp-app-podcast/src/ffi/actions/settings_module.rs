@@ -92,6 +92,22 @@ pub enum SettingsAction {
         key_label: Option<String>,
         connected_at: Option<i64>,
     },
+    /// Set AssemblyAI credential metadata (source, key_id, key_label, connected_at).
+    /// Secrets stay in platform secure storage; only metadata is persisted.
+    SetAssemblyAiCredential {
+        source: String,
+        key_id: Option<String>,
+        key_label: Option<String>,
+        connected_at: Option<i64>,
+    },
+    /// Set Perplexity credential metadata (source, key_id, key_label, connected_at).
+    /// Secrets stay in platform secure storage; only metadata is persisted.
+    SetPerplexityCredential {
+        source: String,
+        key_id: Option<String>,
+        key_label: Option<String>,
+        connected_at: Option<i64>,
+    },
     /// Set the STT provider selection.
     SetSttProvider { provider: String },
     /// Report which STT providers currently have an API key in platform

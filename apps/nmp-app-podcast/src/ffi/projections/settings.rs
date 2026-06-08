@@ -243,6 +243,30 @@ pub struct SettingsSnapshot {
     /// ElevenLabs credential connected-at timestamp (epoch seconds, optional).
     #[serde(default)]
     pub eleven_labs_connected_at: Option<i64>,
+    /// AssemblyAI credential source enum (raw String: "manual", "byok", "none").
+    #[serde(default = "default_empty_string")]
+    pub assembly_ai_credential_source: String,
+    /// AssemblyAI BYOK key ID (optional).
+    #[serde(default)]
+    pub assembly_ai_byok_key_id: Option<String>,
+    /// AssemblyAI BYOK key label (optional).
+    #[serde(default)]
+    pub assembly_ai_byok_key_label: Option<String>,
+    /// AssemblyAI credential connected-at timestamp (epoch seconds, optional).
+    #[serde(default)]
+    pub assembly_ai_connected_at: Option<i64>,
+    /// Perplexity credential source enum (raw String: "manual", "byok", "none").
+    #[serde(default = "default_empty_string")]
+    pub perplexity_credential_source: String,
+    /// Perplexity BYOK key ID (optional).
+    #[serde(default)]
+    pub perplexity_byok_key_id: Option<String>,
+    /// Perplexity BYOK key label (optional).
+    #[serde(default)]
+    pub perplexity_byok_key_label: Option<String>,
+    /// Perplexity credential connected-at timestamp (epoch seconds, optional).
+    #[serde(default)]
+    pub perplexity_connected_at: Option<i64>,
     /// STT provider selection enum (raw String: "apple_native", etc).
     #[serde(default = "default_stt_provider")]
     pub stt_provider: String,
@@ -378,6 +402,14 @@ impl Default for SettingsSnapshot {
             eleven_labs_byok_key_id: None,
             eleven_labs_byok_key_label: None,
             eleven_labs_connected_at: None,
+            assembly_ai_credential_source: String::new(),
+            assembly_ai_byok_key_id: None,
+            assembly_ai_byok_key_label: None,
+            assembly_ai_connected_at: None,
+            perplexity_credential_source: String::new(),
+            perplexity_byok_key_id: None,
+            perplexity_byok_key_label: None,
+            perplexity_connected_at: None,
             stt_provider: "apple_native".to_owned(),
             effective_stt_provider: "apple_native".to_owned(),
             effective_stt_provider_requires_key: false,

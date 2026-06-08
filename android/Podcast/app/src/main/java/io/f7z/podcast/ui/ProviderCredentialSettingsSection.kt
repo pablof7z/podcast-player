@@ -208,6 +208,11 @@ fun ProviderCredentialSettingsSection(
         AssemblyAiCredentialCard(
             input = assemblyAiInput,
             hasStoredKey = hasAssemblyAiKey,
+            status = credentialStatus(
+                source = settings.assemblyAiCredentialSource,
+                hasStoredKey = hasAssemblyAiKey,
+                keyLabel = settings.assemblyAiByokKeyLabel,
+            ),
             result = assemblyAiResult,
             onInputChanged = {
                 assemblyAiInput = it
@@ -227,6 +232,11 @@ fun ProviderCredentialSettingsSection(
         PerplexityCredentialCard(
             input = perplexityInput,
             hasStoredKey = hasPerplexityKey,
+            status = credentialStatus(
+                source = settings.perplexityCredentialSource,
+                hasStoredKey = hasPerplexityKey,
+                keyLabel = settings.perplexityByokKeyLabel,
+            ),
             result = perplexityResult,
             onInputChanged = {
                 perplexityInput = it

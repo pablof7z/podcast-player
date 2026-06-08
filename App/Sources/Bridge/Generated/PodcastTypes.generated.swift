@@ -1,9 +1,11 @@
 // PodcastTypes.generated.swift
 // This file has been split into four focused files in the same directory:
 //
-//   PodcastUpdate.generated.swift      — PodcastUpdate, PlayerState, SettingsSnapshot,
+//   PodcastUpdate.generated.swift      — PodcastUpdate, PlayerState,
 //                                        AccountSummary, DownloadQueueSnapshot,
 //                                        DownloadItemSnapshot
+//   PodcastSettingsSnapshot.generated.swift
+//                                      — SettingsSnapshot
 //   PodcastLibraryTypes.generated.swift — PodcastSummary, EpisodeSummary, ChapterSummary,
 //                                        TranscriptEntry, AdSegment, OwnedPodcastInfo,
 //                                        NostrShowSummary

@@ -119,6 +119,10 @@ worktrees currently in flight.
   Perplexity, Android mirrors those fields and uses them for credential-card and
   speech-provider readiness, and Swift provider/transcript/wiki readiness UI
   consumes the shared projection instead of Keychain-only status fallbacks.
+  Rust settings actions/projections now also persist non-secret credential
+  source, BYOK key id/label, and connected-at metadata for AssemblyAI and
+  Perplexity, matching OpenRouter/Ollama/ElevenLabs; iOS/Android/TUI set,
+  clear, and display that metadata instead of boolean-only provider status.
   Speech STT/TTS model options now come from the shared Rust
   `nmp_app_podcast_speech_model_catalog` instead of Swift/Android-owned
   constants, with the TUI using the same catalog for provider-setting display
@@ -215,9 +219,9 @@ worktrees currently in flight.
   comments, reset progress, and sleep timer actions. The settings relay slice
   now wires configured relay add/remove/role editing and validates projection
   updates. The provider/model settings slice now wires LLM role model
-  selection, provider credential metadata, env-backed in-memory OpenRouter/
-  Ollama/ElevenLabs/AssemblyAI/Perplexity credentials, STT key-presence
-  reporting, STT/TTS model selectors, shared ElevenLabs voice catalog
+  selection, provider credential metadata for OpenRouter/Ollama/ElevenLabs/
+  AssemblyAI/Perplexity, env-backed in-memory provider credentials,
+  STT key-presence reporting, STT/TTS model selectors, shared ElevenLabs voice catalog
   selection, and the local model hint. The terminal shell now
   has shared animated chrome, focused row rails, player waveform motion,
   download activity strips, and themed detail/input overlays without changing

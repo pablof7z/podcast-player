@@ -58,6 +58,34 @@ fn set_stt_keys_present_replaces_previous_set() {
     assert!(store.stt_key_present("openrouter_whisper"));
 }
 
+#[test]
+fn assembly_ai_and_perplexity_credentials_persist_across_reload() {
+    let dir = TempDir::new();
+    {
+        let mut store = PodcastStore::new();
+        store.set_data_dir(dir.path.clone());
+        store.set_assembly_ai_credential(
+            "byok".to_owned(),
+            Some("asm-key".to_owned()),
+            Some("Assembly team".to_owned()),
+            Some(1_710_000_000),
+        );
+        store.set_perplexity_credential("manual".to_owned(), None, None, Some(1_710_000_001));
+    }
+
+    let mut reloaded = PodcastStore::new();
+    reloaded.set_data_dir(dir.path.clone());
+
+    assert_eq!(reloaded.assembly_ai_credential_source(), "byok");
+    assert_eq!(reloaded.assembly_ai_byok_key_id(), Some("asm-key"));
+    assert_eq!(reloaded.assembly_ai_byok_key_label(), Some("Assembly team"));
+    assert_eq!(reloaded.assembly_ai_connected_at(), Some(1_710_000_000));
+    assert_eq!(reloaded.perplexity_credential_source(), "manual");
+    assert_eq!(reloaded.perplexity_byok_key_id(), None);
+    assert_eq!(reloaded.perplexity_byok_key_label(), None);
+    assert_eq!(reloaded.perplexity_connected_at(), Some(1_710_000_001));
+}
+
 // ── Settings round-trip (playback rate / auto-delete / auto-skip-ads) ────
 //
 // These exercise the store-accessor → `set_data_dir` reload path for the

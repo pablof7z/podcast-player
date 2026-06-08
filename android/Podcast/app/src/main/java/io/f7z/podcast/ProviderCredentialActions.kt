@@ -4,9 +4,11 @@ import android.content.Context
 import io.f7z.podcast.security.ProviderCredentialStore
 import io.f7z.podcast.ui.PodcastActionDispatcher
 import io.f7z.podcast.ui.PodcastNamespace
+import io.f7z.podcast.ui.SetAssemblyAiCredentialPayload
 import io.f7z.podcast.ui.SetElevenLabsCredentialPayload
 import io.f7z.podcast.ui.SetOllamaCredentialPayload
 import io.f7z.podcast.ui.SetOpenRouterCredentialPayload
+import io.f7z.podcast.ui.SetPerplexityCredentialPayload
 import io.f7z.podcast.ui.SetProviderApiKeysPayload
 import io.f7z.podcast.ui.SetSttKeysPresentPayload
 
@@ -199,9 +201,17 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.saveAssemblyAiApiKey(context, apiKey)) {
             return ProviderCredentialActionResult(false, "AssemblyAI key could not be saved.")
         }
+        val metadata = PodcastActionDispatcher.dispatch(
+            bridge = bridge,
+            namespace = PodcastNamespace.SETTINGS,
+            payload = SetAssemblyAiCredentialPayload(
+                source = SOURCE_MANUAL,
+                connectedAt = epochSeconds(),
+            ),
+        )
         val reload = reloadProviderApiKeys(context, bridge)
         val stt = syncSttKeysPresent(context, bridge)
-        return if (reload != null && stt != null) {
+        return if (metadata != null && reload != null && stt != null) {
             ProviderCredentialActionResult(true, "AssemblyAI connected.")
         } else {
             ProviderCredentialActionResult(false, "AssemblyAI key saved, but provider state did not update.")
@@ -215,9 +225,14 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.clearAssemblyAiApiKey(context)) {
             return ProviderCredentialActionResult(false, "AssemblyAI key could not be deleted.")
         }
+        val metadata = PodcastActionDispatcher.dispatch(
+            bridge = bridge,
+            namespace = PodcastNamespace.SETTINGS,
+            payload = SetAssemblyAiCredentialPayload(source = SOURCE_NONE),
+        )
         val reload = reloadProviderApiKeys(context, bridge)
         val stt = syncSttKeysPresent(context, bridge)
-        return if (reload != null && stt != null) {
+        return if (metadata != null && reload != null && stt != null) {
             ProviderCredentialActionResult(true, "AssemblyAI disconnected.")
         } else {
             ProviderCredentialActionResult(false, "AssemblyAI key deleted, but provider state did not update.")
@@ -232,8 +247,16 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.savePerplexityApiKey(context, apiKey)) {
             return ProviderCredentialActionResult(false, "Perplexity key could not be saved.")
         }
+        val metadata = PodcastActionDispatcher.dispatch(
+            bridge = bridge,
+            namespace = PodcastNamespace.SETTINGS,
+            payload = SetPerplexityCredentialPayload(
+                source = SOURCE_MANUAL,
+                connectedAt = epochSeconds(),
+            ),
+        )
         val reload = reloadProviderApiKeys(context, bridge)
-        return if (reload != null) {
+        return if (metadata != null && reload != null) {
             ProviderCredentialActionResult(true, "Perplexity connected.")
         } else {
             ProviderCredentialActionResult(false, "Perplexity key saved, but provider state did not update.")
@@ -247,8 +270,13 @@ object ProviderCredentialActions {
         if (!ProviderCredentialStore.clearPerplexityApiKey(context)) {
             return ProviderCredentialActionResult(false, "Perplexity key could not be deleted.")
         }
+        val metadata = PodcastActionDispatcher.dispatch(
+            bridge = bridge,
+            namespace = PodcastNamespace.SETTINGS,
+            payload = SetPerplexityCredentialPayload(source = SOURCE_NONE),
+        )
         val reload = reloadProviderApiKeys(context, bridge)
-        return if (reload != null) {
+        return if (metadata != null && reload != null) {
             ProviderCredentialActionResult(true, "Perplexity disconnected.")
         } else {
             ProviderCredentialActionResult(false, "Perplexity key deleted, but provider state did not update.")

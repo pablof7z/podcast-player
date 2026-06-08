@@ -361,7 +361,13 @@ fn settings_snapshot_round_trips() {
         open_router_key_present: true,
         ollama_key_present: true,
         eleven_labs_key_present: true,
+        assembly_ai_credential_source: "byok".into(),
+        assembly_ai_byok_key_id: Some("asm-key".into()),
+        assembly_ai_byok_key_label: Some("Assembly team".into()),
+        assembly_ai_connected_at: Some(1_710_000_000),
         assembly_ai_key_present: true,
+        perplexity_credential_source: "manual".into(),
+        perplexity_connected_at: Some(1_710_000_001),
         perplexity_key_present: true,
         ..SettingsSnapshot::default()
     };
@@ -370,7 +376,10 @@ fn settings_snapshot_round_trips() {
     assert!(json.contains("\"open_router_key_present\":true"));
     assert!(json.contains("\"ollama_key_present\":true"));
     assert!(json.contains("\"eleven_labs_key_present\":true"));
+    assert!(json.contains("\"assembly_ai_credential_source\":\"byok\""));
+    assert!(json.contains("\"assembly_ai_byok_key_id\":\"asm-key\""));
     assert!(json.contains("\"assembly_ai_key_present\":true"));
+    assert!(json.contains("\"perplexity_credential_source\":\"manual\""));
     assert!(json.contains("\"perplexity_key_present\":true"));
     let decoded: SettingsSnapshot = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, s);

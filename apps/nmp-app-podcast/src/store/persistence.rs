@@ -231,6 +231,24 @@ pub(super) struct PersistedSettings {
     /// ElevenLabs credential connected-at timestamp (epoch seconds, optional).
     #[serde(default)]
     pub eleven_labs_connected_at: Option<i64>,
+    /// AssemblyAI credential metadata; secrets stay in platform secure storage.
+    #[serde(default)]
+    pub assembly_ai_credential_source: String,
+    #[serde(default)]
+    pub assembly_ai_byok_key_id: Option<String>,
+    #[serde(default)]
+    pub assembly_ai_byok_key_label: Option<String>,
+    #[serde(default)]
+    pub assembly_ai_connected_at: Option<i64>,
+    /// Perplexity credential metadata; secrets stay in platform secure storage.
+    #[serde(default)]
+    pub perplexity_credential_source: String,
+    #[serde(default)]
+    pub perplexity_byok_key_id: Option<String>,
+    #[serde(default)]
+    pub perplexity_byok_key_label: Option<String>,
+    #[serde(default)]
+    pub perplexity_connected_at: Option<i64>,
     /// STT provider selection. Empty string in old files →
     /// hydration replaces with "apple_native".
     #[serde(default)]
@@ -348,6 +366,14 @@ impl Default for PersistedSettings {
             eleven_labs_byok_key_id: None,
             eleven_labs_byok_key_label: None,
             eleven_labs_connected_at: None,
+            assembly_ai_credential_source: String::new(),
+            assembly_ai_byok_key_id: None,
+            assembly_ai_byok_key_label: None,
+            assembly_ai_connected_at: None,
+            perplexity_credential_source: String::new(),
+            perplexity_byok_key_id: None,
+            perplexity_byok_key_label: None,
+            perplexity_connected_at: None,
             stt_provider: "apple_native".to_owned(),
             open_router_whisper_model: "openai/whisper-1".to_owned(),
             assembly_ai_stt_model: "universal-3-pro,universal-2".to_owned(),
