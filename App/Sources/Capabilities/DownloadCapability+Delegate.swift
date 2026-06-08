@@ -146,22 +146,29 @@ final class NmpDownloadCoordinator: NSObject, URLSessionDownloadDelegate, @unche
         Task { @MainActor [weak capability] in
             guard let capability else { return }
             if isCancelled {
-                // Either:
-                //   * a `CancelDownload` command — already emitted
-                //     `Cancelled` and cleared resume data;
-                //   * a `PauseDownload` command — the cancel handler
-                //     stashed resume data and emitted `Paused`;
-                //   * an OS-initiated cancel (unlikely with our
-                //     configuration).
-                // If resume data showed up here but wasn't already
-                // persisted (e.g. an OS-driven cancel), stash it so a
-                // subsequent `ResumeDownload` can use it.
+                // Three callers produce NSURLErrorCancelled here:
+                //   * `CancelDownload` command — already emitted `Cancelled`
+                //     and cleared the map entry synchronously before calling
+                //     task.cancel().
+                //   * `PauseDownload` command — the cancel-with-resume-data
+                //     closure emits `Paused` and clears the map entry on the
+                //     main actor (races this hop, but either ordering is safe).
+                //   * OS-initiated cancel — the map entry is still set because
+                //     no command path cleared it. Rust was never told the
+                //     download stopped; emit `Paused` so it can track the stall
+                //     and potentially retry. Resume data (if any) is kept so
+                //     the next `StartDownload` picks up where it left off.
                 if let resumeData {
                     DownloadCapability.writeResumeData(resumeData, for: episodeID, kind: kind)
                 }
-                // The map entry was cleared by the command path; if it
-                // wasn't (OS-driven cancel), drop it now.
+                let wasOSDriven = capability.taskByEpisode[episodeID] != nil
                 capability.taskByEpisode[episodeID] = nil
+                capability.lastEmittedBytes[episodeID] = nil
+                capability.lastEmittedAt[episodeID] = nil
+                if wasOSDriven {
+                    let bytes = UInt64(max(0, task.countOfBytesReceived))
+                    capability.emit(.paused(episodeID: episodeID, bytesDownloaded: bytes))
+                }
                 return
             }
             capability.taskByEpisode[episodeID] = nil

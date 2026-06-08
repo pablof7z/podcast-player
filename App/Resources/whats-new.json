@@ -2,6 +2,14 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-08T00:01:00Z",
+      "lines": [
+        "Download now shows a progress bar immediately when queued — no more silent waiting",
+        "Swiping on a queued download now shows Cancel instead of a second Download button",
+        "OS-interrupted downloads (network drop, backgrounding) now properly surface as paused instead of silently vanishing"
+      ]
+    },
+    {
       "shipped_at": "2026-06-08T02:03:44Z",
       "lines": [
         "AssemblyAI and Perplexity settings now show whether keys were connected manually or through BYOK."

@@ -645,6 +645,36 @@ worktrees currently in flight.
 - ~~**android-download-capability-anr.**~~ Done — `detach()` no longer blocks
   the main thread; it marks the capability detached, cancels tracked OkHttp
   `Call`s, cancels jobs, and suppresses late reports after bridge teardown.
+- **android-exoplayer-position-sampling.** DOCUMENTED PLATFORM EXCEPTION
+  (#322). Significant playback-position events on Android are reported
+  event-driven via `Player.Listener` (`onIsPlayingChanged`,
+  `onPlaybackStateChanged(STATE_ENDED)`, `onPositionDiscontinuity` for seeks,
+  `onPlayerError`). Within-segment progress between those events still requires
+  sampling: ExoPlayer (`media3` 1.4.1) exposes no per-second position callback
+  and `getCurrentPosition()` is poll-only. `ExoPlayerReportListener` therefore
+  keeps a `Handler` tick (`POSITION_TICK_MS`) that runs ONLY while playing and
+  stops the instant `isPlayingChanged(false)` fires (no idle wakeups). Reduced
+  from 250 ms (4 Hz) to 1000 ms (1 Hz), matching the iOS executor cadence and
+  staying well under the canonical ≤4 Hz `AudioReport::Playing` ceiling. This
+  is the platform constraint, not a polling hack; revisit only if a future
+  media3 release adds a position-progress callback.
+- **tui-mpv-position-sampling.** DOCUMENTED EXCEPTION + tracked follow-up
+  (#322). The terminal player samples mpv's `playback-time` over the JSON IPC
+  socket every 250 ms (`AudioHost::poll_position`, driven off the UI animation
+  frame clock in `apps/podcast-tui/src/main.rs`). libmpv / mpv IPC expose no
+  per-frame position event, so periodic sampling is the only mechanism the
+  player offers (the sampling cadence is the legitimate exception). The
+  previous fake-progress path (incrementing the position by the tick interval
+  when no mpv backend was present) was removed: with no real backend the
+  position is now left unknown/unchanged rather than fabricated.
+  FOLLOW-UP (not done in #322): the sampled position is currently stored in
+  `last_position_secs` and NOT forwarded to the kernel — there is no
+  `nmp_app_podcast_audio_report` call anywhere in `apps/podcast-tui`, so live
+  mpv progress never reaches the kernel projection. Wiring that single FFI
+  report (so the TUI surfaces real playback progress, the way iOS/Android do
+  via `AudioReport::Playing`) is the remaining work. The TUI is a secondary
+  target; correctness over polish, so this PR fixes the fabrication and
+  documents the gap rather than building the report path.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
@@ -686,16 +716,38 @@ worktrees currently in flight.
 - **m5-non-utf8-feed-bodies.** Widen HTTP capability body transfer to preserve
   non-UTF8 feed bytes. Update Swift and Rust so XML encoding declarations are
   honored.
-- **m8-blossom-body-base64-rust-side.** The iOS HTTP capability now decodes a
-  `body_base64` request field to raw `Data` before sending it as the HTTP body
-  (`App/Sources/Capabilities/HttpCapability.swift`), so binary uploads survive
-  the UTF-8 bridge. The Rust side on `feat/m8-blossom-upload` does **not** use
-  it yet: `apps/nmp-app-podcast/src/blossom.rs` still puts the base64 string in
-  the existing `body` field, and `apps/podcast-feeds/src/http.rs`'s
-  `HttpRequest` has no `body_base64` field. Until both are updated to emit
-  `body_base64`, the Blossom upload silently sends base64 *text* as the HTTP
-  body and is **not** end-to-end functional. Follow-up: add `body_base64` to the
-  Rust `HttpRequest` struct and have `blossom.rs` set it instead of `body`.
+- ~~**m8-blossom-body-base64-rust-side.**~~ Done (superseded by the
+  `m8-blossom-binary-body` entry below). The Rust side now emits the blob in the
+  dedicated `body_base64` field (`apps/nmp-app-podcast/src/blossom.rs`,
+  `apps/podcast-feeds/src/http.rs`) and the iOS executor decodes it back to raw
+  `Data`, so the Rust audio-upload path is end-to-end functional — the "Rust does
+  not use it yet" status this item described is no longer true.
+- **blossom-active-account-upload-kernel.** The two IN-MEMORY Blossom upload
+  callers — avatar (`App/Sources/Features/Identity/ChangePhotoSheet.swift`) and
+  owned-podcast artwork
+  (`App/Sources/Agent/LiveAgentOwnedPodcastManager.generateAndUploadArtwork`) —
+  still run their HTTP transport in Swift (`App/Sources/Services/BlossomUploader.swift`).
+  Signing is already kernel-owned (D13, via `KernelSigner` →
+  `nmp_app_sign_event_for_return`); only the PUT transport remains in Swift.
+  The AUDIO upload path is by contrast already fully Rust-owned
+  (`host_op_publish::publish_episode` → `blossom::upload_to_blossom`), because
+  it signs the kind:24242 auth event **synchronously** with the per-podcast
+  NIP-F4 key (`secret_bytes`). The blocker for the avatar/artwork path is NOT a
+  missing `file_path` (the original TODO's premise — false; bytes-vs-path is
+  irrelevant) but that these uploads sign with the user's **active account**,
+  which may be a NIP-46 bunker. Active-account signing only goes through the
+  **async** sign-and-return seam (correlation-id + host-side continuation,
+  deliberately host-driven so a remote-signer round-trip never blocks the actor
+  thread). A synchronous Rust host-op handler cannot orchestrate that. Moving
+  these uploads into Rust therefore requires a NEW async-bridging capability: a
+  Rust action that registers a `signed_events` observer, oneshot-bridges the
+  signed kind:24242 event, then dispatches the HTTP upload through the capability
+  executor and stamps the resulting blob URL onto a projection (mirror the
+  `summarize_episode`/`discover_nostr` dispatch-then-await-projection pattern,
+  but for sign-and-return rather than relay publish). Until that lands, keep the
+  Swift transport as one coherent path (do NOT do a Swift-signs/Rust-HTTP split —
+  it fragments auth-event construction across the boundary, AGENTS.md
+  anti-fragmentation).
 - **m5-chirp-headers-parity.** Reconcile podcast-player and Chirp HTTP header
   schemas once the canonical `nmp-core::capability::http` shape lands.
 - ~~**m8-blossom-binary-body.**~~ Done (Rust side): `HttpRequest` now carries
