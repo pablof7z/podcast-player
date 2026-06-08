@@ -93,6 +93,7 @@ fn parse_task_request(request: &str) -> Result<(AgentTaskIntent, &'static str), 
         }
         _ => parse_memory_request(request)
             .map(|intent| (intent, "Remember Memory"))
+            .or_else(|| parse_prompt_request(request).map(|intent| (intent, "Agent Prompt")))
             .ok_or_else(task_input_hint),
     }
 }
@@ -113,6 +114,21 @@ fn parse_memory_request(request: &str) -> Option<AgentTaskIntent> {
     Some(AgentTaskIntent::RememberMemory {
         key: key.to_owned(),
         value: value.to_owned(),
+    })
+}
+
+fn parse_prompt_request(request: &str) -> Option<AgentTaskIntent> {
+    let trimmed = request.trim();
+    let prompt = strip_prefix_ci(trimmed, "prompt:")
+        .or_else(|| strip_prefix_ci(trimmed, "prompt "))
+        .or_else(|| strip_prefix_ci(trimmed, "agent prompt:"))
+        .or_else(|| strip_prefix_ci(trimmed, "ask agent:"))?
+        .trim();
+    if prompt.is_empty() || prompt.starts_with('{') || prompt.starts_with('[') {
+        return None;
+    }
+    Some(AgentTaskIntent::AgentPrompt {
+        prompt: prompt.to_owned(),
     })
 }
 
@@ -147,7 +163,7 @@ fn require_text(text: &str, hint: fn() -> String) -> Result<&str, String> {
 }
 
 fn task_input_hint() -> String {
-    "task examples: daily | triage inbox; weekly | remember topic=rust; once | clear agent"
+    "task examples: daily | triage inbox; weekly | remember topic=rust; daily | prompt: summarize new episodes"
         .to_owned()
 }
 
@@ -185,6 +201,23 @@ mod tests {
         assert_eq!(draft.schedule, "nightly");
         assert_eq!(draft.description.as_deref(), Some("old form"));
         assert_eq!(draft.intent, AgentTaskIntent::ClearAgent);
+    }
+
+    #[test]
+    fn parses_prompt_task_request() {
+        let draft = parse_agent_task_input(
+            "Daily digest | daily | prompt: summarize new episodes | keep fresh",
+        )
+        .unwrap();
+        assert_eq!(draft.title, "Daily digest");
+        assert_eq!(draft.schedule, "daily");
+        assert_eq!(draft.description.as_deref(), Some("keep fresh"));
+        assert_eq!(
+            draft.intent,
+            AgentTaskIntent::AgentPrompt {
+                prompt: "summarize new episodes".to_owned()
+            }
+        );
     }
 
     #[test]

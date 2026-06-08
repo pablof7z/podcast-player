@@ -48,6 +48,26 @@ fn create_from_intent_action_round_trips() {
 }
 
 #[test]
+fn update_from_intent_action_round_trips() {
+    let action = AgentTasksAction::UpdateFromIntent {
+        task_id: "task-1".into(),
+        title: "Prompt".into(),
+        description: Some("Daily prompt".into()),
+        intent: AgentTaskIntent::AgentPrompt {
+            prompt: "summarize new episodes".into(),
+        },
+        schedule: "daily".into(),
+    };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""op":"update_from_intent""#));
+    assert!(json.contains(r#""intent":{"type":"agent_prompt""#));
+    assert!(!json.contains("action_namespace"));
+    assert!(!json.contains("action_body"));
+    let decoded: AgentTasksAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+
+#[test]
 fn memory_intent_round_trips() {
     let intent = AgentTaskIntent::RememberMemory {
         key: "focus".into(),
@@ -102,6 +122,15 @@ fn run_now_action_round_trips() {
     };
     let json = serde_json::to_string(&action).expect("encode");
     assert!(json.contains(r#""op":"run_now""#));
+    let decoded: AgentTasksAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+
+#[test]
+fn run_due_action_round_trips() {
+    let action = AgentTasksAction::RunDue;
+    let json = serde_json::to_string(&action).expect("encode");
+    assert_eq!(json, r#"{"op":"run_due"}"#);
     let decoded: AgentTasksAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, action);
 }

@@ -18,9 +18,9 @@ struct ChatConversation: Identifiable, Codable, Equatable, Sendable {
     /// LLM request and its manual is part of the conversation history.
     /// Defaults to empty so every new conversation starts lean.
     var enabledSkills: Set<String>
-    /// True for conversations started by `AgentScheduledTaskRunner`. Excluded
-    /// from `ChatHistoryStore.mostRecent` so a scheduled run doesn't hijack
-    /// the auto-resume path when the user opens the chat sheet.
+    /// True for conversations started by a scheduled agent task. Excluded from
+    /// `ChatHistoryStore.mostRecent` so a scheduled run doesn't hijack the
+    /// auto-resume path when the user opens the chat sheet.
     var isScheduledTask: Bool
     let createdAt: Date
     var updatedAt: Date

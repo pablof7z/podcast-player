@@ -63,7 +63,7 @@ extension AgentTools {
             ),
             tool(
                 name: Names.scheduleTask,
-                description: "Schedule a recurring background task — the agent will automatically run the given prompt at the specified interval as a new headless conversation. Use this when the user asks for recurring background work (e.g. 'check Hacker News daily for interesting podcasts'). If the app is offline for multiple periods only one catch-up run fires on the next launch.",
+                description: "Schedule a background task through the shared Rust task scheduler. Use this when the user asks for recurring background work (e.g. 'check Hacker News daily for interesting podcasts'). If the app is offline for multiple periods only one catch-up run fires on the next launch.",
                 properties: [
                     "prompt": ["type": "string", "description": "The full task prompt to run on each scheduled execution."],
                     "label": ["type": "string", "description": "Short human-readable name shown in the scheduled tasks list (e.g. 'Daily HN check'). Defaults to the first 40 characters of the prompt."],
@@ -82,7 +82,7 @@ extension AgentTools {
             ),
             tool(
                 name: Names.listScheduledTasks,
-                description: "List all currently active recurring scheduled tasks, including next run time and whether each is currently due.",
+                description: "List all shared scheduled tasks, including task id, schedule, status, and next/last run timestamps when available.",
                 properties: [:],
                 required: []
             ),

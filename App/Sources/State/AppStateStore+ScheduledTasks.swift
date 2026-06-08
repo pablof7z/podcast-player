@@ -1,44 +1,66 @@
 import Foundation
 
-// MARK: - Scheduled Tasks
+// MARK: - Shared Agent Tasks
 
 extension AppStateStore {
 
-    var scheduledTasks: [AgentScheduledTask] { state.agentScheduledTasks }
+    var scheduledTasks: [AgentTaskSummary] {
+        kernel?.podcastSnapshot?.agentTasks ?? []
+    }
 
     @discardableResult
-    func addScheduledTask(label: String, prompt: String, intervalSeconds: TimeInterval) -> AgentScheduledTask {
-        let task = AgentScheduledTask(
-            id: UUID(),
-            label: label,
-            prompt: prompt,
-            intervalSeconds: intervalSeconds,
-            createdAt: Date(),
-            lastRunAt: nil,
-            nextRunAt: Date().addingTimeInterval(intervalSeconds)
-        )
-        state.agentScheduledTasks.append(task)
-        return task
+    func createScheduledPromptTask(title: String, prompt: String, schedule: String) -> DispatchResult {
+        dispatchTaskAction([
+            "op": "create_from_intent",
+            "title": title,
+            "intent": ["type": "agent_prompt", "prompt": prompt],
+            "schedule": schedule,
+        ])
     }
 
-    func removeScheduledTask(id: UUID) {
-        state.agentScheduledTasks.removeAll { $0.id == id }
+    @discardableResult
+    func updateScheduledPromptTask(
+        id: String,
+        title: String,
+        prompt: String,
+        schedule: String
+    ) -> DispatchResult {
+        dispatchTaskAction([
+            "op": "update_from_intent",
+            "task_id": id,
+            "title": title,
+            "intent": ["type": "agent_prompt", "prompt": prompt],
+            "schedule": schedule,
+        ])
     }
 
-    func updateScheduledTask(id: UUID, label: String, prompt: String, intervalSeconds: TimeInterval) {
-        guard let idx = state.agentScheduledTasks.firstIndex(where: { $0.id == id }) else { return }
-        state.agentScheduledTasks[idx].label = label
-        state.agentScheduledTasks[idx].prompt = prompt
-        state.agentScheduledTasks[idx].intervalSeconds = intervalSeconds
-        state.agentScheduledTasks[idx].nextRunAt = Date().addingTimeInterval(intervalSeconds)
+    @discardableResult
+    func removeScheduledTask(id: String) -> DispatchResult {
+        dispatchTaskAction(["op": "delete", "task_id": id])
     }
 
-    /// Advances `nextRunAt` to `now + interval` — NOT `previousNextRunAt + interval`.
-    /// This gives miss-once semantics: if the app was offline for N periods only
-    /// one catch-up run fires; subsequent runs start fresh from the moment of resumption.
-    func markTaskRun(id: UUID, now: Date = Date()) {
-        guard let idx = state.agentScheduledTasks.firstIndex(where: { $0.id == id }) else { return }
-        state.agentScheduledTasks[idx].lastRunAt = now
-        state.agentScheduledTasks[idx].nextRunAt = now.addingTimeInterval(state.agentScheduledTasks[idx].intervalSeconds)
+    @discardableResult
+    func setScheduledTaskEnabled(id: String, isEnabled: Bool) -> DispatchResult {
+        dispatchTaskAction([
+            "op": isEnabled ? "enable" : "disable",
+            "task_id": id,
+        ])
+    }
+
+    @discardableResult
+    func runScheduledTaskNow(id: String) -> DispatchResult {
+        dispatchTaskAction(["op": "run_now", "task_id": id])
+    }
+
+    @discardableResult
+    func runDueScheduledTasksIfNeeded() -> DispatchResult {
+        dispatchTaskAction(["op": "run_due"])
+    }
+
+    private func dispatchTaskAction(_ body: [String: Any]) -> DispatchResult {
+        guard let kernel else {
+            return .failure("Rust kernel is not ready.")
+        }
+        return kernel.dispatch(namespace: "podcast.tasks", body: body)
     }
 }

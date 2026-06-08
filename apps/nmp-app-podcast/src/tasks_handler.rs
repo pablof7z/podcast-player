@@ -58,6 +58,7 @@ use crate::ffi::actions::{
     InboxActionModule, MemoryAction, MemoryActionModule,
 };
 use crate::ffi::projections::AgentTaskSummary;
+use crate::tasks_schedule::{next_run_after, next_run_after_attempt};
 
 /// Seed value installed on first kernel boot — gives the iOS UI rows to
 /// render before the user has scheduled anything. Returned by value so
@@ -76,7 +77,9 @@ pub fn default_seed() -> Vec<AgentTaskSummary> {
         action_namespace: payload.action_namespace,
         action_body: payload.action_body,
         schedule: "daily".into(),
-        next_run_at: None,
+        next_run_at: next_run_after("daily", Utc::now().timestamp())
+            .ok()
+            .flatten(),
         last_run_at: None,
         status: "pending".into(),
         is_enabled: true,
@@ -148,6 +151,25 @@ pub fn handle_tasks_action(
             ),
             Err(error) => serde_json::json!({"ok": false, "error": error}),
         },
+        AgentTasksAction::UpdateFromIntent {
+            task_id,
+            title,
+            description,
+            intent,
+            schedule,
+        } => match task_payload_from_intent(&intent) {
+            Ok(payload) => update_task(
+                &mut guard,
+                rev,
+                task_id,
+                title,
+                description,
+                intent,
+                payload,
+                schedule,
+            ),
+            Err(error) => serde_json::json!({"ok": false, "error": error}),
+        },
         AgentTasksAction::Delete { task_id } => {
             let before = guard.len();
             guard.retain(|t| t.id != task_id);
@@ -161,44 +183,37 @@ pub fn handle_tasks_action(
         AgentTasksAction::Enable { task_id } => set_enabled(&mut guard, &task_id, true, rev),
         AgentTasksAction::Disable { task_id } => set_enabled(&mut guard, &task_id, false, rev),
         AgentTasksAction::RunNow { task_id } => {
-            let Some(task) = guard.iter_mut().find(|t| t.id == task_id) else {
-                return serde_json::json!({"ok": false, "error": "task not found"});
-            };
-            if !task.is_enabled {
-                return serde_json::json!({"ok": false, "error": "task disabled"});
-            }
-            // Snapshot what the dispatch needs, flip to "running", stamp,
-            // and bump `rev` so the next snapshot tick shows the in-flight
-            // state even if there is no `dispatch` wired (unit tests).
-            let action_namespace = task.action_namespace.clone();
-            let action_body = task.action_body.clone();
-            task.last_run_at = Some(Utc::now().timestamp());
-            task.status = "running".into();
-            rev.fetch_add(1, Ordering::Relaxed);
-
-            // Release the tasks lock BEFORE re-dispatching: the production
-            // `dispatch` re-enters the kernel action registry on this same
-            // actor thread and we must not hold the slot across it.
+            drop(guard);
+            run_task_by_id(tasks, rev, &task_id, dispatch, Utc::now().timestamp())
+        }
+        AgentTasksAction::RunDue => {
+            let now = Utc::now().timestamp();
+            let task_ids = guard
+                .iter()
+                .filter(|task| task.is_enabled && task.next_run_at.is_some_and(|due| due <= now))
+                .map(|task| task.id.clone())
+                .collect::<Vec<_>>();
             drop(guard);
 
-            let Some(dispatch) = dispatch else {
-                // No live kernel (unit tests): leave the task "running".
-                return serde_json::json!({"ok": true, "status": "running"});
-            };
-
-            // Synchronous accept/reject — the dispatched action's own
-            // downstream completion arrives later via the snapshot
-            // projection, which this slot does not watch (see module docs).
-            let accepted = dispatch(&action_namespace, &action_body);
-            let status = if accepted { "completed" } else { "failed" };
-            if let Ok(mut g) = tasks.lock() {
-                if let Some(t) = g.iter_mut().find(|t| t.id == task_id) {
-                    t.status = status.into();
-                    t.last_run_at = Some(Utc::now().timestamp());
+            let mut accepted = 0;
+            let mut failed = 0;
+            let mut running = 0;
+            for task_id in &task_ids {
+                let result = run_task_by_id(tasks, rev, task_id, dispatch, now);
+                match result["status"].as_str() {
+                    Some("completed") => accepted += 1,
+                    Some("failed") => failed += 1,
+                    Some("running") => running += 1,
+                    _ => {}
                 }
             }
-            rev.fetch_add(1, Ordering::Relaxed);
-            serde_json::json!({"ok": accepted, "status": status})
+            serde_json::json!({
+                "ok": failed == 0,
+                "ran": task_ids.len(),
+                "accepted": accepted,
+                "failed": failed,
+                "running": running,
+            })
         }
     }
 }
@@ -223,6 +238,11 @@ fn create_task(
     payload: TaskPayload,
     schedule: String,
 ) -> serde_json::Value {
+    let now = Utc::now().timestamp();
+    let next_run_at = match next_run_after(&schedule, now) {
+        Ok(next) => next,
+        Err(error) => return serde_json::json!({"ok": false, "error": error}),
+    };
     let task_id = Uuid::new_v4().to_string();
     let metadata = task_intent_metadata(intent.as_ref());
     guard.push(AgentTaskSummary {
@@ -235,7 +255,7 @@ fn create_task(
         action_namespace: payload.action_namespace,
         action_body: payload.action_body,
         schedule,
-        next_run_at: None,
+        next_run_at,
         last_run_at: None,
         status: "pending".into(),
         is_enabled: true,
@@ -260,6 +280,11 @@ fn task_intent_metadata(intent: Option<&AgentTaskIntent>) -> TaskIntentMetadata 
             intent_type: "remember_memory".to_owned(),
             intent_label: "Remember memory".to_owned(),
             intent_detail: Some(format!("{key} = {value}")),
+        },
+        Some(AgentTaskIntent::AgentPrompt { prompt }) => TaskIntentMetadata {
+            intent_type: "agent_prompt".to_owned(),
+            intent_label: "Agent prompt".to_owned(),
+            intent_detail: Some(prompt.clone()),
         },
         None => TaskIntentMetadata {
             intent_type: "custom".to_owned(),
@@ -287,6 +312,12 @@ fn task_payload_from_intent(intent: &AgentTaskIntent) -> Result<TaskPayload, Str
                 source: Some("task".into()),
             },
         ),
+        AgentTaskIntent::AgentPrompt { prompt } => task_payload(
+            <AgentActionModule as ActionModule>::NAMESPACE,
+            &AgentChatAction::Send {
+                message: prompt.clone(),
+            },
+        ),
     }
 }
 
@@ -299,6 +330,81 @@ fn task_payload<T: serde::Serialize>(
         action_body: serde_json::to_string(action)
             .map_err(|e| format!("failed to encode task intent action: {e}"))?,
     })
+}
+
+fn update_task(
+    guard: &mut [AgentTaskSummary],
+    rev: &Arc<AtomicU64>,
+    task_id: String,
+    title: String,
+    description: Option<String>,
+    intent: AgentTaskIntent,
+    payload: TaskPayload,
+    schedule: String,
+) -> serde_json::Value {
+    let Some(task) = guard.iter_mut().find(|t| t.id == task_id) else {
+        return serde_json::json!({"ok": false, "error": "task not found"});
+    };
+    let now = Utc::now().timestamp();
+    let next_run_at = match next_run_after(&schedule, now) {
+        Ok(next) => next,
+        Err(error) => return serde_json::json!({"ok": false, "error": error}),
+    };
+    let metadata = task_intent_metadata(Some(&intent));
+    task.title = title;
+    task.description = description;
+    task.intent_type = metadata.intent_type;
+    task.intent_label = metadata.intent_label;
+    task.intent_detail = metadata.intent_detail;
+    task.action_namespace = payload.action_namespace;
+    task.action_body = payload.action_body;
+    task.schedule = schedule;
+    task.next_run_at = next_run_at;
+    task.status = "pending".into();
+    task.is_enabled = true;
+    rev.fetch_add(1, Ordering::Relaxed);
+    serde_json::json!({"ok": true})
+}
+
+fn run_task_by_id(
+    tasks: &Arc<Mutex<Vec<AgentTaskSummary>>>,
+    rev: &Arc<AtomicU64>,
+    task_id: &str,
+    dispatch: Option<&TaskDispatchFn<'_>>,
+    now: i64,
+) -> serde_json::Value {
+    let Ok(mut guard) = tasks.lock() else {
+        return serde_json::json!({"ok": false, "error": "tasks slot poisoned"});
+    };
+    let Some(task) = guard.iter_mut().find(|t| t.id == task_id) else {
+        return serde_json::json!({"ok": false, "error": "task not found"});
+    };
+    if !task.is_enabled {
+        return serde_json::json!({"ok": false, "error": "task disabled"});
+    }
+    let action_namespace = task.action_namespace.clone();
+    let action_body = task.action_body.clone();
+    let schedule = task.schedule.clone();
+    task.last_run_at = Some(now);
+    task.status = "running".into();
+    rev.fetch_add(1, Ordering::Relaxed);
+    drop(guard);
+
+    let Some(dispatch) = dispatch else {
+        return serde_json::json!({"ok": true, "status": "running"});
+    };
+
+    let accepted = dispatch(&action_namespace, &action_body);
+    let status = if accepted { "completed" } else { "failed" };
+    if let Ok(mut g) = tasks.lock() {
+        if let Some(t) = g.iter_mut().find(|t| t.id == task_id) {
+            t.status = status.into();
+            t.last_run_at = Some(now);
+            t.next_run_at = next_run_after_attempt(&schedule, now).ok().flatten();
+        }
+    }
+    rev.fetch_add(1, Ordering::Relaxed);
+    serde_json::json!({"ok": accepted, "status": status})
 }
 
 fn set_enabled(

@@ -428,9 +428,12 @@ fn task_intent_from_input(input: &str) -> Result<AgentTaskIntent> {
     match input {
         "inbox_triage" | "triage_inbox" | "triage" => Ok(AgentTaskIntent::InboxTriage),
         "clear_agent" | "agent_clear" | "clear_chat" => Ok(AgentTaskIntent::ClearAgent),
-        _ => memory_intent_value(input).ok_or_else(|| {
-            "unknown task intent; use inbox_triage, clear_agent, or memory:key=value".to_string()
-        }),
+        _ => memory_intent_value(input)
+            .or_else(|| prompt_intent_value(input))
+            .ok_or_else(|| {
+                "unknown task intent; use inbox_triage, clear_agent, memory:key=value, or prompt:<text>"
+                    .to_string()
+            }),
     }
 }
 
@@ -445,5 +448,19 @@ fn memory_intent_value(input: &str) -> Option<AgentTaskIntent> {
     Some(AgentTaskIntent::RememberMemory {
         key: key.to_owned(),
         value: value.to_owned(),
+    })
+}
+
+fn prompt_intent_value(input: &str) -> Option<AgentTaskIntent> {
+    let prompt = input
+        .strip_prefix("prompt:")
+        .or_else(|| input.strip_prefix("agent_prompt:"))
+        .or_else(|| input.strip_prefix("ask_agent:"))?
+        .trim();
+    if prompt.is_empty() || prompt.starts_with('{') || prompt.starts_with('[') {
+        return None;
+    }
+    Some(AgentTaskIntent::AgentPrompt {
+        prompt: prompt.to_owned(),
     })
 }

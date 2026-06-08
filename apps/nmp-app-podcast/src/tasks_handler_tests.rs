@@ -29,6 +29,7 @@ fn default_seed_has_inbox_triage_task() {
     assert_eq!(seed[0].action_body, r#"{"op":"triage"}"#);
     assert!(seed.iter().all(|t| t.is_enabled));
     assert!(seed.iter().all(|t| t.status == "pending"));
+    assert!(seed[0].next_run_at.is_some());
     // Id must be a hyphenated UUID.
     assert!(Uuid::parse_str(&seed[0].id).is_ok());
 }
@@ -58,7 +59,62 @@ fn create_appends_and_returns_task_id() {
     assert_eq!(guard[0].intent_label, "Triage inbox");
     assert_eq!(guard[0].action_namespace, "podcast.inbox");
     assert_eq!(guard[0].action_body, r#"{"op":"triage"}"#);
+    assert!(guard[0].next_run_at.is_some());
     assert_eq!(rev.load(Ordering::Relaxed), 1);
+}
+
+#[test]
+fn create_from_agent_prompt_intent_resolves_agent_send_action() {
+    let (tasks, rev) = new_state();
+    let result = handle_tasks_action(
+        AgentTasksAction::CreateFromIntent {
+            title: "Daily prompt".into(),
+            description: None,
+            intent: AgentTaskIntent::AgentPrompt {
+                prompt: "summarize my new episodes".into(),
+            },
+            schedule: "every 60s".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    assert_eq!(result["ok"], true);
+    let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].intent_type, "agent_prompt");
+    assert_eq!(guard[0].intent_label, "Agent prompt");
+    assert_eq!(
+        guard[0].intent_detail.as_deref(),
+        Some("summarize my new episodes")
+    );
+    assert_eq!(guard[0].action_namespace, "podcast.agent");
+    assert_eq!(
+        guard[0].action_body,
+        r#"{"op":"send","message":"summarize my new episodes"}"#
+    );
+}
+
+#[test]
+fn create_rejects_invalid_schedule_without_bumping_rev() {
+    let (tasks, rev) = new_state();
+    let result = handle_tasks_action(
+        AgentTasksAction::CreateFromIntent {
+            title: "Bad".into(),
+            description: None,
+            intent: AgentTaskIntent::InboxTriage,
+            schedule: "whenever".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    assert_eq!(result["ok"], false);
+    assert!(result["error"]
+        .as_str()
+        .unwrap()
+        .contains("invalid schedule"));
+    assert!(tasks.lock().unwrap().is_empty());
+    assert_eq!(rev.load(Ordering::Relaxed), 0);
 }
 
 #[test]
@@ -112,6 +168,46 @@ fn create_from_memory_intent_resolves_memory_action() {
         guard[0].action_body,
         r#"{"op":"remember","key":"topic","value":"rust","source":"task"}"#
     );
+}
+
+#[test]
+fn update_from_intent_replaces_task_payload_and_schedule() {
+    let (tasks, rev) = new_state();
+    let create = handle_tasks_action(
+        AgentTasksAction::CreateFromIntent {
+            title: "Triage".into(),
+            description: None,
+            intent: AgentTaskIntent::InboxTriage,
+            schedule: "daily".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    let task_id = create["task_id"].as_str().unwrap().to_owned();
+    let update = handle_tasks_action(
+        AgentTasksAction::UpdateFromIntent {
+            task_id,
+            title: "Remember".into(),
+            description: Some("new task".into()),
+            intent: AgentTaskIntent::RememberMemory {
+                key: "topic".into(),
+                value: "rust".into(),
+            },
+            schedule: "weekly".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    assert_eq!(update["ok"], true);
+    let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].title, "Remember");
+    assert_eq!(guard[0].description.as_deref(), Some("new task"));
+    assert_eq!(guard[0].intent_type, "remember_memory");
+    assert_eq!(guard[0].schedule, "weekly");
+    assert_eq!(guard[0].status, "pending");
+    assert!(guard[0].next_run_at.is_some());
 }
 
 #[test]
@@ -272,6 +368,33 @@ fn run_now_marks_completed_on_accept() {
     let guard = tasks.lock().unwrap();
     assert_eq!(guard[0].status, "completed");
     assert!(guard[0].last_run_at.is_some());
+}
+
+#[test]
+fn run_due_runs_due_task_and_clears_once_next_run() {
+    let (tasks, rev) = new_state();
+    let create = handle_tasks_action(
+        AgentTasksAction::CreateFromIntent {
+            title: "Clear".into(),
+            description: None,
+            intent: AgentTaskIntent::ClearAgent,
+            schedule: "once".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    let task_id = create["task_id"].as_str().unwrap().to_owned();
+    let dispatch = |_ns: &str, _body: &str| true;
+    let result = handle_tasks_action(AgentTasksAction::RunDue, &tasks, &rev, Some(&dispatch));
+    assert_eq!(result["ok"], true);
+    assert_eq!(result["ran"], 1);
+    assert_eq!(result["accepted"], 1);
+    let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].id, task_id);
+    assert_eq!(guard[0].status, "completed");
+    assert!(guard[0].last_run_at.is_some());
+    assert_eq!(guard[0].next_run_at, None);
 }
 
 #[test]

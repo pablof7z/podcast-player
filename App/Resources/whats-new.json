@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-08T00:13:00Z",
+      "lines": [
+        "Agent scheduled tasks now use the shared backend scheduler, so prompt tasks and run timing stay consistent across platforms."
+      ]
+    },
+    {
       "shipped_at": "2026-06-07T23:59:00Z",
       "lines": [
         "Transcript fallback messages now reflect the backend's resolved speech provider, so missing-key fallbacks are clearer."

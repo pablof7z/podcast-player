@@ -29,11 +29,9 @@ use nmp_core::ActorCommand;
 /// older clients that already send raw dispatch namespace/body pairs; new
 /// clients should use typed intents.
 ///
-/// `run_now` is a stub: it marks the task `completed` + stamps
-/// `last_run_at` rather than actually dispatching the `action_namespace`
-/// payload. The real receiver action (`podcast.inbox.triage`) is wired
-/// through the task dispatch hook; the stub path remains for unit tests
-/// with no live kernel and preserves the wire shape.
+/// `run_now` and `run_due` route through the task dispatch hook in
+/// `PodcastHostOpHandler`; unit tests with no live kernel still preserve the
+/// same wire shape by leaving tasks in the accepted `running` state.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum AgentTasksAction {
@@ -55,6 +53,14 @@ pub enum AgentTasksAction {
         intent: AgentTaskIntent,
         schedule: String,
     },
+    UpdateFromIntent {
+        task_id: String,
+        title: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        intent: AgentTaskIntent,
+        schedule: String,
+    },
     Delete {
         task_id: String,
     },
@@ -67,6 +73,7 @@ pub enum AgentTasksAction {
     RunNow {
         task_id: String,
     },
+    RunDue,
 }
 
 /// Typed task intents accepted by `"podcast.tasks"` creation.
@@ -81,6 +88,7 @@ pub enum AgentTaskIntent {
     InboxTriage,
     ClearAgent,
     RememberMemory { key: String, value: String },
+    AgentPrompt { prompt: String },
 }
 
 /// Action module for the `"podcast.tasks"` namespace.
