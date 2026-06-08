@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.f7z.podcast.ElevenLabsVoice
 import io.f7z.podcast.KernelBridge
 import io.f7z.podcast.SettingsSnapshot
 import io.f7z.podcast.STT_APPLE_NATIVE
@@ -25,6 +26,10 @@ internal fun SpeechProviderSettingsSection(
     bridge: KernelBridge,
     speechCatalog: SpeechModelCatalog,
     catalogError: String?,
+    voices: List<ElevenLabsVoice>,
+    voiceCatalogLoading: Boolean,
+    voiceCatalogError: String?,
+    onRefreshVoiceCatalog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -154,7 +159,14 @@ internal fun SpeechProviderSettingsSection(
                         )
                     },
                 )
-                ElevenLabsVoiceEditor(settings = settings, bridge = bridge)
+                ElevenLabsVoiceEditor(
+                    settings = settings,
+                    bridge = bridge,
+                    voices = voices,
+                    isLoading = voiceCatalogLoading,
+                    errorMessage = voiceCatalogError,
+                    onRefresh = onRefreshVoiceCatalog,
+                )
             }
         }
     }
