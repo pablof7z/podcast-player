@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-08T13:20:00Z",
+      "lines": [
+        "Episode Diagnostics now explains when transcription was deliberately skipped — category turned off, AI transcription disabled, a missing provider key, or audio not downloaded yet."
+      ]
+    },
+    {
       "shipped_at": "2026-06-08T02:03:44Z",
       "lines": [
         "AssemblyAI and Perplexity settings now show whether keys were connected manually or through BYOK."
