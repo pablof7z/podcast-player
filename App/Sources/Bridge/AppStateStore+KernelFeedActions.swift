@@ -22,16 +22,22 @@ extension AppStateStore {
         let beforeRefreshedAt = before?.lastRefreshedAt
         kern.dispatch(PodcastKernelAction.EnsurePodcast(feedUrl: trimmed))
 
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if let current = podcast(feedURL: url) {
-                if before == nil || current.lastRefreshedAt != beforeRefreshedAt {
-                    return current
-                }
+        // React to the projected row appearing (or its refresh stamp advancing)
+        // instead of polling on a 300ms timer. `podcast(feedURL:)` reads
+        // `state.podcasts`, so the awaiter re-fires the instant
+        // `applyKernelState` ingests the feed.
+        if let current = await awaitState(timeout: timeout, body: { [weak self] () -> Podcast? in
+            guard let current = self?.podcast(feedURL: url) else { return nil }
+            if before == nil || current.lastRefreshedAt != beforeRefreshedAt {
+                return current
             }
-            try await Task.sleep(for: .milliseconds(300))
+            return nil
+        }) {
+            return current
         }
 
+        // Timeout: surface a present-but-unrefreshed row rather than erroring;
+        // the refresh may still land.
         if let current = podcast(feedURL: url) {
             return current
         }
