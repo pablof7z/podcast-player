@@ -1,12 +1,12 @@
 import Foundation
 
-// MARK: - Wiki LLM client
+// MARK: - Provider completion client
 
-/// Stripped-down provider client tuned for JSON-shaped wiki compile turns.
+/// Stripped-down provider client tuned for JSON-shaped completion turns.
 /// Live calls go through Rust provider transport; Swift only sends provider,
 /// model, prompt, and response-format intent. Stub mode stays deterministic for
 /// tests and previews.
-struct WikiOpenRouterClient: Sendable {
+struct ProviderCompletionClient: Sendable {
 
     private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
@@ -41,12 +41,12 @@ struct WikiOpenRouterClient: Sendable {
 
     // MARK: - Convenience constructors
 
-    static func live(model: String = "openai/gpt-4o-mini") -> WikiOpenRouterClient {
-        WikiOpenRouterClient(mode: .live(modelReference: LLMModelReference(storedID: model)))
+    static func live(model: String = "openai/gpt-4o-mini") -> ProviderCompletionClient {
+        ProviderCompletionClient(mode: .live(modelReference: LLMModelReference(storedID: model)))
     }
 
-    static func stubbed(json: String) -> WikiOpenRouterClient {
-        WikiOpenRouterClient(mode: .stubbed(json: json))
+    static func stubbed(json: String) -> ProviderCompletionClient {
+        ProviderCompletionClient(mode: .stubbed(json: json))
     }
 
     // MARK: - Public API
@@ -83,13 +83,13 @@ struct WikiOpenRouterClient: Sendable {
         modelReference: LLMModelReference
     ) async throws -> String {
         guard modelReference.provider != .local else {
-            throw WikiClientError.missingCredential(provider: modelReference.provider.displayName)
+            throw ProviderCompletionClientError.missingCredential(provider: modelReference.provider.displayName)
         }
 
         guard let handleBits = await MainActor.run(body: {
             KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
         }) else {
-            throw WikiClientError.malformedResponse
+            throw ProviderCompletionClientError.malformedResponse
         }
 
         let intent = ProviderCompletionIntent(
@@ -101,7 +101,7 @@ struct WikiOpenRouterClient: Sendable {
         )
         let intentJSON = try Self.encoder.encode(intent)
         guard let intentString = String(data: intentJSON, encoding: .utf8) else {
-            throw WikiClientError.malformedResponse
+            throw ProviderCompletionClientError.malformedResponse
         }
         let responseJSON = await Task.detached(priority: .userInitiated) {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
@@ -117,13 +117,13 @@ struct WikiOpenRouterClient: Sendable {
         }.value
 
         guard let responseData = responseJSON.data(using: .utf8) else {
-            throw WikiClientError.malformedResponse
+            throw ProviderCompletionClientError.malformedResponse
         }
         let envelope = try Self.decoder.decode(ProviderCompletionEnvelope.self, from: responseData)
         if let error = envelope.error {
-            throw WikiClientError.providerError(error)
+            throw ProviderCompletionClientError.providerError(error)
         }
-        guard let result = envelope.result else { throw WikiClientError.malformedResponse }
+        guard let result = envelope.result else { throw ProviderCompletionClientError.malformedResponse }
 
         Task { @MainActor in
             let requestPreview = String(data: intentJSON, encoding: .utf8)
@@ -193,7 +193,7 @@ struct WikiOpenRouterClient: Sendable {
 
 // MARK: - Errors
 
-enum WikiClientError: LocalizedError {
+enum ProviderCompletionClientError: LocalizedError {
     case missingCredential(provider: String)
     case httpError(status: Int, body: String)
     case malformedResponse
@@ -204,11 +204,11 @@ enum WikiClientError: LocalizedError {
         case .missingCredential(let provider):
             "\(provider) is not connected. Add a key in Settings."
         case .httpError(let status, let body):
-            "Wiki API error (\(status)): \(body.prefix(200))"
+            "Provider completion error (\(status)): \(body.prefix(200))"
         case .malformedResponse:
-            "Malformed response from wiki API"
+            "Malformed response from provider completion"
         case .providerError(let message):
-            "Wiki provider error: \(message)"
+            "Provider completion error: \(message)"
         }
     }
 }

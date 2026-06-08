@@ -9,7 +9,7 @@ struct AIModelsSettingsView: View {
     @State private var categorizationSelectorPresented = false
     @State private var chapterSelectorPresented = false
     @State private var embeddingsSelectorPresented = false
-    @State private var catalog = OpenRouterModelSelectorViewModel()
+    @State private var catalog = ProviderModelSelectorViewModel()
 
     var body: some View {
         ZStack {
@@ -32,43 +32,43 @@ struct AIModelsSettingsView: View {
         }
         .sheet(isPresented: $agentSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent (Initial)")
+                ProviderModelSelectorView(selectedModelID: agentModelBinding, selectedModelName: agentModelNameBinding, role: "Agent (Initial)")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $thinkingSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: thinkingModelBinding, selectedModelName: thinkingModelNameBinding, role: "Agent (Thinking)")
+                ProviderModelSelectorView(selectedModelID: thinkingModelBinding, selectedModelName: thinkingModelNameBinding, role: "Agent (Thinking)")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $memorySelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
+                ProviderModelSelectorView(selectedModelID: memoryModelBinding, selectedModelName: memoryModelNameBinding, role: "Memory Compilation")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $wikiSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki")
+                ProviderModelSelectorView(selectedModelID: wikiModelBinding, selectedModelName: wikiModelNameBinding, role: "Wiki")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $categorizationSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization")
+                ProviderModelSelectorView(selectedModelID: categorizationModelBinding, selectedModelName: categorizationModelNameBinding, role: "Categorization")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $chapterSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: chapterModelBinding, selectedModelName: chapterModelNameBinding, role: "Chapter Compilation")
+                ProviderModelSelectorView(selectedModelID: chapterModelBinding, selectedModelName: chapterModelNameBinding, role: "Chapter Compilation")
             }
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $embeddingsSelectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(selectedModelID: embeddingsModelBinding, selectedModelName: embeddingsModelNameBinding, role: "Embeddings")
+                ProviderModelSelectorView(selectedModelID: embeddingsModelBinding, selectedModelName: embeddingsModelNameBinding, role: "Embeddings")
             }
             .presentationDragIndicator(.visible)
         }
@@ -383,7 +383,7 @@ struct AIModelsSettingsView: View {
         return Settings.modelDisplayName(modelID: s.imageGenerationModel, modelName: s.imageGenerationModelName)
     }
 
-    private func catalogModel(for modelID: String) -> OpenRouterModelOption? {
+    private func catalogModel(for modelID: String) -> ProviderModelOption? {
         let id = modelID.trimmed
         guard !id.isEmpty else { return nil }
         return catalog.models.first { $0.matchesStoredID(id) }
@@ -406,7 +406,7 @@ struct AIModelsSettingsView: View {
             static let chipInnerSpacing: CGFloat = 3
         }
 
-        let model: OpenRouterModelOption?
+        let model: ProviderModelOption?
 
         var body: some View {
             if let model {
@@ -449,13 +449,13 @@ struct AIModelsSettingsView: View {
             return "\(tokens) ctx"
         }
 
-        private func pricingColor(_ model: OpenRouterModelOption) -> Color {
+        private func pricingColor(_ model: ProviderModelOption) -> Color {
             if model.isFree { return .green }
             if let cost = model.promptCostPerMillion, cost < 1 { return .secondary }
             return .orange
         }
 
-        private func accessibilityDescription(_ model: OpenRouterModelOption) -> String {
+        private func accessibilityDescription(_ model: ProviderModelOption) -> String {
             var parts: [String] = []
             if let ctx = model.contextLength { parts.append(contextLabel(ctx)) }
             parts.append(model.compactPricing)

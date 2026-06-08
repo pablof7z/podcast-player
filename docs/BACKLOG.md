@@ -127,7 +127,10 @@ worktrees currently in flight.
   floors. Ollama chat endpoint defaults and URL normalization now live in the
   shared Rust provider settings path; iOS/Android/TUI render the canonical
   projected URL and submit raw endpoint intent instead of applying platform-
-  specific fallback rules.
+  specific fallback rules. Swift's live JSON completion wrapper and model
+  catalog/browser types are now provider-neutral (`ProviderCompletionClient`,
+  `ProviderModelCatalogService`, `ProviderModelSelectorView`) to keep OpenRouter
+  as one shared Rust-routed provider rather than a Swift-owned backend concept.
   Remaining provider-ownership work is streaming voice-mode STT/TTS once the
   canonical NMP capability seam lands upstream
   (`pablof7z/nostr-multi-platform#954`).

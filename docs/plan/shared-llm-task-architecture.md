@@ -43,7 +43,7 @@ provider model catalog discovery, image generation, reranking, OpenRouter
 Whisper/STT, ElevenLabs Scribe/STT, AssemblyAI STT, and Perplexity/OpenRouter
 online search through `nmp_app_podcast_perplexity_search`.
 Swift live wiki/title/categorization/chapter/clip completion callers now route
-through `WikiOpenRouterClient` without preflighting Keychain keys, so missing
+through `ProviderCompletionClient` without preflighting Keychain keys, so missing
 provider credentials are reported by Rust. Swift OpenRouter settings validation
 also calls the shared validator directly, leaving missing-key handling to Rust.
 Swift Episode Diagnostics now exposes forced OpenRouter Whisper retry without a

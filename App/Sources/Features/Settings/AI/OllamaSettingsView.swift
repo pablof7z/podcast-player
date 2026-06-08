@@ -250,7 +250,7 @@ struct OllamaSettingsView: View {
         defer { isValidating = false }
 
         do {
-            let models = try await OpenRouterModelCatalogService().fetchModels()
+            let models = try await ProviderModelCatalogService().fetchModels()
             modelCount = models.filter { $0.provider == .ollama }.count
             Haptics.success()
         } catch {

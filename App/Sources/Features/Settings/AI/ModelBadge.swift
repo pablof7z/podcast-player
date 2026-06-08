@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - ModelBadgeKind
 
-/// Typed capability badges for OpenRouter model rows.
+/// Typed capability badges for provider model rows.
 ///
 /// Using a typed enum instead of raw strings ensures that `ModelBadge` and
-/// `OpenRouterModelRow` always agree on both the display label and its color —
+/// `ProviderModelRow` always agree on both the display label and its color —
 /// a change to one can never silently break the other.
 enum ModelBadgeKind: Hashable {
     /// Model does not guarantee JSON-compatible output.
@@ -67,7 +67,7 @@ struct ModelBadge: View {
         static let paddingV: CGFloat = 3
     }
 
-    /// Typed initializer for OpenRouter model capability badges.
+    /// Typed initializer for provider model capability badges.
     init(kind: ModelBadgeKind) {
         self.text = kind.text
         self.color = kind.color

@@ -142,7 +142,7 @@ struct ElevenLabsVoiceBrowserView: View {
     }
 
     /// Pins the currently selected voice at the top of the list,
-    /// mirroring the pattern used by `OpenRouterModelSelectorView`.
+    /// mirroring the pattern used by `ProviderModelSelectorView`.
     @ViewBuilder
     private var currentSection: some View {
         let selectedID = store.state.settings.elevenLabsVoiceID

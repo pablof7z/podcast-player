@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Full model browser presented as a sheet.
 /// Wrap in a `NavigationStack` at the call site.
-struct OpenRouterModelSelectorView: View {
+struct ProviderModelSelectorView: View {
 
     private enum Layout {
         static let maxProviderCount: Int = 24
@@ -25,7 +25,7 @@ struct OpenRouterModelSelectorView: View {
     var initialCapabilityFilter: ModelCapabilityFilter = .compatible
     @Environment(\.dismiss) private var dismiss
 
-    @State private var viewModel: OpenRouterModelSelectorViewModel
+    @State private var viewModel: ProviderModelSelectorViewModel
     @State private var searchText = ""
     @State private var capabilityFilter: ModelCapabilityFilter
     @State private var sort: ModelSort = .recommended
@@ -43,7 +43,7 @@ struct OpenRouterModelSelectorView: View {
         self.role = role
         self.initialCapabilityFilter = initialCapabilityFilter
         self._capabilityFilter = State(initialValue: initialCapabilityFilter)
-        self._viewModel = State(initialValue: OpenRouterModelSelectorViewModel())
+        self._viewModel = State(initialValue: ProviderModelSelectorViewModel())
     }
 
     var body: some View {
@@ -63,8 +63,8 @@ struct OpenRouterModelSelectorView: View {
             if manualModelID.isEmpty { manualModelID = selectedModelID }
             await viewModel.loadIfNeeded()
         }
-        .navigationDestination(for: OpenRouterModelOption.self) { model in
-            OpenRouterModelDetailView(model: model, selectedModelID: $selectedModelID, selectedModelName: $selectedModelName, role: role)
+        .navigationDestination(for: ProviderModelOption.self) { model in
+            ProviderModelDetailView(model: model, selectedModelID: $selectedModelID, selectedModelName: $selectedModelName, role: role)
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -89,7 +89,7 @@ struct OpenRouterModelSelectorView: View {
         Section("Current") {
             if let current = viewModel.models.first(where: { $0.matchesStoredID(selectedModelID) }) {
                 NavigationLink(value: current) {
-                    OpenRouterModelRow(model: current, isSelected: true)
+                    ProviderModelRow(model: current, isSelected: true)
                 }
             } else {
                 VStack(alignment: .leading, spacing: Layout.currentFallbackSpacing) {
@@ -188,7 +188,7 @@ struct OpenRouterModelSelectorView: View {
             } else {
                 ForEach(visibleModels) { model in
                     NavigationLink(value: model) {
-                        OpenRouterModelRow(
+                        ProviderModelRow(
                             model: model,
                             isSelected: model.matchesStoredID(selectedModelID),
                             query: searchText
@@ -256,7 +256,7 @@ struct OpenRouterModelSelectorView: View {
 
     // MARK: - Computed
 
-    private var visibleModels: [OpenRouterModelOption] {
+    private var visibleModels: [ProviderModelOption] {
         var models = viewModel.models
 
         if let providerFilter {
@@ -299,8 +299,8 @@ struct OpenRouterModelSelectorView: View {
 
 @MainActor
 @Observable
-final class OpenRouterModelSelectorViewModel {
-    private(set) var models: [OpenRouterModelOption] = []
+final class ProviderModelSelectorViewModel {
+    private(set) var models: [ProviderModelOption] = []
     private(set) var isLoading = false
     var errorMessage: String?
 
@@ -325,9 +325,9 @@ final class OpenRouterModelSelectorViewModel {
         }
         let localOptions = localSpecs
             .filter { LocalModelCatalog.isDownloaded($0.id) }
-            .map(OpenRouterModelOption.init(local:))
+            .map(ProviderModelOption.init(local:))
         do {
-            let remote = try await OpenRouterModelCatalogService().fetchModels()
+            let remote = try await ProviderModelCatalogService().fetchModels()
             models = localOptions + remote
         } catch {
             models = localOptions

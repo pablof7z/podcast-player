@@ -10,7 +10,7 @@ struct ImageGenerationSettingsView: View {
     @Environment(AppStateStore.self) private var store
     @State private var settings = Settings()
     @State private var selectorPresented = false
-    @State private var catalog = OpenRouterModelSelectorViewModel()
+    @State private var catalog = ProviderModelSelectorViewModel()
 
     var body: some View {
         Form {
@@ -26,7 +26,7 @@ struct ImageGenerationSettingsView: View {
         }
         .sheet(isPresented: $selectorPresented) {
             NavigationStack {
-                OpenRouterModelSelectorView(
+                ProviderModelSelectorView(
                     selectedModelID: modelIDBinding,
                     selectedModelName: modelNameBinding,
                     role: "Image Generation",

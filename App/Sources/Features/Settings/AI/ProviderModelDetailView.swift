@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Full-screen detail view for a single OpenRouter model.
+/// Full-screen detail view for a single provider model.
 /// Pushed via `NavigationLink(value:)` from the model selector.
-struct OpenRouterModelDetailView: View {
-    var model: OpenRouterModelOption
+struct ProviderModelDetailView: View {
+    var model: ProviderModelOption
     @Binding var selectedModelID: String
     /// Persisted human-readable name for the selected model, updated alongside the ID.
     @Binding var selectedModelName: String
@@ -40,10 +40,10 @@ struct OpenRouterModelDetailView: View {
                         DetailLine("Cache write", pricingDetail(model.cacheWriteCostPerMillion))
                     }
                     if let webSearchCost = model.webSearchCost {
-                        DetailLine("Web search", OpenRouterModelOption.money(webSearchCost))
+                        DetailLine("Web search", ProviderModelOption.money(webSearchCost))
                     }
                     if let imageCost = model.imageCost {
-                        DetailLine("Image", OpenRouterModelOption.money(imageCost))
+                        DetailLine("Image", ProviderModelOption.money(imageCost))
                     }
                 }
 
@@ -155,7 +155,7 @@ struct OpenRouterModelDetailView: View {
 
     private func pricingDetail(_ value: Double?) -> String {
         guard let value else { return "Variable" }
-        return "\(OpenRouterModelOption.perToken(value)) / \(OpenRouterModelOption.money(value)) per 1M"
+        return "\(ProviderModelOption.perToken(value)) / \(ProviderModelOption.money(value)) per 1M"
     }
 
     // MARK: - Capability chips

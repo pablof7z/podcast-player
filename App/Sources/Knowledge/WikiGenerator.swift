@@ -8,7 +8,7 @@ import Foundation
 /// Pipeline:
 ///   1. Gather candidate sources via `WikiRAGSearchProtocol`.
 ///   2. Compose the appropriate prompt (topic / person / show / audit).
-///   3. Call `WikiOpenRouterClient.compile` (live or stubbed).
+///   3. Call `ProviderCompletionClient.compile` (live or stubbed).
 ///   4. Parse the JSON response into a draft page.
 ///   5. Run `WikiVerifier` to drop unverified claims.
 ///   6. Persist via `WikiStorage` (optional — caller decides).
@@ -17,13 +17,13 @@ import Foundation
 struct WikiGenerator: Sendable {
 
     let rag: any WikiRAGSearchProtocol
-    let client: WikiOpenRouterClient
+    let client: ProviderCompletionClient
     let storage: WikiStorage
     let model: String
 
     init(
         rag: any WikiRAGSearchProtocol,
-        client: WikiOpenRouterClient,
+        client: ProviderCompletionClient,
         storage: WikiStorage,
         model: String = "openai/gpt-4o-mini"
     ) {
