@@ -187,6 +187,7 @@
 		3A303C43DE097E16F50F0407 /* RAGSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41B4E77282BCB4669C4790B6 /* RAGSearchTests.swift */; };
 		3A4B60482E8F118986753228 /* AppStateStore+KernelProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8CD0F08A118D7907848CC33 /* AppStateStore+KernelProjection.swift */; };
 		3B155B629BEE0FC159BF33E1 /* AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D6DCC3AC57739150675344 /* AppTests.swift */; };
+		3C4439747A945A7AC4D9E925 /* AppStateStore+ObservationAwait.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3CC159C4EED4171F00707C /* AppStateStore+ObservationAwait.swift */; };
 		3C6587F61908F2AB024BFEE6 /* VoiceNoteRecordingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07B87C15E98C7F3A7F93ED7 /* VoiceNoteRecordingSheet.swift */; };
 		3C8733F759D3CE824C65EEB4 /* ClippingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9229F129E247D94BB26AD5D /* ClippingsCard.swift */; };
 		3C8DA0805F6CCA0ABA268940 /* WikiGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2F4B024F24EB57F816181A /* WikiGenerator.swift */; };
@@ -1400,6 +1401,7 @@
 		CB091EEFFE0972BEFCAC22D8 /* DebugSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettingsView.swift; sourceTree = "<group>"; };
 		CB9C42182225DE1D0DECA8D6 /* AppStateStore+Threading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Threading.swift"; sourceTree = "<group>"; };
 		CBC250C2436FBB5E35A6D63A /* AppleNativeSTTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleNativeSTTClient.swift; sourceTree = "<group>"; };
+		CC3CC159C4EED4171F00707C /* AppStateStore+ObservationAwait.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+ObservationAwait.swift"; sourceTree = "<group>"; };
 		CCB2A00C1C54C2EF0F2744CB /* NostrConversationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrConversationsView.swift; sourceTree = "<group>"; };
 		CCDBEC4F0E2BBCFFB096BEFD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CD4F36AB9184A23AA102CF07 /* YouTubeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeSettingsView.swift; sourceTree = "<group>"; };
@@ -2388,6 +2390,7 @@
 				0FA253372DE422E81327969D /* AppStateStore+KernelFeedActions.swift */,
 				F8CD0F08A118D7907848CC33 /* AppStateStore+KernelProjection.swift */,
 				4BBD88C62B89D4A6721289F0 /* AppStateStore+LocalEngine.swift */,
+				CC3CC159C4EED4171F00707C /* AppStateStore+ObservationAwait.swift */,
 				5140E4B2650D8246F6201DBC /* AppStateStore+SettingsProjection.swift */,
 				3D85C2760720BC5045FE0C30 /* EpisodeSummary+Projection.swift */,
 				E0F3023D7B668F4BB59A1A4E /* KernelBridge.swift */,
@@ -3113,6 +3116,7 @@
 				CE77679F6DB0E03EB37F8F54 /* AppStateStore+KernelFeedActions.swift in Sources */,
 				3A4B60482E8F118986753228 /* AppStateStore+KernelProjection.swift in Sources */,
 				738DCC85C179BAB62A3D987F /* AppStateStore+LocalEngine.swift in Sources */,
+				3C4439747A945A7AC4D9E925 /* AppStateStore+ObservationAwait.swift in Sources */,
 				800755532E6607EE10DFCE57 /* AppStateStore+SettingsProjection.swift in Sources */,
 				4E97B1860B853EA782FF5120 /* EpisodeSummary+Projection.swift in Sources */,
 				FC637FAB1053AEBB7D32DA33 /* BridgeSendable.swift in Sources */,
