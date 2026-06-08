@@ -131,6 +131,8 @@ worktrees currently in flight.
   catalog/browser types are now provider-neutral (`ProviderCompletionClient`,
   `ProviderModelCatalogService`, `ProviderModelSelectorView`) to keep OpenRouter
   as one shared Rust-routed provider rather than a Swift-owned backend concept.
+  The unused Swift `LLMProviderCredentialResolver` policy shim was removed so
+  credential requirement decisions cannot drift back into platform code.
   Remaining provider-ownership work is streaming voice-mode STT/TTS once the
   canonical NMP capability seam lands upstream
   (`pablof7z/nostr-multi-platform#954`).
