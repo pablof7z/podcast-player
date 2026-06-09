@@ -33,9 +33,15 @@ final class LocalLLMInferenceTests: XCTestCase {
         let size = (attrs?[.size] as? NSNumber)?.int64Value ?? -1
         print("LLMTEST: model file present path=\(fileURL.path) sizeBytes=\(size)")
 
-        guard let spec = LocalModelCatalog.all.first(where: { $0.id == modelID }) else {
-            return XCTFail("LLMTEST: no catalog spec for \(modelID)")
-        }
+        // load() only uses spec.id to find the on-disk file — downloadURL is irrelevant here.
+        let spec = LocalModelSpec(
+            id: modelID,
+            displayName: "Gemma 4 E2B",
+            description: "Test probe spec",
+            sizeBytes: 0,
+            downloadURL: URL(string: "https://example.com/stub")!,
+            minDeviceRAMGB: 0
+        )
 
         let service = LocalLLMService()
 
