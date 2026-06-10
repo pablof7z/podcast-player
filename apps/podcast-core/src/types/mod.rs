@@ -30,7 +30,7 @@ pub use person::Person;
 pub use podcast::{NostrVisibility, Podcast, PodcastId};
 pub use settings::{
     ElevenLabsCredentialSource, HeadphoneGestureAction, OllamaCredentialSource,
-    OpenRouterCredentialSource, ProviderCredentialMetadata, Settings, SttProvider,
+    OpenRouterCredentialSource, ProviderCredentialMetadata, SttProvider,
 };
 pub use soundbite::SoundBite;
 pub use subscription::{AutoDownloadMode, AutoDownloadPolicy, PodcastSubscription};

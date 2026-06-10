@@ -294,6 +294,16 @@ pub struct PodcastStore {
 }
 
 impl PodcastStore {
+    /// Canonical source of fresh-install settings defaults.
+    ///
+    /// This is one of the two — and only two — sites that may hold a literal
+    /// settings default. The other is the Swift `SettingsSnapshot` property
+    /// initializer mirror. Everything else (the `PersistedSettings` /
+    /// `SettingsSnapshot` `Default` impls, the disk-hydration fallbacks, the
+    /// Swift `Settings` defaults) derives from one of these two. A cross-language
+    /// JSON fixture test (`tests/fixtures/settings_fresh_install.json`) enforces
+    /// that the two stay in lockstep — change a default here and the fixture
+    /// must be regenerated, which keeps Swift honest.
     pub fn new() -> Self {
         Self {
             podcasts: HashMap::new(),

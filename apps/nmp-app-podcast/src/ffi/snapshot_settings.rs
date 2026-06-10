@@ -14,7 +14,7 @@ use crate::store::PodcastStore;
 /// Project the kernel store's settings accessors into the wire-facing
 /// [`SettingsSnapshot`]. Called under the single store lock inside
 /// [`super::snapshot::build_podcast_update`] so it never re-locks.
-pub(super) fn build_settings_snapshot(s: &PodcastStore) -> SettingsSnapshot {
+pub(crate) fn build_settings_snapshot(s: &PodcastStore) -> SettingsSnapshot {
     SettingsSnapshot {
         has_completed_onboarding: s.has_completed_onboarding(),
         auto_skip_ads_enabled: s.auto_skip_ads_enabled(),

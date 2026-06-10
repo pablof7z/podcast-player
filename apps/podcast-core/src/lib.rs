@@ -14,6 +14,6 @@ pub use types::{
     Episode, EpisodeId,
     GenerationSource, HeadphoneGestureAction, NostrVisibility, OllamaCredentialSource,
     OpenRouterCredentialSource, Person, Podcast, PodcastCategory, PodcastId,
-    PodcastSubscription, ProviderCredentialMetadata, Settings, SoundBite, SttProvider,
+    PodcastSubscription, ProviderCredentialMetadata, SoundBite, SttProvider,
     TranscriptKind, TranscriptSource, TranscriptState, TriageDecision,
 };

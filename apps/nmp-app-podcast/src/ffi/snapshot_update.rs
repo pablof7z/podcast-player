@@ -94,10 +94,12 @@ pub struct PodcastUpdate {
     pub nostr_results: Vec<NostrShowSummary>,
     /// App-settings projection (onboarding completion, auto-skip-ads, …).
     ///
-    /// Defaults to the fresh-install `SettingsSnapshot`. The
-    /// `skip_serializing_if = "SettingsSnapshot::is_default"` guard keeps the
-    /// no-op snapshot byte-identical to the legacy stub (D6).
-    #[serde(default, skip_serializing_if = "SettingsSnapshot::is_default")]
+    /// Defaults to the fresh-install `SettingsSnapshot` and is **always**
+    /// serialized — the kernel no longer omits it when all-default. This keeps
+    /// the wire shape uniform so a decoding shell never has to distinguish
+    /// "absent" from "default", and the cross-language fixture test can assert
+    /// a stable byte image.
+    #[serde(default)]
     pub settings: SettingsSnapshot,
     /// NIP-22 (kind 1111) comments for the currently-playing episode.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

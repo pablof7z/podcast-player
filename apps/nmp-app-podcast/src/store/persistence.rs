@@ -28,7 +28,6 @@ use podcast_core::{Episode, Podcast};
 use serde::{Deserialize, Serialize};
 
 use crate::ffi::projections::MemoryFact;
-use crate::llm::provider_config::DEFAULT_OLLAMA_CHAT_URL;
 use crate::player::AdSegment;
 
 /// Schema marker for `podcasts.json`. Bump on incompatible format changes.
@@ -88,235 +87,184 @@ pub(super) struct PersistedStore {
     pub pending_wifi_downloads: Vec<(String, String)>,
 }
 
+/// On-disk settings envelope.
+///
+/// Carries `#[serde(default)]` at the container level, so any field absent
+/// from an older `podcasts.json` hydrates from this struct's [`Default`] impl
+/// — which itself derives from the single canonical defaults site,
+/// [`super::PodcastStore::new`] (via [`super::PodcastStore::persisted_settings`]).
+/// There are intentionally **no** per-field default literals here: the absent ⇒
+/// canonical-default behavior is uniform across every field.
+///
+/// Note: several string fields additionally carry a *sentinel* hydration rule
+/// in `load_from_disk` (empty string / 0.0 ⇒ canonical default), which guards
+/// against pre-`#[serde(default)]` files that wrote explicit empties. Those
+/// fallbacks also read from this `Default`, so the canonical value still lives
+/// in exactly one place.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub(super) struct PersistedSettings {
-    /// Mirrors `PodcastStore::auto_skip_ads_enabled`. Defaults to
-    /// `true` so new installs and users upgrading from a pre-ad-skip build
-    /// get the feature enabled without an explicit opt-in.
-    #[serde(default = "default_true")]
+    /// Mirrors `PodcastStore::auto_skip_ads_enabled`.
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub auto_skip_ads_enabled: bool,
     /// When `true`, kernel auto-advances to the next queued episode on `ItemEnd`.
-    /// `#[serde(default)]` + `fn default_true` loads absent (old) files as `true`.
-    #[serde(default = "default_true")]
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub auto_play_next: bool,
     /// When `true`, kernel marks the episode listened on `ItemEnd`.
-    /// Defaults to `true` for the same reason as `auto_play_next`.
-    #[serde(default = "default_true")]
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub auto_mark_played_at_end: bool,
     /// Raw headphone double-tap action string. Empty string in old files →
-    /// hydration replaces with `"skip_forward"`.
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub headphone_double_tap_action: String,
     /// Raw headphone triple-tap action string. Empty string in old files →
-    /// hydration replaces with `"clip_now"`.
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub headphone_triple_tap_action: String,
-    /// Skip-forward interval in seconds. `serde(default)` loads pre-existing
-    /// files (that lack this field) as 0.0; the store replaces 0.0 with the
-    /// semantic default (30.0) during hydration.
-    #[serde(default)]
+    /// Skip-forward interval in seconds. 0.0 in old files → hydration replaces
+    /// with the canonical default from `PodcastStore::new()`.
     pub skip_forward_secs: f64,
-    /// Skip-backward interval in seconds. Same 0.0 → 15.0 sentinel logic.
-    #[serde(default)]
+    /// Skip-backward interval in seconds. Same 0.0 → canonical-default sentinel logic.
     pub skip_backward_secs: f64,
-    /// Default playback rate. 0.0 in old files → hydration replaces with 1.0.
-    #[serde(default)]
+    /// Default playback rate. 0.0 in old files → hydration replaces with the
+    /// canonical default from `PodcastStore::new()`.
     pub default_playback_rate: f64,
     /// When `true`, downloaded files are deleted after the episode is marked played.
-    #[serde(default)]
     pub auto_delete_downloads_after_played: bool,
     /// LLM model ID for initial agent chat. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub agent_initial_model: String,
     /// Human-readable name for agent initial model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub agent_initial_model_name: String,
     /// LLM model ID for agent thinking/planning. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-pro:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub agent_thinking_model: String,
     /// Human-readable name for agent thinking model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Pro".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub agent_thinking_model_name: String,
     /// LLM model ID for memory compilation. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub memory_compilation_model: String,
     /// Human-readable name for memory compilation model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub memory_compilation_model_name: String,
     /// LLM model ID for wiki synthesis. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub wiki_model: String,
     /// Human-readable name for wiki model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub wiki_model_name: String,
     /// LLM model ID for episode categorization. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub categorization_model: String,
     /// Human-readable name for categorization model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub categorization_model_name: String,
     /// LLM model ID for chapter compilation. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub chapter_compilation_model: String,
     /// Human-readable name for chapter compilation model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub chapter_compilation_model_name: String,
     /// LLM model ID for embeddings generation. Empty string in old files →
-    /// hydration replaces with "deepseek-v4-flash:cloud".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub embeddings_model: String,
     /// Human-readable name for embeddings model. Empty string in old files →
-    /// hydration replaces with "DeepSeek Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub embeddings_model_name: String,
     /// LLM model ID for image generation. Empty string in old files →
-    /// hydration replaces with "google/gemini-2.5-flash-image".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub image_generation_model: String,
     /// Human-readable name for image generation model. Empty string in old files →
-    /// hydration replaces with "Gemini 2.5 Flash".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub image_generation_model_name: String,
-    /// Whether the reranker is enabled for search results. Defaults to `false`.
-    #[serde(default)]
+    /// Whether the reranker is enabled for search results.
     pub reranker_enabled: bool,
     /// OpenRouter credential source enum (raw String: "apiKey", "byok", "nostr").
-    #[serde(default)]
     pub open_router_credential_source: String,
     /// OpenRouter BYOK key ID (optional).
-    #[serde(default)]
     pub open_router_byok_key_id: Option<String>,
     /// OpenRouter BYOK key label (optional).
-    #[serde(default)]
     pub open_router_byok_key_label: Option<String>,
     /// OpenRouter credential connected-at timestamp (epoch seconds, optional).
-    #[serde(default)]
     pub open_router_connected_at: Option<i64>,
     /// Ollama credential source enum (raw String: "apiKey", "byok", "nostr").
-    #[serde(default)]
     pub ollama_credential_source: String,
     /// Ollama BYOK key ID (optional).
-    #[serde(default)]
     pub ollama_byok_key_id: Option<String>,
     /// Ollama BYOK key label (optional).
-    #[serde(default)]
     pub ollama_byok_key_label: Option<String>,
     /// Ollama credential connected-at timestamp (epoch seconds, optional).
-    #[serde(default)]
     pub ollama_connected_at: Option<i64>,
     /// Ollama chat endpoint URL for LLM inference.
-    #[serde(default)]
     pub ollama_chat_url: String,
     /// ElevenLabs credential source enum (raw String: "apiKey", "byok", "nostr").
-    #[serde(default)]
     pub eleven_labs_credential_source: String,
     /// ElevenLabs BYOK key ID (optional).
-    #[serde(default)]
     pub eleven_labs_byok_key_id: Option<String>,
     /// ElevenLabs BYOK key label (optional).
-    #[serde(default)]
     pub eleven_labs_byok_key_label: Option<String>,
     /// ElevenLabs credential connected-at timestamp (epoch seconds, optional).
-    #[serde(default)]
     pub eleven_labs_connected_at: Option<i64>,
     /// AssemblyAI credential metadata; secrets stay in platform secure storage.
-    #[serde(default)]
     pub assembly_ai_credential_source: String,
-    #[serde(default)]
     pub assembly_ai_byok_key_id: Option<String>,
-    #[serde(default)]
     pub assembly_ai_byok_key_label: Option<String>,
-    #[serde(default)]
     pub assembly_ai_connected_at: Option<i64>,
     /// Perplexity credential metadata; secrets stay in platform secure storage.
-    #[serde(default)]
     pub perplexity_credential_source: String,
-    #[serde(default)]
     pub perplexity_byok_key_id: Option<String>,
-    #[serde(default)]
     pub perplexity_byok_key_label: Option<String>,
-    #[serde(default)]
     pub perplexity_connected_at: Option<i64>,
     /// STT provider selection. Empty string in old files →
-    /// hydration replaces with "apple_native".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub stt_provider: String,
     /// OpenRouter Whisper model string. Empty string in old files →
-    /// hydration replaces with "openai/whisper-1".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub open_router_whisper_model: String,
     /// AssemblyAI STT model string. Empty string in old files →
-    /// hydration replaces with "universal-3-pro,universal-2".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub assembly_ai_stt_model: String,
     /// ElevenLabs STT model string. Empty string in old files →
-    /// hydration replaces with "scribe_v1".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub eleven_labs_stt_model: String,
     /// ElevenLabs TTS model string. Empty string in old files →
-    /// hydration replaces with "eleven_turbo_v2_5".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub eleven_labs_tts_model: String,
     /// ElevenLabs voice ID. Defaults to empty string.
-    #[serde(default)]
     pub eleven_labs_voice_id: String,
     /// ElevenLabs voice name. Defaults to empty string.
-    #[serde(default)]
     pub eleven_labs_voice_name: String,
     /// Blossom server URL. Empty string in old files →
-    /// hydration replaces with "https://blossom.primal.net".
-    #[serde(default)]
+    /// hydration replaces with the canonical default from `PodcastStore::new()`.
     pub blossom_server_url: String,
     /// YouTube extractor URL (optional).
-    #[serde(default)]
     pub youtube_extractor_url: Option<String>,
     /// Local on-device LLM model ID (optional).
-    #[serde(default)]
     pub local_model_id: Option<String>,
-    /// Whether to auto-generate wiki entries when transcripts are ingested. Default `false`.
-    #[serde(default)]
+    /// Whether to auto-generate wiki entries when transcripts are ingested.
     pub wiki_auto_generate_on_transcript_ingest: bool,
-    /// Whether to auto-ingest publisher-provided transcripts. Default `true`.
-    #[serde(default = "default_true")]
+    /// Whether to auto-ingest publisher-provided transcripts.
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub auto_ingest_publisher_transcripts: bool,
-    /// Whether to fall back to Scribe (STT) when publisher transcript ingestion fails. Default `true`.
-    #[serde(default = "default_true")]
+    /// Whether to fall back to Scribe (STT) when publisher transcript ingestion fails.
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub auto_fallback_to_scribe: bool,
-    /// Whether to send local notifications when new episodes arrive. Default `true`.
-    #[serde(default = "default_true")]
+    /// Whether to send local notifications when new episodes arrive.
+    /// Absent ⇒ canonical default from `PodcastStore::new()`.
     pub notify_on_new_episodes: bool,
-    /// Whether Nostr publishing and identity features are enabled. Default `false`.
-    #[serde(default)]
+    /// Whether Nostr publishing and identity features are enabled.
     pub nostr_enabled: bool,
     /// Primary Nostr relay URL for publishing and event distribution. Default empty.
-    #[serde(default)]
     pub nostr_relay_url: String,
     /// List of public Nostr relay URLs for broadcast and subscription. Default empty.
-    #[serde(default)]
     pub nostr_public_relays: Vec<String>,
     /// User's display name in Nostr profile metadata. Default empty.
-    #[serde(default)]
     pub nostr_profile_name: String,
     /// User's about/bio text in Nostr profile metadata. Default empty.
-    #[serde(default)]
     pub nostr_profile_about: String,
     /// User's picture URL in Nostr profile metadata. Default empty.
-    #[serde(default)]
     pub nostr_profile_picture: String,
     /// Nostr public key hex (read-only, derived from Keychain). Not persisted.
-    #[serde(default)]
     pub nostr_public_key_hex: Option<String>,
 }
 
@@ -325,77 +273,11 @@ fn default_true() -> bool {
 }
 
 impl Default for PersistedSettings {
+    /// Derive every default from the single canonical defaults site,
+    /// [`super::PodcastStore::new`]. There are no literals here on purpose —
+    /// changing a fresh-install default is a one-line change in `new()`.
     fn default() -> Self {
-        Self {
-            auto_skip_ads_enabled: true,
-            auto_play_next: true,
-            auto_mark_played_at_end: true,
-            headphone_double_tap_action: "skipForward".to_owned(),
-            headphone_triple_tap_action: "clipNow".to_owned(),
-            skip_forward_secs: 30.0,
-            skip_backward_secs: 15.0,
-            default_playback_rate: 1.0,
-            auto_delete_downloads_after_played: false,
-            agent_initial_model: "deepseek-v4-flash:cloud".to_owned(),
-            agent_initial_model_name: "DeepSeek Flash".to_owned(),
-            agent_thinking_model: "deepseek-v4-pro:cloud".to_owned(),
-            agent_thinking_model_name: "DeepSeek Pro".to_owned(),
-            memory_compilation_model: "deepseek-v4-flash:cloud".to_owned(),
-            memory_compilation_model_name: "DeepSeek Flash".to_owned(),
-            wiki_model: "deepseek-v4-flash:cloud".to_owned(),
-            wiki_model_name: "DeepSeek Flash".to_owned(),
-            categorization_model: "deepseek-v4-flash:cloud".to_owned(),
-            categorization_model_name: "DeepSeek Flash".to_owned(),
-            chapter_compilation_model: "deepseek-v4-flash:cloud".to_owned(),
-            chapter_compilation_model_name: "DeepSeek Flash".to_owned(),
-            embeddings_model: "deepseek-v4-flash:cloud".to_owned(),
-            embeddings_model_name: "DeepSeek Flash".to_owned(),
-            image_generation_model: "google/gemini-2.5-flash-image".to_owned(),
-            image_generation_model_name: "Gemini 2.5 Flash".to_owned(),
-            reranker_enabled: false,
-            open_router_credential_source: String::new(),
-            open_router_byok_key_id: None,
-            open_router_byok_key_label: None,
-            open_router_connected_at: None,
-            ollama_credential_source: String::new(),
-            ollama_byok_key_id: None,
-            ollama_byok_key_label: None,
-            ollama_connected_at: None,
-            ollama_chat_url: DEFAULT_OLLAMA_CHAT_URL.to_owned(),
-            eleven_labs_credential_source: String::new(),
-            eleven_labs_byok_key_id: None,
-            eleven_labs_byok_key_label: None,
-            eleven_labs_connected_at: None,
-            assembly_ai_credential_source: String::new(),
-            assembly_ai_byok_key_id: None,
-            assembly_ai_byok_key_label: None,
-            assembly_ai_connected_at: None,
-            perplexity_credential_source: String::new(),
-            perplexity_byok_key_id: None,
-            perplexity_byok_key_label: None,
-            perplexity_connected_at: None,
-            stt_provider: "apple_native".to_owned(),
-            open_router_whisper_model: "openai/whisper-1".to_owned(),
-            assembly_ai_stt_model: "universal-3-pro,universal-2".to_owned(),
-            eleven_labs_stt_model: "scribe_v1".to_owned(),
-            eleven_labs_tts_model: "eleven_turbo_v2_5".to_owned(),
-            eleven_labs_voice_id: String::new(),
-            eleven_labs_voice_name: String::new(),
-            blossom_server_url: "https://blossom.primal.net".to_owned(),
-            youtube_extractor_url: None,
-            local_model_id: None,
-            wiki_auto_generate_on_transcript_ingest: false,
-            auto_ingest_publisher_transcripts: true,
-            auto_fallback_to_scribe: true,
-            notify_on_new_episodes: true,
-            nostr_enabled: false,
-            nostr_relay_url: String::new(),
-            nostr_public_relays: Vec::new(),
-            nostr_profile_name: String::new(),
-            nostr_profile_about: String::new(),
-            nostr_profile_picture: String::new(),
-            nostr_public_key_hex: None,
-        }
+        crate::store::PodcastStore::new().persisted_settings()
     }
 }
 

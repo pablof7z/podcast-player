@@ -27,11 +27,12 @@ fn set_empty_removes_entry() {
 #[test]
 fn auto_skip_toggle_round_trips() {
     let mut store = PodcastStore::new();
-    assert!(!store.auto_skip_ads_enabled());
-    store.set_auto_skip_ads_enabled(true);
+    // Canonical fresh-install default is ON (PodcastStore::new()).
     assert!(store.auto_skip_ads_enabled());
     store.set_auto_skip_ads_enabled(false);
     assert!(!store.auto_skip_ads_enabled());
+    store.set_auto_skip_ads_enabled(true);
+    assert!(store.auto_skip_ads_enabled());
 }
 #[test]
 fn idempotent_toggle_is_safe() {

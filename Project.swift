@@ -210,6 +210,9 @@ let project = Project(
             bundleId: "\(appBundleID).tests",
             deploymentTargets: deploymentTarget,
             sources: ["AppTests/Sources/**"],
+            // Cross-language settings-default parity fixture, shared with the
+            // Rust `settings_fresh_install_matches_fixture` test.
+            resources: ["tests/fixtures/settings_fresh_install.json"],
             dependencies: [.target(name: appName)],
             settings: .settings(
                 base: [
