@@ -52,6 +52,20 @@ final class UserIdentityStore {
     /// Test-only: records kernel dispatches instead of reaching the kernel.
     @ObservationIgnored var _kernelDispatchRecorder: (@MainActor (String, [String: Any]) -> Void)?
 
+    /// Test-only: fires each time `dispatchKernelKeygen()` is called, so tests
+    /// can verify auto-generation and manual keygen without a live kernel.
+    @ObservationIgnored var _keygenCallRecorder: (() -> Void)?
+
+    /// Test-only: fires each time a snapshot pull is requested (from
+    /// `dispatchKernelKeygen` or `importNsec`) so tests can verify the pull
+    /// path without a live kernel (where `kernel?.requestSnapshotPull()` is nil).
+    @ObservationIgnored var _pullCallRecorder: (() -> Void)?
+
+    /// Guards auto-keygen: set on the first `applyKernelIdentity` tick that
+    /// finds no active account so subsequent nil ticks don't re-dispatch.
+    /// Reset by `clearIdentity()` so sign-out + fresh-install re-enables it.
+    @ObservationIgnored private var _autoKeygenDispatched = false
+
     /// Live state of the NIP-46 connection (UI surfaces this).
     private(set) var remoteSignerState: RemoteSignerState = .idle
 
@@ -105,8 +119,9 @@ final class UserIdentityStore {
 
     // MARK: - nsec import
 
-    /// Import a private key. The kernel validates, persists, and adopts it as
-    /// the active account; the resulting pubkey arrives via `applyKernelIdentity`.
+    /// Import a private key. Dispatches `podcast.identity ImportNsec` to the
+    /// app-local identity store (which validates, persists `identity.json`, and
+    /// bumps rev so the next push frame carries `active_account`).
     func importNsec(_ nsec: String) throws {
         loginError = nil
         let trimmed = nsec.trimmed
@@ -115,7 +130,9 @@ final class UserIdentityStore {
             throw UserIdentityError.invalidKey
         }
         remoteSignerState = .idle
-        kernel?.signInNsec(trimmed)
+        dispatchToKernel(namespace: "podcast.identity", body: ["type": "ImportNsec", "nsec": trimmed])
+        _pullCallRecorder?()
+        kernel?.requestSnapshotPull()
     }
 
     // MARK: - Generate account
@@ -129,16 +146,21 @@ final class UserIdentityStore {
         dispatchKernelKeygen()
     }
 
-    /// Dispatch a make-active account creation to the kernel, seeding the
-    /// auto-generated display profile so the kernel's kind:0 publish carries
-    /// it (avoids a second Swift-side profile publish).
+    /// Dispatch a make-active account-generate to the app-local identity store
+    /// via the `podcast.identity Generate` action. The store generates a fresh
+    /// keypair, persists it to `PodcastLibrary/identity.json`, and bumps the
+    /// snapshot rev — so the next push frame carries `active_account` and the
+    /// identity surfaces immediately.
+    ///
+    /// Note: `nmp_app_create_new_account` is the NMP-core multi-account FFI
+    /// (Nostr relay publishing). It does NOT update the app-local `IdentityStore`
+    /// that `PodcastUpdate.active_account` reads from and therefore would never
+    /// surface the identity in the UI.
     private func dispatchKernelKeygen() {
-        kernel?.createNewAccount(
-            profile: Self.placeholderGeneratedProfile(),
-            relays: [],
-            mls: false,
-            makeActive: true
-        )
+        _keygenCallRecorder?()
+        dispatchToKernel(namespace: "podcast.identity", body: ["type": "Generate"])
+        _pullCallRecorder?()
+        kernel?.requestSnapshotPull()
     }
 
     // MARK: - Sign out
@@ -161,6 +183,8 @@ final class UserIdentityStore {
         profileName = nil
         profileAbout = nil
         profilePicture = nil
+        // Allow the next nil-identity tick to auto-generate a fresh key.
+        _autoKeygenDispatched = false
     }
 
     // MARK: - NIP-46 connect / disconnect
@@ -253,7 +277,15 @@ final class UserIdentityStore {
             }
         }
 
-        // 3. Profile side-effects only when the active pubkey actually changes.
+        // 3. Auto-generate on the first nil-pubkey tick (fresh install / data
+        //    reset). One-shot: `_autoKeygenDispatched` prevents re-dispatch on
+        //    subsequent nil ticks while the kernel round-trip is in flight.
+        if pubkeyHex == nil, !_autoKeygenDispatched {
+            _autoKeygenDispatched = true
+            dispatchKernelKeygen()
+        }
+
+        // 4. Profile side-effects only when the active pubkey actually changes.
         guard oldPubkeyHex != pubkeyHex, let pubkey = pubkeyHex else { return }
         loadCachedProfile(for: pubkey)
         Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }

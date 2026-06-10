@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-10T12:00:00Z",
+      "lines": [
+        "Your identity is now created automatically on first launch — no more "No Identity" limbo. Tapping "Generate Key Pair" works again too."
+      ]
+    },
+    {
       "shipped_at": "2026-06-09T13:40:00Z",
       "lines": [
         "On-device (Apple) transcription now actually finishes — previously it could start and then hang forever without ever producing a transcript."

@@ -588,6 +588,13 @@ final class KernelModel {
         kernel.signInNsec(nsec)
     }
 
+    /// Public seam so callers outside KernelModel can request a snapshot
+    /// pull (e.g. after `createNewAccount` or `signInNsec`). The underlying
+    /// pull is rev-gated — safe to call redundantly.
+    func requestSnapshotPull() {
+        pullPodcastSnapshotIfChanged()
+    }
+
     /// Generate a fresh account in the kernel (keypair + kind:0 publish). The
     /// kernel owns the secret; Swift never holds private bytes. When
     /// `makeActive` is true the new account becomes the active session and its
