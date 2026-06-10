@@ -19,14 +19,11 @@ enum FeedbackCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    static func from(tags: [[String]]) -> FeedbackCategory {
-        let tagged = tags.first { tag in
-            tag.count >= 2 && (tag[0] == "t" || tag[0] == "category")
-        }?[1].lowercased()
-        guard let tagged else { return .bug }
-        return Self.allCases.first {
-            $0.tagValue == tagged || $0.rawValue.lowercased() == tagged
-        } ?? .bug
+    /// Map the kernel-resolved canonical category tag value (`bug`,
+    /// `feature-request`, `question`, `praise`) to the enum, defaulting to
+    /// `.bug`. The Nostr tag parsing now happens kernel-side (#354).
+    init(tagValue: String) {
+        self = Self.allCases.first { $0.tagValue == tagValue } ?? .bug
     }
 
     var icon: String {
@@ -87,64 +84,21 @@ struct FeedbackThread: Identifiable {
         self.createdAt = createdAt
     }
 
-    init(
-        event: SignedNostrEvent,
-        replies: [SignedNostrEvent] = [],
-        metadata: FeedbackMetadata? = nil,
-        attachedImage: UIImage? = nil,
-        localPubkey: String? = nil
-    ) {
-        self.eventID = event.id
-        self.authorPubkey = event.pubkey
-        self.category = FeedbackCategory.from(tags: event.tags)
-        self.content = event.content
+    /// Build from the kernel's resolved feedback-thread projection (#354).
+    /// All Nostr reduction (NIP-10 threading, kind:513 supersession, tag
+    /// parsing) happened kernel-side; this only maps fields + attaches the
+    /// local-only image.
+    init(dto: FeedbackThreadDTO, localPubkey: String?, attachedImage: UIImage? = nil) {
+        self.eventID = dto.eventId
+        self.authorPubkey = dto.authorPubkey
+        self.category = FeedbackCategory(tagValue: dto.category)
+        self.content = dto.content
         self.attachedImage = attachedImage
-        self.title = metadata?.title
-        self.summary = metadata?.summary
-        self.statusLabel = metadata?.statusLabel
-        self.replies = replies.map { FeedbackReply(event: $0, localPubkey: localPubkey) }
-        self.createdAt = Date(timeIntervalSince1970: TimeInterval(event.created_at))
-    }
-}
-
-// MARK: - FeedbackMetadata
-
-struct FeedbackMetadata {
-    let createdAt: Int
-    let title: String?
-    let summary: String?
-    let statusLabel: String?
-
-    init(event: SignedNostrEvent) {
-        createdAt = event.created_at
-
-        var title: String?
-        var summary: String?
-        var status: String?
-        for tag in event.tags where tag.count >= 2 {
-            switch tag[0] {
-            case "title":
-                title = title ?? tag[1]
-            case "summary":
-                summary = summary ?? tag[1]
-            case "status-label", "status_label", "status":
-                status = status ?? tag[1]
-            default:
-                break
-            }
-        }
-
-        if title == nil || summary == nil || status == nil,
-           let data = event.content.data(using: .utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            title = title ?? json["title"] as? String
-            summary = summary ?? json["summary"] as? String
-            status = status ?? json["status_label"] as? String ?? json["status"] as? String
-        }
-
-        self.title = title
-        self.summary = summary
-        self.statusLabel = status
+        self.title = dto.title
+        self.summary = dto.summary
+        self.statusLabel = dto.statusLabel
+        self.replies = dto.replies.map { FeedbackReply(dto: $0, localPubkey: localPubkey) }
+        self.createdAt = Date(timeIntervalSince1970: TimeInterval(dto.createdAt))
     }
 }
 
@@ -158,12 +112,12 @@ struct FeedbackReply: Identifiable {
     var isFromMe: Bool
     var createdAt: Date = Date()
 
-    init(event: SignedNostrEvent, localPubkey: String?) {
-        eventID = event.id
-        authorPubkey = event.pubkey
-        content = event.content
-        isFromMe = event.pubkey == localPubkey
-        createdAt = Date(timeIntervalSince1970: TimeInterval(event.created_at))
+    init(dto: FeedbackReplyDTO, localPubkey: String?) {
+        eventID = dto.eventId
+        authorPubkey = dto.authorPubkey
+        content = dto.content
+        isFromMe = dto.authorPubkey == localPubkey
+        createdAt = Date(timeIntervalSince1970: TimeInterval(dto.createdAt))
     }
 
     /// Optimistic reply synthesized from inputs (the kernel publish path is

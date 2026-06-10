@@ -65,12 +65,16 @@ struct PodcastUpdate {
     /// — because the snapshot decoder runs `.convertFromSnakeCase`, which would
     /// rename `created_at` and break `SignedNostrEvent`'s explicit coding key.
     @DefaultEmptyArray var feedbackEvents: [FeedbackEventDTO] = []
+    /// Resolved feedback threads (#354): the kernel performs the NIP-10
+    /// reduction + newest-wins kind:513 metadata; `FeedbackStore` renders these
+    /// directly instead of rebuilding threads from `feedbackEvents`.
+    @DefaultEmptyArray var feedbackThreads: [FeedbackThreadDTO] = []
 }
 
-/// Snapshot-decode mirror of a feedback Nostr event. Mirrors
-/// `SignedNostrEvent` but with a camelCase `createdAt` so it survives the
-/// snapshot decoder's `.convertFromSnakeCase` strategy. Mapped to
-/// `SignedNostrEvent` (with `sig = ""`) before `FeedbackStore.buildThreads`.
+/// Snapshot-decode mirror of a raw feedback Nostr event, retained for the
+/// `FeedbackStore` loading-state check ("has any feedback event arrived?").
+/// Thread reduction now happens kernel-side (#354) — see `feedbackThreads` /
+/// `FeedbackThreadDTO`. camelCase `createdAt` survives `.convertFromSnakeCase`.
 struct FeedbackEventDTO: Codable, Equatable {
     var id: String = ""
     var pubkey: String = ""
@@ -79,19 +83,31 @@ struct FeedbackEventDTO: Codable, Equatable {
     var tags: [[String]] = []
     var content: String = ""
 
-    /// Project onto the `SignedNostrEvent` shape `buildThreads` consumes.
-    /// `sig` is empty — `buildThreads` never reads the signature.
-    var asSignedEvent: SignedNostrEvent {
-        SignedNostrEvent(
-            id: id,
-            pubkey: pubkey,
-            created_at: createdAt,
-            kind: kind,
-            tags: tags,
-            content: content,
-            sig: ""
-        )
-    }
+}
+
+/// Snapshot-decode mirror of the kernel's resolved feedback thread (#354).
+/// Mirrors `ffi::feedback_threads::FeedbackThreadDto` (snake_case fields
+/// survive the decoder's `.convertFromSnakeCase`). The kernel owns the Nostr
+/// reduction; the shell maps this to its view `FeedbackThread`.
+struct FeedbackThreadDTO: Codable, Equatable {
+    var eventId: String = ""
+    var authorPubkey: String = ""
+    var category: String = ""
+    var content: String = ""
+    var createdAt: Int = 0
+    var title: String? = nil
+    var summary: String? = nil
+    var statusLabel: String? = nil
+    var replies: [FeedbackReplyDTO] = []
+}
+
+/// Snapshot-decode mirror of a resolved feedback reply (#354).
+/// Mirrors `ffi::feedback_threads::FeedbackReplyDto`.
+struct FeedbackReplyDTO: Codable, Equatable {
+    var eventId: String = ""
+    var authorPubkey: String = ""
+    var content: String = ""
+    var createdAt: Int = 0
 }
 
 /// One configured app relay: URL plus NIP-65 role string
@@ -192,6 +208,7 @@ extension PodcastUpdate: Codable {
         agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
         feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
+        feedbackThreads = try c.decodeIfPresent([FeedbackThreadDTO].self, forKey: .feedbackThreads) ?? []
     }
 }
 

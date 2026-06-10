@@ -50,9 +50,20 @@ final class FeedbackStore {
     /// Reactive feedback threads. Reading this in a SwiftUI body tracks the
     /// snapshot keypath, so the next kernel push re-renders.
     var threads: [FeedbackThread] {
-        let events = (appStore?.kernel?.podcastSnapshot?.feedbackEvents ?? [])
-            .map(\.asSignedEvent)
-        let projected = buildThreads(from: events, localPubkey: localPubkey)
+        // #354: the kernel emits resolved feedback threads (NIP-10 reduction +
+        // newest-wins kind:513 metadata). The shell only maps the projection to
+        // view models and overlays local-only optimistic state — no Nostr
+        // reduction here.
+        let projected = (appStore?.kernel?.podcastSnapshot?.feedbackThreads ?? [])
+            .map { dto -> FeedbackThread in
+                var thread = FeedbackThread(
+                    dto: dto,
+                    localPubkey: localPubkey,
+                    attachedImage: attachedImages[dto.eventId]
+                )
+                thread.replies = mergeOptimisticReplies(into: thread.replies, rootID: dto.eventId)
+                return thread
+            }
         // Drop optimistic threads whose relay echo has arrived (same author +
         // content), so "Mine" doesn't show a synthetic + real duplicate row.
         let echoed = Set(projected.map { ThreadDedupKey(thread: $0) })
@@ -60,6 +71,19 @@ final class FeedbackStore {
         return (surviving + projected)
             .filter { !hiddenThreadIDs.contains($0.id) }
             .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    /// Merge local-only optimistic replies into a thread's relay replies,
+    /// dropping any whose relay echo (same author + content) has arrived.
+    private func mergeOptimisticReplies(
+        into relayReplies: [FeedbackReply],
+        rootID: String
+    ) -> [FeedbackReply] {
+        let echoed = Set(relayReplies.map { ReplyDedupKey(reply: $0) })
+        let surviving = (pendingReplies[rootID] ?? [])
+            .filter { !echoed.contains(ReplyDedupKey(reply: $0)) }
+        guard !surviving.isEmpty else { return relayReplies }
+        return (relayReplies + surviving).sorted { $0.createdAt < $1.createdAt }
     }
 
     func load(identity: UserIdentityStore) async {
@@ -151,47 +175,6 @@ final class FeedbackStore {
         attachedImages[id] = nil
     }
 
-    // MARK: Thread reconstruction (unchanged from the relay-client era)
-
-    private func buildThreads(from events: [SignedNostrEvent], localPubkey: String?) -> [FeedbackThread] {
-        let metas = events.filter { $0.kind == FeedbackRelayClient.metadataKind }
-        let messages = events.filter { $0.kind == FeedbackRelayClient.textNoteKind }
-
-        var metaByRoot: [String: FeedbackMetadata] = [:]
-        for event in metas {
-            guard let rootID = event.rootEventID else { continue }
-            let parsed = FeedbackMetadata(event: event)
-            if let existing = metaByRoot[rootID], existing.createdAt >= parsed.createdAt { continue }
-            metaByRoot[rootID] = parsed
-        }
-
-        let replies = Dictionary(grouping: messages.filter { $0.rootEventID != nil }) {
-            $0.rootEventID ?? ""
-        }
-
-        return messages
-            .filter { $0.rootEventID == nil && $0.projectATags.contains(FeedbackRelayClient.projectCoordinate) }
-            .sorted { $0.created_at > $1.created_at }
-            .map { root in
-                var thread = FeedbackThread(
-                    event: root,
-                    replies: (replies[root.id] ?? []).sorted { $0.created_at < $1.created_at },
-                    metadata: metaByRoot[root.id],
-                    attachedImage: attachedImages[root.id],
-                    localPubkey: localPubkey
-                )
-                // Merge optimistic replies, dropping any whose relay echo (same
-                // author + content under this root) has already arrived.
-                let echoed = Set(thread.replies.map { ReplyDedupKey(reply: $0) })
-                let surviving = (pendingReplies[root.id] ?? [])
-                    .filter { !echoed.contains(ReplyDedupKey(reply: $0)) }
-                if !surviving.isEmpty {
-                    thread.replies = (thread.replies + surviving)
-                        .sorted { $0.createdAt < $1.createdAt }
-                }
-                return thread
-            }
-    }
 }
 
 // MARK: - Optimistic-vs-echo dedup

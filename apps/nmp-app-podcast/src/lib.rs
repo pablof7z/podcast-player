@@ -52,6 +52,7 @@ pub(crate) mod episode_summary;
 pub(crate) mod episode_summary_llm;
 pub(crate) mod feed_fetch;
 pub(crate) mod feedback_handler;
+pub(crate) mod feedback_threads;
 pub mod ffi;
 pub(crate) mod host_op_handler;
 pub(crate) mod host_op_handler_helpers;

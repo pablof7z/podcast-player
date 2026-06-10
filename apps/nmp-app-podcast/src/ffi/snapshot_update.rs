@@ -12,6 +12,7 @@ use super::projections::{
     OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot, VoiceState, WidgetSnapshot,
     WikiArticle,
 };
+use crate::feedback_threads::FeedbackThreadDto;
 use crate::player::PlayerState;
 
 /// Typed root of the snapshot JSON.
@@ -164,6 +165,12 @@ pub struct PodcastUpdate {
     /// kernel events as JSON, not typed `nostr::Event`s.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub feedback_events: Vec<serde_json::Value>,
+    /// Resolved feedback threads (#354): kind:1 roots (newest-first) with
+    /// their replies (oldest-first) and the newest-wins kind:513 metadata,
+    /// reduced kernel-side from `feedback_events`. The shell renders this
+    /// directly instead of re-running the Nostr reduction.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub feedback_threads: Vec<FeedbackThreadDto>,
 }
 
 /// One row of the `configured_relays` projection: a relay URL plus its
@@ -212,6 +219,7 @@ impl Default for PodcastUpdate {
             agent_notes: Vec::new(),
             configured_relays: Vec::new(),
             feedback_events: Vec::new(),
+            feedback_threads: Vec::new(),
         }
     }
 }

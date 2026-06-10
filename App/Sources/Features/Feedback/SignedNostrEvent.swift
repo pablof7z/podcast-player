@@ -26,31 +26,8 @@ struct SignedNostrEvent: Sendable, Equatable, Codable {
     let sig: String       // 64-byte hex signature (produced kernel-side).
 }
 
-// MARK: - Feedback thread helpers
-
-extension SignedNostrEvent {
-    /// The `a`-tag coordinates (e.g. project addressable references) on this event.
-    var projectATags: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "a" ? tag[1] : nil
-        }
-    }
-
-    /// The `e`-tag event ids referenced by this event.
-    var eTagIDs: [String] {
-        tags.compactMap { tag in
-            tag.count >= 2 && tag[0] == "e" ? tag[1] : nil
-        }
-    }
-
-    /// The NIP-10 root event id this event replies under: prefer an explicit
-    /// `["e", id, relay, "root"]` marker, else fall back to the first `e` tag.
-    var rootEventID: String? {
-        if let marked = tags.first(where: { tag in
-            tag.count >= 4 && tag[0] == "e" && tag[3] == "root"
-        }) {
-            return marked[1]
-        }
-        return eTagIDs.first
-    }
-}
+// NIP-10 thread reconstruction (root/reply/`a`-coordinate tag parsing) used to
+// live here as a `SignedNostrEvent` extension consumed by the feedback thread
+// builder. As of #354 that reduction runs kernel-side
+// (`ffi::feedback_threads`), which emits a resolved `feedbackThreads`
+// projection — the shell no longer parses feedback event tags.
