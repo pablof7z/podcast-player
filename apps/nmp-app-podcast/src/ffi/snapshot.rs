@@ -226,6 +226,13 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .ok()
         .map(|f| f.clone())
         .unwrap_or_default();
+    // #354: reduce the raw events into resolved threads kernel-side (NIP-10
+    // thread reconstruction + newest-wins kind:513 metadata) so the shell
+    // renders a typed projection instead of re-running Nostr semantics.
+    let feedback_threads = crate::feedback_threads::reduce_feedback_threads(
+        &feedback_events,
+        crate::feedback_handler::PROJECT_COORDINATE,
+    );
 
     // Configured app relays (NMP v0.2.1). Kernel-owned slot, projected by the
     // sibling helper. SAFETY: `handle.app` is the live `*mut NmpApp` the
@@ -277,6 +284,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         agent_notes,
         configured_relays,
         feedback_events,
+        feedback_threads,
         ..PodcastUpdate::default()
     }
 }
