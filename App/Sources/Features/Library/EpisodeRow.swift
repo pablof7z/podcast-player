@@ -8,11 +8,9 @@ import SwiftUI
 ///   - Unplayed:     red `circle.fill` dot badge on artwork, bold title.
 ///   - In progress:  `circle.lefthalf.filled` "crescent" badge.
 ///   - Played:       `checkmark.circle.fill` badge, dimmed title.
-///   - Downloading:  2 px progress bar (primary color) pinned to bottom edge.
-///   - Transcribing: 2 px progress bar (accent color) pinned to bottom edge.
+///   - Pipeline:     quiet inline lifecycle text plus an animated bottom rail.
 ///   - Downloaded:   title at full opacity; not-yet-downloaded titles are muted.
 struct EpisodeRow: View {
-    @Environment(AppStateStore.self) private var store
     let episode: Episode
     let showAccent: Color
     /// Fallback artwork URL when the episode has no per-item `<itunes:image>`.
@@ -54,6 +52,7 @@ struct EpisodeRow: View {
                 }
 
                 metaRow
+                EpisodeRowLifecycleLine(episode: episode, accent: showAccent)
             }
 
             if let onPlay {
@@ -73,7 +72,9 @@ struct EpisodeRow: View {
             }
         }
         .padding(.vertical, AppTheme.Spacing.sm)
-        .overlay(alignment: .bottom) { downloadProgressBar }
+        .overlay(alignment: .bottom) {
+            EpisodeRowProgressRail(episode: episode, accent: showAccent)
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -188,28 +189,6 @@ struct EpisodeRow: View {
         if episode.played { return .secondary }
         if case .downloaded = episode.downloadState { return .primary }
         return Color.primary.opacity(0.55)
-    }
-
-    @ViewBuilder
-    private var downloadProgressBar: some View {
-        if case .queued = episode.downloadState {
-            // Full-width track at low opacity: shows "something is pending" even at 0%.
-            thinProgressBar(progress: 1.0, color: Color.primary.opacity(0.15))
-        } else if case .downloading(let persisted, _) = episode.downloadState {
-            thinProgressBar(progress: persisted.clamped01, color: Color.primary, minWidth: 8)
-        } else if case .downloaded = episode.downloadState,
-                  case .transcribing(let p) = episode.transcriptState {
-            thinProgressBar(progress: p.clamped01, color: Color.accentColor, minWidth: 8)
-        }
-    }
-
-    private func thinProgressBar(progress: Double, color: Color, minWidth: CGFloat = 0) -> some View {
-        GeometryReader { geo in
-            Rectangle()
-                .fill(color)
-                .frame(width: max(minWidth, geo.size.width * progress), height: 2)
-        }
-        .frame(height: 2)
     }
 
     private var relativePublished: String {
