@@ -8,6 +8,7 @@ import SwiftUI
 ///   - title: Primary label
 ///   - subtitle: Optional secondary label shown below title
 ///   - value: Optional trailing value text
+///   - valueSubtitle: Optional secondary line below trailing value text
 ///   - badge: When > 0, shows an orange `StatBadge` trailing
 struct SettingsRow: View {
 
@@ -40,6 +41,7 @@ struct SettingsRow: View {
     let title: String
     var subtitle: String? = nil
     var value: String? = nil
+    var valueSubtitle: String? = nil
     var badge: Int = 0
 
     var body: some View {
@@ -90,10 +92,24 @@ struct SettingsRow: View {
         if badge > 0 {
             StatBadge(value: badge, label: nil, color: .orange)
         } else if let value {
-            Text(value)
-                .font(AppTheme.Typography.body)
-                .foregroundStyle(.secondary)
-                .truncatedMiddle()
+            if let valueSubtitle, !valueSubtitle.isEmpty {
+                VStack(alignment: .trailing, spacing: Layout.labelSpacing) {
+                    Text(value)
+                        .font(AppTheme.Typography.body)
+                        .foregroundStyle(.secondary)
+                        .truncatedMiddle()
+                    Text(valueSubtitle)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .truncatedMiddle()
+                }
+                .multilineTextAlignment(.trailing)
+            } else {
+                Text(value)
+                    .font(AppTheme.Typography.body)
+                    .foregroundStyle(.secondary)
+                    .truncatedMiddle()
+            }
         }
     }
 }

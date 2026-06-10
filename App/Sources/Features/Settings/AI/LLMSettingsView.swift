@@ -87,7 +87,6 @@ struct AIModelsSettingsView: View {
             ) {
                 agentSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.agentInitialModel))
 
             modelRow(
                 icon: "sparkles",
@@ -98,7 +97,6 @@ struct AIModelsSettingsView: View {
             ) {
                 thinkingSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.agentThinkingModel))
 
             modelRow(
                 icon: "memories",
@@ -109,7 +107,6 @@ struct AIModelsSettingsView: View {
             ) {
                 memorySelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.memoryCompilationModel))
 
             modelRow(
                 icon: "book.closed.fill",
@@ -120,7 +117,6 @@ struct AIModelsSettingsView: View {
             ) {
                 wikiSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.wikiModel))
 
             modelRow(
                 icon: "square.grid.2x2.fill",
@@ -131,7 +127,6 @@ struct AIModelsSettingsView: View {
             ) {
                 categorizationSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.categorizationModel))
 
             modelRow(
                 icon: "list.bullet.indent",
@@ -142,7 +137,6 @@ struct AIModelsSettingsView: View {
             ) {
                 chapterSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.chapterCompilationModel))
 
             modelRow(
                 icon: "rectangle.stack.fill.badge.person.crop",
@@ -153,7 +147,6 @@ struct AIModelsSettingsView: View {
             ) {
                 embeddingsSelectorPresented = true
             }
-            ModelPreviewCard(model: catalogModel(for: store.state.settings.embeddingsModel))
         } header: {
             Text("Language Roles")
         } footer: {
@@ -201,17 +194,20 @@ struct AIModelsSettingsView: View {
     // MARK: - Row helper
 
     private func modelRow(icon: String, tint: Color, role: String, modelID: String, modelName: String, onTap: @escaping () -> Void) -> some View {
+        let selectedCatalogModel = catalogModel(for: modelID)
         let displayName = displayName(modelID: modelID, modelName: modelName)
+        let providerDisplayName = providerName(modelID: modelID, catalogModel: selectedCatalogModel)
         return Button(action: onTap) {
             SettingsRow(
                 icon: icon,
                 tint: tint,
                 title: role,
-                subtitle: displayName
+                value: displayName,
+                valueSubtitle: providerDisplayName
             )
         }
         .buttonStyle(.pressable)
-        .accessibilityLabel("\(role), \(displayName)")
+        .accessibilityLabel("\(role), \(displayName), \(providerDisplayName)")
         .accessibilityHint("Opens model selector")
     }
 
@@ -389,81 +385,37 @@ struct AIModelsSettingsView: View {
         return catalog.models.first { $0.matchesStoredID(id) }
     }
 
-    // MARK: - ModelPreviewCard
-
-    /// A compact info strip shown beneath each model-role row.
-    /// Shows context-window size, pricing tier, and key capability badges.
-    /// Renders nothing when the model hasn't been loaded from the catalog yet.
-    private struct ModelPreviewCard: View {
-
-        private enum Layout {
-            static let chipCornerRadius: CGFloat = 6
-            static let chipPaddingH: CGFloat = 6
-            static let chipPaddingV: CGFloat = 3
-            static let rowSpacing: CGFloat = 6
-            static let chipIconSize: CGFloat = 9
-            static let chipLabelSize: CGFloat = 11
-            static let chipInnerSpacing: CGFloat = 3
+    private func providerName(modelID: String, catalogModel: ProviderModelOption?) -> String {
+        if let name = catalogModel?.providerName.trimmed, !name.isEmpty {
+            return name
         }
-
-        let model: ProviderModelOption?
-
-        var body: some View {
-            if let model {
-                HStack(spacing: Layout.rowSpacing) {
-                    if let ctx = model.contextLength {
-                        chip(contextLabel(ctx), icon: "text.alignleft", color: .blue)
-                    }
-                    chip(model.compactPricing, icon: "dollarsign", color: pricingColor(model))
-                    if model.supportsTools {
-                        chip("Tools", icon: "wrench.and.screwdriver", color: .teal)
-                    }
-                    if model.supportsReasoning {
-                        chip("Reasoning", icon: "brain", color: .purple)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.leading, SettingsRow.contentLeadingInset)
-                .padding(.bottom, AppTheme.Spacing.xs)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(accessibilityDescription(model))
-            }
+        let reference = LLMModelReference(storedID: modelID)
+        guard !reference.modelID.isBlank else { return "No provider" }
+        if reference.provider == .openRouter,
+           let providerSlug = reference.modelID.split(separator: "/", maxSplits: 1).first,
+           reference.modelID.contains("/") {
+            return formatProviderSlug(String(providerSlug))
         }
+        return reference.provider.displayName
+    }
 
-        private func chip(_ label: String, icon: String, color: Color) -> some View {
-            HStack(spacing: Layout.chipInnerSpacing) {
-                Image(systemName: icon)
-                    .font(.system(size: Layout.chipIconSize, weight: .semibold))
-                Text(label)
-                    .font(.system(size: Layout.chipLabelSize, weight: .medium))
-            }
-            .foregroundStyle(color)
-            .padding(.horizontal, Layout.chipPaddingH)
-            .padding(.vertical, Layout.chipPaddingV)
-            .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: Layout.chipCornerRadius, style: .continuous))
-        }
-
-        private func contextLabel(_ tokens: Int) -> String {
-            if tokens >= 1_000_000 { return "\(tokens / 1_000_000)M ctx" }
-            if tokens >= 1_000     { return "\(tokens / 1_000)K ctx" }
-            return "\(tokens) ctx"
-        }
-
-        private func pricingColor(_ model: ProviderModelOption) -> Color {
-            if model.isFree { return .green }
-            if let cost = model.promptCostPerMillion, cost < 1 { return .secondary }
-            return .orange
-        }
-
-        private func accessibilityDescription(_ model: ProviderModelOption) -> String {
-            var parts: [String] = []
-            if let ctx = model.contextLength { parts.append(contextLabel(ctx)) }
-            parts.append(model.compactPricing)
-            if model.supportsTools     { parts.append("supports tools") }
-            if model.supportsReasoning { parts.append("supports reasoning") }
-            return parts.joined(separator: ", ")
+    private func formatProviderSlug(_ slug: String) -> String {
+        switch slug.lowercased() {
+        case "openai":      return "OpenAI"
+        case "anthropic":   return "Anthropic"
+        case "deepseek":    return "DeepSeek"
+        case "google":      return "Google"
+        case "mistralai":   return "Mistral AI"
+        case "meta-llama":  return "Meta"
+        case "x-ai":        return "xAI"
+        default:
+            return slug
+                .replacingOccurrences(of: "-", with: " ")
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
         }
     }
+
 }
 
 struct LLMSettingsView: View {
