@@ -100,6 +100,11 @@ impl PodcastStore {
             self.transcript_status_overrides
                 .insert(ep_id, (status, message));
         }
+        // Canonical fallback values for fields whose on-disk sentinel (empty
+        // string / 0.0) means "field absent in an old file". Sourced from
+        // `PersistedSettings::default()`, which in turn derives from
+        // `PodcastStore::new()` — so a default lives in exactly one place.
+        let d = PersistedSettings::default();
         self.auto_skip_ads_enabled = loaded.settings.auto_skip_ads_enabled;
         self.auto_play_next = loaded.settings.auto_play_next;
         self.auto_mark_played_at_end = loaded.settings.auto_mark_played_at_end;
@@ -114,17 +119,17 @@ impl PodcastStore {
         self.skip_forward_secs = if loaded.settings.skip_forward_secs > 0.0 {
             loaded.settings.skip_forward_secs
         } else {
-            30.0
+            d.skip_forward_secs
         };
         self.skip_backward_secs = if loaded.settings.skip_backward_secs > 0.0 {
             loaded.settings.skip_backward_secs
         } else {
-            15.0
+            d.skip_backward_secs
         };
         self.default_playback_rate = if loaded.settings.default_playback_rate > 0.0 {
             loaded.settings.default_playback_rate
         } else {
-            1.0
+            d.default_playback_rate
         };
         self.auto_delete_downloads_after_played =
             loaded.settings.auto_delete_downloads_after_played;
@@ -132,85 +137,85 @@ impl PodcastStore {
         self.agent_initial_model = if !loaded.settings.agent_initial_model.is_empty() {
             loaded.settings.agent_initial_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.agent_initial_model.clone()
         };
         self.agent_initial_model_name = if !loaded.settings.agent_initial_model_name.is_empty() {
             loaded.settings.agent_initial_model_name
         } else {
-            "DeepSeek Flash".to_owned()
+            d.agent_initial_model_name.clone()
         };
         self.agent_thinking_model = if !loaded.settings.agent_thinking_model.is_empty() {
             loaded.settings.agent_thinking_model
         } else {
-            "deepseek-v4-pro:cloud".to_owned()
+            d.agent_thinking_model.clone()
         };
         self.agent_thinking_model_name = if !loaded.settings.agent_thinking_model_name.is_empty() {
             loaded.settings.agent_thinking_model_name
         } else {
-            "DeepSeek Pro".to_owned()
+            d.agent_thinking_model_name.clone()
         };
         self.memory_compilation_model = if !loaded.settings.memory_compilation_model.is_empty() {
             loaded.settings.memory_compilation_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.memory_compilation_model.clone()
         };
         self.memory_compilation_model_name =
             if !loaded.settings.memory_compilation_model_name.is_empty() {
                 loaded.settings.memory_compilation_model_name
             } else {
-                "DeepSeek Flash".to_owned()
+                d.memory_compilation_model_name.clone()
             };
         self.wiki_model = if !loaded.settings.wiki_model.is_empty() {
             loaded.settings.wiki_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.wiki_model.clone()
         };
         self.wiki_model_name = if !loaded.settings.wiki_model_name.is_empty() {
             loaded.settings.wiki_model_name
         } else {
-            "DeepSeek Flash".to_owned()
+            d.wiki_model_name.clone()
         };
         self.categorization_model = if !loaded.settings.categorization_model.is_empty() {
             loaded.settings.categorization_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.categorization_model.clone()
         };
         self.categorization_model_name = if !loaded.settings.categorization_model_name.is_empty() {
             loaded.settings.categorization_model_name
         } else {
-            "DeepSeek Flash".to_owned()
+            d.categorization_model_name.clone()
         };
         self.chapter_compilation_model = if !loaded.settings.chapter_compilation_model.is_empty() {
             loaded.settings.chapter_compilation_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.chapter_compilation_model.clone()
         };
         self.chapter_compilation_model_name =
             if !loaded.settings.chapter_compilation_model_name.is_empty() {
                 loaded.settings.chapter_compilation_model_name
             } else {
-                "DeepSeek Flash".to_owned()
+                d.chapter_compilation_model_name.clone()
             };
         self.embeddings_model = if !loaded.settings.embeddings_model.is_empty() {
             loaded.settings.embeddings_model
         } else {
-            "deepseek-v4-flash:cloud".to_owned()
+            d.embeddings_model.clone()
         };
         self.embeddings_model_name = if !loaded.settings.embeddings_model_name.is_empty() {
             loaded.settings.embeddings_model_name
         } else {
-            "DeepSeek Flash".to_owned()
+            d.embeddings_model_name.clone()
         };
         self.image_generation_model = if !loaded.settings.image_generation_model.is_empty() {
             loaded.settings.image_generation_model
         } else {
-            "google/gemini-2.5-flash-image".to_owned()
+            d.image_generation_model.clone()
         };
         self.image_generation_model_name =
             if !loaded.settings.image_generation_model_name.is_empty() {
                 loaded.settings.image_generation_model_name
             } else {
-                "Gemini 2.5 Flash".to_owned()
+                d.image_generation_model_name.clone()
             };
         self.reranker_enabled = loaded.settings.reranker_enabled;
         self.open_router_credential = ProviderCredentialMetadata::new(
@@ -247,34 +252,34 @@ impl PodcastStore {
         self.stt_provider = if !loaded.settings.stt_provider.is_empty() {
             loaded.settings.stt_provider
         } else {
-            "apple_native".to_owned()
+            d.stt_provider.clone()
         };
         self.open_router_whisper_model = if !loaded.settings.open_router_whisper_model.is_empty() {
             loaded.settings.open_router_whisper_model
         } else {
-            "openai/whisper-1".to_owned()
+            d.open_router_whisper_model.clone()
         };
         self.assembly_ai_stt_model = if !loaded.settings.assembly_ai_stt_model.is_empty() {
             loaded.settings.assembly_ai_stt_model
         } else {
-            "universal-3-pro,universal-2".to_owned()
+            d.assembly_ai_stt_model.clone()
         };
         self.eleven_labs_stt_model = if !loaded.settings.eleven_labs_stt_model.is_empty() {
             loaded.settings.eleven_labs_stt_model
         } else {
-            "scribe_v1".to_owned()
+            d.eleven_labs_stt_model.clone()
         };
         self.eleven_labs_tts_model = if !loaded.settings.eleven_labs_tts_model.is_empty() {
             loaded.settings.eleven_labs_tts_model
         } else {
-            "eleven_turbo_v2_5".to_owned()
+            d.eleven_labs_tts_model.clone()
         };
         self.eleven_labs_voice_id = loaded.settings.eleven_labs_voice_id;
         self.eleven_labs_voice_name = loaded.settings.eleven_labs_voice_name;
         self.blossom_server_url = if !loaded.settings.blossom_server_url.is_empty() {
             loaded.settings.blossom_server_url
         } else {
-            "https://blossom.primal.net".to_owned()
+            d.blossom_server_url.clone()
         };
         self.youtube_extractor_url = loaded.settings.youtube_extractor_url;
         self.wiki_auto_generate_on_transcript_ingest =
@@ -386,80 +391,87 @@ impl PodcastStore {
             episode_triage,
             metadata_indexed_episodes,
             transcript_status_overrides,
-            settings: PersistedSettings {
-                auto_skip_ads_enabled: self.auto_skip_ads_enabled,
-                auto_play_next: self.auto_play_next,
-                auto_mark_played_at_end: self.auto_mark_played_at_end,
-                headphone_double_tap_action: self.headphone_double_tap_action.clone(),
-                headphone_triple_tap_action: self.headphone_triple_tap_action.clone(),
-                skip_forward_secs: self.skip_forward_secs,
-                skip_backward_secs: self.skip_backward_secs,
-                default_playback_rate: self.default_playback_rate,
-                auto_delete_downloads_after_played: self.auto_delete_downloads_after_played,
-                agent_initial_model: self.agent_initial_model.clone(),
-                agent_initial_model_name: self.agent_initial_model_name.clone(),
-                agent_thinking_model: self.agent_thinking_model.clone(),
-                agent_thinking_model_name: self.agent_thinking_model_name.clone(),
-                memory_compilation_model: self.memory_compilation_model.clone(),
-                memory_compilation_model_name: self.memory_compilation_model_name.clone(),
-                wiki_model: self.wiki_model.clone(),
-                wiki_model_name: self.wiki_model_name.clone(),
-                categorization_model: self.categorization_model.clone(),
-                categorization_model_name: self.categorization_model_name.clone(),
-                chapter_compilation_model: self.chapter_compilation_model.clone(),
-                chapter_compilation_model_name: self.chapter_compilation_model_name.clone(),
-                embeddings_model: self.embeddings_model.clone(),
-                embeddings_model_name: self.embeddings_model_name.clone(),
-                image_generation_model: self.image_generation_model.clone(),
-                image_generation_model_name: self.image_generation_model_name.clone(),
-                reranker_enabled: self.reranker_enabled,
-                open_router_credential_source: self.open_router_credential.source().to_owned(),
-                open_router_byok_key_id: self.open_router_credential.byok_key_id_owned(),
-                open_router_byok_key_label: self.open_router_credential.byok_key_label_owned(),
-                open_router_connected_at: self.open_router_credential.connected_at(),
-                ollama_credential_source: self.ollama_credential.source().to_owned(),
-                ollama_byok_key_id: self.ollama_credential.byok_key_id_owned(),
-                ollama_byok_key_label: self.ollama_credential.byok_key_label_owned(),
-                ollama_connected_at: self.ollama_credential.connected_at(),
-                ollama_chat_url: self.ollama_chat_url.clone(),
-                eleven_labs_credential_source: self.eleven_labs_credential.source().to_owned(),
-                eleven_labs_byok_key_id: self.eleven_labs_credential.byok_key_id_owned(),
-                eleven_labs_byok_key_label: self.eleven_labs_credential.byok_key_label_owned(),
-                eleven_labs_connected_at: self.eleven_labs_credential.connected_at(),
-                assembly_ai_credential_source: self.assembly_ai_credential.source().to_owned(),
-                assembly_ai_byok_key_id: self.assembly_ai_credential.byok_key_id_owned(),
-                assembly_ai_byok_key_label: self.assembly_ai_credential.byok_key_label_owned(),
-                assembly_ai_connected_at: self.assembly_ai_credential.connected_at(),
-                perplexity_credential_source: self.perplexity_credential.source().to_owned(),
-                perplexity_byok_key_id: self.perplexity_credential.byok_key_id_owned(),
-                perplexity_byok_key_label: self.perplexity_credential.byok_key_label_owned(),
-                perplexity_connected_at: self.perplexity_credential.connected_at(),
-                stt_provider: self.stt_provider.clone(),
-                open_router_whisper_model: self.open_router_whisper_model.clone(),
-                assembly_ai_stt_model: self.assembly_ai_stt_model.clone(),
-                eleven_labs_stt_model: self.eleven_labs_stt_model.clone(),
-                eleven_labs_tts_model: self.eleven_labs_tts_model.clone(),
-                eleven_labs_voice_id: self.eleven_labs_voice_id.clone(),
-                eleven_labs_voice_name: self.eleven_labs_voice_name.clone(),
-                blossom_server_url: self.blossom_server_url.clone(),
-                youtube_extractor_url: self.youtube_extractor_url.clone(),
-                local_model_id: self.local_model_id.clone(),
-                wiki_auto_generate_on_transcript_ingest: self
-                    .wiki_auto_generate_on_transcript_ingest,
-                auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
-                auto_fallback_to_scribe: self.auto_fallback_to_scribe,
-                notify_on_new_episodes: self.notify_on_new_episodes,
-                nostr_enabled: self.nostr_enabled,
-                nostr_relay_url: self.nostr_relay_url.clone(),
-                nostr_public_relays: self.nostr_public_relays.clone(),
-                nostr_profile_name: self.nostr_profile_name.clone(),
-                nostr_profile_about: self.nostr_profile_about.clone(),
-                nostr_profile_picture: self.nostr_profile_picture.clone(),
-                // nostr_public_key_hex is excluded from persistence (read-only, from Keychain)
-                nostr_public_key_hex: None,
-            },
+            settings: self.persisted_settings(),
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
             pending_wifi_downloads: self.pending_wifi_downloads.clone(),
+        }
+    }
+
+    /// Project the live in-memory settings into the on-disk [`PersistedSettings`]
+    /// envelope. Extracted from [`Self::to_persisted`] so the write path has one
+    /// canonical settings-serialization site (mirroring the single canonical
+    /// defaults site in [`super::PodcastStore::new`]).
+    pub(super) fn persisted_settings(&self) -> PersistedSettings {
+        PersistedSettings {
+            auto_skip_ads_enabled: self.auto_skip_ads_enabled,
+            auto_play_next: self.auto_play_next,
+            auto_mark_played_at_end: self.auto_mark_played_at_end,
+            headphone_double_tap_action: self.headphone_double_tap_action.clone(),
+            headphone_triple_tap_action: self.headphone_triple_tap_action.clone(),
+            skip_forward_secs: self.skip_forward_secs,
+            skip_backward_secs: self.skip_backward_secs,
+            default_playback_rate: self.default_playback_rate,
+            auto_delete_downloads_after_played: self.auto_delete_downloads_after_played,
+            agent_initial_model: self.agent_initial_model.clone(),
+            agent_initial_model_name: self.agent_initial_model_name.clone(),
+            agent_thinking_model: self.agent_thinking_model.clone(),
+            agent_thinking_model_name: self.agent_thinking_model_name.clone(),
+            memory_compilation_model: self.memory_compilation_model.clone(),
+            memory_compilation_model_name: self.memory_compilation_model_name.clone(),
+            wiki_model: self.wiki_model.clone(),
+            wiki_model_name: self.wiki_model_name.clone(),
+            categorization_model: self.categorization_model.clone(),
+            categorization_model_name: self.categorization_model_name.clone(),
+            chapter_compilation_model: self.chapter_compilation_model.clone(),
+            chapter_compilation_model_name: self.chapter_compilation_model_name.clone(),
+            embeddings_model: self.embeddings_model.clone(),
+            embeddings_model_name: self.embeddings_model_name.clone(),
+            image_generation_model: self.image_generation_model.clone(),
+            image_generation_model_name: self.image_generation_model_name.clone(),
+            reranker_enabled: self.reranker_enabled,
+            open_router_credential_source: self.open_router_credential.source().to_owned(),
+            open_router_byok_key_id: self.open_router_credential.byok_key_id_owned(),
+            open_router_byok_key_label: self.open_router_credential.byok_key_label_owned(),
+            open_router_connected_at: self.open_router_credential.connected_at(),
+            ollama_credential_source: self.ollama_credential.source().to_owned(),
+            ollama_byok_key_id: self.ollama_credential.byok_key_id_owned(),
+            ollama_byok_key_label: self.ollama_credential.byok_key_label_owned(),
+            ollama_connected_at: self.ollama_credential.connected_at(),
+            ollama_chat_url: self.ollama_chat_url.clone(),
+            eleven_labs_credential_source: self.eleven_labs_credential.source().to_owned(),
+            eleven_labs_byok_key_id: self.eleven_labs_credential.byok_key_id_owned(),
+            eleven_labs_byok_key_label: self.eleven_labs_credential.byok_key_label_owned(),
+            eleven_labs_connected_at: self.eleven_labs_credential.connected_at(),
+            assembly_ai_credential_source: self.assembly_ai_credential.source().to_owned(),
+            assembly_ai_byok_key_id: self.assembly_ai_credential.byok_key_id_owned(),
+            assembly_ai_byok_key_label: self.assembly_ai_credential.byok_key_label_owned(),
+            assembly_ai_connected_at: self.assembly_ai_credential.connected_at(),
+            perplexity_credential_source: self.perplexity_credential.source().to_owned(),
+            perplexity_byok_key_id: self.perplexity_credential.byok_key_id_owned(),
+            perplexity_byok_key_label: self.perplexity_credential.byok_key_label_owned(),
+            perplexity_connected_at: self.perplexity_credential.connected_at(),
+            stt_provider: self.stt_provider.clone(),
+            open_router_whisper_model: self.open_router_whisper_model.clone(),
+            assembly_ai_stt_model: self.assembly_ai_stt_model.clone(),
+            eleven_labs_stt_model: self.eleven_labs_stt_model.clone(),
+            eleven_labs_tts_model: self.eleven_labs_tts_model.clone(),
+            eleven_labs_voice_id: self.eleven_labs_voice_id.clone(),
+            eleven_labs_voice_name: self.eleven_labs_voice_name.clone(),
+            blossom_server_url: self.blossom_server_url.clone(),
+            youtube_extractor_url: self.youtube_extractor_url.clone(),
+            local_model_id: self.local_model_id.clone(),
+            wiki_auto_generate_on_transcript_ingest: self.wiki_auto_generate_on_transcript_ingest,
+            auto_ingest_publisher_transcripts: self.auto_ingest_publisher_transcripts,
+            auto_fallback_to_scribe: self.auto_fallback_to_scribe,
+            notify_on_new_episodes: self.notify_on_new_episodes,
+            nostr_enabled: self.nostr_enabled,
+            nostr_relay_url: self.nostr_relay_url.clone(),
+            nostr_public_relays: self.nostr_public_relays.clone(),
+            nostr_profile_name: self.nostr_profile_name.clone(),
+            nostr_profile_about: self.nostr_profile_about.clone(),
+            nostr_profile_picture: self.nostr_profile_picture.clone(),
+            // nostr_public_key_hex is excluded from persistence (read-only, from Keychain)
+            nostr_public_key_hex: None,
         }
     }
 

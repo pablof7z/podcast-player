@@ -165,62 +165,67 @@ extension SettingsSnapshot: Codable {
     }
 
     init(from decoder: Decoder) throws {
+        // Start from the property initializers — the single Swift-side default
+        // mirror of the kernel's `PodcastStore::new()` — then overwrite only
+        // the keys actually present on the wire. No `?? literal` fallbacks: an
+        // absent key keeps the canonical default set by `self.init()`.
+        self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
-        autoSkipAdsEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAdsEnabled) ?? true
-        autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
-        autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
-        headphoneDoubleTapAction = try c.decodeIfPresent(String.self, forKey: .headphoneDoubleTapAction) ?? "skipForward"
-        headphoneTripleTapAction = try c.decodeIfPresent(String.self, forKey: .headphoneTripleTapAction) ?? "clipNow"
-        skipForwardSecs = try c.decodeIfPresent(Double.self, forKey: .skipForwardSecs) ?? 30
-        skipBackwardSecs = try c.decodeIfPresent(Double.self, forKey: .skipBackwardSecs) ?? 15
-        defaultPlaybackRate = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate) ?? 1.0
-        autoDeleteDownloadsAfterPlayed = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) ?? false
-        agentInitialModel = try c.decodeIfPresent(String.self, forKey: .agentInitialModel) ?? "deepseek-v4-flash:cloud"
-        agentInitialModelName = try c.decodeIfPresent(String.self, forKey: .agentInitialModelName) ?? "DeepSeek Flash"
-        agentThinkingModel = try c.decodeIfPresent(String.self, forKey: .agentThinkingModel) ?? "deepseek-v4-pro:cloud"
-        agentThinkingModelName = try c.decodeIfPresent(String.self, forKey: .agentThinkingModelName) ?? "DeepSeek Pro"
-        memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? "deepseek-v4-flash:cloud"
-        memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? "DeepSeek Flash"
-        wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? "deepseek-v4-flash:cloud"
-        wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? "DeepSeek Flash"
-        categorizationModel = try c.decodeIfPresent(String.self, forKey: .categorizationModel) ?? "deepseek-v4-flash:cloud"
-        categorizationModelName = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) ?? "DeepSeek Flash"
-        chapterCompilationModel = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModel) ?? "deepseek-v4-flash:cloud"
-        chapterCompilationModelName = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) ?? "DeepSeek Flash"
-        embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? "deepseek-v4-flash:cloud"
-        embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? "DeepSeek Flash"
-        imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "google/gemini-2.5-flash-image"
-        imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? "Gemini 2.5 Flash"
-        rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) { hasCompletedOnboarding = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAdsEnabled) { autoSkipAdsEnabled = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) { autoPlayNext = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) { autoMarkPlayedAtEnd = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .headphoneDoubleTapAction) { headphoneDoubleTapAction = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .headphoneTripleTapAction) { headphoneTripleTapAction = v }
+        if let v = try c.decodeIfPresent(Double.self, forKey: .skipForwardSecs) { skipForwardSecs = v }
+        if let v = try c.decodeIfPresent(Double.self, forKey: .skipBackwardSecs) { skipBackwardSecs = v }
+        if let v = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate) { defaultPlaybackRate = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) { autoDeleteDownloadsAfterPlayed = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentInitialModel) { agentInitialModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentInitialModelName) { agentInitialModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentThinkingModel) { agentThinkingModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentThinkingModelName) { agentThinkingModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) { memoryCompilationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) { memoryCompilationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .wikiModel) { wikiModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .wikiModelName) { wikiModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .categorizationModel) { categorizationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) { categorizationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModel) { chapterCompilationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) { chapterCompilationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) { embeddingsModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) { embeddingsModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) { imageGenerationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) { imageGenerationModelName = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) { rerankerEnabled = v }
         try decodeCredentialMetadata(c, "openRouter")
-        ollamaChatURL = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) ?? "https://ollama.com/api/chat"
+        if let v = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) { ollamaChatURL = v }
         try decodeCredentialMetadata(c, "ollama")
         try decodeCredentialMetadata(c, "elevenLabs")
         try decodeCredentialMetadata(c, "assemblyAI")
         try decodeCredentialMetadata(c, "perplexity")
-        sttProvider = try c.decodeIfPresent(String.self, forKey: .sttProvider) ?? "apple_native"
-        effectiveSttProvider = try c.decodeIfPresent(String.self, forKey: .effectiveSttProvider) ?? "apple_native"
-        effectiveSttProviderRequiresKey = try c.decodeIfPresent(Bool.self, forKey: .effectiveSttProviderRequiresKey) ?? false
-        openRouterWhisperModel = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) ?? "openai/whisper-1"
-        assemblyAISTTModel = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) ?? "universal-3-pro,universal-2"
-        elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? "scribe_v1"
-        elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? "eleven_turbo_v2_5"
-        elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
-        elevenLabsVoiceName = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) ?? ""
-        blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
+        if let v = try c.decodeIfPresent(String.self, forKey: .sttProvider) { sttProvider = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .effectiveSttProvider) { effectiveSttProvider = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .effectiveSttProviderRequiresKey) { effectiveSttProviderRequiresKey = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) { openRouterWhisperModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) { assemblyAISTTModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) { elevenLabsSTTModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) { elevenLabsTTSModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) { elevenLabsVoiceID = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) { elevenLabsVoiceName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) { blossomServerURL = v }
         youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
         localModelID = try c.decodeIfPresent(String.self, forKey: .localModelID)
-        wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
-        autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? true
-        autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
-        notifyOnNewEpisodes = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) ?? true
-        nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
-        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? ""
-        nostrPublicRelays = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) ?? []
-        nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
-        nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
-        nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) { wikiAutoGenerateOnTranscriptIngest = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) { autoIngestPublisherTranscripts = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) { autoFallbackToScribe = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) { notifyOnNewEpisodes = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) { nostrEnabled = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) { nostrRelayURL = v }
+        if let v = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) { nostrPublicRelays = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) { nostrProfileName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) { nostrProfileAbout = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) { nostrProfilePicture = v }
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
     }
 
@@ -230,32 +235,32 @@ extension SettingsSnapshot: Codable {
     ) throws {
         switch provider {
         case "openRouter":
-            openRouterCredentialSource = try c.decodeIfPresent(String.self, forKey: .openRouterCredentialSource) ?? ""
-            openRouterKeyPresent = try c.decodeIfPresent(Bool.self, forKey: .openRouterKeyPresent) ?? false
+            if let v = try c.decodeIfPresent(String.self, forKey: .openRouterCredentialSource) { openRouterCredentialSource = v }
+            if let v = try c.decodeIfPresent(Bool.self, forKey: .openRouterKeyPresent) { openRouterKeyPresent = v }
             openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
             openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
             openRouterConnectedAt = try decodeDate(c, .openRouterConnectedAt)
         case "ollama":
-            ollamaCredentialSource = try c.decodeIfPresent(String.self, forKey: .ollamaCredentialSource) ?? ""
-            ollamaKeyPresent = try c.decodeIfPresent(Bool.self, forKey: .ollamaKeyPresent) ?? false
+            if let v = try c.decodeIfPresent(String.self, forKey: .ollamaCredentialSource) { ollamaCredentialSource = v }
+            if let v = try c.decodeIfPresent(Bool.self, forKey: .ollamaKeyPresent) { ollamaKeyPresent = v }
             ollamaBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyID)
             ollamaBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyLabel)
             ollamaConnectedAt = try decodeDate(c, .ollamaConnectedAt)
         case "elevenLabs":
-            elevenLabsCredentialSource = try c.decodeIfPresent(String.self, forKey: .elevenLabsCredentialSource) ?? ""
-            elevenLabsKeyPresent = try c.decodeIfPresent(Bool.self, forKey: .elevenLabsKeyPresent) ?? false
+            if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsCredentialSource) { elevenLabsCredentialSource = v }
+            if let v = try c.decodeIfPresent(Bool.self, forKey: .elevenLabsKeyPresent) { elevenLabsKeyPresent = v }
             elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
             elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
             elevenLabsConnectedAt = try decodeDate(c, .elevenLabsConnectedAt)
         case "assemblyAI":
-            assemblyAICredentialSource = try c.decodeIfPresent(String.self, forKey: .assemblyAICredentialSource) ?? ""
-            assemblyAIKeyPresent = try c.decodeIfPresent(Bool.self, forKey: .assemblyAIKeyPresent) ?? false
+            if let v = try c.decodeIfPresent(String.self, forKey: .assemblyAICredentialSource) { assemblyAICredentialSource = v }
+            if let v = try c.decodeIfPresent(Bool.self, forKey: .assemblyAIKeyPresent) { assemblyAIKeyPresent = v }
             assemblyAIBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyID)
             assemblyAIBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyLabel)
             assemblyAIConnectedAt = try decodeDate(c, .assemblyAIConnectedAt)
         case "perplexity":
-            perplexityCredentialSource = try c.decodeIfPresent(String.self, forKey: .perplexityCredentialSource) ?? ""
-            perplexityKeyPresent = try c.decodeIfPresent(Bool.self, forKey: .perplexityKeyPresent) ?? false
+            if let v = try c.decodeIfPresent(String.self, forKey: .perplexityCredentialSource) { perplexityCredentialSource = v }
+            if let v = try c.decodeIfPresent(Bool.self, forKey: .perplexityKeyPresent) { perplexityKeyPresent = v }
             perplexityBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyID)
             perplexityBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyLabel)
             perplexityConnectedAt = try decodeDate(c, .perplexityConnectedAt)

@@ -70,59 +70,54 @@ enum STTProvider: String, Codable, Hashable, Sendable, CaseIterable {
 
 struct Settings: Codable, Hashable, Sendable {
 
-    // MARK: - Defaults
-    private enum Defaults {
-        static let llmModel = "openai/gpt-4o-mini"
-        static let elevenLabsSTTModel = "scribe_v1"
-        static let elevenLabsTTSModel = "eleven_turbo_v2_5"
-        static let nostrRelayURL = "wss://relay.tenex.chat"
-        static let defaultPlaybackRate: Double = 1.0
-        static let skipForwardSeconds: Int = 30
-        static let skipBackwardSeconds: Int = 15
-    }
+    // MARK: - Kernel-canonical defaults
+    /// Single Swift-side mirror of the kernel's fresh-install defaults. Every
+    /// pre-first-frame `Settings` default that has a snapshot counterpart reads
+    /// from here, so the only literal defaults that remain live in
+    /// `SettingsSnapshot`'s property initializers (the generated mirror of
+    /// `PodcastStore::new()`). A cross-language fixture test pins the two.
+    private static let kernelDefaults = SettingsSnapshot()
 
     /// Default Ollama chat endpoint (Ollama Cloud). Users can override this to
     /// point at a local or self-hosted instance from Settings → Providers → Ollama.
-    static var defaultOllamaChatURL: String { SettingsSnapshot().ollamaChatURL }
+    static var defaultOllamaChatURL: String { kernelDefaults.ollamaChatURL }
 
     // AI / LLM
     /// Model the agent chat session starts on. Designed to be a cheap/fast model
     /// — the agent decides per-task whether to call `upgrade_thinking`, which
     /// switches the session over to `agentThinkingModel` for subsequent turns.
-    var agentInitialModel: String = Defaults.llmModel
-    var agentInitialModelName: String = ""
+    var agentInitialModel: String = Settings.kernelDefaults.agentInitialModel
+    var agentInitialModelName: String = Settings.kernelDefaults.agentInitialModelName
     /// Stronger model the agent escalates to via the `upgrade_thinking` tool when
     /// a task needs more reasoning than the initial model can reliably provide.
-    /// Defaults to the same value as `agentInitialModel` so behavior is unchanged
-    /// until the user picks something stronger in Settings.
-    var agentThinkingModel: String = Defaults.llmModel
-    var agentThinkingModelName: String = ""
-    var memoryCompilationModel: String = Defaults.llmModel
-    var memoryCompilationModelName: String = ""
-    /// Model used by `WikiGenerator`. Kept distinct from `llmModel` so users can pick a
+    var agentThinkingModel: String = Settings.kernelDefaults.agentThinkingModel
+    var agentThinkingModelName: String = Settings.kernelDefaults.agentThinkingModelName
+    var memoryCompilationModel: String = Settings.kernelDefaults.memoryCompilationModel
+    var memoryCompilationModelName: String = Settings.kernelDefaults.memoryCompilationModelName
+    /// Model used by `WikiGenerator`. Kept distinct so users can pick a
     /// cheaper / faster model for wiki compilation than for live agent chat — same pattern
     /// as `memoryCompilationModel`.
-    var wikiModel: String = Defaults.llmModel
-    var wikiModelName: String = ""
+    var wikiModel: String = Settings.kernelDefaults.wikiModel
+    var wikiModelName: String = Settings.kernelDefaults.wikiModelName
     /// Model used by `PodcastCategorizationService`. Kept distinct so users can pick a
     /// cheaper model for one-shot categorization without affecting live agent chat.
-    var categorizationModel: String = Defaults.llmModel
-    var categorizationModelName: String = ""
+    var categorizationModel: String = Settings.kernelDefaults.categorizationModel
+    var categorizationModelName: String = Settings.kernelDefaults.categorizationModelName
     /// Model used by `AIChapterCompiler` to synthesise chapter boundaries from
     /// a ready transcript. Kept distinct from `wikiModel` so users can pick a
     /// cheaper / faster model for chapter compile without affecting wiki quality.
-    var chapterCompilationModel: String = Defaults.llmModel
-    var chapterCompilationModelName: String = ""
-    var embeddingsModel: String = Self.defaultEmbeddingsModel
-    var embeddingsModelName: String = ""
+    var chapterCompilationModel: String = Settings.kernelDefaults.chapterCompilationModel
+    var chapterCompilationModelName: String = Settings.kernelDefaults.chapterCompilationModelName
+    var embeddingsModel: String = Settings.kernelDefaults.embeddingsModel
+    var embeddingsModelName: String = Settings.kernelDefaults.embeddingsModelName
     /// Model used by `ImageGenerationService`. Multimodal models (Gemini/Banana,
     /// GPT-image) route through /chat/completions; legacy DALL-E/FLUX use
     /// /images/generations. Defaults to Gemini 2.5 Flash Image ("Nano Banana").
-    var imageGenerationModel: String = "google/gemini-2.5-flash-image"
-    var imageGenerationModelName: String = ""
+    var imageGenerationModel: String = Settings.kernelDefaults.imageGenerationModel
+    var imageGenerationModelName: String = Settings.kernelDefaults.imageGenerationModelName
     /// When `true`, optionally re-rank top-k RAG candidates with a cross-encoder. Off by
     /// default to save tokens; settings UI exposes the toggle.
-    var rerankerEnabled: Bool = false
+    var rerankerEnabled: Bool = Settings.kernelDefaults.rerankerEnabled
     /// ID of the selected local model (e.g. "gemma-4-e2b"), or nil to use cloud providers.
     /// When set, all AI features route through the on-device LiteRT-LM model.
     var localModelID: String?
@@ -130,16 +125,18 @@ struct Settings: Codable, Hashable, Sendable {
     // Blossom
     /// Blossom BUD-02 server used for uploading podcast artwork, audio, chapters, and
     /// transcripts. Defaults to blossom.primal.net. Configurable in Settings > Agent.
-    var blossomServerURL: String = "https://blossom.primal.net"
+    var blossomServerURL: String = Settings.kernelDefaults.blossomServerURL
 
     // OpenRouter credentials (secret stored in Keychain; only metadata here)
-    var openRouterCredentialSource: OpenRouterCredentialSource = .none
+    var openRouterCredentialSource: OpenRouterCredentialSource =
+        OpenRouterCredentialSource(rawValue: Settings.kernelDefaults.openRouterCredentialSource) ?? .none
     var openRouterBYOKKeyID: String?
     var openRouterBYOKKeyLabel: String?
     var openRouterConnectedAt: Date?
 
     // Ollama Cloud credentials (secret stored in Keychain; only metadata here)
-    var ollamaCredentialSource: OllamaCredentialSource = .none
+    var ollamaCredentialSource: OllamaCredentialSource =
+        OllamaCredentialSource(rawValue: Settings.kernelDefaults.ollamaCredentialSource) ?? .none
     var ollamaBYOKKeyID: String?
     var ollamaBYOKKeyLabel: String?
     var ollamaConnectedAt: Date?
@@ -157,77 +154,83 @@ struct Settings: Codable, Hashable, Sendable {
     var youtubeExtractorURL: String?
 
     // ElevenLabs credentials (secret stored in Keychain; only metadata here)
-    var elevenLabsCredentialSource: ElevenLabsCredentialSource = .none
+    var elevenLabsCredentialSource: ElevenLabsCredentialSource =
+        ElevenLabsCredentialSource(rawValue: Settings.kernelDefaults.elevenLabsCredentialSource) ?? .none
     var elevenLabsBYOKKeyID: String?
     var elevenLabsBYOKKeyLabel: String?
     var elevenLabsConnectedAt: Date?
 
     // AssemblyAI credentials (secret stored in Keychain; only metadata here)
-    var assemblyAICredentialSource: AssemblyAICredentialSource = .none
+    var assemblyAICredentialSource: AssemblyAICredentialSource =
+        AssemblyAICredentialSource(rawValue: Settings.kernelDefaults.assemblyAICredentialSource) ?? .none
     var assemblyAIBYOKKeyID: String?
     var assemblyAIBYOKKeyLabel: String?
     var assemblyAIConnectedAt: Date?
 
     // Perplexity credentials (secret stored in Keychain; only metadata here)
-    var perplexityCredentialSource: PerplexityCredentialSource = .none
+    var perplexityCredentialSource: PerplexityCredentialSource =
+        PerplexityCredentialSource(rawValue: Settings.kernelDefaults.perplexityCredentialSource) ?? .none
     var perplexityBYOKKeyID: String?
     var perplexityBYOKKeyLabel: String?
     var perplexityConnectedAt: Date?
 
     // STT provider selection
-    var sttProvider: STTProvider = .appleNative
+    var sttProvider: STTProvider =
+        STTProvider(rawValue: Settings.kernelDefaults.sttProvider) ?? .appleNative
     /// Whisper model used when `sttProvider == .openRouterWhisper`. Must be a model
     /// accessible on OpenRouter's audio transcription endpoint.
-    var openRouterWhisperModel: String = "openai/whisper-1"
+    var openRouterWhisperModel: String = Settings.kernelDefaults.openRouterWhisperModel
     /// Comma-separated AssemblyAI speech models submitted to `/v2/transcript`.
-    var assemblyAISTTModel: String = "universal-3-pro,universal-2"
+    var assemblyAISTTModel: String = Settings.kernelDefaults.assemblyAISTTModel
 
     // ElevenLabs configuration
-    var elevenLabsSTTModel: String = Defaults.elevenLabsSTTModel
-    var elevenLabsTTSModel: String = Defaults.elevenLabsTTSModel
-    var elevenLabsVoiceID: String = ""
-    var elevenLabsVoiceName: String = ""
+    var elevenLabsSTTModel: String = Settings.kernelDefaults.elevenLabsSTTModel
+    var elevenLabsTTSModel: String = Settings.kernelDefaults.elevenLabsTTSModel
+    var elevenLabsVoiceID: String = Settings.kernelDefaults.elevenLabsVoiceID
+    var elevenLabsVoiceName: String = Settings.kernelDefaults.elevenLabsVoiceName
 
     // Playback
     /// Default playback rate (0.5x – 3.0x). Per-show overrides live on `PodcastSubscription`.
-    var defaultPlaybackRate: Double = Defaults.defaultPlaybackRate
+    var defaultPlaybackRate: Double = Settings.kernelDefaults.defaultPlaybackRate
     /// Seconds the forward-skip transport button advances by. Mirrored to the lock-screen.
-    var skipForwardSeconds: Int = Defaults.skipForwardSeconds
+    var skipForwardSeconds: Int = Int(Settings.kernelDefaults.skipForwardSecs)
     /// Seconds the back-skip transport button rewinds by. Mirrored to the lock-screen.
-    var skipBackwardSeconds: Int = Defaults.skipBackwardSeconds
+    var skipBackwardSeconds: Int = Int(Settings.kernelDefaults.skipBackwardSecs)
     /// When `true`, an episode is automatically marked played the first time playback
     /// reaches its end. Defaults on for parity with Apple Podcasts.
-    var autoMarkPlayedAtEnd: Bool = true
+    var autoMarkPlayedAtEnd: Bool = Settings.kernelDefaults.autoMarkPlayedAtEnd
     /// When `true`, downloaded enclosures are deleted as soon as the episode is
     /// marked played (auto-end-of-play OR explicit "Mark as played"). Off by
     /// default — without it, downloads are kept until manually removed.
-    var autoDeleteDownloadsAfterPlayed: Bool = false
+    var autoDeleteDownloadsAfterPlayed: Bool = Settings.kernelDefaults.autoDeleteDownloadsAfterPlayed
     /// When `true`, the next episode in `PlaybackState.queue` (Up Next)
     /// starts playing automatically when the current episode finishes.
     /// Defaults on for parity with Apple Podcasts. Suppressed when the
     /// sleep timer has armed an end-of-episode stop.
-    var autoPlayNext: Bool = true
+    var autoPlayNext: Bool = Settings.kernelDefaults.autoPlayNext
     /// When `true`, the player auto-seeks past detected ad segments
     /// (`AIChapterCompiler` output, stored on `Episode.adSegments`).
     /// Defaults on — ad detection quality is proven. The chapter rail still
     /// flags ad-overlapping chapters visually regardless.
-    var autoSkipAds: Bool = true
+    var autoSkipAds: Bool = Settings.kernelDefaults.autoSkipAdsEnabled
     /// Action fired by an AirPods double-tap / double-squeeze (or any headphone
     /// remote that emits `MPRemoteCommandCenter.nextTrackCommand`). Default
     /// matches the common podcast-player muscle memory: jump forward by the
     /// configured skip-forward interval.
-    var headphoneDoubleTapAction: HeadphoneGestureAction = .skipForward
+    var headphoneDoubleTapAction: HeadphoneGestureAction =
+        HeadphoneGestureAction(rawValue: Settings.kernelDefaults.headphoneDoubleTapAction) ?? .skipForward
     /// Action fired by an AirPods triple-tap / triple-squeeze (or any headphone
     /// remote that emits `MPRemoteCommandCenter.previousTrackCommand`). Default
     /// captures a clip — quickly bookmarking what you just heard is the most
     /// valuable thing a third tap can do that single/double don't already cover.
-    var headphoneTripleTapAction: HeadphoneGestureAction = .clipNow
+    var headphoneTripleTapAction: HeadphoneGestureAction =
+        HeadphoneGestureAction(rawValue: Settings.kernelDefaults.headphoneTripleTapAction) ?? .clipNow
 
     // Wiki
     /// When `true`, `WikiGenerator` runs (or refreshes) the relevant wiki pages as soon as
     /// a new transcript finishes ingesting. Defaults off so first-run users don't burn
     /// tokens before deciding to opt in.
-    var wikiAutoGenerateOnTranscriptIngest: Bool = false
+    var wikiAutoGenerateOnTranscriptIngest: Bool = Settings.kernelDefaults.wikiAutoGenerateOnTranscriptIngest
 
     // Transcripts
     /// When `true`, the app pre-fetches publisher-supplied transcripts in the
@@ -237,30 +240,30 @@ struct Settings: Codable, Hashable, Sendable {
     /// works once the transcript exists; publisher transcripts are typically
     /// tens of KB so the bandwidth cost is small. Toggle off in
     /// Settings → Transcripts to defer everything to manual fetch.
-    var autoIngestPublisherTranscripts: Bool = true
+    var autoIngestPublisherTranscripts: Bool = Settings.kernelDefaults.autoIngestPublisherTranscripts
     /// When `true`, episodes lacking a publisher transcript fall back to ElevenLabs Scribe
     /// transcription. Requires an ElevenLabs key; defaults on so existing behaviour is
     /// preserved.
-    var autoFallbackToScribe: Bool = true
+    var autoFallbackToScribe: Bool = Settings.kernelDefaults.autoFallbackToScribe
 
     // Notifications (per-kind toggles; the system permission is separate)
     /// When `true`, fire a local notification when a feed refresh discovers a brand-new
     /// episode for a subscription that has notifications enabled.
-    var notifyOnNewEpisodes: Bool = true
+    var notifyOnNewEpisodes: Bool = Settings.kernelDefaults.notifyOnNewEpisodes
 
     // Nostr identity (private key stored in Keychain via NostrCredentialStore)
-    var nostrEnabled: Bool = false
-    var nostrRelayURL: String = Defaults.nostrRelayURL
+    var nostrEnabled: Bool = Settings.kernelDefaults.nostrEnabled
+    var nostrRelayURL: String = Settings.kernelDefaults.nostrRelayURL
     /// Relay list used when publishing NIP-74 podcast events. Initialized from the
     /// user's NIP-65 kind:10002 outbox relays; falls back to primal + damus when empty.
-    var nostrPublicRelays: [String] = []
-    var nostrProfileName: String = ""
-    var nostrProfileAbout: String = ""
-    var nostrProfilePicture: String = ""
+    var nostrPublicRelays: [String] = Settings.kernelDefaults.nostrPublicRelays
+    var nostrProfileName: String = Settings.kernelDefaults.nostrProfileName
+    var nostrProfileAbout: String = Settings.kernelDefaults.nostrProfileAbout
+    var nostrProfilePicture: String = Settings.kernelDefaults.nostrProfilePicture
     var nostrPublicKeyHex: String?
 
     // Onboarding
-    var hasCompletedOnboarding: Bool = false
+    var hasCompletedOnboarding: Bool = Settings.kernelDefaults.hasCompletedOnboarding
 
     init() {}
 
@@ -302,74 +305,86 @@ struct Settings: Codable, Hashable, Sendable {
     }
 
     init(from decoder: Decoder) throws {
+        // Start from the kernel-canonical defaults (the property initializers,
+        // which mirror `SettingsSnapshot()`), then overwrite only keys present
+        // on the wire. No `?? literal` fallbacks: an absent key keeps the
+        // canonical default set by `self.init()`.
+        self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        agentInitialModel = try c.decodeIfPresent(String.self, forKey: .agentInitialModel) ?? Defaults.llmModel
-        agentInitialModelName = try c.decodeIfPresent(String.self, forKey: .agentInitialModelName) ?? ""
-        agentThinkingModel = try c.decodeIfPresent(String.self, forKey: .agentThinkingModel) ?? agentInitialModel
-        agentThinkingModelName = try c.decodeIfPresent(String.self, forKey: .agentThinkingModelName) ?? ""
-        memoryCompilationModel = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) ?? Defaults.llmModel
-        memoryCompilationModelName = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) ?? ""
-        wikiModel = try c.decodeIfPresent(String.self, forKey: .wikiModel) ?? Defaults.llmModel
-        wikiModelName = try c.decodeIfPresent(String.self, forKey: .wikiModelName) ?? ""
-        categorizationModel = try c.decodeIfPresent(String.self, forKey: .categorizationModel) ?? Defaults.llmModel
-        categorizationModelName = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) ?? ""
-        chapterCompilationModel = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModel) ?? Defaults.llmModel
-        chapterCompilationModelName = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) ?? ""
-        embeddingsModel = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) ?? Self.defaultEmbeddingsModel
-        embeddingsModelName = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) ?? ""
-        imageGenerationModel = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) ?? "google/gemini-2.5-flash-image"
-        imageGenerationModelName = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) ?? ""
-        blossomServerURL = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) ?? "https://blossom.primal.net"
-        rerankerEnabled = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) ?? false
-        openRouterCredentialSource = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) ?? .none
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentInitialModel) { agentInitialModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentInitialModelName) { agentInitialModelName = v }
+        // Intentional semantic fallback: an absent thinking model inherits the
+        // (decoded-or-default) initial model, so escalation starts from the same
+        // model until the user picks something stronger.
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentThinkingModel) {
+            agentThinkingModel = v
+        } else {
+            agentThinkingModel = agentInitialModel
+        }
+        if let v = try c.decodeIfPresent(String.self, forKey: .agentThinkingModelName) { agentThinkingModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModel) { memoryCompilationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .memoryCompilationModelName) { memoryCompilationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .wikiModel) { wikiModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .wikiModelName) { wikiModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .categorizationModel) { categorizationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .categorizationModelName) { categorizationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModel) { chapterCompilationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .chapterCompilationModelName) { chapterCompilationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .embeddingsModel) { embeddingsModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .embeddingsModelName) { embeddingsModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .imageGenerationModel) { imageGenerationModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .imageGenerationModelName) { imageGenerationModelName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .blossomServerURL) { blossomServerURL = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .rerankerEnabled) { rerankerEnabled = v }
+        if let v = try c.decodeIfPresent(OpenRouterCredentialSource.self, forKey: .openRouterCredentialSource) { openRouterCredentialSource = v }
         openRouterBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyID)
         openRouterBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .openRouterBYOKKeyLabel)
         openRouterConnectedAt = try c.decodeIfPresent(Date.self, forKey: .openRouterConnectedAt)
-        ollamaCredentialSource = try c.decodeIfPresent(OllamaCredentialSource.self, forKey: .ollamaCredentialSource) ?? .none
+        if let v = try c.decodeIfPresent(OllamaCredentialSource.self, forKey: .ollamaCredentialSource) { ollamaCredentialSource = v }
         ollamaBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyID)
         ollamaBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .ollamaBYOKKeyLabel)
         ollamaConnectedAt = try c.decodeIfPresent(Date.self, forKey: .ollamaConnectedAt)
-        ollamaChatURL = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) ?? Settings.defaultOllamaChatURL
-        elevenLabsCredentialSource = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) ?? .none
+        if let v = try c.decodeIfPresent(String.self, forKey: .ollamaChatURL) { ollamaChatURL = v }
+        if let v = try c.decodeIfPresent(ElevenLabsCredentialSource.self, forKey: .elevenLabsCredentialSource) { elevenLabsCredentialSource = v }
         elevenLabsBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyID)
         elevenLabsBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .elevenLabsBYOKKeyLabel)
         elevenLabsConnectedAt = try c.decodeIfPresent(Date.self, forKey: .elevenLabsConnectedAt)
-        assemblyAICredentialSource = try c.decodeIfPresent(AssemblyAICredentialSource.self, forKey: .assemblyAICredentialSource) ?? .none
+        if let v = try c.decodeIfPresent(AssemblyAICredentialSource.self, forKey: .assemblyAICredentialSource) { assemblyAICredentialSource = v }
         assemblyAIBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyID)
         assemblyAIBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .assemblyAIBYOKKeyLabel)
         assemblyAIConnectedAt = try c.decodeIfPresent(Date.self, forKey: .assemblyAIConnectedAt)
-        perplexityCredentialSource = try c.decodeIfPresent(PerplexityCredentialSource.self, forKey: .perplexityCredentialSource) ?? .none
+        if let v = try c.decodeIfPresent(PerplexityCredentialSource.self, forKey: .perplexityCredentialSource) { perplexityCredentialSource = v }
         perplexityBYOKKeyID = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyID)
         perplexityBYOKKeyLabel = try c.decodeIfPresent(String.self, forKey: .perplexityBYOKKeyLabel)
         perplexityConnectedAt = try c.decodeIfPresent(Date.self, forKey: .perplexityConnectedAt)
-        sttProvider = try c.decodeIfPresent(STTProvider.self, forKey: .sttProvider) ?? .appleNative
-        openRouterWhisperModel = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) ?? "openai/whisper-1"
-        assemblyAISTTModel = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) ?? "universal-3-pro,universal-2"
-        elevenLabsSTTModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) ?? Defaults.elevenLabsSTTModel
-        elevenLabsTTSModel = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) ?? Defaults.elevenLabsTTSModel
-        elevenLabsVoiceID = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) ?? ""
-        elevenLabsVoiceName = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) ?? ""
-        defaultPlaybackRate = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate) ?? Defaults.defaultPlaybackRate
-        skipForwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipForwardSeconds) ?? Defaults.skipForwardSeconds
-        skipBackwardSeconds = try c.decodeIfPresent(Int.self, forKey: .skipBackwardSeconds) ?? Defaults.skipBackwardSeconds
-        autoMarkPlayedAtEnd = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) ?? true
-        autoDeleteDownloadsAfterPlayed = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) ?? false
-        autoPlayNext = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) ?? true
-        autoSkipAds = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAds) ?? true
-        headphoneDoubleTapAction = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneDoubleTapAction) ?? .skipForward
-        headphoneTripleTapAction = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneTripleTapAction) ?? .clipNow
-        wikiAutoGenerateOnTranscriptIngest = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) ?? false
-        autoIngestPublisherTranscripts = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) ?? true
-        autoFallbackToScribe = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) ?? true
-        notifyOnNewEpisodes = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) ?? true
-        nostrEnabled = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) ?? false
-        nostrRelayURL = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) ?? Defaults.nostrRelayURL
-        nostrPublicRelays = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) ?? []
-        nostrProfileName = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) ?? ""
-        nostrProfileAbout = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) ?? ""
-        nostrProfilePicture = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) ?? ""
+        if let v = try c.decodeIfPresent(STTProvider.self, forKey: .sttProvider) { sttProvider = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .openRouterWhisperModel) { openRouterWhisperModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .assemblyAISTTModel) { assemblyAISTTModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsSTTModel) { elevenLabsSTTModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsTTSModel) { elevenLabsTTSModel = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceID) { elevenLabsVoiceID = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .elevenLabsVoiceName) { elevenLabsVoiceName = v }
+        if let v = try c.decodeIfPresent(Double.self, forKey: .defaultPlaybackRate) { defaultPlaybackRate = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .skipForwardSeconds) { skipForwardSeconds = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .skipBackwardSeconds) { skipBackwardSeconds = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoMarkPlayedAtEnd) { autoMarkPlayedAtEnd = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoDeleteDownloadsAfterPlayed) { autoDeleteDownloadsAfterPlayed = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoPlayNext) { autoPlayNext = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoSkipAds) { autoSkipAds = v }
+        if let v = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneDoubleTapAction) { headphoneDoubleTapAction = v }
+        if let v = try c.decodeIfPresent(HeadphoneGestureAction.self, forKey: .headphoneTripleTapAction) { headphoneTripleTapAction = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .wikiAutoGenerateOnTranscriptIngest) { wikiAutoGenerateOnTranscriptIngest = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoIngestPublisherTranscripts) { autoIngestPublisherTranscripts = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .autoFallbackToScribe) { autoFallbackToScribe = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .notifyOnNewEpisodes) { notifyOnNewEpisodes = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .nostrEnabled) { nostrEnabled = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrRelayURL) { nostrRelayURL = v }
+        if let v = try c.decodeIfPresent([String].self, forKey: .nostrPublicRelays) { nostrPublicRelays = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfileName) { nostrProfileName = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfileAbout) { nostrProfileAbout = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .nostrProfilePicture) { nostrProfilePicture = v }
         nostrPublicKeyHex = try c.decodeIfPresent(String.self, forKey: .nostrPublicKeyHex)
-        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) { hasCompletedOnboarding = v }
         youtubeExtractorURL = try c.decodeIfPresent(String.self, forKey: .youtubeExtractorURL)
         localModelID = try c.decodeIfPresent(String.self, forKey: .localModelID)
     }

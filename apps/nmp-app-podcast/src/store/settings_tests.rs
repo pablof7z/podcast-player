@@ -186,14 +186,16 @@ fn auto_skip_ads_persists_through_store_reload() {
     // The `PersistedStore`-level round-trip is covered in
     // `persistence_tests.rs`; this asserts the public store accessor path
     // (`set_auto_skip_ads_enabled` → `set_data_dir` reload) end to end.
+    // Toggle to the *non-default* value (canonical default is now ON) so the
+    // reload assertion proves the persisted value won — not merely the default.
     let dir = TempDir::new();
     {
         let mut store = PodcastStore::new();
         store.set_data_dir(dir.path.clone());
-        assert!(!store.auto_skip_ads_enabled(), "defaults off");
-        store.set_auto_skip_ads_enabled(true);
+        assert!(store.auto_skip_ads_enabled(), "defaults on");
+        store.set_auto_skip_ads_enabled(false);
     }
     let mut store2 = PodcastStore::new();
     store2.set_data_dir(dir.path.clone());
-    assert!(store2.auto_skip_ads_enabled());
+    assert!(!store2.auto_skip_ads_enabled());
 }

@@ -42,12 +42,20 @@ fn episode_summary_field_round_trips() {
 
 #[test]
 fn default_snapshot_omits_now_playing() {
-    let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-    // `skip_serializing_if = "Option::is_none"` keeps the empty
-    // payload byte-identical to the legacy stub.
-    // `skip_serializing_if = "Option::is_none"` keeps the empty payload
-    // byte-identical to the legacy stub.
-    assert_eq!(json, r#"{"running":true,"rev":0,"schema_version":1}"#);
+    let value: serde_json::Value =
+        serde_json::from_str(&serde_json::to_string(&PodcastUpdate::default()).expect("encode"))
+            .expect("valid json");
+    let obj = value.as_object().expect("object");
+    // `skip_serializing_if = "Option::is_none"` keeps optional fields out of
+    // the empty payload.
+    assert_eq!(obj["running"], serde_json::json!(true));
+    assert_eq!(obj["rev"], serde_json::json!(0));
+    assert_eq!(obj["schema_version"], serde_json::json!(1));
+    assert!(!obj.contains_key("now_playing"));
+    assert!(!obj.contains_key("downloads"));
+    // Behavior change: `settings` is the lone non-Option projection and is now
+    // always present (it carries `#[serde(default)]` but no skip guard).
+    assert!(obj.contains_key("settings"));
 }
 
 #[test]
@@ -142,9 +150,12 @@ fn snapshot_with_settings_round_trips() {
 }
 
 #[test]
-fn snapshot_omits_default_settings() {
+fn snapshot_always_includes_settings() {
+    // Behavior change: the `settings` projection is no longer omitted when it
+    // equals the fresh-install default — it is always present on the wire so
+    // the shell never has to distinguish "absent" from "default".
     let json = serde_json::to_string(&PodcastUpdate::default()).expect("encode");
-    assert!(!json.contains("settings"));
+    assert!(json.contains("\"settings\""));
 }
 
 #[test]

@@ -248,7 +248,9 @@ fn save_then_load_round_trips_memory_facts() {
     assert_eq!(loaded.memory_facts[0].key, "preferred_genre");
     assert_eq!(loaded.memory_facts[0].value, "technology");
     assert!(loaded.ad_segments.is_empty());
-    assert!(!loaded.settings.auto_skip_ads_enabled);
+    // Canonical fresh-install default is ON (PodcastStore::new() →
+    // PersistedSettings::default()).
+    assert!(loaded.settings.auto_skip_ads_enabled);
 }
 
 #[test]

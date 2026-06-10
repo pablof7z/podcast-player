@@ -392,3 +392,44 @@ fn settings_snapshot_default_is_fresh_install() {
     let json = serde_json::to_string(&s).expect("encode");
     assert!(json.contains("\"has_completed_onboarding\":false"));
 }
+
+/// Cross-language parity guard. The fresh-install `SettingsSnapshot` —
+/// derived from the single canonical defaults site `PodcastStore::new()` —
+/// must serialize byte-for-byte to the checked-in fixture. The Swift twin
+/// (`AppTests/SettingsSnapshotParityTests.swift`) decodes the *same* fixture
+/// into the Swift `SettingsSnapshot` and asserts it equals `SettingsSnapshot()`.
+/// Together they pin the Rust and Swift default mirrors in lockstep.
+#[test]
+fn settings_fresh_install_matches_fixture() {
+    let fixture = include_str!("../../../../tests/fixtures/settings_fresh_install.json");
+    let actual = serde_json::to_string_pretty(&SettingsSnapshot::default()).expect("encode");
+    assert_eq!(
+        actual.trim_end(),
+        fixture.trim_end(),
+        "SettingsSnapshot::default() drifted from tests/fixtures/settings_fresh_install.json.\n\
+         The canonical defaults live in PodcastStore::new(); if you changed one, \
+         regenerate the fixture with:\n\
+         \tcargo test -p nmp-app-podcast regenerate_settings_fresh_install_fixture -- --ignored --nocapture\n\
+         and update the Swift SettingsSnapshot() mirror to match."
+    );
+}
+
+/// Regeneration helper for [`settings_fresh_install_matches_fixture`]. Ignored
+/// by default; run explicitly to rewrite the fixture after an intentional
+/// defaults change:
+///
+/// ```text
+/// cargo test -p nmp-app-podcast regenerate_settings_fresh_install_fixture -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "regeneration helper; run explicitly after an intentional defaults change"]
+fn regenerate_settings_fresh_install_fixture() {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let path = std::path::Path::new(manifest)
+        .join("../../tests/fixtures/settings_fresh_install.json");
+    let mut json = serde_json::to_string_pretty(&SettingsSnapshot::default()).expect("encode");
+    json.push('\n');
+    std::fs::create_dir_all(path.parent().unwrap()).expect("create fixtures dir");
+    std::fs::write(&path, json).expect("write fixture");
+    eprintln!("wrote {}", path.display());
+}
