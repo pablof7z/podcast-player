@@ -20,7 +20,7 @@ final class PlatformWidgetSnapshotTests: XCTestCase {
         WidgetSnapshot(
             nowPlayingEpisodeTitle: episode,
             nowPlayingPodcastTitle: "Great Show",
-            nowPlayingArtworkURL: "https://ex.com/a.png",
+            nowPlayingArtworkUrl: "https://ex.com/a.png",
             nowPlayingChapterTitle: "Chapter 2",
             isPlaying: playing,
             positionFraction: fraction,
@@ -45,25 +45,49 @@ final class PlatformWidgetSnapshotTests: XCTestCase {
         XCTAssertTrue(json.contains("\"duration_secs\""))
         XCTAssertTrue(json.contains("\"unplayed_count\""))
 
-        // The bytes round-trip back through the same CodingKeys the widget
-        // extension uses.
-        let decoded = try JSONDecoder().decode(WidgetSnapshot.self, from: data)
+        // The encoded bytes round-trip back through the SAME decoder config the
+        // bridge / widget extension use (`.convertFromSnakeCase`). The type now
+        // carries no explicit `CodingKeys` (PR #366 fix), so a plain decoder
+        // would NOT match the snake_case keys — see the explicit guard below.
+        let decoded = try KernelDecoding.makeDecoder().decode(WidgetSnapshot.self, from: data)
         XCTAssertEqual(decoded, sample())
     }
 
     func testWidgetSnapshotDecodesFromKernelStyleSnakeCaseJSON() throws {
+        // Snake_case kernel JSON (serde default) decoded through the bridge
+        // config — the exact path the embedded `WidgetSnapshot` failed on.
         let json = """
         {"now_playing_episode_title":"Ep","now_playing_podcast_title":"Show",
         "now_playing_artwork_url":"https://x/a.png","now_playing_chapter_title":"Ch 1",
         "is_playing":true,"position_fraction":0.5,"position_secs":60.0,
         "duration_secs":120.0,"unplayed_count":4}
         """
-        let decoded = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(json.utf8))
+        let decoded = try KernelDecoding.makeDecoder()
+            .decode(WidgetSnapshot.self, from: Data(json.utf8))
         XCTAssertEqual(decoded.nowPlayingEpisodeTitle, "Ep")
+        XCTAssertEqual(decoded.nowPlayingArtworkUrl, "https://x/a.png")
         XCTAssertEqual(decoded.nowPlayingChapterTitle, "Ch 1")
         XCTAssertEqual(decoded.positionFraction, 0.5)
         XCTAssertEqual(decoded.durationSecs, 120.0)
         XCTAssertEqual(decoded.unplayedCount, 4)
+    }
+
+    /// Guard the footgun directly: explicit snake_case `CodingKeys` + the
+    /// bridge's `.convertFromSnakeCase` (or, equivalently, no key conversion on
+    /// snake_case JSON against synthesized camelCase keys) is the exact mismatch
+    /// that regressed PR #366. A *plain* decoder must FAIL on snake_case JSON
+    /// now that the type has no explicit keys — proving the bridge config is
+    /// load-bearing, not incidental.
+    func testPlainDecoderFailsOnSnakeCaseProvingBridgeConfigIsRequired() {
+        let json = """
+        {"now_playing_episode_title":"Ep","is_playing":true,"position_fraction":0.5,
+        "position_secs":60.0,"duration_secs":120.0,"unplayed_count":4}
+        """
+        XCTAssertThrowsError(
+            try JSONDecoder().decode(WidgetSnapshot.self, from: Data(json.utf8)),
+            "A plain decoder must miss the snake_case `is_playing` key; if this stops "
+                + "throwing, the type regained explicit CodingKeys (the #366 footgun)."
+        )
     }
 
     // MARK: - Cadence (change-gating + fraction quantization)

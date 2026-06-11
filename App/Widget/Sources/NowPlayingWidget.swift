@@ -61,7 +61,7 @@ private struct NowPlayingSmallView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            NowPlayingArtwork(urlString: snapshot.nowPlayingArtworkURL, size: 56)
+            NowPlayingArtwork(urlString: snapshot.nowPlayingArtworkUrl, size: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             Spacer(minLength: 0)
             Text(snapshot.nowPlayingEpisodeTitle ?? "")
@@ -81,7 +81,7 @@ private struct NowPlayingMediumView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            NowPlayingArtwork(urlString: snapshot.nowPlayingArtworkURL, size: 76)
+            NowPlayingArtwork(urlString: snapshot.nowPlayingArtworkUrl, size: 76)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
