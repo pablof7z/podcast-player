@@ -10,7 +10,7 @@ use crate::host_op_publish::{create_owned, publish_show};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
@@ -36,10 +36,9 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(DownloadQueue::new())),
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6.
         // voice_state removed in Step 12 — now owned by state.voice.
+        // podcast_keys and publish_state removed in Step 13 — now owned by state.publish.
         Arc::new(Mutex::new(HashSet::new())),
         rev.clone(),
-        Arc::new(Mutex::new(PodcastKeyStore::new())),
-        Arc::new(Mutex::new(HashMap::new())),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(AtomicBool::new(false)),
@@ -271,16 +270,17 @@ fn delete_owned_removes_row_key_and_state() {
     create_owned(&handler, id.clone());
     // Publish a show so there is a stamped event id to NIP-09-delete.
     publish_show(&handler, id.clone());
-    assert!(handler.podcast_keys.lock().unwrap().get_key(&id).is_some());
+    assert!(handler.state.publish.podcast_keys.lock().unwrap().get_key(&id).is_some());
 
     let out = delete_owned(&handler, id.clone());
     assert_eq!(out["ok"], true);
     // Row gone.
     assert!(store.lock().unwrap().podcast_by_id_str(&id).is_none());
     // Key dropped.
-    assert!(handler.podcast_keys.lock().unwrap().get_key(&id).is_none());
+    assert!(handler.state.publish.podcast_keys.lock().unwrap().get_key(&id).is_none());
     // Publish state discarded.
-    assert!(handler.publish_state.lock().unwrap().get(&id).is_none());
+    // Step 13: publish_state now in state.publish (PublishState).
+    assert!(handler.state.publish.publish_state.lock().unwrap().get(&id).is_none());
     // A NIP-09 deletion was signed (null app → relay "signed").
     assert!(out["deletion_event_id"].is_string());
 }
@@ -308,5 +308,5 @@ fn delete_owned_with_no_published_show_skips_nip09_but_tears_down() {
     assert_eq!(out["ok"], true);
     assert_eq!(out["deletion_status"], "skipped");
     assert!(store.lock().unwrap().podcast_by_id_str(&id).is_none());
-    assert!(handler.podcast_keys.lock().unwrap().get_key(&id).is_none());
+    assert!(handler.state.publish.podcast_keys.lock().unwrap().get_key(&id).is_none());
 }

@@ -7,7 +7,7 @@ use crate::download::DownloadQueue;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 use chrono::Utc;
 use podcast_core::types::episode::Episode;
 use podcast_core::Podcast;
@@ -44,10 +44,9 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(DownloadQueue::new())),
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6.
         // voice_state removed in Step 12 — now owned by state.voice.
+        // podcast_keys and publish_state removed in Step 13 — now owned by state.publish.
         Arc::new(Mutex::new(HashSet::new())),
         rev.clone(),
-        Arc::new(Mutex::new(PodcastKeyStore::new())),
-        Arc::new(Mutex::new(HashMap::new())),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(AtomicBool::new(false)),
@@ -191,7 +190,8 @@ fn remove_owned_clears_key_and_pubkey_field() {
 
     let out = remove_owned(&handler, id.clone());
     assert_eq!(out["ok"], true);
-    assert!(handler.podcast_keys.lock().unwrap().get_key(&id).is_none());
+    // Step 13: podcast_keys now in state.publish (PublishState).
+    assert!(handler.state.publish.podcast_keys.lock().unwrap().get_key(&id).is_none());
     assert!(store
         .lock()
         .unwrap()

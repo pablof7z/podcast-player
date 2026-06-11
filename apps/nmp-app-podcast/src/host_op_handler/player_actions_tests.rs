@@ -10,7 +10,7 @@ use crate::ffi::actions::settings_module::SettingsAction;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 use podcast_core::{Episode, Podcast, PodcastId};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64};
@@ -44,10 +44,9 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(DownloadQueue::new())),
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6.
         // voice_state removed in Step 12 — now owned by state.voice.
+        // podcast_keys and publish_state removed in Step 13 — now owned by state.publish.
         Arc::new(Mutex::new(HashSet::new())),
         rev.clone(),
-        Arc::new(Mutex::new(PodcastKeyStore::new())),
-        Arc::new(Mutex::new(HashMap::new())),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(AtomicBool::new(false)),

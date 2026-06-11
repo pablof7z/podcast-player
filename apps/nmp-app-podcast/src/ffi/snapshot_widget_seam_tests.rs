@@ -34,7 +34,7 @@ use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 use nmp_core::substrate::HostOpHandler;
 
 /// Shared kernel state — the exact Arcs `nmp_app_podcast_register` clones into
@@ -80,10 +80,9 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6 —
         // now owned by state.tasks / state.clips / state.transcripts.
         // voice_state removed in Step 12 — now owned by state.voice.
+        // podcast_keys and publish_state removed in Step 13 — now owned by state.publish.
         Arc::new(Mutex::new(HashSet::new())),
         shared.rev.clone(),
-        Arc::new(Mutex::new(PodcastKeyStore::new())),
-        Arc::new(Mutex::new(HashMap::new())),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(AtomicBool::new(false)),
@@ -120,8 +119,8 @@ fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<Podca
         // clips, transcripts, agent_tasks removed in Steps 5a, 5b, 6 —
         // now owned by state.clips / state.transcripts / state.tasks.
         dismissed_episode_ids: Arc::new(Mutex::new(HashSet::new())),
-        podcast_keys: Arc::new(Mutex::new(PodcastKeyStore::new())),
-        publish_state: Arc::new(Mutex::new(HashMap::new())),
+        // podcast_keys and publish_state removed in Step 13 —
+        // now owned by state.publish (PublishState).
         // voice_state and voice_conversation removed in Step 12 —
         // now owned by state.voice (VoiceSubstate).
         // conversation, agent_busy, agent_touched removed in Step 11 —

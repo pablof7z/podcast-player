@@ -17,7 +17,7 @@ use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 
 /// Diagnostic publish state retained per-podcast across snapshot ticks.
 ///
@@ -81,16 +81,8 @@ pub struct PodcastHandle {
     /// re-surfaces everything so the user can re-triage. Written by the
     /// inbox handler's `Dismiss` op; read by the inbox projection builder.
     pub(super) dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
-    /// Per-podcast Nostr keypairs for NIP-F4 owned podcasts (features
-    /// #27/#28). Written by `podcast.publish.create_owned_podcast` and
-    /// cleared by `remove_owned_podcast`; read by every other publish op.
-    pub(super) podcast_keys: Arc<Mutex<PodcastKeyStore>>,
-    /// Diagnostic publish state per podcast (last show event JSON +
-    /// last-published timestamp). Surfaced via `OwnedPodcastInfo` so the
-    /// iOS shell can render "last published at …" without a separate
-    /// FFI accessor. Keyed by `podcast_id` UUID string (matching the
-    /// FFI projection).
-    pub(super) publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
+    // podcast_keys and publish_state removed in Step 13 —
+    // now owned by `state.publish` (PublishState).
     // voice_state and voice_conversation removed in Step 12 —
     // now owned by `state.voice` (VoiceSubstate).
     // conversation, agent_busy, agent_touched removed in Step 11 —

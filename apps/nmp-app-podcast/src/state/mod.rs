@@ -40,6 +40,7 @@ pub mod comments;
 pub mod discovery;
 pub mod knowledge;
 pub mod picks;
+pub mod publish;
 pub mod slot;
 pub mod social;
 pub mod tasks;
@@ -212,6 +213,11 @@ pub struct PodcastAppState {
     /// completing after `nmp_app_free`.  The ordering is identical to the
     /// previous `reclaimed.voice_conversation.shutdown()` call.
     pub voice: voice::VoiceSubstate,
+
+    /// Publish substate (Step 13).  Owns the NIP-F4 per-podcast keypairs
+    /// (`podcast_keys`, Persisted) and the diagnostic publish map
+    /// (`publish_state`, Session).
+    pub publish: publish::PublishState,
 }
 
 impl PodcastAppState {
@@ -263,6 +269,7 @@ impl PodcastAppState {
             store.clone(),
             std::ptr::null_mut(),
         );
+        let publish = publish::PublishState::new(infra.clone(), store.clone());
         Self {
             infra,
             knowledge,
@@ -277,6 +284,7 @@ impl PodcastAppState {
             social,
             agent_chat,
             voice,
+            publish,
         }
     }
 }

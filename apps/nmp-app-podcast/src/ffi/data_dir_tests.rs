@@ -5,7 +5,7 @@ use crate::ffi::projections::AgentTaskSummary;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -38,8 +38,8 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         // social, agent_notes removed in Steps 8-10 — now owned by
         // state.discovery / state.comments / state.social.
         dismissed_episode_ids: Arc::new(Mutex::new(HashSet::new())),
-        podcast_keys: Arc::new(Mutex::new(PodcastKeyStore::new())),
-        publish_state: Arc::new(Mutex::new(HashMap::new())),
+        // podcast_keys and publish_state removed in Step 13 —
+        // now owned by state.publish (PublishState).
         // voice_state and voice_conversation removed in Step 12 —
         // now owned by state.voice (VoiceSubstate).
         // conversation, agent_busy, agent_touched removed in Step 11 —

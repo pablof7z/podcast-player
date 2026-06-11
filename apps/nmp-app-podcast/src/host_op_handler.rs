@@ -29,13 +29,12 @@ use nmp_ffi::NmpApp;
 
 use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
-use crate::ffi::handle::OwnedPublishState;
 use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
-use crate::store::{PodcastKeyStore, PodcastStore};
+use crate::store::PodcastStore;
 
 mod dispatch;
 mod player_actions;
@@ -90,13 +89,8 @@ pub struct PodcastHostOpHandler {
     // agent_notes removed in Step 10 — dead duplicate Arc; observer now shares
     // from `state.social.agent_notes`.
     pub(crate) rev: Arc<AtomicU64>,
-    /// Per-podcast Nostr keypairs for NIP-F4 owned podcasts. Shared with
-    /// `PodcastHandle.podcast_keys` so the snapshot reader sees the same
-    /// data.
-    pub(crate) podcast_keys: Arc<Mutex<PodcastKeyStore>>,
-    /// Diagnostic publish state per podcast (last show event JSON +
-    /// last-published timestamp). Shared with `PodcastHandle.publish_state`.
-    pub(crate) publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
+    // podcast_keys and publish_state removed in Step 13 —
+    // now owned by `state.publish` (PublishState).
     // agent_chat removed in Step 11 — now owned by `state.agent_chat` (AgentChatState).
     /// Shared Tokio runtime for async LLM / relay work. Seeded in
     /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
@@ -144,8 +138,6 @@ impl PodcastHostOpHandler {
         download_queue: Arc<Mutex<DownloadQueue>>,
         dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
         rev: Arc<AtomicU64>,
-        podcast_keys: Arc<Mutex<PodcastKeyStore>>,
-        publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
         runtime: Arc<Runtime>,
         inbox_triage_cache: Arc<Mutex<HashMap<String, TriageResult>>>,
         inbox_triage_in_progress: Arc<std::sync::atomic::AtomicBool>,
@@ -162,8 +154,6 @@ impl PodcastHostOpHandler {
             download_queue,
             dismissed_episode_ids,
             rev,
-            podcast_keys,
-            publish_state,
             runtime,
             inbox_triage_cache,
             inbox_triage_in_progress,
