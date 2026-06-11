@@ -203,7 +203,7 @@ final class PlatformCapability {
         guard let previous else { return true }
         if next.nowPlayingEpisodeTitle != previous.nowPlayingEpisodeTitle { return true }
         if next.nowPlayingPodcastTitle != previous.nowPlayingPodcastTitle { return true }
-        if next.nowPlayingArtworkURL != previous.nowPlayingArtworkURL { return true }
+        if next.nowPlayingArtworkUrl != previous.nowPlayingArtworkUrl { return true }
         if next.nowPlayingChapterTitle != previous.nowPlayingChapterTitle { return true }
         if next.isPlaying != previous.isPlaying { return true }
         if next.durationSecs != previous.durationSecs { return true }

@@ -206,3 +206,79 @@ fn idle_player_state_with_no_episode_treated_as_not_loaded() {
     let state = PlayerState::idle();
     assert!(build_widget_snapshot(Some(&state), &[]).is_none());
 }
+
+// ── Cross-language wire fixture ─────────────────────────────────────
+//
+// `tests/fixtures/podcast_update_with_widget.json` is a *Rust-emitted*
+// `PodcastUpdate` JSON (a populated `widget` embedded in a non-empty
+// `library` — the exact frame shape the bridge decodes). The Swift
+// `PlatformWidgetContractTests` decodes the SAME bytes through the bridge's
+// `keyDecodingStrategy = .convertFromSnakeCase` config and asserts the widget
+// + library survive. That pairing is what would have caught the PR #366
+// regression (explicit snake_case `CodingKeys` on the embedded `WidgetSnapshot`
+// double-converted under the bridge strategy → `is_playing` threw `keyNotFound`
+// → the *entire* PodcastUpdate decode failed → the library froze empty).
+//
+// Building the fixture here (not hand-typing it) guarantees the bytes are real
+// serde output; the parity assert fails if the wire shape ever drifts.
+
+/// The canonical `PodcastUpdate` the wire-fixture tests pin: one subscribed
+/// show with one episode, actively playing, with a fully-populated widget.
+fn fixture_update() -> crate::ffi::snapshot_update::PodcastUpdate {
+    use crate::ffi::snapshot_update::PodcastUpdate;
+
+    let ep = EpisodeSummary {
+        id: "ep-1".into(),
+        title: "The Daily — Friday".into(),
+        artwork_url: Some("https://ex.com/ep.png".into()),
+        duration_secs: Some(1200.0),
+        ..Default::default()
+    };
+    let mut state = playing("ep-1", 300.0, 1200.0);
+    state.current_chapter_title = Some("Headlines".into());
+    let library = vec![show("show-1", "The Daily", 5, vec![ep])];
+    let widget = build_widget_snapshot(Some(&state), &library);
+    assert!(widget.is_some(), "fixture must have a populated widget");
+
+    PodcastUpdate {
+        running: true,
+        rev: 1,
+        schema_version: 1,
+        library,
+        widget,
+        ..PodcastUpdate::default()
+    }
+}
+
+#[test]
+fn podcast_update_with_widget_matches_fixture() {
+    let fixture = include_str!("../../../../tests/fixtures/podcast_update_with_widget.json");
+    let actual = serde_json::to_string_pretty(&fixture_update()).expect("encode");
+    assert_eq!(
+        actual.trim(),
+        fixture.trim(),
+        "PodcastUpdate wire shape drifted from \
+         tests/fixtures/podcast_update_with_widget.json.\n\
+         If this change is intentional, regenerate the fixture:\n\
+         \tcargo test -p nmp-app-podcast regenerate_podcast_update_widget_fixture -- --ignored --nocapture\n\
+         The Swift PlatformWidgetContractTests decodes this exact JSON through the \
+         bridge decoder, so keep them in sync."
+    );
+}
+
+/// Regeneration helper for [`podcast_update_with_widget_matches_fixture`].
+/// Ignored by default; run explicitly to rewrite the committed fixture:
+///
+/// ```text
+/// cargo test -p nmp-app-podcast regenerate_podcast_update_widget_fixture -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "regeneration helper; run with --ignored to rewrite the fixture"]
+fn regenerate_podcast_update_widget_fixture() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tests/fixtures/podcast_update_with_widget.json");
+    let mut json = serde_json::to_string_pretty(&fixture_update()).expect("encode");
+    json.push('\n');
+    std::fs::write(&path, json).expect("write fixture");
+    eprintln!("wrote {}", path.display());
+}

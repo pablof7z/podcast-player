@@ -7,13 +7,17 @@ import WidgetKit
 /// (`apps/nmp-app-podcast/src/ffi/projections/platform.rs`). The widget
 /// extension compiles separately from the app target (it can't share the
 /// app-side mirror in `PlatformCapability+WireTypes.swift`), so it keeps its
-/// own copy. Field names + `CodingKeys` must stay in lock-step with the Rust
-/// source — the app side writes this JSON into the App Group key on every
-/// content-changed kernel tick.
+/// own copy. It mirrors the app side exactly: **no explicit `CodingKeys`**, and
+/// `readCurrent()` decodes with `.convertFromSnakeCase`. Property names are the
+/// camelCase the strategy produces from the snake_case wire keys — including
+/// the acronym lowercasing (`artwork_url` → `artworkUrl`). Keeping both mirrors
+/// structurally identical avoids drift; see the app-side note for why explicit
+/// snake_case `CodingKeys` are a decode-breaking footgun under the bridge's
+/// strategy.
 struct WidgetSnapshot: Codable, Equatable {
     var nowPlayingEpisodeTitle: String?
     var nowPlayingPodcastTitle: String?
-    var nowPlayingArtworkURL: String?
+    var nowPlayingArtworkUrl: String?
     /// Active chapter title at the playhead, preferred over the show name.
     var nowPlayingChapterTitle: String?
     var isPlaying: Bool
@@ -27,18 +31,6 @@ struct WidgetSnapshot: Codable, Equatable {
     /// Unplayed episodes across subscribed shows — drives the "N to listen"
     /// badge / empty-state line.
     var unplayedCount: Int
-
-    enum CodingKeys: String, CodingKey {
-        case nowPlayingEpisodeTitle = "now_playing_episode_title"
-        case nowPlayingPodcastTitle = "now_playing_podcast_title"
-        case nowPlayingArtworkURL = "now_playing_artwork_url"
-        case nowPlayingChapterTitle = "now_playing_chapter_title"
-        case isPlaying = "is_playing"
-        case positionFraction = "position_fraction"
-        case positionSecs = "position_secs"
-        case durationSecs = "duration_secs"
-        case unplayedCount = "unplayed_count"
-    }
 
     /// `true` when an episode is loaded (the kernel populates a title only when
     /// something is playing). A badge-only snapshot (nothing playing, unplayed
@@ -95,6 +87,11 @@ struct NowPlayingTimelineProvider: TimelineProvider {
         guard let defaults = UserDefaults(suiteName: Self.appGroupID),
               let data = defaults.data(forKey: Self.defaultsKey)
         else { return nil }
-        return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+        // The app side writes this payload with `.convertToSnakeCase` and the
+        // type carries no explicit `CodingKeys`, so decode with the matching
+        // `.convertFromSnakeCase` strategy (mirrors the bridge's decoder config).
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try? decoder.decode(WidgetSnapshot.self, from: data)
     }
 }
