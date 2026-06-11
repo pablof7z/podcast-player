@@ -12,7 +12,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use super::handle::PodcastHandle;
-use super::projections::{AgentSnapshot, PodcastSummary, VoiceState};
+use super::projections::{AgentSnapshot, PodcastSummary};
 use super::snapshot_categories::build_category_aggregate;
 use super::snapshot_downloads::build_downloads_snapshot;
 use super::snapshot_owned::collect_owned_podcasts;
@@ -172,10 +172,8 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     // host-op handler also dereferences; the actor joins before `nmp_app_free`.
     let configured_relays = unsafe { super::snapshot_relays::build_configured_relays(handle.app) };
 
-    let voice = handle.voice_state.lock().ok().and_then(|v| {
-        let snap = v.clone();
-        (snap != VoiceState::default()).then_some(snap)
-    });
+    // Step 12: voice now projected from VoiceSubstate.
+    let voice = handle.state.voice.voice_snapshot();
 
     // Step 11: agent chat now read from AgentChatState.
     let agent = {
@@ -331,13 +329,16 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
     // reclaims the shell's strong ref; the snapshot-projection closure holds a
     // second ref that is released when the app's projection registry is dropped.
     let reclaimed = unsafe { Arc::from_raw(handle as *const PodcastHandle) };
-    // Fence the voice-conversation off-thread dispatch UAF: abort + join any
-    // in-flight LLM turn so no spawned Tokio task can dereference `app` after
-    // `nmp_app_free`. The caller contract guarantees `unregister` runs before
-    // `nmp_app_free`, and (because the snapshot-projection closure holds a
-    // second strong `Arc<PodcastHandle>`) the manager itself does not drop
-    // here — so this explicit drain, not a `Drop` impl, is the fence.
-    reclaimed.voice_conversation.shutdown();
+    // Step 12: Fence the voice-conversation off-thread dispatch UAF: abort +
+    // join any in-flight LLM turn so no spawned Tokio task can dereference
+    // `app` after `nmp_app_free`.  The caller contract guarantees `unregister`
+    // runs before `nmp_app_free`, and (because the snapshot-projection closure
+    // holds a second strong `Arc<PodcastHandle>`) the manager itself does not
+    // drop here — so this explicit drain, not a `Drop` impl, is the fence.
+    //
+    // Teardown ordering: shutdown BEFORE drop (i.e. before the `reclaimed` Arc
+    // falls out of scope) — unchanged from the pre-migration fence.
+    reclaimed.state.voice.shutdown();
     let _ = reclaimed.app;
 }
 

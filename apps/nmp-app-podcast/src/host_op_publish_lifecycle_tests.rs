@@ -35,8 +35,8 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(PlaybackQueue::new())),
         Arc::new(Mutex::new(DownloadQueue::new())),
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6.
+        // voice_state removed in Step 12 — now owned by state.voice.
         Arc::new(Mutex::new(HashSet::new())),
-        Arc::new(Mutex::new(Default::default())),
         rev.clone(),
         Arc::new(Mutex::new(PodcastKeyStore::new())),
         Arc::new(Mutex::new(HashMap::new())),

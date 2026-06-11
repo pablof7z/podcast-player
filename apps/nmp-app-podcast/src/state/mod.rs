@@ -44,6 +44,7 @@ pub mod slot;
 pub mod social;
 pub mod tasks;
 pub mod transcripts;
+pub mod voice;
 pub mod wiki;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -201,6 +202,16 @@ pub struct PodcastAppState {
     /// `agent_busy` + `agent_touched` flags.  Wraps `AgentChatHandler` so
     /// the LLM dispatch logic stays in one place.
     pub agent_chat: agent_chat::AgentChatState,
+
+    /// Voice substate (Step 12).  Owns `voice_state` projection + the
+    /// `VoiceConversationManager` (LLM↔TTS loop).
+    ///
+    /// **Shutdown fence**: `nmp_app_podcast_unregister` MUST call
+    /// `state.voice.shutdown()` before dropping the handle.  This fences
+    /// in-flight Tokio tasks that hold a `*mut NmpApp` deref from
+    /// completing after `nmp_app_free`.  The ordering is identical to the
+    /// previous `reclaimed.voice_conversation.shutdown()` call.
+    pub voice: voice::VoiceSubstate,
 }
 
 impl PodcastAppState {
@@ -244,6 +255,14 @@ impl PodcastAppState {
         let discovery = discovery::DiscoveryState::new(infra.clone());
         let social = social::SocialState::new(infra.clone());
         let agent_chat = agent_chat::AgentChatState::new(infra.clone(), store.clone());
+        // Voice is constructed with a null app pointer by default.  In
+        // production (`register.rs`) the caller replaces this field before
+        // wrapping in `Arc` using `with_voice`.
+        let voice = voice::VoiceSubstate::new(
+            infra.clone(),
+            store.clone(),
+            std::ptr::null_mut(),
+        );
         Self {
             infra,
             knowledge,
@@ -257,6 +276,7 @@ impl PodcastAppState {
             discovery,
             social,
             agent_chat,
+            voice,
         }
     }
 }

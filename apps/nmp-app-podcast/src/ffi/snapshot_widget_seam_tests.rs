@@ -29,7 +29,6 @@ use url::Url;
 use crate::download::DownloadQueue;
 use crate::ffi::audio_report::nmp_app_podcast_audio_report;
 use crate::ffi::handle::PodcastHandle;
-use crate::ffi::projections::VoiceState;
 use crate::ffi::snapshot::build_podcast_update;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
@@ -80,8 +79,8 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
         Arc::new(Mutex::new(DownloadQueue::new())),
         // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6 —
         // now owned by state.tasks / state.clips / state.transcripts.
+        // voice_state removed in Step 12 — now owned by state.voice.
         Arc::new(Mutex::new(HashSet::new())),
-        Arc::new(Mutex::new(VoiceState::default())),
         shared.rev.clone(),
         Arc::new(Mutex::new(PodcastKeyStore::new())),
         Arc::new(Mutex::new(HashMap::new())),
@@ -123,16 +122,8 @@ fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<Podca
         dismissed_episode_ids: Arc::new(Mutex::new(HashSet::new())),
         podcast_keys: Arc::new(Mutex::new(PodcastKeyStore::new())),
         publish_state: Arc::new(Mutex::new(HashMap::new())),
-        voice_state: Arc::new(Mutex::new(VoiceState::default())),
-        voice_conversation: crate::voice_conversation::VoiceConversationManager::new(
-            std::ptr::null_mut(),
-            Arc::new(Mutex::new(Vec::new())),
-            shared.store.clone(),
-            Arc::new(Mutex::new(VoiceState::default())),
-            Arc::new(tokio::runtime::Runtime::new().unwrap()),
-            shared.rev.clone(),
-            None,
-        ),
+        // voice_state and voice_conversation removed in Step 12 —
+        // now owned by state.voice (VoiceSubstate).
         // conversation, agent_busy, agent_touched removed in Step 11 —
         // now owned by state.agent_chat.
         inbox_triage_cache: Arc::new(Mutex::new(HashMap::new())),

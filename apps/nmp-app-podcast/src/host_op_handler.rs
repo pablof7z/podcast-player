@@ -30,7 +30,6 @@ use nmp_ffi::NmpApp;
 use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
 use crate::ffi::handle::OwnedPublishState;
-use crate::ffi::projections::VoiceState;
 use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
@@ -82,7 +81,7 @@ pub struct PodcastHostOpHandler {
     // clips removed in Step 5a — now owned by `state.clips` (ClipsState).
     // transcripts removed in Step 5b — now owned by `state.transcripts` (TranscriptsState).
     pub(crate) dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
-    pub(crate) voice_state: Arc<Mutex<VoiceState>>,
+    // voice_state removed in Step 12 — now owned by `state.voice` (VoiceSubstate).
     // categories + categorization_in_progress removed in Step 4 —
     // they are now owned by `state.categories` (CategoriesState).
     // comments_cache + viewed_comments_episode_id removed in Step 8 —
@@ -144,7 +143,6 @@ impl PodcastHostOpHandler {
         queue: Arc<Mutex<PlaybackQueue>>,
         download_queue: Arc<Mutex<DownloadQueue>>,
         dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
-        voice_state: Arc<Mutex<VoiceState>>,
         rev: Arc<AtomicU64>,
         podcast_keys: Arc<Mutex<PodcastKeyStore>>,
         publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
@@ -163,7 +161,6 @@ impl PodcastHostOpHandler {
             queue,
             download_queue,
             dismissed_episode_ids,
-            voice_state,
             rev,
             podcast_keys,
             publish_state,
