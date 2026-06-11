@@ -108,8 +108,7 @@ extension PodcastHandle {
                     defer { nmp_app_free_string(result) }
                     let responseJSON = String(cString: result)
                     guard let data = responseJSON.data(using: .utf8) else { return }
-                    let decoder = JSONDecoder()
-                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let decoder = KernelDecoding.makeDecoder()
                     guard let response = try? decoder.decode(
                         AudioReportResponse.self, from: data) else {
                         return
@@ -162,8 +161,7 @@ extension PodcastHandle {
                 defer { nmp_app_free_string(result) }
                 let responseJSON = String(cString: result)
                 guard let data = responseJSON.data(using: .utf8) else { return }
-                let decoder = JSONDecoder()
-                decoder.keyDecodingStrategy = .convertFromSnakeCase
+                let decoder = KernelDecoding.makeDecoder()
                 guard let response = try? decoder.decode(DownloadReportResponse.self, from: data) else {
                     return
                 }
@@ -310,10 +308,8 @@ extension PodcastHandle {
         let json = String(cString: ptr)
         guard let data = json.data(using: .utf8) else { return PodcastUpdate() }
         pullBytes = data.count
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         do {
-            let update = try decoder.decode(PodcastUpdate.self, from: data)
+            let update = try KernelDecoding.decodePodcastUpdate(from: data)
             guard update.schemaVersion == KERNEL_SCHEMA_VERSION else {
                 kbLog.fault(
                     "podcastSnapshot REJECTED: schema_version \(update.schemaVersion) != expected \(KERNEL_SCHEMA_VERSION) — failing closed on kernel/shell schema mismatch")

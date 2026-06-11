@@ -239,10 +239,8 @@ final class PodcastHandle: @unchecked Sendable {
             let podcast = projections["podcast.snapshot"],
             let podcastData = try? JSONSerialization.data(withJSONObject: podcast)
         else { return nil }
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         do {
-            let update = try decoder.decode(PodcastUpdate.self, from: podcastData)
+            let update = try KernelDecoding.decodePodcastUpdate(from: podcastData)
             guard update.schemaVersion == KERNEL_SCHEMA_VERSION else {
                 kbLog.fault(
                     "podcast.snapshot REJECTED: schema_version \(update.schemaVersion) != expected \(KERNEL_SCHEMA_VERSION) — failing closed on kernel/shell schema mismatch")
@@ -259,8 +257,7 @@ final class PodcastHandle: @unchecked Sendable {
         let start = ContinuousClock.now
         let payload = String(cString: pointer)
         let data = Data(payload.utf8)
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let decoder = KernelDecoding.makeDecoder()
         do {
             let envelope = try decoder.decode(SnapshotEnvelope.self, from: data)
             guard envelope.t == "snapshot" else {

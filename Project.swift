@@ -210,9 +210,16 @@ let project = Project(
             bundleId: "\(appBundleID).tests",
             deploymentTargets: deploymentTarget,
             sources: ["AppTests/Sources/**"],
-            // Cross-language settings-default parity fixture, shared with the
-            // Rust `settings_fresh_install_matches_fixture` test.
-            resources: ["tests/fixtures/settings_fresh_install.json"],
+            // Cross-language parity fixtures, each emitted by a Rust test and
+            // decoded by a matching Swift test:
+            //   - settings_fresh_install.json   → SettingsSnapshotParityTests
+            //   - podcast_update_with_widget.json → PlatformWidgetContractTests
+            //     (decoded through the bridge's .convertFromSnakeCase config —
+            //     pins Rust-JSON ↔ embedded-WidgetSnapshot compatibility).
+            resources: [
+                "tests/fixtures/settings_fresh_install.json",
+                "tests/fixtures/podcast_update_with_widget.json",
+            ],
             dependencies: [.target(name: appName)],
             settings: .settings(
                 base: [

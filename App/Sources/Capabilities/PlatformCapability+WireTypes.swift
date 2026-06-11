@@ -22,10 +22,22 @@ import Foundation
 /// The widget extension decodes the JSON payload this struct
 /// encodes; the extension defines its own copy of the type because
 /// the two targets don't share Swift sources.
+///
+/// IMPORTANT — NO explicit `CodingKeys`. This type is embedded in
+/// `PodcastUpdate`, which `KernelBridge` decodes with
+/// `keyDecodingStrategy = .convertFromSnakeCase`. That strategy rewrites the
+/// wire keys (`is_playing` → `isPlaying`) *before* key lookup, so the
+/// synthesized camelCase keys are exactly what's required. Declaring explicit
+/// snake_case `CodingKeys` here double-converts and makes every key miss — the
+/// required `isPlaying` then throws `keyNotFound` and fails the **entire**
+/// `PodcastUpdate` decode on every push/pull frame (the live regression caught
+/// in PR #366 review: the library froze at "No episodes yet"). Property names
+/// must be the camelCase the strategy produces, including its acronym
+/// lowercasing: `artwork_url` → `artworkUrl` (not `artworkURL`).
 struct WidgetSnapshot: Codable, Equatable {
     var nowPlayingEpisodeTitle: String?
     var nowPlayingPodcastTitle: String?
-    var nowPlayingArtworkURL: String?
+    var nowPlayingArtworkUrl: String?
     /// Active chapter title at the playhead, preferred over the show
     /// name on the medium widget. `nil` for chapter-less episodes.
     var nowPlayingChapterTitle: String?
@@ -39,18 +51,6 @@ struct WidgetSnapshot: Codable, Equatable {
     /// Track duration in seconds; `0` until the capability reports it.
     var durationSecs: Double
     var unplayedCount: Int
-
-    enum CodingKeys: String, CodingKey {
-        case nowPlayingEpisodeTitle = "now_playing_episode_title"
-        case nowPlayingPodcastTitle = "now_playing_podcast_title"
-        case nowPlayingArtworkURL = "now_playing_artwork_url"
-        case nowPlayingChapterTitle = "now_playing_chapter_title"
-        case isPlaying = "is_playing"
-        case positionFraction = "position_fraction"
-        case positionSecs = "position_secs"
-        case durationSecs = "duration_secs"
-        case unplayedCount = "unplayed_count"
-    }
 }
 
 /// Swift mirror of `apps/podcast-core/src/types/handoff.rs`
