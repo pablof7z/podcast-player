@@ -369,6 +369,25 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
 /// Returns a heap `CString` (free with `nmp_app_free_string`) or null when the
 /// frame is invalid.
 ///
+/// **nmp-v0.3.0 migration note (PR-B #991/#979):** The generic `payload:Value`
+/// JSON tree — which previously carried `projections["podcast.snapshot"]` and
+/// `projections["signed_events"]` — is no longer present in the wire frame.
+/// `UpdateEnvelope::Snapshot` now carries a typed [`SnapshotEnvelope`] (Tier-3
+/// fields only: `rev`, `running`, metrics, relay statuses, error toasts).
+///
+/// As a result the `v` returned here no longer contains a `projections` map.
+/// The iOS shell's `decodePodcastUpdate` guard (`v.projections["podcast.snapshot"]`)
+/// will return nil, causing the push-frame decode path to drop the frame. The
+/// pull path (`nmp_app_podcast_snapshot_rev` + `nmp_app_podcast_snapshot`)
+/// remains correct and continues to deliver `PodcastUpdate` to the shell on
+/// every accepted push notification trigger (`pullPodcastSnapshotIfChanged`).
+///
+/// The `signed_events` typed FlatBuffer sidecar (now a Tier-2 built-in typed
+/// projection — key `"signed_events"`, schema `nmp.signedEvents`) is not yet
+/// bridged from the binary frame into the iOS `SignedEventsRegistry`. Until
+/// that follow-up Swift change lands, `signEventForReturn` results will be
+/// silently dropped. Track under BACKLOG `signed-events-fb-bridge`.
+///
 /// # Safety
 /// `bytes` must point to `len` readable bytes, or be null.
 #[no_mangle]
@@ -386,8 +405,26 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
         Err(_) => return std::ptr::null_mut(),
     };
     let json = match envelope {
-        nmp_core::UpdateEnvelope::Snapshot(value) => {
-            serde_json::json!({ "t": "snapshot", "v": value })
+        // PR-B (nmp-v0.3.0): `Snapshot` now carries a typed `SnapshotEnvelope`
+        // (Tier-3 fields) instead of the deleted generic `payload:Value`. Build
+        // the `v` object from the available typed fields. The `projections` map
+        // is absent — `podcast.snapshot` must be obtained via the pull path
+        // (`nmp_app_podcast_snapshot`), which is driven by the shell's
+        // `pullPodcastSnapshotIfChanged` on every accepted push notification.
+        nmp_core::UpdateEnvelope::Snapshot(env) => {
+            let mut v = serde_json::json!({
+                "rev": env.rev,
+                "running": env.running,
+                "schema_version": 1u32,
+            });
+            // Forward the liveness / error fields the shell reads on every frame.
+            if let Some(toast) = env.last_error_toast {
+                v["last_error_toast"] = serde_json::Value::String(toast);
+            }
+            if let Some(cat) = env.last_error_category {
+                v["last_error_category"] = serde_json::Value::String(cat);
+            }
+            serde_json::json!({ "t": "snapshot", "v": v })
         }
         nmp_core::UpdateEnvelope::Panic(panic) => {
             serde_json::json!({ "t": "panic", "message": panic.msg })

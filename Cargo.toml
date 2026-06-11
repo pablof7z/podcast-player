@@ -11,9 +11,13 @@ members = [
 ]
 resolver = "2"
 
+# nmp-v0.3.0: all NMP pins (direct + nmp-feedback's internal pin) reference
+# the SAME nostr-multi-platform rev so the whole graph compiles exactly one
+# copy of each NMP crate (one `NmpApp` type). When bumping NMP, bump
+# nmp-feedback in lockstep to a rev that pins the same NMP rev.
 [workspace.dependencies]
-nmp-app-template = { version = "0.2.10", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "e5070e2321f26683f97b266015dad629ca8dc685" }
-nmp-core = { version = "0.2.10", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "e5070e2321f26683f97b266015dad629ca8dc685" }
-nmp-ffi = { version = "0.2.10", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "e5070e2321f26683f97b266015dad629ca8dc685" }
-nmp-signer-broker = { version = "0.2.10", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "e5070e2321f26683f97b266015dad629ca8dc685" }
-nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "2bc722c4afa7d7b1e0ed1818f198ed08dca9e94a" }
+nmp-app-template = { version = "0.3.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "4bec822272821a38ccbb251994dc058373e61bd1" }
+nmp-core = { version = "0.3.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "4bec822272821a38ccbb251994dc058373e61bd1" }
+nmp-ffi = { version = "0.3.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "4bec822272821a38ccbb251994dc058373e61bd1" }
+nmp-signer-broker = { version = "0.3.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "4bec822272821a38ccbb251994dc058373e61bd1" }
+nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "a6794d6aabb38a3711b5a5d3b365d6326e38fa24" }
