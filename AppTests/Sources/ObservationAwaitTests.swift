@@ -80,6 +80,87 @@ final class ObservationAwaitTests: XCTestCase {
         XCTAssertEqual(result, true)
     }
 
+    // MARK: - Download-resolution predicate (AgentTTSComposer.waitForDownload)
+    //
+    // `AgentTTSComposer.resolveEpisodeAudio` replaced a 1s `Task.sleep` poll
+    // loop (D8 violation) with an `awaitState` predicate keyed on the episode's
+    // `downloadState`, mapping `.downloaded` → `.success(url)`, `.failed` →
+    // `.failure`, and a deadline-exhausted `awaitState` → `nil` (timeout). These
+    // tests pin that exact predicate shape against the public
+    // `setEpisodeDownloadState` seam, so a regression in the awaiter that the
+    // composer depends on is caught here without exercising ElevenLabs/stitching.
+
+    /// `.downloaded` resolves the predicate to `.success` reactively, the moment
+    /// the kernel projection flips `downloadState` — not on a timer.
+    func testDownloadPredicateResolvesSuccessOnDownloaded() async {
+        let target = insertEpisode(guid: "dl-ok")
+        let localURL = URL(fileURLWithPath: "/tmp/dl-ok.mp3")
+
+        let waiter = Task { @MainActor in
+            await store.awaitState(timeout: .seconds(5)) { [weak store] () -> Result<URL, Error>? in
+                guard let episode = store?.episode(id: target.id) else { return nil }
+                switch episode.downloadState {
+                case .downloaded(let url, _): return .success(url)
+                case .failed(let message):
+                    return .failure(NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: message]))
+                default: return nil
+                }
+            }
+        }
+
+        await Task.yield()
+        store.setEpisodeDownloadState(target.id, state: .downloaded(localFileURL: localURL, byteCount: 1))
+
+        let result = await waiter.value
+        guard case .success(let url) = result else {
+            return XCTFail("expected .success, got \(String(describing: result))")
+        }
+        XCTAssertEqual(url, localURL)
+    }
+
+    /// `.failed` resolves the predicate to `.failure` — the composer maps this to
+    /// `AgentTTSError.snippetDownloadFailed`.
+    func testDownloadPredicateResolvesFailureOnFailed() async {
+        let target = insertEpisode(guid: "dl-fail")
+
+        let waiter = Task { @MainActor in
+            await store.awaitState(timeout: .seconds(5)) { [weak store] () -> Result<URL, Error>? in
+                guard let episode = store?.episode(id: target.id) else { return nil }
+                switch episode.downloadState {
+                case .downloaded(let url, _): return .success(url)
+                case .failed(let message):
+                    return .failure(NSError(domain: "test", code: 1, userInfo: [NSLocalizedDescriptionKey: message]))
+                default: return nil
+                }
+            }
+        }
+
+        await Task.yield()
+        store.setEpisodeDownloadState(target.id, state: .failed(message: "boom"))
+
+        let result = await waiter.value
+        guard case .failure(let error) = result else {
+            return XCTFail("expected .failure, got \(String(describing: result))")
+        }
+        XCTAssertEqual((error as NSError).localizedDescription, "boom")
+    }
+
+    /// A download that never settles returns `nil` at the deadline — the
+    /// composer maps this to `AgentTTSError.snippetDownloadTimeout`.
+    func testDownloadPredicateTimesOutWhenNeverSettles() async {
+        let target = insertEpisode(guid: "dl-stall")
+        // Leave it in the default (`.notDownloaded`) state — never resolves.
+
+        let result: Result<URL, Error>? = await store.awaitState(timeout: .milliseconds(200)) {
+            [weak store] () -> Result<URL, Error>? in
+            guard let episode = store?.episode(id: target.id) else { return nil }
+            if case .downloaded(let url, _) = episode.downloadState { return .success(url) }
+            return nil
+        }
+
+        XCTAssertNil(result)
+    }
+
     // MARK: - Fixtures
 
     @discardableResult
