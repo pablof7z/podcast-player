@@ -826,6 +826,54 @@ worktrees currently in flight.
   `nowPlaying.positionSecs`. At that point `PlatformCapability.applyNowPlayingSnapshot`
   needs a separate position-write path (not gated by the identity dedup) so the
   widget stays live during playback. Owner: M1.6 agent.
+- **episode-metadata-indexer-ownership.** `App/Sources/Services/EpisodeMetadataIndexer.swift`
+  is a Swift-owned RAG embedding-backfill service that holds native batching and
+  rate-limit *policy*: it chunks pending episodes at `batchSize = 32` and sleeps
+  `interBatchDelayNanoseconds = 200_000_000` (0.2s) between batches
+  (`:53`/`:57`, applied in the backfill loop at `:112`–`:119`). Per D7 the
+  rate-limit / batch policy belongs in the Rust kernel, which already owns the
+  providers and the episode store; per D4 the "which episodes are indexed" fact
+  is a kernel write (`MarkEpisodesMetadataIndexed` action exists), yet the
+  selection/ordering policy feeding it is still native. Decision needed: migrate
+  the backfill orchestration into a kernel action/job (kernel owns batch size,
+  inter-batch pacing, and the pending-episode scan), or write an ADR documenting
+  why the embeddings utility is intentionally shell-owned. Surfaced in the
+  2026-06-11 NMP architecture audit.
+- **provider-credential-connected-at-kernel-time.** Android
+  `android/Podcast/app/src/main/java/io/f7z/podcast/ProviderCredentialActions.kt`
+  stamps the credential `connectedAt` field natively: `epochSeconds()` (`:286`,
+  `System.currentTimeMillis() / 1000`) is read at `:73`, `:119`, `:163`, `:209`,
+  and `:255` and passed through the credential payloads into the kernel. D9 says
+  the kernel owns time, so the kernel should stamp `connectedAt` on receipt and
+  the field should be dropped from the shell payloads entirely. When picked up,
+  check whether iOS does the same for the equivalent provider-credential ops and
+  fix both shells together so the native-clock value cannot re-enter from either
+  side. Surfaced in the 2026-06-11 NMP architecture audit.
+- **feed-not-modified-rev-bump.** `apps/nmp-app-podcast/src/host_op_handler/podcast_actions_feed.rs`
+  (`:175`–`:182`) handles a `304 NotModified` feed refresh by updating
+  etag/last-modified via `update_refresh_metadata` and then unconditionally
+  `self.rev.fetch_add(1, ...)`. That rev bump forces a full snapshot rebuild +
+  FFI decode on every shell for a tick where nothing user-visible changed —
+  multiplied across N feeds on a refresh-all, this is pure main-thread churn
+  (compare the snapshot-decode hot-path entries). Fix: skip the bump when only
+  refresh metadata changed (etag/last-modified are not projected to the shells),
+  or route conditional-GET metadata through a metadata-only path that does not
+  participate in the snapshot rev. Surfaced in the 2026-06-11 NMP architecture
+  audit.
+- **auto-advance-actor-stage-resilience.** In
+  `apps/nmp-app-podcast/src/ffi/audio_report.rs`, `maybe_auto_advance`
+  (`:263`–`:307`) pops the next episode from the canonical queue and resolves its
+  playback info, then stages it on the player actor under
+  `if let Ok(mut actor) = handle.player_actor.lock() { actor.stage_load(...) }`
+  (`:280`). On a lock failure (poison-only, near-theoretical) the `stage_load`
+  is silently skipped, but the `Load` + `Play` dispatch at `:285`–`:289` still
+  fire — leaving the actor with no staged record for the now-playing episode.
+  That is the same symptom class as the fixed lock-screen-play bug: position
+  never persists and the episode is never marked played. Cheap hardening:
+  acquire the actor lock before popping the queue, or fold the staging into the
+  same lock acquisition as the `auto_play_next` read at `:245`, so the staged
+  record and the dispatched Load can never diverge. Surfaced in the 2026-06-11
+  NMP architecture audit.
 
 ## Pending Decisions
 
