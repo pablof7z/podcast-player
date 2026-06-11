@@ -51,7 +51,6 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(Mutex::new(HashSet::new())),
         Arc::new(Mutex::new(Default::default())),
-        Arc::new(Mutex::new(HashMap::new())),
         rev.clone(),
         Arc::new(Mutex::new(PodcastKeyStore::new())),
         Arc::new(Mutex::new(HashMap::new())),

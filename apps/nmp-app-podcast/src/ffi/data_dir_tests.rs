@@ -53,7 +53,6 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         conversation: Arc::new(Mutex::new(Vec::new())),
         agent_busy: Arc::new(AtomicBool::new(false)),
         agent_touched: Arc::new(AtomicBool::new(false)),
-        categories: Arc::new(Mutex::new(HashMap::new())),
         inbox_triage_cache: Arc::new(Mutex::new(HashMap::new())),
         inbox_triage_in_progress: Arc::new(AtomicBool::new(false)),
         comments_cache: Arc::new(Mutex::new(HashMap::new())),

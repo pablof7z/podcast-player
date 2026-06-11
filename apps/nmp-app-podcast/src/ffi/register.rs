@@ -110,7 +110,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let conversation = Arc::new(Mutex::new(Vec::new()));
     let agent_busy = Arc::new(AtomicBool::new(false));
     let agent_touched = Arc::new(AtomicBool::new(false));
-    let categories: Arc<Mutex<HashMap<String, Vec<String>>>> = Arc::new(Mutex::new(HashMap::new()));
+    // categories and categorization_in_progress removed in Step 4 —
+    // they are now seeded inside PodcastAppState::new (CategoriesState).
     let comments_cache: Arc<Mutex<HashMap<String, Vec<crate::ffi::projections::CommentSummary>>>> =
         Arc::new(Mutex::new(HashMap::new()));
     let viewed_comments_episode_id: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
@@ -177,19 +178,17 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // between the host-op handler (registers a pending fetch + dispatches the
     // async HTTP command on the actor thread) and the handle (whose HTTP-report
     // FFI applies the parsed result from the platform transport thread). Holds
-    // the same shared `store` / `rev` / `categories` / `runtime` Arcs
-    // the rest of the kernel uses, plus the snapshot signal so it can re-project
-    // from off the actor thread.
-    // Step 3: picks Arc is now shared from `app_state.picks` so FeedFetchCoordinator
-    // uses the SAME slot as the PicksState substate (single guard consolidation).
+    // the same shared `store` / `rev` / `runtime` Arcs the rest of the kernel
+    // uses, plus the snapshot signal so it can re-project from off the actor thread.
+    // Step 3: picks Arc shared from `app_state.picks` (single guard consolidation).
+    // Step 4: categories Arc shared from `app_state.categories` (single guard
+    // consolidation — eliminates the duplicate categorization_in_progress race).
     let feed_fetch = Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
         store.clone(),
         rev.clone(),
         Some(snapshot_signal.clone()),
-        categories.clone(),
-        app_state.picks.picks.share(),
-        app_state.picks.score_in_progress.clone(),
-        runtime.clone(),
+        Arc::clone(&app_state.categories),
+        Arc::clone(&app_state.picks),
     ));
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
@@ -266,7 +265,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             transcripts.clone(),
             dismissed_episode_ids.clone(),
             voice_state.clone(),
-            categories.clone(),
             rev.clone(),
             podcast_keys.clone(),
             publish_state.clone(),
@@ -373,7 +371,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         conversation,
         agent_busy,
         agent_touched,
-        categories,
         inbox_triage_cache,
         inbox_triage_in_progress,
         comments_cache,

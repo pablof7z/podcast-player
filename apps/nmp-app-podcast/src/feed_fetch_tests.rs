@@ -33,14 +33,16 @@ const FEED_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 </rss>"#;
 
 fn coordinator_over(store: Arc<Mutex<PodcastStore>>) -> FeedFetchCoordinator {
+    use crate::state::categories::CategoriesState;
+    use crate::state::picks::PicksState;
+    use crate::state::Infra;
+    let infra = Infra::for_test();
     FeedFetchCoordinator::new(
-        store,
-        Arc::new(AtomicU64::new(1)),
+        store.clone(),
+        infra.rev.clone(),
         None, // no snapshot signal: skip the spawned categorize / picks passes
-        Arc::new(Mutex::new(HashMap::new())),
-        Arc::new(Mutex::new(Vec::new())),
-        Arc::new(AtomicBool::new(false)), // picks_score_in_progress (Step 3: shared with PicksState)
-        Arc::new(tokio::runtime::Runtime::new().unwrap()),
+        Arc::new(CategoriesState::for_test(store.clone())),
+        Arc::new(PicksState::for_test(store)),
     )
 }
 

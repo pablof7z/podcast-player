@@ -21,8 +21,12 @@
 //! Step 3: Picks substate — `PicksState` owns `picks` + `score_in_progress`;
 //! the duplicate guard on `FeedFetchCoordinator` is consolidated here.
 //!
-//! Steps 4-N are defined in the design doc.
+//! Step 4: Categories substate — `CategoriesState` owns `categories` cache +
+//! `in_progress`; the duplicate guard on `FeedFetchCoordinator` is consolidated.
+//!
+//! Steps 5-N are defined in the design doc.
 
+pub mod categories;
 pub mod knowledge;
 pub mod picks;
 pub mod slot;
@@ -121,7 +125,10 @@ impl Infra {
 /// added in Steps 2-N per the design doc.  At each step the corresponding
 /// god-struct fields are REMOVED in the same PR (no overlap window).
 ///
-/// Steps 2-3: wiki + picks substates added; respective god-struct fields removed.
+/// Steps 2-4: wiki + picks + categories substates added; respective god-struct fields removed.
+///
+/// `picks` and `categories` are wrapped in `Arc` so `FeedFetchCoordinator` can
+/// hold the SAME substate instance (canonical single guard — no duplicate Arcs).
 pub struct PodcastAppState {
     /// Cross-cutting infrastructure (rev + signal + runtime).
     pub infra: Infra,
@@ -133,7 +140,12 @@ pub struct PodcastAppState {
     pub wiki: wiki::WikiState,
 
     /// Picks substate (Step 3).  Owns picks slot + the single scoring guard.
-    pub picks: picks::PicksState,
+    /// Wrapped in `Arc` so `FeedFetchCoordinator` can hold the canonical instance.
+    pub picks: Arc<picks::PicksState>,
+
+    /// Categories substate (Step 4).  Owns categories cache + single guard.
+    /// Wrapped in `Arc` so `FeedFetchCoordinator` can hold the canonical instance.
+    pub categories: Arc<categories::CategoriesState>,
 }
 
 impl PodcastAppState {
@@ -151,7 +163,8 @@ impl PodcastAppState {
         // Wiki shares the same KnowledgeStore Arc (Step 2 constraint).
         let knowledge_index = knowledge.index_arc();
         let wiki = wiki::WikiState::new(infra.clone(), store.clone(), knowledge_index);
-        let picks = picks::PicksState::new(infra.clone(), store);
-        Self { infra, knowledge, wiki, picks }
+        let picks = Arc::new(picks::PicksState::new(infra.clone(), store.clone()));
+        let categories = Arc::new(categories::CategoriesState::new(infra.clone(), store));
+        Self { infra, knowledge, wiki, picks, categories }
     }
 }

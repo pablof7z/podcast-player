@@ -49,12 +49,8 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .ok()
         .map(|t| t.clone())
         .unwrap_or_default();
-    let categories_cache: std::collections::HashMap<String, Vec<String>> = handle
-        .categories
-        .lock()
-        .ok()
-        .map(|c| c.clone())
-        .unwrap_or_default();
+    // Step 4: categories_cache now read from CategoriesState.
+    let categories_cache = handle.state.categories.categories_snapshot();
 
     // Single store lock → library + memory_facts + settings.
     let (library, memory_facts, settings) = handle

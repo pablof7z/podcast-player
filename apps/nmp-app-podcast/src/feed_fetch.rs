@@ -21,21 +21,19 @@
 //! which wakes the actor's update sink from any thread.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
 use podcast_core::{Episode, PodcastId};
 use podcast_feeds::client::{handle_feed_response, FeedResult};
 use podcast_feeds::http::{HttpReport, HttpResult};
-use tokio::runtime::Runtime;
 use url::Url;
 
-use crate::categorization::handle_run_with_signal as categorization_run_with_signal;
-use crate::ffi::projections::AgentPickSummary;
 use crate::host_op_handler_helpers::merge_episodes;
-use crate::picks_handler::handle_refresh_with_signal as picks_handle_refresh_with_signal;
 use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::state::categories::CategoriesState;
+use crate::state::picks::PicksState;
 use crate::store::PodcastStore;
 
 /// What to do with a feed body once its async HTTP report arrives. Currently
@@ -70,41 +68,31 @@ pub(crate) struct PendingFeedFetch {
 /// result from the platform transport thread). The two share the same `store`
 /// / `rev` / `snapshot_signal` `Arc`s the rest of the kernel uses.
 ///
-/// Step 3: `picks` and `picks_score_in_progress` are now shared from
-/// `PicksState` (canonical single guard — eliminates the duplicate that caused
-/// a subscribe completion and a manual refresh to race independent guards).
+/// Steps 3+4: holds `Arc<PicksState>` and `Arc<CategoriesState>` directly
+/// instead of individual Arc clones — eliminates the duplicate guard races and
+/// keeps the constructor under the 7-argument limit.
 pub(crate) struct FeedFetchCoordinator {
     pending: Mutex<HashMap<String, PendingFeedFetch>>,
     store: Arc<Mutex<PodcastStore>>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<SnapshotUpdateSignal>,
-    categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
-    categorization_in_progress: Arc<AtomicBool>,
-    picks: Arc<Mutex<Vec<AgentPickSummary>>>,
-    /// Shared with `PicksState::score_in_progress` — single canonical guard so
-    /// a subscribe completion and a manual refresh cannot spawn concurrent passes.
-    picks_score_in_progress: Arc<AtomicBool>,
-    runtime: Arc<Runtime>,
+    categories: Arc<CategoriesState>,
+    picks: Arc<PicksState>,
 }
 
 impl FeedFetchCoordinator {
     /// Build a coordinator over the kernel's shared state.
     ///
-    /// `picks` and `picks_score_in_progress` must be the SAME `Arc`s that
-    /// `PicksState` owns — they are the canonical single guard.  Pass
-    /// `app_state.picks.picks.share()` and
-    /// `app_state.picks.score_in_progress.clone()` from `register.rs`.
-    ///
-    /// `categorization_in_progress` remains private (not yet promoted to a
-    /// `CategoriesState` substate — that is Step 4).
+    /// Pass `Arc::clone(&app_state.categories_arc)` and
+    /// `Arc::clone(&app_state.picks_arc)`.  The substates own the canonical
+    /// guards; holding them directly eliminates the duplicate-guard races
+    /// described in Steps 3 and 4.
     pub(crate) fn new(
         store: Arc<Mutex<PodcastStore>>,
         rev: Arc<AtomicU64>,
         snapshot_signal: Option<SnapshotUpdateSignal>,
-        categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
-        picks: Arc<Mutex<Vec<AgentPickSummary>>>,
-        picks_score_in_progress: Arc<AtomicBool>,
-        runtime: Arc<Runtime>,
+        categories: Arc<CategoriesState>,
+        picks: Arc<PicksState>,
     ) -> Self {
         Self {
             pending: Mutex::new(HashMap::new()),
@@ -112,10 +100,7 @@ impl FeedFetchCoordinator {
             rev,
             snapshot_signal,
             categories,
-            categorization_in_progress: Arc::new(AtomicBool::new(false)),
             picks,
-            picks_score_in_progress,
-            runtime,
         }
     }
 
@@ -186,23 +171,10 @@ impl FeedFetchCoordinator {
         // touch only `store` / `categories` / `picks` / `rev` / signal — no app
         // pointer — so they are safe from the transport thread. They no-op
         // without a snapshot signal (headless / unit-test handles).
-        if let Some(signal) = self.snapshot_signal.clone() {
-            let _ = categorization_run_with_signal(
-                &self.store,
-                &self.categories,
-                &self.rev,
-                &self.runtime,
-                &self.categorization_in_progress,
-                signal.clone(),
-            );
-            let _ = picks_handle_refresh_with_signal(
-                &self.store,
-                &self.picks,
-                &self.rev,
-                &self.runtime,
-                &self.picks_score_in_progress,
-                signal,
-            );
+        // Steps 3+4: use canonical substates so guards are shared (single pass).
+        if self.snapshot_signal.is_some() {
+            let _ = self.categories.auto_run();
+            let _ = self.picks.auto_refresh();
         }
     }
 
@@ -220,14 +192,15 @@ impl FeedFetchCoordinator {
     /// Throwaway coordinator over fresh state, for host-op-handler unit tests
     /// that construct a handler but never exercise the async feed-fetch path.
     pub(crate) fn new_test() -> Arc<Self> {
+        use crate::state::Infra;
+        let store = Arc::new(Mutex::new(PodcastStore::new()));
+        let infra = Infra::for_test();
         Arc::new(Self::new(
-            Arc::new(Mutex::new(PodcastStore::new())),
-            Arc::new(AtomicU64::new(1)),
+            store.clone(),
+            infra.rev.clone(),
             None,
-            Arc::new(Mutex::new(HashMap::new())),
-            Arc::new(Mutex::new(Vec::new())),
-            Arc::new(AtomicBool::new(false)),
-            Arc::new(tokio::runtime::Runtime::new().expect("tokio runtime")),
+            Arc::new(CategoriesState::for_test(store.clone())),
+            Arc::new(PicksState::for_test(store)),
         ))
     }
 }

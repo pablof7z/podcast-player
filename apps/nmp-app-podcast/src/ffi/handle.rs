@@ -145,14 +145,7 @@ pub struct PodcastHandle {
     /// can tell "cleared" from "never touched". Reset only by a process
     /// restart.
     pub(super) agent_touched: Arc<AtomicBool>,
-    /// Heuristic categorizer cache: `episode_id -> Vec<category labels>`.
-    /// Written by [`crate::host_op_handler::PodcastHostOpHandler`] on the
-    /// actor thread (`podcast.categorize.run` /
-    /// `podcast.categorize.categorize_episode`, plus the auto-trigger at
-    /// the end of every successful feed refresh). Read by
-    /// `build_snapshot_payload` to populate
-    /// `EpisodeSummary.ai_categories` + the `categories` aggregate.
-    pub(super) categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
+    // categories removed in Step 4 — now owned by `state.categories` (CategoriesState).
     /// LLM triage cache: `episode_id -> TriageResult`.
     ///
     /// Populated by `InboxAction::Triage` on the actor thread (running LLM

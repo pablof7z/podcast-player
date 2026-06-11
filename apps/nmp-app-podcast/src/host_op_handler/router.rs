@@ -28,10 +28,6 @@ use nmp_core::substrate::HostOpHandler;
 
 use super::PodcastHostOpHandler;
 use crate::ai_chapters::{handle_compile_chapters, handle_compile_chapters_with_signal};
-use crate::categorization::{
-    handle_categorize_episode, handle_run as categorization_run,
-    handle_run_with_signal as categorization_run_with_signal,
-};
 use crate::clip_handler::ClipHandler;
 use crate::ffi::actions::agent_module::AgentChatAction;
 use crate::ffi::actions::categorization_module::CategorizationAction;
@@ -107,39 +103,7 @@ impl HostOpHandler for PodcastHostOpHandler {
                 }
                 handler.handle(action)
             }
-            "podcast.categorize" => {
-                let action = parse!(CategorizationAction);
-                match action {
-                    CategorizationAction::Run => {
-                        if let Some(signal) = self.snapshot_signal.clone() {
-                            categorization_run_with_signal(
-                                &self.store,
-                                &self.categories,
-                                &self.rev,
-                                &self.runtime,
-                                &self.categorization_in_progress,
-                                signal,
-                            )
-                        } else {
-                            categorization_run(
-                                &self.store,
-                                &self.categories,
-                                &self.rev,
-                                &self.runtime,
-                                &self.categorization_in_progress,
-                            )
-                        }
-                    }
-                    CategorizationAction::CategorizeEpisode { episode_id } => {
-                        handle_categorize_episode(
-                            &self.store,
-                            &self.categories,
-                            &self.rev,
-                            episode_id,
-                        )
-                    }
-                }
-            }
+            "podcast.categorize" => self.state.categories.handle(parse!(CategorizationAction)),
             "podcast" => self.handle_podcast_action(parse!(PodcastAction), correlation_id),
             "podcast.publish" => handle_publish_action(self, parse!(PublishAction)),
             "podcast.player" => {
