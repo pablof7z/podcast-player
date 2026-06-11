@@ -7,6 +7,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 
 /// Wire enum for all `podcast.identity` namespace actions.
@@ -33,11 +34,29 @@ pub enum IdentityAction {
 pub struct IdentityHandler {
     pub identity: Arc<Mutex<IdentityStore>>,
     pub rev: Arc<AtomicU64>,
+    pub snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 impl IdentityHandler {
     pub fn new(identity: Arc<Mutex<IdentityStore>>, rev: Arc<AtomicU64>) -> Self {
-        Self { identity, rev }
+        Self { identity, rev, snapshot_signal: None }
+    }
+
+    pub fn with_snapshot_signal(mut self, signal: SnapshotUpdateSignal) -> Self {
+        self.snapshot_signal = Some(signal);
+        self
+    }
+
+    /// Bump the snapshot rev and — when a signal is wired — tell NMP-core to
+    /// re-emit the snapshot projection. Without the signal the rev bump alone
+    /// invalidates the snapshot cache; the next NMP-core event will carry the
+    /// fresh identity. With the signal a dedicated `MarkChangedSinceEmit` is
+    /// posted so a fresh push frame arrives even if no other event fires.
+    fn bump_rev(&self) {
+        match self.snapshot_signal {
+            Some(ref signal) => signal.bump(),
+            None => { self.rev.fetch_add(1, Ordering::Relaxed); }
+        }
     }
 
     pub fn handle(&self, action: IdentityAction) -> serde_json::Value {
@@ -45,7 +64,7 @@ impl IdentityHandler {
             IdentityAction::ImportNsec { nsec } => match self.identity.lock() {
                 Ok(mut id) => match id.import_nsec(&nsec) {
                     Ok(()) => {
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_rev();
                         serde_json::json!({"ok": true})
                     }
                     Err(e) => serde_json::json!({"ok": false, "error": e}),
@@ -55,7 +74,7 @@ impl IdentityHandler {
             IdentityAction::Generate => match self.identity.lock() {
                 Ok(mut id) => match id.generate() {
                     Ok(()) => {
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_rev();
                         serde_json::json!({"ok": true})
                     }
                     Err(e) => serde_json::json!({"ok": false, "error": e}),
@@ -65,7 +84,7 @@ impl IdentityHandler {
             IdentityAction::Clear => match self.identity.lock() {
                 Ok(mut id) => {
                     id.clear();
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_rev();
                     serde_json::json!({"ok": true})
                 }
                 Err(_) => serde_json::json!({"ok": false, "error": "identity lock poisoned"}),

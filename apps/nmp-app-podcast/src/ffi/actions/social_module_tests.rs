@@ -129,6 +129,7 @@ fn execute_emits_dispatch_host_op() {
     };
     assert_eq!(correlation_id, "corr-1");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "publish_note");
-    assert_eq!(v["content"], "hi");
+    assert_eq!(v["ns"], "podcast.social");
+    assert_eq!(v["action"]["op"], "publish_note");
+    assert_eq!(v["action"]["content"], "hi");
 }

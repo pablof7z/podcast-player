@@ -31,6 +31,7 @@ fn execute_emits_dispatch_host_op_with_payload() {
     };
     assert_eq!(correlation_id, "corr-1");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "compile");
-    assert_eq!(v["episode_id"], "ep-2");
+    assert_eq!(v["ns"], "podcast.chapters");
+    assert_eq!(v["action"]["op"], "compile");
+    assert_eq!(v["action"]["episode_id"], "ep-2");
 }

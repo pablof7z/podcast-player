@@ -215,7 +215,9 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
         ios_episode_id, ep_id,
         "the stored id must be lowercase so the uppercase iOS form exercises the case path"
     );
-    let play_json = format!(r#"{{"op":"play","episode_id":"{ios_episode_id}"}}"#);
+    let play_json = format!(
+        r#"{{"ns":"podcast.player","action":{{"op":"play","episode_id":"{ios_episode_id}"}}}}"#
+    );
     let resp = handler.handle(&play_json, "corr-seam-play");
     assert_eq!(
         resp["ok"],

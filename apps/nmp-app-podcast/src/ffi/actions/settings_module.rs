@@ -238,12 +238,7 @@ impl ActionModule for SettingsActionModule {
             _ => {}
         }
 
-        let action_json = serde_json::to_string(&action).map_err(|e| e.to_string())?;
-        send(ActorCommand::DispatchHostOp {
-            action_json,
-            correlation_id: correlation_id.to_owned(),
-        });
-        Ok(())
+        crate::ffi::actions::dispatch_host_op(Self::NAMESPACE, &action, correlation_id, send)
     }
 }
 
