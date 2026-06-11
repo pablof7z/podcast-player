@@ -28,10 +28,6 @@ use nmp_core::substrate::HostOpHandler;
 
 use super::PodcastHostOpHandler;
 use crate::ai_chapters::{handle_compile_chapters, handle_compile_chapters_with_signal};
-use crate::categorization::{
-    handle_categorize_episode, handle_run as categorization_run,
-    handle_run_with_signal as categorization_run_with_signal,
-};
 use crate::clip_handler::ClipHandler;
 use crate::ffi::actions::agent_module::AgentChatAction;
 use crate::ffi::actions::categorization_module::CategorizationAction;
@@ -57,12 +53,7 @@ use crate::host_op_publish::handle_publish_action;
 use crate::identity_handler::IdentityHandler;
 use crate::inbox_handler::{handle_inbox_action, handle_inbox_action_with_signal};
 use crate::memory_handler;
-use crate::picks_handler::{
-    handle_refresh as picks_handle_refresh,
-    handle_refresh_with_signal as picks_handle_refresh_with_signal,
-};
 use crate::voice_handler;
-use crate::wiki::{handle_wiki_action, handle_wiki_action_with_signal};
 
 /// Namespaced envelope produced by every `ActionModule::execute` body via
 /// [`crate::ffi::actions::dispatch_host_op`].
@@ -112,39 +103,7 @@ impl HostOpHandler for PodcastHostOpHandler {
                 }
                 handler.handle(action)
             }
-            "podcast.categorize" => {
-                let action = parse!(CategorizationAction);
-                match action {
-                    CategorizationAction::Run => {
-                        if let Some(signal) = self.snapshot_signal.clone() {
-                            categorization_run_with_signal(
-                                &self.store,
-                                &self.categories,
-                                &self.rev,
-                                &self.runtime,
-                                &self.categorization_in_progress,
-                                signal,
-                            )
-                        } else {
-                            categorization_run(
-                                &self.store,
-                                &self.categories,
-                                &self.rev,
-                                &self.runtime,
-                                &self.categorization_in_progress,
-                            )
-                        }
-                    }
-                    CategorizationAction::CategorizeEpisode { episode_id } => {
-                        handle_categorize_episode(
-                            &self.store,
-                            &self.categories,
-                            &self.rev,
-                            episode_id,
-                        )
-                    }
-                }
-            }
+            "podcast.categorize" => self.state.categories.handle(parse!(CategorizationAction)),
             "podcast" => self.handle_podcast_action(parse!(PodcastAction), correlation_id),
             "podcast.publish" => handle_publish_action(self, parse!(PublishAction)),
             "podcast.player" => {
@@ -201,50 +160,8 @@ impl HostOpHandler for PodcastHostOpHandler {
                     }
                 }
             }
-            "podcast.wiki" => {
-                let action = parse!(WikiAction);
-                // Wiki reads the shared knowledge index (Step 2 will move wiki
-                // fully onto KnowledgeState; for now bridge via index_arc()).
-                let knowledge_store = self.state.knowledge.index_arc();
-                if let Some(signal) = self.snapshot_signal.clone() {
-                    handle_wiki_action_with_signal(
-                        &self.wiki_articles,
-                        &self.wiki_search_results,
-                        &self.store,
-                        &knowledge_store,
-                        &self.rev,
-                        &self.runtime,
-                        action,
-                        signal,
-                    )
-                } else {
-                    handle_wiki_action(
-                        &self.wiki_articles,
-                        &self.wiki_search_results,
-                        &self.store,
-                        &knowledge_store,
-                        &self.rev,
-                        &self.runtime,
-                        action,
-                    )
-                }
-            }
-            "podcast.picks" => {
-                let _action = parse!(PicksAction);
-                let p = &self.picks_score_in_progress;
-                if let Some(signal) = self.snapshot_signal.clone() {
-                    picks_handle_refresh_with_signal(
-                        &self.store,
-                        &self.picks,
-                        &self.rev,
-                        &self.runtime,
-                        p,
-                        signal,
-                    )
-                } else {
-                    picks_handle_refresh(&self.store, &self.picks, &self.rev, &self.runtime, p)
-                }
-            }
+            "podcast.wiki" => self.state.wiki.handle(parse!(WikiAction)),
+            "podcast.picks" => self.state.picks.handle(parse!(PicksAction)),
             "podcast.tasks" => self.handle_task_action(parse!(AgentTasksAction)),
             "podcast.knowledge" => self.state.knowledge.handle(parse!(KnowledgeAction)),
             "podcast.memory" => {

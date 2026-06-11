@@ -13,9 +13,9 @@ use tokio::runtime::Runtime;
 use crate::clip_handler::ClipRecord;
 use crate::download::DownloadQueue;
 use crate::ffi::projections::{
-    AgentMessageSummary, AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
+    AgentMessageSummary, AgentNoteSummary, AgentTaskSummary, CommentSummary,
     NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry,
-    VoiceState, WikiArticle,
+    VoiceState,
 };
 use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
@@ -77,21 +77,9 @@ pub struct PodcastHandle {
     /// action handler and the download-report FFI entry point; read by
     /// `build_snapshot_payload` to populate `PodcastUpdate.downloads`.
     pub(super) download_queue: Arc<Mutex<DownloadQueue>>,
-    /// All AI-wiki articles the user has generated. Written by the
-    /// `podcast.wiki.{generate,delete}` ops on the actor thread; read by
-    /// `build_snapshot_payload` on the main thread.
-    pub(super) wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-    /// Transient result of the most recent `podcast.wiki.search`. Written
-    /// by the search op; cleared by a subsequent search that returns
-    /// nothing (or by `podcast.wiki.delete` of a referenced article — the
-    /// scaffold only mutates `wiki_articles` so search results may go
-    /// stale; that's tracked as a follow-up alongside real LLM synthesis).
-    pub(super) wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
-    /// AI agent picks, recomputed heuristically after every successful feed
-    /// refresh and on explicit `podcast.picks.refresh` dispatches. Read by
-    /// `build_snapshot_payload` on each tick. See `picks_handler` for the
-    /// compute path.
-    pub(super) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
+    // wiki_articles and wiki_search_results removed in Step 2 —
+    // they are now owned by `state.wiki` (WikiState).
+    // picks removed in Step 3 — now owned by `state.picks` (PicksState).
     /// Agent-scheduled tasks. Mutated by `podcast.tasks.*` action ops
     /// (see `tasks_handler.rs`); read by `build_snapshot_payload`.
     /// Seeded with defaults in `register.rs` so the iOS UI has rows to render
@@ -157,14 +145,7 @@ pub struct PodcastHandle {
     /// can tell "cleared" from "never touched". Reset only by a process
     /// restart.
     pub(super) agent_touched: Arc<AtomicBool>,
-    /// Heuristic categorizer cache: `episode_id -> Vec<category labels>`.
-    /// Written by [`crate::host_op_handler::PodcastHostOpHandler`] on the
-    /// actor thread (`podcast.categorize.run` /
-    /// `podcast.categorize.categorize_episode`, plus the auto-trigger at
-    /// the end of every successful feed refresh). Read by
-    /// `build_snapshot_payload` to populate
-    /// `EpisodeSummary.ai_categories` + the `categories` aggregate.
-    pub(super) categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
+    // categories removed in Step 4 — now owned by `state.categories` (CategoriesState).
     /// LLM triage cache: `episode_id -> TriageResult`.
     ///
     /// Populated by `InboxAction::Triage` on the actor thread (running LLM

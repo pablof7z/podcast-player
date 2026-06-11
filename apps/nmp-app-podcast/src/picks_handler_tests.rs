@@ -69,7 +69,7 @@ fn handle_refresh_returns_ok_envelope_and_populates_slot() {
     // The immediate heuristic stamp runs synchronously inside handle_refresh,
     // so the slot is populated before the background scoring task (which would
     // need a live Ollama) even starts.
-    let resp = handle_refresh(&store, &slot, &rev, &runtime, &in_progress);
+    let resp = handle_refresh_inner(&store, &slot, &rev, &runtime, &in_progress, None);
     assert_eq!(resp["ok"], true);
     assert_eq!(resp["status"], "scoring_started");
     assert_eq!(slot.lock().unwrap().len(), 1);
@@ -91,7 +91,7 @@ fn handle_refresh_second_call_while_in_progress_is_guarded() {
     let runtime = Arc::new(tokio::runtime::Runtime::new().unwrap());
     let in_progress = Arc::new(AtomicBool::new(true)); // already running
 
-    let resp = handle_refresh(&store, &slot, &rev, &runtime, &in_progress);
+    let resp = handle_refresh_inner(&store, &slot, &rev, &runtime, &in_progress, None);
     assert_eq!(resp["status"], "already_running");
     // Heuristic stamp still happened.
     assert_eq!(slot.lock().unwrap().len(), 1);

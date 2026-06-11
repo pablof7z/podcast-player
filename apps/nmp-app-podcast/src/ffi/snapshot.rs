@@ -49,12 +49,8 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .ok()
         .map(|t| t.clone())
         .unwrap_or_default();
-    let categories_cache: std::collections::HashMap<String, Vec<String>> = handle
-        .categories
-        .lock()
-        .ok()
-        .map(|c| c.clone())
-        .unwrap_or_default();
+    // Step 4: categories_cache now read from CategoriesState.
+    let categories_cache = handle.state.categories.categories_snapshot();
 
     // Single store lock → library + memory_facts + settings.
     let (library, memory_facts, settings) = handle
@@ -114,24 +110,11 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         .map(|q| q.items().to_vec())
         .unwrap_or_default();
     let queue = resolve_queue_rows(&queue_ids, &library);
-    let wiki_articles = handle
-        .wiki_articles
-        .lock()
-        .ok()
-        .map(|w| w.clone())
-        .unwrap_or_default();
-    let wiki_search_results = handle
-        .wiki_search_results
-        .lock()
-        .ok()
-        .map(|w| w.clone())
-        .unwrap_or_default();
-    let picks = handle
-        .picks
-        .lock()
-        .ok()
-        .map(|p| p.clone())
-        .unwrap_or_default();
+    // Step 2: wiki slots are now owned by `state.wiki`.
+    let wiki_articles = handle.state.wiki.articles_snapshot();
+    let wiki_search_results = handle.state.wiki.search_results_snapshot();
+    // Step 3: picks slot is now owned by `state.picks`.
+    let picks = handle.state.picks.picks_snapshot();
     let agent_tasks = handle
         .agent_tasks
         .lock()

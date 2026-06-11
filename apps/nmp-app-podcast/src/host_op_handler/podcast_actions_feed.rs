@@ -211,7 +211,7 @@ impl PodcastHostOpHandler {
                 if !ok {
                     return serde_json::json!({"ok": false, "error": "store poisoned"});
                 }
-                refresh_picks_into_slot(&self.store, &self.picks, &self.rev);
+                refresh_picks_into_slot(&self.store, &self.state.picks.picks.share(), &self.rev);
                 serde_json::json!({"ok": true})
             }
             Err(_) => serde_json::json!({"ok": false, "error": "invalid podcast_id"}),

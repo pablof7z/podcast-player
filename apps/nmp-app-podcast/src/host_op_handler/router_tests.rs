@@ -56,13 +56,9 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         Arc::new(Mutex::new(DownloadQueue::new())),
         Arc::new(Mutex::new(Vec::new())),
         Arc::new(Mutex::new(Vec::new())),
-        Arc::new(Mutex::new(Vec::new())),
-        Arc::new(Mutex::new(Vec::new())),
-        Arc::new(Mutex::new(Vec::new())),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(Mutex::new(HashSet::new())),
         Arc::new(Mutex::new(Default::default())),
-        Arc::new(Mutex::new(HashMap::new())),
         rev.clone(),
         Arc::new(Mutex::new(PodcastKeyStore::new())),
         Arc::new(Mutex::new(HashMap::new())),
@@ -150,7 +146,8 @@ fn knowledge_search_routes_to_knowledge_not_wiki() {
     // Pre-condition: both result slots are empty.
     // Knowledge results now live in state.knowledge (Step 1 migration).
     assert!(handler.state.knowledge.results_snapshot().is_empty());
-    assert!(handler.wiki_search_results.lock().unwrap().is_empty());
+    // Wiki results now live in state.wiki (Step 2 migration).
+    assert!(handler.state.wiki.search_results_snapshot().is_empty());
 
     let envelope =
         serde_json::json!({"ns": "podcast.knowledge", "action": {"op": "search", "query": "rust"}});
@@ -160,7 +157,7 @@ fn knowledge_search_routes_to_knowledge_not_wiki() {
     assert_eq!(result["ok"], serde_json::json!(true), "knowledge search should succeed: {result}");
     // Wiki results must remain empty — search was NOT misrouted.
     assert!(
-        handler.wiki_search_results.lock().unwrap().is_empty(),
+        handler.state.wiki.search_results_snapshot().is_empty(),
         "wiki_search_results must remain empty when routing podcast.knowledge.search"
     );
 }

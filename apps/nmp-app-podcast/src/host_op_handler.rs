@@ -27,22 +27,15 @@ use tokio::runtime::Runtime;
 use nmp_ffi::NmpApp;
 
 use crate::agent_handler::AgentChatHandler;
-use crate::categorization::{
-    handle_run as categorization_run, handle_run_with_signal as categorization_run_with_signal,
-};
 use crate::clip_handler::ClipRecord;
 use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
 use crate::ffi::handle::OwnedPublishState;
 use crate::ffi::projections::{
-    AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
-    NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState, WikiArticle,
+    AgentNoteSummary, AgentTaskSummary, CommentSummary,
+    NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState,
 };
 use crate::inbox_llm::TriageResult;
-use crate::picks_handler::{
-    handle_refresh as picks_handle_refresh,
-    handle_refresh_with_signal as picks_handle_refresh_with_signal,
-};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
@@ -81,13 +74,10 @@ pub struct PodcastHostOpHandler {
     pub(crate) nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
     pub(crate) queue: Arc<Mutex<PlaybackQueue>>,
     pub(crate) download_queue: Arc<Mutex<DownloadQueue>>,
-    pub(crate) wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-    pub(crate) wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
-    pub(crate) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
-    /// Re-entrancy guard for background LLM picks scoring (M5.6); see
-    /// `picks_handler::handle_refresh`. Handler-only (the snapshot never reads
-    /// it, so it is not mirrored onto `PodcastHandle`); set in `new()`.
-    pub(crate) picks_score_in_progress: Arc<std::sync::atomic::AtomicBool>,
+    // wiki_articles and wiki_search_results removed in Step 2 —
+    // they are now owned by `state.wiki` (WikiState).
+    // picks + picks_score_in_progress removed in Step 3 —
+    // they are now owned by `state.picks` (PicksState).
     pub(crate) agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
     // knowledge_search_results and knowledge_store removed in Step 1 —
     // they are now owned by `state.knowledge` (KnowledgeState).
@@ -95,18 +85,8 @@ pub struct PodcastHostOpHandler {
     pub(crate) transcripts: Arc<Mutex<HashMap<String, Vec<TranscriptEntry>>>>,
     pub(crate) dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
     pub(crate) voice_state: Arc<Mutex<VoiceState>>,
-    /// Categorizer cache shared with
-    /// `ffi::handle::PodcastHandle::categories`. Mutated by
-    /// `handle_categorize_*` and auto-triggered at the end of every
-    /// successful feed refresh. Phase-1 keyword tags are written
-    /// synchronously; the background LLM pass (M5.6) re-stamps entries.
-    pub(crate) categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
-    /// Re-entrancy guard for the background LLM categorization pass. Set
-    /// `true` when a pass is spawned, cleared when it finishes, so a feed
-    /// refresh fired while the previous LLM pass is still running doesn't
-    /// race a second one on the shared `categories` cache. Internal only —
-    /// not projected to `PodcastUpdate`.
-    pub(crate) categorization_in_progress: Arc<std::sync::atomic::AtomicBool>,
+    // categories + categorization_in_progress removed in Step 4 —
+    // they are now owned by `state.categories` (CategoriesState).
     pub(crate) rev: Arc<AtomicU64>,
     /// Per-podcast Nostr keypairs for NIP-F4 owned podcasts. Shared with
     /// `PodcastHandle.podcast_keys` so the snapshot reader sees the same
@@ -182,15 +162,11 @@ impl PodcastHostOpHandler {
         nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
         queue: Arc<Mutex<PlaybackQueue>>,
         download_queue: Arc<Mutex<DownloadQueue>>,
-        wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-        wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
-        picks: Arc<Mutex<Vec<AgentPickSummary>>>,
         agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
         clips: Arc<Mutex<Vec<ClipRecord>>>,
         transcripts: Arc<Mutex<HashMap<String, Vec<TranscriptEntry>>>>,
         dismissed_episode_ids: Arc<Mutex<HashSet<String>>>,
         voice_state: Arc<Mutex<VoiceState>>,
-        categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
         rev: Arc<AtomicU64>,
         podcast_keys: Arc<Mutex<PodcastKeyStore>>,
         publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
@@ -215,17 +191,11 @@ impl PodcastHostOpHandler {
             nostr_results,
             queue,
             download_queue,
-            wiki_articles,
-            wiki_search_results,
-            picks,
-            picks_score_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
-            categorization_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             agent_tasks,
             clips,
             transcripts,
             dismissed_episode_ids,
             voice_state,
-            categories,
             rev,
             podcast_keys,
             publish_state,
@@ -250,55 +220,17 @@ impl PodcastHostOpHandler {
 
     /// Re-run the categorizer after a successful refresh so newly-
     /// arrived episodes pick up labels automatically.
+    /// Step 4: delegates to CategoriesState (single canonical guard).
     pub(super) fn auto_categorize(&self) {
-        let _ = if let Some(signal) = self.snapshot_signal.clone() {
-            categorization_run_with_signal(
-                &self.store,
-                &self.categories,
-                &self.rev,
-                &self.runtime,
-                &self.categorization_in_progress,
-                signal,
-            )
-        } else {
-            categorization_run(
-                &self.store,
-                &self.categories,
-                &self.rev,
-                &self.runtime,
-                &self.categorization_in_progress,
-            )
-        };
+        let _ = self.state.categories.auto_run();
     }
 
     /// Re-run the AI picks pass after a successful refresh so newly-arrived
-    /// episodes are folded into a fresh personalized ranking automatically —
-    /// the same auto-trigger discipline as [`Self::auto_categorize`].
+    /// episodes are folded into a fresh personalized ranking automatically.
     ///
-    /// This goes through [`picks_handle_refresh`] (not the bare
-    /// `refresh_picks_into_slot` heuristic stamp) so the LLM scoring path
-    /// actually runs in normal operation: the heuristic stamps the rail
-    /// immediately and the background LLM pass upgrades it. The
-    /// `picks_score_in_progress` guard coalesces the repeated calls that a
-    /// `refresh_all` batch would otherwise produce into a single scoring pass.
+    /// Delegates to `PicksState::auto_refresh` (Step 3 migration) which owns
+    /// the single canonical `score_in_progress` guard and `infra.bump()`.
     pub(super) fn auto_refresh_picks(&self) {
-        let _ = if let Some(signal) = self.snapshot_signal.clone() {
-            picks_handle_refresh_with_signal(
-                &self.store,
-                &self.picks,
-                &self.rev,
-                &self.runtime,
-                &self.picks_score_in_progress,
-                signal,
-            )
-        } else {
-            picks_handle_refresh(
-                &self.store,
-                &self.picks,
-                &self.rev,
-                &self.runtime,
-                &self.picks_score_in_progress,
-            )
-        };
+        let _ = self.state.picks.auto_refresh();
     }
 }

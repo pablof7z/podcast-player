@@ -201,47 +201,8 @@ fn build_listening_profile(store: &PodcastStore) -> String {
     lines.join("\n")
 }
 
-/// Handler for `{"op":"refresh"}` on the `podcast.picks` namespace.
-///
-/// Stamps the heuristic immediately (so the UI is never empty while the LLM
-/// runs), then spawns a background task that scores candidates via Ollama and
-/// re-stamps the slot. Returns the `{"ok":true}` envelope every host-op
-/// handler returns.
-///
-/// `in_progress` guards against concurrent refresh passes: Refresh can be
-/// dispatched repeatedly (user pull-to-refresh, auto-trigger after feed sync),
-/// and two background passes would race on the materialized slot. A second
-/// dispatch while one is in flight returns immediately (the heuristic is still
-/// re-stamped so the rail stays current).
-pub fn handle_refresh(
-    store: &Arc<Mutex<PodcastStore>>,
-    picks_slot: &Arc<Mutex<Vec<AgentPickSummary>>>,
-    rev: &Arc<AtomicU64>,
-    runtime: &Arc<Runtime>,
-    in_progress: &Arc<AtomicBool>,
-) -> serde_json::Value {
-    handle_refresh_inner(store, picks_slot, rev, runtime, in_progress, None)
-}
-
-pub fn handle_refresh_with_signal(
-    store: &Arc<Mutex<PodcastStore>>,
-    picks_slot: &Arc<Mutex<Vec<AgentPickSummary>>>,
-    rev: &Arc<AtomicU64>,
-    runtime: &Arc<Runtime>,
-    in_progress: &Arc<AtomicBool>,
-    snapshot_signal: SnapshotUpdateSignal,
-) -> serde_json::Value {
-    handle_refresh_inner(
-        store,
-        picks_slot,
-        rev,
-        runtime,
-        in_progress,
-        Some(snapshot_signal),
-    )
-}
-
-fn handle_refresh_inner(
+/// Inner implementation shared with `PicksState::auto_refresh` (Step 3 migration).
+pub(crate) fn handle_refresh_inner(
     store: &Arc<Mutex<PodcastStore>>,
     picks_slot: &Arc<Mutex<Vec<AgentPickSummary>>>,
     rev: &Arc<AtomicU64>,
