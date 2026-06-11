@@ -26,7 +26,6 @@ use std::sync::{Arc, Mutex};
 use podcast_core::{Episode, Podcast};
 use url::Url;
 
-use crate::agent_handler::AgentChatHandler;
 use crate::download::DownloadQueue;
 use crate::ffi::audio_report::nmp_app_podcast_audio_report;
 use crate::ffi::handle::PodcastHandle;
@@ -62,12 +61,6 @@ fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
 /// actor thread): `build_podcast_update` reads its `configured_relays_handle`
 /// and `dispatch_audio` derefs it (a no-op send into an unstarted app).
 fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastHostOpHandler {
-    let agent_chat = AgentChatHandler::new_without_runtime(
-        Arc::new(Mutex::new(Vec::new())),
-        Arc::new(AtomicBool::new(false)),
-        Arc::new(AtomicBool::new(false)),
-        shared.rev.clone(),
-    );
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
@@ -76,6 +69,7 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
     ));
     // Steps 8-10: search_results, nostr_results, comments_cache,
     // viewed_comments_episode_id, social, agent_notes removed from constructor.
+    // Step 11: agent_chat removed — now owned by state.agent_chat.
     PodcastHostOpHandler::new(
         app,
         state,
@@ -91,7 +85,6 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
         shared.rev.clone(),
         Arc::new(Mutex::new(PodcastKeyStore::new())),
         Arc::new(Mutex::new(HashMap::new())),
-        agent_chat,
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(AtomicBool::new(false)),
@@ -140,9 +133,8 @@ fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<Podca
             shared.rev.clone(),
             None,
         ),
-        conversation: Arc::new(Mutex::new(Vec::new())),
-        agent_busy: Arc::new(AtomicBool::new(false)),
-        agent_touched: Arc::new(AtomicBool::new(false)),
+        // conversation, agent_busy, agent_touched removed in Step 11 —
+        // now owned by state.agent_chat.
         inbox_triage_cache: Arc::new(Mutex::new(HashMap::new())),
         inbox_triage_in_progress: Arc::new(AtomicBool::new(false)),
         feedback: feedback_runtime(shared.rev.clone()),

@@ -29,8 +29,11 @@
 //! Step 6:  Tasks substate — `TasksState` owns `tasks` slot + write-through
 //!          persistence via `store::agent_tasks`.
 //!
-//! Steps 7-N are defined in the design doc.
+//! Steps 7-N: see design doc.  Steps 8-10 done (Comments, Discovery, Social).
+//! Step 11: AgentChat substate — `conversation`/`agent_busy`/`agent_touched`
+//!          removed from both god-structs.
 
+pub mod agent_chat;
 pub mod categories;
 pub mod clips;
 pub mod comments;
@@ -146,6 +149,11 @@ impl Infra {
 /// Step 6: tasks substate added; `agent_tasks` field removed from both
 /// god-structs.
 ///
+/// Steps 8-10: comments, discovery, social substates added.
+///
+/// Step 11: agent_chat substate added; `conversation`/`agent_busy`/`agent_touched`
+/// removed from both god-structs.
+///
 /// `picks` and `categories` are wrapped in `Arc` so `FeedFetchCoordinator` can
 /// hold the SAME substate instance (canonical single guard — no duplicate Arcs).
 pub struct PodcastAppState {
@@ -188,6 +196,11 @@ pub struct PodcastAppState {
     /// `AgentNotesObserver` shares `agent_notes` off the actor thread via
     /// `.share()`.  Removes the dead-duplicate `agent_notes` handler Arc.
     pub social: social::SocialState,
+
+    /// AgentChat substate (Step 11).  Owns the conversation transcript +
+    /// `agent_busy` + `agent_touched` flags.  Wraps `AgentChatHandler` so
+    /// the LLM dispatch logic stays in one place.
+    pub agent_chat: agent_chat::AgentChatState,
 }
 
 impl PodcastAppState {
@@ -230,6 +243,7 @@ impl PodcastAppState {
             comments::CommentsState::new(infra.clone(), store.clone(), identity.clone());
         let discovery = discovery::DiscoveryState::new(infra.clone());
         let social = social::SocialState::new(infra.clone());
+        let agent_chat = agent_chat::AgentChatState::new(infra.clone(), store.clone());
         Self {
             infra,
             knowledge,
@@ -242,6 +256,7 @@ impl PodcastAppState {
             comments,
             discovery,
             social,
+            agent_chat,
         }
     }
 }

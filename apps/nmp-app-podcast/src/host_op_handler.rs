@@ -27,7 +27,6 @@ use tokio::runtime::Runtime;
 
 use nmp_ffi::NmpApp;
 
-use crate::agent_handler::AgentChatHandler;
 use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
 use crate::ffi::handle::OwnedPublishState;
@@ -99,7 +98,7 @@ pub struct PodcastHostOpHandler {
     /// Diagnostic publish state per podcast (last show event JSON +
     /// last-published timestamp). Shared with `PodcastHandle.publish_state`.
     pub(crate) publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
-    pub(crate) agent_chat: AgentChatHandler,
+    // agent_chat removed in Step 11 — now owned by `state.agent_chat` (AgentChatState).
     /// Shared Tokio runtime for async LLM / relay work. Seeded in
     /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
     /// Used by wiki synthesis, agent chat, inbox triage, and social graph fetches.
@@ -149,7 +148,6 @@ impl PodcastHostOpHandler {
         rev: Arc<AtomicU64>,
         podcast_keys: Arc<Mutex<PodcastKeyStore>>,
         publish_state: Arc<Mutex<HashMap<String, OwnedPublishState>>>,
-        agent_chat: AgentChatHandler,
         runtime: Arc<Runtime>,
         inbox_triage_cache: Arc<Mutex<HashMap<String, TriageResult>>>,
         inbox_triage_in_progress: Arc<std::sync::atomic::AtomicBool>,
@@ -169,7 +167,6 @@ impl PodcastHostOpHandler {
             rev,
             podcast_keys,
             publish_state,
-            agent_chat,
             runtime,
             inbox_triage_cache,
             inbox_triage_in_progress,

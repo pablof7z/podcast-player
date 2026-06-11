@@ -32,7 +32,6 @@ use super::actions::voice_module::VoiceActionModule;
 use super::actions::wiki_module::WikiActionModule;
 use super::handle::PodcastHandle;
 use super::projections::VoiceState;
-use crate::agent_handler::AgentChatHandler;
 use crate::download::DownloadQueue;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::player::PlayerActor;
@@ -103,9 +102,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let podcast_keys = Arc::new(Mutex::new(PodcastKeyStore::new()));
     let publish_state = Arc::new(Mutex::new(HashMap::new()));
     let voice_state = Arc::new(Mutex::new(VoiceState::default()));
-    let conversation = Arc::new(Mutex::new(Vec::new()));
-    let agent_busy = Arc::new(AtomicBool::new(false));
-    let agent_touched = Arc::new(AtomicBool::new(false));
+    // conversation, agent_busy, agent_touched removed in Step 11 —
+    // now seeded inside PodcastAppState::new (AgentChatState).
     // categories and categorization_in_progress removed in Step 4 —
     // they are now seeded inside PodcastAppState::new (CategoriesState).
     // comments_cache, viewed_comments_episode_id removed in Step 8 —
@@ -145,22 +143,16 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
                 move || snapshot_signal.bump()
             }));
 
-    let agent_chat = AgentChatHandler::new(
-        conversation.clone(),
-        agent_busy.clone(),
-        agent_touched.clone(),
-        rev.clone(),
-        runtime.clone(),
-        store.clone(),
-    )
-    .with_snapshot_signal(snapshot_signal.clone());
-
-    // Step 0-3 — composed state root.
+    // Steps 0-11 — composed state root.
     // `Infra` bundles rev + signal + runtime so substates can bump the
     // snapshot without receiving extra parameters.  `PodcastAppState::new`
     // seeds each substate's slots internally.  Both seams receive ONE Arc
-    // clone; the old per-slot Arcs (knowledge/wiki/picks slots removed in
-    // Steps 1-3) are no longer needed in register.rs for the migrated features.
+    // clone; the old per-slot Arcs (knowledge/wiki/picks/agent_chat slots
+    // removed in Steps 1-3/11) are no longer needed in register.rs.
+    //
+    // Step 11: AgentChatState::new reads `infra.signal` to wire the snapshot
+    // signal into its inner AgentChatHandler automatically — no manual wiring
+    // needed after construction.
     let app_state_infra = Infra {
         rev: rev.clone(),
         signal: Some(snapshot_signal.clone()),
@@ -250,8 +242,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     ]);
 
     // Steps 8-10: comments_cache, viewed_comments_episode_id, nostr_results,
-    // search_results, social, agent_notes removed from constructor — now owned
-    // by state.comments / state.discovery / state.social respectively.
+    // Steps 8-10: search_results, social, agent_notes removed from constructor.
+    // Step 11: agent_chat removed — now owned by state.agent_chat (AgentChatState).
     app_ref.set_host_op_handler(Arc::new(
         PodcastHostOpHandler::new(
             app,
@@ -266,7 +258,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             rev.clone(),
             podcast_keys.clone(),
             publish_state.clone(),
-            agent_chat,
             runtime.clone(),
             inbox_triage_cache.clone(),
             Arc::clone(&inbox_triage_in_progress),
@@ -371,9 +362,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         publish_state,
         voice_state,
         voice_conversation,
-        conversation,
-        agent_busy,
-        agent_touched,
+        // conversation, agent_busy, agent_touched removed in Step 11 —
+        // now owned by state.agent_chat (AgentChatState).
         inbox_triage_cache,
         inbox_triage_in_progress,
         feedback: feedback_runtime,

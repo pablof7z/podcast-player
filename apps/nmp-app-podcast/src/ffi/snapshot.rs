@@ -177,16 +177,19 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         (snap != VoiceState::default()).then_some(snap)
     });
 
-    let agent = handle.conversation.lock().ok().and_then(|c| {
-        if c.is_empty() && !handle.agent_touched.load(Ordering::Relaxed) {
+    // Step 11: agent chat now read from AgentChatState.
+    let agent = {
+        let messages = handle.state.agent_chat.conversation_snapshot();
+        let touched = handle.state.agent_chat.is_touched();
+        if messages.is_empty() && !touched {
             None
         } else {
             Some(AgentSnapshot {
-                messages: c.clone(),
-                is_busy: handle.agent_busy.load(Ordering::Relaxed),
+                messages,
+                is_busy: handle.state.agent_chat.is_busy(),
             })
         }
-    });
+    };
 
     // Kernel-owned widget projection (D4 single source of truth). Built from
     // the player state + the already-assembled library (per-show

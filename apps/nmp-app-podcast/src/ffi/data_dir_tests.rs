@@ -50,9 +50,8 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
             rev.clone(),
             None,
         ),
-        conversation: Arc::new(Mutex::new(Vec::new())),
-        agent_busy: Arc::new(AtomicBool::new(false)),
-        agent_touched: Arc::new(AtomicBool::new(false)),
+        // conversation, agent_busy, agent_touched removed in Step 11 —
+        // now owned by state.agent_chat.
         inbox_triage_cache: Arc::new(Mutex::new(HashMap::new())),
         inbox_triage_in_progress: Arc::new(AtomicBool::new(false)),
         feedback: nmp_feedback::FeedbackRuntime::new(

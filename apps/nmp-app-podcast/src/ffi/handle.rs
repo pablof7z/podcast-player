@@ -12,10 +12,7 @@ use nmp_ffi::NmpApp;
 use tokio::runtime::Runtime;
 
 use crate::download::DownloadQueue;
-use crate::ffi::projections::{
-    AgentMessageSummary,
-    VoiceState,
-};
+use crate::ffi::projections::VoiceState;
 use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
@@ -107,23 +104,8 @@ pub struct PodcastHandle {
     /// when a `VoiceReport::TranscriptFinal` arrives (the user finished
     /// speaking).
     pub(super) voice_conversation: crate::voice_conversation::VoiceConversationManager,
-    /// Active agent-chat transcript. Written by the
-    /// [`super::actions::agent_module::AgentActionModule`] handler on the
-    /// actor thread; read by `build_snapshot_payload` on the main thread.
-    /// In-memory only — feature #32 is a UI scaffold, real LLM integration
-    /// (and persistence) lands in a follow-up.
-    pub(super) conversation: Arc<Mutex<Vec<AgentMessageSummary>>>,
-    /// `true` while the kernel is composing an assistant reply (mirrored
-    /// into `AgentSnapshot::is_busy`). Stays `false` in the scaffold since
-    /// the canned reply is committed synchronously; the flag exists now so
-    /// the snapshot reader doesn't need rewiring once streaming lands.
-    pub(super) agent_busy: Arc<AtomicBool>,
-    /// `true` once the user has interacted with the agent in this kernel
-    /// lifetime (Send → flips to `true`, Clear keeps it `true`). Used by
-    /// the snapshot builder to keep `agent` `Some` after a clear so the UI
-    /// can tell "cleared" from "never touched". Reset only by a process
-    /// restart.
-    pub(super) agent_touched: Arc<AtomicBool>,
+    // conversation, agent_busy, agent_touched removed in Step 11 —
+    // now owned by `state.agent_chat` (AgentChatState).
     // categories removed in Step 4 — now owned by `state.categories` (CategoriesState).
     /// LLM triage cache: `episode_id -> TriageResult`.
     ///
