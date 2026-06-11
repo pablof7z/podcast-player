@@ -14,6 +14,7 @@
 //! * `merge_episodes`         -> `host_op_handler_helpers.rs`
 //! * Publish-action dispatch  -> `host_op_publish.rs`
 //! * Voice-action dispatch    -> `voice_handler.rs`
+//! * Namespace-envelope router -> `host_op_handler/router.rs`
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU64;
@@ -21,48 +22,21 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use nmp_core::substrate::HostOpHandler;
 use nmp_ffi::NmpApp;
 
 use crate::agent_handler::AgentChatHandler;
-use crate::ai_chapters::{handle_compile_chapters, handle_compile_chapters_with_signal};
 use crate::categorization::{
-    handle_categorize_episode, handle_run as categorization_run,
-    handle_run_with_signal as categorization_run_with_signal,
+    handle_run as categorization_run, handle_run_with_signal as categorization_run_with_signal,
 };
-use crate::clip_handler::{ClipHandler, ClipRecord};
+use crate::clip_handler::ClipRecord;
 use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
-use crate::ffi::actions::agent_module::AgentChatAction;
-use crate::ffi::actions::categorization_module::CategorizationAction;
-use crate::ffi::actions::chapters_module::ChaptersAction;
-use crate::ffi::actions::clip_module::ClipAction;
-use crate::ffi::actions::identity_module::IdentityAction;
-use crate::ffi::actions::inbox_module::InboxAction;
-use crate::ffi::actions::knowledge_module::KnowledgeAction;
-use crate::ffi::actions::memory_module::MemoryAction;
-use crate::ffi::actions::picks_module::PicksAction;
-use crate::ffi::actions::player_module::PlayerAction;
-use crate::ffi::actions::podcast_module::PodcastAction;
-use crate::ffi::actions::publish_module::PublishAction;
-use crate::ffi::actions::queue_module::QueueAction;
-use crate::ffi::actions::settings_module::SettingsAction;
-use crate::ffi::actions::siri_module::SiriAction;
-use crate::ffi::actions::social_module::SocialAction;
-use crate::ffi::actions::tasks_module::AgentTasksAction;
-use crate::ffi::actions::voice_module::VoiceAction;
-use crate::ffi::actions::wiki_module::WikiAction;
 use crate::ffi::handle::OwnedPublishState;
 use crate::ffi::projections::{
     AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary, KnowledgeSearchResult,
     NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState, WikiArticle,
 };
-use crate::host_op_handler_queue::handle_queue_action;
-use crate::host_op_publish::handle_publish_action;
-use crate::identity_handler::IdentityHandler;
-use crate::inbox_handler::{handle_inbox_action, handle_inbox_action_with_signal};
 use crate::inbox_llm::TriageResult;
-use crate::memory_handler;
 use crate::picks_handler::{
     handle_refresh as picks_handle_refresh,
     handle_refresh_with_signal as picks_handle_refresh_with_signal,
@@ -72,8 +46,6 @@ use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::{PodcastKeyStore, PodcastStore};
-use crate::voice_handler;
-use crate::wiki::{handle_wiki_action, handle_wiki_action_with_signal};
 
 mod dispatch;
 mod player_actions;
@@ -82,6 +54,7 @@ mod podcast_actions;
 mod podcast_actions_downloads;
 mod podcast_actions_feed;
 mod podcast_actions_refresh;
+mod router;
 mod settings_actions;
 mod siri_actions;
 mod social_actions;
@@ -325,167 +298,5 @@ impl PodcastHostOpHandler {
                 &self.picks_score_in_progress,
             )
         };
-    }
-}
-
-impl HostOpHandler for PodcastHostOpHandler {
-    fn handle(&self, action_json: &str, correlation_id: &str) -> serde_json::Value {
-        if let Ok(action) = serde_json::from_str::<IdentityAction>(action_json) {
-            return IdentityHandler::new(self.identity.clone(), self.rev.clone()).handle(action);
-        }
-        if let Ok(action) = serde_json::from_str::<CategorizationAction>(action_json) {
-            return match action {
-                CategorizationAction::Run => {
-                    if let Some(signal) = self.snapshot_signal.clone() {
-                        categorization_run_with_signal(
-                            &self.store,
-                            &self.categories,
-                            &self.rev,
-                            &self.runtime,
-                            &self.categorization_in_progress,
-                            signal,
-                        )
-                    } else {
-                        categorization_run(
-                            &self.store,
-                            &self.categories,
-                            &self.rev,
-                            &self.runtime,
-                            &self.categorization_in_progress,
-                        )
-                    }
-                }
-                CategorizationAction::CategorizeEpisode { episode_id } => {
-                    handle_categorize_episode(&self.store, &self.categories, &self.rev, episode_id)
-                }
-            };
-        }
-        if let Ok(action) = serde_json::from_str::<PodcastAction>(action_json) {
-            return self.handle_podcast_action(action, correlation_id);
-        }
-        if let Ok(action) = serde_json::from_str::<PublishAction>(action_json) {
-            return handle_publish_action(self, action);
-        }
-        if let Ok(action) = serde_json::from_str::<PlayerAction>(action_json) {
-            return self.handle_player_action(action, correlation_id);
-        }
-        if let Ok(action) = serde_json::from_str::<InboxAction>(action_json) {
-            return if let Some(signal) = self.snapshot_signal.clone() {
-                handle_inbox_action_with_signal(
-                    action,
-                    &self.store,
-                    &self.dismissed_episode_ids,
-                    &self.rev,
-                    &self.inbox_triage_cache,
-                    &self.runtime,
-                    &self.inbox_triage_in_progress,
-                    signal,
-                )
-            } else {
-                handle_inbox_action(
-                    action,
-                    &self.store,
-                    &self.dismissed_episode_ids,
-                    &self.rev,
-                    &self.inbox_triage_cache,
-                    &self.runtime,
-                    &self.inbox_triage_in_progress,
-                )
-            };
-        }
-        if let Ok(action) = serde_json::from_str::<QueueAction>(action_json) {
-            return handle_queue_action(&self.queue, &self.store, &self.rev, action);
-        }
-        if let Ok(action) = serde_json::from_str::<ChaptersAction>(action_json) {
-            return match action {
-                ChaptersAction::Compile { episode_id } => {
-                    if let Some(signal) = self.snapshot_signal.clone() {
-                        handle_compile_chapters_with_signal(
-                            &self.store,
-                            &self.rev,
-                            &self.runtime,
-                            episode_id,
-                            signal,
-                        )
-                    } else {
-                        handle_compile_chapters(&self.store, &self.rev, &self.runtime, episode_id)
-                    }
-                }
-            };
-        }
-        if let Ok(action) = serde_json::from_str::<WikiAction>(action_json) {
-            return if let Some(signal) = self.snapshot_signal.clone() {
-                handle_wiki_action_with_signal(
-                    &self.wiki_articles,
-                    &self.wiki_search_results,
-                    &self.store,
-                    &self.knowledge_store,
-                    &self.rev,
-                    &self.runtime,
-                    action,
-                    signal,
-                )
-            } else {
-                handle_wiki_action(
-                    &self.wiki_articles,
-                    &self.wiki_search_results,
-                    &self.store,
-                    &self.knowledge_store,
-                    &self.rev,
-                    &self.runtime,
-                    action,
-                )
-            };
-        }
-        if let Ok(PicksAction::Refresh) = serde_json::from_str::<PicksAction>(action_json) {
-            let p = &self.picks_score_in_progress;
-            return if let Some(signal) = self.snapshot_signal.clone() {
-                picks_handle_refresh_with_signal(
-                    &self.store,
-                    &self.picks,
-                    &self.rev,
-                    &self.runtime,
-                    p,
-                    signal,
-                )
-            } else {
-                picks_handle_refresh(&self.store, &self.picks, &self.rev, &self.runtime, p)
-            };
-        }
-        if let Ok(action) = serde_json::from_str::<AgentTasksAction>(action_json) {
-            return self.handle_task_action(action);
-        }
-        if let Ok(a) = serde_json::from_str::<KnowledgeAction>(action_json) {
-            return crate::knowledge::handle_knowledge_action(
-                a,
-                &self.store,
-                &self.knowledge_search_results,
-                &self.knowledge_store,
-                &self.rev,
-            );
-        }
-        if let Ok(action) = serde_json::from_str::<MemoryAction>(action_json) {
-            return memory_handler::handle(action, &self.store, &self.rev);
-        }
-        if let Ok(action) = serde_json::from_str::<ClipAction>(action_json) {
-            return ClipHandler::new(self.clips.clone(), self.store.clone(), self.rev.clone())
-                .handle(action);
-        }
-        if let Ok(action) = serde_json::from_str::<VoiceAction>(action_json) {
-            return voice_handler::handle(self, action, correlation_id);
-        }
-        if let Ok(action) = serde_json::from_str::<AgentChatAction>(action_json) {
-            return self.agent_chat.handle(action);
-        }
-        if let Ok(action) = serde_json::from_str::<SettingsAction>(action_json) {
-            return self.handle_settings_action(action);
-        }
-        if let Ok(action) = serde_json::from_str::<SiriAction>(action_json) {
-            return self.handle_siri_action(action, correlation_id);
-        }
-        if let Ok(action) = serde_json::from_str::<SocialAction>(action_json) {
-            return self.handle_social_action(action, correlation_id);
-        }
-        serde_json::json!({"ok": false, "error": format!("unknown action: {action_json}")})
     }
 }

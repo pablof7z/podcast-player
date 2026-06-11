@@ -65,8 +65,9 @@ fn execute_emits_dispatch_host_op() {
     };
     assert_eq!(correlation_id, "corr-1");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "set_auto_skip_ads");
-    assert_eq!(v["enabled"], false);
+    assert_eq!(v["ns"], "podcast.settings");
+    assert_eq!(v["action"]["op"], "set_auto_skip_ads");
+    assert_eq!(v["action"]["enabled"], false);
 }
 
 #[test]
@@ -140,7 +141,8 @@ fn execute_add_relay_emits_add_relay_then_dispatch_host_op() {
     };
     assert_eq!(correlation_id, "corr-2");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "add_relay");
+    assert_eq!(v["ns"], "podcast.settings");
+    assert_eq!(v["action"]["op"], "add_relay");
 }
 
 /// `set_relay_role` reuses `AddRelay` (upsert on URL) since there is no
@@ -167,7 +169,8 @@ fn execute_set_relay_role_emits_add_relay_then_dispatch_host_op() {
         panic!("expected DispatchHostOp second, got {:?}", commands[1]);
     };
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "set_relay_role");
+    assert_eq!(v["ns"], "podcast.settings");
+    assert_eq!(v["action"]["op"], "set_relay_role");
 }
 
 #[test]
@@ -190,5 +193,6 @@ fn execute_remove_relay_emits_remove_relay_then_dispatch_host_op() {
         panic!("expected DispatchHostOp second, got {:?}", commands[1]);
     };
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "remove_relay");
+    assert_eq!(v["ns"], "podcast.settings");
+    assert_eq!(v["action"]["op"], "remove_relay");
 }

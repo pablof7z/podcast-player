@@ -114,6 +114,25 @@ pub use wiki_module::{WikiAction, WikiActionModule};
 
 use serde::{Deserialize, Serialize};
 
+/// Wrap `action` in a namespaced envelope and forward it as a
+/// `DispatchHostOp`. The host-op handler peels `ns` to route to the
+/// correct handler arm, eliminating the try-parse cascade.
+///
+/// Envelope shape: `{"ns":"<namespace>","action":<bare action JSON>}`.
+pub(crate) fn dispatch_host_op(
+    ns: &str,
+    action: &impl Serialize,
+    correlation_id: &str,
+    send: &dyn Fn(nmp_core::ActorCommand),
+) -> Result<(), String> {
+    let envelope = serde_json::json!({ "ns": ns, "action": action });
+    send(nmp_core::ActorCommand::DispatchHostOp {
+        action_json: envelope.to_string(),
+        correlation_id: correlation_id.to_owned(),
+    });
+    Ok(())
+}
+
 pub use voice::{
     SetVoiceAction, SpeakAction, StopVoiceAction, ACTION_VOICE_SET_VOICE, ACTION_VOICE_SPEAK,
     ACTION_VOICE_STOP,

@@ -40,7 +40,8 @@ fn execute_emits_dispatch_host_op() {
     };
     assert_eq!(correlation_id, "corr-1");
     let v: serde_json::Value = serde_json::from_str(action_json).expect("json");
-    assert_eq!(v["op"], "refresh");
+    assert_eq!(v["ns"], "podcast.picks");
+    assert_eq!(v["action"]["op"], "refresh");
 }
 #[test]
 fn compute_picks_empty_input_returns_empty() {
