@@ -35,14 +35,10 @@ use crate::download::DownloadQueue;
 use crate::feed_fetch::FeedFetchCoordinator;
 use crate::ffi::handle::OwnedPublishState;
 use crate::ffi::projections::{
-    AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
+    AgentNoteSummary, AgentTaskSummary, CommentSummary,
     NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState,
 };
 use crate::inbox_llm::TriageResult;
-use crate::picks_handler::{
-    handle_refresh as picks_handle_refresh,
-    handle_refresh_with_signal as picks_handle_refresh_with_signal,
-};
 use crate::player::PlayerActor;
 use crate::queue::PlaybackQueue;
 use crate::snapshot_signal::SnapshotUpdateSignal;
@@ -83,11 +79,8 @@ pub struct PodcastHostOpHandler {
     pub(crate) download_queue: Arc<Mutex<DownloadQueue>>,
     // wiki_articles and wiki_search_results removed in Step 2 —
     // they are now owned by `state.wiki` (WikiState).
-    pub(crate) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
-    /// Re-entrancy guard for background LLM picks scoring (M5.6); see
-    /// `picks_handler::handle_refresh`. Handler-only (the snapshot never reads
-    /// it, so it is not mirrored onto `PodcastHandle`); set in `new()`.
-    pub(crate) picks_score_in_progress: Arc<std::sync::atomic::AtomicBool>,
+    // picks + picks_score_in_progress removed in Step 3 —
+    // they are now owned by `state.picks` (PicksState).
     pub(crate) agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
     // knowledge_search_results and knowledge_store removed in Step 1 —
     // they are now owned by `state.knowledge` (KnowledgeState).
@@ -182,7 +175,6 @@ impl PodcastHostOpHandler {
         nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
         queue: Arc<Mutex<PlaybackQueue>>,
         download_queue: Arc<Mutex<DownloadQueue>>,
-        picks: Arc<Mutex<Vec<AgentPickSummary>>>,
         agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
         clips: Arc<Mutex<Vec<ClipRecord>>>,
         transcripts: Arc<Mutex<HashMap<String, Vec<TranscriptEntry>>>>,
@@ -213,8 +205,6 @@ impl PodcastHostOpHandler {
             nostr_results,
             queue,
             download_queue,
-            picks,
-            picks_score_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             categorization_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             agent_tasks,
             clips,
@@ -268,33 +258,11 @@ impl PodcastHostOpHandler {
     }
 
     /// Re-run the AI picks pass after a successful refresh so newly-arrived
-    /// episodes are folded into a fresh personalized ranking automatically —
-    /// the same auto-trigger discipline as [`Self::auto_categorize`].
+    /// episodes are folded into a fresh personalized ranking automatically.
     ///
-    /// This goes through [`picks_handle_refresh`] (not the bare
-    /// `refresh_picks_into_slot` heuristic stamp) so the LLM scoring path
-    /// actually runs in normal operation: the heuristic stamps the rail
-    /// immediately and the background LLM pass upgrades it. The
-    /// `picks_score_in_progress` guard coalesces the repeated calls that a
-    /// `refresh_all` batch would otherwise produce into a single scoring pass.
+    /// Delegates to `PicksState::auto_refresh` (Step 3 migration) which owns
+    /// the single canonical `score_in_progress` guard and `infra.bump()`.
     pub(super) fn auto_refresh_picks(&self) {
-        let _ = if let Some(signal) = self.snapshot_signal.clone() {
-            picks_handle_refresh_with_signal(
-                &self.store,
-                &self.picks,
-                &self.rev,
-                &self.runtime,
-                &self.picks_score_in_progress,
-                signal,
-            )
-        } else {
-            picks_handle_refresh(
-                &self.store,
-                &self.picks,
-                &self.rev,
-                &self.runtime,
-                &self.picks_score_in_progress,
-            )
-        };
+        let _ = self.state.picks.auto_refresh();
     }
 }

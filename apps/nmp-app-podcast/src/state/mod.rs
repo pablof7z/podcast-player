@@ -18,9 +18,13 @@
 //! Step 2: Wiki substate — `WikiState` owns `articles` + `search_results`,
 //! shares `KnowledgeState.index` Arc for RAG context.
 //!
-//! Steps 3-N are defined in the design doc.
+//! Step 3: Picks substate — `PicksState` owns `picks` + `score_in_progress`;
+//! the duplicate guard on `FeedFetchCoordinator` is consolidated here.
+//!
+//! Steps 4-N are defined in the design doc.
 
 pub mod knowledge;
+pub mod picks;
 pub mod slot;
 pub mod wiki;
 
@@ -117,8 +121,7 @@ impl Infra {
 /// added in Steps 2-N per the design doc.  At each step the corresponding
 /// god-struct fields are REMOVED in the same PR (no overlap window).
 ///
-/// Step 2: `wiki` substate added; `wiki_articles` + `wiki_search_results`
-/// removed from both god-structs.
+/// Steps 2-3: wiki + picks substates added; respective god-struct fields removed.
 pub struct PodcastAppState {
     /// Cross-cutting infrastructure (rev + signal + runtime).
     pub infra: Infra,
@@ -128,6 +131,9 @@ pub struct PodcastAppState {
 
     /// Wiki substate (Step 2).  Shares `knowledge.index` Arc for RAG context.
     pub wiki: wiki::WikiState,
+
+    /// Picks substate (Step 3).  Owns picks slot + the single scoring guard.
+    pub picks: picks::PicksState,
 }
 
 impl PodcastAppState {
@@ -144,7 +150,8 @@ impl PodcastAppState {
         let knowledge = knowledge::KnowledgeState::new(infra.clone(), store.clone());
         // Wiki shares the same KnowledgeStore Arc (Step 2 constraint).
         let knowledge_index = knowledge.index_arc();
-        let wiki = wiki::WikiState::new(infra.clone(), store, knowledge_index);
-        Self { infra, knowledge, wiki }
+        let wiki = wiki::WikiState::new(infra.clone(), store.clone(), knowledge_index);
+        let picks = picks::PicksState::new(infra.clone(), store);
+        Self { infra, knowledge, wiki, picks }
     }
 }

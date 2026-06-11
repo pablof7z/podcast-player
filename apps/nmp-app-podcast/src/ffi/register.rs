@@ -95,7 +95,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let download_queue = Arc::new(Mutex::new(DownloadQueue::new()));
     // wiki_articles and wiki_search_results removed in Step 2 —
     // they are now seeded inside PodcastAppState::new (WikiState).
-    let picks = Arc::new(Mutex::new(Vec::new()));
+    // picks and picks_score_in_progress removed in Step 3 —
+    // they are now seeded inside PodcastAppState::new (PicksState).
     // Seed the tasks slot with defaults so the iOS UI has rows to render
     // before the user has scheduled anything (see
     // `tasks_handler::default_seed`).
@@ -149,22 +150,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
                 move || snapshot_signal.bump()
             }));
 
-    // Optimistic-subscribe async feed-fetch coordinator. Shared (one `Arc`)
-    // between the host-op handler (registers a pending fetch + dispatches the
-    // async HTTP command on the actor thread) and the handle (whose HTTP-report
-    // FFI applies the parsed result from the platform transport thread). Holds
-    // the same shared `store` / `rev` / `categories` / `picks` / `runtime` Arcs
-    // the rest of the kernel uses, plus the snapshot signal so it can re-project
-    // from off the actor thread.
-    let feed_fetch = Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
-        store.clone(),
-        rev.clone(),
-        Some(snapshot_signal.clone()),
-        categories.clone(),
-        picks.clone(),
-        runtime.clone(),
-    ));
-
     let agent_chat = AgentChatHandler::new(
         conversation.clone(),
         agent_busy.clone(),
@@ -175,18 +160,37 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     )
     .with_snapshot_signal(snapshot_signal.clone());
 
-    // Step 0/1 — composed state root.
+    // Step 0-3 — composed state root.
     // `Infra` bundles rev + signal + runtime so substates can bump the
     // snapshot without receiving extra parameters.  `PodcastAppState::new`
     // seeds each substate's slots internally.  Both seams receive ONE Arc
-    // clone; the old per-slot Arcs (knowledge slots removed in Step 1) are
-    // no longer needed in register.rs for the migrated features.
+    // clone; the old per-slot Arcs (knowledge/wiki/picks slots removed in
+    // Steps 1-3) are no longer needed in register.rs for the migrated features.
     let app_state_infra = Infra {
         rev: rev.clone(),
         signal: Some(snapshot_signal.clone()),
         runtime: runtime.clone(),
     };
     let app_state = Arc::new(PodcastAppState::new(app_state_infra, store.clone()));
+
+    // Optimistic-subscribe async feed-fetch coordinator. Shared (one `Arc`)
+    // between the host-op handler (registers a pending fetch + dispatches the
+    // async HTTP command on the actor thread) and the handle (whose HTTP-report
+    // FFI applies the parsed result from the platform transport thread). Holds
+    // the same shared `store` / `rev` / `categories` / `runtime` Arcs
+    // the rest of the kernel uses, plus the snapshot signal so it can re-project
+    // from off the actor thread.
+    // Step 3: picks Arc is now shared from `app_state.picks` so FeedFetchCoordinator
+    // uses the SAME slot as the PicksState substate (single guard consolidation).
+    let feed_fetch = Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
+        store.clone(),
+        rev.clone(),
+        Some(snapshot_signal.clone()),
+        categories.clone(),
+        app_state.picks.picks.share(),
+        app_state.picks.score_in_progress.clone(),
+        runtime.clone(),
+    ));
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
     //
@@ -257,7 +261,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             nostr_results.clone(),
             queue.clone(),
             download_queue.clone(),
-            picks.clone(),
             agent_tasks.clone(),
             clips.clone(),
             transcripts.clone(),
@@ -359,7 +362,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
         queue,
         download_queue,
-        picks,
         agent_tasks,
         clips,
         transcripts,

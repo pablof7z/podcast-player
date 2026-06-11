@@ -39,6 +39,7 @@ fn coordinator_over(store: Arc<Mutex<PodcastStore>>) -> FeedFetchCoordinator {
         None, // no snapshot signal: skip the spawned categorize / picks passes
         Arc::new(Mutex::new(HashMap::new())),
         Arc::new(Mutex::new(Vec::new())),
+        Arc::new(AtomicBool::new(false)), // picks_score_in_progress (Step 3: shared with PicksState)
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
     )
 }

@@ -13,7 +13,7 @@ use tokio::runtime::Runtime;
 use crate::clip_handler::ClipRecord;
 use crate::download::DownloadQueue;
 use crate::ffi::projections::{
-    AgentMessageSummary, AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
+    AgentMessageSummary, AgentNoteSummary, AgentTaskSummary, CommentSummary,
     NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry,
     VoiceState,
 };
@@ -79,11 +79,7 @@ pub struct PodcastHandle {
     pub(super) download_queue: Arc<Mutex<DownloadQueue>>,
     // wiki_articles and wiki_search_results removed in Step 2 —
     // they are now owned by `state.wiki` (WikiState).
-    /// AI agent picks, recomputed heuristically after every successful feed
-    /// refresh and on explicit `podcast.picks.refresh` dispatches. Read by
-    /// `build_snapshot_payload` on each tick. See `picks_handler` for the
-    /// compute path.
-    pub(super) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
+    // picks removed in Step 3 — now owned by `state.picks` (PicksState).
     /// Agent-scheduled tasks. Mutated by `podcast.tasks.*` action ops
     /// (see `tasks_handler.rs`); read by `build_snapshot_payload`.
     /// Seeded with defaults in `register.rs` so the iOS UI has rows to render

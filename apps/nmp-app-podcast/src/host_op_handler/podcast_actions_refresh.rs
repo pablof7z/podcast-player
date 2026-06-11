@@ -256,7 +256,7 @@ impl PodcastHostOpHandler {
                     let _ = self.dispatch_notification(&cmd, correlation_id);
                 }
                 self.dispatch_auto_downloads(&to_auto_download, correlation_id);
-                refresh_picks_into_slot(&self.store, &self.picks, &self.rev);
+                refresh_picks_into_slot(&self.store, &self.state.picks.picks.share(), &self.rev);
                 serde_json::json!({"ok": true})
             }
             Ok(FeedResult::NotModified { .. }) => {

@@ -57,10 +57,6 @@ use crate::host_op_publish::handle_publish_action;
 use crate::identity_handler::IdentityHandler;
 use crate::inbox_handler::{handle_inbox_action, handle_inbox_action_with_signal};
 use crate::memory_handler;
-use crate::picks_handler::{
-    handle_refresh as picks_handle_refresh,
-    handle_refresh_with_signal as picks_handle_refresh_with_signal,
-};
 use crate::voice_handler;
 
 /// Namespaced envelope produced by every `ActionModule::execute` body via
@@ -201,22 +197,7 @@ impl HostOpHandler for PodcastHostOpHandler {
                 }
             }
             "podcast.wiki" => self.state.wiki.handle(parse!(WikiAction)),
-            "podcast.picks" => {
-                let _action = parse!(PicksAction);
-                let p = &self.picks_score_in_progress;
-                if let Some(signal) = self.snapshot_signal.clone() {
-                    picks_handle_refresh_with_signal(
-                        &self.store,
-                        &self.picks,
-                        &self.rev,
-                        &self.runtime,
-                        p,
-                        signal,
-                    )
-                } else {
-                    picks_handle_refresh(&self.store, &self.picks, &self.rev, &self.runtime, p)
-                }
-            }
+            "podcast.picks" => self.state.picks.handle(parse!(PicksAction)),
             "podcast.tasks" => self.handle_task_action(parse!(AgentTasksAction)),
             "podcast.knowledge" => self.state.knowledge.handle(parse!(KnowledgeAction)),
             "podcast.memory" => {

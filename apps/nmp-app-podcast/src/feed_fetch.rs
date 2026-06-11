@@ -69,6 +69,10 @@ pub(crate) struct PendingFeedFetch {
 /// [`crate::ffi::handle::PodcastHandle`] (whose HTTP-report FFI applies the
 /// result from the platform transport thread). The two share the same `store`
 /// / `rev` / `snapshot_signal` `Arc`s the rest of the kernel uses.
+///
+/// Step 3: `picks` and `picks_score_in_progress` are now shared from
+/// `PicksState` (canonical single guard — eliminates the duplicate that caused
+/// a subscribe completion and a manual refresh to race independent guards).
 pub(crate) struct FeedFetchCoordinator {
     pending: Mutex<HashMap<String, PendingFeedFetch>>,
     store: Arc<Mutex<PodcastStore>>,
@@ -77,23 +81,29 @@ pub(crate) struct FeedFetchCoordinator {
     categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
     categorization_in_progress: Arc<AtomicBool>,
     picks: Arc<Mutex<Vec<AgentPickSummary>>>,
+    /// Shared with `PicksState::score_in_progress` — single canonical guard so
+    /// a subscribe completion and a manual refresh cannot spawn concurrent passes.
     picks_score_in_progress: Arc<AtomicBool>,
     runtime: Arc<Runtime>,
 }
 
 impl FeedFetchCoordinator {
-    /// Build a coordinator over the kernel's shared state. The two
-    /// re-entrancy guards are private to this coordinator — a subscribe
-    /// continuation and a concurrent feed refresh may each spawn a
-    /// categorization / picks pass, but each pass locks `store` + `categories`
-    /// / `picks` serially, so independent guards are safe (they only coalesce
-    /// repeated spawns from the *same* source).
+    /// Build a coordinator over the kernel's shared state.
+    ///
+    /// `picks` and `picks_score_in_progress` must be the SAME `Arc`s that
+    /// `PicksState` owns — they are the canonical single guard.  Pass
+    /// `app_state.picks.picks.share()` and
+    /// `app_state.picks.score_in_progress.clone()` from `register.rs`.
+    ///
+    /// `categorization_in_progress` remains private (not yet promoted to a
+    /// `CategoriesState` substate — that is Step 4).
     pub(crate) fn new(
         store: Arc<Mutex<PodcastStore>>,
         rev: Arc<AtomicU64>,
         snapshot_signal: Option<SnapshotUpdateSignal>,
         categories: Arc<Mutex<HashMap<String, Vec<String>>>>,
         picks: Arc<Mutex<Vec<AgentPickSummary>>>,
+        picks_score_in_progress: Arc<AtomicBool>,
         runtime: Arc<Runtime>,
     ) -> Self {
         Self {
@@ -104,7 +114,7 @@ impl FeedFetchCoordinator {
             categories,
             categorization_in_progress: Arc::new(AtomicBool::new(false)),
             picks,
-            picks_score_in_progress: Arc::new(AtomicBool::new(false)),
+            picks_score_in_progress,
             runtime,
         }
     }
@@ -216,6 +226,7 @@ impl FeedFetchCoordinator {
             None,
             Arc::new(Mutex::new(HashMap::new())),
             Arc::new(Mutex::new(Vec::new())),
+            Arc::new(AtomicBool::new(false)),
             Arc::new(tokio::runtime::Runtime::new().expect("tokio runtime")),
         ))
     }

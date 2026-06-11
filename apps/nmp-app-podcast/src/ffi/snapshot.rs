@@ -117,12 +117,8 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     // Step 2: wiki slots are now owned by `state.wiki`.
     let wiki_articles = handle.state.wiki.articles_snapshot();
     let wiki_search_results = handle.state.wiki.search_results_snapshot();
-    let picks = handle
-        .picks
-        .lock()
-        .ok()
-        .map(|p| p.clone())
-        .unwrap_or_default();
+    // Step 3: picks slot is now owned by `state.picks`.
+    let picks = handle.state.picks.picks_snapshot();
     let agent_tasks = handle
         .agent_tasks
         .lock()
