@@ -93,8 +93,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let nostr_results = Arc::new(Mutex::new(Vec::new()));
     let queue = Arc::new(Mutex::new(PlaybackQueue::new()));
     let download_queue = Arc::new(Mutex::new(DownloadQueue::new()));
-    let wiki_articles = Arc::new(Mutex::new(Vec::new()));
-    let wiki_search_results = Arc::new(Mutex::new(Vec::new()));
+    // wiki_articles and wiki_search_results removed in Step 2 —
+    // they are now seeded inside PodcastAppState::new (WikiState).
     let picks = Arc::new(Mutex::new(Vec::new()));
     // Seed the tasks slot with defaults so the iOS UI has rows to render
     // before the user has scheduled anything (see
@@ -257,8 +257,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             nostr_results.clone(),
             queue.clone(),
             download_queue.clone(),
-            wiki_articles.clone(),
-            wiki_search_results.clone(),
             picks.clone(),
             agent_tasks.clone(),
             clips.clone(),
@@ -361,8 +359,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
         queue,
         download_queue,
-        wiki_articles,
-        wiki_search_results,
         picks,
         agent_tasks,
         clips,

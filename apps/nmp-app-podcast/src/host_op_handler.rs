@@ -36,7 +36,7 @@ use crate::feed_fetch::FeedFetchCoordinator;
 use crate::ffi::handle::OwnedPublishState;
 use crate::ffi::projections::{
     AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
-    NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState, WikiArticle,
+    NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry, VoiceState,
 };
 use crate::inbox_llm::TriageResult;
 use crate::picks_handler::{
@@ -81,8 +81,8 @@ pub struct PodcastHostOpHandler {
     pub(crate) nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
     pub(crate) queue: Arc<Mutex<PlaybackQueue>>,
     pub(crate) download_queue: Arc<Mutex<DownloadQueue>>,
-    pub(crate) wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-    pub(crate) wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
+    // wiki_articles and wiki_search_results removed in Step 2 —
+    // they are now owned by `state.wiki` (WikiState).
     pub(crate) picks: Arc<Mutex<Vec<AgentPickSummary>>>,
     /// Re-entrancy guard for background LLM picks scoring (M5.6); see
     /// `picks_handler::handle_refresh`. Handler-only (the snapshot never reads
@@ -182,8 +182,6 @@ impl PodcastHostOpHandler {
         nostr_results: Arc<Mutex<Vec<NostrShowSummary>>>,
         queue: Arc<Mutex<PlaybackQueue>>,
         download_queue: Arc<Mutex<DownloadQueue>>,
-        wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-        wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
         picks: Arc<Mutex<Vec<AgentPickSummary>>>,
         agent_tasks: Arc<Mutex<Vec<AgentTaskSummary>>>,
         clips: Arc<Mutex<Vec<ClipRecord>>>,
@@ -215,8 +213,6 @@ impl PodcastHostOpHandler {
             nostr_results,
             queue,
             download_queue,
-            wiki_articles,
-            wiki_search_results,
             picks,
             picks_score_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             categorization_in_progress: Arc::new(std::sync::atomic::AtomicBool::new(false)),

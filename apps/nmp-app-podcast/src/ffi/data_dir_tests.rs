@@ -34,8 +34,6 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
         queue: Arc::new(Mutex::new(PlaybackQueue::new())),
         download_queue: Arc::new(Mutex::new(DownloadQueue::new())),
-        wiki_articles: Arc::new(Mutex::new(Vec::new())),
-        wiki_search_results: Arc::new(Mutex::new(Vec::new())),
         picks: Arc::new(Mutex::new(Vec::<AgentPickSummary>::new())),
         agent_tasks: Arc::new(Mutex::new(Vec::new())),
         clips: Arc::new(Mutex::new(Vec::new())),

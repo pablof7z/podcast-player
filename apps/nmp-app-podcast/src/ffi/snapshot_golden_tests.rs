@@ -120,8 +120,6 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
         queue: Arc::new(Mutex::new(PlaybackQueue::new())),
         download_queue: Arc::new(Mutex::new(DownloadQueue::new())),
-        wiki_articles: Arc::new(Mutex::new(Vec::new())),
-        wiki_search_results: Arc::new(Mutex::new(Vec::new())),
         picks: Arc::new(Mutex::new(Vec::new())),
         agent_tasks: Arc::new(Mutex::new(Vec::new())),
         clips: Arc::new(Mutex::new(Vec::new())),

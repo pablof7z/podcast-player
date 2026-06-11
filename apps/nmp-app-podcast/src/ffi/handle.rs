@@ -15,7 +15,7 @@ use crate::download::DownloadQueue;
 use crate::ffi::projections::{
     AgentMessageSummary, AgentNoteSummary, AgentPickSummary, AgentTaskSummary, CommentSummary,
     NostrShowSummary, PodcastSummary, SocialSnapshot, TranscriptEntry,
-    VoiceState, WikiArticle,
+    VoiceState,
 };
 use crate::inbox_llm::TriageResult;
 use crate::player::PlayerActor;
@@ -77,16 +77,8 @@ pub struct PodcastHandle {
     /// action handler and the download-report FFI entry point; read by
     /// `build_snapshot_payload` to populate `PodcastUpdate.downloads`.
     pub(super) download_queue: Arc<Mutex<DownloadQueue>>,
-    /// All AI-wiki articles the user has generated. Written by the
-    /// `podcast.wiki.{generate,delete}` ops on the actor thread; read by
-    /// `build_snapshot_payload` on the main thread.
-    pub(super) wiki_articles: Arc<Mutex<Vec<WikiArticle>>>,
-    /// Transient result of the most recent `podcast.wiki.search`. Written
-    /// by the search op; cleared by a subsequent search that returns
-    /// nothing (or by `podcast.wiki.delete` of a referenced article — the
-    /// scaffold only mutates `wiki_articles` so search results may go
-    /// stale; that's tracked as a follow-up alongside real LLM synthesis).
-    pub(super) wiki_search_results: Arc<Mutex<Vec<WikiArticle>>>,
+    // wiki_articles and wiki_search_results removed in Step 2 —
+    // they are now owned by `state.wiki` (WikiState).
     /// AI agent picks, recomputed heuristically after every successful feed
     /// refresh and on explicit `podcast.picks.refresh` dispatches. Read by
     /// `build_snapshot_payload` on each tick. See `picks_handler` for the

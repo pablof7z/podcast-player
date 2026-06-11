@@ -62,7 +62,6 @@ use crate::picks_handler::{
     handle_refresh_with_signal as picks_handle_refresh_with_signal,
 };
 use crate::voice_handler;
-use crate::wiki::{handle_wiki_action, handle_wiki_action_with_signal};
 
 /// Namespaced envelope produced by every `ActionModule::execute` body via
 /// [`crate::ffi::actions::dispatch_host_op`].
@@ -201,34 +200,7 @@ impl HostOpHandler for PodcastHostOpHandler {
                     }
                 }
             }
-            "podcast.wiki" => {
-                let action = parse!(WikiAction);
-                // Wiki reads the shared knowledge index (Step 2 will move wiki
-                // fully onto KnowledgeState; for now bridge via index_arc()).
-                let knowledge_store = self.state.knowledge.index_arc();
-                if let Some(signal) = self.snapshot_signal.clone() {
-                    handle_wiki_action_with_signal(
-                        &self.wiki_articles,
-                        &self.wiki_search_results,
-                        &self.store,
-                        &knowledge_store,
-                        &self.rev,
-                        &self.runtime,
-                        action,
-                        signal,
-                    )
-                } else {
-                    handle_wiki_action(
-                        &self.wiki_articles,
-                        &self.wiki_search_results,
-                        &self.store,
-                        &knowledge_store,
-                        &self.rev,
-                        &self.runtime,
-                        action,
-                    )
-                }
-            }
+            "podcast.wiki" => self.state.wiki.handle(parse!(WikiAction)),
             "podcast.picks" => {
                 let _action = parse!(PicksAction);
                 let p = &self.picks_score_in_progress;
