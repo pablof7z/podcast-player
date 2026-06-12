@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		00398F2D3677B88258458499 /* AIChapterCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9B23681B1B9A54B3F9C90E /* AIChapterCompiler.swift */; };
 		008E07A0F15B0176C0BDCBEB /* LocalEmbeddingsClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D27E0D8056423C267527E1E /* LocalEmbeddingsClientTests.swift */; };
 		00A1EEE68C8AD61AFC553D33 /* PerfSignposter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A67DAB8DE371B15ECD8C111 /* PerfSignposter.swift */; };
 		00D0604F92F2793F9CA70A84 /* HighlightedTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E39D85E4B13CD42BCEDDFE48 /* HighlightedTextTests.swift */; };
@@ -226,6 +225,7 @@
 		47F6161218DDFB29D24261B8 /* DownloadCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EEEF80A426A4CAAC3A8EDA5 /* DownloadCapability.swift */; };
 		482BECF59006DF673E88F8B7 /* OllamaEmbeddingsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468A79B75645281766177D2F /* OllamaEmbeddingsClient.swift */; };
 		48D3774FEED606C4CB30FB6E /* UserIdentityStore+NIP46.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5183645DBEDD1F73FC5F85 /* UserIdentityStore+NIP46.swift */; };
+		49243A505EE2E54DB0EEAE15 /* Episode+AdOverlap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4FD922476EEC17BF40883B /* Episode+AdOverlap.swift */; };
 		492EC93AD9800FC9379A1C29 /* VoiceAudioSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144B28A8B29A36DC8E3C7642 /* VoiceAudioSessionBridge.swift */; };
 		493F83C1F9959EEAB31ABE4D /* AgentScheduledTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEE6A9DF1C9108D30A7D128 /* AgentScheduledTasksView.swift */; };
 		494A1E9BD1B9FDE385BEF661 /* AppStateStore+AgentActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA0FE5F340F1575C19BFB4F5 /* AppStateStore+AgentActivity.swift */; };
@@ -1205,6 +1205,7 @@
 		7B36864D3592245C3E34AA9E /* PodcastCategorizationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastCategorizationParser.swift; sourceTree = "<group>"; };
 		7BB4DF52635241CB7EF44652 /* PodcastCategorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastCategorizationService.swift; sourceTree = "<group>"; };
 		7BE8777EE4FC402BB3C9C36E /* CostLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostLedger.swift; sourceTree = "<group>"; };
+		7C4FD922476EEC17BF40883B /* Episode+AdOverlap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Episode+AdOverlap.swift"; sourceTree = "<group>"; };
 		7C67FC3C3FEE4DD2B5BD76C9 /* AVSpeechFallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVSpeechFallback.swift; sourceTree = "<group>"; };
 		7C70D48DA04DEB4330285B88 /* AgentChatBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentChatBubble.swift; sourceTree = "<group>"; };
 		7CF4F09180B230E7BC6E4754 /* ClipShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipShareSheet.swift; sourceTree = "<group>"; };
@@ -1432,7 +1433,6 @@
 		CA1F1E69DB05ED198000CF47 /* ElevenLabsCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsCredentialStore.swift; sourceTree = "<group>"; };
 		CA594AA5EEB9C2B662718060 /* PlayerMoreMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerMoreMenu.swift; sourceTree = "<group>"; };
 		CA6AC57D48A9853520632B69 /* LocalModelDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalModelDownloads.swift; sourceTree = "<group>"; };
-		CA9B23681B1B9A54B3F9C90E /* AIChapterCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChapterCompiler.swift; sourceTree = "<group>"; };
 		CB091EEFFE0972BEFCAC22D8 /* DebugSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettingsView.swift; sourceTree = "<group>"; };
 		CB9C42182225DE1D0DECA8D6 /* AppStateStore+Threading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Threading.swift"; sourceTree = "<group>"; };
 		CBC250C2436FBB5E35A6D63A /* AppleNativeSTTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleNativeSTTClient.swift; sourceTree = "<group>"; };
@@ -1761,6 +1761,7 @@
 				511731D80490220B47A3B4E1 /* CategorySettings.swift */,
 				D19840842AA448D8665CECFC /* DownloadState.swift */,
 				086F37EBFE11D08101EB3756 /* Episode.swift */,
+				7C4FD922476EEC17BF40883B /* Episode+AdOverlap.swift */,
 				0767C0EFD3EE8CA914E16094 /* Episode+Triage.swift */,
 				D4F8B87E49AE8CE274362E96 /* EpisodeAuditEvent.swift */,
 				3FB88EFFF87E7658942912F9 /* EpisodeDownloadStore.swift */,
@@ -2530,7 +2531,6 @@
 			children = (
 				CC6583AC70070C41CEC4F2CA /* Nip46 */,
 				A81A462CB984FC3DCBD1EF8F /* PodcastCategorization */,
-				CA9B23681B1B9A54B3F9C90E /* AIChapterCompiler.swift */,
 				587C7D9278E988FCED0A5663 /* AssemblyAICredentialStore.swift */,
 				1B6FE38C2893D5E47E328069 /* Bech32.swift */,
 				92CA53594D5B5B3AC527ABCC /* BlossomUploader.swift */,
@@ -3632,6 +3632,7 @@
 				916C3EF963BE3EAF8C30F6CC /* AutoDownloadPolicy.swift in Sources */,
 				8B2598EDDD99EB99139D69B1 /* CategorySettings.swift in Sources */,
 				C60DE59DAE164662CE7E818D /* DownloadState.swift in Sources */,
+				49243A505EE2E54DB0EEAE15 /* Episode+AdOverlap.swift in Sources */,
 				8ADE7DDE6DADB962BB887648 /* Episode+Triage.swift in Sources */,
 				642D729BCF01B29A890BCFDD /* Episode.swift in Sources */,
 				939502AB327D27876753398A /* EpisodeAuditEvent.swift in Sources */,
@@ -3649,7 +3650,6 @@
 				2765C4E7686B37B23BE18A50 /* RSSParserDelegate.swift in Sources */,
 				87B6D49DBAF7EADDD0FFB80B /* TranscriptKind.swift in Sources */,
 				77B0A55AFAECFFD755AA55AA /* TranscriptState.swift in Sources */,
-				00398F2D3677B88258458499 /* AIChapterCompiler.swift in Sources */,
 				AB9B83CFE6982C77C88D691E /* AssemblyAICredentialStore.swift in Sources */,
 				A298ACE23AB733748C547EC0 /* BYOKConnectService.swift in Sources */,
 				A824EDCFFC735AD20CAD1DE2 /* BYOKCredentialImporter.swift in Sources */,

@@ -80,6 +80,35 @@ pub struct SynthesizedChapter {
     pub title: String,
     /// Start offset in seconds; `0.0` for the first chapter, monotonic after.
     pub start_secs: f64,
+    /// 1–2 sentence summary of what the chapter covers (optional — present in
+    /// FULL and ENRICH-ONLY modes; absent in the legacy chapters-only path).
+    pub summary: Option<String>,
+}
+
+/// A single advertisement span synthesized by the LLM.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SynthesizedAdSpan {
+    pub start_secs: f64,
+    pub end_secs: f64,
+    /// `"preroll"` | `"midroll"` | `"postroll"`.
+    pub kind: String,
+}
+
+/// Result of the FULL compile mode: chapters + summaries + ads, synthesized
+/// from a transcript when the episode has no publisher chapters yet.
+#[derive(Debug, Clone)]
+pub struct CompileResult {
+    pub chapters: Vec<SynthesizedChapter>,
+    pub ads: Vec<SynthesizedAdSpan>,
+}
+
+/// Result of the ENRICH-ONLY compile mode: per-chapter summaries (by index,
+/// matching the publisher's existing chapter list) + ads.
+#[derive(Debug, Clone)]
+pub struct EnrichOnlyResult {
+    /// Maps publisher chapter index → 1–2 sentence summary.
+    pub summaries: std::collections::HashMap<usize, String>,
+    pub ads: Vec<SynthesizedAdSpan>,
 }
 
 /// Which prompt variant to send. The first attempt asks the model to ground
@@ -230,7 +259,7 @@ pub(crate) fn parse_chapters(response: &str) -> Result<Vec<SynthesizedChapter>, 
                 "chapter '{title}' has negative start_secs ({start_secs})"
             ));
         }
-        chapters.push(SynthesizedChapter { title, start_secs });
+        chapters.push(SynthesizedChapter { title, start_secs, summary: None });
     }
 
     // Enforce monotonic ordering: a hallucinating model may return inverted
@@ -267,6 +296,20 @@ fn extract_json_array(s: &str) -> Result<String, String> {
         .map(str::to_owned)
         .ok_or_else(|| "malformed JSON: closing bracket before opening bracket".into())
 }
+
+// FULL + ENRICH-ONLY compile modes, prompts, parsers, and round-trips live in
+// a separate file to keep this file under the 500-line hard limit (AGENTS.md).
+// The sub-module uses `use super::*` to access shared types + constants.
+#[path = "ai_chapters_llm_compile.rs"]
+pub(crate) mod compile;
+// Public synthesis API used by ai_chapters_impl.
+pub(crate) use compile::{synthesize_enrich_only, synthesize_full};
+// Parser / prompt symbols are only needed in tests.
+#[cfg(test)]
+pub(crate) use compile::{
+    enrich_only_user_prompt, full_user_prompt, parse_ads, parse_enrich_only, parse_full,
+    SYSTEM_PROMPT_ENRICH_ONLY, SYSTEM_PROMPT_FULL,
+};
 
 #[cfg(test)]
 #[path = "ai_chapters_llm_tests.rs"]

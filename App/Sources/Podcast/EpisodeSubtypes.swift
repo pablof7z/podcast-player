@@ -65,10 +65,10 @@ extension Episode {
         }
     }
 
-    /// A detected ad span inside the audio. Produced by `AIChapterCompiler`
-    /// from the transcript and persisted on the episode so the player can
-    /// auto-skip (gated by `Settings.autoSkipAds`) and the chapter rail can
-    /// flag overlapping chapters with the amber stripe.
+    /// A detected ad span inside the audio. Produced by the Rust kernel's
+    /// `podcast.chapters.compile` action from the transcript and persisted so
+    /// the player can auto-skip (gated by `Settings.autoSkipAds`) and the
+    /// chapter rail can flag overlapping chapters with the amber stripe.
     struct AdSegment: Codable, Sendable, Hashable, Identifiable {
         var id: UUID
         /// Start of the ad in seconds from the beginning of the episode.

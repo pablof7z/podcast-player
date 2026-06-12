@@ -101,14 +101,9 @@ struct EpisodeDetailView: View {
                 episode: episode,
                 store: store
             )
-            // Compile chapters + summaries + ad segments in a single LLM call
-            // for episodes that finished ingesting before the auto-compile hook
-            // in `TranscriptIngestService.persistAndIndex` existed. Idempotent —
-            // early returns once `Episode.adSegments` is non-nil.
-            await AIChapterCompiler.shared.compileIfNeeded(
-                episodeID: episode.id,
-                store: store
-            )
+            // Compile chapters + summaries + ad segments via the kernel (D0).
+            // Idempotent: the kernel gates on whether ad detection has already run.
+            store.kernelCompileChapters(episodeID: episode.id)
         }
     }
 

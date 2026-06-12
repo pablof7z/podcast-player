@@ -371,22 +371,11 @@ worktrees currently in flight.
      show as "keep the latest `AUTO_DOWNLOAD_BACKFILL_LIMIT` (=3) undownloaded
      episodes" rather than honoring a user-chosen N or true all-new. Follow-up:
      project the mode + N into the kernel store so backfill respects it.
-  2. **ad detection not in the kernel.** Ad-span identification still runs only
-     in the Swift legacy `AIChapterCompiler` (chapters + ad spans in one LLM
-     shot, `App/Sources/Services/AIChapterCompiler.swift`); the Rust
-     `ai_chapters`/`ai_chapters_llm` path produces chapters only. The kernel
-     emits an `ads.ready` event when iOS reports segments via
-     `kernelSetAdSegments`, but does not itself detect ads. Follow-up: extend
-     `ai_chapters_llm` to also return ad spans and persist via
-     `set_ad_segments_for`, then delete the Swift detector (per
-     `docs/plan/nmp-feature-parity.md:124`).
-  3. **AI chapters not reported to the kernel from the legacy path.** Swift
-     `AppStateStore.setEpisodeChapters` writes Swift state only (no kernel
-     dispatch), so AI-compiled chapters from the legacy `AIChapterCompiler` do
-     not reach the kernel and therefore do not emit a `chapters.ready` event
-     (only RSS chapters via `fetch_chapters` and the kernel's own
-     `ai_chapters` compile do). Resolved once the legacy compiler call sites
-     dispatch `podcast.chapters.compile` and the Swift writer is removed.
+  2. ~~**ad detection not in the kernel.**~~ DONE (PR refactor/kernel-ai-chapters-ad-spans).
+     `ai_chapters_llm.rs` now emits ad spans; `ai_chapters.rs` persists via
+     `set_ad_segments_for` and emits `ads.ready`. `AIChapterCompiler.swift` deleted.
+  3. ~~**AI chapters not reported to the kernel from the legacy path.**~~ DONE (same PR).
+     All call sites dispatch `podcast.chapters.compile`; the Swift writer is removed.
 - **inbox-triage-progress-projection.** ~~Swift shimmer done~~ The
   `inbox_triage_in_progress` bool is projected onto `PodcastUpdate` and
   `HomeFeaturedSection.isStreaming` is now wired to it (Fix B, PR #TBD). The
@@ -576,22 +565,12 @@ worktrees currently in flight.
   Swift composer follow-ups
   (NIP-F4 publishing, deletion cleanup, restart verification), not feed-store
   ownership.
-- **ai-chapters-swift-compiler-delete.** Rust chapter synthesis/persistence now
-  exists (`podcast.chapters.compile` → `ai_chapters.rs` →
-  `store.set_episode_chapters` → `EpisodeSummary.chapters` projection), but the
-  legacy Swift `AIChapterCompiler` is still live from `PlayerView`,
-  `EpisodeDetailView`, and `TranscriptIngestService`. It resolves provider
-  credentials, prompts an LLM, parses chapter/ad decisions, and writes
-  `setEpisodeChapters` / `setEpisodeAdSegments` directly in Swift. Move those
-  call sites to a `kernelCompileChapters` dispatch, keep ad-segment reporting on
-  the Rust-backed `kernelSetAdSegments` path, then delete
-  `AIChapterCompiler.swift` and its Swift parse tests.
-- **m4-chapters-preserved-state-cleanup.** Rust chapter round-trip is done and
-  `merge_episodes` carries prior AI chapters forward when refreshed RSS has no
-  publisher chapters. The remaining preserved-state fallback in
-  `AppStateStore+KernelProjection.swift` exists only for legacy
-  Swift-written chapters from `AIChapterCompiler`. Delete that fallback after
-  `ai-chapters-swift-compiler-delete` lands.
+- ~~**ai-chapters-swift-compiler-delete.**~~ DONE (PR #refactor/kernel-ai-chapters-ad-spans).
+  `AIChapterCompiler.swift` deleted; call sites in `PlayerView`, `EpisodeDetailView`,
+  and `TranscriptIngestService` converted to `kernelCompileChapters`; FULL + ENRICH-ONLY
+  modes + ad validation ported to Rust. The `KernelProjection` legacy fallback also removed.
+- ~~**m4-chapters-preserved-state-cleanup.**~~ DONE (same PR). The legacy Swift-chapters
+  fallback block in `AppStateStore+KernelProjection.swift` has been deleted.
 - **inbox-triage-real-model.** Replace recency heuristic with provider-backed
   triage, persisted dismiss/listened state, explainable reasons, and user
   correction loop. Partially done in PR #123 (rig-core + Ollama LLM scoring

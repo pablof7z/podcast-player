@@ -363,6 +363,28 @@ extension AppStateStore {
                          body: ["op": "fetch_chapters", "episode_id": episodeID.uuidString])
     }
 
+    /// Compile AI chapters + per-chapter summaries + ad spans for an episode
+    /// in a single kernel LLM round-trip (namespace: podcast.chapters).
+    ///
+    /// The kernel owns all chapter + ad policy (D0): it detects boundaries,
+    /// summaries, and ad spans from the cached transcript, persists results to
+    /// `PodcastStore`, and bumps the snapshot rev so the projected `Episode`
+    /// updates reactively.
+    ///
+    /// Two modes (selected by the kernel based on stored state):
+    ///   - FULL — no publisher chapters yet: produce 4–12 chapters with
+    ///     summaries + detect ad spans.
+    ///   - ENRICH-ONLY — publisher chapters already exist: add per-chapter
+    ///     summaries + detect ad spans; leave boundaries untouched.
+    ///
+    /// Idempotent: the kernel gates on whether ad detection has already run
+    /// for the episode (mirrors the Swift `adSegments != nil` gate).
+    /// Fire-and-forget: results arrive on the next snapshot push frame.
+    func kernelCompileChapters(episodeID: UUID) {
+        kernel?.dispatch(namespace: "podcast.chapters",
+                         body: ["op": "compile", "episode_id": episodeID.uuidString])
+    }
+
     // MARK: - Ad segments
 
     /// Persist detected ad-break intervals for an episode (namespace: podcast.player).
