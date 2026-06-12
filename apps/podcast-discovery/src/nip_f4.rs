@@ -139,6 +139,138 @@ pub fn parse_kind_10154(
     })
 }
 
+/// Parsed `kind:54` NIP-F4 episode event.
+///
+/// `event_id` and `author_pubkey` come from the wrapping event header. The
+/// `author_pubkey` is the podcast's own per-podcast key — the same key that
+/// signed the parent `kind:10154` show event, so it serves as the stable
+/// show ↔ episode link.
+///
+/// Tag layout (mirror of `build/episode.rs::episode_to_episode_tags`):
+///
+/// ```text
+/// ["title", "My Episode"]
+/// ["description", "..."]            // optional — falls back to content
+/// ["duration", "<seconds>"]         // optional integer seconds
+/// ["image", "https://..."]          // optional per-episode artwork
+/// ["audio", "<url>", "<mime>"]      // required — the enclosure URL
+/// ["chapters", "<url>", "<mime>"]   // optional Podcasting 2.0 chapters
+/// ["transcript", "<url>", "<mime>"] // optional transcript
+/// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct NipF4Episode {
+    /// Event id (hex) from the wrapping Nostr envelope.
+    pub event_id: String,
+    /// Pubkey (hex) that signed the event — the podcast's per-podcast key.
+    pub author_pubkey: String,
+    /// `["title", ...]`.
+    pub title: String,
+    /// `["description", ...]` — falls back to `Event.content`.
+    pub description: Option<String>,
+    /// `["duration", <seconds>]` — integer seconds.
+    pub duration_secs: Option<f64>,
+    /// `["image", <url>]` — per-episode artwork.
+    pub image_url: Option<String>,
+    /// `["audio", "<url>", ...]` — the enclosure URL (required).
+    pub audio_url: String,
+    /// MIME type from the second component of the `audio` tag.
+    pub audio_mime_type: Option<String>,
+    /// `["chapters", <url>, <mime>]`.
+    pub chapters_url: Option<String>,
+    /// `["transcript", <url>, <mime>]`.
+    pub transcript_url: Option<String>,
+    /// MIME type from the second component of the `transcript` tag.
+    pub transcript_mime_type: Option<String>,
+    /// Event header `created_at` (unix seconds). Used as `published_at`.
+    pub created_at: i64,
+}
+
+/// Parse a `kind:54` NIP-F4 episode event into a [`NipF4Episode`].
+///
+/// This is the exact inverse of `build/episode.rs::episode_to_episode_tags`:
+/// `["audio", "<url>", "<mime>"]` is the required enclosure tag.
+///
+/// Hard requirements:
+/// * `kind` must equal [`KIND_NIP_F4_EPISODE`].
+/// * A `["audio", "<url>", ...]` tag with a non-empty URL.
+///
+/// Everything else is best-effort (D6 — tolerant decoder).
+pub fn parse_kind_54(
+    kind: u32,
+    event_id: &str,
+    pubkey: &str,
+    created_at: i64,
+    content: &str,
+    tags: &[Vec<String>],
+) -> Result<NipF4Episode, ParseError> {
+    if kind != KIND_NIP_F4_EPISODE {
+        return Err(ParseError::WrongKind {
+            expected: KIND_NIP_F4_EPISODE,
+            got: kind,
+        });
+    }
+
+    // `audio` tag is the required enclosure — mirrors `build_audio_tag`.
+    let audio_tag = tags
+        .iter()
+        .find(|t| t.first().map(String::as_str) == Some("audio"))
+        .ok_or(ParseError::MissingTag("audio"))?;
+    let audio_url = audio_tag
+        .get(1)
+        .filter(|s| !s.is_empty())
+        .ok_or(ParseError::MissingAudioUrl)?
+        .clone();
+    let audio_mime_type = audio_tag.get(2).filter(|s| !s.is_empty()).cloned();
+
+    let title = first_tag_value(tags, "title")
+        .map(str::to_string)
+        .unwrap_or_default();
+
+    let description = first_tag_value(tags, "description")
+        .map(str::to_string)
+        .or_else(|| if content.is_empty() { None } else { Some(content.to_string()) });
+
+    let duration_secs = first_tag_value(tags, "duration")
+        .and_then(|v| v.parse::<f64>().ok());
+
+    let image_url = first_tag_value(tags, "image").map(str::to_string);
+
+    let chapters_tag = tags
+        .iter()
+        .find(|t| t.first().map(String::as_str) == Some("chapters"));
+    let chapters_url = chapters_tag
+        .and_then(|t| t.get(1))
+        .filter(|s| !s.is_empty())
+        .cloned();
+
+    let transcript_tag = tags
+        .iter()
+        .find(|t| t.first().map(String::as_str) == Some("transcript"));
+    let transcript_url = transcript_tag
+        .and_then(|t| t.get(1))
+        .filter(|s| !s.is_empty())
+        .cloned();
+    let transcript_mime_type = transcript_tag
+        .and_then(|t| t.get(2))
+        .filter(|s| !s.is_empty())
+        .cloned();
+
+    Ok(NipF4Episode {
+        event_id: event_id.to_string(),
+        author_pubkey: pubkey.to_string(),
+        title,
+        description,
+        duration_secs,
+        image_url,
+        audio_url,
+        audio_mime_type,
+        chapters_url,
+        transcript_url,
+        transcript_mime_type,
+        created_at,
+    })
+}
+
 /// Parse a JSON `kind:10154` event payload (as delivered by a relay HTTP
 /// gateway) into a [`NipF4Show`]. Returns `None` on any decode failure —
 /// the discovery handler treats malformed events as silently dropped (D6).
