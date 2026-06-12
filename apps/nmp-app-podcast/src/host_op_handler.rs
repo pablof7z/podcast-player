@@ -17,19 +17,13 @@
 //! * Voice-action dispatch    -> `voice_handler.rs`
 //! * Namespace-envelope router -> `host_op_handler/router.rs`
 
-use std::sync::atomic::AtomicU64;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::state::PodcastAppState;
 
-use tokio::runtime::Runtime;
-
 use nmp_ffi::NmpApp;
-
-use crate::feed_fetch::FeedFetchCoordinator;
-use crate::snapshot_signal::SnapshotUpdateSignal;
-use crate::store::identity::IdentityStore;
-use crate::store::PodcastStore;
+// AtomicU64, Mutex, Runtime, SnapshotUpdateSignal removed in Step N+1 —
+// rev + signal + runtime are now accessed via state.infra.
 
 mod dispatch;
 mod player_actions;
@@ -57,10 +51,11 @@ pub struct PodcastHostOpHandler {
     /// Composed state root.  Inbox (Step 7), Knowledge (Step 1), Wiki (Step 2),
     /// Picks (Step 3), Categories (Step 4), Clips (Step 5a), Transcripts (Step 5b),
     /// Tasks (Step 6), Comments (Step 8), Discovery (Step 9), Social (Step 10),
-    /// AgentChat (Step 11), Voice (Step 12), Publish (Step 13) all live here.
+    /// AgentChat (Step 11), Voice (Step 12), Publish (Step 13), Playback (Step 14),
+    /// Library/identity (Step 15) all live here.
     pub(crate) state: Arc<PodcastAppState>,
-    pub(crate) store: Arc<Mutex<PodcastStore>>,
-    pub(crate) identity: Arc<Mutex<IdentityStore>>,
+    // store removed in Step 15 — now owned by `state.library.store`.
+    // identity removed in Step 15 — now owned by `state.library.identity`.
     // player_actor removed in Step 14 — now owned by `state.playback.player`.
     // search_results removed in Step 9 — now owned by `state.discovery` (DiscoveryState).
     // nostr_results removed in Step 9 — dead duplicate Arc; observer now shares
@@ -85,25 +80,16 @@ pub struct PodcastHostOpHandler {
     // social removed in Step 10 — now owned by `state.social` (SocialState).
     // agent_notes removed in Step 10 — dead duplicate Arc; observer now shares
     // from `state.social.agent_notes`.
-    pub(crate) rev: Arc<AtomicU64>,
+    // rev removed in Step N+1 — now accessed via `state.infra.rev`.
+    // runtime removed in Step N+1 — now accessed via `state.infra.runtime`.
+    // snapshot_signal removed in Step N+1 — now in `state.infra.signal`.
     // podcast_keys and publish_state removed in Step 13 —
     // now owned by `state.publish` (PublishState).
     // agent_chat removed in Step 11 — now owned by `state.agent_chat` (AgentChatState).
     // inbox_triage_cache removed in Step 7 — now owned by `state.inbox` (InboxState).
     // inbox_triage_in_progress removed in Step 7 — now owned by `state.inbox` (InboxState).
-    /// Shared Tokio runtime for async LLM / relay work. Seeded in
-    /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
-    /// Used by wiki synthesis, agent chat, inbox triage, and social graph fetches.
-    pub(crate) runtime: Arc<Runtime>,
-    /// Coordinates optimistic-subscribe async feed fetches. Shared with
-    /// `PodcastHandle` (whose HTTP-report FFI applies the results); this handler
-    /// registers a pending fetch then fire-and-forget dispatches the async HTTP
-    /// command on the actor thread.
-    pub(crate) feed_fetch: Arc<FeedFetchCoordinator>,
-    /// App-scoped feedback runtime. Shared with `PodcastHandle` so actions,
-    /// observer pushes, and snapshots read the same cache.
-    pub(crate) feedback: nmp_feedback::FeedbackRuntime,
-    pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
+    // feed_fetch removed in Step 16 — now accessed via `state.feed_fetch`.
+    // feedback removed in Step 16 — now accessed via `state.feedback`.
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the
@@ -115,33 +101,10 @@ unsafe impl Send for PodcastHostOpHandler {}
 unsafe impl Sync for PodcastHostOpHandler {}
 
 impl PodcastHostOpHandler {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        app: *mut NmpApp,
-        state: Arc<PodcastAppState>,
-        store: Arc<Mutex<PodcastStore>>,
-        identity: Arc<Mutex<IdentityStore>>,
-        rev: Arc<AtomicU64>,
-        runtime: Arc<Runtime>,
-        feed_fetch: Arc<FeedFetchCoordinator>,
-        feedback: nmp_feedback::FeedbackRuntime,
-    ) -> Self {
-        Self {
-            app,
-            state,
-            store,
-            identity,
-            rev,
-            runtime,
-            feed_fetch,
-            feedback,
-            snapshot_signal: None,
-        }
-    }
-
-    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
-        self.snapshot_signal = Some(snapshot_signal);
-        self
+    /// Step N+1: The minimal 2-arg constructor.  All infrastructure
+    /// (rev + signal + runtime) comes from `state.infra`.
+    pub fn new(app: *mut NmpApp, state: Arc<PodcastAppState>) -> Self {
+        Self { app, state }
     }
 
     /// Re-run the categorizer after a successful refresh so newly-

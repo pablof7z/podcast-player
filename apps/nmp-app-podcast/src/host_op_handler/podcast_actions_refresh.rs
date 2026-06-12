@@ -23,7 +23,7 @@ impl PodcastHostOpHandler {
         correlation_id: &str,
     ) -> serde_json::Value {
         let (podcast_id, url, etag, last_modified) = {
-            match self.store.lock() {
+            match self.state.library.store.lock() {
                 Ok(s) => match s.podcast_by_id_str(&podcast_id_str) {
                     Some(p) => match p.feed_url.clone() {
                         Some(u) => (p.id, u, p.etag.clone(), p.last_modified.clone()),
@@ -52,7 +52,7 @@ impl PodcastHostOpHandler {
     }
 
     pub(super) fn handle_refresh_all(&self, correlation_id: &str) -> serde_json::Value {
-        let infos = match self.store.lock() {
+        let infos = match self.state.library.store.lock() {
             Ok(s) => s.all_feed_infos(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
@@ -74,7 +74,7 @@ impl PodcastHostOpHandler {
         }
         // Bump rev so the next snapshot tick recomputes the inbox projection
         // from the freshly-pulled episodes even when every feed returned 304.
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         if any_succeeded {
             self.auto_categorize();
             self.auto_refresh_picks();
@@ -102,7 +102,7 @@ impl PodcastHostOpHandler {
             Ok(p) => p,
             Err(e) => return serde_json::json!({"ok": false, "error": e.to_string()}),
         };
-        let existing_feed_urls: HashSet<String> = match self.store.lock() {
+        let existing_feed_urls: HashSet<String> = match self.state.library.store.lock() {
             Ok(s) => s
                 .all_feed_infos()
                 .into_iter()
@@ -179,7 +179,7 @@ impl PodcastHostOpHandler {
                     to_auto_download,
                     podcast_title,
                     stale_triage_ids,
-                ) = match self.store.lock() {
+                ) = match self.state.library.store.lock() {
                     Ok(mut s) => {
                         let existing: Vec<Episode> = s.episodes_for(podcast_id).to_vec();
                         let existing_guids: HashSet<String> =
@@ -238,11 +238,11 @@ impl PodcastHostOpHandler {
                 };
                 let etag_out = http_result.header("etag").map(str::to_owned);
                 let lm_out = http_result.header("last-modified").map(str::to_owned);
-                let write_ok = match self.store.lock() {
+                let write_ok = match self.state.library.store.lock() {
                     Ok(mut s) => {
                         s.upsert_known_podcast(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                         true
                     }
                     Err(_) => false,
@@ -266,7 +266,11 @@ impl PodcastHostOpHandler {
                     let _ = self.dispatch_notification(&cmd, correlation_id);
                 }
                 self.dispatch_auto_downloads(&to_auto_download, correlation_id);
-                refresh_picks_into_slot(&self.store, &self.state.picks.picks.share(), &self.rev);
+                refresh_picks_into_slot(
+                    &self.state.library.store,
+                    &self.state.picks.picks.share(),
+                    &self.state.infra.rev,
+                );
                 serde_json::json!({"ok": true})
             }
             Ok(FeedResult::NotModified { .. }) => {

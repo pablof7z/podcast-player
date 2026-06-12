@@ -45,7 +45,8 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
 
         let path_buf = PathBuf::from(path_str.clone());
 
-        let (loaded, loaded_queue) = match handle.store.lock() {
+        // Step 15: store/identity sourced from state.library.
+        let (loaded, loaded_queue) = match handle.state.library.store.lock() {
             Ok(mut s) => {
                 let count = s.set_data_dir(path_buf.clone());
                 let queue = s.take_loaded_queue();
@@ -68,7 +69,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
         // Bind the identity store to the same directory. If `identity.json` exists
         // this loads the saved secret key and derives `pubkey_hex` + `npub` so
         // the next snapshot poll surfaces `active_account` without a write.
-        let identity_loaded = if let Ok(mut id) = handle.identity.lock() {
+        let identity_loaded = if let Ok(mut id) = handle.state.library.identity.lock() {
             let was_empty = id.secret_hex.is_none();
             id.set_data_dir(&PathBuf::from(&path_str));
             // Only bump rev if we just loaded a key that wasn't present before.

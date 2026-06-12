@@ -61,7 +61,7 @@ pub extern "C" fn nmp_app_podcast_generate_image(
                 prompt: input.prompt,
                 model: input.model,
             };
-            match generate_openrouter_image(Arc::clone(&handle_ref.store), &request) {
+            match generate_openrouter_image(Arc::clone(&handle_ref.state.library.store), &request) {
                 Ok(image) => ok_envelope(&image.bytes).into_raw(),
                 Err(e) => err_envelope(&e.to_string()).into_raw(),
             }

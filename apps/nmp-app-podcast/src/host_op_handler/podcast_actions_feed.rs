@@ -39,7 +39,7 @@ impl PodcastHostOpHandler {
             Err(e) => return serde_json::json!({"ok": false, "error": format!("bad url: {e}")}),
         };
         // Snapshot any existing row for this feed under a short lock.
-        let known = match self.store.lock() {
+        let known = match self.state.library.store.lock() {
             Ok(s) => s.podcast_by_feed_url(&url).map(|p| {
                 (
                     p.id,
@@ -67,7 +67,7 @@ impl PodcastHostOpHandler {
         // its follow flag flipped so its cached metadata + episodes survive; a
         // brand-new feed gets a placeholder titled from the feed host that the
         // async hydration replaces with the real parsed metadata.
-        let inserted = match self.store.lock() {
+        let inserted = match self.state.library.store.lock() {
             Ok(mut s) => {
                 if known_row {
                     s.mark_subscribed(podcast_id)
@@ -86,10 +86,11 @@ impl PodcastHostOpHandler {
             return serde_json::json!({"ok": false, "error": "podcast not found"});
         }
         // Surface the optimistic row immediately.
-        if let Some(signal) = &self.snapshot_signal {
+        // Step 15+16: signal sourced from state.infra.
+        if let Some(signal) = &self.state.infra.signal {
             signal.bump();
         } else {
-            self.rev.fetch_add(1, Ordering::Relaxed);
+            self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         }
 
         // Hydrate episodes in the background. Only a known feed carries cache
@@ -104,7 +105,8 @@ impl PodcastHostOpHandler {
         };
         let req = build_feed_request(&url, cache.as_ref());
         let request_id = Uuid::new_v4().to_string();
-        self.feed_fetch.register(
+        // Step 16: feed_fetch is now in state.feed_fetch.
+        self.state.feed_fetch.register(
             request_id.clone(),
             PendingFeedFetch {
                 mode: FeedFetchMode::Subscribe,
@@ -131,7 +133,7 @@ impl PodcastHostOpHandler {
             Ok(u) => u,
             Err(e) => return serde_json::json!({"ok": false, "error": format!("bad url: {e}")}),
         };
-        let known = match self.store.lock() {
+        let known = match self.state.library.store.lock() {
             Ok(s) => s
                 .podcast_by_feed_url(&url)
                 .map(|p| (p.id, p.etag.clone(), p.last_modified.clone())),
@@ -155,13 +157,13 @@ impl PodcastHostOpHandler {
             Ok(FeedResult::Parsed { parsed, .. }) => {
                 let etag_out = http_result.header("etag").map(str::to_owned);
                 let lm_out = http_result.header("last-modified").map(str::to_owned);
-                let write_ok = match self.store.lock() {
+                let write_ok = match self.state.library.store.lock() {
                     Ok(mut s) => {
                         let existing = s.episodes_for(podcast_id).to_vec();
                         let episodes = merge_episodes(parsed.episodes, existing);
                         s.upsert_known_podcast(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                         true
                     }
                     Err(_) => false,
@@ -181,7 +183,7 @@ impl PodcastHostOpHandler {
                     // means nothing user-visible changed, so forcing a full
                     // snapshot rebuild + FFI decode is wasted work.
                     // (etag/last-modified are not projected into PodcastUpdate.)
-                    if let Ok(mut s) = self.store.lock() {
+                    if let Ok(mut s) = self.state.library.store.lock() {
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
                     }
                     serde_json::json!({
@@ -204,10 +206,10 @@ impl PodcastHostOpHandler {
         match podcast_id_str.parse::<Uuid>() {
             Ok(uuid) => {
                 let id = PodcastId::new(uuid);
-                let ok = match self.store.lock() {
+                let ok = match self.state.library.store.lock() {
                     Ok(mut s) => {
                         s.unsubscribe(id);
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                         true
                     }
                     Err(_) => false,
@@ -215,7 +217,11 @@ impl PodcastHostOpHandler {
                 if !ok {
                     return serde_json::json!({"ok": false, "error": "store poisoned"});
                 }
-                refresh_picks_into_slot(&self.store, &self.state.picks.picks.share(), &self.rev);
+                refresh_picks_into_slot(
+                    &self.state.library.store,
+                    &self.state.picks.picks.share(),
+                    &self.state.infra.rev,
+                );
                 serde_json::json!({"ok": true})
             }
             Err(_) => serde_json::json!({"ok": false, "error": "invalid podcast_id"}),

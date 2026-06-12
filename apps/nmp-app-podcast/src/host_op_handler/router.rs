@@ -49,6 +49,7 @@ use crate::ffi::actions::voice_module::VoiceAction;
 use crate::ffi::actions::wiki_module::WikiAction;
 // handle_queue_action free fn retired in Step 14 — now PlaybackState::handle_queue_action.
 use crate::host_op_publish::handle_publish_action;
+// Step 15: IdentityHandler now sources identity from state.library.identity.
 use crate::identity_handler::IdentityHandler;
 use crate::memory_handler;
 use crate::voice_handler;
@@ -93,10 +94,13 @@ impl HostOpHandler for PodcastHostOpHandler {
 
         match env.ns.as_str() {
             "podcast.identity" => {
+                // Step 15: identity Arc sourced from state.library.identity.
                 let action = parse!(IdentityAction);
-                let mut handler =
-                    IdentityHandler::new(self.identity.clone(), self.rev.clone());
-                if let Some(ref signal) = self.snapshot_signal {
+                let mut handler = IdentityHandler::new(
+                    self.state.library.identity.clone(),
+                    self.state.infra.rev.clone(),
+                );
+                if let Some(ref signal) = self.state.infra.signal {
                     handler = handler.with_snapshot_signal(signal.clone());
                 }
                 handler.handle(action)
@@ -114,22 +118,23 @@ impl HostOpHandler for PodcastHostOpHandler {
             // no inline Arc threading, infra.bump() owns the rev bump.
             "podcast.queue" => self.state.playback.handle_queue_action(parse!(QueueAction)),
             "podcast.chapters" => {
+                // Step 15: store/rev/runtime sourced from state.library/state.infra.
                 let action = parse!(ChaptersAction);
                 match action {
                     ChaptersAction::Compile { episode_id } => {
-                        if let Some(signal) = self.snapshot_signal.clone() {
+                        if let Some(signal) = self.state.infra.signal.clone() {
                             handle_compile_chapters_with_signal(
-                                &self.store,
-                                &self.rev,
-                                &self.runtime,
+                                &self.state.library.store,
+                                &self.state.infra.rev,
+                                &self.state.infra.runtime,
                                 episode_id,
                                 signal,
                             )
                         } else {
                             handle_compile_chapters(
-                                &self.store,
-                                &self.rev,
-                                &self.runtime,
+                                &self.state.library.store,
+                                &self.state.infra.rev,
+                                &self.state.infra.runtime,
                                 episode_id,
                             )
                         }
@@ -141,7 +146,12 @@ impl HostOpHandler for PodcastHostOpHandler {
             "podcast.tasks" => self.state.tasks.handle(parse!(AgentTasksAction), self.app),
             "podcast.knowledge" => self.state.knowledge.handle(parse!(KnowledgeAction)),
             "podcast.memory" => {
-                memory_handler::handle(parse!(MemoryAction), &self.store, &self.rev)
+                // Step 15: store/rev sourced from state.library/state.infra.
+                memory_handler::handle(
+                    parse!(MemoryAction),
+                    &self.state.library.store,
+                    &self.state.infra.rev,
+                )
             }
             "podcast.clip" => self.state.clips.handle(parse!(ClipAction)),
             "podcast.voice" => {

@@ -98,10 +98,18 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
 
     let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 16: feedback injected into PodcastAppState; feed_fetch constructed inside.
+    let feedback = nmp_feedback::FeedbackRuntime::new(
+        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
+            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
+        Arc::new(Mutex::new(Vec::new())),
+        rev.clone(),
+    );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
+        feedback,
     ));
     // Clear agent_tasks: default_seed() uses Uuid::new_v4() + Utc::now(), making
     // the fixture non-deterministic.  The golden test exercises the projection
@@ -109,41 +117,14 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
     // byte-identical across runs (skip_serializing_if = "Vec::is_empty" omits it).
     state.tasks.tasks.lock().unwrap().clear();
 
-    // Steps 8-10: search_results, nostr_results, comments_cache,
-    // viewed_comments_episode_id, social, agent_notes removed — now owned by
-    // state.discovery / state.comments / state.social respectively.
-    // Step 14: player_actor, queue, download_queue removed — now owned by
-    // state.playback (PlaybackState).
+    // Steps 8-N+1: all substates in PodcastAppState; rev/signal/runtime in state.infra.
+    // Step 15: store + identity in state.library.
+    // Step 16: feedback + feed_fetch in state.{feedback,feed_fetch}.
     Box::new(PodcastHandle {
         app,
         state,
-        store: store.clone(),
-        identity,
-        rev: rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        // player_actor removed in Step 14 — now owned by state.playback.player.
-        // queue removed in Step 14 — now owned by state.playback.queue.
-        // download_queue removed in Step 14 — now owned by state.playback.downloads.
-        // clips, transcripts, agent_tasks removed in Steps 5a, 5b, 6 —
-        // now owned by state.clips / state.transcripts / state.tasks.
-        // dismissed_episode_ids, inbox_triage_cache, inbox_triage_in_progress removed in Step 7 —
-        // now owned by state.inbox (InboxState).
-        // podcast_keys and publish_state removed in Step 13 —
-        // now owned by state.publish (PublishState).
-        // voice_state and voice_conversation removed in Step 12 —
-        // now owned by state.voice (VoiceSubstate).
-        // conversation, agent_busy, agent_touched removed in Step 11 —
-        // now owned by state.agent_chat (AgentChatState).
-        feedback: nmp_feedback::FeedbackRuntime::new(
-            nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-                .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-            Arc::new(Mutex::new(Vec::new())),
-            rev.clone(),
-        ),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        feed_fetch: crate::feed_fetch::FeedFetchCoordinator::new_test(),
     })
 }
 

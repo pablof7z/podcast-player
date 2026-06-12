@@ -24,22 +24,17 @@ use uuid::Uuid;
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 16: feedback injected; feed_fetch + feedback removed from handler::new.
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
+        feedback_runtime(rev.clone()),
     ));
-    // Steps 8-14: all substates removed from constructor —
-    // player_actor, queue, download_queue now owned by state.playback (Step 14).
+    // Steps 8-N+1: all substates in PodcastAppState; new takes only (app, state).
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        store,
-        identity,
-        rev.clone(),
-        Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        crate::feed_fetch::FeedFetchCoordinator::new_test(),
-        feedback_runtime(rev),
     )
 }
 
@@ -146,19 +141,22 @@ fn relay_settings_actions_bump_rev() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let handler = handler_with_store(store);
 
-    let before = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
+    // Step 15: settings_actions.rs now bumps state.infra.rev, not the
+    // mirrored handler.rev field. Read from the canonical infra rev.
+    let rev = &handler.state.infra.rev;
+    let before = rev.load(std::sync::atomic::Ordering::Relaxed);
     handler.handle_settings_action(SettingsAction::AddRelay {
         url: "wss://relay.example".into(),
         role: "both".into(),
     });
-    let after_add = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
+    let after_add = rev.load(std::sync::atomic::Ordering::Relaxed);
     assert_eq!(after_add, before + 1, "add_relay companion must bump rev");
 
     handler.handle_settings_action(SettingsAction::SetRelayRole {
         url: "wss://relay.example".into(),
         role: "read".into(),
     });
-    let after_role = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
+    let after_role = rev.load(std::sync::atomic::Ordering::Relaxed);
     assert_eq!(
         after_role,
         after_add + 1,
@@ -168,7 +166,7 @@ fn relay_settings_actions_bump_rev() {
     handler.handle_settings_action(SettingsAction::RemoveRelay {
         url: "wss://relay.example".into(),
     });
-    let after_remove = handler.rev.load(std::sync::atomic::Ordering::Relaxed);
+    let after_remove = rev.load(std::sync::atomic::Ordering::Relaxed);
     assert_eq!(
         after_remove,
         after_role + 1,

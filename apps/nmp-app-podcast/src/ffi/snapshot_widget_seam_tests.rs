@@ -63,16 +63,10 @@ fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
 /// Step 14: `player_actor`, `queue`, and `download_queue` are no longer
 /// separate constructor args — they live inside `state.playback`.
 fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastHostOpHandler {
-    let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Steps 15-N+1: store, identity, feed_fetch, feedback, rev, runtime all in state.
     PodcastHostOpHandler::new(
         app,
         shared.state.clone(),
-        shared.store.clone(),
-        identity,
-        shared.rev.clone(),
-        Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        crate::feed_fetch::FeedFetchCoordinator::new_test(),
-        feedback_runtime(shared.rev.clone()),
     )
 }
 
@@ -80,22 +74,13 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
 /// handler so the snapshot reader sees the writer's mutations without any
 /// separate Arc wiring.
 fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
-    let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 15: store + identity removed from PodcastHandle.
+    // Step 16: feedback + feed_fetch removed from PodcastHandle — now in state.
     Box::new(PodcastHandle {
         app,
         state: shared.state.clone(),
-        // player_actor removed in Step 14 — now state.playback.player.
-        store: shared.store.clone(),
-        identity,
-        rev: shared.rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        // queue removed in Step 14 — now state.playback.queue.
-        // download_queue removed in Step 14 — now state.playback.downloads.
-        feedback: feedback_runtime(shared.rev.clone()),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        feed_fetch: crate::feed_fetch::FeedFetchCoordinator::new_test(),
     })
 }
 
@@ -133,10 +118,13 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     // Step 14: both seams share ONE Arc<PodcastAppState> so handler writes
     // to state.playback.player are visible to the handle's snapshot reader.
+    // Step 16: feedback injected into PodcastAppState.
+    let feedback = feedback_runtime(rev.clone());
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity,
+        feedback,
     ));
     let shared = SharedKernel {
         store: store.clone(),

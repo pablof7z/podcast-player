@@ -89,9 +89,13 @@ impl PodcastHostOpHandler {
                 .transcripts
                 .handle_fetch(episode_id, |req| self.dispatch_http(req, correlation_id)),
             PodcastAction::FetchChapters { episode_id } => {
-                handle_fetch_chapters(&self.store, &self.rev, episode_id, |req| {
-                    self.dispatch_http(req, correlation_id)
-                })
+                // Step 15: store/rev sourced from state.library/state.infra.
+                handle_fetch_chapters(
+                    &self.state.library.store,
+                    &self.state.infra.rev,
+                    episode_id,
+                    |req| self.dispatch_http(req, correlation_id),
+                )
             }
             PodcastAction::UpdateSettings {
                 has_completed_onboarding,
@@ -131,9 +135,9 @@ impl PodcastHostOpHandler {
                 self.handle_evaluate_auto_downloads(correlation_id)
             }
             PodcastAction::FetchContacts => {
-                // Step 10: use SocialState slots from the shared state.
+                // Step 10+15: identity Arc sourced from state.library.identity.
                 crate::social_handler::handle_fetch_contacts(
-                    &self.identity,
+                    &self.state.library.identity,
                     self.state.social.social_slot.share(),
                     self.state.infra.rev.clone(),
                     self.state.infra.runtime.clone(),
@@ -147,7 +151,7 @@ impl PodcastHostOpHandler {
                 root_a_tags,
             } => crate::agent_note_handler::handle_publish_agent_note(
                 self.app,
-                &self.identity,
+                &self.state.library.identity,
                 &recipient_pubkey_hex,
                 &content,
                 root_event_id.as_deref(),
@@ -155,15 +159,18 @@ impl PodcastHostOpHandler {
                 &root_a_tags,
             ),
             PodcastAction::FetchAgentNotes => {
-                crate::agent_note_handler::handle_fetch_agent_notes(self.app, &self.identity)
+                crate::agent_note_handler::handle_fetch_agent_notes(
+                    self.app,
+                    &self.state.library.identity,
+                )
             }
             PodcastAction::StarEpisode {
                 episode_id,
                 starred,
-            } => match self.store.lock() {
+            } => match self.state.library.store.lock() {
                 Ok(mut s) => match s.set_episode_starred(&episode_id, starred) {
                     Some(new_value) => {
-                        self.rev.fetch_add(1, Ordering::Relaxed);
+                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                         serde_json::json!({"ok": true, "starred": new_value})
                     }
                     None => {
@@ -185,31 +192,33 @@ impl PodcastHostOpHandler {
                 provider,
             } => self.handle_set_episode_transcript_status(episode_id, status, message, provider),
             PodcastAction::SummarizeEpisode { episode_id } => {
-                if let Some(signal) = self.snapshot_signal.clone() {
+                // Step 15+16: store/rev/runtime/signal sourced from state.*.
+                if let Some(signal) = self.state.infra.signal.clone() {
                     crate::episode_summary::handle_summarize_episode_with_signal(
-                        &self.store,
-                        &self.rev,
-                        &self.runtime,
+                        &self.state.library.store,
+                        &self.state.infra.rev,
+                        &self.state.infra.runtime,
                         episode_id,
                         signal,
                     )
                 } else {
                     crate::episode_summary::handle_summarize_episode(
-                        &self.store,
-                        &self.rev,
-                        &self.runtime,
+                        &self.state.library.store,
+                        &self.state.infra.rev,
+                        &self.state.infra.runtime,
                         episode_id,
                     )
                 }
             }
-            PodcastAction::FetchFeedback => self.feedback.fetch(self.app).as_json(),
+            // Step 16: feedback is now in state.feedback.
+            PodcastAction::FetchFeedback => self.state.feedback.fetch(self.app).as_json(),
             PodcastAction::PublishFeedback {
                 category,
                 content,
                 parent_event_id,
                 reply_to_pubkey,
             } => self
-                .feedback
+                .state.feedback
                 .publish(
                     self.app,
                     &category,
@@ -223,9 +232,9 @@ impl PodcastHostOpHandler {
                 show_title,
             } => crate::nostr_episodes::handle_subscribe_nostr(
                 self.app,
-                &self.store,
-                &self.rev,
-                self.snapshot_signal.as_ref(),
+                &self.state.library.store,
+                &self.state.infra.rev,
+                self.state.infra.signal.as_ref(),
                 &author_pubkey_hex,
                 show_title.as_deref(),
             ),

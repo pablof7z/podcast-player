@@ -41,7 +41,7 @@ pub extern "C" fn nmp_app_podcast_network_report(
         let handle_ref = unsafe { &*handle };
         match report {
             NetworkReport::ConnectivityChanged { is_wifi, .. } => {
-                if let Ok(mut s) = handle_ref.store.lock() {
+                if let Ok(mut s) = handle_ref.state.library.store.lock() {
                     s.set_is_on_wifi(is_wifi);
                 }
                 // When Wi-Fi is restored, pending deferred downloads are drained

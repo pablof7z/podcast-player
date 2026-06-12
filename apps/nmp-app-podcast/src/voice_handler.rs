@@ -89,7 +89,7 @@ pub(crate) fn handle(
         VoiceAction::Speak { text, voice_id } => {
             // Mint a kernel-owned request id so the executor's reports
             // correlate even when the UI didn't supply one.
-            let request_id = format!("turn-{}", handler.rev.load(Ordering::Relaxed));
+            let request_id = format!("turn-{}", handler.state.infra.rev.load(Ordering::Relaxed));
             mutate_voice_state(handler, |v| {
                 v.is_speaking = true;
                 v.current_request_id = Some(request_id.clone());
@@ -179,7 +179,7 @@ fn mutate_voice_state(handler: &PodcastHostOpHandler, f: impl FnOnce(&mut VoiceS
     if let Ok(mut v) = handler.state.voice.voice_state.lock() {
         f(&mut v);
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 }
 
 #[cfg(test)]

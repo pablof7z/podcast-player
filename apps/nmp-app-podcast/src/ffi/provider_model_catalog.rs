@@ -20,8 +20,8 @@ pub extern "C" fn nmp_app_podcast_provider_model_catalog(
         || err_envelope("panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let store = Arc::clone(&handle_ref.state.library.store);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(model_catalog::fetch_model_catalog(store)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
                 Err(error) => err_envelope(&error.to_string()).into_raw(),

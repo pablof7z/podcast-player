@@ -34,6 +34,9 @@
 //! Steps 8-10 done (Comments, Discovery, Social).
 //! Step 11: AgentChat substate — `conversation`/`agent_busy`/`agent_touched`
 //!          removed from both god-structs.
+//! Step 15: LibraryState substate — `store` + `identity` relocated from
+//!          register.rs locals into `state.library`; removed from both
+//!          god-structs.  All other substates keep their existing Arc clones.
 
 pub mod agent_chat;
 pub mod categories;
@@ -42,6 +45,7 @@ pub mod comments;
 pub mod discovery;
 pub mod inbox;
 pub mod knowledge;
+pub mod library;
 pub mod picks;
 pub mod playback;
 pub mod publish;
@@ -130,6 +134,21 @@ impl Infra {
             runtime: Arc::new(rt),
         }
     }
+
+    /// Like `for_test()` but shares the caller-supplied `rev` Arc so tests can
+    /// observe bumps via the same handle they hold.
+    #[cfg(test)]
+    pub fn for_test_with_rev(rev: Arc<AtomicU64>) -> Self {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test tokio runtime");
+        Self {
+            rev,
+            signal: None,
+            runtime: Arc::new(rt),
+        }
+    }
 }
 
 // ── PodcastAppState ───────────────────────────────────────────────────────────
@@ -169,6 +188,12 @@ impl Infra {
 pub struct PodcastAppState {
     /// Cross-cutting infrastructure (rev + signal + runtime).
     pub infra: Infra,
+
+    /// Library substate (Step 15).  Owns the canonical persisted root:
+    /// `store` (`Arc<Mutex<PodcastStore>>`) and `identity`
+    /// (`Arc<Mutex<IdentityStore>>`).  All other substates hold existing Arc
+    /// clones; `LibraryState` is the tree-level owner.
+    pub library: library::LibraryState,
 
     /// Knowledge substate (Step 1).
     pub knowledge: knowledge::KnowledgeState,
@@ -239,6 +264,23 @@ pub struct PodcastAppState {
     /// Cross-thread: the report FFIs (`audio_report`, `download_report`)
     /// write here from the platform audio/download threads via `.share()`.
     pub playback: playback::PlaybackState,
+
+    /// In-app feedback runtime (Step 16).  Moved from the god-struct mirrors
+    /// (`PodcastHandle.feedback` / `PodcastHostOpHandler.feedback`) into the
+    /// shared state tree so both seams read the same event cache without a
+    /// separate Arc wire.
+    ///
+    /// `nmp-feedback` owns the relay-pinned subscription, publish tags, event
+    /// cache, and thread projection.  Empty until the first `FetchFeedback`
+    /// dispatch.
+    pub feedback: nmp_feedback::FeedbackRuntime,
+
+    /// Optimistic-subscribe async feed-fetch coordinator (Step 16).  Moved
+    /// from both god-structs into the shared tree.  The handler registers a
+    /// pending fetch + dispatches the async HTTP command; the handle's
+    /// HTTP-report FFI resolves the result.  Holds a shared clone of
+    /// `library.store` + `infra.rev` + signal.
+    pub(crate) feed_fetch: std::sync::Arc<crate::feed_fetch::FeedFetchCoordinator>,
 }
 
 impl PodcastAppState {
@@ -248,26 +290,45 @@ impl PodcastAppState {
     /// plus the shared `store` Arc.  The 31-arg positional constructor in
     /// `register.rs` will be replaced by this single call once all steps
     /// are complete.
+    ///
+    /// Uses a stub `FeedbackRuntime` with the podcast project coordinate.
     pub fn new(
         infra: Infra,
         store: Arc<std::sync::Mutex<crate::store::PodcastStore>>,
     ) -> Self {
+        let feedback = nmp_feedback::FeedbackRuntime::new(
+            nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
+                .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+            infra.rev.clone(),
+        );
         Self::new_with_identity(
             infra,
             store,
             Arc::new(std::sync::Mutex::new(
                 crate::store::identity::IdentityStore::new(),
             )),
+            feedback,
         )
     }
 
     /// Full constructor accepting an externally-created identity store so
     /// `register.rs` can pass the shared Arc rather than creating a new one.
+    ///
+    /// Step 16: `feedback` is also injected — `FeedbackRuntime` needs a
+    /// project coordinate + relay seed from the app layer and a
+    /// `with_snapshot_bump` hook that references the live signal.
+    /// `FeedFetchCoordinator` is constructed internally since it only needs
+    /// `picks` + `categories` + `infra` which are all available here.
     pub fn new_with_identity(
         infra: Infra,
         store: Arc<std::sync::Mutex<crate::store::PodcastStore>>,
         identity: Arc<std::sync::Mutex<crate::store::identity::IdentityStore>>,
+        feedback: nmp_feedback::FeedbackRuntime,
     ) -> Self {
+        // Step 15: LibraryState owns the store + identity Arcs.  All other
+        // substates receive clones of these same Arcs (lock topology unchanged).
+        let library = library::LibraryState::new(store.clone(), identity.clone());
         let knowledge = knowledge::KnowledgeState::new(infra.clone(), store.clone());
         // Wiki shares the same KnowledgeStore Arc (Step 2 constraint).
         let knowledge_index = knowledge.index_arc();
@@ -293,8 +354,18 @@ impl PodcastAppState {
         );
         let publish = publish::PublishState::new(infra.clone(), store.clone());
         let playback = playback::PlaybackState::new(infra.clone(), store.clone());
+        // Step 16: FeedFetchCoordinator is constructed inside the state — it
+        // needs picks + categories Arcs available here, plus infra.rev + signal.
+        let feed_fetch = std::sync::Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
+            store.clone(),
+            infra.rev.clone(),
+            infra.signal.clone(),
+            Arc::clone(&categories),
+            Arc::clone(&picks),
+        ));
         Self {
             infra,
+            library,
             knowledge,
             wiki,
             picks,
@@ -310,6 +381,8 @@ impl PodcastAppState {
             voice,
             publish,
             playback,
+            feedback,
+            feed_fetch,
         }
     }
 }

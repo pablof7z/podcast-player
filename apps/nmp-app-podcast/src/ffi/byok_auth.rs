@@ -47,7 +47,7 @@ pub extern "C" fn nmp_app_podcast_byok_exchange(
                 Err(error) => return err_envelope(&error, "invalid_request").into_raw(),
             };
             let handle_ref = unsafe { &*handle };
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(byok_auth::exchange_authorization(intent)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
                 Err(error) => byok_error_envelope(&error).into_raw(),

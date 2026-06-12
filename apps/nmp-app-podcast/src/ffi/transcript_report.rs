@@ -69,7 +69,7 @@ pub extern "C" fn nmp_app_podcast_transcript_report(
             };
 
             let handle_ref = unsafe { &*handle };
-            if let Ok(mut s) = handle_ref.store.lock() {
+            if let Ok(mut s) = handle_ref.state.library.store.lock() {
                 let char_count = report.text.chars().count();
                 let source = report.source.clone();
                 s.set_transcript(report.episode_id.clone(), report.text);

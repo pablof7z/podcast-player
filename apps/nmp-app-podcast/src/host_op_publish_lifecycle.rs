@@ -97,7 +97,7 @@ pub fn update_owned(
     let visibility = visibility.map(|v| parse_visibility(Some(v)));
     // Mutate the row, then read the gate inputs under the same lock so the
     // republish decision reflects the just-applied update (visibility first).
-    let (updated, should_publish) = match handler.store.lock() {
+    let (updated, should_publish) = match handler.state.library.store.lock() {
         Ok(mut s) => {
             let updated = s.update_owned_metadata(
                 &podcast_id,
@@ -122,7 +122,7 @@ pub fn update_owned(
             "error": format!("podcast not found: {podcast_id}")
         });
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 
     if !should_publish {
         return serde_json::json!({"ok": true, "status": "skipped"});
@@ -171,10 +171,10 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
     let mut deletion_status = "skipped";
     let mut deletion_event_id: Option<String> = None;
     let nostr_enabled = handler
-        .store
+        .state.library.store
         .lock()
         .ok()
-        .map(|s| s.nostr_enabled())
+        .map(|s: std::sync::MutexGuard<'_, crate::store::PodcastStore>| s.nostr_enabled())
         .unwrap_or(false);
     if let (Some(event_id), true) = (show_event_id.as_ref(), nostr_enabled) {
         // Step 13: podcast_keys now in state.publish (PublishState).
@@ -210,7 +210,7 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
         keys.remove_key(&podcast_id);
     }
     // Step 3: remove the row + episodes.
-    if let Ok(mut s) = handler.store.lock() {
+    if let Ok(mut s) = handler.state.library.store.lock() {
         s.remove_podcast_and_episodes(&podcast_id);
     }
     // Step 4: discard publish state.
@@ -218,7 +218,7 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {
         state.remove(&podcast_id);
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 
     serde_json::json!({
         "ok": true,

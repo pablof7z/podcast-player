@@ -11,36 +11,26 @@ use std::sync::{Arc, Mutex};
 fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<PodcastHandle> {
     use std::collections::HashMap;
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step N+1: rev is now owned by Infra; use for_test_with_rev so test
+    // assertions on `rev.load(...)` observe bumps routed through state.infra.
+    let feedback = nmp_feedback::FeedbackRuntime::new(
+        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
+            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
+        Arc::new(Mutex::new(Vec::new())),
+        rev.clone(),
+    );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
-        crate::state::Infra::for_test(),
+        crate::state::Infra::for_test_with_rev(rev.clone()),
         store.clone(),
         identity.clone(),
+        feedback,
     ));
+    // Steps 15-N+1: all fields in state (library, infra, feedback, feed_fetch).
     Box::new(PodcastHandle {
         app: std::ptr::null_mut(),
         state,
-        // player_actor, queue, download_queue removed in Step 14 — now in state.playback.
-        store: store.clone(),
-        identity,
-        rev: rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        // clips, transcripts, agent_tasks removed in Steps 5a, 5b, 6 —
-        // now owned by state.clips / state.transcripts / state.tasks.
-        // search_results, nostr_results, comments_cache, viewed_comments_episode_id,
-        // social, agent_notes removed in Steps 8-10 — now owned by
-        // state.discovery / state.comments / state.social.
-        // dismissed_episode_ids, inbox_triage_cache, inbox_triage_in_progress removed in Step 7 —
-        // now owned by state.inbox (InboxState).
-        feedback: nmp_feedback::FeedbackRuntime::new(
-            nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-                .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-            Arc::new(Mutex::new(Vec::new())),
-            rev.clone(),
-        ),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        feed_fetch: crate::feed_fetch::FeedFetchCoordinator::new_test(),
     })
 }
 struct TempDir {

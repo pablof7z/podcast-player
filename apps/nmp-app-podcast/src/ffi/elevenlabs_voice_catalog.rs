@@ -20,8 +20,8 @@ pub extern "C" fn nmp_app_podcast_elevenlabs_voice_catalog(
         || err_envelope("panic", None, "panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let store = Arc::clone(&handle_ref.state.library.store);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(elevenlabs_voice_catalog::fetch_elevenlabs_voice_catalog(store))
             {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),

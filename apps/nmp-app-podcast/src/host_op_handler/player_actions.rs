@@ -42,7 +42,7 @@ impl PodcastHostOpHandler {
         if prior_episode == Some(episode_id) {
             return;
         }
-        if let Ok(mut s) = self.store.lock() {
+        if let Ok(mut s) = self.state.library.store.lock() {
             let detail = if position_secs > 1.0 {
                 crate::store::events::EventDetail::new(
                     "Resumed at",
@@ -63,7 +63,7 @@ impl PodcastHostOpHandler {
 
     fn handle_play(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
         let (canonical_id, podcast_id, url, position_secs, needs_download) = {
-            match self.store.lock() {
+            match self.state.library.store.lock() {
                 Ok(s) => match s.episode_playback_info(&episode_id) {
                     Some((canon_id, pod_id, ep_url, pos)) => {
                         let downloaded = s.episode_is_downloaded(&episode_id);
@@ -96,8 +96,8 @@ impl PodcastHostOpHandler {
         // Push the persisted ad segments + global toggle into the
         // freshly-staged actor so auto-skip can fire on the very first
         // `Playing` report (no extra round-trip via iOS).
-        hydrate_actor_for_play(&self.store, &player, &episode_id);
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        hydrate_actor_for_play(&self.state.library.store, &player, &episode_id);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         if let Err(e) = self.dispatch_audio(
             &AudioCommand::load_with_id(&url, position_secs, &episode_id),
             correlation_id,
@@ -120,7 +120,7 @@ impl PodcastHostOpHandler {
 
     fn handle_load(&self, episode_id: String, correlation_id: &str) -> serde_json::Value {
         let (canonical_id, podcast_id, url, position_secs, needs_download) = {
-            match self.store.lock() {
+            match self.state.library.store.lock() {
                 Ok(s) => match s.episode_playback_info(&episode_id) {
                     Some((canon_id, pod_id, ep_url, pos)) => {
                         let downloaded = s.episode_is_downloaded(&episode_id);
@@ -147,8 +147,8 @@ impl PodcastHostOpHandler {
             None
         };
         self.record_playback_started_if_new(&episode_id, position_secs, prior_episode.as_deref());
-        hydrate_actor_for_play(&self.store, &player, &episode_id);
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        hydrate_actor_for_play(&self.state.library.store, &player, &episode_id);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         // Dispatch Load only — no Play. iOS calls Resume when the user taps play.
         let dispatch = self.dispatch_audio(
             &AudioCommand::load_with_id(&url, position_secs, &episode_id),
@@ -186,14 +186,14 @@ impl PodcastHostOpHandler {
                 if let Ok(mut a) = self.state.playback.player.lock() {
                     a.set_speed(speed);
                 }
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 self.dispatch_audio_json(AudioCommand::SetSpeed { speed }, correlation_id)
             }
             PlayerAction::SetVolume { volume } => {
                 if let Ok(mut a) = self.state.playback.player.lock() {
                     a.set_volume(volume);
                 }
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 self.dispatch_audio_json(AudioCommand::SetVolume { volume }, correlation_id)
             }
             PlayerAction::SetSleepTimer { secs } => {
@@ -205,7 +205,7 @@ impl PodcastHostOpHandler {
                         _ => a.cancel_sleep_timer(),
                     }
                 }
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 self.dispatch_audio_json(AudioCommand::SetSleepTimer { secs }, correlation_id)
             }
             PlayerAction::Stop => self.dispatch_audio_json(AudioCommand::Stop, correlation_id),
@@ -217,9 +217,9 @@ impl PodcastHostOpHandler {
                 episode_id,
                 segments,
             } => handle_set_ad_segments(
-                &self.store,
+                &self.state.library.store,
                 &self.state.playback.player.share(),
-                &self.rev,
+                &self.state.infra.rev,
                 episode_id,
                 segments,
             ),
@@ -240,10 +240,10 @@ impl PodcastHostOpHandler {
             PlayerAction::CancelAllDownloads => {
                 self.handle_download_command(|q| q.cancel_all(), correlation_id)
             }
-            PlayerAction::ResetProgress { episode_id } => match self.store.lock() {
+            PlayerAction::ResetProgress { episode_id } => match self.state.library.store.lock() {
                 Ok(mut s) => {
                     s.reset_episode_progress(&episode_id);
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                     serde_json::json!({"ok": true})
                 }
                 Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -252,11 +252,11 @@ impl PodcastHostOpHandler {
             PlayerAction::PersistPosition {
                 episode_id,
                 position_secs,
-            } => match self.store.lock() {
+            } => match self.state.library.store.lock() {
                 Ok(mut s) => {
                     s.set_episode_position(&episode_id, position_secs);
                     s.flush_positions();
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                     serde_json::json!({"ok": true})
                 }
                 Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -287,7 +287,7 @@ impl PodcastHostOpHandler {
     /// same queue the snapshot's `Up Next` projection renders from. Validates
     /// the episode exists, then mutates + persists via the shared queue helper.
     fn handle_enqueue(&self, episode_id: String) -> serde_json::Value {
-        let exists = match self.store.lock() {
+        let exists = match self.state.library.store.lock() {
             Ok(s) => s.episode_playback_info(&episode_id).is_some(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
@@ -324,10 +324,10 @@ impl PodcastHostOpHandler {
             };
             let Some(id) = popped else {
                 self.persist_queue();
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 return serde_json::json!({"ok": false, "error": "queue is empty"});
             };
-            let resolvable = match self.store.lock() {
+            let resolvable = match self.state.library.store.lock() {
                 Ok(s) => s.episode_playback_info(&id).is_some(),
                 Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
             };
@@ -353,8 +353,8 @@ impl PodcastHostOpHandler {
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "queue poisoned"}),
         };
-        self.rev.fetch_add(1, Ordering::Relaxed);
-        if let Ok(mut s) = self.store.lock() {
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut s) = self.state.library.store.lock() {
             s.persist_with_queue(&items);
         }
         serde_json::json!({"ok": true})
@@ -367,7 +367,7 @@ impl PodcastHostOpHandler {
             Ok(q) => q.items().to_vec(),
             Err(_) => return,
         };
-        if let Ok(mut s) = self.store.lock() {
+        if let Ok(mut s) = self.state.library.store.lock() {
             s.persist_with_queue(&items);
         }
     }
@@ -390,7 +390,7 @@ impl PodcastHostOpHandler {
         url: String,
         correlation_id: &str,
     ) -> serde_json::Value {
-        let exists = match self.store.lock() {
+        let exists = match self.state.library.store.lock() {
             Ok(s) => s.episode_enclosure_url(&episode_id).is_some(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
@@ -421,7 +421,7 @@ impl PodcastHostOpHandler {
             Ok(mut q) => f(&mut q),
             Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
         };
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         match command {
             Some(cmd) => self.dispatch_download_json(cmd, correlation_id),
             None => serde_json::json!({"ok": true}),

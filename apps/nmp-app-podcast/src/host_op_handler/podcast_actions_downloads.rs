@@ -21,7 +21,7 @@ impl PodcastHostOpHandler {
         &self,
         correlation_id: &str,
     ) -> serde_json::Value {
-        let pending = match self.store.lock() {
+        let pending = match self.state.library.store.lock() {
             Ok(mut s) => s.drain_pending_wifi_downloads(),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
@@ -32,7 +32,7 @@ impl PodcastHostOpHandler {
         //   drop          — unsubscribed, download disabled, or already on disk.
         let mut dispatch_now = Vec::new();
         let mut keep_pending = Vec::new();
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(s) => {
                 let is_on_wifi = s.is_on_wifi();
                 for (ep_id, url) in pending {
@@ -58,7 +58,7 @@ impl PodcastHostOpHandler {
         };
         // Re-add entries that are still valid but need Wi-Fi.
         if !keep_pending.is_empty() {
-            if let Ok(mut s) = self.store.lock() {
+            if let Ok(mut s) = self.state.library.store.lock() {
                 s.add_pending_wifi_downloads(keep_pending);
             }
         }
@@ -80,7 +80,7 @@ impl PodcastHostOpHandler {
             url
         } else {
             // Fall back to store lookup (for legacy/Rust-side dispatch).
-            match self.store.lock() {
+            match self.state.library.store.lock() {
                 Ok(s) => match s.episode_enclosure_url(&episode_id_str) {
                     Some((_id, url)) => url,
                     None => {
@@ -96,7 +96,7 @@ impl PodcastHostOpHandler {
         if let Err(e) = self.start_episode_download(&episode_id_str, &url, correlation_id, false) {
             return serde_json::json!({"ok": false, "error": e});
         }
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         serde_json::json!({"ok": true})
     }
 
@@ -139,7 +139,7 @@ impl PodcastHostOpHandler {
             Err(_) => return Err("download_queue poisoned".into()),
         };
 
-        if let Ok(mut s) = self.store.lock() {
+        if let Ok(mut s) = self.state.library.store.lock() {
             let (kind, summary): (&str, &str) = if auto {
                 (stage::AUTO_DOWNLOAD_QUEUED, "Auto-download queued")
             } else {
@@ -184,7 +184,7 @@ impl PodcastHostOpHandler {
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
         };
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         if let Some(cmd) = command {
             if let Err(e) = self.dispatch_download(&cmd, correlation_id) {
                 return serde_json::json!({"ok": false, "error": e});
@@ -205,11 +205,11 @@ impl PodcastHostOpHandler {
             Err(_) => return serde_json::json!({"ok": false, "error": "invalid podcast_id"}),
         };
         let podcast_id = podcast_core::PodcastId::new(uuid);
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(mut s) => {
                 s.set_auto_download(podcast_id, enabled);
                 s.set_wifi_only(podcast_id, wifi_only);
-                self.rev.fetch_add(1, Ordering::Relaxed);
+                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         }
@@ -232,7 +232,7 @@ impl PodcastHostOpHandler {
     /// queue-backed [`Self::start_episode_download`].
     pub(super) fn handle_evaluate_auto_downloads(&self, correlation_id: &str) -> serde_json::Value {
         use crate::store::auto_download::AUTO_DOWNLOAD_BACKFILL_LIMIT;
-        let (ready, deferred) = match self.store.lock() {
+        let (ready, deferred) = match self.state.library.store.lock() {
             Ok(s) => {
                 let is_on_wifi = s.is_on_wifi();
                 s.auto_download_backfill_candidates(is_on_wifi, AUTO_DOWNLOAD_BACKFILL_LIMIT)
@@ -244,7 +244,7 @@ impl PodcastHostOpHandler {
                 self.start_episode_download(&episode_id.0.to_string(), url, correlation_id, true);
         }
         if !deferred.is_empty() {
-            if let Ok(mut s) = self.store.lock() {
+            if let Ok(mut s) = self.state.library.store.lock() {
                 use crate::store::events::{stage, EventSeverity};
                 for (episode_id, _url) in &deferred {
                     s.emit_event_simple(
@@ -275,7 +275,7 @@ impl PodcastHostOpHandler {
 
     pub(super) fn handle_delete_download(&self, episode_id_str: String) -> serde_json::Value {
         let removed_path = {
-            match self.store.lock() {
+            match self.state.library.store.lock() {
                 Ok(mut s) => match s.episode_enclosure_url(&episode_id_str) {
                     Some((ep_id, _url)) => {
                         let path = s.clear_local_path(&ep_id);
@@ -296,7 +296,7 @@ impl PodcastHostOpHandler {
         };
         if let Some(path) = removed_path {
             let _ = std::fs::remove_file(&path);
-            self.rev.fetch_add(1, Ordering::Relaxed);
+            self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         }
         serde_json::json!({"ok": true})
     }

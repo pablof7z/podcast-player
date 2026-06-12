@@ -24,7 +24,7 @@ impl PodcastHostOpHandler {
                 picture,
             } => crate::social_publish_handler::handle_publish_profile(
                 self.app,
-                &self.identity,
+                &self.state.library.identity,
                 &name,
                 display_name.as_deref(),
                 about.as_deref(),
@@ -36,7 +36,7 @@ impl PodcastHostOpHandler {
                 episode_coord,
             } => crate::social_publish_handler::handle_publish_note(
                 self.app,
-                &self.identity,
+                &self.state.library.identity,
                 &content,
                 episode_coord.as_deref(),
                 correlation_id,
@@ -60,7 +60,7 @@ impl PodcastHostOpHandler {
                 };
                 crate::social_publish_handler::handle_publish_highlight(
                     self.app,
-                    &self.identity,
+                    &self.state.library.identity,
                     &content,
                     &fields,
                     correlation_id,

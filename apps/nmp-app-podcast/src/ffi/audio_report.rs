@@ -147,7 +147,7 @@ pub extern "C" fn nmp_app_podcast_audio_report(
         // -- 2. Mirror the playhead into the store. ----------------------------
         let is_item_end = matches!(report, AudioReport::ItemEnd { .. });
         if let Some(ref episode_id) = episode_id_for_writeback {
-            if let Ok(mut store) = handle_ref.store.lock() {
+            if let Ok(mut store) = handle_ref.state.library.store.lock() {
                 apply_writeback(&mut store, &report, episode_id);
             }
         }
@@ -268,7 +268,7 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
             Err(_) => return,
         };
         let Some(id) = popped else { return }; // queue exhausted — nothing to play
-        let info = match handle.store.lock() {
+        let info = match handle.state.library.store.lock() {
             Ok(s) => s.episode_playback_info(&id),
             Err(_) => return,
         };
@@ -294,7 +294,7 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
 
     // Enqueue a background download for un-downloaded episodes (mirrors
     // handle_play). `DownloadQueue::enqueue` is idempotent.
-    let needs_dl = match handle.store.lock() {
+    let needs_dl = match handle.state.library.store.lock() {
         Ok(s) => !s.episode_is_downloaded(&episode_id),
         Err(_) => false,
     };
