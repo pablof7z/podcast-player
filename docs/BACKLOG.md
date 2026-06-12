@@ -750,6 +750,16 @@ worktrees currently in flight.
   requires registering per-podcast keys as named roster accounts, or an alternate
   signing seam. Until that capability lands, `blossom.rs` stays (it uses direct
   `Keys` signing which works without the roster).
+- **kernelsigner-deadcode-removal.** After the Blossom-via-kernel migration
+  (PR feat/blossom-upload-via-nmp) the `KernelSigner` struct
+  (`App/Sources/Services/Nip46/NostrSigner.swift`) has ZERO callers — its only
+  two users (avatar + artwork upload) were converted to `KernelModel.blossomUpload`.
+  Removing it also strands `KernelModel.signEventForReturn` /
+  `PodcastHandle.signEventForReturn` (`KernelBridge.swift`) and the now-conformerless
+  `NostrSigner` protocol + `NostrEventDraft`. Deferred from the PR because the chain
+  reaches into unrelated bridge files and `NostrSignerError` is still referenced by
+  `KernelBridge.swift` + `SignedEventsRegistryTests.swift` — a clean removal needs a
+  focused pass, not a drive-by in the Blossom PR. Non-blocking dead code.
 - **m5-chirp-headers-parity.** Reconcile podcast-player and Chirp HTTP header
   schemas once the canonical `nmp-core::capability::http` shape lands.
 - ~~**m8-blossom-binary-body.**~~ Done (Rust side): `HttpRequest` now carries
