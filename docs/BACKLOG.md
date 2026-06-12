@@ -352,11 +352,17 @@ worktrees currently in flight.
     expected to be **subsumed/replaced** by the Rust-owned conversation
     projection under `nostr-conversations-real-projection`; it is shipped
     now only to give the kind:1 transport an observable output seam.
-  - **DONE — trust gate.** `AgentNoteSummary::trusted` now reflects live
-    NIP-02 follow-list membership via `ActiveFollowSet::predicate()` (PR
-    `feat/social-graph-reactive-trust-gate`). Notes from followed pubkeys are
-    `trusted: true`; all others `false`. Conversations projection deferred to
-    `nostr-conversations-real-projection` (next cycle).
+  - **DONE — trust gate (projection-time-live).** `AgentNoteSummary::trusted`
+    is computed at **projection-build time** in
+    `SocialState::agent_notes_snapshot` by applying the shared live
+    `ActiveFollowSet::predicate()` to each cached note's author hex (PR
+    `feat/social-graph-reactive-trust-gate`). The verdict is NEVER frozen at
+    receipt: a note from X received before following X starts untrusted and
+    flips to `trusted: true` on the next projection after the follow lands (and
+    back on unfollow). Per-account social state (`social_slot` + `agent_notes`)
+    is cleared on account switch so no cross-account trust/notes leak.
+    Conversations projection deferred to `nostr-conversations-real-projection`
+    (next cycle).
   - **OPEN — LLM responder loop.** The inbound→model→outbound autopilot
     (dedup via responded-event ids, per-root outgoing turn cap, `wtd-end`
     end-conversation gate, bounded kind:0 profile hydration, owner-consult

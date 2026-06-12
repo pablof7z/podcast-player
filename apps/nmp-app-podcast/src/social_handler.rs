@@ -23,14 +23,15 @@
 //!   shell to re-render even if no new kind:3 has arrived (e.g. on tab focus).
 //!   It does NOT open a relay connection itself.
 //!
-//! ## Trust gate
+//! ## Trust gate (lives in the social PROJECTION, not here)
 //!
-//! [`FollowListObserver`] also carries an [`nmp_nip02::ActiveFollowSet`] clone
-//! (shared with [`crate::agent_note_handler::AgentNotesObserver`]).  When a
-//! kind:3 event arrives the `ActiveFollowSet` observer (`on_kernel_event`)
-//! fires first (registration order), so by the time `FollowListObserver` runs
-//! the set is already current.  The [`AgentNotesObserver`] uses the predicate
-//! returned by `ActiveFollowSet::predicate()` to set `AgentNoteSummary::trusted`.
+//! The trust verdict for inbound agent notes is computed **live at projection
+//! time** in [`crate::state::social::SocialState::agent_notes_snapshot`], by
+//! applying the shared [`nmp_nip02::ActiveFollowSet`] predicate to each cached
+//! note's author hex.  This observer module only materialises the follow-list
+//! snapshot; it does NOT stamp `trusted`.  See `agent_note_handler.rs` for why
+//! the verdict must be recomputed at projection (follow/unfollow must flip the
+//! verdict on every existing note, with no stale freeze).
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};

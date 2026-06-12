@@ -9,18 +9,25 @@
 //! `InterestLifecycle::OneShot`. NMP opens the subscription; events arrive via
 //! [`AgentNotesObserver`] registered at init.
 //!
-//! ## Trust gate
+//! ## Trust gate — computed live at projection, NOT frozen at receipt
 //!
-//! `AgentNoteSummary::trusted` is now wired to `ActiveFollowSet::predicate()`:
-//! a note whose author hex pubkey is in the active account's NIP-02 follow set
-//! is marked `trusted: true`.  The predicate is a live `Arc<dyn Fn(&str)->bool>`
-//! that reflects kind:3 updates (and account switches) without re-wiring — the
-//! closure captures a clone of the inner `Arc<RwLock<BTreeSet<String>>>` so
-//! updates land automatically.
+//! `AgentNoteSummary::trusted` reflects `ActiveFollowSet::predicate()` membership
+//! at **projection-build time**, not at the moment the kind:1 note was received.
 //!
-//! The `ActiveFollowSet` observer is registered before `AgentNotesObserver` in
-//! `register.rs`, so by the time a kind:1 note fires this observer the set
-//! already reflects the latest kind:3 from the active account.
+//! The observer caches the raw note as a [`CachedAgentNote`] that retains the
+//! author **hex** pubkey but carries **no** `trusted` stamp. The trust verdict is
+//! recomputed every time the snapshot is built, inside
+//! [`crate::state::social::SocialState::agent_notes_snapshot`], by applying the
+//! shared live `ActiveFollowSet` predicate to each cached note's author hex.
+//!
+//! This is the load-bearing correctness property: a note from X received *before*
+//! the user follows X starts untrusted, and flips to `trusted: true` on the very
+//! next projection after the follow lands — and back to `false` on unfollow.
+//! Stamping at receipt (the old design) would freeze a stale verdict because the
+//! cache dedups by event id and never refreshes the row.
+//!
+//! Because the verdict is recomputed at build time, the observer-registration
+//! order relative to `ActiveFollowSet` no longer matters for correctness.
 //!
 //! ## No LLM responder loop (BACKLOG follow-up)
 //!
@@ -30,20 +37,44 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use nostr::nips::nip19::ToBech32;
-use nmp_nip02::ActiveFollowSet;
 
 use nmp_core::planner::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_core::stable_hash::stable_hash64;
 use nmp_core::substrate::{KernelEvent, ViewDependencies};
 use nmp_core::KernelEventObserver;
 
-use crate::ffi::projections::AgentNoteSummary;
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use nmp_ffi::NmpApp;
 
 const MAX_INBOUND_NOTES: usize = 200;
+
+/// Internal cached representation of an inbound kind:1 agent note.
+///
+/// Distinct from the wire DTO [`crate::ffi::projections::AgentNoteSummary`]:
+/// it retains the author **hex** pubkey so the social projection can recompute
+/// the trust verdict live (against the `ActiveFollowSet`) at every snapshot
+/// build, and it carries **no** `trusted` field — the verdict is never frozen
+/// at receipt.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CachedAgentNote {
+    /// Event id (lowercase hex) — stable identifier, used for dedup.
+    pub id: String,
+    /// Author hex pubkey (64 chars) — the trust-gate input. Retained so the
+    /// projection can apply the live `ActiveFollowSet` predicate.
+    pub author_hex: String,
+    /// Author bech32 (`npub1…`) — pre-encoded for the iOS truncated-key
+    /// fallback.
+    pub author_npub: String,
+    /// Note body — the raw `content` field of the kind:1 event.
+    pub content: String,
+    /// Unix seconds (matches NIP-01 `created_at`).
+    pub created_at: i64,
+    /// NIP-10 conversation root event id (lowercase hex) when the note is a
+    /// reply, else `None`.
+    pub root_event_id: Option<String>,
+}
 
 // ── subscribe helpers ────────────────────────────────────────────────────────
 
@@ -163,27 +194,23 @@ pub fn handle_publish_agent_note(
 // ── observer ─────────────────────────────────────────────────────────────────
 
 /// Receives inbound kind:1 notes from NMP's relay pool addressed to the
-/// active account, filters self-authored events, and writes to the cache.
+/// active account, filters self-authored events, and writes the raw note
+/// (author hex retained, NO trust stamp) to the cache.
 ///
-/// The `follow_set` field is an [`ActiveFollowSet`] shared with the
-/// `FollowListObserver` registered in `register.rs`.  Its predicate is used
-/// to set `AgentNoteSummary::trusted` — a note from a followed pubkey is
-/// trusted; all others are not.
+/// The trust verdict is computed later, at projection-build time, in
+/// [`crate::state::social::SocialState::agent_notes_snapshot`] — see the
+/// module-level "Trust gate" doc. The observer never freezes `trusted`.
 pub struct AgentNotesObserver {
     identity: Arc<Mutex<IdentityStore>>,
-    agent_notes_cache: Arc<Mutex<Vec<AgentNoteSummary>>>,
+    agent_notes_cache: Arc<Mutex<Vec<CachedAgentNote>>>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<SnapshotUpdateSignal>,
-    /// Live follow-set membership predicate.  `None` when no `ActiveFollowSet`
-    /// is wired (unit-test / legacy path); in that case `trusted` defaults
-    /// to `false` for every note (conservative fail-closed, D6).
-    follow_set: Option<Arc<ActiveFollowSet>>,
 }
 
 impl AgentNotesObserver {
     pub fn new(
         identity: Arc<Mutex<IdentityStore>>,
-        agent_notes_cache: Arc<Mutex<Vec<AgentNoteSummary>>>,
+        agent_notes_cache: Arc<Mutex<Vec<CachedAgentNote>>>,
         rev: Arc<AtomicU64>,
     ) -> Self {
         Self {
@@ -191,23 +218,11 @@ impl AgentNotesObserver {
             agent_notes_cache,
             rev,
             snapshot_signal: None,
-            follow_set: None,
         }
     }
 
     pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
         self.snapshot_signal = Some(snapshot_signal);
-        self
-    }
-
-    /// Wire the reactive [`ActiveFollowSet`] so `AgentNoteSummary::trusted`
-    /// reflects live NIP-02 follow-list membership.
-    ///
-    /// Must be called before the observer is registered against the kernel
-    /// (registration order matters: `ActiveFollowSet` must fire before this
-    /// observer for the same kind:3 event so the predicate is up-to-date).
-    pub fn with_follow_set(mut self, follow_set: Arc<ActiveFollowSet>) -> Self {
-        self.follow_set = Some(follow_set);
         self
     }
 }
@@ -235,24 +250,16 @@ impl KernelEventObserver for AgentNotesObserver {
 
         let root_event_id = extract_nip10_root(&event.tags);
 
-        // Trust gate: check whether the note author is in the active account's
-        // NIP-02 follow set.  The predicate is a live closure that captures the
-        // inner Arc<RwLock<BTreeSet>> — it reflects the latest kind:3 push
-        // without re-wiring.  Fail-closed: if the set is not wired (None) or
-        // the lock is poisoned the predicate returns false (D6).
-        let trusted = self
-            .follow_set
-            .as_ref()
-            .map(|fs| fs.predicate()(&event.author))
-            .unwrap_or(false);
-
-        let note = AgentNoteSummary {
+        // Store the raw note with author hex retained. The trust verdict is
+        // NOT computed here — it is recomputed live at projection-build time
+        // against the shared `ActiveFollowSet` (see SocialState).
+        let note = CachedAgentNote {
             id: event.id.clone(),
+            author_hex: event.author.clone(),
             author_npub,
             content: event.content.clone(),
             created_at: event.created_at as i64,
             root_event_id,
-            trusted,
         };
 
         if let Ok(mut cache) = self.agent_notes_cache.lock() {
