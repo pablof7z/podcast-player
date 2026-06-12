@@ -715,6 +715,17 @@ worktrees currently in flight.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
+- **swift-codegen-settings-snapshot.** `PodcastSettingsSnapshot.generated.swift` is
+  the last hand-maintained Generated/ file because `SettingsSnapshot` requires a mixed
+  `CodingKeys` enum: most keys are auto-camelCase but ~15 fields override to raw
+  snake_case (`ollama_chat_url`, `stt_provider`, `assembly_ai_*`, etc.). The
+  `swift-codegen` binary (added in PR #406) skips this file and marks it
+  `// NOT YET GENERATED`. To close the gap: extend the generator's field manifest
+  with an optional per-field `coding_key_override: &'static str` and emit the full
+  `CodingKeys` enum only when overrides are present. Faithfulness proof: generator
+  output matches the current file byte-for-byte. Unblocks full drift-gate coverage.
+  Tracked here per AGENTS.md; do not create a separate plan file.
+
 - ~~**signed-events-fb-bridge.**~~ Done (PR #383): `nmp_app_podcast_decode_update_frame`
   now decodes the typed `signed_events` FlatBuffer sidecar
   (`nmp_core::decode_snapshot_typed_projections` + `nmp_core::typed_projections::decode_signed_events`)
