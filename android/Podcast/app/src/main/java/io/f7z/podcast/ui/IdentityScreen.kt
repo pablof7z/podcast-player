@@ -228,6 +228,7 @@ private fun NotSignedInState(
 private fun ModeBadge(mode: String) {
     val label = when (mode.lowercase()) {
         "bunker", "nip46", "nip-46" -> "Bunker"
+        "nip55", "nip-55", "amber" -> "Amber"
         else -> "Local Key"
     }
     AssistChip(
