@@ -281,7 +281,11 @@ pub struct PodcastAppState {
     /// Inbox substate (Step 7).  Owns `dismissed` + `triage_cache` slots +
     /// `triage_in_progress` atomic.  Tokio tasks write back scores via
     /// `triage_cache.share()`.
-    pub inbox: inbox::InboxState,
+    ///
+    /// Wrapped in `Arc` so `FeedFetchCoordinator` can hold the canonical
+    /// instance and call `maybe_enqueue_triage` from the transport thread
+    /// after an async subscribe delivers fresh episodes (D8 re-homing).
+    pub inbox: Arc<inbox::InboxState>,
 
     /// Comments substate (Step 8).  Owns cache + viewed-episode-id slots.
     /// `CommentsObserver` shares `cache` off the actor thread via `.share()`.
@@ -411,7 +415,7 @@ impl PodcastAppState {
         let clips = clips::ClipsState::new(infra.clone(), store.clone());
         let transcripts = transcripts::TranscriptsState::new(infra.clone(), store.clone());
         let tasks = tasks::TasksState::new(infra.clone(), store.clone());
-        let inbox = inbox::InboxState::new(infra.clone(), store.clone());
+        let inbox = Arc::new(inbox::InboxState::new(infra.clone(), store.clone()));
         let comments =
             comments::CommentsState::new(infra.clone(), store.clone(), identity.clone());
         let discovery = discovery::DiscoveryState::new(infra.clone());
@@ -431,13 +435,16 @@ impl PodcastAppState {
             store.clone(),
         );
         // Step 16: FeedFetchCoordinator is constructed inside the state — it
-        // needs picks + categories Arcs available here, plus infra.rev + signal.
+        // needs picks + categories + inbox Arcs available here, plus infra.rev + signal.
+        // inbox Arc added (D8 re-homing): apply_subscribe_result enqueues triage after
+        // fresh episodes land, matching the synchronous refresh path.
         let feed_fetch = std::sync::Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
             store.clone(),
             infra.rev.clone(),
             infra.signal.clone(),
             Arc::clone(&categories),
             Arc::clone(&picks),
+            Arc::clone(&inbox),
         ));
         Self {
             infra,

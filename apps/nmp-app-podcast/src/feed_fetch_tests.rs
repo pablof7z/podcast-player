@@ -1,6 +1,7 @@
 //! Tests for [`super::FeedFetchCoordinator`] — the async subscribe continuation.
 
 use super::*;
+use crate::state::inbox::InboxState;
 use podcast_core::Podcast;
 use podcast_feeds::http::{HttpReport, HttpResult};
 use url::Url;
@@ -40,10 +41,47 @@ fn coordinator_over(store: Arc<Mutex<PodcastStore>>) -> FeedFetchCoordinator {
     FeedFetchCoordinator::new(
         store.clone(),
         infra.rev.clone(),
-        None, // no snapshot signal: skip the spawned categorize / picks passes
+        None, // no snapshot signal: skip the spawned categorize / picks / triage passes
         Arc::new(CategoriesState::for_test(store.clone())),
-        Arc::new(PicksState::for_test(store)),
+        Arc::new(PicksState::for_test(store.clone())),
+        Arc::new(InboxState::for_test()),
     )
+}
+
+/// Build a coordinator that exposes the `InboxState` Arc for post-run
+/// assertions.  Uses a real `SnapshotUpdateSignal` so the
+/// `if self.snapshot_signal.is_some()` gate opens and `maybe_enqueue_triage`
+/// is actually reached.
+///
+/// The `InboxState` is wired to the SAME `store` as the coordinator so
+/// `maybe_enqueue_triage` sees the episodes hydrated by `apply_subscribe_result`.
+fn coordinator_with_inbox(
+    store: Arc<Mutex<PodcastStore>>,
+) -> (FeedFetchCoordinator, Arc<InboxState>) {
+    use crate::snapshot_signal::SnapshotUpdateSignal;
+    use crate::state::categories::CategoriesState;
+    use crate::state::picks::PicksState;
+    use crate::state::Infra;
+    let infra = Infra::for_test();
+    // Create a throw-away channel — the receiver is dropped immediately so the
+    // `send` inside `SnapshotUpdateSignal::bump` returns `Err(Disconnected)`,
+    // which `bump` already ignores (`let _ = self.actor_tx.send(...)`).
+    // The important thing is that `snapshot_signal.is_some()` is `true` so the
+    // `maybe_enqueue_triage` gate opens — this matches the production path.
+    let (tx, _rx) = std::sync::mpsc::channel();
+    let signal = SnapshotUpdateSignal::new(infra.rev.clone(), tx);
+    // Wire InboxState to the shared store so maybe_enqueue_triage sees the
+    // episodes applied by apply_subscribe_result.
+    let inbox = Arc::new(InboxState::new(infra.clone(), store.clone()));
+    let coord = FeedFetchCoordinator::new(
+        store.clone(),
+        infra.rev.clone(),
+        Some(signal),
+        Arc::new(CategoriesState::for_test(store.clone())),
+        Arc::new(PicksState::for_test(store.clone())),
+        Arc::clone(&inbox),
+    );
+    (coord, inbox)
 }
 
 fn ok_result(body: &str) -> HttpResult {
@@ -152,4 +190,72 @@ fn duplicate_report_is_dropped() {
         result: ok_result(FEED_XML),
     });
     assert_eq!(store.lock().unwrap().episodes_for(podcast_id).len(), 3);
+}
+
+/// D8 trigger re-homing: an async subscribe report that delivers fresh
+/// episodes MUST enqueue an inbox triage pass.
+///
+/// Asserts that `triage_in_progress` flips to `true` inside `maybe_enqueue_triage`
+/// (the `InboxState` guard that prevents concurrent passes), mirroring the
+/// pattern used to verify the categories/picks side-effects in their own
+/// guard tests.
+///
+/// The coordinator is wired with a real `SnapshotUpdateSignal` so the
+/// `if self.snapshot_signal.is_some()` gate opens — exactly the condition
+/// that also enables `auto_categorize` and `auto_refresh_picks`.
+#[test]
+fn subscribe_report_with_fresh_episodes_enqueues_triage() {
+    use std::sync::atomic::Ordering;
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let url = Url::parse("https://example.com/feed.xml").unwrap();
+    let podcast_id = PodcastId::generate();
+
+    // Insert optimistic placeholder (zero episodes) so the subscribe path has
+    // a row to update — mirrors the production `handle_subscribe` flow.
+    {
+        let mut s = store.lock().unwrap();
+        let mut placeholder = Podcast::new("example.com");
+        placeholder.id = podcast_id;
+        placeholder.feed_url = Some(url.clone());
+        placeholder.title_is_placeholder = true;
+        s.subscribe(placeholder, Vec::new());
+    }
+
+    let (coord, inbox) = coordinator_with_inbox(store.clone());
+
+    // Precondition: triage not yet claimed.
+    assert!(
+        !inbox.triage_in_progress.load(Ordering::Relaxed),
+        "triage_in_progress should start false"
+    );
+
+    let request_id = "req-triage".to_string();
+    coord.register(
+        request_id.clone(),
+        PendingFeedFetch {
+            mode: FeedFetchMode::Subscribe,
+            podcast_id,
+            url,
+            known: false,
+        },
+    );
+    coord.apply_report(HttpReport {
+        request_id,
+        result: ok_result(FEED_XML),
+    });
+
+    // Episodes hydrated — triage path was reached.
+    assert_eq!(
+        store.lock().unwrap().episodes_for(podcast_id).len(),
+        3,
+        "episodes must hydrate before the triage assertion"
+    );
+
+    // maybe_enqueue_triage claims the in-progress flag when it finds
+    // untriaged episodes and spawns the background task.  The store now
+    // holds three fresh (unscored) episodes, so the flag must have flipped.
+    assert!(
+        inbox.triage_in_progress.load(Ordering::Relaxed),
+        "apply_subscribe_result must invoke maybe_enqueue_triage (D8 re-homing)"
+    );
 }
