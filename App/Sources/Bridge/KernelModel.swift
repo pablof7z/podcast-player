@@ -117,6 +117,16 @@ final class KernelModel {
     /// this tracks every processed tick so the short-circuit guards stay
     /// accurate.
     private var lastProcessedRev: UInt64 = 0
+    /// `false` until the first cold-start full pull has been successfully
+    /// applied. Guards the re-seed allowance: before the first hydration
+    /// the pull path uses `>=` instead of `>` when comparing
+    /// `update.rev` against `lastProcessedRev`, so a partial push frame
+    /// that races the startup pull and advances `lastProcessedRev` cannot
+    /// permanently block the full-library snapshot from seeding the
+    /// composite. Flipped to `true` inside `applyPodcastUpdate` the
+    /// moment the first `fromPull` frame commits; after that the
+    /// steady-state `>` guard is restored for both push and pull paths.
+    private var hasHydrated: Bool = false
     /// Per-domain last-applied rev counters. Each domain frame's `rev` is
     /// compared here before merging — stale/duplicate frames are dropped
     /// without touching the composite.
@@ -241,6 +251,7 @@ final class KernelModel {
         podcastSnapshot = nil
         library = []
         lastProcessedRev = 0
+        hasHydrated = false
         domainRevTracker = DomainRevTracker()
         compositeUpdate = PodcastUpdate()
         kernel.reregisterPodcastProjection()
@@ -377,11 +388,23 @@ final class KernelModel {
     /// `fromPull`: when true, also replace `compositeUpdate` with the full
     /// snapshot so the push path's incremental merges start from a current base.
     private func applyPodcastUpdate(_ update: PodcastUpdate, fromPull: Bool = false) {
-        guard update.rev > lastProcessedRev else { return }
+        // Cold-start re-seed allowance: before the first full hydration a partial
+        // push frame may have already advanced `lastProcessedRev` to the same rev
+        // the startup pull carries. Allow `>=` on the cold-start pull so the full
+        // library snapshot still seeds the composite even if a partial push frame
+        // raced it. After `hasHydrated` flips true the normal `>` guard is
+        // restored for all subsequent push and pull frames.
+        let revPasses = fromPull && !hasHydrated
+            ? update.rev >= Int(lastProcessedRev)
+            : update.rev > Int(lastProcessedRev)
+        guard revPasses else { return }
         lastProcessedRev = UInt64(update.rev)
         // For the pull path, replace the composite so future push merges start
         // from the current full state rather than a stale domain-by-domain build.
-        if fromPull { compositeUpdate = update }
+        if fromPull {
+            compositeUpdate = update
+            hasHydrated = true
+        }
         snapshot = update
         if update.downloads != downloadSnapshot { downloadSnapshot = update.downloads }
         let previousNowPlaying = nowPlaying
