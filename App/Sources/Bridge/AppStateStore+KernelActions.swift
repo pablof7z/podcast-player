@@ -91,6 +91,42 @@ extension AppStateStore {
                          body: ["op": "discover_nostr", "consumer_id": "nostr-discover-view", "release": true])
     }
 
+    /// Subscribe to a feedless NIP-F4 (`kind:54`) Nostr podcast by author pubkey.
+    ///
+    /// Rust opens a `kind:54` relay subscription through the kernel's relay pool
+    /// (D7 — no iOS WebSocket) and upserts a followed feedless show row so the
+    /// podcast appears in the library immediately. Episodes arrive asynchronously
+    /// via the reactive observer and ride the snapshot push seam.
+    ///
+    /// Dispatches `subscribe_nostr` (namespace: podcast) and waits up to
+    /// `timeout` for the feedless show row to land in the projected podcasts.
+    /// Returns the `Podcast` on success; throws on timeout.
+    @discardableResult
+    func kernelSubscribeNostr(authorPubkeyHex: String,
+                              showTitle: String? = nil,
+                              timeout: Duration = .seconds(10)) async throws -> Podcast {
+        guard let kern = kernel else {
+            throw SubscriptionService.AddError.transport("Kernel not available")
+        }
+        let pubkey = authorPubkeyHex.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !pubkey.isEmpty else {
+            throw SubscriptionService.AddError.transport("Author pubkey is empty")
+        }
+        var body: [String: Any] = ["op": "subscribe_nostr", "author_pubkey_hex": pubkey]
+        if let title = showTitle { body["show_title"] = title }
+        kern.dispatch(namespace: "podcast", body: body)
+        // Wait for the feedless show row to appear in the projected podcasts.
+        // The Rust handler calls `subscribe_feedless_show`, which creates the
+        // row and bumps rev; the next snapshot push frame lands the podcast.
+        if let podcast = await awaitState(timeout: timeout, body: { [weak self] () -> Podcast? in
+            self?.state.podcasts.first(where: { $0.ownerPubkeyHex == pubkey })
+        }) {
+            return podcast
+        }
+        throw SubscriptionService.AddError.transport(
+            "Feedless show did not appear in library after \(timeout).")
+    }
+
     // MARK: - Playback dispatch (M1 Part 3)
 
     /// Load an episode into the Rust actor without starting playback.

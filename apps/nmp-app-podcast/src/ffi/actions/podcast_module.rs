@@ -173,6 +173,22 @@ pub enum PodcastAction {
         #[serde(default)]
         release: bool,
     },
+    /// Subscribe to a feedless NIP-F4 show by its podcast Nostr pubkey.
+    ///
+    /// Routes through the host-op handler (unlike `DiscoverNostr`, which emits
+    /// an `ActorCommand` directly). The handler calls `subscribe_nostr_episodes`
+    /// to open a `kind:54` `EnsureInterest` via `push_interest_via_nmp`, then
+    /// upserts a followed feedless show row in the store. Inbound episode events
+    /// are delivered asynchronously via [`crate::nostr_episodes::NostrEpisodesObserver`]
+    /// and surface on the snapshot with zero ffi/snapshot.rs changes.
+    SubscribeNostr {
+        /// Hex pubkey of the podcast's per-podcast Nostr key (`owner_pubkey_hex`
+        /// from the discovered `kind:10154` show event).
+        author_pubkey_hex: String,
+        /// Optional show title for the feedless row (from the kind:10154 show).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        show_title: Option<String>,
+    },
     /// Patch one or more fields on the kernel-side settings projection.
     ///
     /// All fields are `Option` so the iOS shell can patch a single setting
