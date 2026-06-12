@@ -39,8 +39,27 @@ jobs:
         with:
           targets: aarch64-linux-android
 
+      # ubuntu-24.04 runner images ship no preinstalled NDK and never set
+      # ANDROID_NDK_LATEST_HOME, and android-actions/setup-android installs
+      # the SDK only — so the previous env wiring expanded to an empty prefix
+      # ("/toolchains/llvm/...") and cc-rs failed with ToolNotFound on every
+      # run. Install the NDK explicitly and reference its output path. The
+      # SDK itself is not needed for a cargo cross-check.
       - name: Set up Android NDK
-        uses: android-actions/setup-android@v3
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: false
+
+      - name: Assert NDK clang exists (fail loudly, not via cc-rs noise)
+        run: |
+          CLANG="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang"
+          if [ ! -x "$CLANG" ]; then
+            echo "::error::NDK clang not found at $CLANG — NDK layout changed?"
+            ls "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/" | head -40
+            exit 1
+          fi
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -54,10 +73,10 @@ jobs:
 
       - name: cargo check — nmp-app-podcast (aarch64-linux-android)
         env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
-          CC_aarch64_linux_android: ${{ env.ANDROID_NDK_LATEST_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
-          AR_aarch64_linux_android: ${{ env.ANDROID_NDK_LATEST_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_LATEST_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
+          AR_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
         working-directory: apps/nmp-app-podcast
         run: cargo check --target aarch64-linux-android
 
