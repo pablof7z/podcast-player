@@ -19,6 +19,32 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- ADR-0048 — NIP-55 external signer (Amber / Primal) package visibility.
+
+         Android 11+ (API 30+) hides other installed packages from
+         `PackageManager` unless declared here. Without these entries
+         `detectInstalledSigners` (signing/ExternalSignerWire.kt) returns an
+         empty list and the `nostrsigner:` Intent fails to resolve even when
+         Amber is installed.
+
+         Two forms are needed:
+           * <intent> with the `nostrsigner`/`primal` schemes — so
+             `queryIntentActivities`-based detection sees the signer.
+           * explicit <package> — so `Intent.setPackage(...)` routing and the
+             ContentResolver fast-path authority resolve to the real app. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="nostrsigner" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="primal" />
+        </intent>
+        <package android:name="com.greenart7c3.nostrsigner" />
+        <package android:name="net.primal.android" />
+    </queries>
+
     <application
         android:name=".PodcastApp"
         android:label="@string/app_name"

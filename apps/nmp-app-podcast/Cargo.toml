@@ -60,7 +60,12 @@ nmp-core = { workspace = true }
 # `nmp_app_podcast_register` takes `*mut NmpApp`; the per-app crate names
 # the handle + FFI symbols (`nmp_app_dispatch_action`, etc.) through this
 # dep.
-nmp-ffi = { workspace = true, features = ["signer-broker"] }
+# `external-signer` (ADR-0048) adds the NIP-55 Amber driver: the
+# `nmp_app_signin_nip55` / `nmp_app_deliver_external_signer_response` /
+# `nmp_external_signer_init` C-ABI symbols the Android JNI shim calls. Rides the
+# existing capability socket (no new FFI primitive); kept distinct from
+# `signer-broker` so the NIP-46 relay-broker graph is not pulled in twice.
+nmp-ffi = { workspace = true, features = ["signer-broker", "external-signer"] }
 nmp-signer-broker = { workspace = true }
 nmp-feedback = { workspace = true }
 # NIP-02 reactive follow-list projection + ActiveFollowSet trust-gate predicate.

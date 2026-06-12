@@ -23,6 +23,7 @@ import io.f7z.podcast.capabilities.DownloadCapability
 import io.f7z.podcast.capabilities.ExoPlayerCapability
 import io.f7z.podcast.capabilities.HttpCapability
 import io.f7z.podcast.security.KeystoreManager
+import io.f7z.podcast.signing.ExternalSignerCapabilityBridge
 import io.f7z.podcast.ui.AppNavigation
 import io.f7z.podcast.ui.FeedbackSheet
 import io.f7z.podcast.ui.ShakeFeedbackDetector
@@ -30,6 +31,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
+
+/**
+ * Amber's Android package — the `nostrsigner:` signer this app targets for
+ * NIP-55 sign-in (ADR-0048). Mirrors `KNOWN_NOSTR_SIGNERS` in
+ * `signing/ExternalSignerWire.kt`; the package also appears in `<queries>` in
+ * AndroidManifest.xml so `PackageManager` detection works on API 30+.
+ */
+private const val AMBER_SIGNER_PACKAGE = "com.greenart7c3.nostrsigner"
 
 /**
  * Single-Activity Compose host for the M13 Android surface.
@@ -53,13 +62,44 @@ import kotlin.coroutines.coroutineContext
  *  - Toast surface for `PodcastSnapshot.toast` via `LaunchedEffect`.
  */
 class MainActivity : ComponentActivity() {
+
+    /**
+     * ADR-0048 Stage 2 — the D7 host adapter for the `external_signer`
+     * capability (NIP-55 Amber). Owns the Activity Result launcher, which MUST
+     * be registered in `onCreate` before first `onStart`; raw Amber results are
+     * routed back to the Rust driver through the kernel sink installed by
+     * [PodcastRoot] once its [KernelBridge] exists.
+     *
+     * The bridge is created here (it needs the `ComponentActivity`), but the
+     * kernel reference lives in the composable, so the result is forwarded
+     * through a settable [kernelSink] rather than a direct dependency.
+     */
+    private lateinit var signerBridge: ExternalSignerCapabilityBridge
+
+    /** Set by [PodcastRoot] once the [KernelBridge] is constructed. */
+    @Volatile
+    private var kernelSink: ((String) -> Unit)? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        signerBridge = ExternalSignerCapabilityBridge(this) { responseJson ->
+            kernelSink?.invoke(responseJson)
+        }
+        signerBridge.register()
         setContent {
             MaterialTheme {
-                PodcastRoot()
+                PodcastRoot(
+                    signerBridge = signerBridge,
+                    setKernelSink = { sink -> kernelSink = sink },
+                )
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (::signerBridge.isInitialized) signerBridge.unregister()
+        kernelSink = null
+        super.onDestroy()
     }
 }
 
@@ -78,7 +118,10 @@ class MainActivity : ComponentActivity() {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PodcastRoot() {
+private fun PodcastRoot(
+    signerBridge: ExternalSignerCapabilityBridge,
+    setKernelSink: ((String) -> Unit) -> Unit,
+) {
     val context = LocalContext.current
     val bridge = remember { KernelBridge() }
     // `attach` starts `PodcastPlaybackService` so the OS keeps the process
@@ -123,6 +166,10 @@ private fun PodcastRoot() {
         ProviderCredentialActions.reloadProviderApiKeys(context, bridge)
         ProviderCredentialActions.syncSttKeysPresent(context, bridge)
         bridge.registerCapabilityRouter(router)
+        // ADR-0048 — route Amber's raw results from the Activity-owned signer
+        // bridge back into this composable's kernel. Installed after the kernel
+        // exists; cleared on dispose so a torn-down kernel is never touched.
+        setKernelSink { responseJson -> bridge.deliverSignerResponse(responseJson) }
         http.start()
         audio.attach()
         bridge.start()
@@ -182,9 +229,29 @@ private fun PodcastRoot() {
         }
     }
 
+    // ADR-0048 — signer-request reader loop. Mirrors the snapshot loop above:
+    // block on `nextSignerRequest()` (Rust-side `recv` bounded at ≤250 ms so
+    // cancellation is prompt) and hand each `ExternalSignerRequest` JSON to the
+    // Activity-owned bridge, which fires the Amber Intent. Reactive, not timed:
+    // the channel is empty until a sign-in/sign op builds a request in Rust.
+    LaunchedEffect(bridge, signerBridge) {
+        while (true) {
+            coroutineContext.ensureActive()
+            val requestJson = withContext(Dispatchers.IO) { bridge.nextSignerRequest() } ?: continue
+            signerBridge.handleJson(requestJson)
+        }
+    }
+
     ShakeFeedbackDetector { feedbackVisible = true }
 
-    AppNavigation(snapshot = snapshot, bridge = bridge)
+    AppNavigation(
+        snapshot = snapshot,
+        bridge = bridge,
+        // ADR-0048 — Amber is the default Android signer. Passing its package
+        // explicitly lets Rust route the Intent (and pick the ContentResolver
+        // fast-path post-grant); a null would let the OS resolver choose.
+        onSignInWithAmber = { bridge.signInNip55(AMBER_SIGNER_PACKAGE) },
+    )
 
     if (feedbackVisible) {
         ModalBottomSheet(onDismissRequest = { feedbackVisible = false }) {

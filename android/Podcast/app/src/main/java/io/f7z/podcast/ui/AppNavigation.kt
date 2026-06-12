@@ -54,7 +54,11 @@ import io.f7z.podcast.PodcastSummary
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(snapshot: PodcastSnapshot?, bridge: KernelBridge) {
+fun AppNavigation(
+    snapshot: PodcastSnapshot?,
+    bridge: KernelBridge,
+    onSignInWithAmber: (() -> Unit)? = null,
+) {
     var selectedTab by rememberSaveable { mutableStateOf(BottomTab.Home) }
     var route by rememberSaveable(stateSaver = AppRoute.Saver) { mutableStateOf<AppRoute>(AppRoute.Tab(BottomTab.Home)) }
 
@@ -113,6 +117,7 @@ fun AppNavigation(snapshot: PodcastSnapshot?, bridge: KernelBridge) {
                 snapshot = snapshot,
                 bridge = bridge,
                 onBack = { route = AppRoute.Tab(selectedTab) },
+                onSignInWithAmber = onSignInWithAmber,
                 modifier = contentModifier,
             )
             AppRoute.ProviderModels -> ProviderModelSettingsScreen(
