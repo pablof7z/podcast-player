@@ -96,6 +96,13 @@ data class PodcastSnapshot(
     @SerialName("feedback_events") val feedbackEvents: List<JsonElement> = emptyList(),
     /** Resolved feedback threads emitted by `nmp-feedback`. */
     @SerialName("feedback_threads") val feedbackThreads: List<FeedbackThreadDto> = emptyList(),
+    /**
+     * AI-curated picks rail. Mirror of `PodcastUpdate.picks` —
+     * `Vec<AgentPickSummary>` projected by `picks_handler.rs`. Populated by
+     * the heuristic immediately on first library load, then re-scored by the
+     * LLM pass. Rides the `podcast.misc` domain frame.
+     */
+    val picks: List<AgentPickSummary> = emptyList(),
 ) {
     /**
      * Effective subscription list — prefer the new `podcasts` projection, fall
@@ -489,6 +496,30 @@ data class AgentTaskSummary(
     @SerialName("last_run_at") val lastRunAt: Long? = null,
     val status: String = "pending",
     @SerialName("is_enabled") val isEnabled: Boolean = false,
+)
+
+/**
+ * One AI-curated pick row surfaced via `PodcastUpdate.picks` (podcast.misc domain).
+ *
+ * Mirror of `ffi/projections/agent.rs::AgentPickSummary`. Fields are
+ * pre-resolved (podcast title + artwork denormalized) so the Home picks rail can
+ * render without a second snapshot lookup per row.
+ *
+ * Wire shape verified against the Rust struct — all snake_case keys are
+ * load-bearing; kotlinx does not auto-convert. `pick_score` is `0.0..=1.0`.
+ * Optional fields (`artwork_url`, `duration_secs`) mirror Rust `Option<T>`.
+ */
+@Serializable
+data class AgentPickSummary(
+    @SerialName("episode_id") val episodeId: String = "",
+    @SerialName("episode_title") val episodeTitle: String = "",
+    @SerialName("podcast_id") val podcastId: String = "",
+    @SerialName("podcast_title") val podcastTitle: String = "",
+    @SerialName("artwork_url") val artworkUrl: String? = null,
+    @SerialName("published_at") val publishedAt: Long = 0,
+    @SerialName("duration_secs") val durationSecs: Double? = null,
+    @SerialName("pick_reason") val pickReason: String = "",
+    @SerialName("pick_score") val pickScore: Float = 0.0f,
 )
 
 /**
