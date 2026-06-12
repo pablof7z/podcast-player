@@ -1,4 +1,5 @@
 use std::ffi::{c_char, c_void, CStr, CString};
+use std::sync::mpsc::Sender;
 
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jlong;
@@ -8,9 +9,22 @@ use nmp_ffi::nmp_app_set_capability_callback;
 
 use crate::ffi::guard::ffi_guard;
 
+/// Wire constant — must match `nmp_signer_iface::EXTERNAL_SIGNER_NAMESPACE`
+/// (and the `EXTERNAL_SIGNER_NAMESPACE` the NMP `nmp-android-ffi` trampoline
+/// uses). The `external_signer` capability is interactive/async (an Amber
+/// Intent round-trip), so it is split off the synchronous Kotlin router path
+/// onto a channel drained by `nativeNextSignerRequest`. The string is part of
+/// the stable capability wire; this crate does not depend on `nmp-signer-iface`.
+const EXTERNAL_SIGNER_NAMESPACE: &str = "external_signer";
+
 pub(super) struct AndroidCapabilityContext {
     vm: JavaVM,
     router: GlobalRef,
+    /// ADR-0048 — clone of `Session.signer_requests`. The trampoline pushes the
+    /// inner `external_signer` payload here instead of calling the synchronous
+    /// Kotlin router; a Kotlin reader thread drains it via
+    /// `nativeNextSignerRequest`.
+    signer_requests: Sender<String>,
 }
 
 fn capability_error_envelope(message: &str) -> *mut c_char {
@@ -20,6 +34,51 @@ fn capability_error_envelope(message: &str) -> *mut c_char {
     CString::new(json)
         .unwrap_or_else(|_| CString::new("{}").expect("static JSON has no NUL"))
         .into_raw()
+}
+
+/// Build the `{"namespace","correlation_id","result_json"}` ack envelope a
+/// dispatched (channel-routed) `external_signer` request returns synchronously.
+/// The real signer result arrives later through `nativeDeliverSignerResponse`.
+fn capability_dispatched_envelope(correlation_id: &str) -> *mut c_char {
+    let json = serde_json::json!({
+        "namespace": EXTERNAL_SIGNER_NAMESPACE,
+        "correlation_id": correlation_id,
+        "result_json": r#"{"status":"dispatched"}"#,
+    })
+    .to_string();
+    CString::new(json)
+        .unwrap_or_else(|_| CString::new("{}").expect("static JSON has no NUL"))
+        .into_raw()
+}
+
+/// If `request` carries the `external_signer` namespace, push its inner
+/// `payload_json` onto the signer-request channel and return the `dispatched`
+/// ack envelope. Returns `None` for every other namespace (the caller then
+/// routes to the synchronous Kotlin capability router).
+///
+/// D6 — a dead channel (session torn down) or a malformed payload degrades to
+/// an error envelope rather than a panic; the Rust-side correlation sender is
+/// simply never resolved and the parked op times out.
+fn maybe_dispatch_external_signer(
+    ctx: &AndroidCapabilityContext,
+    request: &str,
+) -> Option<*mut c_char> {
+    let parsed: serde_json::Value = serde_json::from_str(request).ok()?;
+    let namespace = parsed.get("namespace").and_then(|v| v.as_str())?;
+    if namespace != EXTERNAL_SIGNER_NAMESPACE {
+        return None;
+    }
+    let correlation_id = parsed
+        .get("correlation_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let Some(payload) = parsed.get("payload_json").and_then(|v| v.as_str()) else {
+        return Some(capability_error_envelope("missing-payload"));
+    };
+    match ctx.signer_requests.send(payload.to_string()) {
+        Ok(()) => Some(capability_dispatched_envelope(correlation_id)),
+        Err(_) => Some(capability_error_envelope("session-closed")),
+    }
 }
 
 extern "C" fn android_capability_callback(
@@ -41,6 +100,18 @@ extern "C" fn android_capability_callback(
                 Ok(s) => s,
                 Err(_) => return capability_error_envelope("bad-utf8"),
             };
+
+            // ADR-0048 — the `external_signer` namespace is async (an Amber
+            // Intent round-trip cannot resolve inside this synchronous
+            // callback). Split it onto the signer-request channel and ack
+            // `dispatched`; the real result arrives later via
+            // `nativeDeliverSignerResponse`. Every other namespace falls
+            // through to the synchronous Kotlin router below (D7 — the host
+            // never decides; this routing is a mechanical wire consequence).
+            if let Some(envelope) = maybe_dispatch_external_signer(ctx, request) {
+                return envelope;
+            }
+
             let mut env = match ctx.vm.attach_current_thread() {
                 Ok(env) => env,
                 Err(_) => return capability_error_envelope("attach-failed"),
@@ -111,8 +182,13 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             Ok(g) => g,
             Err(_) => return,
         };
-        let ctx =
-            Box::into_raw(Box::new(AndroidCapabilityContext { vm, router: global }));
+        let ctx = Box::into_raw(Box::new(AndroidCapabilityContext {
+            vm,
+            router: global,
+            // ADR-0048 — the trampoline pushes `external_signer` requests onto
+            // the session's signer channel; clone its sender into the context.
+            signer_requests: s.signer_requests.clone(),
+        }));
         nmp_app_set_capability_callback(
             s.app,
             ctx as *mut c_void,

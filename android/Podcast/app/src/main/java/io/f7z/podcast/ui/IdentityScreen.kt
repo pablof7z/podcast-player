@@ -66,6 +66,7 @@ fun IdentityScreen(
     snapshot: PodcastSnapshot?,
     bridge: KernelBridge,
     onBack: () -> Unit,
+    onSignInWithAmber: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -93,7 +94,7 @@ fun IdentityScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (account == null) {
-                NotSignedInState(bridge = bridge)
+                NotSignedInState(bridge = bridge, onSignInWithAmber = onSignInWithAmber)
             } else {
                 SignedInState(account = account, bridge = bridge)
             }
@@ -163,7 +164,10 @@ private fun SignedInState(account: AccountSummary, bridge: KernelBridge) {
 }
 
 @Composable
-private fun NotSignedInState(bridge: KernelBridge) {
+private fun NotSignedInState(
+    bridge: KernelBridge,
+    onSignInWithAmber: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
 
@@ -186,6 +190,16 @@ private fun NotSignedInState(bridge: KernelBridge) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(onClick = { showSheet = true }) { Text("Import nsec key") }
+            // ADR-0048 — NIP-55 (Amber) external signer. The private key never
+            // enters this process; Amber holds it and signs each request over an
+            // OS IPC round-trip. Shown only when a delegate is wired (Android
+            // host); the import-nsec flow above remains the local-key path.
+            if (onSignInWithAmber != null) {
+                OutlinedButton(
+                    onClick = onSignInWithAmber,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Sign in with Amber") }
+            }
         }
     }
 
@@ -214,6 +228,7 @@ private fun NotSignedInState(bridge: KernelBridge) {
 private fun ModeBadge(mode: String) {
     val label = when (mode.lowercase()) {
         "bunker", "nip46", "nip-46" -> "Bunker"
+        "nip55", "nip-55", "amber" -> "Amber"
         else -> "Local Key"
     }
     AssistChip(

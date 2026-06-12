@@ -1,0 +1,118 @@
+//! Android JNI surface for the NIP-55 external-signer capability (ADR-0048).
+//!
+//! Three JNI entry points, mirroring NMP's own `nmp-android-ffi` Chirp bridge
+//! but threaded through this crate's boxed-pointer `Session` (vs. NMP's session
+//! registry) and its single registered capability callback:
+//!
+//! 1. **`nativeSignInNip55`** — user intent in. Rust builds the
+//!    `get_public_key` + permission-batch request (D7 — Kotlin reports intent
+//!    only) via `nmp_app_signin_nip55`. The request is emitted onto the
+//!    capability socket, intercepted by the trampoline in `capability_router.rs`
+//!    (namespace `external_signer`), and pushed onto the session signer channel.
+//! 2. **`nativeNextSignerRequest`** — Kotlin's blocking timed drain. The Kotlin
+//!    reader thread loops on this and hands each request JSON to
+//!    `ExternalSignerCapabilityBridge.handleJson`, which fires the Amber Intent.
+//! 3. **`nativeDeliverSignerResponse`** — raw Amber result back into the Rust
+//!    driver via `nmp_app_deliver_external_signer_response` (D7 — verbatim; the
+//!    driver owns correlation routing and all policy).
+//!
+//! Doctrine: D5/D8 — pure transport, no business logic or cached state;
+//! D6 — every entry point degrades silently on null / poison / serde failure.
+
+use std::ffi::CString;
+use std::ptr;
+use std::time::Duration;
+
+use jni::objects::{JClass, JObject, JString};
+use jni::sys::{jlong, jstring};
+use jni::JNIEnv;
+
+use nmp_ffi::{nmp_app_deliver_external_signer_response, nmp_app_signin_nip55};
+
+use super::session_ref;
+use crate::ffi::guard::ffi_guard;
+
+/// `nativeSignInNip55(handle, signerPackage)` — begin a NIP-55 sign-in.
+/// `signer_package` may be null ("let the OS resolver pick"); Rust builds the
+/// `get_public_key` + permission-batch request. Result-bearing work happens
+/// asynchronously through the signer-request channel + `deliverSignerResponse`.
+#[no_mangle]
+pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSignInNip55<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    handle: jlong,
+    signer_package: JString<'l>,
+) {
+    ffi_guard("nativeSignInNip55", || (), || {
+        let Some(s) = session_ref(handle) else {
+            return;
+        };
+        let package = optional_jstring_to_cstring(&mut env, &signer_package);
+        nmp_app_signin_nip55(
+            s.app,
+            package.as_ref().map_or(ptr::null(), |value| value.as_ptr()),
+        );
+    });
+}
+
+/// `nativeNextSignerRequest(handle)` — blocking (≤250 ms) drain of the outbound
+/// NIP-55 request channel. Returns one `ExternalSignerRequest` JSON, or `null`
+/// on idle / closed channel (the Kotlin reader loops back in either way). The
+/// signer analogue of `nativeNextUpdate` (D6 — no error crosses FFI).
+#[no_mangle]
+pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNextSignerRequest<'l>(
+    env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    handle: jlong,
+) -> jstring {
+    let null: jstring = ptr::null_mut();
+    ffi_guard("nativeNextSignerRequest", || null, || {
+        let Some(s) = session_ref(handle) else {
+            return null;
+        };
+        match s.recv_next_signer_request(Duration::from_millis(250)) {
+            Some(payload) => match env.new_string(payload) {
+                Ok(js) => js.into_raw(),
+                Err(_) => null,
+            },
+            None => null,
+        }
+    })
+}
+
+/// `nativeDeliverSignerResponse(handle, responseJson)` — report a raw
+/// `ExternalSignerResponse` JSON back to the Rust driver (D7 — verbatim; the
+/// driver owns correlation routing and all policy).
+#[no_mangle]
+pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeDeliverSignerResponse<'l>(
+    mut env: JNIEnv<'l>,
+    _class: JClass<'l>,
+    handle: jlong,
+    response_json: JString<'l>,
+) {
+    ffi_guard("nativeDeliverSignerResponse", || (), || {
+        let Some(s) = session_ref(handle) else {
+            return;
+        };
+        let response = match env.get_string(&response_json) {
+            Ok(value) => value.to_string_lossy().into_owned(),
+            Err(_) => return,
+        };
+        let Ok(c_response) = CString::new(response) else {
+            return;
+        };
+        nmp_app_deliver_external_signer_response(s.app, c_response.as_ptr());
+    });
+}
+
+/// Convert a (possibly null) Java string to an owned `CString`, or `None` when
+/// the Java reference is null. Mirrors NMP's `nmp-android-ffi` helper so a
+/// `null` `signer_package` means "let the OS resolver pick the signer app".
+fn optional_jstring_to_cstring(env: &mut JNIEnv, value: &JString) -> Option<CString> {
+    let obj: &JObject = AsRef::<JObject>::as_ref(value);
+    if obj.as_raw().is_null() {
+        return None;
+    }
+    let owned = env.get_string(value).ok()?.to_string_lossy().into_owned();
+    CString::new(owned).ok()
+}

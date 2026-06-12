@@ -163,6 +163,41 @@ class KernelBridge {
      */
     fun nextUpdate(): String? = if (handle != 0L) nativeNextUpdate(handle) else null
 
+    // ── NIP-55 external signer (ADR-0048) ──────────────────────────────────
+
+    /**
+     * Begin a NIP-55 (Amber) sign-in. Rust builds the `get_public_key` +
+     * permission-batch request and emits it onto the capability socket; the
+     * trampoline routes it to the signer-request channel, where a reader thread
+     * (see [nextSignerRequest]) drains it and fires the Amber Intent. The
+     * resulting pubkey-only account appears on the next snapshot tick (D6 — the
+     * outcome arrives as state, never a return value).
+     *
+     * @param signerPackage the Android package of the chosen signer
+     *   (`com.greenart7c3.nostrsigner` for Amber), or `null` to let the OS
+     *   resolver pick.
+     */
+    fun signInNip55(signerPackage: String?) {
+        if (handle != 0L) nativeSignInNip55(handle, signerPackage)
+    }
+
+    /**
+     * Blocking (≤250 ms) drain of the outbound NIP-55 request channel; `null`
+     * on idle. The signer analogue of [nextUpdate]: a dedicated reader thread
+     * loops on this and hands each `ExternalSignerRequest` JSON to
+     * `ExternalSignerCapabilityBridge.handleJson`.
+     */
+    fun nextSignerRequest(): String? = if (handle != 0L) nativeNextSignerRequest(handle) else null
+
+    /**
+     * Report a raw `ExternalSignerResponse` JSON (Amber's reply) back to the
+     * Rust driver, which owns correlation routing and all policy (D7 —
+     * verbatim, no interpretation here).
+     */
+    fun deliverSignerResponse(responseJson: String) {
+        if (handle != 0L) nativeDeliverSignerResponse(handle, responseJson)
+    }
+
     /** Pull the Podcast projection JSON (one-shot, off the projection cache). */
     fun podcastSnapshot(): String? = if (handle != 0L) nativePodcastSnapshot(handle) else null
 
@@ -313,6 +348,9 @@ class KernelBridge {
     private external fun nativeDownloadReport(handle: Long, reportJson: String): String?
     private external fun nativeHttpReport(handle: Long, reportJson: String)
     private external fun nativeSigninNsec(handle: Long, nsec: String)
+    private external fun nativeSignInNip55(handle: Long, signerPackage: String?)
+    private external fun nativeNextSignerRequest(handle: Long): String?
+    private external fun nativeDeliverSignerResponse(handle: Long, responseJson: String)
     private external fun nativeNextUpdate(handle: Long): String?
     private external fun nativePodcastSnapshot(handle: Long): String?
     private external fun nativeChatComplete(handle: Long, messagesJson: String): String?

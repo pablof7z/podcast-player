@@ -28,7 +28,8 @@ use jni::JNIEnv;
 use nmp_ffi::{
     nmp_app_dispatch_action, nmp_app_free, nmp_free_string, nmp_app_is_alive,
     nmp_app_lifecycle_background, nmp_app_lifecycle_foreground, nmp_app_new,
-    nmp_app_set_update_callback, nmp_app_signin_nsec, nmp_app_start, nmp_app_stop, NmpApp,
+    nmp_app_set_update_callback, nmp_app_signin_nsec, nmp_app_start, nmp_app_stop,
+    nmp_external_signer_init, NmpApp,
 };
 
 use crate::ffi::{
@@ -39,6 +40,8 @@ use crate::ffi::guard::ffi_guard;
 
 #[path = "android/capability_router.rs"]
 mod capability_router;
+#[path = "android/external_signer.rs"]
+mod external_signer;
 #[path = "android/provider_transport.rs"]
 mod provider_transport;
 #[path = "android/reports.rs"]
@@ -55,6 +58,16 @@ pub(crate) struct Session {
     rx: Receiver<String>,
     tx: *mut Sender<String>,
     capability_ctx: Mutex<Option<*mut capability_router::AndroidCapabilityContext>>,
+    /// ADR-0048 — outbound NIP-55 `ExternalSignerRequest` JSON queue. The
+    /// capability trampoline (`android_capability_callback`, on a Rust thread)
+    /// pushes the inner request payload here when it sees the `external_signer`
+    /// namespace; a Kotlin reader thread drains it via `nativeNextSignerRequest`
+    /// and hands each item to `ExternalSignerCapabilityBridge.handleJson`. This
+    /// channel-drain shape mirrors NMP's own `nmp-android-ffi` Chirp bridge: the
+    /// capability is interactive/async (an Amber Intent round-trip) and cannot
+    /// resolve synchronously inside the capability callback.
+    pub(crate) signer_requests: Sender<String>,
+    signer_rx: Mutex<Receiver<String>>,
 }
 
 // SAFETY: `Session` is sent across threads only inside a `Box` whose ownership
@@ -71,6 +84,17 @@ pub(super) fn session_ref<'a>(handle: jlong) -> Option<&'a Session> {
         // SAFETY: non-zero handles are live `Session` pointers produced by
         // `nativeNew`; Kotlin never calls after `nativeFree`.
         Some(unsafe { &*(handle as *const Session) })
+    }
+}
+
+impl Session {
+    /// Blocking timed drain of the outbound NIP-55 request channel — the
+    /// signer analogue of `nativeNextUpdate`'s snapshot drain. Returns the next
+    /// `ExternalSignerRequest` JSON, or `None` on idle / closed channel (the
+    /// Kotlin reader loops back in either way; D6 — no error crosses FFI).
+    fn recv_next_signer_request(&self, timeout: Duration) -> Option<String> {
+        let rx = self.signer_rx.lock().ok()?;
+        rx.recv_timeout(timeout).ok()
     }
 }
 
@@ -140,12 +164,23 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
         // box, and `on_update` matches the kernel's `UpdateCallback` C ABI.
         nmp_app_set_update_callback(app, tx as *mut c_void, Some(on_update));
         let podcast = nmp_app_podcast_register(app);
+        // ADR-0048 — install the NIP-55 external-signer driver so the kernel can
+        // dispatch `external_signer` capability requests (built when the host
+        // calls `nativeSignInNip55`). The driver only emits onto the capability
+        // socket; the host adapter (`ExternalSignerCapabilityBridge`) is wired
+        // through the channel below once `nativeSetCapabilityRouter` registers
+        // the trampoline. Safe to call before the callback exists — no request
+        // is built until sign-in.
+        nmp_external_signer_init(app);
+        let (signer_tx, signer_rx) = std::sync::mpsc::channel::<String>();
         let session = Box::new(Session {
             app,
             podcast,
             rx,
             tx,
             capability_ctx: Mutex::new(None),
+            signer_requests: signer_tx,
+            signer_rx: Mutex::new(signer_rx),
         });
         Box::into_raw(session) as jlong
     })
