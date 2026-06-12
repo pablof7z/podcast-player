@@ -241,7 +241,7 @@ impl PodcastHostOpHandler {
                     return serde_json::json!({"ok": false, "error": "store poisoned"});
                 }
                 if !stale_triage_ids.is_empty() {
-                    if let Ok(mut cache) = self.inbox_triage_cache.lock() {
+                    if let Ok(mut cache) = self.state.inbox.triage_cache.lock() {
                         for id in &stale_triage_ids {
                             cache.remove(id);
                         }
