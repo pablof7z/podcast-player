@@ -119,6 +119,8 @@ data class MiscDomainFrame(
     @SerialName("feedback_threads") val feedbackThreads: List<FeedbackThreadDto>? = null,
     val voice: VoiceStateSnapshot? = null,
     val agent: AgentSnapshot? = null,
+    /** AI-curated picks rail. Populated by `picks_handler.rs`; null = not yet projected. */
+    val picks: List<AgentPickSummary>? = null,
 )
 
 // ── Composite push-frame result ───────────────────────────────────────────────
@@ -354,6 +356,7 @@ object SnapshotCodec {
                     feedbackThreads = m.feedbackThreads ?: snap.feedbackThreads,
                     voice           = m.voice ?: snap.voice,
                     agent           = m.agent ?: snap.agent,
+                    picks           = m.picks ?: snap.picks,
                 )
             }
         }

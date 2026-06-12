@@ -80,6 +80,17 @@ fun HomeScreen(
             item { NowPlayingCard(nowPlaying, bridge) }
         }
 
+        val picks = snapshot?.picks.orEmpty()
+        if (picks.isNotEmpty()) {
+            item {
+                PicksRail(
+                    picks = picks,
+                    bridge = bridge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
         item {
             Text(
                 text = "Recent Episodes",

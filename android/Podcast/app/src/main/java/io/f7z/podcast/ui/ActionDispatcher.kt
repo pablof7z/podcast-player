@@ -47,6 +47,7 @@ object PodcastNamespace {
     const val TASKS = "podcast.tasks"
     const val INBOX = "podcast.inbox"
     const val AGENT = "podcast.agent"
+    const val PICKS = "podcast.picks"
 }
 
 // ── `podcast` namespace payloads ──────────────────────────────────────────
@@ -467,6 +468,23 @@ data class SetProviderApiKeysPayload(
 //
 // `#[serde(tag = "op", rename_all = "snake_case")]` maps variant names to
 // the snake_case `op` string. `Send { message }` carries one extra field.
+
+// ── `podcast.picks` namespace payloads ───────────────────────────────────
+//
+// Verified against `apps/nmp-app-podcast/src/ffi/actions/picks_module.rs`:
+//
+//   PicksAction::Refresh  →  op = "refresh"
+//
+// `#[serde(tag = "op", rename_all = "snake_case")]` maps the variant name.
+
+/**
+ * Trigger a synchronous picks recompute. The handler walks the library with
+ * the heuristic (newest-first, per-show cap) and, if Ollama is available,
+ * follows up with the LLM scoring pass. The updated `Vec<AgentPickSummary>`
+ * is stamped onto `PodcastHandle` and rides the next `podcast.misc` push frame.
+ */
+@Serializable
+data class PicksRefreshPayload(val op: String = "refresh")
 
 @Serializable
 data class AgentSendPayload(
