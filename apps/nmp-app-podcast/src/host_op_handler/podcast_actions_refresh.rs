@@ -78,9 +78,14 @@ impl PodcastHostOpHandler {
         if any_succeeded {
             self.auto_categorize();
             self.auto_refresh_picks();
-            // D8: proactive triage trigger fires from the feed-refresh path.
-            self.state.inbox.maybe_enqueue_triage();
         }
+        // D8: proactive triage trigger fires on EVERY refresh pass, decoupled
+        // from `any_succeeded`. A 304-only or even all-failed foreground refresh
+        // must still re-triage episodes whose cached `Ready`/`Pending` entries
+        // went stale (>TRIAGE_STALE_SECS) or never got a score — the trigger is
+        // internally guarded (`episodes_needing_triage`/`in_progress`), so it is
+        // a cheap no-op when nothing is due.
+        self.state.inbox.maybe_enqueue_triage();
         if errors.is_empty() {
             serde_json::json!({"ok": true})
         } else {

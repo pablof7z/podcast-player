@@ -288,3 +288,58 @@ fn player_download_routes_to_player_not_podcast() {
         "podcast.player.download must enqueue in DownloadQueue"
     );
 }
+
+// ---------------------------------------------------------------------------
+// D8 cold-start triage: `auto_download_evaluate` (the op iOS dispatches on the
+// first foreground, where RefreshAll is skipped) must kick a proactive triage
+// pass over the on-disk library. Drives the full envelope router end-to-end so
+// the op→handler→`maybe_enqueue_triage()` wiring is covered, not just the
+// inner function.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn auto_download_evaluate_kicks_cold_start_triage() {
+    use std::sync::atomic::Ordering;
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let podcast = Podcast::new("Cold Start Show");
+    let pid = podcast.id;
+    // An unlistened episode with NO triage-cache entry → needs triage.
+    let ep = make_episode(pid);
+    store.lock().unwrap().subscribe(podcast, vec![ep]);
+
+    let handler = handler_with_store(store);
+
+    // Precondition: no triage pass claimed yet.
+    assert!(
+        !handler
+            .state
+            .inbox
+            .triage_in_progress
+            .load(Ordering::Relaxed),
+        "triage must not be in progress before cold-start evaluate"
+    );
+
+    let envelope = serde_json::json!({
+        "ns": "podcast",
+        "action": { "op": "auto_download_evaluate" }
+    });
+    let result = handler.handle(&envelope.to_string(), "corr-ade");
+    assert_eq!(
+        result["ok"],
+        serde_json::json!(true),
+        "auto_download_evaluate should succeed: {result}"
+    );
+
+    // The cold-start seam must have claimed a triage pass over the un-triaged,
+    // unlistened library episode (proves the trigger is wired to this op, not
+    // just to RefreshAll which iOS skips at launch).
+    assert!(
+        handler
+            .state
+            .inbox
+            .triage_in_progress
+            .load(Ordering::Relaxed),
+        "auto_download_evaluate must enqueue a cold-start triage pass"
+    );
+}
