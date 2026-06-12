@@ -1,7 +1,7 @@
 //! `nmp-app-podcast` — Podcast per-app glue.
 //!
 //! Composes `nmp-core` (the kernel substrate + event observer slot) with
-//! `nmp-app-template` (the canonical NMP composition root) to surface podcast
+//! `nmp-defaults` (the canonical NMP composition root) to surface podcast
 //! state over a static-lib FFI for the iOS shell.
 //!
 //! ## Wiring
@@ -13,7 +13,7 @@
 //! The shell calls `nmp_signer_broker_init` (from `nmp-ffi`) once after `nmp_app_new`, then
 //! calls [`ffi::nmp_app_podcast_register`]. The registration:
 //!
-//! 1. Wires the canonical NMP defaults via `nmp_app_template::register_defaults`.
+//! 1. Wires the canonical NMP defaults via `nmp_defaults::register_defaults`.
 //! 2. Returns an opaque handle for later snapshots / unregister.
 //!
 //! On each render tick the shell calls [`ffi::nmp_app_podcast_snapshot`],

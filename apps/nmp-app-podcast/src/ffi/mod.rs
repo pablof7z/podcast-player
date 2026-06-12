@@ -2,7 +2,7 @@
 //!
 //! `extern "C"` symbols Swift links against:
 //!
-//! - [`nmp_app_podcast_register`] — wire `nmp-app-template` defaults into
+//! - [`nmp_app_podcast_register`] — wire `nmp-defaults` defaults into
 //!   the supplied `NmpApp` and return an opaque handle for subsequent
 //!   snapshot / unregister calls.
 //! - [`nmp_app_podcast_snapshot`] — serialize the current app state into a

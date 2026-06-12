@@ -3,7 +3,7 @@ name = "nmp-app-podcast"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Per-app Podcast glue. Owns the kernel composition root, wires nmp-app-template defaults, and surfaces the projected state over a static-lib FFI for the iOS shell."
+description = "Per-app Podcast glue. Owns the kernel composition root, wires nmp-defaults defaults, and surfaces the projected state over a static-lib FFI for the iOS shell."
 
 [lib]
 name = "nmp_app_podcast"
@@ -63,7 +63,7 @@ nmp-feedback = { workspace = true }
 # production routing substrate, and the DM-inbox + zap-receipts runtime
 # controllers. Podcast's `nmp_app_podcast_register` calls `register_defaults`
 # once at app init instead of duplicating the boilerplate.
-nmp-app-template = { workspace = true }
+nmp-defaults = { workspace = true }
 # `nostr` reconstructs typed `Event` / `Keys` / `PublicKey` / `RelayUrl`
 # values from C-ABI JSON. Pinned to 0.44.
 nostr = { version = "0.44", default-features = false, features = ["std"] }
