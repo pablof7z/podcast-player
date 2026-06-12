@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::agent_tools::{self, ToolRegistry, TOOL_INSTRUCTIONS, TRIAGE_TOOL_INSTRUCTIONS};
-use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
+use crate::llm::{resolve_request, role_model_or_default};
 use crate::store::PodcastStore;
 
 /// Maximum tool-call round-trips for interactive chat turns.
@@ -86,15 +86,19 @@ async fn single_turn(
         .ok()
         .map(|s| s.agent_initial_model().to_owned())
         .unwrap_or_default();
+    // Resolve the model name up front so the "{model} failed: …" error contract
+    // is preserved even when credential validation rejects the request inside
+    // `resolve_request` (which only returns the typed `LlmError`).
     let model = role_model_or_default(&initial_cfg, THINKING_MODEL);
-    validate_model_credentials(store, &model).map_err(|e| format!("{model} failed: {e}"))?;
-    let backend = backend_for(store, &model);
-    let req = LlmRequest {
-        system: system_prompt.to_owned(),
-        history: history.to_vec(),
-        user: user_message.to_owned(),
-        model: model.clone(),
-    };
+    let (backend, req) = resolve_request(
+        store,
+        &initial_cfg,
+        THINKING_MODEL,
+        system_prompt,
+        user_message,
+        history.to_vec(),
+    )
+    .map_err(|e| format!("{model} failed: {e}"))?;
     match tokio::time::timeout(AGENT_TURN_TIMEOUT, backend.complete(&req)).await {
         Ok(Ok(response)) => Ok(response),
         Ok(Err(e)) => Err(format!("{model} failed: {e}")),

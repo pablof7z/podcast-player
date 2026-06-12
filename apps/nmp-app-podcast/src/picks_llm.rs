@@ -29,7 +29,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
+use crate::llm::complete_for_role;
 use crate::store::PodcastStore;
 
 /// Same fast model the inbox triage path uses.
@@ -73,17 +73,8 @@ pub fn score_episode_for_picks(
             .ok()
             .map(|s| s.categorization_model().to_owned())
             .unwrap_or_default();
-        let picks_model = role_model_or_default(&picks_cfg, PICKS_MODEL);
-        validate_model_credentials(store, &picks_model).map_err(|e| e.to_string())?;
-        let backend = backend_for(store, &picks_model);
-        let req = LlmRequest {
-            system: PICKS_PREAMBLE.to_owned(),
-            history: Vec::new(),
-            user: prompt,
-            model: picks_model,
-        };
-
-        let response: String = backend.complete(&req).await?;
+        let response =
+            complete_for_role(store, &picks_cfg, PICKS_MODEL, PICKS_PREAMBLE, &prompt).await?;
         parse_picks_response(&response)
     })
 }
@@ -136,15 +127,20 @@ pub fn parse_picks_response(response: &str) -> Result<(f32, String), String> {
 
 /// Extract the first `{…}` JSON object from an arbitrary string.
 ///
-/// The LLM may wrap its JSON in markdown fences or preamble text; this finds
-/// the outermost balanced `{…}` delimiters and returns just that slice.
+/// Thin wrapper over [`crate::llm::extract_json_object`] that re-maps the
+/// shared `Option` seam onto this module's historical `Result<String, String>`
+/// error strings (which the parse tests assert on). The find-first-to-last
+/// scan itself now lives once in the `llm` module.
 fn extract_json_object(s: &str) -> Result<String, String> {
-    let start = s.find('{').ok_or("no JSON object found in LLM response")?;
-    let end = s.rfind('}').ok_or("no closing brace in LLM response")?;
-    if end < start {
-        return Err("malformed JSON: closing brace before opening brace".into());
+    if !s.contains('{') {
+        return Err("no JSON object found in LLM response".into());
     }
-    Ok(s[start..=end].to_owned())
+    if !s.contains('}') {
+        return Err("no closing brace in LLM response".into());
+    }
+    crate::llm::extract_json_object(s)
+        .map(str::to_owned)
+        .ok_or_else(|| "malformed JSON: closing brace before opening brace".into())
 }
 
 #[cfg(test)]

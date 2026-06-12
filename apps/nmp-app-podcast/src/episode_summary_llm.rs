@@ -28,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
 
-use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
+use crate::llm::complete_for_role;
 use crate::store::PodcastStore;
 
 const SUMMARIZE_MODEL: &str = "deepseek-v4-flash:cloud";
@@ -63,17 +63,9 @@ pub fn summarize_episode(
             .ok()
             .map(|s| s.wiki_model().to_owned())
             .unwrap_or_default();
-        let summary_model = role_model_or_default(&summary_cfg, SUMMARIZE_MODEL);
-        validate_model_credentials(store, &summary_model).map_err(|e| e.to_string())?;
-        let backend = backend_for(store, &summary_model);
-        let req = LlmRequest {
-            system: SUMMARIZE_PREAMBLE.to_owned(),
-            history: Vec::new(),
-            user: prompt,
-            model: summary_model,
-        };
-
-        let response: String = backend.complete(&req).await?;
+        let response =
+            complete_for_role(store, &summary_cfg, SUMMARIZE_MODEL, SUMMARIZE_PREAMBLE, &prompt)
+                .await?;
 
         clean_summary(&response)
     })
