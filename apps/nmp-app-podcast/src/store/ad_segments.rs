@@ -24,11 +24,20 @@ impl PodcastStore {
             .unwrap_or(&[])
     }
 
+    /// True when the AI compile pipeline has run ad detection for this
+    /// episode and committed a result (even an empty one). Distinct from
+    /// `ad_segments_for(..).is_empty()` because an empty segment list means
+    /// "ran, found nothing" while `ad_detection_ran == false` means "never ran".
+    ///
+    /// Matches the Swift `episode.adSegments != nil` gate in `AIChapterCompiler`.
+    pub fn ad_detection_ran(&self, episode_id_str: &str) -> bool {
+        self.ad_segments.contains_key(episode_id_str)
+    }
+
     /// Replace the ad-break list for `episode_id_str`. An empty
     /// `segments` vec records "detection ran, found nothing" (distinct
-    /// from "never ran" — but the wire shape collapses both to empty
-    /// since `EpisodeSummary.ad_segments` uses `skip_serializing_if
-    /// = Vec::is_empty`).
+    /// from "never ran" — the key stays in the map either way, so
+    /// [`PodcastStore::ad_detection_ran`] returns `true` after this call).
     ///
     /// Flushes to disk via `persist()` so the annotations survive a
     /// relaunch.
@@ -38,11 +47,11 @@ impl PodcastStore {
         segments: Vec<AdSegment>,
     ) {
         let key = episode_id_str.into();
-        if segments.is_empty() {
-            self.ad_segments.remove(&key);
-        } else {
-            self.ad_segments.insert(key, segments);
-        }
+        // Keep an empty vec so ad_detection_ran() can distinguish
+        // "ran + found nothing" from "never ran". The wire projection
+        // uses `skip_serializing_if = Vec::is_empty` so empty arrays
+        // never pollute the snapshot JSON.
+        self.ad_segments.insert(key, segments);
         self.persist();
     }
 

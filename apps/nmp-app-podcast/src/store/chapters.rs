@@ -3,6 +3,18 @@ use podcast_core::Chapter;
 use super::PodcastStore;
 
 impl PodcastStore {
+    /// Return a clone of the stored chapters for an episode, or `None` when the
+    /// episode has no chapters yet. Used by the AI compile path to build the
+    /// ENRICH-ONLY prompt (publisher chapters already exist).
+    pub fn episode_chapters(&self, id_str: &str) -> Option<Vec<podcast_core::Chapter>> {
+        for episodes in self.episodes.values() {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                return ep.chapters.clone();
+            }
+        }
+        None
+    }
+
     pub fn episode_chapters_state(&self, id_str: &str) -> Option<(Option<url::Url>, bool)> {
         for episodes in self.episodes.values() {
             if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
