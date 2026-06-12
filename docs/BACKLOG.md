@@ -38,21 +38,13 @@ worktrees currently in flight.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
-- **inbox-triage-on-async-subscribe.** PR #383 (D8) lifted the proactive
-  `maybe_enqueue_triage()` trigger out of the snapshot builder and re-homed it
-  to the feed-refresh path (`handle_refresh`/`handle_refresh_all`) plus the
-  cold-start `auto_download_evaluate` seam. The async optimistic-subscribe /
-  OPML-import path (`feed_fetch::FeedFetchCoordinator::apply_subscribe_result`)
-  applies fresh episodes off the actor thread and already mirrors
-  `auto_categorize`/`auto_refresh_picks`, but does NOT yet fire triage —
-  `FeedFetchCoordinator` holds `Arc<CategoriesState>`/`Arc<PicksState>` but no
-  inbox handle (`InboxState` is held by-value on `PodcastAppState`, not as an
-  `Arc`). Threading triage in cleanly means making inbox `Arc<InboxState>` (or
-  extracting the triage internals) and adding it to the coordinator
-  constructor (7-arg limit). Until then, freshly-subscribed episodes get
-  triaged on the next refresh/foreground pass rather than immediately. Low
-  user impact (the trigger is internally guarded and runs on the next refresh);
-  deferred per PR #383 review.
+- **inbox-triage-on-async-subscribe.** DONE (PR #383 deferred; completed in
+  this PR). `PodcastAppState.inbox` flipped to `Arc<InboxState>`; 6th ctor
+  arg added to `FeedFetchCoordinator::new`; `apply_subscribe_result` calls
+  `self.inbox.maybe_enqueue_triage()` gated identically to
+  `auto_categorize`/`auto_refresh_picks`. Test:
+  `subscribe_report_with_fresh_episodes_enqueues_triage` asserts
+  `triage_in_progress` flips. Golden 3789 B byte-identical. Closes item.
 
 - ~~**external-feed-ensure-kernel-seed.**~~ Done in this PR:
   `SubscriptionService.ensurePodcast` now dispatches the typed `podcast`
