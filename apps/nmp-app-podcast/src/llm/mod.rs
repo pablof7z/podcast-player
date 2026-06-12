@@ -8,6 +8,7 @@
 pub mod assemblyai_transcript;
 pub mod backend;
 pub mod byok_auth;
+pub mod complete_for_role;
 pub mod elevenlabs_key_validation;
 pub mod elevenlabs_scribe;
 pub mod elevenlabs_tts;
@@ -30,6 +31,9 @@ pub mod rerank_backend;
 pub mod speech_model_catalog;
 
 pub use backend::{LlmBackend, LlmError, LlmRequest};
+pub use complete_for_role::{
+    complete_for_role, extract_json_array, extract_json_object, resolve_request,
+};
 pub use factory::{backend_for, role_model_or_default, validate_model_credentials};
 pub use local_model_backend::LocalModelBackend;
 pub use rerank_backend::{rerank_openrouter, RerankError, RerankRequest};

@@ -38,7 +38,7 @@ use std::sync::{Arc, Mutex};
 use tokio::runtime::Runtime;
 
 use crate::ffi::actions::categorization_module::MAX_CATEGORIES_PER_EPISODE;
-use crate::llm::{backend_for, role_model_or_default, validate_model_credentials, LlmRequest};
+use crate::llm::complete_for_role;
 use crate::store::PodcastStore;
 
 const CATEGORIZE_MODEL: &str = "deepseek-v4-flash:cloud";
@@ -86,17 +86,9 @@ pub fn categorize_episode(
             .ok()
             .map(|s| s.categorization_model().to_owned())
             .unwrap_or_default();
-        let cat_model = role_model_or_default(&cat_cfg, CATEGORIZE_MODEL);
-        validate_model_credentials(store, &cat_model).map_err(|e| e.to_string())?;
-        let backend = backend_for(store, &cat_model);
-        let req = LlmRequest {
-            system: CATEGORIZE_PREAMBLE.to_owned(),
-            history: Vec::new(),
-            user: prompt,
-            model: cat_model.clone(),
-        };
-
-        let response: String = backend.complete(&req).await?;
+        let response =
+            complete_for_role(store, &cat_cfg, CATEGORIZE_MODEL, CATEGORIZE_PREAMBLE, &prompt)
+                .await?;
 
         parse_category_array(&response)
     })
@@ -140,15 +132,20 @@ fn filter_taxonomy(candidates: Vec<String>) -> Vec<String> {
 
 /// Extract the first balanced `[…]` JSON array from an arbitrary string.
 ///
-/// The LLM may wrap its JSON in markdown fences or preamble text; this
-/// finds the first `[` and the last `]` and returns just that slice.
+/// Thin wrapper over [`crate::llm::extract_json_array`] that re-maps the
+/// shared `Option` seam onto this module's historical `Result<String, String>`
+/// error strings (which the parse tests assert on). The find-first-to-last
+/// scan itself now lives once in the `llm` module.
 fn extract_json_array(s: &str) -> Result<String, String> {
-    let start = s.find('[').ok_or("no JSON array found in LLM response")?;
-    let end = s.rfind(']').ok_or("no closing bracket in LLM response")?;
-    if end < start {
-        return Err("malformed JSON: closing bracket before opening bracket".into());
+    if !s.contains('[') {
+        return Err("no JSON array found in LLM response".into());
     }
-    Ok(s[start..=end].to_owned())
+    if !s.contains(']') {
+        return Err("no closing bracket in LLM response".into());
+    }
+    crate::llm::extract_json_array(s)
+        .map(str::to_owned)
+        .ok_or_else(|| "malformed JSON: closing bracket before opening bracket".into())
 }
 
 #[cfg(test)]
