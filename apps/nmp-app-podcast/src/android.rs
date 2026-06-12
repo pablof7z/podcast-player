@@ -89,24 +89,30 @@ extern "C" fn on_update(context: *mut c_void, bytes: *const u8, len: usize) {
     if context.is_null() || bytes.is_null() || len == 0 {
         return;
     }
-    // SAFETY: `bytes` is valid for `len` bytes for the duration of this call
-    // (NMP borrows the frame to the callback). `decode_update_frame` returns a
-    // heap-owned C string (or null on a non-decodable frame) that we must
-    // release through `nmp_app_free_string`.
-    let json_ptr = unsafe { crate::ffi::snapshot::nmp_app_podcast_decode_update_frame(bytes, len) };
-    if json_ptr.is_null() {
-        return;
-    }
-    let owned = unsafe { CStr::from_ptr(json_ptr) }
-        .to_string_lossy()
-        .into_owned();
-    nmp_app_free_string(json_ptr);
-    // SAFETY: `context` is the `Box<Sender<String>>` pointer registered in
-    // `nativeNew`; it lives until `nativeFree` clears the callback before
-    // reclaiming the box.
-    let tx = unsafe { &*(context as *const Sender<String>) };
-    // Dead receiver ⇒ silent no-op (D6).
-    let _ = tx.send(owned);
+    ffi_guard("on_update", (), || {
+        // SAFETY: `bytes` is valid for `len` bytes for the duration of this
+        // call (NMP borrows the frame to the callback).
+        // `decode_update_frame` returns a heap-owned C string (or null on a
+        // non-decodable frame) that we must release through
+        // `nmp_app_free_string`.
+        let json_ptr = unsafe {
+            crate::ffi::snapshot::nmp_app_podcast_decode_update_frame(bytes, len)
+        };
+        if json_ptr.is_null() {
+            return;
+        }
+        let owned = unsafe { CStr::from_ptr(json_ptr) }
+            .to_string_lossy()
+            .into_owned();
+        nmp_app_free_string(json_ptr);
+        // SAFETY: `context` is the `Box<Sender<String>>` pointer registered
+        // in `nativeNew`; it lives until `nativeFree` clears the callback
+        // before reclaiming the box. AssertUnwindSafe is sound: null-checked
+        // above; not observed again on panic path.
+        let tx = unsafe { &*(context as *const Sender<String>) };
+        // Dead receiver ⇒ silent no-op (D6).
+        let _ = tx.send(owned);
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
