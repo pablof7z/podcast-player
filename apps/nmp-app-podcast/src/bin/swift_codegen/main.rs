@@ -20,25 +20,26 @@
 //! ## Contract
 //!
 //! The emitter enforces the critical wire contract:
-//! - Swift fields are **camelCase** with NO explicit `CodingKeys` enum
-//!   (except `PodcastSettingsSnapshot` — see below).
+//! - Swift fields are **camelCase** with NO explicit `CodingKeys` enum, except
+//!   `PodcastSettingsSnapshot` — see below.
 //! - The decoder uses `.convertFromSnakeCase`, so camelCase Swift ↔
 //!   snake_case Rust is handled automatically.
 //! - Explicit snake_case `CodingKeys` = the #371 freeze hazard; the emitter
-//!   never emits them for automatically-generated types.
+//!   never emits them for the auto-camelCase types.
 //!
-//! ## NOT YET GENERATED
+//! ## SettingsSnapshot — the one explicit-CodingKeys type
 //!
-//! `PodcastSettingsSnapshot.generated.swift` is left **hand-maintained**
-//! and is NOT overwritten by this generator. The reason: `SettingsSnapshot`
-//! requires a mixed CodingKeys enum where most keys are auto-camelCase but
-//! ~15 fields override to raw snake_case (e.g. `ollama_chat_url`,
-//! `stt_provider`). A faithful emitter for this pattern needs explicit
-//! per-field key overrides; the current type manifest format doesn't model
-//! that. The file is marked `// NOT YET GENERATED` in its header. The
-//! drift gate in CI still covers it — any manual hand-edit that changes
-//! `settings.rs` will NOT be caught automatically for this file specifically,
-//! but the `// NOT YET GENERATED` marker makes this explicit.
+//! `PodcastSettingsSnapshot.generated.swift` IS now generated. It is the single
+//! type that carries a full explicit `CodingKeys` enum: most keys are
+//! auto-camelCase, but ~15 fields override to raw snake_case (e.g.
+//! `ollama_chat_url`, `stt_provider`, `assembly_ai_*`) and the BYOK credential
+//! ID/label fields use uppercase acronyms (`...BYOKKeyID`) whose
+//! `.convertFromSnakeCase` round-trip lands on a different converted key. Its
+//! custom `init(from:)` seeds every field from `self.init()` (the canonical
+//! default mirror of the kernel's `PodcastStore::new()`) and overwrites only the
+//! keys present on the wire, so an absent key keeps its default and the decoder
+//! can never throw `keyNotFound`. The drift gate covers it like every other
+//! Generated/ file.
 //!
 //! ## Usage
 //!
@@ -94,9 +95,6 @@ fn main() {
             println!("  updated:   {filename}");
         }
     }
-
-    // PodcastSettingsSnapshot is NOT generated — leave it untouched.
-    println!("  skipped:   PodcastSettingsSnapshot.generated.swift (NOT YET GENERATED — see file header)");
 
     println!("swift-codegen: done.");
 }
