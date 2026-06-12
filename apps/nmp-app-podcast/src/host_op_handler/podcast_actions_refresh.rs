@@ -44,6 +44,9 @@ impl PodcastHostOpHandler {
         if result["ok"] == true {
             self.auto_categorize();
             self.auto_refresh_picks();
+            // D8: proactive triage trigger fires from the feed-refresh path
+            // (pure-projection doctrine — not from build_snapshot_payload).
+            self.state.inbox.maybe_enqueue_triage();
         }
         result
     }
@@ -75,6 +78,8 @@ impl PodcastHostOpHandler {
         if any_succeeded {
             self.auto_categorize();
             self.auto_refresh_picks();
+            // D8: proactive triage trigger fires from the feed-refresh path.
+            self.state.inbox.maybe_enqueue_triage();
         }
         if errors.is_empty() {
             serde_json::json!({"ok": true})

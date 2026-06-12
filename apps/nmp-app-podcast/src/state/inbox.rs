@@ -313,4 +313,27 @@ mod tests {
         });
         assert!(state.infra.rev() > rev0, "dismiss must bump rev");
     }
+
+    /// D8 doctrine guard: `project()` must never spawn a triage task.
+    ///
+    /// If this test fails the snapshot builder has regressed to spawning
+    /// side-effects from the projection path.
+    #[test]
+    fn project_does_not_set_triage_in_progress() {
+        let state = InboxState {
+            dismissed: Slot::new(HashSet::new()),
+            triage_cache: Slot::new(HashMap::new()),
+            triage_in_progress: Arc::new(AtomicBool::new(false)),
+            infra: Infra::for_test(),
+            store: fixture_store(),
+        };
+        // project() is the path called from build_snapshot_payload.
+        let _items = state.project();
+        // Must NOT have claimed a triage pass — that is only triggered from the
+        // feed-refresh path via maybe_enqueue_triage().
+        assert!(
+            !state.triage_in_progress.load(std::sync::atomic::Ordering::Relaxed),
+            "project() must not spawn a triage task (D8 pure-projection doctrine)"
+        );
+    }
 }

@@ -109,11 +109,9 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     let knowledge_search_results = handle.state.knowledge.results_snapshot();
     // Step 5a: clips now projected from ClipsState.
     let clips = handle.state.clips.project(&library);
-    // Step 7: inbox now projected from InboxState (pure — no side effects).
+    // Step 7 / D8: inbox projected from InboxState — pure, no side effects.
+    // Proactive triage trigger was lifted to the feed-refresh path (Commit 2).
     let inbox = handle.state.inbox.project();
-    // Step 7 / Commit 1: proactive triage trigger remains here temporarily
-    // (behavior-identical); Commit 2 (D8) lifts it to the feed-refresh path.
-    handle.state.inbox.maybe_enqueue_triage();
     // Step 7: inbox_triage_in_progress now read from InboxState.
     let inbox_triage_in_progress = handle.state.inbox.triage_in_progress_snapshot();
     let owned_podcasts = collect_owned_podcasts(handle);
