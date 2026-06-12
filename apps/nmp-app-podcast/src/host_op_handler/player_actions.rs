@@ -1,4 +1,3 @@
-use std::sync::atomic::Ordering;
 use std::time::{Duration, SystemTime};
 
 use crate::ad_skip_handler::{handle_set_ad_segments, hydrate_actor_for_play};
@@ -97,7 +96,7 @@ impl PodcastHostOpHandler {
         // freshly-staged actor so auto-skip can fire on the very first
         // `Playing` report (no extra round-trip via iOS).
         hydrate_actor_for_play(&self.state.library.store, &player, &episode_id);
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Playback);
         if let Err(e) = self.dispatch_audio(
             &AudioCommand::load_with_id(&url, position_secs, &episode_id),
             correlation_id,
@@ -148,7 +147,7 @@ impl PodcastHostOpHandler {
         };
         self.record_playback_started_if_new(&episode_id, position_secs, prior_episode.as_deref());
         hydrate_actor_for_play(&self.state.library.store, &player, &episode_id);
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Playback);
         // Dispatch Load only — no Play. iOS calls Resume when the user taps play.
         let dispatch = self.dispatch_audio(
             &AudioCommand::load_with_id(&url, position_secs, &episode_id),
@@ -186,14 +185,14 @@ impl PodcastHostOpHandler {
                 if let Ok(mut a) = self.state.playback.player.lock() {
                     a.set_speed(speed);
                 }
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Playback);
                 self.dispatch_audio_json(AudioCommand::SetSpeed { speed }, correlation_id)
             }
             PlayerAction::SetVolume { volume } => {
                 if let Ok(mut a) = self.state.playback.player.lock() {
                     a.set_volume(volume);
                 }
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Playback);
                 self.dispatch_audio_json(AudioCommand::SetVolume { volume }, correlation_id)
             }
             PlayerAction::SetSleepTimer { secs } => {
@@ -205,7 +204,7 @@ impl PodcastHostOpHandler {
                         _ => a.cancel_sleep_timer(),
                     }
                 }
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Playback);
                 self.dispatch_audio_json(AudioCommand::SetSleepTimer { secs }, correlation_id)
             }
             PlayerAction::Stop => self.dispatch_audio_json(AudioCommand::Stop, correlation_id),
@@ -243,7 +242,7 @@ impl PodcastHostOpHandler {
             PlayerAction::ResetProgress { episode_id } => match self.state.library.store.lock() {
                 Ok(mut s) => {
                     s.reset_episode_progress(&episode_id);
-                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_domain(crate::state::Domain::Playback);
                     serde_json::json!({"ok": true})
                 }
                 Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -256,7 +255,7 @@ impl PodcastHostOpHandler {
                 Ok(mut s) => {
                     s.set_episode_position(&episode_id, position_secs);
                     s.flush_positions();
-                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_domain(crate::state::Domain::Playback);
                     serde_json::json!({"ok": true})
                 }
                 Err(_) => serde_json::json!({"ok": false, "error": "store poisoned"}),
@@ -324,7 +323,7 @@ impl PodcastHostOpHandler {
             };
             let Some(id) = popped else {
                 self.persist_queue();
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Playback);
                 return serde_json::json!({"ok": false, "error": "queue is empty"});
             };
             let resolvable = match self.state.library.store.lock() {
@@ -353,7 +352,7 @@ impl PodcastHostOpHandler {
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "queue poisoned"}),
         };
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Playback);
         if let Ok(mut s) = self.state.library.store.lock() {
             s.persist_with_queue(&items);
         }
@@ -421,7 +420,7 @@ impl PodcastHostOpHandler {
             Ok(mut q) => f(&mut q),
             Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
         };
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Downloads);
         match command {
             Some(cmd) => self.dispatch_download_json(cmd, correlation_id),
             None => serde_json::json!({"ok": true}),

@@ -115,6 +115,11 @@ const CLEAN_HTML_CACHE_CAP: usize = 16_384;
 impl PodcastHandle {
     /// Bump the snapshot rev. Step N+1: delegates to `state.infra.bump()`
     /// which owns the canonical signal + rev fallback logic.
+    ///
+    /// perf/domain-rev-wiring: the cross-thread report FFIs (`audio_report`,
+    /// `download_report`) call the domain-scoped variants below so the right
+    /// per-domain push delta fires. This bare form (Misc-scoped root infra) is
+    /// kept for any caller without a specific domain.
     pub(crate) fn bump_snapshot_rev(&self) {
         self.state.infra.bump();
     }
@@ -122,6 +127,21 @@ impl PodcastHandle {
     /// Conditional bump — delegates to `state.infra.bump_if(changed)`.
     pub(crate) fn bump_snapshot_rev_if(&self, changed: bool) {
         self.state.infra.bump_if(changed);
+    }
+
+    /// Bump the global rev AND a specific push domain's rev (signal-aware).
+    ///
+    /// Cross-thread report paths use this so a playback writeback fires the
+    /// `podcast.playback` delta and a download completion fires `podcast.library`.
+    pub(crate) fn bump_snapshot_rev_domain(&self, domain: crate::state::Domain) {
+        self.state.infra.bump_domain_explicit(domain);
+    }
+
+    /// Conditional domain-scoped bump — no-op when `changed` is false.
+    pub(crate) fn bump_snapshot_rev_domain_if(&self, domain: crate::state::Domain, changed: bool) {
+        if changed {
+            self.state.infra.bump_domain_explicit(domain);
+        }
     }
 
     /// Memoized [`super::helpers::strip_html`]. The snapshot projection calls

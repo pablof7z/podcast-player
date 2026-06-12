@@ -43,6 +43,7 @@ pub mod categories;
 pub mod clips;
 pub mod comments;
 pub mod discovery;
+pub mod domain;
 pub mod inbox;
 pub mod knowledge;
 pub mod library;
@@ -63,57 +64,8 @@ use tokio::runtime::Runtime;
 
 use crate::snapshot_signal::SnapshotUpdateSignal;
 
+pub use domain::{Domain, DomainRevs};
 pub use slot::{Derived, Durability, Persisted, Session, Slot};
-
-// ── DomainRevs ────────────────────────────────────────────────────────────────
-
-/// Per-domain snapshot revision counters.
-///
-/// Each counter tracks when a specific domain's state last changed.
-/// The push-side typed-projection closures compare against `last_emitted`
-/// and return `None` (omit the sidecar) when unchanged — giving true
-/// per-domain delta semantics without re-serialising the whole snapshot.
-///
-/// Every domain-specific mutation MUST bump its domain rev **and** the
-/// global rev (`infra.rev`) so the pull path continues to work correctly.
-/// Use `infra.bump_domain(domain_rev)` which does both atomically.
-///
-/// ## Domain assignment
-///
-/// | Counter | Domain / Key | State sources |
-/// |---|---|---|
-/// | `library` | `podcast.library` | store (podcasts + episodes + categories) |
-/// | `playback` | `podcast.playback` | now_playing + queue |
-/// | `downloads` | `podcast.downloads` | download_queue |
-/// | `settings` | `podcast.settings` | store settings |
-/// | `identity` | `podcast.identity` | identity store |
-/// | `widget` | `podcast.widget` | player state + library (derived) |
-/// | `misc` | `podcast.misc` | everything else (wiki/picks/clips/transcripts/…) |
-#[derive(Clone)]
-pub struct DomainRevs {
-    pub library: Arc<AtomicU64>,
-    pub playback: Arc<AtomicU64>,
-    pub downloads: Arc<AtomicU64>,
-    pub settings: Arc<AtomicU64>,
-    pub identity: Arc<AtomicU64>,
-    pub widget: Arc<AtomicU64>,
-    pub misc: Arc<AtomicU64>,
-}
-
-impl DomainRevs {
-    pub fn new() -> Self {
-        // Start at 1 so the first emit always fires (closures start last_emitted at 0).
-        Self {
-            library: Arc::new(AtomicU64::new(1)),
-            playback: Arc::new(AtomicU64::new(1)),
-            downloads: Arc::new(AtomicU64::new(1)),
-            settings: Arc::new(AtomicU64::new(1)),
-            identity: Arc::new(AtomicU64::new(1)),
-            widget: Arc::new(AtomicU64::new(1)),
-            misc: Arc::new(AtomicU64::new(1)),
-        }
-    }
-}
 
 // ── Infra ─────────────────────────────────────────────────────────────────────
 
@@ -136,19 +88,52 @@ pub struct Infra {
     pub runtime: Arc<Runtime>,
     /// Per-domain revision counters for push-side delta projections.
     pub domain_revs: Arc<DomainRevs>,
+    /// The push domain this `Infra` handle is scoped to. Every `bump()` on this
+    /// handle advances `domain_revs.counter(domain)` in addition to the global
+    /// rev. Substates receive a `Domain`-scoped clone at construction (see
+    /// [`Infra::with_domain`]); the un-scoped root `Infra` defaults to
+    /// [`Domain::Misc`].
+    pub domain: Domain,
 }
 
 impl Infra {
-    /// Bump the snapshot rev.
+    /// Return a clone of this `Infra` scoped to a different push [`Domain`].
     ///
-    /// When a `SnapshotUpdateSignal` is wired (production), this posts
-    /// `MarkChangedSinceEmit` on the actor channel, which coalesces multiple
-    /// in-flight bumps into one rev increment.  Without a signal (tests) it
-    /// falls back to a raw `fetch_add(1, Relaxed)`.
+    /// Used by [`PodcastAppState::new_with_identity`] to hand each substate an
+    /// `Infra` whose bare `bump()` routes to that substate's domain rev. All
+    /// `Arc` fields are shared (cheap clone); only `domain` differs.
+    pub fn with_domain(&self, domain: Domain) -> Self {
+        Self {
+            rev: self.rev.clone(),
+            signal: self.signal.clone(),
+            runtime: self.runtime.clone(),
+            domain_revs: self.domain_revs.clone(),
+            domain,
+        }
+    }
+
+    /// Bump the snapshot rev — both the global rev AND this handle's domain rev.
+    ///
+    /// The global rev drives the pull path (`nmp_app_podcast_snapshot`) and the
+    /// actor's `MarkChangedSinceEmit` coalescing. The domain rev drives the
+    /// push-side per-domain typed sidecar (the closure emits the sidecar only
+    /// when its domain rev advanced). A mutation on a `Domain::Playback`-scoped
+    /// `Infra` therefore fires the `podcast.playback` sidecar on the next tick
+    /// and leaves `podcast.library` / `podcast.settings` untouched.
+    ///
+    /// When a `SnapshotUpdateSignal` is wired (production), the global side
+    /// posts `MarkChangedSinceEmit` on the actor channel, which coalesces
+    /// multiple in-flight bumps into one rev increment. Without a signal
+    /// (tests) it falls back to a raw `fetch_add(1, Relaxed)`.
     ///
     /// Replaces the `match self.snapshot_signal { Some(s)=>s.bump(), … }`
     /// pattern repeated in ~12 handlers.
     pub fn bump(&self) {
+        // Advance the domain rev first so a consumer reading the frame produced
+        // by the global-rev tick observes the matching domain delta.
+        self.domain_revs
+            .counter(self.domain)
+            .fetch_add(1, Ordering::Relaxed);
         match &self.signal {
             Some(s) => s.bump(),
             None => {
@@ -165,15 +150,23 @@ impl Infra {
         }
     }
 
-    /// Bump both the supplied domain rev and the global rev.
+    /// Bump a SPECIFIC domain's rev (plus the global rev), regardless of the
+    /// domain this handle is scoped to.
     ///
-    /// Use this instead of `bump()` whenever the mutation belongs to a specific
-    /// push domain (library, playback, downloads, settings, identity, widget,
-    /// misc).  The global rev must also advance so the pull path
-    /// (`nmp_app_podcast_snapshot`) continues to serve correct data.
-    pub fn bump_domain(&self, domain_rev: &Arc<AtomicU64>) {
-        domain_rev.fetch_add(1, Ordering::Relaxed);
-        self.bump();
+    /// Most mutations should use the domain-scoped [`Self::bump`]. This explicit
+    /// form is for the rare site that must target a domain other than its own
+    /// `Infra` scope (e.g. a library mutation that also affects the widget
+    /// badge), or for tests asserting a specific counter.
+    pub fn bump_domain_explicit(&self, domain: Domain) {
+        self.domain_revs
+            .counter(domain)
+            .fetch_add(1, Ordering::Relaxed);
+        match &self.signal {
+            Some(s) => s.bump(),
+            None => {
+                self.rev.fetch_add(1, Ordering::Relaxed);
+            }
+        }
     }
 
     /// Read the current rev (for test assertions).
@@ -196,6 +189,7 @@ impl Infra {
             signal: None,
             runtime: Arc::new(rt),
             domain_revs: Arc::new(DomainRevs::new()),
+            domain: Domain::Misc,
         }
     }
 
@@ -212,6 +206,7 @@ impl Infra {
             signal: None,
             runtime: Arc::new(rt),
             domain_revs: Arc::new(DomainRevs::new()),
+            domain: Domain::Misc,
         }
     }
 }
@@ -393,13 +388,26 @@ impl PodcastAppState {
     ) -> Self {
         // Step 15: LibraryState owns the store + identity Arcs.  All other
         // substates receive clones of these same Arcs (lock topology unchanged).
+        //
+        // Domain scoping (perf/domain-rev-wiring-substates): each substate gets
+        // an `Infra` scoped to its push domain so its bare `infra.bump()` routes
+        // to the right domain rev. The `Domain → substate` mapping lives HERE
+        // (one place); the `Domain → counter` mapping lives in
+        // `DomainRevs::counter`. Substates not yet split into their own push
+        // domain keep `Domain::Misc` (the default `infra.domain`).
+        //   - PlaybackState        → Playback (now_playing + queue + downloads work)
+        //   - CategoriesState      → Library  (categories are part of the library payload)
+        //   - everything else      → Misc
         let library = library::LibraryState::new(store.clone(), identity.clone());
         let knowledge = knowledge::KnowledgeState::new(infra.clone(), store.clone());
         // Wiki shares the same KnowledgeStore Arc (Step 2 constraint).
         let knowledge_index = knowledge.index_arc();
         let wiki = wiki::WikiState::new(infra.clone(), store.clone(), knowledge_index);
         let picks = Arc::new(picks::PicksState::new(infra.clone(), store.clone()));
-        let categories = Arc::new(categories::CategoriesState::new(infra.clone(), store.clone()));
+        let categories = Arc::new(categories::CategoriesState::new(
+            infra.with_domain(Domain::Library),
+            store.clone(),
+        ));
         let clips = clips::ClipsState::new(infra.clone(), store.clone());
         let transcripts = transcripts::TranscriptsState::new(infra.clone(), store.clone());
         let tasks = tasks::TasksState::new(infra.clone(), store.clone());
@@ -418,7 +426,10 @@ impl PodcastAppState {
             std::ptr::null_mut(),
         );
         let publish = publish::PublishState::new(infra.clone(), store.clone());
-        let playback = playback::PlaybackState::new(infra.clone(), store.clone());
+        let playback = playback::PlaybackState::new(
+            infra.with_domain(Domain::Playback),
+            store.clone(),
+        );
         // Step 16: FeedFetchCoordinator is constructed inside the state — it
         // needs picks + categories Arcs available here, plus infra.rev + signal.
         let feed_fetch = std::sync::Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(

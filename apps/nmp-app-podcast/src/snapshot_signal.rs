@@ -27,10 +27,4 @@ impl SnapshotUpdateSignal {
         self.rev.fetch_add(1, Ordering::Relaxed);
         let _ = self.actor_tx.send(ActorCommand::MarkChangedSinceEmit);
     }
-
-    pub(crate) fn bump_if(&self, changed: bool) {
-        if changed {
-            self.bump();
-        }
-    }
 }

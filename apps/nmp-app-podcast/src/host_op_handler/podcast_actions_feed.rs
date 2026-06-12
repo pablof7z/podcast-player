@@ -87,6 +87,16 @@ impl PodcastHostOpHandler {
         }
         // Surface the optimistic row immediately.
         // Step 15+16: signal sourced from state.infra.
+        // perf/domain-rev-wiring: bump the library domain rev first so the
+        // `podcast.library` sidecar fires its delta, then drive the global
+        // rev (via the signal when present — this surfaces from a deferred
+        // path, so the signal's MarkChangedSinceEmit is required to wake the
+        // emit; the raw fetch_add fallback covers the no-signal test path).
+        self.state
+            .infra
+            .domain_revs
+            .counter(crate::state::Domain::Library)
+            .fetch_add(1, Ordering::Relaxed);
         if let Some(signal) = &self.state.infra.signal {
             signal.bump();
         } else {
@@ -163,7 +173,7 @@ impl PodcastHostOpHandler {
                         let episodes = merge_episodes(parsed.episodes, existing);
                         s.upsert_known_podcast(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
-                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_domain(crate::state::Domain::Library);
                         true
                     }
                     Err(_) => false,
@@ -209,7 +219,7 @@ impl PodcastHostOpHandler {
                 let ok = match self.state.library.store.lock() {
                     Ok(mut s) => {
                         s.unsubscribe(id);
-                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_domain(crate::state::Domain::Library);
                         true
                     }
                     Err(_) => false,

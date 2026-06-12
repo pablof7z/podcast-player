@@ -10,8 +10,6 @@
 //! * Never hold a `PodcastStore` lock across a capability dispatch.
 //! * Notifications + auto-downloads fire AFTER the store lock is released.
 
-use std::sync::atomic::Ordering;
-
 use uuid::Uuid;
 
 use crate::host_op_handler::PodcastHostOpHandler;
@@ -96,7 +94,7 @@ impl PodcastHostOpHandler {
         if let Err(e) = self.start_episode_download(&episode_id_str, &url, correlation_id, false) {
             return serde_json::json!({"ok": false, "error": e});
         }
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Downloads);
         serde_json::json!({"ok": true})
     }
 
@@ -184,7 +182,7 @@ impl PodcastHostOpHandler {
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "download_queue poisoned"}),
         };
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Downloads);
         if let Some(cmd) = command {
             if let Err(e) = self.dispatch_download(&cmd, correlation_id) {
                 return serde_json::json!({"ok": false, "error": e});
@@ -209,7 +207,7 @@ impl PodcastHostOpHandler {
             Ok(mut s) => {
                 s.set_auto_download(podcast_id, enabled);
                 s.set_wifi_only(podcast_id, wifi_only);
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Library);
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         }
@@ -296,7 +294,7 @@ impl PodcastHostOpHandler {
         };
         if let Some(path) = removed_path {
             let _ = std::fs::remove_file(&path);
-            self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+            self.bump_domain(crate::state::Domain::Library);
         }
         serde_json::json!({"ok": true})
     }

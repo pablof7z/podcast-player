@@ -99,7 +99,8 @@ impl HostOpHandler for PodcastHostOpHandler {
                 let mut handler = IdentityHandler::new(
                     self.state.library.identity.clone(),
                     self.state.infra.rev.clone(),
-                );
+                )
+                .with_domain_rev(self.state.infra.domain_revs.identity.clone());
                 if let Some(ref signal) = self.state.infra.signal {
                     handler = handler.with_snapshot_signal(signal.clone());
                 }

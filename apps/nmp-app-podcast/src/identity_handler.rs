@@ -35,15 +35,31 @@ pub struct IdentityHandler {
     pub identity: Arc<Mutex<IdentityStore>>,
     pub rev: Arc<AtomicU64>,
     pub snapshot_signal: Option<SnapshotUpdateSignal>,
+    /// The `podcast.identity` domain rev counter. Bumped alongside the global
+    /// rev so the `podcast.identity` typed sidecar fires its push delta on an
+    /// identity mutation. `None` in tests that don't exercise the push path.
+    pub identity_domain_rev: Option<Arc<AtomicU64>>,
 }
 
 impl IdentityHandler {
     pub fn new(identity: Arc<Mutex<IdentityStore>>, rev: Arc<AtomicU64>) -> Self {
-        Self { identity, rev, snapshot_signal: None }
+        Self {
+            identity,
+            rev,
+            snapshot_signal: None,
+            identity_domain_rev: None,
+        }
     }
 
     pub fn with_snapshot_signal(mut self, signal: SnapshotUpdateSignal) -> Self {
         self.snapshot_signal = Some(signal);
+        self
+    }
+
+    /// Wire the `podcast.identity` domain rev so identity mutations advance the
+    /// per-domain push delta (in addition to the global rev).
+    pub fn with_domain_rev(mut self, domain_rev: Arc<AtomicU64>) -> Self {
+        self.identity_domain_rev = Some(domain_rev);
         self
     }
 
@@ -52,7 +68,14 @@ impl IdentityHandler {
     /// invalidates the snapshot cache; the next NMP-core event will carry the
     /// fresh identity. With the signal a dedicated `MarkChangedSinceEmit` is
     /// posted so a fresh push frame arrives even if no other event fires.
+    ///
+    /// The identity domain rev (when wired) is advanced first so a consumer
+    /// reading the global-rev frame observes the matching `podcast.identity`
+    /// delta.
     fn bump_rev(&self) {
+        if let Some(ref domain_rev) = self.identity_domain_rev {
+            domain_rev.fetch_add(1, Ordering::Relaxed);
+        }
         match self.snapshot_signal {
             Some(ref signal) => signal.bump(),
             None => { self.rev.fetch_add(1, Ordering::Relaxed); }

@@ -123,4 +123,26 @@ impl PodcastHostOpHandler {
         let _ = self.state.picks.auto_refresh();
     }
 
+    /// Bump the global rev AND a specific push domain's rev for an on-actor-thread
+    /// mutation.
+    ///
+    /// Handler arms run synchronously on the actor thread during command
+    /// dispatch — the actor emits a frame after the command returns, so these
+    /// sites do NOT post the snapshot signal (matching the historical raw
+    /// `infra.rev.fetch_add(1)` they replace). They DO advance the named domain
+    /// rev so the per-domain typed sidecar fires its delta on that emit.
+    ///
+    /// This is the ONE place the handler's domain-bump mechanism lives; the
+    /// `Domain` argument at each call site is the per-mutation mapping. A
+    /// `podcast.settings.*` arm passes `Domain::Settings`, a player arm
+    /// `Domain::Playback`, a feed/library arm `Domain::Library`, etc.
+    pub(crate) fn bump_domain(&self, domain: crate::state::Domain) {
+        use std::sync::atomic::Ordering;
+        self.state
+            .infra
+            .domain_revs
+            .counter(domain)
+            .fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+    }
 }

@@ -133,7 +133,11 @@ pub extern "C" fn nmp_app_podcast_download_report(
                 drop(store);
                 // Only durable library changes (completion/cancellation) bump the
                 // global `rev`; progress ticks ride the inline `downloads` field.
-                handle_ref.bump_snapshot_rev_if(dispatch.durable_changed);
+                // A completed/cancelled download changes the episode's
+                // download_path/file_size_bytes in the `podcast.library` payload,
+                // so route the delta there.
+                handle_ref
+                    .bump_snapshot_rev_domain_if(crate::state::Domain::Library, dispatch.durable_changed);
                 DownloadReportResponse {
                     follow_up: dispatch.follow_up_json,
                     downloads,

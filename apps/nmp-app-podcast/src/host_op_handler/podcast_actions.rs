@@ -10,8 +10,6 @@
 //! * Never hold a `PodcastStore` lock across a capability dispatch.
 //! * Notifications + auto-downloads fire AFTER the store lock is released.
 
-use std::sync::atomic::Ordering;
-
 use podcast_feeds::http::{HttpRequest, HttpResult};
 
 use crate::host_op_handler::PodcastHostOpHandler;
@@ -56,7 +54,7 @@ impl PodcastHostOpHandler {
                 "error": format!("invalid podcast id: {podcast_id}")
             });
         }
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Library);
         serde_json::json!({"ok": true})
     }
 
@@ -102,7 +100,7 @@ impl PodcastHostOpHandler {
                 "error": format!("could not add episode {episode_id} under podcast {podcast_id}")
             });
         }
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Library);
         serde_json::json!({"ok": true, "episode_id": episode_id})
     }
 
@@ -125,7 +123,7 @@ impl PodcastHostOpHandler {
                 }
                 // Single rev bump for the whole batch — one snapshot tick.
                 if changed {
-                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_domain(crate::state::Domain::Library);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -141,7 +139,7 @@ impl PodcastHostOpHandler {
             Ok(mut s) => {
                 let changed = s.mark_episodes_metadata_indexed(episode_ids);
                 if changed {
-                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_domain(crate::state::Domain::Library);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -235,7 +233,7 @@ impl PodcastHostOpHandler {
                             format!("Transcription: {other}"),
                         ),
                     }
-                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                    self.bump_domain(crate::state::Domain::Library);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -268,7 +266,7 @@ impl PodcastHostOpHandler {
         match self.state.discovery.itunes_results.lock() {
             Ok(mut r) => {
                 *r = results;
-                self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                self.bump_domain(crate::state::Domain::Library);
                 serde_json::json!({"ok": true})
             }
             Err(_) => serde_json::json!({"ok": false, "error": "search_results poisoned"}),
@@ -292,7 +290,7 @@ impl PodcastHostOpHandler {
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         }
         if mutated {
-            self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+            self.bump_domain(crate::state::Domain::Settings);
         }
         serde_json::json!({"ok": true})
     }

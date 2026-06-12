@@ -4,7 +4,6 @@
 //! stays under the repository's 500-line hard ceiling.
 
 use std::collections::HashSet;
-use std::sync::atomic::Ordering;
 
 use chrono::Utc;
 use podcast_core::{Episode, EpisodeId, PodcastId};
@@ -74,7 +73,7 @@ impl PodcastHostOpHandler {
         }
         // Bump rev so the next snapshot tick recomputes the inbox projection
         // from the freshly-pulled episodes even when every feed returned 304.
-        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+        self.bump_domain(crate::state::Domain::Library);
         if any_succeeded {
             self.auto_categorize();
             self.auto_refresh_picks();
@@ -242,7 +241,7 @@ impl PodcastHostOpHandler {
                     Ok(mut s) => {
                         s.upsert_known_podcast(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, etag_out, lm_out);
-                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_domain(crate::state::Domain::Library);
                         true
                     }
                     Err(_) => false,

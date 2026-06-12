@@ -140,7 +140,10 @@ pub extern "C" fn nmp_app_podcast_audio_report(
                 None
             };
             drop(actor); // release before rev bump and store lock
-            handle_ref.bump_snapshot_rev_if(durable_changed);
+            // A durable audio report (mark-played-at-end, sleep-timer stop)
+            // changes the episode's played/position state — both live in the
+            // `podcast.library` payload — so route the delta there.
+            handle_ref.bump_snapshot_rev_domain_if(crate::state::Domain::Library, durable_changed);
             (follow_up_json, now_playing, episode_id)
         };
 
@@ -308,7 +311,9 @@ fn maybe_auto_advance(handle: &PodcastHandle) {
         }
     }
 
-    handle.bump_snapshot_rev();
+    // Auto-advance staged a new now_playing episode → the `podcast.playback`
+    // delta. (The departing episode's mark-played already bumped library above.)
+    handle.bump_snapshot_rev_domain(crate::state::Domain::Playback);
 }
 
 fn dispatch_audio_cmd(handle: &PodcastHandle, cmd: &AudioCommand) {

@@ -55,6 +55,10 @@ pub const SCHEMA_MISC: &str = "podcast.misc";
 /// Build the `podcast.library` domain payload from the current handle state.
 /// Returns `None` when the library is empty (preserves byte-identical pull-path
 /// behaviour for a fresh install).
+///
+/// `inbox` lives here (not in playback) because it is DERIVED from library
+/// episodes — a feed refresh that adds/updates episodes drives the inbox delta,
+/// and both are bumped by `Domain::Library` mutation sites.
 fn build_library_payload(handle: &PodcastHandle) -> Option<serde_json::Value> {
     let update = build_podcast_update(handle);
     if update.library.is_empty() {
@@ -67,6 +71,8 @@ fn build_library_payload(handle: &PodcastHandle) -> Option<serde_json::Value> {
         "search_results": update.search_results,
         "nostr_results": update.nostr_results,
         "owned_podcasts": update.owned_podcasts,
+        "inbox": update.inbox,
+        "inbox_triage_in_progress": update.inbox_triage_in_progress,
     }))
 }
 
@@ -77,8 +83,6 @@ fn build_playback_payload(handle: &PodcastHandle) -> serde_json::Value {
         "rev": update.rev,
         "now_playing": update.now_playing,
         "queue": update.queue,
-        "inbox": update.inbox,
-        "inbox_triage_in_progress": update.inbox_triage_in_progress,
     })
 }
 
