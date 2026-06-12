@@ -181,23 +181,38 @@ struct NostrDiscoverForm: View {
     // MARK: - Logic
 
     private func isAlreadySubscribed(_ show: NostrShowSummary) -> Bool {
-        guard let feed = show.feedUrl, let url = URL(string: feed),
-              let existing = store.podcast(feedURL: url) else { return false }
-        return store.subscription(podcastID: existing.id) != nil
+        // RSS path: match by feed URL + active subscription.
+        if let feed = show.feedUrl, let url = URL(string: feed),
+           let existing = store.podcast(feedURL: url),
+           store.subscription(podcastID: existing.id) != nil {
+            return true
+        }
+        // Feedless path: match by author pubkey (stable UUIDv5 row key).
+        return store.state.podcasts.contains {
+            $0.ownerPubkeyHex == show.authorPubkey
+        }
     }
 
     private func subscribe(to show: NostrShowSummary) async {
         guard subscribingID == nil else { return }
-        guard let feed = show.feedUrl, !feed.isEmpty else {
-            rowErrors[show.id] = "This show has no feed to subscribe to."
-            return
-        }
         subscribingID = show.id
         rowErrors.removeValue(forKey: show.id)
         defer { subscribingID = nil }
 
         do {
-            let podcast = try await store.kernelSubscribe(feedURL: feed)
+            let podcast: Podcast
+            if let feed = show.feedUrl, !feed.isEmpty {
+                // RSS-backed NIP-F4 show: subscribe via feed URL.
+                podcast = try await store.kernelSubscribe(feedURL: feed)
+            } else {
+                // Feedless NIP-F4 show: subscribe via author pubkey.
+                // Rust opens a kind:54 relay subscription and creates a
+                // feedless show row; episodes arrive asynchronously.
+                podcast = try await store.kernelSubscribeNostr(
+                    authorPubkeyHex: show.authorPubkey,
+                    showTitle: show.title.isEmpty ? nil : show.title
+                )
+            }
             Haptics.success()
             onAdded(podcast)
         } catch {
@@ -216,11 +231,12 @@ private struct NostrShowRow: View {
     let rowError: String?
     let onSubscribe: () -> Void
 
-    /// A show with no feed URL can't be subscribed (there is no Nostr-native
-    /// subscribe op — only the RSS `feed_url` the kind:10154 event carries).
+    /// All NIP-F4 shows are subscribable:
+    /// - RSS-backed shows (with a `feedUrl`) via the RSS subscribe path.
+    /// - Feedless shows (no `feedUrl`, but have a pubkey) via `subscribe_nostr`.
     private var isSubscribable: Bool {
-        guard let feed = show.feedUrl else { return false }
-        return !feed.isEmpty
+        if let feed = show.feedUrl, !feed.isEmpty { return true }
+        return !show.authorPubkey.isEmpty
     }
 
     var body: some View {
@@ -301,15 +317,12 @@ private struct NostrShowRow: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .frame(width: 32, height: 32)
-        } else if isSubscribable {
+        } else {
+            // Both RSS-backed and feedless shows show plus.circle.fill;
+            // isSubscribable is now always true (all NIP-F4 shows are subscribable).
             Image(systemName: "plus.circle.fill")
                 .font(.title3)
                 .foregroundStyle(.tint)
-                .frame(width: 32, height: 32)
-        } else {
-            Image(systemName: "link.badge.plus")
-                .font(.title3)
-                .foregroundStyle(.tertiary)
                 .frame(width: 32, height: 32)
         }
     }
@@ -317,7 +330,8 @@ private struct NostrShowRow: View {
     private var accessibilityLabel: String {
         if isAlreadySubscribed { return "Already subscribed to \(show.title)" }
         if isSubscribing { return "Subscribing to \(show.title)" }
-        if !isSubscribable { return "\(show.title) has no feed to subscribe to" }
-        return "Subscribe to \(show.title) on Nostr"
+        let isFeedless = show.feedUrl?.isEmpty ?? true
+        if isFeedless { return "Subscribe to \(show.title) on Nostr (feedless)" }
+        return "Subscribe to \(show.title)"
     }
 }

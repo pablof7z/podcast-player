@@ -218,6 +218,17 @@ impl PodcastHostOpHandler {
                     reply_to_pubkey.as_deref(),
                 )
                 .as_json(),
+            PodcastAction::SubscribeNostr {
+                author_pubkey_hex,
+                show_title,
+            } => crate::nostr_episodes::handle_subscribe_nostr(
+                self.app,
+                &self.store,
+                &self.rev,
+                self.snapshot_signal.as_ref(),
+                &author_pubkey_hex,
+                show_title.as_deref(),
+            ),
             // DiscoverNostr is handled in PodcastActionModule::execute via
             // EnsureInterest/DropInterestOwner before reaching the host-op
             // handler; it never arrives here.

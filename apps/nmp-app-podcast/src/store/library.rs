@@ -336,6 +336,30 @@ impl PodcastStore {
             .map(|p| p.id)
     }
 
+    /// Ensure a feedless (no RSS `feed_url`) followed show row exists for
+    /// `owner_pubkey_hex`. Creates the row if absent; idempotent if present.
+    ///
+    /// Used by `handle_subscribe_nostr` to make the show appear in the library
+    /// immediately — before any `kind:54` episode events arrive.
+    pub fn subscribe_feedless_show(&mut self, owner_pubkey_hex: &str, show_title: &str) {
+        if self.podcast_id_for_pubkey(owner_pubkey_hex).is_some() {
+            return; // already exists — no-op.
+        }
+        let id = PodcastId::new(uuid::Uuid::new_v5(
+            &uuid::Uuid::NAMESPACE_URL,
+            format!("nostr:show:{owner_pubkey_hex}").as_bytes(),
+        ));
+        let mut podcast = Podcast::new(show_title.to_string());
+        podcast.id = id;
+        podcast.owner_pubkey_hex = Some(owner_pubkey_hex.to_string());
+        podcast.nostr_coordinate =
+            Some(format!("{}:{owner_pubkey_hex}", podcast_discovery::KIND_NIP_F4_SHOW));
+        self.podcasts.insert(id, podcast);
+        self.episodes.entry(id).or_default();
+        self.followed_podcasts.insert(id);
+        self.persist();
+    }
+
     /// Upsert a feedless (no RSS `feed_url`) show row keyed by `owner_pubkey_hex`,
     /// then upsert the given episode into its episode list.
     ///

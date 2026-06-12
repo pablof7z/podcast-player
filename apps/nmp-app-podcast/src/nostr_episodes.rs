@@ -29,7 +29,7 @@
 //!   `SnapshotUpdateSignal::bump()` on every successful upsert.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use nmp_core::planner::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_core::stable_hash::stable_hash64;
@@ -43,6 +43,16 @@ use crate::nmp_dispatch::push_interest_via_nmp;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
 use nmp_ffi::NmpApp;
+
+/// Guards one-time lazy registration of the [`NostrEpisodesObserver`].
+///
+/// `handle_subscribe_nostr` registers the observer on first call — not in
+/// `ffi/register.rs` (which is constrained) — so the observer is wired
+/// before any `kind:54` interest is pushed, ensuring no events are dropped.
+///
+/// The `OnceLock` makes concurrent first calls safe: only one thread wins the
+/// `get_or_init`; the loser sees the initialised `()` and moves on.
+static OBSERVER_REGISTERED: OnceLock<()> = OnceLock::new();
 
 /// Namespace discriminant for kind:54 episode interests.
 const NOSTR_EPISODES_NAMESPACE: &str = "podcast.nostr_episodes";
@@ -76,11 +86,83 @@ fn episode_interest(author_pubkey: &str) -> LogicalInterest {
 
 /// Open a `kind:54` subscription for `author_pubkey` via NMP's relay pool.
 ///
-/// Called by `handle_subscribe_nostr` the first time a feedless show is
-/// subscribed. Idempotent: the kernel deduplicates interests by
-/// `InterestId`, so re-subscribing the same pubkey is a no-op.
+/// Idempotent: the kernel deduplicates interests by `InterestId`, so
+/// re-subscribing the same pubkey is a no-op.
 pub fn subscribe_nostr_episodes(app: *mut NmpApp, author_pubkey: &str) {
     push_interest_via_nmp(app, episode_interest(author_pubkey));
+}
+
+/// `podcast.subscribe_nostr` handler.
+///
+/// 1. Lazily registers [`NostrEpisodesObserver`] on the first call (so the
+///    kernel routes `kind:54` events to the observer before the relay interest
+///    is opened — ensuring zero events are dropped during the EOSE sweep).
+/// 2. Calls [`subscribe_nostr_episodes`] to open the `kind:54` relay interest.
+/// 3. Upserts a followed feedless show row in the store (so the podcast
+///    appears in the library immediately, before any episodes arrive).
+/// 4. Bumps the snapshot rev so the next projection tick reflects the new row.
+///
+/// Returns `{"ok": true, "status": "subscribed"}` on success.
+pub fn handle_subscribe_nostr(
+    app: *mut NmpApp,
+    store: &Arc<Mutex<PodcastStore>>,
+    rev: &Arc<AtomicU64>,
+    snapshot_signal: Option<&SnapshotUpdateSignal>,
+    author_pubkey_hex: &str,
+    show_title: Option<&str>,
+) -> serde_json::Value {
+    if author_pubkey_hex.is_empty() {
+        return serde_json::json!({"ok": false, "error": "author_pubkey_hex is empty"});
+    }
+
+    // Register the observer on the first call (lazily, to avoid touching
+    // `ffi/register.rs`). `OnceLock::get_or_init` is atomic: concurrent
+    // first calls are safe; only one executes the init closure.
+    OBSERVER_REGISTERED.get_or_init(|| {
+        if !app.is_null() {
+            // SAFETY: `app` is valid for the lifetime of the process —
+            // `nmp_app_podcast_register` holds it alive. `register_event_observer`
+            // takes `&self`; no exclusive alias exists at this call site.
+            let app_ref = unsafe { &*app };
+            let observer = Arc::new(
+                NostrEpisodesObserver::new(store.clone(), rev.clone())
+                    .with_snapshot_signal_opt(snapshot_signal.cloned()),
+            );
+            let _id = app_ref.register_event_observer(observer);
+            // The returned id is intentionally dropped: the observer is
+            // permanent (alive for the app's lifetime). `nmp_app_free` joins
+            // the actor before dropping the observer slot.
+        }
+    });
+
+    // Open the kind:54 relay interest (idempotent).
+    subscribe_nostr_episodes(app, author_pubkey_hex);
+
+    // Upsert a feedless followed show row so the podcast is visible in the
+    // library immediately (episode rows arrive asynchronously via the observer).
+    let title = show_title.unwrap_or_else(|| {
+        // Minimal placeholder — replaced by the kind:10154 observer.
+        "Nostr Show"
+    });
+
+    // Use a dummy episode to seed the row if needed; `upsert_feedless_episode`
+    // creates the podcast row on first call. When the row already exists the
+    // upsert is just a persist() call — not harmful.
+    //
+    // We only need to ensure the show row exists and is followed. We do not
+    // insert a placeholder episode here — that would pollute the episode list.
+    // Instead, we call the simpler `subscribe_feedless_show` helper.
+    match store.lock() {
+        Ok(mut s) => s.subscribe_feedless_show(author_pubkey_hex, title),
+        Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+    }
+
+    if let Some(signal) = snapshot_signal {
+        signal.bump();
+    } else {
+        rev.fetch_add(1, Ordering::Relaxed);
+    }
+    serde_json::json!({"ok": true, "status": "subscribed", "author_pubkey_hex": author_pubkey_hex})
 }
 
 /// In-process [`KernelEventObserver`] that turns inbound `kind:54` events
@@ -107,8 +189,16 @@ impl NostrEpisodesObserver {
         }
     }
 
-    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
-        self.snapshot_signal = Some(snapshot_signal);
+    /// Builder for the optional snapshot signal.
+    ///
+    /// Used by lazy registration in [`handle_subscribe_nostr`] where the signal
+    /// is already `Option<SnapshotUpdateSignal>`. Prefer this over storing a
+    /// plain `AtomicU64::fetch_add` fallback on the caller side.
+    pub(crate) fn with_snapshot_signal_opt(
+        mut self,
+        snapshot_signal: Option<SnapshotUpdateSignal>,
+    ) -> Self {
+        self.snapshot_signal = snapshot_signal;
         self
     }
 }
