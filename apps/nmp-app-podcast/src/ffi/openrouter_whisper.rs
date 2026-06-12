@@ -34,7 +34,7 @@ pub extern "C" fn nmp_app_podcast_openrouter_whisper_transcribe(
                 }
             };
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
+            let store = Arc::clone(&handle_ref.state.library.store);
             let runtime = Arc::clone(&handle_ref.runtime);
             match runtime.block_on(openrouter_whisper::transcribe_openrouter_whisper(
                 store, intent,

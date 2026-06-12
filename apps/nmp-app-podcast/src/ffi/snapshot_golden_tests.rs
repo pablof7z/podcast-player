@@ -114,11 +114,13 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
     // state.discovery / state.comments / state.social respectively.
     // Step 14: player_actor, queue, download_queue removed — now owned by
     // state.playback (PlaybackState).
+    // Step 15: store + identity are no longer fields of PodcastHandle —
+    // they live in state.library.store / state.library.identity.
     Box::new(PodcastHandle {
         app,
         state,
-        store: store.clone(),
-        identity,
+        // store removed in Step 15 — accessed via state.library.store.
+        // identity removed in Step 15 — accessed via state.library.identity.
         rev: rev.clone(),
         snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),

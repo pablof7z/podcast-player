@@ -36,7 +36,7 @@ pub extern "C" fn nmp_app_podcast_assemblyai_transcribe(
                 }
             };
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
+            let store = Arc::clone(&handle_ref.state.library.store);
             let runtime = Arc::clone(&handle_ref.runtime);
             match runtime.block_on(assemblyai_transcript::transcribe_assemblyai(store, intent)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),

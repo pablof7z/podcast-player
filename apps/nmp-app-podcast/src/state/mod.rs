@@ -34,6 +34,9 @@
 //! Steps 8-10 done (Comments, Discovery, Social).
 //! Step 11: AgentChat substate — `conversation`/`agent_busy`/`agent_touched`
 //!          removed from both god-structs.
+//! Step 15: LibraryState substate — `store` + `identity` relocated from
+//!          register.rs locals into `state.library`; removed from both
+//!          god-structs.  All other substates keep their existing Arc clones.
 
 pub mod agent_chat;
 pub mod categories;
@@ -42,6 +45,7 @@ pub mod comments;
 pub mod discovery;
 pub mod inbox;
 pub mod knowledge;
+pub mod library;
 pub mod picks;
 pub mod playback;
 pub mod publish;
@@ -170,6 +174,12 @@ pub struct PodcastAppState {
     /// Cross-cutting infrastructure (rev + signal + runtime).
     pub infra: Infra,
 
+    /// Library substate (Step 15).  Owns the canonical persisted root:
+    /// `store` (`Arc<Mutex<PodcastStore>>`) and `identity`
+    /// (`Arc<Mutex<IdentityStore>>`).  All other substates hold existing Arc
+    /// clones; `LibraryState` is the tree-level owner.
+    pub library: library::LibraryState,
+
     /// Knowledge substate (Step 1).
     pub knowledge: knowledge::KnowledgeState,
 
@@ -268,6 +278,9 @@ impl PodcastAppState {
         store: Arc<std::sync::Mutex<crate::store::PodcastStore>>,
         identity: Arc<std::sync::Mutex<crate::store::identity::IdentityStore>>,
     ) -> Self {
+        // Step 15: LibraryState owns the store + identity Arcs.  All other
+        // substates receive clones of these same Arcs (lock topology unchanged).
+        let library = library::LibraryState::new(store.clone(), identity.clone());
         let knowledge = knowledge::KnowledgeState::new(infra.clone(), store.clone());
         // Wiki shares the same KnowledgeStore Arc (Step 2 constraint).
         let knowledge_index = knowledge.index_arc();
@@ -295,6 +308,7 @@ impl PodcastAppState {
         let playback = playback::PlaybackState::new(infra.clone(), store.clone());
         Self {
             infra,
+            library,
             knowledge,
             wiki,
             picks,

@@ -38,7 +38,7 @@ impl PodcastHostOpHandler {
         podcast_id: Option<&str>,
         correlation_id: &str,
     ) -> serde_json::Value {
-        let episode_id = match self.store.lock() {
+        let episode_id = match self.state.library.store.lock() {
             Ok(s) => {
                 let candidates = s.subscribed_podcasts();
                 candidates

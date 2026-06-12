@@ -11,8 +11,6 @@ use nmp_ffi::NmpApp;
 use tokio::runtime::Runtime;
 
 use crate::snapshot_signal::SnapshotUpdateSignal;
-use crate::store::identity::IdentityStore;
-use crate::store::PodcastStore;
 
 /// Diagnostic publish state retained per-podcast across snapshot ticks.
 ///
@@ -33,11 +31,11 @@ pub struct PodcastHandle {
     /// Composed state root.  Inbox (Step 7), Knowledge (Step 1), Wiki (Step 2),
     /// Picks (Step 3), Categories (Step 4), Clips (Step 5a), Transcripts (Step 5b),
     /// Tasks (Step 6), Comments (Step 8), Discovery (Step 9), Social (Step 10),
-    /// AgentChat (Step 11), Voice (Step 12), Publish (Step 13),
-    /// Playback (Step 14) all live here.
+    /// AgentChat (Step 11), Voice (Step 12), Publish (Step 13), Playback (Step 14),
+    /// Library/identity (Step 15) all live here.
     pub(crate) state: Arc<PodcastAppState>,
-    pub(super) store: Arc<Mutex<PodcastStore>>,
-    pub(super) identity: Arc<Mutex<IdentityStore>>,
+    // store removed in Step 15 — now owned by `state.library.store`.
+    // identity removed in Step 15 — now owned by `state.library.identity`.
     pub(super) rev: Arc<AtomicU64>,
     pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
     // search_results removed in Step 9 — now owned by `state.discovery` (DiscoveryState).

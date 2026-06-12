@@ -93,7 +93,7 @@ pub extern "C" fn nmp_app_podcast_record_episode_event(
             };
 
             let handle_ref = unsafe { &*handle };
-            if let Ok(mut store) = handle_ref.store.lock() {
+            if let Ok(mut store) = handle_ref.state.library.store.lock() {
                 let details = req
                     .details
                     .into_iter()
@@ -133,7 +133,7 @@ pub extern "C" fn nmp_app_podcast_episode_events(
         };
 
         let handle_ref = unsafe { &*handle };
-        let events = match handle_ref.store.lock() {
+        let events = match handle_ref.state.library.store.lock() {
             Ok(mut store) => store.episode_events(episode_id),
             Err(_) => return std::ptr::null_mut(),
         };

@@ -16,12 +16,14 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         store.clone(),
         identity.clone(),
     ));
+    // Step 15: store + identity removed from PodcastHandle —
+    // they are now accessed via state.library.store / state.library.identity.
     Box::new(PodcastHandle {
         app: std::ptr::null_mut(),
         state,
         // player_actor, queue, download_queue removed in Step 14 — now in state.playback.
-        store: store.clone(),
-        identity,
+        // store removed in Step 15 — accessed via state.library.store.
+        // identity removed in Step 15 — accessed via state.library.identity.
         rev: rev.clone(),
         snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),

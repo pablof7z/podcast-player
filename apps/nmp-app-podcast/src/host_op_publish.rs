@@ -63,7 +63,7 @@ pub(crate) fn create_owned(
     handler: &PodcastHostOpHandler,
     podcast_id: String,
 ) -> serde_json::Value {
-    let exists = match handler.store.lock() {
+    let exists = match handler.state.library.store.lock() {
         Ok(s) => s.podcast_by_id_str(&podcast_id).is_some(),
         Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
     };
@@ -84,7 +84,7 @@ pub(crate) fn create_owned(
         }
         Err(_) => return serde_json::json!({"ok": false, "error": "podcast_keys poisoned"}),
     };
-    if let Ok(mut s) = handler.store.lock() {
+    if let Ok(mut s) = handler.state.library.store.lock() {
         s.set_owner_pubkey_hex(&podcast_id, pubkey_hex.clone());
     }
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {
@@ -101,7 +101,7 @@ pub(crate) fn publish_show(
     handler: &PodcastHostOpHandler,
     podcast_id: String,
 ) -> serde_json::Value {
-    let podcast_clone = match handler.store.lock() {
+    let podcast_clone = match handler.state.library.store.lock() {
         Ok(s) => match s.podcast_by_id_str(&podcast_id) {
             Some(p) => p.clone(),
             None => {
@@ -169,7 +169,7 @@ pub(crate) fn publish_show(
 /// event, then broadcast to `relay.primal.net`. The parent podcast must
 /// have been claimed via `create_owned_podcast`.
 fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_json::Value {
-    let (podcast, episode, local_path, blossom_url) = match handler.store.lock() {
+    let (podcast, episode, local_path, blossom_url) = match handler.state.library.store.lock() {
         Ok(s) => match s.episode_with_podcast_clone(&episode_id) {
             Some((podcast, episode)) => {
                 let local_path = s.local_path_for(&episode.id).map(str::to_owned);
@@ -344,7 +344,7 @@ fn remove_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde_jso
     if let Ok(mut keys) = handler.state.publish.podcast_keys.lock() {
         keys.remove_key(&podcast_id);
     }
-    if let Ok(mut s) = handler.store.lock() {
+    if let Ok(mut s) = handler.state.library.store.lock() {
         s.clear_owner_pubkey_hex(&podcast_id);
     }
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {

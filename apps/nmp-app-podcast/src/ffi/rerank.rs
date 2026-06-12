@@ -103,7 +103,7 @@ pub extern "C" fn nmp_app_podcast_rerank(
             };
 
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
+            let store = Arc::clone(&handle_ref.state.library.store);
             let api_key = match store.lock() {
                 Ok(store) => store.open_router_api_key().map(str::to_owned),
                 Err(_) => {

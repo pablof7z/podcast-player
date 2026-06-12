@@ -54,7 +54,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
 
     // Single store lock → library + memory_facts + settings.
     let (library, memory_facts, settings) = handle
-        .store
+        .state.library.store
         .lock()
         .ok()
         .map(|s| {

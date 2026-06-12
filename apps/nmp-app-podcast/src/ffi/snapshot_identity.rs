@@ -7,7 +7,7 @@ use crate::store::identity::IdentityStore;
 /// hosts use for signing, profile lookup, allowlists, and removal.
 pub(crate) fn build_active_account(handle: &PodcastHandle) -> Option<AccountSummary> {
     handle
-        .identity
+        .state.library.identity
         .lock()
         .ok()
         .and_then(|id| project_active_account(&id))

@@ -23,16 +23,11 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     // viewed_comments_episode_id, social, agent_notes removed from constructor.
     // Step 11: agent_chat removed — now owned by state.agent_chat.
     // Step 14: player_actor, queue, download_queue removed — now in state.playback.
+    // Step 15: store + identity removed from PodcastHostOpHandler::new —
+    // now accessed via state.library.store / state.library.identity.
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        store,
-        identity,
-        // agent_tasks, clips, transcripts removed in Steps 5a, 5b, 6.
-        // voice_state removed in Step 12 — now owned by state.voice.
-        // podcast_keys and publish_state removed in Step 13 — now owned by state.publish.
-        // dismissed_episode_ids, inbox_triage_cache, inbox_triage_in_progress removed in Step 7 —
-        // now owned by state.inbox (InboxState).
         rev.clone(),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         crate::feed_fetch::FeedFetchCoordinator::new_test(),

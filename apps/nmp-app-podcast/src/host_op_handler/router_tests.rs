@@ -41,11 +41,11 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     // agent_chat, voice, publish removed from constructor.
     // Step 14: player_actor, queue, download_queue removed from constructor —
     // now seeded inside PodcastAppState (PlaybackState).
+    // Step 15: store + identity removed from PodcastHostOpHandler::new —
+    // now accessed via state.library.store / state.library.identity.
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        store,
-        identity,
         rev.clone(),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         crate::feed_fetch::FeedFetchCoordinator::new_test(),

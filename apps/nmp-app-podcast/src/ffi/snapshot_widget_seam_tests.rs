@@ -63,12 +63,11 @@ fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
 /// Step 14: `player_actor`, `queue`, and `download_queue` are no longer
 /// separate constructor args — they live inside `state.playback`.
 fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastHostOpHandler {
-    let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 15: store + identity removed from PodcastHostOpHandler::new —
+    // they now live in shared.state.library.store / shared.state.library.identity.
     PodcastHostOpHandler::new(
         app,
         shared.state.clone(),
-        shared.store.clone(),
-        identity,
         shared.rev.clone(),
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
         crate::feed_fetch::FeedFetchCoordinator::new_test(),
@@ -80,13 +79,14 @@ fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastH
 /// handler so the snapshot reader sees the writer's mutations without any
 /// separate Arc wiring.
 fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
-    let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 15: store + identity removed from PodcastHandle —
+    // they now live in shared.state.library.store / shared.state.library.identity.
     Box::new(PodcastHandle {
         app,
         state: shared.state.clone(),
         // player_actor removed in Step 14 — now state.playback.player.
-        store: shared.store.clone(),
-        identity,
+        // store removed in Step 15 — now state.library.store.
+        // identity removed in Step 15 — now state.library.identity.
         rev: shared.rev.clone(),
         snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),

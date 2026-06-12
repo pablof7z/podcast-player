@@ -29,7 +29,7 @@ pub extern "C" fn nmp_app_podcast_provider_complete(
                 Err(e) => return err_envelope(&format!("JSON parse: {e}")).into_raw(),
             };
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.store);
+            let store = Arc::clone(&handle_ref.state.library.store);
             let runtime = Arc::clone(&handle_ref.runtime);
             match runtime.block_on(provider_transport::complete(store, intent)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),

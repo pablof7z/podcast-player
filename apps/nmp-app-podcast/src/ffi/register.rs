@@ -260,12 +260,12 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // now owned by state.inbox (InboxState).
     // Step 14: player_actor/queue/download_queue removed from constructor —
     // now owned by app_state.playback (PlaybackState).
+    // Step 15: store + identity removed from PodcastHostOpHandler::new —
+    // they are now accessed via app_state.library.store / app_state.library.identity.
     app_ref.set_host_op_handler(Arc::new(
         PodcastHostOpHandler::new(
             app,
             app_state.clone(),
-            store.clone(),
-            identity.clone(),
             rev.clone(),
             runtime.clone(),
             feed_fetch.clone(),
@@ -333,12 +333,14 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // search_results, nostr_results, comments_cache, viewed_comments_episode_id, social,
     // agent_notes, voice_state, voice_conversation, podcast_keys, publish_state removed —
     // now owned by state.inbox / state.* respectively.
+    // Step 15: store + identity removed from PodcastHandle —
+    // they are now accessed via state.library.store / state.library.identity.
     let handle = Arc::new(PodcastHandle {
         app,
         state: app_state,
         // player_actor removed in Step 14 — now owned by state.playback.player.
-        store,
-        identity,
+        // store removed in Step 15 — now owned by state.library.store.
+        // identity removed in Step 15 — now owned by state.library.identity.
         rev,
         snapshot_signal: Some(snapshot_signal.clone()),
         snapshot_cache: Arc::new(Mutex::new(None)),

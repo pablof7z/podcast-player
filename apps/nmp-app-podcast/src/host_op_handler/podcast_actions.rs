@@ -35,7 +35,7 @@ impl PodcastHostOpHandler {
             Some("private") => podcast_core::NostrVisibility::Private,
             _ => podcast_core::NostrVisibility::Public,
         };
-        let inserted = match self.store.lock() {
+        let inserted = match self.state.library.store.lock() {
             Ok(mut s) => s.create_podcast(
                 &podcast_id,
                 title,
@@ -56,7 +56,7 @@ impl PodcastHostOpHandler {
                 "error": format!("invalid podcast id: {podcast_id}")
             });
         }
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         serde_json::json!({"ok": true})
     }
 
@@ -82,7 +82,7 @@ impl PodcastHostOpHandler {
                 source_episode_id: c.source_episode_id,
             })
             .collect();
-        let inserted = match self.store.lock() {
+        let inserted = match self.state.library.store.lock() {
             Ok(mut s) => s.add_episode(
                 &podcast_id,
                 &episode_id,
@@ -102,7 +102,7 @@ impl PodcastHostOpHandler {
                 "error": format!("could not add episode {episode_id} under podcast {podcast_id}")
             });
         }
-        self.rev.fetch_add(1, Ordering::Relaxed);
+        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         serde_json::json!({"ok": true, "episode_id": episode_id})
     }
 
@@ -110,7 +110,7 @@ impl PodcastHostOpHandler {
         &self,
         decisions: Vec<crate::ffi::actions::podcast_module::EpisodeTriagePatch>,
     ) -> serde_json::Value {
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(mut s) => {
                 let mut changed = false;
                 for patch in decisions {
@@ -125,7 +125,7 @@ impl PodcastHostOpHandler {
                 }
                 // Single rev bump for the whole batch — one snapshot tick.
                 if changed {
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -137,11 +137,11 @@ impl PodcastHostOpHandler {
         &self,
         episode_ids: Vec<String>,
     ) -> serde_json::Value {
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(mut s) => {
                 let changed = s.mark_episodes_metadata_indexed(episode_ids);
                 if changed {
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -156,7 +156,7 @@ impl PodcastHostOpHandler {
         message: Option<String>,
         provider: Option<String>,
     ) -> serde_json::Value {
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(mut s) => {
                 use crate::store::events::{stage, EventDetail, EventSeverity};
                 // "skipped" is an event-only signal: the iOS pipeline declined
@@ -235,7 +235,7 @@ impl PodcastHostOpHandler {
                             format!("Transcription: {other}"),
                         ),
                     }
-                    self.rev.fetch_add(1, Ordering::Relaxed);
+                    self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
                 }
                 serde_json::json!({"ok": true})
             }
@@ -280,7 +280,7 @@ impl PodcastHostOpHandler {
         has_completed_onboarding: Option<bool>,
     ) -> serde_json::Value {
         let mut mutated = false;
-        match self.store.lock() {
+        match self.state.library.store.lock() {
             Ok(mut s) => {
                 if let Some(value) = has_completed_onboarding {
                     if s.has_completed_onboarding() != value {
@@ -292,7 +292,7 @@ impl PodcastHostOpHandler {
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         }
         if mutated {
-            self.rev.fetch_add(1, Ordering::Relaxed);
+            self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
         }
         serde_json::json!({"ok": true})
     }
