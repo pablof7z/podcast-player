@@ -1,0 +1,1021 @@
+//! Emitter — produces the exact text of each Generated/*.generated.swift file.
+//!
+//! Each `emit_*` function returns `(filename, content)`.
+//! All files are returned by `all_files()`.
+
+pub fn all_files() -> Vec<(&'static str, String)> {
+    vec![
+        ("PodcastTypes.generated.swift",           emit_podcast_types()),
+        ("PodcastAgentContextTypes.generated.swift", emit_agent_context_types()),
+        ("PodcastDownloadTypes.generated.swift",   emit_download_types()),
+        ("PodcastLibraryTypes.generated.swift",    emit_library_types()),
+        ("PodcastMediaTypes.generated.swift",      emit_media_types()),
+        ("PodcastSocialTypes.generated.swift",     emit_social_types()),
+        ("PodcastUpdate.generated.swift",          emit_podcast_update()),
+    ]
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+fn header(file: &str, note: &str, source: &str) -> String {
+    format!(
+        "// {file}\n// {note}\n// Source of truth: {source}\n\nimport Foundation\n",
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastTypes.generated.swift — legacy redirect stub
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_podcast_types() -> String {
+    r#"// PodcastTypes.generated.swift
+// This file has been split into four focused files in the same directory:
+//
+//   PodcastUpdate.generated.swift      — PodcastUpdate, PlayerState,
+//                                        AccountSummary, DownloadQueueSnapshot,
+//                                        DownloadItemSnapshot
+//   PodcastSettingsSnapshot.generated.swift
+//                                      — SettingsSnapshot
+//   PodcastLibraryTypes.generated.swift — PodcastSummary, EpisodeSummary, ChapterSummary,
+//                                        TranscriptEntry, AdSegment, OwnedPodcastInfo,
+//                                        NostrShowSummary
+//   PodcastMediaTypes.generated.swift  — VoiceSnapshot, AgentSnapshot, AgentMessageSummary,
+//                                        AgentTaskSummary, AgentPickSummary,
+//                                        TtsEpisodeSummary, ClipSummary
+//   PodcastSocialTypes.generated.swift — InboxItem, CommentSummary, ContactSummary,
+//                                        SocialSnapshot, CategoryBrowseItem, WikiArticle,
+//                                        KnowledgeSearchResult, MemoryFact
+//
+// Intended regeneration command (once the dumper exists):
+//
+//   cargo run -p nmp-app-podcast --features codegen-schema \
+//       --bin dump_projection_schemas \
+//     | cargo run -p nmp-codegen -- gen swift
+//
+// Source of truth: apps/nmp-app-podcast/src/ffi/snapshot.rs
+"#.to_string()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastAgentContextTypes.generated.swift
+// Source: ffi/projections/agent_context.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_agent_context_types() -> String {
+    let hdr = "// PodcastAgentContextTypes.generated.swift\n\
+// Hand-maintained mirror of the Rust agent-context projection types.\n\
+// Split out of `PodcastUpdate.generated.swift` to keep that file under the\n\
+// 500-line hard limit. Keep camelCase in sync with snake_case Rust source —\n\
+// `.convertFromSnakeCase` handles the key mapping.\n\
+// Source of truth: apps/nmp-app-podcast/src/ffi/projections/agent_context.rs\n\
+\n\
+import Foundation\n";
+
+    let mut out = hdr.to_string();
+    out += r#"
+/// Agent-prompt inventory context. Mirrors
+/// `ffi::projections::AgentContextSnapshot`. The kernel performs all
+/// selection / ordering / capping; `AgentPrompt` only renders the strings.
+struct AgentContextSnapshot: Equatable {
+    /// Subscribed-show titles, already sorted + capped by the kernel.
+    var subscriptions: [String] = []
+    /// Followed-show count *before* the cap (drives the "(N)" header and the
+    /// "…and N more" suffix).
+    var subscriptionsTotal: Int = 0
+    /// In-progress episodes (started, not finished, not archived), newest-first.
+    var inProgress: [AgentContextEpisode] = []
+    /// Recent unplayed episodes inside the recency window, newest-first.
+    var recentUnplayed: [AgentContextEpisode] = []
+    /// Recency-window width (days) the kernel applied to `recentUnplayed`.
+    var recentWindowDays: Int = 0
+}
+
+/// One episode row in `AgentContextSnapshot`. Mirrors
+/// `ffi::projections::AgentContextEpisode`. Carries the resolved show title
+/// so the renderer needs no second lookup.
+struct AgentContextEpisode: Equatable {
+    var title: String = ""
+    var showTitle: String = ""
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if = "Vec::is_empty")]` on the
+// collection fields (omit when empty). `decodeIfPresent` with explicit
+// fallbacks keeps the decoder forward- and backward-compatible.
+
+extension AgentContextSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        subscriptions = try c.decodeIfPresent([String].self, forKey: .subscriptions) ?? []
+        subscriptionsTotal = try c.decodeIfPresent(Int.self, forKey: .subscriptionsTotal) ?? 0
+        inProgress = try c.decodeIfPresent([AgentContextEpisode].self, forKey: .inProgress) ?? []
+        recentUnplayed = try c.decodeIfPresent([AgentContextEpisode].self, forKey: .recentUnplayed) ?? []
+        recentWindowDays = try c.decodeIfPresent(Int.self, forKey: .recentWindowDays) ?? 0
+    }
+}
+
+extension AgentContextEpisode: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        showTitle = try c.decodeIfPresent(String.self, forKey: .showTitle) ?? ""
+    }
+}
+"#;
+    out
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastDownloadTypes.generated.swift
+// Source: ffi/projections/download.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_download_types() -> String {
+    r#"// PodcastDownloadTypes.generated.swift
+// Hand-maintained mirror of Rust projection types. See PodcastUpdate.generated.swift.
+
+import Foundation
+
+/// Active download-queue projection surfaced via `PodcastUpdate.downloads`.
+struct DownloadQueueSnapshot: Equatable {
+    var active: [DownloadItemSnapshot] = []
+    var queuedCount: Int = 0
+    var completedToday: Int = 0
+}
+
+/// One row in `DownloadQueueSnapshot.active`.
+struct DownloadItemSnapshot: Identifiable, Equatable {
+    var episodeId: String
+    /// What this row fetches. Omitted on the wire for episodes (the default),
+    /// so it must decode-default to `.episode`. Lets the model UI pick out its
+    /// own rows and lets the episode overlay skip non-episode rows.
+    var kind: DownloadKind = .episode
+    var progress: Double = 0
+    var state: String
+    /// Total file size (bytes) once the server reports `Content-Length`.
+    /// `nil` until the first HTTP response arrives.
+    var totalBytes: Int64? = nil
+    var error: String? = nil
+
+    var id: String { episodeId }
+}
+
+extension DownloadQueueSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        active = try c.decodeIfPresent([DownloadItemSnapshot].self, forKey: .active) ?? []
+        queuedCount = try c.decodeIfPresent(Int.self, forKey: .queuedCount) ?? 0
+        completedToday = try c.decodeIfPresent(Int.self, forKey: .completedToday) ?? 0
+    }
+}
+
+extension DownloadItemSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        kind = try c.decodeIfPresent(DownloadKind.self, forKey: .kind) ?? .episode
+        progress = try c.decodeIfPresent(Double.self, forKey: .progress) ?? 0
+        state = try c.decode(String.self, forKey: .state)
+        totalBytes = try c.decodeIfPresent(Int64.self, forKey: .totalBytes)
+        error = try c.decodeIfPresent(String.self, forKey: .error)
+    }
+}
+"#.to_string()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastLibraryTypes.generated.swift
+// Source: ffi/projections/library.rs, podcast-core/src/types/ad_segment.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_library_types() -> String {
+    r#"// PodcastLibraryTypes.generated.swift
+// Library types: podcast + episode projections, chapters, transcript, ads.
+// Hand-maintained mirror of Rust projection types. See PodcastUpdate.generated.swift.
+
+import Foundation
+
+/// Narrow projection for a known podcast (one library grid/list cell).
+/// Episode rows are embedded so the show-detail view doesn't need a second pull.
+struct PodcastSummary: Identifiable, Equatable, Hashable {
+    var id: String
+    var title: String
+    var episodeCount: Int = 0
+    var unplayedCount: Int = 0
+    /// True when the user follows this known podcast. Rust also projects
+    /// known-but-unfollowed rows for external feed listing/playback; those
+    /// rows must not become `PodcastSubscription`s in Swift.
+    var isSubscribed: Bool = true
+    var artworkUrl: String? = nil
+    var feedUrl: String? = nil
+    var author: String? = nil
+    /// Podcast description, HTML-stripped by the Rust projection layer.
+    /// `nil` when the RSS feed provides no description.
+    var description: String? = nil
+    /// Unix milliseconds of the last successful Rust feed fetch or 304 check.
+    var lastRefreshedAt: Int? = nil
+    @DefaultFalse var titleIsPlaceholder: Bool = false
+    /// Per-podcast auto-download policy state. `true` ⇒ the Rust kernel
+    /// will auto-queue freshly-discovered episodes on the next feed
+    /// refresh. The ShowDetailView toolbar reads this for the toggle's
+    /// rendered state and dispatches `set_auto_download` to flip it.
+    /// Defaults to `false`; iTunes search rows never set it (they have
+    /// no real `PodcastId` server-side).
+    /// `@DefaultFalse`: the Rust projection omits this key when `false` (D5), so
+    /// decode must tolerate its absence — synthesized `Decodable` would otherwise
+    /// throw `keyNotFound`.
+    @DefaultFalse var autoDownload: Bool = false
+    /// When `true`, the user explicitly allowed cellular auto-downloads
+    /// for this show (Wi-Fi-only is off). Omitted from the wire when `false`
+    /// (D5 — `#[serde(skip_serializing_if)]`). The iOS subscription list
+    /// uses this to reconstruct `AutoDownloadPolicy.wifiOnly` from the
+    /// snapshot rather than hardcoding `wifiOnly: true` for all enabled rows.
+    @DefaultFalse var cellularAllowed: Bool = false
+    /// Hex public key of the per-podcast NIP-F4 signing key, set once the
+    /// podcast has been claimed via `create_owned_podcast`. Drives owned-
+    /// podcast UI (the agent's `listOwnedPodcasts` filters on its presence).
+    /// `nil` for RSS shows (D5 — omitted on the wire).
+    var ownerPubkeyHex: String? = nil
+    /// NIP-F4 publish visibility — `"public"` (default) or `"private"`.
+    /// The Rust projection omits this when `"public"` (D5).
+    var nostrVisibility: String = "public"
+    @DefaultEmptyArray var episodes: [EpisodeSummary] = []
+}
+
+/// One episode row embedded in `PodcastSummary.episodes`.
+struct EpisodeSummary: Identifiable, Equatable, Hashable {
+    var id: String
+    var title: String
+    var podcastId: String? = nil
+    var podcastTitle: String? = nil
+    var durationSecs: Double? = nil
+    var artworkUrl: String? = nil
+    /// Unix seconds from `Episode::pub_date`.
+    var publishedAt: Int? = nil
+    /// On-disk path to the downloaded enclosure when one exists. `nil`
+    /// means the episode has not been downloaded yet.
+    var downloadPath: String? = nil
+    /// Size in bytes of the downloaded enclosure, cached by the Rust kernel
+    /// at download-completion time. `0` when not downloaded or unknown. Read
+    /// directly instead of statting the file on the main actor per tick.
+    /// Omitted from the wire when `0` (D5); decoded with a `?? 0` fallback.
+    var fileSizeBytes: Int64 = 0
+    /// Original RSS enclosure URL for streaming. Present for all library
+    /// episodes; used by the host player when `downloadPath` is absent.
+    var enclosureUrl: String? = nil
+    /// Show notes / episode description from the RSS feed, HTML-stripped.
+    /// `nil` when empty (D5 — omit to let the host hide the section).
+    var description: String? = nil
+    /// Publisher-advertised transcript URL (Podcasting 2.0
+    /// `<podcast:transcript>` tag).
+    var transcriptUrl: String? = nil
+    /// Parsed transcript rows. Empty until `podcast.fetch_transcript` succeeds.
+    var transcriptEntries: [TranscriptEntry]? = nil
+    /// Chapter markers projected after `podcast.fetch_chapters`.
+    var chapters: [ChapterSummary]? = nil
+    /// Persisted playback position in seconds. `nil` when not started.
+    var playbackPositionSecs: Double? = nil
+    var transcript: String? = nil
+    /// AI-generated 2–3 sentence episode summary, projected from the Rust
+    /// kernel (`Episode::summary`). `nil` until `podcast.summarize_episode`
+    /// runs. Drives the `summarize_episode` agent tool result.
+    var summary: String? = nil
+    // D5 omit-on-empty/false fields — wrapped so absent keys decode to defaults.
+    @DefaultEmptyStrings var aiCategories: [String] = []
+    @DefaultEmptyArray var adSegments: [AdSegment] = []
+    @DefaultFalse var played: Bool = false
+    @DefaultFalse var starred: Bool = false
+    /// AI Inbox triage decision (`"inbox"` | `"archived"`); `nil` ⇒ untriaged.
+    /// Reported by iOS via `set_episode_triage` (M4 / D7), projected back here.
+    var triageDecision: String? = nil
+    /// `true` when this is the single hero pick of the latest triage pass.
+    @DefaultFalse var triageIsHero: Bool = false
+    /// One-line "Because …" rationale for `.inbox` picks; `nil` otherwise.
+    var triageRationale: String? = nil
+    /// `true` once the episode's metadata/transcript chunk is RAG-indexed.
+    @DefaultFalse var metadataIndexed: Bool = false
+    /// Transient transcript-ingestion status reported by iOS (M4 / D7):
+    /// `"queued"` | `"fetching_publisher"` | `"transcribing"` | `"failed"`.
+    /// Empty ⇒ no override (idle, or `.ready` derived from `transcript`).
+    /// Decoded with a `?? ""` fallback in `init(from:)` since the Rust wire
+    /// omits the key when empty (D5).
+    var transcriptStatus: String = ""
+    /// User-facing error text for `transcriptStatus == "failed"`; `nil` otherwise.
+    var transcriptStatusMessage: String? = nil
+}
+
+/// One time-stamped transcript row for a single episode.
+struct TranscriptEntry: Codable, Equatable, Hashable {
+    var startSecs: Double
+    var endSecs: Double? = nil
+    var speaker: String? = nil
+    var text: String
+    var aiCategories: [String]? = nil
+}
+
+/// Narrow chapter projection for full-player chapter rail rendering.
+struct ChapterSummary: Equatable, Hashable {
+    var startSecs: Double
+    var endSecs: Double? = nil
+    var title: String
+    var imageUrl: String? = nil
+    var url: String? = nil
+    var isAiGenerated: Bool = false
+    /// UUID string of the source episode when this chapter is a clip from
+    /// another episode (agent-generated TTS snippet turns). Drives the
+    /// clip-source chip + mid-play artwork swap in the player.
+    var sourceEpisodeId: String? = nil
+}
+
+/// One advertisement interval inside an episode's audio track.
+/// `[startSecs, endSecs)` half-open interval.
+struct AdSegment: Identifiable, Equatable, Hashable {
+    var id: String
+    var startSecs: Double
+    var endSecs: Double
+    /// Ad classification: "preroll", "midroll", or "postroll".
+    var kind: String = "midroll"
+}
+
+/// Snapshot row for a podcast the user owns (NIP-F4 per-podcast keypair).
+struct OwnedPodcastInfo: Codable, Identifiable, Equatable, Hashable {
+    var podcastId: String
+    var podcastPubkeyHex: String
+    var showEventJson: String? = nil
+    var lastPublishedAt: Int? = nil
+
+    var id: String { podcastId }
+}
+
+/// NIP-F4 podcast discovery result row.
+struct NostrShowSummary: Codable, Identifiable, Equatable, Hashable {
+    var eventId: String
+    var authorPubkey: String
+    var title: String
+    var description: String? = nil
+    var feedUrl: String? = nil
+    var artworkUrl: String? = nil
+    var categories: [String]? = nil
+
+    var id: String { eventId }
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false) and Vec fields (omit when empty). Swift's synthesized Decodable
+// requires every non-optional key to be present, but Rust legitimately omits
+// these keys when the value is the zero/default. `decodeIfPresent` + fallback
+// makes the decoder forward- and backward-compatible.
+//
+// WHY extensions, not struct bodies: putting `init(from:)` inside the struct
+// body suppresses the synthesized memberwise init. Extensions preserve it.
+
+extension PodcastSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        episodeCount = try c.decodeIfPresent(Int.self, forKey: .episodeCount) ?? 0
+        unplayedCount = try c.decodeIfPresent(Int.self, forKey: .unplayedCount) ?? 0
+        isSubscribed = try c.decodeIfPresent(Bool.self, forKey: .isSubscribed) ?? true
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        feedUrl = try c.decodeIfPresent(String.self, forKey: .feedUrl)
+        author = try c.decodeIfPresent(String.self, forKey: .author)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        lastRefreshedAt = try c.decodeIfPresent(Int.self, forKey: .lastRefreshedAt)
+        titleIsPlaceholder = try c.decodeIfPresent(Bool.self, forKey: .titleIsPlaceholder) ?? false
+        autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
+        cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
+        ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
+        nostrVisibility = try c.decodeIfPresent(String.self, forKey: .nostrVisibility) ?? "public"
+        episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []
+    }
+}
+
+extension EpisodeSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        podcastId = try c.decodeIfPresent(String.self, forKey: .podcastId)
+        podcastTitle = try c.decodeIfPresent(String.self, forKey: .podcastTitle)
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs)
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        publishedAt = try c.decodeIfPresent(Int.self, forKey: .publishedAt)
+        downloadPath = try c.decodeIfPresent(String.self, forKey: .downloadPath)
+        fileSizeBytes = try c.decodeIfPresent(Int64.self, forKey: .fileSizeBytes) ?? 0
+        enclosureUrl = try c.decodeIfPresent(String.self, forKey: .enclosureUrl)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        transcriptUrl = try c.decodeIfPresent(String.self, forKey: .transcriptUrl)
+        transcriptEntries = try c.decodeIfPresent([TranscriptEntry].self, forKey: .transcriptEntries)
+        chapters = try c.decodeIfPresent([ChapterSummary].self, forKey: .chapters)
+        playbackPositionSecs = try c.decodeIfPresent(Double.self, forKey: .playbackPositionSecs)
+        transcript = try c.decodeIfPresent(String.self, forKey: .transcript)
+        summary = try c.decodeIfPresent(String.self, forKey: .summary)
+        aiCategories = try c.decodeIfPresent([String].self, forKey: .aiCategories) ?? []
+        adSegments = try c.decodeIfPresent([AdSegment].self, forKey: .adSegments) ?? []
+        played = try c.decodeIfPresent(Bool.self, forKey: .played) ?? false
+        starred = try c.decodeIfPresent(Bool.self, forKey: .starred) ?? false
+        triageDecision = try c.decodeIfPresent(String.self, forKey: .triageDecision)
+        triageIsHero = try c.decodeIfPresent(Bool.self, forKey: .triageIsHero) ?? false
+        triageRationale = try c.decodeIfPresent(String.self, forKey: .triageRationale)
+        metadataIndexed = try c.decodeIfPresent(Bool.self, forKey: .metadataIndexed) ?? false
+        transcriptStatus = try c.decodeIfPresent(String.self, forKey: .transcriptStatus) ?? ""
+        transcriptStatusMessage = try c.decodeIfPresent(String.self, forKey: .transcriptStatusMessage)
+    }
+}
+
+extension AdSegment: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        startSecs = try c.decode(Double.self, forKey: .startSecs)
+        endSecs = try c.decode(Double.self, forKey: .endSecs)
+        kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "midroll"
+    }
+}
+
+extension ChapterSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        startSecs = try c.decode(Double.self, forKey: .startSecs)
+        endSecs = try c.decodeIfPresent(Double.self, forKey: .endSecs)
+        title = try c.decode(String.self, forKey: .title)
+        imageUrl = try c.decodeIfPresent(String.self, forKey: .imageUrl)
+        url = try c.decodeIfPresent(String.self, forKey: .url)
+        isAiGenerated = try c.decodeIfPresent(Bool.self, forKey: .isAiGenerated) ?? false
+        sourceEpisodeId = try c.decodeIfPresent(String.self, forKey: .sourceEpisodeId)
+    }
+}
+"#.to_string()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastMediaTypes.generated.swift
+// Source: ffi/projections/voice.rs, agent.rs, clips.rs; player/state.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_media_types() -> String {
+    r#"// PodcastMediaTypes.generated.swift
+// Media types: agent, voice, TTS, clips.
+// Hand-maintained mirror of Rust projection types. See PodcastUpdate.generated.swift.
+
+import Foundation
+
+/// Voice-mode projection mirroring Rust `VoiceState`.
+struct VoiceSnapshot: Equatable {
+    var isSpeaking: Bool = false
+    var isListening: Bool = false
+    var currentRequestId: String? = nil
+    var currentVoiceId: String? = nil
+    var partialTranscript: String? = nil
+    var lastResponse: String? = nil
+}
+
+/// Agent-chat conversation surfaced via `PodcastUpdate.agent`.
+struct AgentSnapshot: Equatable {
+    var messages: [AgentMessageSummary] = []
+    /// `true` while the kernel is composing an assistant reply.
+    var isBusy: Bool = false
+}
+
+/// One row in `AgentSnapshot.messages`.
+struct AgentMessageSummary: Identifiable, Equatable, Hashable {
+    var id: String
+    /// `"user"` or `"assistant"`.
+    var role: String
+    var content: String
+    var createdAt: Int
+    var isGenerating: Bool = false
+}
+
+/// One agent-scheduled task surfaced via `PodcastUpdate.agentTasks`.
+struct AgentTaskSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var title: String
+    var description: String? = nil
+    var intentType: String? = nil
+    var intentLabel: String? = nil
+    var intentDetail: String? = nil
+    var schedule: String
+    var nextRunAt: Int? = nil
+    var lastRunAt: Int? = nil
+    /// One of `"pending"`, `"running"`, `"completed"`, `"failed"`.
+    var status: String
+    var isEnabled: Bool
+}
+
+/// One AI agent pick row surfaced via `PodcastUpdate.picks`.
+struct AgentPickSummary: Identifiable, Equatable, Hashable {
+    var episodeId: String
+    var episodeTitle: String
+    var podcastId: String
+    var podcastTitle: String
+    var artworkUrl: String? = nil
+    var publishedAt: Int = 0
+    var durationSecs: Double? = nil
+    var pickReason: String = ""
+    var pickScore: Double = 0
+
+    var id: String { episodeId }
+}
+
+/// One agent-generated TTS episode row surfaced via `PodcastUpdate.ttsEpisodes`.
+struct TtsEpisodeSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var title: String
+    var script: String
+    var durationEstimateSecs: Double
+    var createdAt: Int
+    var status: String
+    var voiceId: String? = nil
+}
+
+/// User-saved audio clip from an episode.
+struct ClipSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var episodeId: String
+    var episodeTitle: String
+    var podcastTitle: String
+    var startSecs: Double
+    var endSecs: Double
+    var title: String? = nil
+    var createdAt: Int
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false) and Vec fields (omit when empty). Conformance is declared in extensions
+// (not struct bodies) so the synthesized memberwise init is preserved.
+
+extension VoiceSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isSpeaking = try c.decodeIfPresent(Bool.self, forKey: .isSpeaking) ?? false
+        isListening = try c.decodeIfPresent(Bool.self, forKey: .isListening) ?? false
+        currentRequestId = try c.decodeIfPresent(String.self, forKey: .currentRequestId)
+        currentVoiceId = try c.decodeIfPresent(String.self, forKey: .currentVoiceId)
+        partialTranscript = try c.decodeIfPresent(String.self, forKey: .partialTranscript)
+        lastResponse = try c.decodeIfPresent(String.self, forKey: .lastResponse)
+    }
+}
+
+extension AgentSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        messages = try c.decodeIfPresent([AgentMessageSummary].self, forKey: .messages) ?? []
+        isBusy = try c.decodeIfPresent(Bool.self, forKey: .isBusy) ?? false
+    }
+}
+
+extension AgentMessageSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        role = try c.decode(String.self, forKey: .role)
+        content = try c.decode(String.self, forKey: .content)
+        createdAt = try c.decode(Int.self, forKey: .createdAt)
+        isGenerating = try c.decodeIfPresent(Bool.self, forKey: .isGenerating) ?? false
+    }
+}
+
+extension AgentPickSummary: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        episodeTitle = try c.decode(String.self, forKey: .episodeTitle)
+        podcastId = try c.decode(String.self, forKey: .podcastId)
+        podcastTitle = try c.decode(String.self, forKey: .podcastTitle)
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        publishedAt = try c.decodeIfPresent(Int.self, forKey: .publishedAt) ?? 0
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs)
+        pickReason = try c.decodeIfPresent(String.self, forKey: .pickReason) ?? ""
+        pickScore = try c.decodeIfPresent(Double.self, forKey: .pickScore) ?? 0
+    }
+}
+"#.to_string()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastSocialTypes.generated.swift
+// Source: ffi/projections/social.rs, inbox.rs, knowledge.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_social_types() -> String {
+    r#"// PodcastSocialTypes.generated.swift
+// Social + discovery types: inbox, comments, contacts, categories, wiki, knowledge.
+// Hand-maintained mirror of Rust projection types. See PodcastUpdate.generated.swift.
+
+import Foundation
+
+/// One row in the AI-triaged inbox surfaced via `PodcastUpdate.inbox`.
+struct InboxItem: Identifiable, Equatable, Hashable {
+    var episodeId: String
+    var episodeTitle: String
+    var podcastId: String
+    var podcastTitle: String
+    var artworkUrl: String? = nil
+    var publishedAt: Int
+    var durationSecs: Double? = nil
+    /// `0.0..=1.0`; higher = more important.
+    var priorityScore: Double
+    var priorityReason: String? = nil
+    @DefaultEmptyStrings var aiCategories: [String] = []
+
+    var id: String { episodeId }
+}
+
+/// One NIP-22 (kind 1111) comment row in `PodcastUpdate.comments`.
+struct CommentSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var authorNpub: String
+    var authorName: String? = nil
+    var content: String
+    var createdAt: Int
+}
+
+/// One inbound agent-to-agent kind:1 note (feature #44) in
+/// `PodcastUpdate.agentNotes`. Public NIP-01 text note tagging the active
+/// account (`#p`), threaded with NIP-10. `trusted` is always `false`
+/// until the kind:3 contact/trust gate lands — the UI must route these to
+/// an approval surface and must not auto-respond.
+struct AgentNoteSummary: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var authorNpub: String
+    var content: String
+    var createdAt: Int
+    var rootEventId: String? = nil
+    var trusted: Bool = false
+}
+
+/// One contact in the active account's NIP-02 (kind:3) follow list.
+struct ContactSummary: Codable, Identifiable, Equatable, Hashable {
+    var npub: String
+    var displayName: String? = nil
+    var pictureUrl: String? = nil
+
+    var id: String { npub }
+}
+
+/// Snapshot of the user's Nostr social graph (NIP-02 / kind:3 follows).
+struct SocialSnapshot: Equatable, Hashable {
+    var following: [ContactSummary] = []
+    var followingCount: Int = 0
+}
+
+/// One row in `PodcastUpdate.categories`. Backs the "Browse by Topic" grid.
+struct CategoryBrowseItem: Identifiable, Equatable, Hashable {
+    var category: String
+    var episodeCount: Int = 0
+    var podcastCount: Int = 0
+    var topEpisodeIds: [String] = []
+    var adSegments: [AdSegment]? = nil
+
+    var id: String { category }
+}
+
+/// One AI-synthesised, per-podcast knowledge entry in `PodcastUpdate.wikiArticles`.
+struct WikiArticle: Identifiable, Equatable, Hashable {
+    var id: String
+    var podcastId: String
+    var topic: String
+    var summary: String
+    var sourceEpisodeIds: [String]? = nil
+    var lastUpdatedAt: Int = 0
+    var isGenerating: Bool = false
+}
+
+/// One row in the RAG / vector-search projection.
+struct KnowledgeSearchResult: Identifiable, Equatable, Hashable {
+    var episodeId: String
+    var episodeTitle: String
+    var podcastTitle: String
+    var snippet: String
+    var startSecs: Double? = nil
+    var relevanceScore: Double = 0
+
+    var id: String { "\(episodeId)|\(snippet.hashValue)" }
+}
+
+/// One key→value fact the agent or user saved via the memory system.
+struct MemoryFact: Codable, Identifiable, Equatable, Hashable {
+    var id: String
+    var key: String
+    var value: String
+    var source: String
+    var createdAt: Int
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false) and Vec fields (omit when empty). Conformance is declared in extensions
+// (not struct bodies) so the synthesized memberwise init is preserved.
+
+extension InboxItem: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        episodeTitle = try c.decode(String.self, forKey: .episodeTitle)
+        podcastId = try c.decode(String.self, forKey: .podcastId)
+        podcastTitle = try c.decode(String.self, forKey: .podcastTitle)
+        artworkUrl = try c.decodeIfPresent(String.self, forKey: .artworkUrl)
+        publishedAt = try c.decode(Int.self, forKey: .publishedAt)
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs)
+        priorityScore = try c.decode(Double.self, forKey: .priorityScore)
+        priorityReason = try c.decodeIfPresent(String.self, forKey: .priorityReason)
+        aiCategories = try c.decodeIfPresent([String].self, forKey: .aiCategories) ?? []
+    }
+}
+
+extension SocialSnapshot: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        following = try c.decodeIfPresent([ContactSummary].self, forKey: .following) ?? []
+        followingCount = try c.decodeIfPresent(Int.self, forKey: .followingCount) ?? 0
+    }
+}
+
+extension CategoryBrowseItem: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        category = try c.decode(String.self, forKey: .category)
+        episodeCount = try c.decodeIfPresent(Int.self, forKey: .episodeCount) ?? 0
+        podcastCount = try c.decodeIfPresent(Int.self, forKey: .podcastCount) ?? 0
+        topEpisodeIds = try c.decodeIfPresent([String].self, forKey: .topEpisodeIds) ?? []
+        adSegments = try c.decodeIfPresent([AdSegment].self, forKey: .adSegments)
+    }
+}
+
+extension WikiArticle: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        podcastId = try c.decode(String.self, forKey: .podcastId)
+        topic = try c.decode(String.self, forKey: .topic)
+        summary = try c.decode(String.self, forKey: .summary)
+        sourceEpisodeIds = try c.decodeIfPresent([String].self, forKey: .sourceEpisodeIds)
+        lastUpdatedAt = try c.decodeIfPresent(Int.self, forKey: .lastUpdatedAt) ?? 0
+        isGenerating = try c.decodeIfPresent(Bool.self, forKey: .isGenerating) ?? false
+    }
+}
+
+extension KnowledgeSearchResult: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decode(String.self, forKey: .episodeId)
+        episodeTitle = try c.decode(String.self, forKey: .episodeTitle)
+        podcastTitle = try c.decode(String.self, forKey: .podcastTitle)
+        snippet = try c.decode(String.self, forKey: .snippet)
+        startSecs = try c.decodeIfPresent(Double.self, forKey: .startSecs)
+        relevanceScore = try c.decodeIfPresent(Double.self, forKey: .relevanceScore) ?? 0
+    }
+}
+"#.to_string()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PodcastUpdate.generated.swift
+// Source: ffi/snapshot_update.rs, player/state.rs, ffi/projections/identity.rs
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn emit_podcast_update() -> String {
+    r#"// PodcastUpdate.generated.swift
+// Hand-maintained mirror of the Rust projection types until the codegen
+// pipeline (`dump_projection_schemas | gen swift`) lands. Keep camelCase in
+// sync with snake_case Rust source — `.convertFromSnakeCase` handles it.
+// Source of truth: apps/nmp-app-podcast/src/ffi/snapshot.rs
+
+import Foundation
+
+/// Top-level snapshot emitted by the Rust podcast kernel on every podcast
+/// projection tick (pulled via `nmp_app_podcast_snapshot`).
+struct PodcastUpdate {
+    var running: Bool = false
+    var rev: Int = 0
+    var schemaVersion: Int = 0
+    var nowPlaying: PlayerState? = nil
+    var downloads: DownloadQueueSnapshot? = nil
+    var agent: AgentSnapshot? = nil
+    /// Agent-prompt inventory context: kernel-owned selection/ordering/capping
+    /// of the subscribed-show list, in-progress episodes, and recent-unplayed
+    /// episodes the `AgentPrompt` builder renders into its system prompt.
+    /// `nil` when the library is empty.
+    var agentContext: AgentContextSnapshot? = nil
+    var voice: VoiceSnapshot? = nil
+    var social: SocialSnapshot? = nil
+    // D5: the Rust projection omits empty collections / default settings from
+    // the wire. Wrap them so absent keys decode to defaults instead of throwing
+    // `keyNotFound` (synthesized `Decodable` does not honor the `= []` default).
+    @DefaultEmptyArray var library: [PodcastSummary] = []
+    var activeAccount: AccountSummary? = nil
+    var widget: WidgetSnapshot? = nil
+    var toast: String? = nil
+    @DefaultEmptyArray var searchResults: [PodcastSummary] = []
+    @DefaultEmptyArray var nostrResults: [NostrShowSummary] = []
+    @DefaultSettings var settings: SettingsSnapshot = SettingsSnapshot()
+    @DefaultEmptyArray var comments: [CommentSummary] = []
+    @DefaultEmptyArray var queue: [EpisodeSummary] = []
+    @DefaultEmptyArray var wikiArticles: [WikiArticle] = []
+    @DefaultEmptyArray var wikiSearchResults: [WikiArticle] = []
+    @DefaultEmptyArray var picks: [AgentPickSummary] = []
+    @DefaultEmptyArray var agentTasks: [AgentTaskSummary] = []
+    @DefaultEmptyArray var knowledgeSearchResults: [KnowledgeSearchResult] = []
+    @DefaultEmptyArray var memoryFacts: [MemoryFact] = []
+    @DefaultEmptyArray var ttsEpisodes: [TtsEpisodeSummary] = []
+    @DefaultEmptyArray var clips: [ClipSummary] = []
+    @DefaultEmptyArray var inbox: [InboxItem] = []
+    /// `true` while a background LLM triage pass is running. D5: omitted when false.
+    @DefaultFalse var inboxTriageInProgress: Bool = false
+    @DefaultEmptyArray var ownedPodcasts: [OwnedPodcastInfo] = []
+    @DefaultEmptyArray var categories: [CategoryBrowseItem] = []
+    /// Feature #44 — inbound agent-to-agent kind:1 notes, newest-first.
+    /// Every row carries `trusted == false` until the kind:3 contact/trust
+    /// gate lands; route to an approval surface, do not auto-respond.
+    @DefaultEmptyArray var agentNotes: [AgentNoteSummary] = []
+    /// User-configured app relays (NMP v0.2.1 `configured_relays`). Each row
+    /// carries the relay URL plus its NIP-65 role string. Drives the App
+    /// Relays editor. Empty until the kernel seeds defaults at start or the
+    /// user adds a relay.
+    @DefaultEmptyArray var configuredRelays: [AppRelayRow] = []
+    /// In-app feedback events (TENEX project notes): kind:1 messages/replies +
+    /// kind:513 metadata, all bearing the project `["a"]` coord. Each row is a
+    /// `SignedNostrEvent`-shaped object (`pubkey` is the author, `sig` is empty).
+    /// Empty until the first `fetch_feedback` dispatch. `FeedbackStore` rebuilds
+    /// threads from this flat list (replacing the deleted `FeedbackRelayClient`
+    /// WebSocket fetch). Decoded into `FeedbackEventDTO` — NOT `SignedNostrEvent`
+    /// — because the snapshot decoder runs `.convertFromSnakeCase`, which would
+    /// rename `created_at` and break `SignedNostrEvent`'s explicit coding key.
+    @DefaultEmptyArray var feedbackEvents: [FeedbackEventDTO] = []
+    /// Resolved feedback threads (#354): the kernel performs the NIP-10
+    /// reduction + newest-wins kind:513 metadata; `FeedbackStore` renders these
+    /// directly instead of rebuilding threads from `feedbackEvents`.
+    @DefaultEmptyArray var feedbackThreads: [FeedbackThreadDTO] = []
+}
+
+/// Snapshot-decode mirror of a raw feedback Nostr event, retained for the
+/// `FeedbackStore` loading-state check ("has any feedback event arrived?").
+/// Thread reduction now happens kernel-side (#354) — see `feedbackThreads` /
+/// `FeedbackThreadDTO`. camelCase `createdAt` survives `.convertFromSnakeCase`.
+struct FeedbackEventDTO: Codable, Equatable {
+    var id: String = ""
+    var pubkey: String = ""
+    var createdAt: Int = 0
+    var kind: Int = 0
+    var tags: [[String]] = []
+    var content: String = ""
+
+}
+
+/// Snapshot-decode mirror of the kernel's resolved feedback thread (#354).
+/// Mirrors `nmp_feedback::projection::FeedbackThreadDto` (snake_case fields
+/// survive the decoder's `.convertFromSnakeCase`). The kernel owns the Nostr
+/// reduction; the shell maps this to its view `FeedbackThread`.
+struct FeedbackThreadDTO: Codable, Equatable {
+    var eventId: String = ""
+    var authorPubkey: String = ""
+    var category: String = ""
+    var content: String = ""
+    var createdAt: Int = 0
+    var title: String? = nil
+    var summary: String? = nil
+    var statusLabel: String? = nil
+    var replies: [FeedbackReplyDTO] = []
+}
+
+/// Snapshot-decode mirror of a resolved feedback reply (#354).
+/// Mirrors `nmp_feedback::projection::FeedbackReplyDto`.
+struct FeedbackReplyDTO: Codable, Equatable {
+    var eventId: String = ""
+    var authorPubkey: String = ""
+    var content: String = ""
+    var createdAt: Int = 0
+}
+
+/// One configured app relay: URL plus NIP-65 role string
+/// (`read` | `write` | `both` | `indexer`, optionally comma-joined).
+/// Mirrors `ffi::snapshot_update::AppRelayRow`.
+struct AppRelayRow: Codable, Equatable, Identifiable {
+    var url: String = ""
+    var role: String = ""
+    var id: String { url }
+}
+
+// AgentContextSnapshot / AgentContextEpisode live in
+// `PodcastAgentContextTypes.generated.swift` to keep this file under the
+// 500-line hard limit.
+
+/// Active player state (present only when an episode is loaded).
+struct PlayerState {
+    var episodeId: String? = nil
+    var podcastId: String? = nil
+    var url: String? = nil
+    var positionSecs: Double = 0
+    var durationSecs: Double = 0
+    var isPlaying: Bool = false
+    var bufferingFraction: Double? = nil
+    var speed: Float = 1
+    var volume: Float = 1
+    var sleepTimerRemainingSecs: Int? = nil
+    var lastError: String? = nil
+    /// Set to `true` when AVPlayer fires `AVPlayerItemDidPlayToEndTime`.
+    /// Cleared when the next episode loads. Used by the UI to distinguish
+    /// a natural finish from a user-initiated stop.
+    var didReachNaturalEnd: Bool = false
+    /// Absolute end boundary (seconds) for a bounded agent segment.
+    /// Nil for unbounded playback.
+    var segmentEndSecs: Double? = nil
+    /// Title of the chapter active at the current playhead position.
+    var currentChapterTitle: String? = nil
+    /// Artwork URL of the active chapter, if the chapter has a per-chapter image.
+    var currentChapterArtworkUrl: String? = nil
+}
+
+/// Active Nostr identity (present only when an account is loaded).
+struct AccountSummary: Codable {
+    var npub: String
+    /// Lowercase 64-hex pubkey. This is the canonical account id; `npub` is
+    /// for display.
+    var pubkeyHex: String
+    var displayName: String? = nil
+    var mode: String
+    var pictureUrl: String? = nil
+}
+
+// MARK: - Custom Decodable implementations
+//
+// Rust uses `#[serde(default, skip_serializing_if)]` on bool fields (omit when
+// false), Vec fields (omit when empty), and `settings` (omit when default).
+// Swift's synthesized Decodable requires every non-optional key to be present,
+// but these keys are legitimately absent from snapshots where the value is the
+// zero/default. Custom `init(from:)` in extensions uses `decodeIfPresent` with
+// explicit fallbacks so the decoder is forward- and backward-compatible.
+//
+// WHY extensions, not struct bodies: putting `init(from:)` inside the struct
+// body suppresses the synthesized memberwise init. Extensions preserve it.
+
+extension PodcastUpdate: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        running = try c.decodeIfPresent(Bool.self, forKey: .running) ?? false
+        rev = try c.decodeIfPresent(Int.self, forKey: .rev) ?? 0
+        schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        nowPlaying = try c.decodeIfPresent(PlayerState.self, forKey: .nowPlaying)
+        downloads = try c.decodeIfPresent(DownloadQueueSnapshot.self, forKey: .downloads)
+        agent = try c.decodeIfPresent(AgentSnapshot.self, forKey: .agent)
+        agentContext = try c.decodeIfPresent(AgentContextSnapshot.self, forKey: .agentContext)
+        voice = try c.decodeIfPresent(VoiceSnapshot.self, forKey: .voice)
+        social = try c.decodeIfPresent(SocialSnapshot.self, forKey: .social)
+        library = try c.decodeIfPresent([PodcastSummary].self, forKey: .library) ?? []
+        activeAccount = try c.decodeIfPresent(AccountSummary.self, forKey: .activeAccount)
+        widget = try c.decodeIfPresent(WidgetSnapshot.self, forKey: .widget)
+        toast = try c.decodeIfPresent(String.self, forKey: .toast)
+        searchResults = try c.decodeIfPresent([PodcastSummary].self, forKey: .searchResults) ?? []
+        nostrResults = try c.decodeIfPresent([NostrShowSummary].self, forKey: .nostrResults) ?? []
+        settings = try c.decodeIfPresent(SettingsSnapshot.self, forKey: .settings) ?? SettingsSnapshot()
+        comments = try c.decodeIfPresent([CommentSummary].self, forKey: .comments) ?? []
+        queue = try c.decodeIfPresent([EpisodeSummary].self, forKey: .queue) ?? []
+        wikiArticles = try c.decodeIfPresent([WikiArticle].self, forKey: .wikiArticles) ?? []
+        wikiSearchResults = try c.decodeIfPresent([WikiArticle].self, forKey: .wikiSearchResults) ?? []
+        picks = try c.decodeIfPresent([AgentPickSummary].self, forKey: .picks) ?? []
+        agentTasks = try c.decodeIfPresent([AgentTaskSummary].self, forKey: .agentTasks) ?? []
+        knowledgeSearchResults = try c.decodeIfPresent([KnowledgeSearchResult].self, forKey: .knowledgeSearchResults) ?? []
+        memoryFacts = try c.decodeIfPresent([MemoryFact].self, forKey: .memoryFacts) ?? []
+        ttsEpisodes = try c.decodeIfPresent([TtsEpisodeSummary].self, forKey: .ttsEpisodes) ?? []
+        clips = try c.decodeIfPresent([ClipSummary].self, forKey: .clips) ?? []
+        inbox = try c.decodeIfPresent([InboxItem].self, forKey: .inbox) ?? []
+        inboxTriageInProgress = try c.decodeIfPresent(Bool.self, forKey: .inboxTriageInProgress) ?? false
+        ownedPodcasts = try c.decodeIfPresent([OwnedPodcastInfo].self, forKey: .ownedPodcasts) ?? []
+        categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
+        agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
+        configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
+        feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
+        feedbackThreads = try c.decodeIfPresent([FeedbackThreadDTO].self, forKey: .feedbackThreads) ?? []
+    }
+}
+
+extension PlayerState: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        episodeId = try c.decodeIfPresent(String.self, forKey: .episodeId)
+        podcastId = try c.decodeIfPresent(String.self, forKey: .podcastId)
+        url = try c.decodeIfPresent(String.self, forKey: .url)
+        positionSecs = try c.decodeIfPresent(Double.self, forKey: .positionSecs) ?? 0
+        durationSecs = try c.decodeIfPresent(Double.self, forKey: .durationSecs) ?? 0
+        isPlaying = try c.decodeIfPresent(Bool.self, forKey: .isPlaying) ?? false
+        bufferingFraction = try c.decodeIfPresent(Double.self, forKey: .bufferingFraction)
+        speed = try c.decodeIfPresent(Float.self, forKey: .speed) ?? 1
+        volume = try c.decodeIfPresent(Float.self, forKey: .volume) ?? 1
+        sleepTimerRemainingSecs = try c.decodeIfPresent(Int.self, forKey: .sleepTimerRemainingSecs)
+        lastError = try c.decodeIfPresent(String.self, forKey: .lastError)
+        didReachNaturalEnd = try c.decodeIfPresent(Bool.self, forKey: .didReachNaturalEnd) ?? false
+        segmentEndSecs = try c.decodeIfPresent(Double.self, forKey: .segmentEndSecs)
+        currentChapterTitle = try c.decodeIfPresent(String.self, forKey: .currentChapterTitle)
+        currentChapterArtworkUrl = try c.decodeIfPresent(String.self, forKey: .currentChapterArtworkUrl)
+    }
+}
+"#.to_string()
+}

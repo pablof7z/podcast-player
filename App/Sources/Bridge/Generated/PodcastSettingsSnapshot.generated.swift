@@ -1,5 +1,12 @@
 // PodcastSettingsSnapshot.generated.swift
-// Hand-maintained mirror of `ffi::projections::SettingsSnapshot`.
+// NOT YET GENERATED — hand-maintained mirror of `ffi::projections::SettingsSnapshot`.
+// Reason: SettingsSnapshot requires a mixed CodingKeys enum where most keys are
+// auto-camelCase but ~15 fields override to explicit snake_case (e.g. `ollama_chat_url`,
+// `stt_provider`, `assembly_ai_*`). The swift-codegen emitter does not yet model
+// per-field CodingKeys overrides; adding that is tracked in docs/BACKLOG.md.
+// Until then: keep this file in sync by hand when settings.rs changes.
+// The CI drift gate (swift-bridge-codegen-drift) still covers this file via
+// `git diff --exit-code App/Sources/Bridge/Generated`.
 // Source of truth: apps/nmp-app-podcast/src/ffi/projections/settings.rs
 
 import Foundation

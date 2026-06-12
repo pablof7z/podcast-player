@@ -35,6 +35,11 @@ name = "headless"
 path = "src/bin/headless/main.rs"
 required-features = ["headless"]
 
+[[bin]]
+name = "swift-codegen"
+path = "src/bin/swift_codegen/main.rs"
+# No required-features: the codegen binary uses only std, no crate deps.
+
 [dependencies]
 async-trait = "0.1"
 log = "0.4"

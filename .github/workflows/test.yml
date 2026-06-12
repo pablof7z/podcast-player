@@ -60,3 +60,44 @@ jobs:
           CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_LATEST_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang
         working-directory: apps/nmp-app-podcast
         run: cargo check --target aarch64-linux-android
+
+  swift-bridge-codegen-drift:
+    name: Swift bridge codegen drift gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-codegen-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-codegen-
+
+      - name: Run swift-codegen
+        working-directory: apps/nmp-app-podcast
+        run: cargo run --bin swift-codegen
+
+      - name: Fail if Generated/ files drifted from Rust types
+        # Checks that the checked-in Generated/*.generated.swift files match
+        # the generator output exactly.  Any hand-edit that changes a wire
+        # shape without re-running the generator will cause this step to fail.
+        # NOTE: PodcastSettingsSnapshot.generated.swift is intentionally skipped
+        # by the generator (NOT YET GENERATED); its header comment explains why.
+        run: |
+          git diff --exit-code App/Sources/Bridge/Generated/ || {
+            echo ""
+            echo "ERROR: App/Sources/Bridge/Generated/ has drifted from the Rust"
+            echo "projection types.  Re-run \`cargo run --bin swift-codegen\` and"
+            echo "commit the updated files."
+            exit 1
+          }
