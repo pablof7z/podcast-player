@@ -90,7 +90,7 @@ pub(crate) fn create_owned(
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {
         let _: &mut OwnedPublishState = state.entry(podcast_id).or_default();
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": true, "pubkey_hex": pubkey_hex})
 }
 
@@ -153,7 +153,7 @@ pub(crate) fn publish_show(
         entry.show_event_json = Some(event.as_json());
         entry.last_published_at = Some(created_at);
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 
     let status = publish_via_nmp(handler.app, &event);
     serde_json::json!({
@@ -245,7 +245,7 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
             }
         };
 
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
     let status = publish_via_nmp(handler.app, &event);
     serde_json::json!({
         "ok": true,
@@ -327,7 +327,7 @@ fn publish_author_claim(
         .iter()
         .map(|(_, pk)| vec!["p".into(), pk.clone()])
         .collect();
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
     let status = publish_raw_via_nmp(handler.app, KIND_AUTHOR_CLAIM, &tags, "");
     serde_json::json!({
         "ok": true,
@@ -350,7 +350,7 @@ fn remove_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde_jso
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {
         state.remove(&podcast_id);
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": true})
 }
 

@@ -17,17 +17,13 @@
 //! * Voice-action dispatch    -> `voice_handler.rs`
 //! * Namespace-envelope router -> `host_op_handler/router.rs`
 
-use std::sync::atomic::AtomicU64;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::state::PodcastAppState;
 
-use tokio::runtime::Runtime;
-
 use nmp_ffi::NmpApp;
-
-// FeedFetchCoordinator removed in Step 16 — now in state.feed_fetch.
-use crate::snapshot_signal::SnapshotUpdateSignal;
+// AtomicU64, Mutex, Runtime, SnapshotUpdateSignal removed in Step N+1 —
+// rev + signal + runtime are now accessed via state.infra.
 
 mod dispatch;
 mod player_actions;
@@ -84,19 +80,16 @@ pub struct PodcastHostOpHandler {
     // social removed in Step 10 — now owned by `state.social` (SocialState).
     // agent_notes removed in Step 10 — dead duplicate Arc; observer now shares
     // from `state.social.agent_notes`.
-    pub(crate) rev: Arc<AtomicU64>,
+    // rev removed in Step N+1 — now accessed via `state.infra.rev`.
+    // runtime removed in Step N+1 — now accessed via `state.infra.runtime`.
+    // snapshot_signal removed in Step N+1 — now in `state.infra.signal`.
     // podcast_keys and publish_state removed in Step 13 —
     // now owned by `state.publish` (PublishState).
     // agent_chat removed in Step 11 — now owned by `state.agent_chat` (AgentChatState).
     // inbox_triage_cache removed in Step 7 — now owned by `state.inbox` (InboxState).
     // inbox_triage_in_progress removed in Step 7 — now owned by `state.inbox` (InboxState).
-    /// Shared Tokio runtime for async LLM / relay work. Seeded in
-    /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
-    /// Used by wiki synthesis, agent chat, inbox triage, and social graph fetches.
-    pub(crate) runtime: Arc<Runtime>,
     // feed_fetch removed in Step 16 — now accessed via `state.feed_fetch`.
     // feedback removed in Step 16 — now accessed via `state.feedback`.
-    pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the
@@ -108,25 +101,10 @@ unsafe impl Send for PodcastHostOpHandler {}
 unsafe impl Sync for PodcastHostOpHandler {}
 
 impl PodcastHostOpHandler {
-    // Step 16: feed_fetch + feedback removed from constructor — now in state.
-    pub fn new(
-        app: *mut NmpApp,
-        state: Arc<PodcastAppState>,
-        rev: Arc<AtomicU64>,
-        runtime: Arc<Runtime>,
-    ) -> Self {
-        Self {
-            app,
-            state,
-            rev,
-            runtime,
-            snapshot_signal: None,
-        }
-    }
-
-    pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
-        self.snapshot_signal = Some(snapshot_signal);
-        self
+    /// Step N+1: The minimal 2-arg constructor.  All infrastructure
+    /// (rev + signal + runtime) comes from `state.infra`.
+    pub fn new(app: *mut NmpApp, state: Arc<PodcastAppState>) -> Self {
+        Self { app, state }
     }
 
     /// Re-run the categorizer after a successful refresh so newly-

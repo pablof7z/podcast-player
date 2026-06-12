@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex};
 fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<PodcastHandle> {
     use std::collections::HashMap;
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
-    // Step 16: feedback is now injected into PodcastAppState.
+    // Step N+1: rev is now owned by Infra; use for_test_with_rev so test
+    // assertions on `rev.load(...)` observe bumps routed through state.infra.
     let feedback = nmp_feedback::FeedbackRuntime::new(
         nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
             .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
@@ -19,28 +20,17 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
         rev.clone(),
     );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
-        crate::state::Infra::for_test(),
+        crate::state::Infra::for_test_with_rev(rev.clone()),
         store.clone(),
         identity.clone(),
         feedback,
     ));
-    // Step 15: store + identity removed from PodcastHandle —
-    // they are now accessed via state.library.store / state.library.identity.
-    // Step 16: feedback + feed_fetch removed from PodcastHandle —
-    // they are now accessed via state.feedback / state.feed_fetch.
+    // Steps 15-N+1: all fields in state (library, infra, feedback, feed_fetch).
     Box::new(PodcastHandle {
         app: std::ptr::null_mut(),
         state,
-        // player_actor, queue, download_queue removed in Step 14 — now in state.playback.
-        // store removed in Step 15 — accessed via state.library.store.
-        // identity removed in Step 15 — accessed via state.library.identity.
-        // feedback removed in Step 16 — accessed via state.feedback.
-        // feed_fetch removed in Step 16 — accessed via state.feed_fetch.
-        rev: rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }
 struct TempDir {

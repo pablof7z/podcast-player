@@ -2,15 +2,13 @@
 //! `nmp_app_podcast_snapshot` / `nmp_app_podcast_unregister`.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::state::PodcastAppState;
 
 use nmp_ffi::NmpApp;
-use tokio::runtime::Runtime;
-
-use crate::snapshot_signal::SnapshotUpdateSignal;
+// AtomicU64, Ordering, Runtime, SnapshotUpdateSignal removed in Step N+1 —
+// these lived in the mirror fields now deleted.
 
 /// Diagnostic publish state retained per-podcast across snapshot ticks.
 ///
@@ -36,8 +34,9 @@ pub struct PodcastHandle {
     pub(crate) state: Arc<PodcastAppState>,
     // store removed in Step 15 — now owned by `state.library.store`.
     // identity removed in Step 15 — now owned by `state.library.identity`.
-    pub(super) rev: Arc<AtomicU64>,
-    pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
+    // rev removed in Step N+1 — now `state.infra.rev`.
+    // snapshot_signal removed in Step N+1 — now `state.infra.signal`.
+    // runtime removed in Step N+1 — now `state.infra.runtime`.
     // search_results removed in Step 9 — now owned by `state.discovery` (DiscoveryState).
     // nostr_results removed in Step 9 — dead duplicate Arc; observer now shares
     // from `state.discovery.nostr_results` via register.rs.
@@ -84,10 +83,7 @@ pub struct PodcastHandle {
     // from `state.social.agent_notes` via register.rs.
     // feedback removed in Step 16 — now owned by state.feedback (FeedbackRuntime).
     // feed_fetch removed in Step 16 — now owned by state.feed_fetch (FeedFetchCoordinator).
-    /// Shared multi-thread Tokio runtime (same `Arc` the host-op handler and
-    /// voice manager hold). Kept here for other off-actor work (e.g. wiki,
-    /// social). Triage spawning has moved to InboxState (Step 7).
-    pub(super) runtime: Arc<Runtime>,
+    // runtime removed in Step N+1 — now state.infra.runtime.
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the
@@ -117,20 +113,15 @@ unsafe impl Sync for PodcastHandle {}
 const CLEAN_HTML_CACHE_CAP: usize = 16_384;
 
 impl PodcastHandle {
+    /// Bump the snapshot rev. Step N+1: delegates to `state.infra.bump()`
+    /// which owns the canonical signal + rev fallback logic.
     pub(crate) fn bump_snapshot_rev(&self) {
-        if let Some(signal) = &self.snapshot_signal {
-            signal.bump();
-        } else {
-            self.rev.fetch_add(1, Ordering::Relaxed);
-        }
+        self.state.infra.bump();
     }
 
+    /// Conditional bump — delegates to `state.infra.bump_if(changed)`.
     pub(crate) fn bump_snapshot_rev_if(&self, changed: bool) {
-        if let Some(signal) = &self.snapshot_signal {
-            signal.bump_if(changed);
-        } else if changed {
-            self.rev.fetch_add(1, Ordering::Relaxed);
-        }
+        self.state.infra.bump_if(changed);
     }
 
     /// Memoized [`super::helpers::strip_html`]. The snapshot projection calls

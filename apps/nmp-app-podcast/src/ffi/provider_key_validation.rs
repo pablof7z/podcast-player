@@ -22,7 +22,7 @@ pub extern "C" fn nmp_app_podcast_validate_openrouter_key(
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(openrouter_key_validation::validate_openrouter_key(store)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
                 Err(error) => openrouter_validation_error_envelope(&error).into_raw(),
@@ -45,7 +45,7 @@ pub extern "C" fn nmp_app_podcast_validate_elevenlabs_key(
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(elevenlabs_key_validation::validate_elevenlabs_key(store)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
                 Err(error) => elevenlabs_validation_error_envelope(&error).into_raw(),

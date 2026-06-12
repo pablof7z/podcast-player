@@ -21,12 +21,10 @@ fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
         identity.clone(),
         feedback_runtime(rev.clone()),
     ));
-    // Steps 8-16: all substates in PodcastAppState; feed_fetch + feedback removed from handler::new.
+    // Steps 8-N+1: all substates in PodcastAppState; new takes only (app, state).
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        rev,
-        Arc::new(tokio::runtime::Runtime::new().unwrap()),
     )
 }
 

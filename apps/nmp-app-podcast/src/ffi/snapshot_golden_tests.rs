@@ -117,25 +117,14 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
     // byte-identical across runs (skip_serializing_if = "Vec::is_empty" omits it).
     state.tasks.tasks.lock().unwrap().clear();
 
-    // Steps 8-10: search_results, nostr_results, comments_cache,
-    // viewed_comments_episode_id, social, agent_notes removed — now owned by
-    // state.discovery / state.comments / state.social respectively.
-    // Step 14: player_actor, queue, download_queue removed — now owned by
-    // state.playback (PlaybackState).
-    // Step 15: store + identity are no longer fields of PodcastHandle.
-    // Step 16: feedback + feed_fetch are no longer fields of PodcastHandle.
+    // Steps 8-N+1: all substates in PodcastAppState; rev/signal/runtime in state.infra.
+    // Step 15: store + identity in state.library.
+    // Step 16: feedback + feed_fetch in state.{feedback,feed_fetch}.
     Box::new(PodcastHandle {
         app,
         state,
-        // store removed in Step 15 — accessed via state.library.store.
-        // identity removed in Step 15 — accessed via state.library.identity.
-        // feedback removed in Step 16 — accessed via state.feedback.
-        // feed_fetch removed in Step 16 — accessed via state.feed_fetch.
-        rev: rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }
 

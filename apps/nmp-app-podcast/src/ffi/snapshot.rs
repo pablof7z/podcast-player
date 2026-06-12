@@ -34,7 +34,7 @@ pub(super) fn provider_key_present(key: Option<&str>) -> bool {
 /// Rust consumers that want typed projections without paying serde
 /// serialization + deserialization.
 pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
-    let rev = handle.rev.load(Ordering::Relaxed);
+    let rev = handle.state.infra.rev.load(Ordering::Relaxed);
 
     // Step 14: player_actor now sourced from state.playback.player.
     let now_playing = handle.state.playback.player.lock().ok().and_then(|a| {
@@ -209,7 +209,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
 }
 
 pub(super) fn build_snapshot_payload(handle: &PodcastHandle) -> String {
-    let rev = handle.rev.load(Ordering::Relaxed);
+    let rev = handle.state.infra.rev.load(Ordering::Relaxed);
 
     // Fast path: skip re-serialization when rev hasn't changed.
     if let Ok(cache) = handle.snapshot_cache.lock() {
@@ -277,7 +277,7 @@ pub extern "C" fn nmp_app_podcast_snapshot_rev(handle: *mut PodcastHandle) -> u6
     }
     ffi_guard("nmp_app_podcast_snapshot_rev", || 0u64, || {
         let handle = unsafe { &*handle };
-        handle.rev.load(std::sync::atomic::Ordering::Relaxed)
+        handle.state.infra.rev.load(std::sync::atomic::Ordering::Relaxed)
     })
 }
 

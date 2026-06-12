@@ -63,13 +63,10 @@ fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
 /// Step 14: `player_actor`, `queue`, and `download_queue` are no longer
 /// separate constructor args — they live inside `state.playback`.
 fn handler_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> PodcastHostOpHandler {
-    // Step 15: store + identity removed from PodcastHostOpHandler::new.
-    // Step 16: feed_fetch + feedback removed — now in state.
+    // Steps 15-N+1: store, identity, feed_fetch, feedback, rev, runtime all in state.
     PodcastHostOpHandler::new(
         app,
         shared.state.clone(),
-        shared.rev.clone(),
-        Arc::new(tokio::runtime::Runtime::new().unwrap()),
     )
 }
 
@@ -82,11 +79,8 @@ fn handle_sharing(shared: &SharedKernel, app: *mut nmp_ffi::NmpApp) -> Box<Podca
     Box::new(PodcastHandle {
         app,
         state: shared.state.clone(),
-        rev: shared.rev.clone(),
-        snapshot_signal: None,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
-        runtime: Arc::new(tokio::runtime::Runtime::new().unwrap()),
     })
 }
 

@@ -35,7 +35,7 @@ pub extern "C" fn nmp_app_podcast_perplexity_search(
             };
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(perplexity_search::search_perplexity(store, intent)) {
                 Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
                 Err(error) => search_error_envelope(&error).into_raw(),

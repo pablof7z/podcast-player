@@ -173,7 +173,7 @@ pub extern "C" fn nmp_app_podcast_chat_complete(
 
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
 
             // Drive the full Rust tool loop (search_library, get_transcript,
             // get_podcast_info, get_memory_facts) via chat_with_tools. Swift's

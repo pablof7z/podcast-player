@@ -35,7 +35,7 @@ pub extern "C" fn nmp_app_podcast_elevenlabs_scribe_transcribe(
             };
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.runtime);
+            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
             match runtime.block_on(elevenlabs_scribe::transcribe_elevenlabs_scribe(
                 store, intent,
             )) {

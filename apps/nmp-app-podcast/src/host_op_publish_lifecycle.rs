@@ -122,7 +122,7 @@ pub fn update_owned(
             "error": format!("podcast not found: {podcast_id}")
         });
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 
     if !should_publish {
         return serde_json::json!({"ok": true, "status": "skipped"});
@@ -218,7 +218,7 @@ pub fn delete_owned(handler: &PodcastHostOpHandler, podcast_id: String) -> serde
     if let Ok(mut state) = handler.state.publish.publish_state.lock() {
         state.remove(&podcast_id);
     }
-    handler.rev.fetch_add(1, Ordering::Relaxed);
+    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
 
     serde_json::json!({
         "ok": true,

@@ -134,6 +134,21 @@ impl Infra {
             runtime: Arc::new(rt),
         }
     }
+
+    /// Like `for_test()` but shares the caller-supplied `rev` Arc so tests can
+    /// observe bumps via the same handle they hold.
+    #[cfg(test)]
+    pub fn for_test_with_rev(rev: Arc<AtomicU64>) -> Self {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test tokio runtime");
+        Self {
+            rev,
+            signal: None,
+            runtime: Arc::new(rt),
+        }
+    }
 }
 
 // ── PodcastAppState ───────────────────────────────────────────────────────────
@@ -265,7 +280,7 @@ pub struct PodcastAppState {
     /// pending fetch + dispatches the async HTTP command; the handle's
     /// HTTP-report FFI resolves the result.  Holds a shared clone of
     /// `library.store` + `infra.rev` + signal.
-    pub feed_fetch: std::sync::Arc<crate::feed_fetch::FeedFetchCoordinator>,
+    pub(crate) feed_fetch: std::sync::Arc<crate::feed_fetch::FeedFetchCoordinator>,
 }
 
 impl PodcastAppState {
