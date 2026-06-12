@@ -25,8 +25,8 @@ use podcast_discovery::KIND_SHOW;
 
 use crate::ffi::actions::publish_module::PublishAction;
 use crate::host_op_handler::PodcastHostOpHandler;
-use crate::host_op_publish::{publish_episode, publish_show, sign_event};
-use crate::nmp_dispatch::publish_via_nmp;
+use crate::host_op_publish::{publish_show, sign_event};
+use crate::nmp_dispatch::{publish_via_nmp, self_dispatch_publish};
 
 /// NIP-09 deletion request kind.
 const KIND_DELETION: u32 = 5;
@@ -86,10 +86,19 @@ fn parse_visibility(raw: Option<String>) -> NostrVisibility {
 /// republishes the show in the same op.
 ///
 /// On a private→public flip the kernel also backfills every existing episode
-/// as a `kind:54` event by calling [`publish_episode`] for each one (D0:
-/// Rust owns publish policy end-to-end). The response includes
-/// `"episodes_backfilled": N`. A non-flip update (already-public show) only
-/// republishes the show event; `episodes_backfilled` is 0.
+/// as a `kind:54` event (D0: Rust owns publish policy end-to-end). Rather than
+/// publishing them synchronously in a loop — which would block the actor
+/// thread for N sequential Blossom uploads + relay broadcasts and freeze all
+/// reactivity (D8 stall) — it **self-enqueues** one `podcast.publish`
+/// `publish_episode` action per episode via [`self_dispatch_publish`]. Each
+/// lands as its own `ActorCommand::DispatchHostOp` in the actor queue, so the
+/// per-episode publish runs in its OWN later tick and the actor yields between
+/// them (same responsiveness the old Swift per-episode loop had). The response
+/// includes `"episodes_queued": N` (episodes the flip identified for backfill)
+/// and `"episodes_accepted": M` (self-dispatches the FFI registry accepted —
+/// `M == N` with a live kernel; `0` under a null app in tests). A non-flip
+/// update (already-public show) only republishes the show event;
+/// `episodes_queued` is 0.
 #[allow(clippy::too_many_arguments)]
 pub fn update_owned(
     handler: &PodcastHostOpHandler,
@@ -167,19 +176,36 @@ pub fn update_owned(
     // onto `publish_state` and bumps `rev`.
     let publish = publish_show(handler, podcast_id);
 
-    // Backfill per-episode kind:54 events on a private→public flip.
-    // Reuses the existing publish_episode path (Blossom upload + sign +
-    // broadcast) — no reimplementation. Lock is NOT held here.
-    let episode_count = episode_ids_to_backfill.len();
+    // Backfill per-episode kind:54 events on a private→public flip by
+    // SELF-ENQUEUING one `publish_episode` action per episode (NOT a
+    // synchronous loop). Each self-dispatch enqueues an
+    // `ActorCommand::DispatchHostOp` and returns immediately, so each episode
+    // publishes in its own later actor tick and the actor yields in between —
+    // a 50–100 episode flip stays responsive instead of blocking the actor for
+    // N sequential Blossom uploads (D8). The dispatched action reuses the same
+    // `publish_episode` path (Blossom upload + sign + broadcast). Lock is NOT
+    // held here.
+    //
+    // `episodes_queued` is the number of episodes the kernel DECIDED to backfill
+    // (the policy decision — what this op owns under D0). `episodes_accepted`
+    // is how many the FFI registry accepted; in unit tests (null app) the
+    // self-dispatch is a no-op so accepted is 0, but the decision count still
+    // reflects the flip.
+    let episodes_queued = episode_ids_to_backfill.len();
+    let mut episodes_accepted = 0usize;
     for episode_id in episode_ids_to_backfill {
-        publish_episode(handler, episode_id);
+        let body = serde_json::json!({ "op": "publish_episode", "episode_id": episode_id });
+        if self_dispatch_publish(handler.app, body) {
+            episodes_accepted += 1;
+        }
     }
 
     serde_json::json!({
         "ok": true,
         "status": "republished",
         "publish": publish,
-        "episodes_backfilled": episode_count,
+        "episodes_queued": episodes_queued,
+        "episodes_accepted": episodes_accepted,
     })
 }
 

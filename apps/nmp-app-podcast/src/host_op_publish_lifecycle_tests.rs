@@ -292,11 +292,14 @@ fn delete_owned_with_no_published_show_skips_nip09_but_tears_down() {
     assert!(handler.state.publish.podcast_keys.lock().unwrap().get_key(&id).is_none());
 }
 
-/// Private→public flip publishes the show event AND backfills N kind:54
-/// episode events via the existing `publish_episode` path (D0: kernel owns
-/// all publish policy). Checks that `episodes_backfilled` in the response
-/// matches the number of seeded episodes, and that the show republish also
-/// ran (inner `publish.ok`).
+/// Private→public flip publishes the show event AND identifies all N episodes
+/// for kind:54 backfill (D0: kernel owns all publish policy). The backfill is
+/// self-enqueued as N separate `publish_episode` actions so the actor yields
+/// between them (D8 — no synchronous upload loop on the actor thread). Checks
+/// that `episodes_queued` (the policy decision) matches the seeded episode
+/// count and that the show republish ran (inner `publish.ok`). With the null
+/// app pointer the self-dispatch is a no-op so `episodes_accepted` is 0 — the
+/// live-kernel fan-out is covered by the headless nipf4 scenario.
 #[test]
 fn private_to_public_flip_backfills_all_episodes_as_kind54() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -353,11 +356,19 @@ fn private_to_public_flip_backfills_all_episodes_as_kind54() {
     assert_eq!(out["status"], "republished", "visibility flip must trigger republish");
     // Show event published.
     assert_eq!(out["publish"]["ok"], true, "show event republish must succeed");
-    // All episodes backfilled.
+    // All episodes identified for backfill (one self-dispatched publish_episode
+    // action each — the actor yields between them).
     assert_eq!(
-        out["episodes_backfilled"].as_u64().unwrap_or(0),
+        out["episodes_queued"].as_u64().unwrap_or(0),
         EPISODE_COUNT as u64,
-        "all {EPISODE_COUNT} episodes must be backfilled as kind:54 events"
+        "all {EPISODE_COUNT} episodes must be queued for kind:54 backfill"
+    );
+    // Null app in tests → self-dispatch is a no-op → none accepted by the FFI
+    // registry (the live fan-out is exercised by the headless scenario).
+    assert_eq!(
+        out["episodes_accepted"].as_u64().unwrap_or(99),
+        0,
+        "null app pointer must accept 0 self-dispatches"
     );
     // Post-state: visibility is public on the kernel row.
     assert_eq!(
@@ -418,10 +429,10 @@ fn already_public_show_update_does_not_backfill_episodes() {
     );
     assert_eq!(out["ok"], true);
     assert_eq!(out["status"], "republished");
-    // No flip → no backfill.
+    // No flip → no episodes queued for backfill.
     assert_eq!(
-        out["episodes_backfilled"].as_u64().unwrap_or(0),
+        out["episodes_queued"].as_u64().unwrap_or(99),
         0,
-        "non-flip update must not backfill episodes"
+        "non-flip update must not queue any episodes for backfill"
     );
 }
