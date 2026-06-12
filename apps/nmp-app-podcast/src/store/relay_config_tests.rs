@@ -83,7 +83,7 @@ fn save_overwrites_previous_config() {
 #[test]
 fn on_disk_shape_is_url_role_objects() {
     // Lock the wire format so it stays byte-compatible with the
-    // nmp-app-template sidecar (one canonical representation).
+    // nmp-defaults sidecar (one canonical representation).
     let dir = tempfile::tempdir().expect("tempdir");
     save_relay_config(
         dir.path(),

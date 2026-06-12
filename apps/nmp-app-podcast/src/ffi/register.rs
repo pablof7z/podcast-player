@@ -62,7 +62,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AssertUnwindSafe is sound: all pointer null checks happen before this
     // closure is constructed; captured raw ptrs are never observed on panic path.
     let app_mut = unsafe { &mut *app };
-    nmp_app_template::register_defaults(app_mut);
+    nmp_defaults::register_defaults(app_mut);
 
     app_mut.register_action::<IdentityActionModule>();
     app_mut.register_action::<PodcastActionModule>();

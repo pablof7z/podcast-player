@@ -4,7 +4,7 @@
 //! ## Why this exists
 //!
 //! Relay state (`AppRelaySlot`) is kernel-owned, in-memory state. The
-//! `nmp-app-template` builder persists it via its own
+//! `nmp-defaults` builder persists it via its own
 //! `relay_config::{load,save}` inside `NmpAppBuilder::start`, but the podcast
 //! app is constructed over the raw C-ABI (`nmp_app_new` →
 //! `nmp_app_podcast_register` → `nmp_app_start`) and never runs through the
@@ -29,7 +29,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-/// Sidecar filename, shared verbatim with `nmp-app-template`'s relay-config
+/// Sidecar filename, shared verbatim with `nmp-defaults`'s relay-config
 /// sidecar so both start paths read/write one canonical file.
 pub(crate) const RELAY_CONFIG_FILENAME: &str = ".nmp-relay-config.json";
 
