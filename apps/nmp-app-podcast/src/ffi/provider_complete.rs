@@ -18,7 +18,7 @@ pub extern "C" fn nmp_app_podcast_provider_complete(
     }
     ffi_guard(
         "nmp_app_podcast_provider_complete",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             let json_str = match unsafe { CStr::from_ptr(intent_json) }.to_str() {
                 Ok(s) => s,

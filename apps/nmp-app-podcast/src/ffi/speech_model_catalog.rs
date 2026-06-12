@@ -14,7 +14,7 @@ pub extern "C" fn nmp_app_podcast_speech_model_catalog(handle: *mut PodcastHandl
     }
     ffi_guard(
         "nmp_app_podcast_speech_model_catalog",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             json_envelope(
                 &serde_json::json!({"result": speech_model_catalog::speech_model_catalog()}),

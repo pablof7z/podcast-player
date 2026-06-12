@@ -80,7 +80,7 @@ pub extern "C" fn nmp_app_podcast_record_episode_event(
     }
     ffi_guard(
         "nmp_app_podcast_record_episode_event",
-        std::ptr::null_mut(),
+        std::ptr::null_mut,
         || {
             let raw = match unsafe { CStr::from_ptr(event_json) }.to_str() {
                 Ok(s) => s,
@@ -126,7 +126,7 @@ pub extern "C" fn nmp_app_podcast_episode_events(
     if handle.is_null() || episode_id.is_null() {
         return std::ptr::null_mut();
     }
-    ffi_guard("nmp_app_podcast_episode_events", std::ptr::null_mut(), || {
+    ffi_guard("nmp_app_podcast_episode_events", std::ptr::null_mut, || {
         let episode_id = match unsafe { CStr::from_ptr(episode_id) }.to_str() {
             Ok(s) => s,
             Err(_) => return std::ptr::null_mut(),

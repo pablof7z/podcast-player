@@ -60,10 +60,10 @@ extern "C" fn capability_handler(
     request_json: *const c_char,
 ) -> *mut c_char {
     // Local guard mirrors ffi/guard.rs for this binary entry point (pub(crate)
-    // is not reachable from [[bin]] crates).
-    let fallback = CString::new(r#"{"error":"panic"}"#)
-        .expect("static string")
-        .into_raw();
+    // ffi_guard is not reachable from [[bin]] crates). The fallback CString is
+    // constructed ONLY on the panic path — building it eagerly would leak its
+    // heap allocation on every successful call (the success branch returns
+    // `body`'s pointer and the unused raw-pointer fallback drops as a no-op).
     match catch_unwind(AssertUnwindSafe(|| {
         let request_str = if request_json.is_null() {
             ""
@@ -80,7 +80,12 @@ extern "C" fn capability_handler(
             .into_raw()
     })) {
         Ok(ptr) => ptr,
-        Err(_) => fallback,
+        Err(_) => {
+            eprintln!("[headless] capability_handler caught panic; returning error envelope");
+            CString::new(r#"{"error":"panic"}"#)
+                .expect("static string")
+                .into_raw()
+        }
     }
 }
 

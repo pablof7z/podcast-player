@@ -16,7 +16,7 @@ pub extern "C" fn nmp_app_podcast_local_model_catalog(
     }
     ffi_guard(
         "nmp_app_podcast_local_model_catalog",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             json_envelope(
                 &serde_json::json!({"result": local_model_catalog::local_model_catalog()}),

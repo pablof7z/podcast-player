@@ -51,7 +51,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     if app.is_null() {
         return std::ptr::null_mut();
     }
-    ffi_guard("nmp_app_podcast_register", std::ptr::null_mut(), || {
+    ffi_guard("nmp_app_podcast_register", std::ptr::null_mut, || {
     // Wire the canonical NMP composition — NIP-02 / NIP-17 / NIP-57 / NIP-65
     // action modules, the kind:10050 ingest parser, the production routing
     // substrate, and the DM-inbox + zap-receipts runtime controllers.

@@ -22,7 +22,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeCapabilityReport<'
     report_json: JString<'l>,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeCapabilityReport", null, || {
+    ffi_guard("nativeCapabilityReport", || null, || {
         let Some(s) = super::session_ref(handle) else {
             return null;
         };
@@ -60,7 +60,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeDownloadReport<'l>
     report_json: JString<'l>,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeDownloadReport", null, || {
+    ffi_guard("nativeDownloadReport", || null, || {
         let Some(s) = super::session_ref(handle) else {
             return null;
         };
@@ -96,7 +96,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeHttpReport<'l>(
     handle: jlong,
     report_json: JString<'l>,
 ) {
-    ffi_guard("nativeHttpReport", (), || {
+    ffi_guard("nativeHttpReport", || (), || {
         let Some(s) = super::session_ref(handle) else {
             return;
         };

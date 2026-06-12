@@ -254,7 +254,7 @@ pub extern "C" fn nmp_app_podcast_snapshot(handle: *mut PodcastHandle) -> *mut c
     if handle.is_null() {
         return std::ptr::null_mut();
     }
-    ffi_guard("nmp_app_podcast_snapshot", std::ptr::null_mut(), || {
+    ffi_guard("nmp_app_podcast_snapshot", std::ptr::null_mut, || {
         // SAFETY: caller guarantees `handle` is a valid pointer returned by
         // `nmp_app_podcast_register` and not yet freed.
         let handle = unsafe { &*handle };
@@ -276,7 +276,7 @@ pub extern "C" fn nmp_app_podcast_snapshot_rev(handle: *mut PodcastHandle) -> u6
     if handle.is_null() {
         return 0;
     }
-    ffi_guard("nmp_app_podcast_snapshot_rev", 0u64, || {
+    ffi_guard("nmp_app_podcast_snapshot_rev", || 0u64, || {
         let handle = unsafe { &*handle };
         handle.rev.load(std::sync::atomic::Ordering::Relaxed)
     })
@@ -290,7 +290,7 @@ pub extern "C" fn nmp_app_podcast_snapshot_free(ptr: *mut c_char) {
     if ptr.is_null() {
         return;
     }
-    ffi_guard("nmp_app_podcast_snapshot_free", (), || {
+    ffi_guard("nmp_app_podcast_snapshot_free", || (), || {
         // SAFETY: caller guarantees `ptr` came from `CString::into_raw` in
         // `nmp_app_podcast_snapshot` and has not been freed.
         unsafe {
@@ -308,7 +308,7 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
     if handle.is_null() {
         return;
     }
-    ffi_guard("nmp_app_podcast_unregister", (), || {
+    ffi_guard("nmp_app_podcast_unregister", || (), || {
         // SAFETY: caller guarantees `handle` came from `nmp_app_podcast_register`
         // (which now returns `Arc::into_raw`) and has not already been freed. This
         // reclaims the shell's strong ref; the snapshot-projection closure holds a
@@ -361,7 +361,7 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
     if bytes.is_null() || len == 0 {
         return std::ptr::null_mut();
     }
-    ffi_guard("nmp_app_podcast_decode_update_frame", std::ptr::null_mut(), || {
+    ffi_guard("nmp_app_podcast_decode_update_frame", std::ptr::null_mut, || {
     // SAFETY: caller guarantees `bytes` is valid for `len` bytes.
     let slice = unsafe { std::slice::from_raw_parts(bytes, len) };
     let envelope = match nmp_core::decode_update_frame(slice) {

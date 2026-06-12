@@ -30,7 +30,7 @@ pub extern "C" fn nmp_app_register_local_llm(
     context: *mut c_void,
     callback: NmpLocalLlmFn,
 ) {
-    ffi_guard("nmp_app_register_local_llm", (), || {
+    ffi_guard("nmp_app_register_local_llm", || (), || {
         // Register the callback globally.
         set_registration(Some(LocalLlmRegistration {
             context: context as usize,
@@ -48,7 +48,7 @@ pub extern "C" fn nmp_app_register_local_llm(
 /// Null handle is silently ignored (registration is global, handle param is API-symmetry only).
 #[no_mangle]
 pub extern "C" fn nmp_app_clear_local_llm(_handle: *mut PodcastHandle) {
-    ffi_guard("nmp_app_clear_local_llm", (), || {
+    ffi_guard("nmp_app_clear_local_llm", || (), || {
         // Clear the callback globally.
         set_registration(None);
     });

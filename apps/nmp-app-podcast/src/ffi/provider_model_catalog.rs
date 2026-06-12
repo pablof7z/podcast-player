@@ -17,7 +17,7 @@ pub extern "C" fn nmp_app_podcast_provider_model_catalog(
     }
     ffi_guard(
         "nmp_app_podcast_provider_model_catalog",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.store);

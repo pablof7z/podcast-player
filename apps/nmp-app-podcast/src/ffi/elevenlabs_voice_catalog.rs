@@ -17,7 +17,7 @@ pub extern "C" fn nmp_app_podcast_elevenlabs_voice_catalog(
     }
     ffi_guard(
         "nmp_app_podcast_elevenlabs_voice_catalog",
-        err_envelope("panic", None, "panic").into_raw(),
+        || err_envelope("panic", None, "panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.store);

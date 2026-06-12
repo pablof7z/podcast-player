@@ -141,7 +141,7 @@ pub extern "C" fn nmp_app_podcast_chat_complete(
     }
     ffi_guard(
         "nmp_app_podcast_chat_complete",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             let json_str = match unsafe { CStr::from_ptr(messages_json) }.to_str() {
                 Ok(s) => s,

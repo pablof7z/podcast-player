@@ -15,7 +15,7 @@ pub extern "C" fn nmp_app_podcast_byok_authorization(intent_json: *const c_char)
     }
     ffi_guard(
         "nmp_app_podcast_byok_authorization",
-        err_envelope("panic", "panic").into_raw(),
+        || err_envelope("panic", "panic").into_raw(),
         || {
             let intent = match decode_intent::<ByokAuthorizationIntent>(intent_json) {
                 Ok(intent) => intent,
@@ -40,7 +40,7 @@ pub extern "C" fn nmp_app_podcast_byok_exchange(
     }
     ffi_guard(
         "nmp_app_podcast_byok_exchange",
-        err_envelope("panic", "panic").into_raw(),
+        || err_envelope("panic", "panic").into_raw(),
         || {
             let intent = match decode_intent::<ByokExchangeIntent>(intent_json) {
                 Ok(intent) => intent,

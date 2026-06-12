@@ -18,7 +18,7 @@ pub extern "C" fn nmp_app_podcast_validate_openrouter_key(
     }
     ffi_guard(
         "nmp_app_podcast_validate_openrouter_key",
-        err_envelope("panic", None, "panic").into_raw(),
+        || err_envelope("panic", None, "panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.store);
@@ -41,7 +41,7 @@ pub extern "C" fn nmp_app_podcast_validate_elevenlabs_key(
     }
     ffi_guard(
         "nmp_app_podcast_validate_elevenlabs_key",
-        err_envelope("panic", None, "panic").into_raw(),
+        || err_envelope("panic", None, "panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
             let store = Arc::clone(&handle_ref.store);

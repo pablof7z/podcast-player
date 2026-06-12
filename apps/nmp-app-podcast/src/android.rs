@@ -89,7 +89,7 @@ extern "C" fn on_update(context: *mut c_void, bytes: *const u8, len: usize) {
     if context.is_null() || bytes.is_null() || len == 0 {
         return;
     }
-    ffi_guard("on_update", (), || {
+    ffi_guard("on_update", || (), || {
         // SAFETY: `bytes` is valid for `len` bytes for the duration of this
         // call (NMP borrows the frame to the callback).
         // `decode_update_frame` returns a heap-owned C string (or null on a
@@ -128,7 +128,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    ffi_guard("nativeNew", 0jlong, || {
+    ffi_guard("nativeNew", || 0jlong, || {
         let app = nmp_app_new();
         if app.is_null() {
             return 0;
@@ -170,7 +170,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetDataDir<'l>(
     handle: jlong,
     path: JString<'l>,
 ) {
-    ffi_guard("nativeSetDataDir", (), || {
+    ffi_guard("nativeSetDataDir", || (), || {
         let Some(s) = session_ref(handle) else {
             return;
         };
@@ -200,7 +200,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeStart(
     visible_limit: jint,
     emit_hz: jint,
 ) {
-    ffi_guard("nativeStart", (), || {
+    ffi_guard("nativeStart", || (), || {
         if let Some(s) = session_ref(handle) {
             nmp_app_start(s.app, 0, visible_limit as u32, emit_hz as u32);
         }
@@ -214,7 +214,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeStop(
     _class: JClass,
     handle: jlong,
 ) {
-    ffi_guard("nativeStop", (), || {
+    ffi_guard("nativeStop", || (), || {
         if let Some(s) = session_ref(handle) {
             nmp_app_stop(s.app);
         }
@@ -228,7 +228,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeIsAlive(
     _class: JClass,
     handle: jlong,
 ) -> jint {
-    ffi_guard("nativeIsAlive", 0jint, || {
+    ffi_guard("nativeIsAlive", || 0jint, || {
         match session_ref(handle) {
             Some(s) => nmp_app_is_alive(s.app) as jint,
             None => 0,
@@ -244,7 +244,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeLifecycleForegroun
     _class: JClass,
     handle: jlong,
 ) {
-    ffi_guard("nativeLifecycleForeground", (), || {
+    ffi_guard("nativeLifecycleForeground", || (), || {
         if let Some(s) = session_ref(handle) {
             nmp_app_lifecycle_foreground(s.app);
         }
@@ -257,7 +257,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeLifecycleBackgroun
     _class: JClass,
     handle: jlong,
 ) {
-    ffi_guard("nativeLifecycleBackground", (), || {
+    ffi_guard("nativeLifecycleBackground", || (), || {
         if let Some(s) = session_ref(handle) {
             nmp_app_lifecycle_background(s.app);
         }
@@ -276,7 +276,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeDispatchAction<'l>
     action_json: JString<'l>,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeDispatchAction", null, || {
+    ffi_guard("nativeDispatchAction", || null, || {
         let Some(s) = session_ref(handle) else {
             return null;
         };
@@ -323,7 +323,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSigninNsec<'l>(
     handle: jlong,
     nsec: JString<'l>,
 ) {
-    ffi_guard("nativeSigninNsec", (), || {
+    ffi_guard("nativeSigninNsec", || (), || {
         let Some(s) = session_ref(handle) else {
             return;
         };
@@ -350,7 +350,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNextUpdate<'l>(
     handle: jlong,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeNextUpdate", null, || {
+    ffi_guard("nativeNextUpdate", || null, || {
         let Some(s) = session_ref(handle) else {
             return null;
         };
@@ -373,7 +373,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativePodcastSnapshot<'l
     handle: jlong,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativePodcastSnapshot", null, || {
+    ffi_guard("nativePodcastSnapshot", || null, || {
         let Some(s) = session_ref(handle) else {
             return null;
         };
@@ -413,7 +413,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nmpActionDispatch<'l>(
     _class: JClass<'l>,
     action_json: JString<'l>,
 ) -> jint {
-    ffi_guard("nmpActionDispatch", -1jint, || {
+    ffi_guard("nmpActionDispatch", || -1jint, || {
         let Ok(body) = env.get_string(&action_json) else {
             return -1;
         };
@@ -450,7 +450,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
     if handle == 0 {
         return;
     }
-    ffi_guard("nativeFree", (), || {
+    ffi_guard("nativeFree", || (), || {
         // SAFETY: `handle` was produced by `nativeNew`; freed exactly once.
         let s = unsafe { Box::from_raw(handle as *mut Session) };
         nmp_app_stop(s.app);

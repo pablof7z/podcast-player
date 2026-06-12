@@ -31,7 +31,7 @@ extern "C" fn android_capability_callback(
     }
     ffi_guard(
         "android_capability_callback",
-        capability_error_envelope("panic"),
+        || capability_error_envelope("panic"),
         || {
             // SAFETY: registered by nativeSetCapabilityRouter; cleared before
             // drop. AssertUnwindSafe is sound — ptr is null-checked above and
@@ -95,7 +95,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
     handle: jlong,
     router: JObject<'l>,
 ) {
-    ffi_guard("nativeSetCapabilityRouter", (), || {
+    ffi_guard("nativeSetCapabilityRouter", || (), || {
         let Some(s) = super::session_ref(handle) else {
             return;
         };

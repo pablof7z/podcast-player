@@ -40,7 +40,7 @@ fn call_podcast_json_ffi<'l>(
     call: PodcastJsonFn,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("call_podcast_json_ffi", null, || {
+    ffi_guard("call_podcast_json_ffi", || null, || {
         let Some(s) = session_ref(handle) else {
             return null;
         };
@@ -72,7 +72,7 @@ fn call_podcast_global_json_ffi<'l>(
     call: PodcastGlobalJsonFn,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("call_podcast_global_json_ffi", null, || {
+    ffi_guard("call_podcast_global_json_ffi", || null, || {
         let request = match env.get_string(&request_json) {
             Ok(s) => s.to_string_lossy().into_owned(),
             Err(_) => return null,
@@ -98,7 +98,7 @@ fn call_podcast_catalog_ffi<'l>(
     call: PodcastCatalogFn,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
-    ffi_guard("call_podcast_catalog_ffi", null, || {
+    ffi_guard("call_podcast_catalog_ffi", || null, || {
         let Some(s) = session_ref(handle) else {
             return null;
         };

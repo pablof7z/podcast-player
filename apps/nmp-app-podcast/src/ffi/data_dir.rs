@@ -38,7 +38,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
     if path_str.is_empty() {
         return;
     }
-    ffi_guard("nmp_app_podcast_set_data_dir", (), || {
+    ffi_guard("nmp_app_podcast_set_data_dir", || (), || {
         // SAFETY: caller guarantees `handle` is a valid pointer returned by
         // `nmp_app_podcast_register` and not yet freed.
         let handle = unsafe { &*handle };

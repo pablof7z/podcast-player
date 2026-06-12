@@ -42,7 +42,7 @@ pub extern "C" fn nmp_app_podcast_generate_image(
     }
     ffi_guard(
         "nmp_app_podcast_generate_image",
-        err_envelope("panic").into_raw(),
+        || err_envelope("panic").into_raw(),
         || {
             let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
                 Ok(s) => s,

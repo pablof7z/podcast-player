@@ -18,7 +18,7 @@ pub extern "C" fn nmp_app_podcast_elevenlabs_scribe_transcribe(
     }
     ffi_guard(
         "nmp_app_podcast_elevenlabs_scribe_transcribe",
-        err_envelope("panic", None, "panic").into_raw(),
+        || err_envelope("panic", None, "panic").into_raw(),
         || {
             let json_str = match unsafe { CStr::from_ptr(intent_json) }.to_str() {
                 Ok(s) => s,

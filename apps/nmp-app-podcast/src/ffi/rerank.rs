@@ -85,7 +85,7 @@ pub extern "C" fn nmp_app_podcast_rerank(
     }
     ffi_guard(
         "nmp_app_podcast_rerank",
-        static_error("panic", "panic in ffi").into_raw(),
+        || static_error("panic", "panic in ffi").into_raw(),
         || {
             let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
                 Ok(s) => s,

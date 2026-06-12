@@ -102,7 +102,7 @@ pub extern "C" fn nmp_app_podcast_download_report(
     }
     ffi_guard(
         "nmp_app_podcast_download_report",
-        std::ptr::null_mut(),
+        std::ptr::null_mut,
         || {
             let report_str = match unsafe { CStr::from_ptr(report_json) }.to_str() {
                 Ok(s) => s,
