@@ -44,6 +44,20 @@ extension KernelModel {
         into composite: inout PodcastUpdate,
         tracker: inout DomainRevTracker
     ) -> Bool {
+        KernelModel.mergeDomainFramesImpl(frames, into: &composite, tracker: &tracker)
+    }
+
+    /// Pure static implementation — no `KernelModel` instance required.
+    /// Called by the instance method above and directly by `@testable` unit
+    /// tests (via `KernelDomainMergeTests`) so both paths exercise the same
+    /// logic without duplication.
+    @MainActor
+    @discardableResult
+    static func mergeDomainFramesImpl(
+        _ frames: PodcastDomainFrames,
+        into composite: inout PodcastUpdate,
+        tracker: inout DomainRevTracker
+    ) -> Bool {
         var anyAccepted = false
 
         // ── library ──────────────────────────────────────────────────────────
