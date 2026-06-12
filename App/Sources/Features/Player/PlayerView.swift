@@ -123,10 +123,7 @@ struct PlayerView: View {
                     episode: episode,
                     store: store
                 )
-                await AIChapterCompiler.shared.compileIfNeeded(
-                    episodeID: episode.id,
-                    store: store
-                )
+                store.kernelCompileChapters(episodeID: episode.id)
             }
             AutoSnipController.shared.attach(playback: state, store: store)
         }

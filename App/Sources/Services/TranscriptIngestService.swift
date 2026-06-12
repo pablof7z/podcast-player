@@ -430,17 +430,15 @@ final class TranscriptIngestService {
             )
         }
 
-        // STEP 3: Fire-and-forget AI chapter compilation when the episode
-        // lacks publisher chapters. The compiler is internally idempotent and
-        // early-returns when chapters already exist, so re-runs of the ingest
-        // pipeline are cheap. Decoupled from the embed step because chapter
-        // compilation runs even when embeddings can't (no API key). The
-        // combined call produces chapters, per-chapter summaries, and ad
-        // segments in one LLM round trip.
+        // STEP 3: Fire-and-forget AI chapter compilation via the kernel (D0).
+        // The kernel runs FULL or ENRICH-ONLY mode depending on whether publisher
+        // chapters already exist and gates on whether ad detection has already run.
+        // Decoupled from the embed step: chapter compilation runs even when
+        // embeddings can't (no API key).
         let episodeID = episode.id
         Task { @MainActor [weak appStore] in
             guard let appStore else { return }
-            await AIChapterCompiler.shared.compileIfNeeded(episodeID: episodeID, store: appStore)
+            appStore.kernelCompileChapters(episodeID: episodeID)
         }
 
         // STEP 4: Fire-and-forget wiki refresh — auto-trigger pipeline.

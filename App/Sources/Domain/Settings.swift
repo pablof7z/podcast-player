@@ -103,9 +103,9 @@ struct Settings: Codable, Hashable, Sendable {
     /// cheaper model for one-shot categorization without affecting live agent chat.
     var categorizationModel: String = Settings.kernelDefaults.categorizationModel
     var categorizationModelName: String = Settings.kernelDefaults.categorizationModelName
-    /// Model used by `AIChapterCompiler` to synthesise chapter boundaries from
-    /// a ready transcript. Kept distinct from `wikiModel` so users can pick a
-    /// cheaper / faster model for chapter compile without affecting wiki quality.
+    /// Model used by the kernel's `podcast.chapters.compile` action to synthesise
+    /// chapter boundaries from a ready transcript. Kept distinct from `wikiModel`
+    /// so users can pick a cheaper / faster model for compile without affecting wiki quality.
     var chapterCompilationModel: String = Settings.kernelDefaults.chapterCompilationModel
     var chapterCompilationModelName: String = Settings.kernelDefaults.chapterCompilationModelName
     var embeddingsModel: String = Settings.kernelDefaults.embeddingsModel
@@ -209,7 +209,7 @@ struct Settings: Codable, Hashable, Sendable {
     /// sleep timer has armed an end-of-episode stop.
     var autoPlayNext: Bool = Settings.kernelDefaults.autoPlayNext
     /// When `true`, the player auto-seeks past detected ad segments
-    /// (`AIChapterCompiler` output, stored on `Episode.adSegments`).
+    /// (kernel `podcast.chapters.compile` output, stored on `Episode.adSegments`).
     /// Defaults on — ad detection quality is proven. The chapter rail still
     /// flags ad-overlapping chapters visually regardless.
     var autoSkipAds: Bool = Settings.kernelDefaults.autoSkipAdsEnabled

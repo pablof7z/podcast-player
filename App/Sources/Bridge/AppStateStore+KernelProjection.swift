@@ -398,30 +398,6 @@ extension AppStateStore {
             }
         }
 
-        // ── Legacy Swift chapters fallback ────────────────────────────────
-        // For REUSED episodes this is a no-op — they already carry their merged
-        // chapters from the tick that first mapped them. It exists for the
-        // NEW/CHANGED episodes that just came out of `toEpisode`.
-        //
-        // Rust now has a real `podcast.chapters.compile` path and projects
-        // stored chapters. The remaining exception is the legacy Swift
-        // `AIChapterCompiler`, which still writes through `setEpisodeChapters`
-        // without dispatching to Rust. Until those call sites move to the kernel
-        // action, keep prior Swift-written chapters when Rust projects none so
-        // they do not flash empty after a feed-refresh projection.
-        // Tracked in docs/BACKLOG.md.
-        //
-        // Reuses `priorEpisodesByID` from the diff above. Reused (unchanged)
-        // episodes already carry their merged chapters from the tick that first
-        // mapped them, so this only does real work for the newly-mapped ones —
-        // but running it over the whole array is harmless and keeps the fallback
-        // a single, obviously-correct pass.
-        for idx in episodes.indices {
-            guard let prior = priorEpisodesByID[episodes[idx].id] else { continue }
-            if episodes[idx].chapters?.isEmpty != false {
-                episodes[idx].chapters = prior.chapters
-            }
-        }
         // Assign the projected list to the live `self.episodes` stored property
         // inside the batch below (episodes no longer round-trip through `state`).
         var projectedEpisodes = episodes
