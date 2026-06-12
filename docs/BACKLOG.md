@@ -724,6 +724,13 @@ worktrees currently in flight.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
+- ~~**signed-events-fb-bridge.**~~ Done (PR #383): `nmp_app_podcast_decode_update_frame`
+  now decodes the typed `signed_events` FlatBuffer sidecar
+  (`nmp_core::decode_snapshot_typed_projections` + `nmp_core::typed_projections::decode_signed_events`)
+  and injects the result under `v.projections["signed_events"]` so
+  `SignedEventsRegistry.ingest` works unchanged. Absent/malformed sidecar degrades
+  silently (D6). Swift unchanged. Regression since #377 (v0.3.0 typed-first migration).
+
 - ~~**provider-api-keys-no-kernel-handler.**~~ Stale audit entry. Live Rust has
   `SettingsAction::SetProviderApiKeys` and
   `settings_actions.rs` stores the in-memory OpenRouter/Ollama secrets via

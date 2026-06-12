@@ -331,18 +331,16 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
 /// `UpdateEnvelope::Snapshot` now carries a typed [`SnapshotEnvelope`] (Tier-3
 /// fields only: `rev`, `running`, metrics, relay statuses, error toasts).
 ///
-/// As a result the `v` returned here no longer contains a `projections` map.
-/// The iOS shell's `decodePodcastUpdate` guard (`v.projections["podcast.snapshot"]`)
-/// will return nil, causing the push-frame decode path to drop the frame. The
-/// pull path (`nmp_app_podcast_snapshot_rev` + `nmp_app_podcast_snapshot`)
-/// remains correct and continues to deliver `PodcastUpdate` to the shell on
-/// every accepted push notification trigger (`pullPodcastSnapshotIfChanged`).
+/// As a result the `v` returned here no longer contains a `projections["podcast.snapshot"]`
+/// entry. The iOS shell's `decodePodcastUpdate` guard falls through to the pull
+/// path (`nmp_app_podcast_snapshot_rev` + `nmp_app_podcast_snapshot`), which is
+/// driven by `pullPodcastSnapshotIfChanged` on every accepted push notification.
 ///
-/// The `signed_events` typed FlatBuffer sidecar (now a Tier-2 built-in typed
-/// projection — key `"signed_events"`, schema `nmp.signedEvents`) is not yet
-/// bridged from the binary frame into the iOS `SignedEventsRegistry`. Until
-/// that follow-up Swift change lands, `signEventForReturn` results will be
-/// silently dropped. Track under BACKLOG `signed-events-fb-bridge`.
+/// **signed_events bridge:** The `signed_events` Tier-2 typed FlatBuffer sidecar
+/// (key `"signed_events"`, schema `nmp.signedEvents`) is decoded here and
+/// injected under `v.projections["signed_events"]` so the iOS
+/// `SignedEventsRegistry.ingest` path continues to work unchanged. Decode
+/// failure degrades silently (D6 — key absent, never a crash).
 ///
 /// # Safety
 /// `bytes` must point to `len` readable bytes, or be null.
@@ -364,9 +362,9 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
         // PR-B (nmp-v0.3.0): `Snapshot` now carries a typed `SnapshotEnvelope`
         // (Tier-3 fields) instead of the deleted generic `payload:Value`. Build
         // the `v` object from the available typed fields. The `projections` map
-        // is absent — `podcast.snapshot` must be obtained via the pull path
-        // (`nmp_app_podcast_snapshot`), which is driven by the shell's
-        // `pullPodcastSnapshotIfChanged` on every accepted push notification.
+        // carries only the signed_events sidecar — `podcast.snapshot` must be
+        // obtained via the pull path (`nmp_app_podcast_snapshot`), driven by
+        // the shell's `pullPodcastSnapshotIfChanged` on every push frame.
         nmp_core::UpdateEnvelope::Snapshot(env) => {
             let mut v = serde_json::json!({
                 "rev": env.rev,
@@ -380,6 +378,13 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
             if let Some(cat) = env.last_error_category {
                 v["last_error_category"] = serde_json::Value::String(cat);
             }
+            // Bridge the signed_events Tier-2 typed sidecar into
+            // v.projections["signed_events"] so SignedEventsRegistry.ingest
+            // keeps working after the v0.3.0 typed-first migration. Decode
+            // failure degrades silently (D6 — key absent, not a crash).
+            if let Some(signed_events_json) = decode_signed_events_sidecar(slice) {
+                v["projections"] = serde_json::json!({ "signed_events": signed_events_json });
+            }
             serde_json::json!({ "t": "snapshot", "v": v })
         }
         nmp_core::UpdateEnvelope::Panic(panic) => {
@@ -392,10 +397,44 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
     }
 }
 
-// Tests split into snapshot_tests.rs + snapshot_tests_ext.rs; #[path] keeps private items in scope.
+/// Decode the `signed_events` typed FlatBuffer sidecar from a raw update-frame
+/// slice and convert it to the JSON object `SignedEventsRegistry.ingest` expects:
+/// `{ correlation_id: { "ok": true, "signed_json": "..." } }` or
+/// `{ correlation_id: { "ok": false, "error": "..." } }`.
+///
+/// Returns `None` when the sidecar is absent, empty, or malformed (D6 — degrade
+/// silently, never panic).
+fn decode_signed_events_sidecar(slice: &[u8]) -> Option<serde_json::Value> {
+    use nmp_core::typed_projections::{decode_signed_events, SIGNED_EVENTS_SCHEMA_ID};
+
+    let typed = nmp_core::decode_snapshot_typed_projections(slice).ok()?;
+    let entry = typed
+        .into_iter()
+        .find(|e| e.schema_id == SIGNED_EVENTS_SCHEMA_ID)?;
+    let model = decode_signed_events(&entry.payload).ok()?;
+    if model.entries.is_empty() {
+        return None;
+    }
+    let mut map = serde_json::Map::with_capacity(model.entries.len());
+    for (correlation_id, row) in model.entries {
+        let value = if row.ok {
+            serde_json::json!({ "ok": true, "signed_json": row.signed_json.unwrap_or_default() })
+        } else {
+            serde_json::json!({ "ok": false, "error": row.error.unwrap_or_default() })
+        };
+        map.insert(correlation_id, value);
+    }
+    Some(serde_json::Value::Object(map))
+}
+
+// Tests split into snapshot_tests.rs + snapshot_tests_ext.rs + snapshot_decode_tests.rs;
+// #[path] keeps private items in scope.
 #[cfg(test)]
 #[path = "snapshot_tests.rs"]
 mod tests;
 #[cfg(test)]
 #[path = "snapshot_tests_ext.rs"]
 mod tests_ext;
+#[cfg(test)]
+#[path = "snapshot_decode_tests.rs"]
+mod decode_tests;
