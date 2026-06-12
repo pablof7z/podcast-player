@@ -391,8 +391,24 @@ pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
             // v.projections["signed_events"] so SignedEventsRegistry.ingest
             // keeps working after the v0.3.0 typed-first migration. Decode
             // failure degrades silently (D6 — key absent, not a crash).
-            if let Some(signed_events_json) = decode_signed_events_sidecar(slice) {
-                v["projections"] = serde_json::json!({ "signed_events": signed_events_json });
+            //
+            // Also inject all podcast.* domain sidecars under
+            // v.projections[key] so Swift/Android shells can consume per-domain
+            // delta updates without waiting for the pull path.
+            let signed_events_json = decode_signed_events_sidecar(slice);
+            let domain_sidecars = super::snapshot_domain_projections::decode_podcast_domain_sidecars(slice);
+
+            if signed_events_json.is_some() || domain_sidecars.is_some() {
+                let mut projections = serde_json::Map::new();
+                if let Some(se) = signed_events_json {
+                    projections.insert("signed_events".to_string(), se);
+                }
+                if let Some(domains) = domain_sidecars {
+                    for (key, val) in domains {
+                        projections.insert(key, val);
+                    }
+                }
+                v["projections"] = serde_json::Value::Object(projections);
             }
             serde_json::json!({ "t": "snapshot", "v": v })
         }

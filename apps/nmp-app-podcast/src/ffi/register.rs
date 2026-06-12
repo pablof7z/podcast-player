@@ -159,6 +159,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
                 .build()
                 .expect("tokio runtime"),
         ),
+        domain_revs: std::sync::Arc::new(crate::state::DomainRevs::new()),
     };
     // Steps 8-10: pass the shared identity Arc so CommentsState / SocialState
     // can access it without needing a separate clone in register.rs.
@@ -318,26 +319,21 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
     });
 
-    // NOTE: The `register_snapshot_projection_gated("podcast.snapshot", …)` block
-    // that existed here has been deleted (perf/delete-dead-snapshot-projection).
+    // Per-domain typed snapshot projections (perf/domain-sub-projections-kernel).
     //
-    // Since NMP v0.3.0 typed-first (ADR-0044), the Tier-3 frame encoder
-    // (`nmp-core::update_envelope::tier3_frame::encode_snapshot_with_envelope`)
-    // encodes ONLY the typed envelope + typed-projection FlatBuffer sidecars —
-    // it does NOT encode the generic `KernelSnapshot::projections` JSON map.
-    // The `podcast.snapshot` generic push-projection closure therefore produced
-    // output that was silently DISCARDED on every actor tick: multi-MB JSON
-    // serialize on rev-change, multi-MB `Value::clone` in the registry memo on
-    // rev-unchanged — pure actor-thread waste with no consumer.
+    // Each closure runs on the actor thread on every tick (D8 — non-blocking).
+    // It reads the domain's `Arc<AtomicU64>` rev and compares against its own
+    // `last_emitted`; if unchanged, returns `None` so the sidecar is omitted
+    // from the frame entirely — true push-side delta semantics.
     //
-    // Every real consumer (iOS `pullPodcastSnapshotIfChanged` →
-    // `nmp_app_podcast_snapshot`, Android `android.rs`, headless, TUI) uses the
-    // PULL symbol (`nmp_app_podcast_snapshot` / `build_snapshot_payload`), which
-    // is kept intact as the cold-start hydration and fallback path.
+    // The Tier-3 encoder carries typed sidecars verbatim. The shell decodes them
+    // via `nmp_app_podcast_decode_update_frame`, which injects every `podcast.*`
+    // sidecar into `v.projections[key]` — available for future Swift/Android
+    // consumption without touching the pull path.
     //
-    // Per-domain typed sidecars (podcast.library, podcast.playback, …) will be
-    // registered via `register_typed_snapshot_projection` in a follow-up PR
-    // (`perf/domain-sub-projections-kernel`).
+    // The PULL path (`nmp_app_podcast_snapshot` / `build_snapshot_payload`) is
+    // kept intact as cold-start hydration + fallback.
+    super::snapshot_domain_projections::register_domain_projections(app_ref, &handle);
 
     // Ownership: one strong ref is returned to the shell as the opaque handle
     // pointer; the projection closure above holds a second strong ref for the
