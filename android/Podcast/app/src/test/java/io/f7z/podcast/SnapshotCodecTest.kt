@@ -14,47 +14,18 @@ import org.junit.Test
  * enveloped JSON `{"t":"snapshot","v":{...}}` (see
  * `apps/nmp-app-podcast/src/android.rs::on_update` +
  * `nmp_app_podcast_decode_update_frame`). These tests pin the decode contract
- * that makes that loop correct: the envelope unwraps to the same
- * `PodcastSnapshot` the bare projection pull yields, successive frames advance
- * `rev` (so the UI reacts to each emit), and non-snapshot / malformed frames are
- * dropped so a bad frame can never blank or crash the surface.
+ * that makes that loop correct: non-snapshot / malformed frames are dropped so
+ * a bad frame can never blank or crash the surface, and the bare pull path for
+ * the first-paint snapshot continues to work.
+ *
+ * NOTE: As of NMP v0.5.0 (PR #404) the push-frame path uses per-domain typed
+ * sidecars decoded via [SnapshotCodec.decodeDomainFrames] + [SnapshotCodec.mergeFrames].
+ * The old `decodeEnvelope` (single full-snapshot decode from the push envelope)
+ * no longer exists — the full-snapshot decode contract is now covered by
+ * [DomainFrameWireTest]. The tests below focus on the bare pull path and
+ * edge-case envelope handling via [SnapshotCodec.decodeDomainFrames].
  */
 class SnapshotCodecTest {
-
-    @Test
-    fun `push envelope unwraps to the same snapshot as a bare pull`() {
-        // The bare projection payload `podcastSnapshot()` returns off the cache.
-        val bare = """{"running":true,"rev":7,"schema_version":1,"toast":"hi"}"""
-        // The identical projection wrapped in the push-frame envelope that
-        // `nextUpdate()` returns after the kernel decodes its FlatBuffers frame.
-        val enveloped = """{"t":"snapshot","v":$bare}"""
-
-        val fromPull = SnapshotCodec.decode(bare)
-        val fromPush = SnapshotCodec.decodeEnvelope(enveloped)
-
-        assertNotNull(fromPull)
-        assertNotNull(fromPush)
-        // Push delivery must be wire-equivalent to the old pull — same state.
-        assertEquals(fromPull, fromPush)
-        assertEquals(7L, fromPush!!.rev)
-        assertTrue(fromPush.running)
-        assertEquals("hi", fromPush.toast)
-    }
-
-    @Test
-    fun `successive push frames advance the revision`() {
-        // Two frames the kernel would emit in sequence; the loop reacts to each.
-        val frames = listOf(
-            """{"t":"snapshot","v":{"running":true,"rev":1,"schema_version":1}}""",
-            """{"t":"snapshot","v":{"running":true,"rev":2,"schema_version":1}}""",
-        )
-
-        val revs = frames.mapNotNull { SnapshotCodec.decodeEnvelope(it)?.rev }
-
-        // Monotonically increasing rev proves snapshot changes propagate per
-        // emit — no timer involved, one decoded snapshot per pushed frame.
-        assertEquals(listOf(1L, 2L), revs)
-    }
 
     @Test
     fun `non-snapshot envelope tag yields null`() {
@@ -63,16 +34,16 @@ class SnapshotCodecTest {
         // mis-decode it as state.
         val panic = """{"t":"panic","message":"actor died"}"""
 
-        assertNull(SnapshotCodec.decodeEnvelope(panic))
+        assertNull(SnapshotCodec.decodeDomainFrames(panic))
     }
 
     @Test
     fun `malformed or empty input yields null`() {
-        assertNull(SnapshotCodec.decodeEnvelope(null))
-        assertNull(SnapshotCodec.decodeEnvelope(""))
-        assertNull(SnapshotCodec.decodeEnvelope("not json"))
+        assertNull(SnapshotCodec.decodeDomainFrames(null))
+        assertNull(SnapshotCodec.decodeDomainFrames(""))
+        assertNull(SnapshotCodec.decodeDomainFrames("not json"))
         // A snapshot tag with no `v` payload is incomplete — dropped, not crashed.
-        assertNull(SnapshotCodec.decodeEnvelope("""{"t":"snapshot"}"""))
+        assertNull(SnapshotCodec.decodeDomainFrames("""{"t":"snapshot"}"""))
     }
 
     @Test
@@ -123,5 +94,23 @@ class SnapshotCodecTest {
         assertEquals("Launch crash", thread.title)
         assertEquals("open", thread.statusLabel)
         assertEquals("reply1", thread.replies.single().eventId)
+    }
+
+    @Test
+    fun `successive push frames each yield distinct domain frames`() {
+        // Two playback-only push frames the kernel would emit in sequence;
+        // each must decode to a non-null PodcastDomainFrames independently.
+        val frames = listOf(
+            """{"t":"snapshot","v":{"running":true,"rev":1,"projections":{"podcast.playback":{"rev":1,"now_playing":null,"queue":[]}}}}""",
+            """{"t":"snapshot","v":{"running":true,"rev":2,"projections":{"podcast.playback":{"rev":2,"now_playing":null,"queue":[]}}}}""",
+        )
+
+        val revs = frames
+            .mapNotNull { SnapshotCodec.decodeDomainFrames(it) }
+            .mapNotNull { it.playback?.rev }
+
+        // Each emit produces a distinct PodcastDomainFrames with monotonically
+        // increasing playback.rev — proves the push loop reacts per-emit.
+        assertEquals(listOf(1L, 2L), revs)
     }
 }
