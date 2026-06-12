@@ -1,0 +1,363 @@
+package io.f7z.podcast
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+/**
+ * Per-domain push-frame envelope data classes.
+ *
+ * The kernel (NMP v0.5.0) emits typed sidecars via
+ * `nmp_app_podcast_decode_update_frame`, which injects them into
+ * `v.projections["podcast.<domain>"]` in the bridge JSON. The slim top-level
+ * `v` carries only `rev`/`running`/`schema_version` and MUST NOT be decoded
+ * as a full PodcastSnapshot — that caused the empty-library clobber bug.
+ *
+ * CONTRACT:
+ *  - Each frame carries a `rev` field (monotonically increasing per-domain).
+ *  - Absent domains in a given push frame are NOT present in `projections`;
+ *    they MUST NOT overwrite prior state (delta suppression).
+ *  - Tombstone shape: `{"rev":N,"<primary_field>":null}` — the primary field
+ *    decodes as null, signalling the domain is now empty (sign-out, zero subs).
+ *  - kotlinx-serialization `@SerialName` is used for snake_case fields;
+ *    ignoreUnknownKeys = true for forward compat.
+ *
+ * Domain builders in `apps/nmp-app-podcast/src/ffi/snapshot_domain_projections.rs`:
+ *   podcast.library   — rev, library, categories, search_results, nostr_results,
+ *                       owned_podcasts, inbox, inbox_triage_in_progress
+ *   podcast.playback  — rev, now_playing, queue
+ *   podcast.downloads — rev, downloads (null = no active downloads / tombstone)
+ *   podcast.settings  — rev, settings, configured_relays
+ *   podcast.identity  — rev, active_account (null = signed out / tombstone)
+ *   podcast.widget    — rev, widget (null = nothing to show / tombstone)
+ *   podcast.misc      — rev, agent_tasks, feedback_threads, feedback_events, voice,
+ *                       agent, wiki_articles, wiki_search_results, picks,
+ *                       knowledge_search_results, memory_facts, clips, social,
+ *                       agent_notes, comments, agent_context
+ */
+
+// ── Schema IDs ────────────────────────────────────────────────────────────────
+
+object DomainSchema {
+    const val LIBRARY   = "podcast.library"
+    const val PLAYBACK  = "podcast.playback"
+    const val DOWNLOADS = "podcast.downloads"
+    const val SETTINGS  = "podcast.settings"
+    const val IDENTITY  = "podcast.identity"
+    const val WIDGET    = "podcast.widget"
+    const val MISC      = "podcast.misc"
+}
+
+// ── podcast.library ───────────────────────────────────────────────────────────
+
+@Serializable
+data class LibraryDomainFrame(
+    val rev: Long = 0,
+    /** null = tombstone (all-unsubscribed or empty state). */
+    val library: List<PodcastSummary>? = null,
+    @SerialName("search_results") val searchResults: List<PodcastSummary>? = null,
+    val inbox: List<InboxItem>? = null,
+    @SerialName("inbox_triage_in_progress") val inboxTriageInProgress: Boolean? = null,
+)
+
+// ── podcast.playback ──────────────────────────────────────────────────────────
+
+@Serializable
+data class PlaybackDomainFrame(
+    val rev: Long = 0,
+    @SerialName("now_playing") val nowPlaying: NowPlayingState? = null,
+    val queue: List<EpisodeSummary>? = null,
+)
+
+// ── podcast.downloads ─────────────────────────────────────────────────────────
+
+@Serializable
+data class DownloadsDomainFrame(
+    val rev: Long = 0,
+    /** null = tombstone (all downloads cleared). */
+    val downloads: DownloadQueueSnapshot? = null,
+)
+
+// ── podcast.settings ─────────────────────────────────────────────────────────
+
+@Serializable
+data class SettingsDomainFrame(
+    val rev: Long = 0,
+    val settings: SettingsSnapshot? = null,
+)
+
+// ── podcast.identity ─────────────────────────────────────────────────────────
+
+@Serializable
+data class IdentityDomainFrame(
+    val rev: Long = 0,
+    /** null = tombstone (signed out / no active account). */
+    @SerialName("active_account") val activeAccount: AccountSummary? = null,
+)
+
+// ── podcast.widget ────────────────────────────────────────────────────────────
+
+@Serializable
+data class WidgetDomainFrame(
+    val rev: Long = 0,
+    /** null = tombstone (nothing to show). */
+    val widget: WidgetSnapshot? = null,
+)
+
+// ── podcast.misc ──────────────────────────────────────────────────────────────
+
+@Serializable
+data class MiscDomainFrame(
+    val rev: Long = 0,
+    @SerialName("agent_tasks") val agentTasks: List<AgentTaskSummary>? = null,
+    @SerialName("feedback_events") val feedbackEvents: List<JsonElement>? = null,
+    @SerialName("feedback_threads") val feedbackThreads: List<FeedbackThreadDto>? = null,
+    val voice: VoiceStateSnapshot? = null,
+    val agent: AgentSnapshot? = null,
+)
+
+// ── Composite push-frame result ───────────────────────────────────────────────
+
+/**
+ * All per-domain frames extracted from one push frame. Only domains present in
+ * the kernel's delta emit carry a non-null value. Absent domains MUST NOT
+ * overwrite the last-accepted composite state.
+ */
+data class PodcastDomainFrames(
+    val library:   LibraryDomainFrame? = null,
+    val playback:  PlaybackDomainFrame? = null,
+    val downloads: DownloadsDomainFrame? = null,
+    val settings:  SettingsDomainFrame? = null,
+    val identity:  IdentityDomainFrame? = null,
+    val widget:    WidgetDomainFrame? = null,
+    val misc:      MiscDomainFrame? = null,
+) {
+    val hasAnyDomain: Boolean get() =
+        library != null || playback != null || downloads != null ||
+        settings != null || identity != null || widget != null || misc != null
+
+    fun presentDomainNames(): String {
+        val names = mutableListOf<String>()
+        if (library   != null) names.add("library")
+        if (playback  != null) names.add("playback")
+        if (downloads != null) names.add("downloads")
+        if (settings  != null) names.add("settings")
+        if (identity  != null) names.add("identity")
+        if (widget    != null) names.add("widget")
+        if (misc      != null) names.add("misc")
+        return if (names.isEmpty()) "none" else names.joinToString(",")
+    }
+}
+
+// ── Per-domain rev tracker (drop-guard) ──────────────────────────────────────
+
+/**
+ * Holds the last-applied rev for each domain. A frame whose rev ≤ lastApplied
+ * is stale and MUST be dropped without touching the composite snapshot.
+ */
+data class DomainRevTracker(
+    var library:   Long = 0L,
+    var playback:  Long = 0L,
+    var downloads: Long = 0L,
+    var settings:  Long = 0L,
+    var identity:  Long = 0L,
+    var widget:    Long = 0L,
+    var misc:      Long = 0L,
+)
+
+// ── Updated SnapshotCodec ─────────────────────────────────────────────────────
+
+/**
+ * Lazy JSON parser shared by the snapshot consumer.
+ *
+ * NMP v0.5.0 push frames carry per-domain typed sidecars injected by
+ * `nmp_app_podcast_decode_update_frame` under `v.projections[schema_id]`.
+ * The slim `v` envelope itself carries only `rev`/`running`/`schema_version`
+ * and MUST NOT be decoded directly as a PodcastSnapshot.
+ *
+ * `decodeDomainFrames` is the correct entry point for push frames.
+ * `decode` remains for the initial cold-start pull from `podcastSnapshot()`.
+ */
+object SnapshotCodec {
+    val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    /**
+     * Decode a bare projection payload — the shape `KernelBridge.podcastSnapshot()`
+     * returns straight off the projection cache. Used for the initial cold-start paint.
+     */
+    fun decode(raw: String?): PodcastSnapshot? =
+        raw?.let { runCatching { json.decodeFromString<PodcastSnapshot>(it) }.getOrNull() }
+
+    /**
+     * Decode per-domain sidecars from a reactive push-frame envelope.
+     *
+     * The envelope shape is:
+     * ```json
+     * { "t": "snapshot", "v": { "rev": N, "running": true,
+     *     "projections": {
+     *         "podcast.playback": { "rev": N, "now_playing": {...}, "queue": [...] },
+     *         "podcast.library":  { "rev": N, "library": [...], ... },
+     *         ...
+     *     }
+     * }}
+     * ```
+     *
+     * Only domains whose sidecar is present in `projections` are populated.
+     * Absent domains → null field → caller MUST NOT overwrite prior state.
+     * Tombstone: `{"rev":N,"<field>":null}` — primary field decodes null → clear slice.
+     *
+     * Returns null when the envelope is not a "snapshot" frame, is unparseable,
+     * or carries no podcast.* projections — D6 degrade, never throws.
+     */
+    fun decodeDomainFrames(raw: String?): PodcastDomainFrames? {
+        raw ?: return null
+        return runCatching {
+            val outerObj = json.parseToJsonElement(raw) as? JsonObject ?: return null
+            val t = outerObj["t"]?.jsonPrimitive?.content ?: return null
+            if (t != "snapshot") return null
+
+            val v = outerObj["v"]?.jsonObject ?: return null
+            val projections = v["projections"]?.jsonObject ?: return null
+
+            fun <T> tryDecode(key: String, deserializer: DeserializationStrategy<T>): T? {
+                val elem = projections[key] ?: return null
+                return runCatching { json.decodeFromJsonElement(deserializer, elem) }.getOrNull()
+            }
+
+            val library   = tryDecode(DomainSchema.LIBRARY,   LibraryDomainFrame.serializer())
+            val playback  = tryDecode(DomainSchema.PLAYBACK,  PlaybackDomainFrame.serializer())
+            val downloads = tryDecode(DomainSchema.DOWNLOADS, DownloadsDomainFrame.serializer())
+            val settings  = tryDecode(DomainSchema.SETTINGS,  SettingsDomainFrame.serializer())
+            val identity  = tryDecode(DomainSchema.IDENTITY,  IdentityDomainFrame.serializer())
+            val widget    = tryDecode(DomainSchema.WIDGET,     WidgetDomainFrame.serializer())
+            val misc      = tryDecode(DomainSchema.MISC,       MiscDomainFrame.serializer())
+
+            val frames = PodcastDomainFrames(
+                library   = library,
+                playback  = playback,
+                downloads = downloads,
+                settings  = settings,
+                identity  = identity,
+                widget    = widget,
+                misc      = misc,
+            )
+            if (!frames.hasAnyDomain) null else frames
+        }.getOrNull()
+    }
+
+    /**
+     * Merge present domain frames into a held [PodcastSnapshot] via copy().
+     *
+     * Per-domain drop-guard: if frame.rev <= tracker[domain], the frame is
+     * stale and that domain slice is skipped (no clobber). The tracker is
+     * updated in-place for each accepted domain.
+     *
+     * Tombstone handling: a domain's primary field arriving as null clears
+     * that slice (e.g. identity.activeAccount = null → signed out).
+     *
+     * Returns the updated snapshot (may be the same instance if all domains
+     * were stale), plus a flag indicating whether any domain was accepted.
+     */
+    fun mergeFrames(
+        frames: PodcastDomainFrames,
+        current: PodcastSnapshot,
+        tracker: DomainRevTracker,
+    ): Pair<PodcastSnapshot, Boolean> {
+        var snap = current
+        var anyAccepted = false
+
+        // ── library ──────────────────────────────────────────────────────────
+        frames.library?.let { lib ->
+            if (lib.rev > tracker.library) {
+                tracker.library = lib.rev
+                anyAccepted = true
+                snap = snap.copy(
+                    // null = tombstone → clear to empty list
+                    library  = lib.library ?: emptyList(),
+                    podcasts = lib.library ?: emptyList(),
+                    searchResults      = lib.searchResults ?: emptyList(),
+                    inbox              = lib.inbox ?: emptyList(),
+                    inboxTriageInProgress = lib.inboxTriageInProgress ?: false,
+                )
+            }
+        }
+
+        // ── playback ─────────────────────────────────────────────────────────
+        frames.playback?.let { play ->
+            if (play.rev > tracker.playback) {
+                tracker.playback = play.rev
+                anyAccepted = true
+                snap = snap.copy(
+                    nowPlaying = play.nowPlaying,
+                    queue      = play.queue ?: emptyList(),
+                )
+            }
+        }
+
+        // ── downloads ────────────────────────────────────────────────────────
+        frames.downloads?.let { dl ->
+            if (dl.rev > tracker.downloads) {
+                tracker.downloads = dl.rev
+                anyAccepted = true
+                // null = tombstone → no active downloads
+                snap = snap.copy(downloads = dl.downloads)
+            }
+        }
+
+        // ── settings ─────────────────────────────────────────────────────────
+        frames.settings?.let { sett ->
+            if (sett.rev > tracker.settings) {
+                tracker.settings = sett.rev
+                anyAccepted = true
+                if (sett.settings != null) {
+                    snap = snap.copy(settings = sett.settings)
+                }
+            }
+        }
+
+        // ── identity ─────────────────────────────────────────────────────────
+        frames.identity?.let { ident ->
+            if (ident.rev > tracker.identity) {
+                tracker.identity = ident.rev
+                anyAccepted = true
+                // null = tombstone → signed out
+                snap = snap.copy(activeAccount = ident.activeAccount)
+            }
+        }
+
+        // ── widget ───────────────────────────────────────────────────────────
+        frames.widget?.let { wid ->
+            if (wid.rev > tracker.widget) {
+                tracker.widget = wid.rev
+                anyAccepted = true
+                // null = tombstone → nothing to show
+                snap = snap.copy(widget = wid.widget)
+            }
+        }
+
+        // ── misc ─────────────────────────────────────────────────────────────
+        frames.misc?.let { m ->
+            if (m.rev > tracker.misc) {
+                tracker.misc = m.rev
+                anyAccepted = true
+                snap = snap.copy(
+                    agentTasks      = m.agentTasks ?: snap.agentTasks,
+                    feedbackEvents  = m.feedbackEvents ?: snap.feedbackEvents,
+                    feedbackThreads = m.feedbackThreads ?: snap.feedbackThreads,
+                    voice           = m.voice ?: snap.voice,
+                    agent           = m.agent ?: snap.agent,
+                )
+            }
+        }
+
+        return Pair(snap, anyAccepted)
+    }
+}

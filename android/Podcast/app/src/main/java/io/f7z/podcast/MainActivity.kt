@@ -95,6 +95,10 @@ private fun PodcastRoot() {
         AndroidCapabilityRouter(audio = audio, http = http)
     }
     var snapshot by remember { mutableStateOf<PodcastSnapshot?>(null) }
+    // Per-domain rev tracker: mutable reference shared by the frame loop.
+    // Each domain's rev is advanced when a sidecar is accepted; stale/duplicate
+    // frames (rev <= last applied) are silently dropped per the drop-guard.
+    val domainRevTracker = remember { DomainRevTracker() }
     var feedbackVisible by rememberSaveable { mutableStateOf(false) }
 
     DisposableEffect(bridge, audio, download, http, router) {
@@ -147,12 +151,22 @@ private fun PodcastRoot() {
         // on the Rust-side `recv` (≤250 ms bounded so cancellation is prompt) and
         // returns the moment a new frame arrives — reactive, not timed. A `null`
         // return means "no new frame yet"; we re-park without touching state.
+        //
+        // NMP v0.5.0 per-domain push path: the slim `v` envelope carries only
+        // `rev`/`running`/`schema_version`. The real domain payloads arrive as
+        // typed sidecars under `v.projections["podcast.*"]`. We decode whichever
+        // domains are present and MERGE them into the held snapshot via copy(),
+        // leaving absent-domain slices untouched (no more whole-snapshot clobber).
         while (true) {
             coroutineContext.ensureActive()
             val raw = withContext(Dispatchers.IO) { bridge.nextUpdate() } ?: continue
-            val next = SnapshotCodec.decodeEnvelope(raw) ?: continue
-            snapshot = next
-            download.reconcile(next.downloads?.active)
+            val frames = SnapshotCodec.decodeDomainFrames(raw) ?: continue
+            val current = snapshot ?: PodcastSnapshot()
+            val (merged, anyAccepted) = SnapshotCodec.mergeFrames(frames, current, domainRevTracker)
+            if (anyAccepted) {
+                snapshot = merged
+                download.reconcile(merged.downloads?.active)
+            }
         }
     }
 
