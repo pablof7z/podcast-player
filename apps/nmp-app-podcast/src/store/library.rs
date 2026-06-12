@@ -325,6 +325,62 @@ impl PodcastStore {
         &self.local_paths
     }
 
+    /// Find the `PodcastId` of the feedless show keyed by `owner_pubkey_hex`.
+    ///
+    /// Used by [`NostrEpisodesObserver`] to route inbound `kind:54` events to
+    /// the right podcast row without holding the store lock across I/O.
+    pub fn podcast_id_for_pubkey(&self, pubkey_hex: &str) -> Option<PodcastId> {
+        self.podcasts
+            .values()
+            .find(|p| p.owner_pubkey_hex.as_deref() == Some(pubkey_hex))
+            .map(|p| p.id)
+    }
+
+    /// Upsert a feedless (no RSS `feed_url`) show row keyed by `owner_pubkey_hex`,
+    /// then upsert the given episode into its episode list.
+    ///
+    /// If no podcast row with that pubkey exists, a minimal one is created
+    /// (followed, no feed) so the existing snapshot projection / playback /
+    /// download pipeline picks it up with zero changes — the show appears in the
+    /// library as a subscribed feedless row. Re-entrant on pubkey: a second
+    /// episode for the same show updates the existing row.
+    ///
+    /// Episode dedup is by `episode.id` — a re-arrival updates the row in place
+    /// rather than appending a duplicate.
+    pub fn upsert_feedless_episode(
+        &mut self,
+        owner_pubkey_hex: &str,
+        show_title: &str,
+        episode: Episode,
+    ) {
+        // Find or create the podcast row for this pubkey.
+        let podcast_id = if let Some(id) = self.podcast_id_for_pubkey(owner_pubkey_hex) {
+            id
+        } else {
+            let id = PodcastId::new(uuid::Uuid::new_v5(
+                &uuid::Uuid::NAMESPACE_URL,
+                format!("nostr:show:{owner_pubkey_hex}").as_bytes(),
+            ));
+            let mut podcast = Podcast::new(show_title.to_string());
+            podcast.id = id;
+            podcast.owner_pubkey_hex = Some(owner_pubkey_hex.to_string());
+            podcast.nostr_coordinate =
+                Some(format!("{}:{owner_pubkey_hex}", podcast_discovery::KIND_NIP_F4_SHOW));
+            self.podcasts.insert(id, podcast);
+            self.episodes.entry(id).or_default();
+            self.followed_podcasts.insert(id);
+            id
+        };
+
+        // Upsert the episode: update in place if the id already exists.
+        let eps = self.episodes.entry(podcast_id).or_default();
+        match eps.iter_mut().find(|e| e.id == episode.id) {
+            Some(existing) => *existing = episode,
+            None => eps.push(episode),
+        }
+        self.persist();
+    }
+
     /// Reverse-lookup: find the episode_id whose NIP-73 anchor matches
     /// `anchor` (`"podcast:item:guid:<guid>"`). Used by [`CommentsObserver`]
     /// to route inbound kind:1111 events to the right cache slot.
