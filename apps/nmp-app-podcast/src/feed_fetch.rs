@@ -33,6 +33,7 @@ use url::Url;
 use crate::host_op_handler_helpers::merge_episodes;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::state::categories::CategoriesState;
+use crate::state::inbox::InboxState;
 use crate::state::picks::PicksState;
 use crate::store::PodcastStore;
 
@@ -71,6 +72,11 @@ pub(crate) struct PendingFeedFetch {
 /// Steps 3+4: holds `Arc<PicksState>` and `Arc<CategoriesState>` directly
 /// instead of individual Arc clones — eliminates the duplicate guard races and
 /// keeps the constructor under the 7-argument limit.
+///
+/// D8 re-homing: holds `Arc<InboxState>` so `apply_subscribe_result` can call
+/// `maybe_enqueue_triage` after fresh episodes land — completing the D8 trigger
+/// re-homing started in PR #383.  The coordinator now has 6 fields (struct) +
+/// `pending`; still under the 7-arg function limit.
 pub(crate) struct FeedFetchCoordinator {
     pending: Mutex<HashMap<String, PendingFeedFetch>>,
     store: Arc<Mutex<PodcastStore>>,
@@ -78,21 +84,25 @@ pub(crate) struct FeedFetchCoordinator {
     snapshot_signal: Option<SnapshotUpdateSignal>,
     categories: Arc<CategoriesState>,
     picks: Arc<PicksState>,
+    inbox: Arc<InboxState>,
 }
 
 impl FeedFetchCoordinator {
     /// Build a coordinator over the kernel's shared state.
     ///
-    /// Pass `Arc::clone(&app_state.categories_arc)` and
-    /// `Arc::clone(&app_state.picks_arc)`.  The substates own the canonical
-    /// guards; holding them directly eliminates the duplicate-guard races
-    /// described in Steps 3 and 4.
+    /// Pass `Arc::clone(&app_state.categories_arc)`,
+    /// `Arc::clone(&app_state.picks_arc)`, and `Arc::clone(&app_state.inbox)`.
+    /// The substates own the canonical guards; holding them directly eliminates
+    /// the duplicate-guard races described in Steps 3 and 4.
+    ///
+    /// Arg count: 6 (below the 7-arg clippy limit).
     pub(crate) fn new(
         store: Arc<Mutex<PodcastStore>>,
         rev: Arc<AtomicU64>,
         snapshot_signal: Option<SnapshotUpdateSignal>,
         categories: Arc<CategoriesState>,
         picks: Arc<PicksState>,
+        inbox: Arc<InboxState>,
     ) -> Self {
         Self {
             pending: Mutex::new(HashMap::new()),
@@ -101,6 +111,7 @@ impl FeedFetchCoordinator {
             snapshot_signal,
             categories,
             picks,
+            inbox,
         }
     }
 
@@ -172,9 +183,16 @@ impl FeedFetchCoordinator {
         // pointer — so they are safe from the transport thread. They no-op
         // without a snapshot signal (headless / unit-test handles).
         // Steps 3+4: use canonical substates so guards are shared (single pass).
+        //
+        // D8 re-homing: also enqueue inbox triage so freshly-subscribed / OPML-
+        // imported episodes are triaged immediately (previously only happened on
+        // the next foreground refresh).  Gated identically to the adjacent
+        // auto_categorize / auto_refresh_picks calls — same transport-thread
+        // safety, same snapshot-signal guard, same internally-idempotent no-op.
         if self.snapshot_signal.is_some() {
             let _ = self.categories.auto_run();
             let _ = self.picks.auto_refresh();
+            self.inbox.maybe_enqueue_triage();
         }
     }
 
@@ -200,7 +218,8 @@ impl FeedFetchCoordinator {
             infra.rev.clone(),
             None,
             Arc::new(CategoriesState::for_test(store.clone())),
-            Arc::new(PicksState::for_test(store)),
+            Arc::new(PicksState::for_test(store.clone())),
+            Arc::new(InboxState::for_test()),
         ))
     }
 }
