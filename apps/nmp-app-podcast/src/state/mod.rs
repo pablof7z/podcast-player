@@ -65,14 +65,64 @@ use crate::snapshot_signal::SnapshotUpdateSignal;
 
 pub use slot::{Derived, Durability, Persisted, Session, Slot};
 
+// ── DomainRevs ────────────────────────────────────────────────────────────────
+
+/// Per-domain snapshot revision counters.
+///
+/// Each counter tracks when a specific domain's state last changed.
+/// The push-side typed-projection closures compare against `last_emitted`
+/// and return `None` (omit the sidecar) when unchanged — giving true
+/// per-domain delta semantics without re-serialising the whole snapshot.
+///
+/// Every domain-specific mutation MUST bump its domain rev **and** the
+/// global rev (`infra.rev`) so the pull path continues to work correctly.
+/// Use `infra.bump_domain(domain_rev)` which does both atomically.
+///
+/// ## Domain assignment
+///
+/// | Counter | Domain / Key | State sources |
+/// |---|---|---|
+/// | `library` | `podcast.library` | store (podcasts + episodes + categories) |
+/// | `playback` | `podcast.playback` | now_playing + queue |
+/// | `downloads` | `podcast.downloads` | download_queue |
+/// | `settings` | `podcast.settings` | store settings |
+/// | `identity` | `podcast.identity` | identity store |
+/// | `widget` | `podcast.widget` | player state + library (derived) |
+/// | `misc` | `podcast.misc` | everything else (wiki/picks/clips/transcripts/…) |
+#[derive(Clone)]
+pub struct DomainRevs {
+    pub library: Arc<AtomicU64>,
+    pub playback: Arc<AtomicU64>,
+    pub downloads: Arc<AtomicU64>,
+    pub settings: Arc<AtomicU64>,
+    pub identity: Arc<AtomicU64>,
+    pub widget: Arc<AtomicU64>,
+    pub misc: Arc<AtomicU64>,
+}
+
+impl DomainRevs {
+    pub fn new() -> Self {
+        // Start at 1 so the first emit always fires (closures start last_emitted at 0).
+        Self {
+            library: Arc::new(AtomicU64::new(1)),
+            playback: Arc::new(AtomicU64::new(1)),
+            downloads: Arc::new(AtomicU64::new(1)),
+            settings: Arc::new(AtomicU64::new(1)),
+            identity: Arc::new(AtomicU64::new(1)),
+            widget: Arc::new(AtomicU64::new(1)),
+            misc: Arc::new(AtomicU64::new(1)),
+        }
+    }
+}
+
 // ── Infra ─────────────────────────────────────────────────────────────────────
 
 /// Cross-cutting infrastructure every substate needs to bump the snapshot and
 /// spawn off-actor work.
 ///
-/// `Infra` is cheap to clone (three `Arc` clones) and is injected into every
-/// substate at construction so substate methods need no extra parameters to
-/// bump `rev`.
+/// `Infra` is cheap to clone (three `Arc` clones + one shared `DomainRevs`)
+/// and is injected into every substate at construction so substate methods
+/// need no extra parameters to bump `rev`.
 ///
 /// ## Rev-bump discipline
 ///
@@ -84,6 +134,8 @@ pub struct Infra {
     pub rev: Arc<AtomicU64>,
     pub(crate) signal: Option<SnapshotUpdateSignal>,
     pub runtime: Arc<Runtime>,
+    /// Per-domain revision counters for push-side delta projections.
+    pub domain_revs: Arc<DomainRevs>,
 }
 
 impl Infra {
@@ -113,6 +165,17 @@ impl Infra {
         }
     }
 
+    /// Bump both the supplied domain rev and the global rev.
+    ///
+    /// Use this instead of `bump()` whenever the mutation belongs to a specific
+    /// push domain (library, playback, downloads, settings, identity, widget,
+    /// misc).  The global rev must also advance so the pull path
+    /// (`nmp_app_podcast_snapshot`) continues to serve correct data.
+    pub fn bump_domain(&self, domain_rev: &Arc<AtomicU64>) {
+        domain_rev.fetch_add(1, Ordering::Relaxed);
+        self.bump();
+    }
+
     /// Read the current rev (for test assertions).
     #[cfg(test)]
     pub fn rev(&self) -> u64 {
@@ -132,6 +195,7 @@ impl Infra {
             rev: Arc::new(AtomicU64::new(1)),
             signal: None,
             runtime: Arc::new(rt),
+            domain_revs: Arc::new(DomainRevs::new()),
         }
     }
 
@@ -147,6 +211,7 @@ impl Infra {
             rev,
             signal: None,
             runtime: Arc::new(rt),
+            domain_revs: Arc::new(DomainRevs::new()),
         }
     }
 }

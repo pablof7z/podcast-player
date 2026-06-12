@@ -64,6 +64,7 @@ pub(crate) mod relay_persist;
 mod rerank;
 pub(crate) mod snapshot;
 mod snapshot_categories;
+pub(crate) mod snapshot_domain_projections;
 mod snapshot_downloads;
 mod snapshot_identity;
 mod snapshot_library;
