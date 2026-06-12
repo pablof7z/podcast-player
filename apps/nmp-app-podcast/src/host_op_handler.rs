@@ -26,7 +26,7 @@ use tokio::runtime::Runtime;
 
 use nmp_ffi::NmpApp;
 
-use crate::feed_fetch::FeedFetchCoordinator;
+// FeedFetchCoordinator removed in Step 16 — now in state.feed_fetch.
 use crate::snapshot_signal::SnapshotUpdateSignal;
 
 mod dispatch;
@@ -94,14 +94,8 @@ pub struct PodcastHostOpHandler {
     /// `ffi::register` so all host-op handlers share one multi-thread scheduler.
     /// Used by wiki synthesis, agent chat, inbox triage, and social graph fetches.
     pub(crate) runtime: Arc<Runtime>,
-    /// Coordinates optimistic-subscribe async feed fetches. Shared with
-    /// `PodcastHandle` (whose HTTP-report FFI applies the results); this handler
-    /// registers a pending fetch then fire-and-forget dispatches the async HTTP
-    /// command on the actor thread.
-    pub(crate) feed_fetch: Arc<FeedFetchCoordinator>,
-    /// App-scoped feedback runtime. Shared with `PodcastHandle` so actions,
-    /// observer pushes, and snapshots read the same cache.
-    pub(crate) feedback: nmp_feedback::FeedbackRuntime,
+    // feed_fetch removed in Step 16 — now accessed via `state.feed_fetch`.
+    // feedback removed in Step 16 — now accessed via `state.feedback`.
     pub(crate) snapshot_signal: Option<SnapshotUpdateSignal>,
 }
 
@@ -114,22 +108,18 @@ unsafe impl Send for PodcastHostOpHandler {}
 unsafe impl Sync for PodcastHostOpHandler {}
 
 impl PodcastHostOpHandler {
-    #[allow(clippy::too_many_arguments)]
+    // Step 16: feed_fetch + feedback removed from constructor — now in state.
     pub fn new(
         app: *mut NmpApp,
         state: Arc<PodcastAppState>,
         rev: Arc<AtomicU64>,
         runtime: Arc<Runtime>,
-        feed_fetch: Arc<FeedFetchCoordinator>,
-        feedback: nmp_feedback::FeedbackRuntime,
     ) -> Self {
         Self {
             app,
             state,
             rev,
             runtime,
-            feed_fetch,
-            feedback,
             snapshot_signal: None,
         }
     }

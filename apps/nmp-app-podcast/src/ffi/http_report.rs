@@ -61,7 +61,8 @@ pub extern "C" fn nmp_app_podcast_http_report(
         // Runs on the platform transport thread — `apply_report` touches only the
         // shared store / signal Arcs, never `*mut NmpApp`.
         let handle_ref = unsafe { &*handle };
-        handle_ref.feed_fetch.apply_report(report);
+        // Step 16: feed_fetch is now in state.feed_fetch.
+        handle_ref.state.feed_fetch.apply_report(report);
         std::ptr::null_mut()
     })
 }

@@ -24,22 +24,19 @@ use uuid::Uuid;
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 16: feedback injected; feed_fetch + feedback removed from handler::new.
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
+        feedback_runtime(rev.clone()),
     ));
-    // Steps 8-14: all substates removed from constructor —
-    // player_actor, queue, download_queue now owned by state.playback (Step 14).
-    // Step 15: store + identity removed from PodcastHostOpHandler::new —
-    // now accessed via state.library.store / state.library.identity.
+    // Steps 8-16: all substates in PodcastAppState.
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        rev.clone(),
+        rev,
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        crate::feed_fetch::FeedFetchCoordinator::new_test(),
-        feedback_runtime(rev),
     )
 }
 

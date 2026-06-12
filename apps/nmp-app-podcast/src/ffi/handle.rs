@@ -82,19 +82,12 @@ pub struct PodcastHandle {
     // social removed in Step 10 — now owned by `state.social` (SocialState).
     // agent_notes removed in Step 10 — dead duplicate Arc; observer now shares
     // from `state.social.agent_notes` via register.rs.
-    /// In-app feedback runtime. The app owns only its project coordinate;
-    /// `nmp-feedback` owns the relay-pinned interest, publish tags, event cache,
-    /// and thread projection. Empty until the first `FetchFeedback` dispatch.
-    pub(crate) feedback: nmp_feedback::FeedbackRuntime,
+    // feedback removed in Step 16 — now owned by state.feedback (FeedbackRuntime).
+    // feed_fetch removed in Step 16 — now owned by state.feed_fetch (FeedFetchCoordinator).
     /// Shared multi-thread Tokio runtime (same `Arc` the host-op handler and
     /// voice manager hold). Kept here for other off-actor work (e.g. wiki,
     /// social). Triage spawning has moved to InboxState (Step 7).
     pub(super) runtime: Arc<Runtime>,
-    /// Optimistic-subscribe async feed-fetch coordinator (same `Arc` the
-    /// host-op handler holds). The HTTP-report FFI (`nmp_app_podcast_http_report`)
-    /// resolves pending feed fetches through this from the platform transport
-    /// thread.
-    pub(crate) feed_fetch: Arc<crate::feed_fetch::FeedFetchCoordinator>,
 }
 
 // SAFETY: the auto-derived `!Send`/`!Sync` comes solely from the

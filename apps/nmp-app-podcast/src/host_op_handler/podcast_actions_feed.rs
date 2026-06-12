@@ -105,7 +105,8 @@ impl PodcastHostOpHandler {
         };
         let req = build_feed_request(&url, cache.as_ref());
         let request_id = Uuid::new_v4().to_string();
-        self.feed_fetch.register(
+        // Step 16: feed_fetch is now in state.feed_fetch.
+        self.state.feed_fetch.register(
             request_id.clone(),
             PendingFeedFetch {
                 mode: FeedFetchMode::Subscribe,

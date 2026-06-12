@@ -210,14 +210,15 @@ impl PodcastHostOpHandler {
                     )
                 }
             }
-            PodcastAction::FetchFeedback => self.feedback.fetch(self.app).as_json(),
+            // Step 16: feedback is now in state.feedback.
+            PodcastAction::FetchFeedback => self.state.feedback.fetch(self.app).as_json(),
             PodcastAction::PublishFeedback {
                 category,
                 content,
                 parent_event_id,
                 reply_to_pubkey,
             } => self
-                .feedback
+                .state.feedback
                 .publish(
                     self.app,
                     &category,

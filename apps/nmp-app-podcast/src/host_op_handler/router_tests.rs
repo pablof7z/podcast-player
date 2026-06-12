@@ -32,24 +32,20 @@ fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
+    // Step 16: feedback injected; feed_fetch constructed inside new_with_identity.
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
+        feedback_runtime(rev.clone()),
     ));
-    // Steps 8-13: search_results, nostr_results, comments, social, agent_notes,
-    // agent_chat, voice, publish removed from constructor.
-    // Step 14: player_actor, queue, download_queue removed from constructor —
-    // now seeded inside PodcastAppState (PlaybackState).
-    // Step 15: store + identity removed from PodcastHostOpHandler::new —
-    // now accessed via state.library.store / state.library.identity.
+    // Steps 8-16: all substates moved into PodcastAppState.
+    // Step 16: feed_fetch + feedback removed from PodcastHostOpHandler::new.
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-        rev.clone(),
+        rev,
         Arc::new(tokio::runtime::Runtime::new().unwrap()),
-        crate::feed_fetch::FeedFetchCoordinator::new_test(),
-        feedback_runtime(rev),
     )
 }
 

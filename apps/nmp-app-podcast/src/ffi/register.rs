@@ -131,6 +131,10 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // &mut borrow above is released by the block end).
     let app_ref = unsafe { &*app };
     let snapshot_signal = SnapshotUpdateSignal::new(rev.clone(), app_ref.actor_sender());
+
+    // Step 16: feedback runtime constructed here (needs the snapshot-bump hook
+    // that captures the live signal) and injected into PodcastAppState.  The
+    // observer and relay-seed calls below use app_state.feedback.
     let feedback_events_cache: nmp_feedback::FeedbackEventCache = Arc::new(Mutex::new(Vec::new()));
     let feedback_config =
         nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
@@ -142,18 +146,19 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
                 move || snapshot_signal.bump()
             }));
 
-    // Steps 0-13 — composed state root.
+    // Steps 0-16 — composed state root.
     // `Infra` bundles rev + signal + runtime so substates can bump the
     // snapshot without receiving extra parameters.  `PodcastAppState::new`
     // seeds each substate's slots internally.  Both seams receive ONE Arc
-    // clone; the old per-slot Arcs (knowledge/wiki/picks/agent_chat/voice slots
-    // removed in Steps 1-3/11-12) are no longer needed in register.rs.
+    // clone; the old per-slot Arcs are no longer needed in register.rs.
     //
     // Step 11: AgentChatState::new reads `infra.signal` to wire the snapshot
     // signal into its inner AgentChatHandler automatically.
     // Step 12: VoiceSubstate is constructed with null app by default inside
     // new_with_identity; replaced with the real app pointer below before
     // sealing into Arc.
+    // Step 16: FeedFetchCoordinator is now constructed inside new_with_identity
+    // (accesses picks + categories built there); FeedbackRuntime is injected.
     let app_state_infra = Infra {
         rev: rev.clone(),
         signal: Some(snapshot_signal.clone()),
@@ -165,6 +170,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app_state_infra.clone(),
         store.clone(),
         identity.clone(),
+        feedback_runtime,
     );
     // Step 12: Replace the default null-app VoiceSubstate with one that holds
     // the live `app` pointer so `VoiceConversationManager` can dispatch
@@ -175,23 +181,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app,
     );
     let app_state = Arc::new(app_state_inner);
-
-    // Optimistic-subscribe async feed-fetch coordinator. Shared (one `Arc`)
-    // between the host-op handler (registers a pending fetch + dispatches the
-    // async HTTP command on the actor thread) and the handle (whose HTTP-report
-    // FFI applies the parsed result from the platform transport thread). Holds
-    // the same shared `store` / `rev` / `runtime` Arcs the rest of the kernel
-    // uses, plus the snapshot signal so it can re-project from off the actor thread.
-    // Step 3: picks Arc shared from `app_state.picks` (single guard consolidation).
-    // Step 4: categories Arc shared from `app_state.categories` (single guard
-    // consolidation — eliminates the duplicate categorization_in_progress race).
-    let feed_fetch = Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
-        store.clone(),
-        rev.clone(),
-        Some(snapshot_signal.clone()),
-        Arc::clone(&app_state.categories),
-        Arc::clone(&app_state.picks),
-    ));
+    // Step 16: feed_fetch is now app_state.feed_fetch; no local variable needed.
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
     //
@@ -248,7 +238,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         // In-app feedback source relay. Seeded read-only so NMP opens the
         // connection used by the relay-pinned feedback subscription; publish
         // targets the same relay explicitly through `nmp-feedback`.
-        feedback_runtime.config().relay_seed(),
+        // Step 16: feedback is now in app_state.feedback.
+        app_state.feedback.config().relay_seed(),
     ]);
 
     // Steps 8-10: comments_cache, viewed_comments_episode_id, nostr_results,
@@ -260,16 +251,14 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // now owned by state.inbox (InboxState).
     // Step 14: player_actor/queue/download_queue removed from constructor —
     // now owned by app_state.playback (PlaybackState).
-    // Step 15: store + identity removed from PodcastHostOpHandler::new —
-    // they are now accessed via app_state.library.store / app_state.library.identity.
+    // Step 15: store + identity removed from PodcastHostOpHandler::new.
+    // Step 16: feed_fetch + feedback removed — now accessed via app_state.
     app_ref.set_host_op_handler(Arc::new(
         PodcastHostOpHandler::new(
             app,
             app_state.clone(),
             rev.clone(),
             runtime.clone(),
-            feed_fetch.clone(),
-            feedback_runtime.clone(),
         )
         .with_snapshot_signal(snapshot_signal.clone()),
     ));
@@ -322,8 +311,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // In-app feedback observer. The reusable module owns event filtering,
     // bounded caching, and snapshot rev bumps. Unlike agent-notes, it does NOT
     // self-filter — the Feedback UI shows the user's own threads.
+    // Step 16: feedback is now in app_state.feedback.
     let _feedback_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(feedback_runtime.observer()));
+        app_ref.register_event_observer(std::sync::Arc::new(app_state.feedback.observer()));
 
     // Step 12: voice_state + voice_conversation are now owned by state.voice (VoiceSubstate).
     // The runtime clone below is still needed for the snapshot path and off-actor work.
@@ -357,9 +347,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         // now owned by state.agent_chat (AgentChatState).
         // voice_state, voice_conversation removed in Step 12 —
         // now owned by state.voice (VoiceSubstate).
-        feedback: feedback_runtime,
+        // feedback removed in Step 16 — now owned by state.feedback.
+        // feed_fetch removed in Step 16 — now owned by state.feed_fetch.
         runtime: runtime_for_handle,
-        feed_fetch,
     });
 
     // Reactive push projection — the canonical snapshot-output seam

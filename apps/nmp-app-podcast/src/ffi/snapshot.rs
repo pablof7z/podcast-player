@@ -140,8 +140,9 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
 
     // In-app feedback events (kind:1 + kind:513 for this app's project coord),
     // cached and reduced by `nmp-feedback`.
-    let feedback_events = handle.feedback.snapshot_events();
-    let feedback_threads = handle.feedback.snapshot_threads();
+    // Step 16: feedback is now in state.feedback.
+    let feedback_events = handle.state.feedback.snapshot_events();
+    let feedback_threads = handle.state.feedback.snapshot_threads();
 
     // Configured app relays (NMP v0.2.1). Kernel-owned slot, projected by the
     // sibling helper. SAFETY: `handle.app` is the live `*mut NmpApp` the

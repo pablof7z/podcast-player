@@ -249,6 +249,23 @@ pub struct PodcastAppState {
     /// Cross-thread: the report FFIs (`audio_report`, `download_report`)
     /// write here from the platform audio/download threads via `.share()`.
     pub playback: playback::PlaybackState,
+
+    /// In-app feedback runtime (Step 16).  Moved from the god-struct mirrors
+    /// (`PodcastHandle.feedback` / `PodcastHostOpHandler.feedback`) into the
+    /// shared state tree so both seams read the same event cache without a
+    /// separate Arc wire.
+    ///
+    /// `nmp-feedback` owns the relay-pinned subscription, publish tags, event
+    /// cache, and thread projection.  Empty until the first `FetchFeedback`
+    /// dispatch.
+    pub feedback: nmp_feedback::FeedbackRuntime,
+
+    /// Optimistic-subscribe async feed-fetch coordinator (Step 16).  Moved
+    /// from both god-structs into the shared tree.  The handler registers a
+    /// pending fetch + dispatches the async HTTP command; the handle's
+    /// HTTP-report FFI resolves the result.  Holds a shared clone of
+    /// `library.store` + `infra.rev` + signal.
+    pub feed_fetch: std::sync::Arc<crate::feed_fetch::FeedFetchCoordinator>,
 }
 
 impl PodcastAppState {
@@ -258,25 +275,41 @@ impl PodcastAppState {
     /// plus the shared `store` Arc.  The 31-arg positional constructor in
     /// `register.rs` will be replaced by this single call once all steps
     /// are complete.
+    ///
+    /// Uses a stub `FeedbackRuntime` with the podcast project coordinate.
     pub fn new(
         infra: Infra,
         store: Arc<std::sync::Mutex<crate::store::PodcastStore>>,
     ) -> Self {
+        let feedback = nmp_feedback::FeedbackRuntime::new(
+            nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
+                .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+            infra.rev.clone(),
+        );
         Self::new_with_identity(
             infra,
             store,
             Arc::new(std::sync::Mutex::new(
                 crate::store::identity::IdentityStore::new(),
             )),
+            feedback,
         )
     }
 
     /// Full constructor accepting an externally-created identity store so
     /// `register.rs` can pass the shared Arc rather than creating a new one.
+    ///
+    /// Step 16: `feedback` is also injected — `FeedbackRuntime` needs a
+    /// project coordinate + relay seed from the app layer and a
+    /// `with_snapshot_bump` hook that references the live signal.
+    /// `FeedFetchCoordinator` is constructed internally since it only needs
+    /// `picks` + `categories` + `infra` which are all available here.
     pub fn new_with_identity(
         infra: Infra,
         store: Arc<std::sync::Mutex<crate::store::PodcastStore>>,
         identity: Arc<std::sync::Mutex<crate::store::identity::IdentityStore>>,
+        feedback: nmp_feedback::FeedbackRuntime,
     ) -> Self {
         // Step 15: LibraryState owns the store + identity Arcs.  All other
         // substates receive clones of these same Arcs (lock topology unchanged).
@@ -306,6 +339,15 @@ impl PodcastAppState {
         );
         let publish = publish::PublishState::new(infra.clone(), store.clone());
         let playback = playback::PlaybackState::new(infra.clone(), store.clone());
+        // Step 16: FeedFetchCoordinator is constructed inside the state — it
+        // needs picks + categories Arcs available here, plus infra.rev + signal.
+        let feed_fetch = std::sync::Arc::new(crate::feed_fetch::FeedFetchCoordinator::new(
+            store.clone(),
+            infra.rev.clone(),
+            infra.signal.clone(),
+            Arc::clone(&categories),
+            Arc::clone(&picks),
+        ));
         Self {
             infra,
             library,
@@ -324,6 +366,8 @@ impl PodcastAppState {
             voice,
             publish,
             playback,
+            feedback,
+            feed_fetch,
         }
     }
 }
