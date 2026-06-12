@@ -25,7 +25,7 @@ use podcast_discovery::KIND_SHOW;
 
 use crate::ffi::actions::publish_module::PublishAction;
 use crate::host_op_handler::PodcastHostOpHandler;
-use crate::host_op_publish::{publish_show, sign_event};
+use crate::host_op_publish::{publish_episode, publish_show, sign_event};
 use crate::nmp_dispatch::publish_via_nmp;
 
 /// NIP-09 deletion request kind.
@@ -84,6 +84,12 @@ fn parse_visibility(raw: Option<String>) -> NostrVisibility {
 /// next snapshot push does not revert a Swift-side edit / flip. Because
 /// `visibility` is applied *before* the gate is read, a private→public flip
 /// republishes the show in the same op.
+///
+/// On a private→public flip the kernel also backfills every existing episode
+/// as a `kind:54` event by calling [`publish_episode`] for each one (D0:
+/// Rust owns publish policy end-to-end). The response includes
+/// `"episodes_backfilled": N`. A non-flip update (already-public show) only
+/// republishes the show event; `episodes_backfilled` is 0.
 #[allow(clippy::too_many_arguments)]
 pub fn update_owned(
     handler: &PodcastHostOpHandler,
@@ -94,28 +100,57 @@ pub fn update_owned(
     artwork_url: Option<String>,
     visibility: Option<String>,
 ) -> serde_json::Value {
-    let visibility = visibility.map(|v| parse_visibility(Some(v)));
+    let new_visibility = visibility.map(|v| parse_visibility(Some(v)));
     // Mutate the row, then read the gate inputs under the same lock so the
     // republish decision reflects the just-applied update (visibility first).
-    let (updated, should_publish) = match handler.state.library.store.lock() {
-        Ok(mut s) => {
-            let updated = s.update_owned_metadata(
-                &podcast_id,
-                title,
-                description,
-                author,
-                artwork_url,
-                visibility,
-            );
-            let is_public = s
-                .podcast_by_id_str(&podcast_id)
-                .map(|p| p.nostr_visibility == NostrVisibility::Public)
-                .unwrap_or(false);
-            let gate = updated && is_public && s.nostr_enabled();
-            (updated, gate)
-        }
-        Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
-    };
+    // Also capture whether this is a private→public flip so we can backfill
+    // per-episode kind:54 events after the show republish (D0: kernel owns all
+    // publish policy).
+    let (updated, should_publish, episode_ids_to_backfill) =
+        match handler.state.library.store.lock() {
+            Ok(mut s) => {
+                // Capture pre-update visibility to detect the private→public flip.
+                let was_private = s
+                    .podcast_by_id_str(&podcast_id)
+                    .map(|p| p.nostr_visibility != NostrVisibility::Public)
+                    .unwrap_or(false);
+
+                let updated = s.update_owned_metadata(
+                    &podcast_id,
+                    title,
+                    description,
+                    author,
+                    artwork_url,
+                    new_visibility,
+                );
+                let is_public = s
+                    .podcast_by_id_str(&podcast_id)
+                    .map(|p| p.nostr_visibility == NostrVisibility::Public)
+                    .unwrap_or(false);
+                let nostr_enabled = s.nostr_enabled();
+                let gate = updated && is_public && nostr_enabled;
+
+                // Collect episode IDs for backfill when flipping private→public.
+                // We gather them here (under the lock) and publish after releasing
+                // it, since publish_episode re-acquires the store lock.
+                let episode_ids = if gate && was_private {
+                    s.podcast_by_id_str(&podcast_id)
+                        .map(|p| p.id)
+                        .map(|pid| {
+                            s.episodes_for(pid)
+                                .iter()
+                                .map(|e| e.id.0.to_string())
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default()
+                } else {
+                    vec![]
+                };
+
+                (updated, gate, episode_ids)
+            }
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        };
     if !updated {
         return serde_json::json!({
             "ok": false,
@@ -131,10 +166,20 @@ pub fn update_owned(
     // re-implement signing here. `publish_show` stamps the new event JSON
     // onto `publish_state` and bumps `rev`.
     let publish = publish_show(handler, podcast_id);
+
+    // Backfill per-episode kind:54 events on a private→public flip.
+    // Reuses the existing publish_episode path (Blossom upload + sign +
+    // broadcast) — no reimplementation. Lock is NOT held here.
+    let episode_count = episode_ids_to_backfill.len();
+    for episode_id in episode_ids_to_backfill {
+        publish_episode(handler, episode_id);
+    }
+
     serde_json::json!({
         "ok": true,
         "status": "republished",
         "publish": publish,
+        "episodes_backfilled": episode_count,
     })
 }
 
