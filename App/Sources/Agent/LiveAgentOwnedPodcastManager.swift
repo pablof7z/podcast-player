@@ -9,8 +9,9 @@ import os.log
 // next kernel snapshot push reconcile the render store. The only real policy
 // that remains Swift-side is the artwork generation pipeline (image-gen →
 // Blossom upload). Per-episode kind:54 backfill on a private→public flip is
-// now owned by the kernel (D0 — update_owned detects the flip and calls
-// publish_episode for every episode atomically).
+// now owned by the kernel (D0 — update_owned detects the flip and self-enqueues
+// one publish_episode op per episode, so the actor yields between uploads
+// instead of blocking — D8).
 //
 // Lifecycle ownership (Rust kernel):
 //   podcast.create_podcast   — insert the feed-less row into the kernel store
@@ -159,8 +160,9 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
         }
 
         // Episode backfill on a private→public flip is now owned by the kernel:
-        // update_owned detects the flip and calls publish_episode for every
-        // episode in the same op (D0 — Rust owns publish policy end-to-end).
+        // update_owned detects the flip and self-enqueues one publish_episode op
+        // per episode (D0 — Rust owns publish policy; D8 — the actor yields
+        // between uploads instead of blocking on a synchronous loop).
         return await MainActor.run {
             info(for: updated, nostrEventID: nil, nostrAddr: nil)
         }
