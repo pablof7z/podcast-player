@@ -160,6 +160,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
                 .expect("tokio runtime"),
         ),
         domain_revs: std::sync::Arc::new(crate::state::DomainRevs::new()),
+        // Root infra defaults to Misc; each substate receives a domain-scoped
+        // clone via `infra.with_domain(...)` inside PodcastAppState::new_with_identity.
+        domain: crate::state::Domain::Misc,
     };
     // Steps 8-10: pass the shared identity Arc so CommentsState / SocialState
     // can access it without needing a separate clone in register.rs.

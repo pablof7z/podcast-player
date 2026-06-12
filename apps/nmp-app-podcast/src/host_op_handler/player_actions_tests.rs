@@ -338,3 +338,90 @@ fn play_next_op_skips_stale_head() {
     );
     let _ = &ids[0];
 }
+
+// ---- perf/domain-rev-wiring: real mutation → only the right domain delta ----
+//
+// These prove the per-domain push delta actually FIRES on a real handler
+// mutation (not just a synthetic rev bump): a queue mutation advances ONLY the
+// playback domain rev; a settings mutation advances ONLY the settings domain
+// rev. Library/settings/etc. stay put — so the frame produced by that tick
+// carries the mutated domain's sidecar and OMITS the others.
+
+/// A real `podcast.player.enqueue` mutation advances the PLAYBACK domain rev and
+/// leaves library + settings untouched. This is the end-to-end delta proof: the
+/// `podcast.playback` sidecar fires, `podcast.library` does not.
+#[test]
+fn real_queue_mutation_bumps_only_playback_domain() {
+    use crate::state::Domain;
+    use std::sync::atomic::Ordering;
+
+    let (handler, ids) = handler_with_episodes(&["A"]);
+    let dr = &handler.state.infra.domain_revs;
+
+    let pb_before = dr.counter(Domain::Playback).load(Ordering::Relaxed);
+    let lib_before = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    let set_before = dr.counter(Domain::Settings).load(Ordering::Relaxed);
+
+    let r = handler.handle_player_action(
+        PlayerAction::Enqueue {
+            episode_id: ids[0].clone(),
+        },
+        "corr-domain-enq",
+    );
+    assert_eq!(r["ok"], serde_json::json!(true));
+
+    let pb_after = dr.counter(Domain::Playback).load(Ordering::Relaxed);
+    let lib_after = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    let set_after = dr.counter(Domain::Settings).load(Ordering::Relaxed);
+
+    assert!(
+        pb_after > pb_before,
+        "a real queue mutation MUST advance the playback domain rev (got {pb_before}->{pb_after})"
+    );
+    assert_eq!(
+        lib_after, lib_before,
+        "a queue mutation must NOT advance the library domain rev (delta proof)"
+    );
+    assert_eq!(
+        set_after, set_before,
+        "a queue mutation must NOT advance the settings domain rev (delta proof)"
+    );
+}
+
+/// A real `podcast.settings.set_skip_intervals` mutation advances the SETTINGS
+/// domain rev and leaves playback + library untouched.
+#[test]
+fn real_settings_mutation_bumps_only_settings_domain() {
+    use crate::state::Domain;
+    use std::sync::atomic::Ordering;
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let handler = handler_with_store(store);
+    let dr = &handler.state.infra.domain_revs;
+
+    let set_before = dr.counter(Domain::Settings).load(Ordering::Relaxed);
+    let pb_before = dr.counter(Domain::Playback).load(Ordering::Relaxed);
+    let lib_before = dr.counter(Domain::Library).load(Ordering::Relaxed);
+
+    handler.handle_settings_action(SettingsAction::SetSkipIntervals {
+        forward_secs: 45.0,
+        backward_secs: 15.0,
+    });
+
+    let set_after = dr.counter(Domain::Settings).load(Ordering::Relaxed);
+    let pb_after = dr.counter(Domain::Playback).load(Ordering::Relaxed);
+    let lib_after = dr.counter(Domain::Library).load(Ordering::Relaxed);
+
+    assert!(
+        set_after > set_before,
+        "a real settings mutation MUST advance the settings domain rev (got {set_before}->{set_after})"
+    );
+    assert_eq!(
+        pb_after, pb_before,
+        "a settings mutation must NOT advance the playback domain rev (delta proof)"
+    );
+    assert_eq!(
+        lib_after, lib_before,
+        "a settings mutation must NOT advance the library domain rev (delta proof)"
+    );
+}

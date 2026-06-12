@@ -3,8 +3,6 @@
 //! This module owns the single match over podcast actions and delegates concrete
 //! work to focused sibling impl modules.
 
-use std::sync::atomic::Ordering;
-
 use crate::chapter::handle_fetch_chapters;
 use crate::ffi::actions::podcast_module::PodcastAction;
 use crate::host_op_handler::PodcastHostOpHandler;
@@ -170,7 +168,7 @@ impl PodcastHostOpHandler {
             } => match self.state.library.store.lock() {
                 Ok(mut s) => match s.set_episode_starred(&episode_id, starred) {
                     Some(new_value) => {
-                        self.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+                        self.bump_domain(crate::state::Domain::Library);
                         serde_json::json!({"ok": true, "starred": new_value})
                     }
                     None => {

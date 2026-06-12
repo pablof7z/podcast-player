@@ -20,7 +20,7 @@ use crate::ffi::snapshot_domain_projections::{
     decode_podcast_domain_sidecars, register_domain_projections, SCHEMA_DOWNLOADS,
     SCHEMA_IDENTITY, SCHEMA_LIBRARY, SCHEMA_MISC, SCHEMA_PLAYBACK, SCHEMA_SETTINGS, SCHEMA_WIDGET,
 };
-use crate::state::{DomainRevs, Infra, PodcastAppState};
+use crate::state::{Domain, DomainRevs, Infra, PodcastAppState};
 use crate::store::PodcastStore;
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
@@ -69,24 +69,45 @@ fn domain_revs_start_at_one() {
     assert_eq!(dr.misc.load(Ordering::Relaxed), 1);
 }
 
-/// `infra.bump_domain` advances both the domain rev and the global rev.
+/// `infra.bump_domain_explicit` advances both the named domain rev and the
+/// global rev.
 #[test]
-fn bump_domain_advances_both_revs() {
+fn bump_domain_explicit_advances_both_revs() {
     let infra = Infra::for_test();
     let initial_global = infra.rev.load(Ordering::Relaxed);
     let initial_domain = infra.domain_revs.library.load(Ordering::Relaxed);
 
-    let domain_rev = Arc::clone(&infra.domain_revs.library);
-    infra.bump_domain(&domain_rev);
+    infra.bump_domain_explicit(Domain::Library);
 
     assert_eq!(
         infra.domain_revs.library.load(Ordering::Relaxed),
         initial_domain + 1,
-        "domain rev must have incremented by 1"
+        "named domain rev must have incremented by 1"
     );
     assert!(
         infra.rev.load(Ordering::Relaxed) > initial_global,
-        "global rev must also advance after bump_domain"
+        "global rev must also advance after bump_domain_explicit"
+    );
+}
+
+/// A `Domain`-scoped `Infra`'s bare `bump()` routes to that domain's rev.
+#[test]
+fn scoped_bump_routes_to_domain_rev() {
+    let infra = Infra::for_test().with_domain(Domain::Playback);
+    let initial_playback = infra.domain_revs.playback.load(Ordering::Relaxed);
+    let initial_library = infra.domain_revs.library.load(Ordering::Relaxed);
+
+    infra.bump();
+
+    assert_eq!(
+        infra.domain_revs.playback.load(Ordering::Relaxed),
+        initial_playback + 1,
+        "scoped bump() must advance the playback domain rev"
+    );
+    assert_eq!(
+        infra.domain_revs.library.load(Ordering::Relaxed),
+        initial_library,
+        "scoped bump() must NOT advance an unrelated domain rev"
     );
 }
 
