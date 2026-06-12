@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use crate::state::{Infra, PodcastAppState};
 
 use nmp_ffi::NmpApp;
+use nmp_nip02::ActiveFollowSet;
 
 use super::actions::agent_module::AgentActionModule;
 use super::actions::categorization_module::CategorizationModule;
@@ -293,16 +294,58 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         .with_snapshot_signal(snapshot_signal.clone()),
     ));
 
+    // ── Reactive social-graph observers ──────────────────────────────────────
+    //
+    // ActiveFollowSet (nmp-nip02): observes kind:3 events and maintains a live
+    // BTreeSet<hex-pubkey> for the active account's follow list.  Its predicate
+    // (`ActiveFollowSet::predicate()`) is a closure that captures the same
+    // Arc<RwLock<…>> so consumers always see the latest kind:3 — no re-wiring.
+    //
+    // Registration order: ActiveFollowSet fires BEFORE AgentNotesObserver and
+    // FollowListObserver for the same kind:3 event, so trust-gate checks and
+    // snapshot materialisation see the current follow set immediately.
+    //
+    // Account-change hook: `register_identity_change_observer` fires on the
+    // update-listener thread whenever the active pubkey changes (sign-in /
+    // switch / logout). `notify_account_changed` clears the stale follow set
+    // and seeds the new account's own pubkey (self-inclusion) so the predicate
+    // is correct between sign-in and the first kind:3 push.
+    let active_follow_set = ActiveFollowSet::new(app_ref.active_account_handle());
+    {
+        let afs = Arc::clone(&active_follow_set);
+        app_ref.register_identity_change_observer(move |_| {
+            afs.notify_account_changed();
+        });
+    }
+    let _follow_set_observer_id = app_ref.register_event_observer(Arc::clone(&active_follow_set));
+
+    // FollowListObserver: materialises a SocialSnapshot from the inner
+    // FollowListProjection on every kind:3 push frame and writes it to
+    // state.social.social_slot.  Uses the kernel's standing
+    // account_profile_interest subscription (kind:0 + kind:3 + kind:10002) —
+    // no extra relay subscription needed.
+    let _follow_list_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
+        crate::social_handler::FollowListObserver::new(
+            app_ref.active_account_handle(),
+            app_state.social.social_slot.share(),
+            app_state.infra.rev.clone(),
+        )
+        .with_snapshot_signal(snapshot_signal.clone()),
+    ));
+
     // kind:1 agent-notes observer — receives events from push_interest_via_nmp
     // subscriptions opened by handle_fetch_agent_notes. No iOS WebSocket.
     // Step 10: observer shares from state.social.agent_notes (removes the
     // dead-duplicate handler Arc from PodcastHostOpHandler.agent_notes).
+    // Trust gate: wired to the shared ActiveFollowSet — AgentNoteSummary::trusted
+    // reflects live NIP-02 follow-list membership without extra subscriptions.
     let _agent_notes_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
         crate::agent_note_handler::AgentNotesObserver::new(
             identity.clone(),
             app_state.social.agent_notes.share(),
             app_state.infra.rev.clone(),
         )
+        .with_follow_set(Arc::clone(&active_follow_set))
         .with_snapshot_signal(snapshot_signal.clone()),
     ));
 

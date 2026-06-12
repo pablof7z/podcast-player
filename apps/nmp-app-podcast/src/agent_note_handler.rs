@@ -9,15 +9,28 @@
 //! `InterestLifecycle::OneShot`. NMP opens the subscription; events arrive via
 //! [`AgentNotesObserver`] registered at init.
 //!
-//! ## What this slice deliberately does NOT do (BACKLOG follow-ups)
+//! ## Trust gate
 //!
-//! * **No trust gate.** Every inbound note is surfaced with `trusted: false`.
-//! * **No LLM responder loop.** Still on the Swift `NostrAgentResponder` path.
+//! `AgentNoteSummary::trusted` is now wired to `ActiveFollowSet::predicate()`:
+//! a note whose author hex pubkey is in the active account's NIP-02 follow set
+//! is marked `trusted: true`.  The predicate is a live `Arc<dyn Fn(&str)->bool>`
+//! that reflects kind:3 updates (and account switches) without re-wiring — the
+//! closure captures a clone of the inner `Arc<RwLock<BTreeSet<String>>>` so
+//! updates land automatically.
+//!
+//! The `ActiveFollowSet` observer is registered before `AgentNotesObserver` in
+//! `register.rs`, so by the time a kind:1 note fires this observer the set
+//! already reflects the latest kind:3 from the active account.
+//!
+//! ## No LLM responder loop (BACKLOG follow-up)
+//!
+//! Still on the Swift `NostrAgentResponder` path.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use nostr::nips::nip19::ToBech32;
+use nmp_nip02::ActiveFollowSet;
 
 use nmp_core::planner::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_core::stable_hash::stable_hash64;
@@ -151,11 +164,20 @@ pub fn handle_publish_agent_note(
 
 /// Receives inbound kind:1 notes from NMP's relay pool addressed to the
 /// active account, filters self-authored events, and writes to the cache.
+///
+/// The `follow_set` field is an [`ActiveFollowSet`] shared with the
+/// `FollowListObserver` registered in `register.rs`.  Its predicate is used
+/// to set `AgentNoteSummary::trusted` — a note from a followed pubkey is
+/// trusted; all others are not.
 pub struct AgentNotesObserver {
     identity: Arc<Mutex<IdentityStore>>,
     agent_notes_cache: Arc<Mutex<Vec<AgentNoteSummary>>>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<SnapshotUpdateSignal>,
+    /// Live follow-set membership predicate.  `None` when no `ActiveFollowSet`
+    /// is wired (unit-test / legacy path); in that case `trusted` defaults
+    /// to `false` for every note (conservative fail-closed, D6).
+    follow_set: Option<Arc<ActiveFollowSet>>,
 }
 
 impl AgentNotesObserver {
@@ -169,11 +191,23 @@ impl AgentNotesObserver {
             agent_notes_cache,
             rev,
             snapshot_signal: None,
+            follow_set: None,
         }
     }
 
     pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
         self.snapshot_signal = Some(snapshot_signal);
+        self
+    }
+
+    /// Wire the reactive [`ActiveFollowSet`] so `AgentNoteSummary::trusted`
+    /// reflects live NIP-02 follow-list membership.
+    ///
+    /// Must be called before the observer is registered against the kernel
+    /// (registration order matters: `ActiveFollowSet` must fire before this
+    /// observer for the same kind:3 event so the predicate is up-to-date).
+    pub fn with_follow_set(mut self, follow_set: Arc<ActiveFollowSet>) -> Self {
+        self.follow_set = Some(follow_set);
         self
     }
 }
@@ -201,13 +235,24 @@ impl KernelEventObserver for AgentNotesObserver {
 
         let root_event_id = extract_nip10_root(&event.tags);
 
+        // Trust gate: check whether the note author is in the active account's
+        // NIP-02 follow set.  The predicate is a live closure that captures the
+        // inner Arc<RwLock<BTreeSet>> — it reflects the latest kind:3 push
+        // without re-wiring.  Fail-closed: if the set is not wired (None) or
+        // the lock is poisoned the predicate returns false (D6).
+        let trusted = self
+            .follow_set
+            .as_ref()
+            .map(|fs| fs.predicate()(&event.author))
+            .unwrap_or(false);
+
         let note = AgentNoteSummary {
             id: event.id.clone(),
             author_npub,
             content: event.content.clone(),
             created_at: event.created_at as i64,
             root_event_id,
-            trusted: false,
+            trusted,
         };
 
         if let Ok(mut cache) = self.agent_notes_cache.lock() {
