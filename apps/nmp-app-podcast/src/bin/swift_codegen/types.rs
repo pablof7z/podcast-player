@@ -32,20 +32,41 @@ pub struct Field {
     pub wrapper: Option<&'static str>,
     /// Optional doc comment line(s) (without `///` prefix).
     pub doc: Option<&'static str>,
+    /// Per-field `CodingKeys` raw-value override.
+    ///
+    /// When `Some(raw)`, the emitted `CodingKeys` case is:
+    ///   `case <name> = "<raw>"`
+    /// instead of the bare `case <name>` (which uses the Swift case name as the
+    /// raw value, i.e. the JSON key the decoder looks for).
+    ///
+    /// Use this when the JSON key that the decoder sees after applying the
+    /// decoder's `keyDecodingStrategy` is neither the Swift field name nor the
+    /// camelCase conversion of the Rust snake_case name.  The canonical examples
+    /// are `SettingsSnapshot` fields like `ollamaChatURL` (Rust `ollama_chat_url`)
+    /// and the credential BYOK ID/label fields whose Swift names use uppercase
+    /// acronyms that don't survive the `.convertFromSnakeCase` round-trip.
+    ///
+    /// **Wire-compatibility note**: the raw value is what the decoder looks for in
+    /// the JSON *after* applying the `keyDecodingStrategy`.  With the default
+    /// strategy (no conversion) the raw value must match the JSON key verbatim;
+    /// with `.convertFromSnakeCase` the strategy converts the JSON key first and
+    /// then compares against the raw value.  Always set this to the value that
+    /// makes the relevant test suite pass for the decoder configuration in use.
+    pub coding_key_override: Option<&'static str>,
 }
 
 impl Field {
     pub const fn required(name: &'static str, swift_type: &'static str) -> Self {
-        Self { name, swift_type, struct_default: None, decode: DecodeStrategy::Required, wrapper: None, doc: None }
+        Self { name, swift_type, struct_default: None, decode: DecodeStrategy::Required, wrapper: None, doc: None, coding_key_override: None }
     }
     pub const fn opt(name: &'static str, swift_type: &'static str) -> Self {
-        Self { name, swift_type, struct_default: Some("nil"), decode: DecodeStrategy::Optional, wrapper: None, doc: None }
+        Self { name, swift_type, struct_default: Some("nil"), decode: DecodeStrategy::Optional, wrapper: None, doc: None, coding_key_override: None }
     }
     pub fn default_val(name: &'static str, swift_type: &'static str, default: &'static str) -> Self {
-        Self { name, swift_type, struct_default: Some(default), decode: DecodeStrategy::WithDefault(default.to_string()), wrapper: None, doc: None }
+        Self { name, swift_type, struct_default: Some(default), decode: DecodeStrategy::WithDefault(default.to_string()), wrapper: None, doc: None, coding_key_override: None }
     }
     pub fn default_false(name: &'static str) -> Self {
-        Self { name, swift_type: "Bool", struct_default: Some("false"), decode: DecodeStrategy::WithDefault("false".to_string()), wrapper: Some("@DefaultFalse"), doc: None }
+        Self { name, swift_type: "Bool", struct_default: Some("false"), decode: DecodeStrategy::WithDefault("false".to_string()), wrapper: Some("@DefaultFalse"), doc: None, coding_key_override: None }
     }
     pub fn default_empty_array(name: &'static str, elem_type: &'static str) -> Self {
         let swift_type = Box::leak(format!("[{elem_type}]").into_boxed_str());
@@ -56,6 +77,7 @@ impl Field {
             decode: DecodeStrategy::WithDefault("[]".to_string()),
             wrapper: Some("@DefaultEmptyArray"),
             doc: None,
+            coding_key_override: None,
         }
     }
     pub fn default_empty_strings(name: &'static str) -> Self {
@@ -66,10 +88,16 @@ impl Field {
             decode: DecodeStrategy::WithDefault("[]".to_string()),
             wrapper: Some("@DefaultEmptyStrings"),
             doc: None,
+            coding_key_override: None,
         }
     }
     pub fn with_doc(mut self, doc: &'static str) -> Self {
         self.doc = Some(doc);
+        self
+    }
+    /// Set a per-field `CodingKeys` raw-value override (builder method).
+    pub fn with_key(mut self, raw: &'static str) -> Self {
+        self.coding_key_override = Some(raw);
         self
     }
 }

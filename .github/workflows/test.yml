@@ -91,8 +91,8 @@ jobs:
         # Checks that the checked-in Generated/*.generated.swift files match
         # the generator output exactly.  Any hand-edit that changes a wire
         # shape without re-running the generator will cause this step to fail.
-        # NOTE: PodcastSettingsSnapshot.generated.swift is intentionally skipped
-        # by the generator (NOT YET GENERATED); its header comment explains why.
+        # All Generated/ files are now generator-owned, including
+        # PodcastSettingsSnapshot.generated.swift (full explicit CodingKeys).
         run: |
           git diff --exit-code App/Sources/Bridge/Generated/ || {
             echo ""

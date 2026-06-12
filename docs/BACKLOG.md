@@ -715,16 +715,20 @@ worktrees currently in flight.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
-- **swift-codegen-settings-snapshot.** `PodcastSettingsSnapshot.generated.swift` is
-  the last hand-maintained Generated/ file because `SettingsSnapshot` requires a mixed
-  `CodingKeys` enum: most keys are auto-camelCase but ~15 fields override to raw
-  snake_case (`ollama_chat_url`, `stt_provider`, `assembly_ai_*`, etc.). The
-  `swift-codegen` binary (added in PR #406) skips this file and marks it
-  `// NOT YET GENERATED`. To close the gap: extend the generator's field manifest
-  with an optional per-field `coding_key_override: &'static str` and emit the full
-  `CodingKeys` enum only when overrides are present. Faithfulness proof: generator
-  output matches the current file byte-for-byte. Unblocks full drift-gate coverage.
-  Tracked here per AGENTS.md; do not create a separate plan file.
+- ~~**swift-codegen-settings-snapshot.**~~ Done: `PodcastSettingsSnapshot.generated.swift`
+  is now generator-owned — the last hand-maintained Generated/ file is gone.
+  `SettingsSnapshot` needs a mixed `CodingKeys` enum (most keys auto-camelCase, ~15
+  override to raw snake_case `ollama_chat_url`/`stt_provider`/`assembly_ai_*`, plus the
+  BYOK ID/label uppercase-acronym fields). The field manifest gained an optional
+  `coding_key_override: &'static str` (`Field::with_key`); `emit_settings_snapshot()`
+  emits the struct, the full explicit `CodingKeys` enum, and the
+  `decodeIfPresent`-with-defaults `init(from:)` (seeded from `self.init()`, so an absent
+  key keeps its default and the decoder can never throw `keyNotFound`). Faithfulness
+  proof: generator output is byte-for-byte identical to the prior hand-maintained body
+  (only the header comment changed), so `git diff --exit-code App/Sources/Bridge/Generated`
+  stays clean and the existing `.convertFromSnakeCase` decode-parity tests
+  (`EffectiveSTTProviderDecodeTests`, `SettingsSnapshotParityTests`) pass unchanged.
+  `main.rs` skip dropped; the CI drift gate now covers every Generated/ file.
 
 - ~~**signed-events-fb-bridge.**~~ Done (PR #383): `nmp_app_podcast_decode_update_frame`
   now decodes the typed `signed_events` FlatBuffer sidecar
