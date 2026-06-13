@@ -61,6 +61,7 @@ fun AppNavigation(
     snapshot: PodcastSnapshot?,
     bridge: KernelBridge,
     onSignInWithAmber: (() -> Unit)? = null,
+    onSnapshotPull: suspend () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(BottomTab.Home) }
     var route by rememberSaveable(stateSaver = AppRoute.Saver) { mutableStateOf<AppRoute>(AppRoute.Tab(BottomTab.Home)) }
@@ -126,6 +127,7 @@ fun AppNavigation(
                 bridge = bridge,
                 onBack = { route = AppRoute.Tab(selectedTab) },
                 onSignInWithAmber = onSignInWithAmber,
+                onSnapshotPull = onSnapshotPull,
                 modifier = contentModifier,
             )
             AppRoute.ProviderModels -> ProviderModelSettingsScreen(

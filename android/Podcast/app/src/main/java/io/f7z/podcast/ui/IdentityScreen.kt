@@ -29,7 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,9 +55,9 @@ import io.f7z.podcast.security.KeystoreManager
  * and wipes the stored key. The legacy `bridge.signinNsec` stub is NOT used —
  * it feeds the nmp-core multi-account store that `activeAccount` never reads.
  *
- * NIP-46 bunker sign-in and key generation are out of scope here (see the PR
- * notes): the kernel `Generate` action does not return the new nsec to the
- * host, so it cannot be persisted on-device.
+ * Key generation uses the kernel `Generate` action — the kernel writes the new
+ * keypair to `identity.json` in the data dir, so it persists across restarts
+ * without any Keystore entry. NIP-46 bunker sign-in is out of scope.
  *
  * `ModeBadge` mirrors the iOS `Features/Identity/ModeBadge.swift` surface — a
  * small pill marking which auth mode the user is in.
@@ -67,6 +69,7 @@ fun IdentityScreen(
     bridge: KernelBridge,
     onBack: () -> Unit,
     onSignInWithAmber: (() -> Unit)? = null,
+    onSnapshotPull: suspend () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -94,7 +97,11 @@ fun IdentityScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (account == null) {
-                NotSignedInState(bridge = bridge, onSignInWithAmber = onSignInWithAmber)
+                NotSignedInState(
+                    bridge = bridge,
+                    onSignInWithAmber = onSignInWithAmber,
+                    onSnapshotPull = onSnapshotPull,
+                )
             } else {
                 SignedInState(account = account, bridge = bridge)
             }
@@ -167,8 +174,10 @@ private fun SignedInState(account: AccountSummary, bridge: KernelBridge) {
 private fun NotSignedInState(
     bridge: KernelBridge,
     onSignInWithAmber: (() -> Unit)? = null,
+    onSnapshotPull: suspend () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var showSheet by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -189,7 +198,14 @@ private fun NotSignedInState(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = { showSheet = true }) { Text("Import nsec key") }
+            Button(onClick = {
+                scope.launch {
+                    IdentityActions.generate(bridge)
+                    // Explicit pull: actor bumped rev but no NMP-core push fires.
+                    onSnapshotPull()
+                }
+            }) { Text("Generate Key Pair") }
+            OutlinedButton(onClick = { showSheet = true }) { Text("Import nsec key") }
             // ADR-0048 — NIP-55 (Amber) external signer. The private key never
             // enters this process; Amber holds it and signs each request over an
             // OS IPC round-trip. Shown only when a delegate is wired (Android
