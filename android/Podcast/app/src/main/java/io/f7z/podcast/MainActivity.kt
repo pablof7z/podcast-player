@@ -191,13 +191,21 @@ private fun PodcastRoot(
     LaunchedEffect(bridge) {
         // First paint: one-shot pull off the projection cache so the UI renders
         // immediately instead of waiting for the kernel's first push frame.
-        withContext(Dispatchers.IO) { bridge.podcastSnapshot() }
-            ?.let { raw ->
-                SnapshotCodec.decode(raw)?.let { first ->
-                    snapshot = first
-                    download.reconcile(first.downloads?.active)
+        val firstRaw = withContext(Dispatchers.IO) { bridge.podcastSnapshot() }
+        firstRaw?.let { raw ->
+            SnapshotCodec.decode(raw)?.let { first ->
+                snapshot = first
+                download.reconcile(first.downloads?.active)
+                if (first.activeAccount == null && KeystoreManager.loadNsec(context) == null) {
+                    withContext(Dispatchers.IO) { IdentityActions.generate(bridge) }
+                    val updatedRaw = withContext(Dispatchers.IO) { bridge.podcastSnapshot() }
+                    updatedRaw?.let { SnapshotCodec.decode(it) }?.let { updated ->
+                        snapshot = updated
+                        download.reconcile(updated.downloads?.active)
+                    }
                 }
             }
+        }
 
         // Steady state: block on the kernel's push channel. `nextUpdate()` parks
         // on the Rust-side `recv` (≤250 ms bounded so cancellation is prompt) and
@@ -249,6 +257,16 @@ private fun PodcastRoot(
 
     ShakeFeedbackDetector { feedbackVisible = true }
 
+    // Explicit snapshot pull — used by screens that dispatch kernel actions
+    // whose rev bump doesn't trigger an NMP-core push frame (e.g. Generate).
+    val onSnapshotPull: suspend () -> Unit = {
+        val raw = withContext(Dispatchers.IO) { bridge.podcastSnapshot() }
+        raw?.let { SnapshotCodec.decode(it) }?.let { updated ->
+            snapshot = updated
+            download.reconcile(updated.downloads?.active)
+        }
+    }
+
     AppNavigation(
         snapshot = snapshot,
         bridge = bridge,
@@ -256,6 +274,7 @@ private fun PodcastRoot(
         // explicitly lets Rust route the Intent (and pick the ContentResolver
         // fast-path post-grant); a null would let the OS resolver choose.
         onSignInWithAmber = { bridge.signInNip55(AMBER_SIGNER_PACKAGE) },
+        onSnapshotPull = onSnapshotPull,
     )
 
     if (feedbackVisible) {
