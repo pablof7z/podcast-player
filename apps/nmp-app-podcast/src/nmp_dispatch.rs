@@ -5,10 +5,11 @@
 //!   with `target: Auto`. Used for per-podcast keys (kind:10154/54) that
 //!   NMP cannot yet sign on behalf of (pending multi-account signer API).
 //! * [`publish_raw_via_nmp`] — dispatch unsigned `{kind, tags, content}` to
-//!   `nmp.publish { PublishRaw }`. NMP signs with the active signer (user's
-//!   nsec), stamps `created_at` (D9), and routes via Auto. Used for all
-//!   events the user signs: kind:10064 author-claims, kind:1111 comments,
-//!   kind:1 agent notes.
+//!   `nmp.publish { PublishRaw }`. NMP signs with the active signer (local
+//!   nsec or NIP-46 bunker — both handled transparently by the kernel's
+//!   `sign_active_nonblocking` / `PendingSign` path), stamps `created_at`
+//!   (D9), and routes via Auto. Used for all events the user signs:
+//!   kind:10064 author-claims, kind:1111 comments, kind:1 agent notes.
 //! * [`push_interest_via_nmp`] — push a [`LogicalInterest`] into NMP's relay
 //!   pool so the kernel opens the subscription without any iOS WebSocket.
 
@@ -46,9 +47,10 @@ pub(crate) fn publish_via_nmp(app: *mut nmp_ffi::NmpApp, event: &Event) -> &'sta
 }
 
 /// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }`.
-/// NMP signs with the active signer (user's nsec), stamps `created_at`
-/// (D9 — kernel owns the clock), and routes via Auto. No secret bytes in
-/// app code.
+/// NMP signs with the active signer (local nsec or NIP-46 bunker —
+/// transparent to the caller; bunker ops park on the kernel's `PendingSign`
+/// queue and resolve asynchronously), stamps `created_at` (D9 — kernel owns
+/// the clock), and routes via Auto. No secret bytes in app code.
 /// Returns `"queued"` or `"signed"` (null app).
 pub(crate) fn publish_raw_via_nmp(
     app: *mut nmp_ffi::NmpApp,
