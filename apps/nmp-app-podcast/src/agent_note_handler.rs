@@ -29,9 +29,13 @@
 //! Because the verdict is recomputed at build time, the observer-registration
 //! order relative to `ActiveFollowSet` no longer matters for correctness.
 //!
-//! ## No LLM responder loop (BACKLOG follow-up)
+//! ## LLM responder loop
 //!
-//! Still on the Swift `NostrAgentResponder` path.
+//! Restored in `agent_note_responder.rs` (PR #420 / feat/kernel-kind1-auto-responder).
+//! When a trusted kind:1 note arrives, the observer calls
+//! [`crate::agent_note_responder::try_respond_to_trusted_note`], which spawns an
+//! async LLM-reply task off the actor thread (D8). The trust verdict is computed
+//! live against the shared `ActiveFollowSet` before dispatch.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -45,8 +49,12 @@ use nmp_core::KernelEventObserver;
 
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
 use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::store::agent_note_responder_cache::ResponderCache;
 use crate::store::identity::IdentityStore;
+use crate::store::PodcastStore;
 use nmp_ffi::NmpApp;
+use nmp_nip02::ActiveFollowSet;
+use tokio::runtime::Runtime;
 
 const MAX_INBOUND_NOTES: usize = 200;
 
@@ -200,12 +208,39 @@ pub fn handle_publish_agent_note(
 /// The trust verdict is computed later, at projection-build time, in
 /// [`crate::state::social::SocialState::agent_notes_snapshot`] — see the
 /// module-level "Trust gate" doc. The observer never freezes `trusted`.
+///
+/// When a note is TRUSTED (its author hex is in the active account's NIP-02
+/// follow set at reception time), the observer calls
+/// [`crate::agent_note_responder::try_respond_to_trusted_note`] to spawn an
+/// async LLM-reply task off the actor thread (D8).
 pub struct AgentNotesObserver {
     identity: Arc<Mutex<IdentityStore>>,
     agent_notes_cache: Arc<Mutex<Vec<CachedAgentNote>>>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<SnapshotUpdateSignal>,
+    /// Shared live follow set for trust-gate checks at reception time.
+    /// `None` in test / legacy paths → all notes treated as untrusted.
+    follow_set: Option<Arc<ActiveFollowSet>>,
+    /// Shared podcast store (LLM model config for the responder).
+    /// `None` in test paths → responder is disabled.
+    store: Option<Arc<Mutex<PodcastStore>>>,
+    /// Shared responder cache (dedup + turn counts).
+    /// `None` in test / legacy paths → responder is disabled.
+    responder_cache: Option<Arc<Mutex<ResponderCache>>>,
+    /// Shared Tokio runtime for spawning responder tasks.
+    /// `None` in test / legacy paths → responder is disabled.
+    runtime: Option<Arc<Runtime>>,
+    /// Raw NmpApp pointer for the responder's publish call.
+    /// Null in test paths → responder is disabled.
+    app: *mut NmpApp,
 }
+
+// SAFETY: `app` is a raw pointer that is only READ (passed to
+// `handle_publish_agent_note`, which null-checks it). The observer is only
+// registered once and lives for the app's lifetime; `nmp_app_free` joins the
+// actor thread before freeing the pointer.
+unsafe impl Send for AgentNotesObserver {}
+unsafe impl Sync for AgentNotesObserver {}
 
 impl AgentNotesObserver {
     pub fn new(
@@ -218,11 +253,36 @@ impl AgentNotesObserver {
             agent_notes_cache,
             rev,
             snapshot_signal: None,
+            follow_set: None,
+            store: None,
+            responder_cache: None,
+            runtime: None,
+            app: std::ptr::null_mut(),
         }
     }
 
     pub(crate) fn with_snapshot_signal(mut self, snapshot_signal: SnapshotUpdateSignal) -> Self {
         self.snapshot_signal = Some(snapshot_signal);
+        self
+    }
+
+    /// Wire the responder: enable auto-reply for trusted notes.
+    ///
+    /// All four arguments are `Arc` clones from `register.rs`; the `app`
+    /// pointer is the live `*mut NmpApp` that `handle_publish_agent_note` uses.
+    pub(crate) fn with_responder(
+        mut self,
+        app: *mut NmpApp,
+        follow_set: Arc<ActiveFollowSet>,
+        store: Arc<Mutex<PodcastStore>>,
+        responder_cache: Arc<Mutex<ResponderCache>>,
+        runtime: Arc<Runtime>,
+    ) -> Self {
+        self.app = app;
+        self.follow_set = Some(follow_set);
+        self.store = Some(store);
+        self.responder_cache = Some(responder_cache);
+        self.runtime = Some(runtime);
         self
     }
 }
@@ -262,9 +322,9 @@ impl KernelEventObserver for AgentNotesObserver {
             root_event_id,
         };
 
-        if let Ok(mut cache) = self.agent_notes_cache.lock() {
+        let is_new = if let Ok(mut cache) = self.agent_notes_cache.lock() {
             if !cache.iter().any(|n| n.id == note.id) {
-                cache.push(note);
+                cache.push(note.clone());
                 cache.sort_by(|a, b| b.created_at.cmp(&a.created_at));
                 if cache.len() > MAX_INBOUND_NOTES {
                     cache.truncate(MAX_INBOUND_NOTES);
@@ -274,6 +334,38 @@ impl KernelEventObserver for AgentNotesObserver {
                 } else {
                     self.rev.fetch_add(1, Ordering::Relaxed);
                 }
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        // ── Auto-responder hook ──────────────────────────────────────────────
+        // Fire ONLY for new, trusted notes (avoid double-reply on relay re-delivery).
+        // Trust is checked live against the shared ActiveFollowSet at reception
+        // time; the projection ALSO recomputes it at build time (separate paths).
+        if is_new {
+            if let (Some(fs), Some(store), Some(rc), Some(rt)) = (
+                &self.follow_set,
+                &self.store,
+                &self.responder_cache,
+                &self.runtime,
+            ) {
+                let predicate = fs.predicate();
+                let trusted = predicate(&note.author_hex);
+                crate::agent_note_responder::try_respond_to_trusted_note(
+                    &note,
+                    &event.tags,
+                    trusted,
+                    self.app,
+                    self.identity.clone(),
+                    store.clone(),
+                    rc.clone(),
+                    rt,
+                    self.snapshot_signal.clone(),
+                );
             }
         }
     }

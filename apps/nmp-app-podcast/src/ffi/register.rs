@@ -30,6 +30,7 @@ use super::actions::wiki_module::WikiActionModule;
 use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::host_op_handler::PodcastHostOpHandler;
+use crate::store::agent_note_responder_cache::ResponderCache;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::PodcastStore;
@@ -211,6 +212,14 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             .with_follow_set(Arc::clone(&active_follow_set));
 
     let app_state = Arc::new(app_state_inner);
+
+    // ── Agent-note auto-responder cache ──────────────────────────────────────
+    //
+    // Shared between the handle (where `data_dir.rs` restores persisted state)
+    // and the `AgentNotesObserver` (which checks + updates it on each reply).
+    // The `Arc` is cheap to clone; the inner `Mutex` protects access between
+    // the observer thread and the data_dir restore call.
+    let responder_cache = Arc::new(Mutex::new(ResponderCache::default()));
     // Step 16: feed_fetch is now app_state.feed_fetch; no local variable needed.
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
@@ -364,13 +373,24 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // It caches raw notes (author hex retained, NO trust stamp); the trust
     // verdict is recomputed live at projection time in SocialState against the
     // shared ActiveFollowSet (so follow/unfollow flips existing notes).
+    //
+    // `with_responder` wires the auto-responder: when a trusted note lands, the
+    // observer calls `agent_note_responder::try_respond_to_trusted_note`, which
+    // spawns an async LLM-reply + publish task off the actor thread (D8).
     let _agent_notes_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
         crate::agent_note_handler::AgentNotesObserver::new(
             identity.clone(),
             app_state.social.agent_notes.share(),
             app_state.infra.rev.clone(),
         )
-        .with_snapshot_signal(snapshot_signal.clone()),
+        .with_snapshot_signal(snapshot_signal.clone())
+        .with_responder(
+            app,
+            Arc::clone(&active_follow_set),
+            store.clone(),
+            Arc::clone(&responder_cache),
+            app_state.infra.runtime.clone(),
+        ),
     ));
 
     // In-app feedback observer. The reusable module owns event filtering,
@@ -391,6 +411,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let handle = Arc::new(PodcastHandle {
         app,
         state: app_state,
+        responder_cache,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
     });
