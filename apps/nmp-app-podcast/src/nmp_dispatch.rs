@@ -25,17 +25,12 @@
 //!   auth event with the named per-podcast key (D13 — no raw secret bytes
 //!   in app code). Returns the correlation id string; the result rides the
 //!   `action_results` snapshot slot.
-//! * [`publish_via_nmp`] — hand a pre-signed `nostr::Event` to `nmp.publish`
-//!   with `target: Auto`. Retained for callers that already have a signed
-//!   event object (e.g. NIP-09 deletion); new per-podcast publish paths use
-//!   `publish_raw_with_signer_via_nmp` instead.
 //! * [`push_interest_via_nmp`] — push a [`LogicalInterest`] into NMP's relay
 //!   pool so the kernel opens the subscription without any iOS WebSocket.
 
-use std::ffi::{CString, c_char};
+use std::ffi::CString;
 
 use nmp_core::planner::LogicalInterest;
-use nostr::Event;
 
 /// Register a per-podcast secret key in the kernel's identity roster without
 /// activating it. `secret_hex` must be a 64-char lowercase hex string (the
@@ -56,10 +51,7 @@ pub(crate) fn register_podcast_signer_in_kernel(app: *mut nmp_ffi::NmpApp, secre
     let Ok(secret_c) = CString::new(secret_hex) else {
         return;
     };
-    // SAFETY: app is non-null (checked above); secret_c is a valid C string.
-    unsafe {
-        nmp_ffi::nmp_app_signin_nsec(app, secret_c.as_ptr() as *const c_char, 0);
-    }
+    nmp_ffi::nmp_app_signin_nsec(app, secret_c.as_ptr(), 0);
 }
 
 /// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }` with an
@@ -143,34 +135,6 @@ pub(crate) fn blossom_upload_via_nmp(
         .get("correlation_id")
         .and_then(|v| v.as_str())
         .map(str::to_owned)
-}
-
-/// Hand a pre-signed event to `nmp.publish { Publish, target: Auto }`.
-/// NMP routes through the relay pool; no relay URLs in app code.
-/// Returns `"queued"` (async, fire-and-forget) or `"signed"` (null app).
-pub(crate) fn publish_via_nmp(app: *mut nmp_ffi::NmpApp, event: &Event) -> &'static str {
-    if app.is_null() {
-        return "signed";
-    }
-    let signed_event = serde_json::json!({
-        "id": event.id.to_hex(),
-        "sig": event.sig.to_string(),
-        "unsigned": {
-            "pubkey": event.pubkey.to_hex(),
-            "kind": u32::from(event.kind.as_u16()),
-            "created_at": event.created_at.as_secs(),
-            "tags": event.tags.iter().map(|t| t.as_slice().to_vec()).collect::<Vec<_>>(),
-            "content": &*event.content,
-        }
-    });
-    let body = serde_json::json!({
-        "Publish": {
-            "handle": uuid::Uuid::new_v4().to_string(),
-            "event": signed_event,
-            "target": "Auto",
-        }
-    });
-    dispatch_nmp_publish(app, body)
 }
 
 /// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }` using
