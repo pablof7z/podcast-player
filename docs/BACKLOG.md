@@ -711,6 +711,24 @@ worktrees currently in flight.
 
 ## Active P2 - Cross-Cutting Technical Debt
 
+- **signed-events-fb-bridge.** In nmp-v0.3.0 (PR-B #991/#979) the generic
+  `payload:Value` tree is no longer emitted in the binary FlatBuffers frame.
+  `signed_events` is now a Tier-2 typed FlatBuffer sidecar (key
+  `"signed_events"`, schema `nmp.signedEvents`), not a JSON projection in
+  `v.projections`. The iOS `SignedEventsRegistry.ingest` path — which read
+  `v.projections["signed_events"]` from the JSON returned by
+  `nmp_app_podcast_decode_update_frame` — now reads an empty projections map
+  and silently drops every `signEventForReturn` result. Fix: decode the typed
+  `signed_events` FlatBuffer sidecar in `nmp_app_podcast_decode_update_frame`
+  (call `nmp_core::decode_snapshot_typed_projections`, find the
+  `"signed_events"` entry, decode via `nmp_core::typed_projections::decode_signed_events`,
+  serialise to JSON, and inject under `v.projections["signed_events"]`). Until
+  this lands, any caller of `nmp_app_sign_event_for_return` will not receive
+  their result via the push path; results can still be read via the pull path if
+  a separate `nmp_app_podcast_snapshot` call is made after the signing completes.
+
+
+
 - ~~**provider-api-keys-no-kernel-handler.**~~ Stale audit entry. Live Rust has
   `SettingsAction::SetProviderApiKeys` and
   `settings_actions.rs` stores the in-memory OpenRouter/Ollama secrets via

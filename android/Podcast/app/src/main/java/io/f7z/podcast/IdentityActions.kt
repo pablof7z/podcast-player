@@ -31,6 +31,12 @@ object IdentityActions {
     fun importNsec(bridge: KernelBridge, nsec: String): String? =
         bridge.dispatchAction(NAMESPACE, importNsecPayload(nsec))
 
+    /** Dispatch `Generate` to create a fresh keypair. The kernel writes the new key
+     *  to `identity.json` in the data dir — no Keystore entry needed (Keystore is
+     *  only for imported nsec keys that the user may want to back up). */
+    fun generate(bridge: KernelBridge): String? =
+        bridge.dispatchAction(NAMESPACE, GENERATE_PAYLOAD)
+
     /** Dispatch `Clear` to sign out. Returns the kernel JSON envelope or null on FFI failure. */
     fun clear(bridge: KernelBridge): String? =
         bridge.dispatchAction(NAMESPACE, CLEAR_PAYLOAD)
@@ -59,4 +65,5 @@ object IdentityActions {
     }
 
     private const val CLEAR_PAYLOAD = "{\"type\":\"Clear\"}"
+    private const val GENERATE_PAYLOAD = "{\"type\":\"Generate\"}"
 }
