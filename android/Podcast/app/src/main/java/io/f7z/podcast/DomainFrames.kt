@@ -403,15 +403,16 @@ object SnapshotCodec {
 
         // ── social ───────────────────────────────────────────────────────────
         // Kernel-authoritative: social + agent_notes moved out of podcast.misc.
-        // PodcastSnapshot currently has no social/agentNotes/nostrConversations
-        // fields on Android, so this block only advances the tracker (preventing
-        // future stale-rev drops) and is a no-op for state. When Android surfaces
-        // a conversations UI, add the field to PodcastSnapshot and map here.
+        // nostrConversations is wired into PodcastSnapshot so the conversations
+        // list + detail screens can render directly from the snapshot flow.
+        // null = tombstone (account switch / no conversations) → clear to empty.
         frames.social?.let { soc ->
             if (soc.rev > tracker.social) {
                 tracker.social = soc.rev
                 anyAccepted = true
-                // Future: snap = snap.copy(nostrConversations = soc.nostrConversations ?: emptyList())
+                snap = snap.copy(
+                    nostrConversations = soc.nostrConversations ?: emptyList(),
+                )
             }
         }
 

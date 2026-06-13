@@ -816,6 +816,83 @@ class DomainFrameWireTest {
         assertEquals(9L, tracker.social)
     }
 
+    // ── 7b. social mergeFrames populates PodcastSnapshot.nostrConversations ────
+    //
+    // These tests guard the UI-binding contract: the conversations list screen
+    // binds `snapshot.nostrConversations`; this section verifies that
+    // mergeFrames correctly wires the decoded SocialDomainFrame into that field
+    // (the new code path added in feat/android-nostr-conversations).
+
+    @Test
+    fun `social mergeFrames populates nostrConversations on PodcastSnapshot`() {
+        // Feed a podcast.social frame with one conversation.
+        val raw = envelope("podcast.social" to socialFixture)
+        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        assertNotNull("social frame must decode", frames)
+
+        val tracker = DomainRevTracker()
+        val (snap, accepted) = SnapshotCodec.mergeFrames(frames!!, PodcastSnapshot(), tracker)
+
+        assertTrue("social frame must be accepted", accepted)
+
+        // The UI-binding field — asserts the merge wiring is complete.
+        assertEquals(
+            "nostrConversations must have one entry after mergeFrames",
+            1,
+            snap.nostrConversations.size,
+        )
+
+        val conv = snap.nostrConversations.single()
+        // @SerialName contract: root_event_id, counterparty_hex, etc.
+        assertEquals("deadbeef001", conv.rootEventId)
+        assertEquals("aabbccdd001", conv.counterpartyHex)
+        assertTrue("trusted must be true", conv.trusted)
+        assertEquals(1717200000L, conv.firstSeen)
+        assertEquals(1717286400L, conv.lastActivity)
+        assertEquals(2, conv.turns.size)
+
+        // Turns — direction + content (what the conversations detail screen renders)
+        val inbound = conv.turns[0]
+        assertEquals("inbound", inbound.direction)
+        assertEquals("Hello from Nostr", inbound.content)
+        assertEquals("aabbccdd001", inbound.pubkeyHex)
+        assertEquals(1717200001L, inbound.createdAt)
+
+        val outbound = conv.turns[1]
+        assertEquals("outbound", outbound.direction)
+        assertEquals("Reply from agent", outbound.content)
+    }
+
+    @Test
+    fun `social tombstone clears nostrConversations in mergeFrames`() {
+        // Seed composite with a social frame.
+        val socFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.social" to socialFixture))!!
+        val tracker = DomainRevTracker()
+        val (seeded, _) = SnapshotCodec.mergeFrames(socFrames, PodcastSnapshot(), tracker)
+        assertEquals("seeded nostrConversations must have one entry", 1,
+            seeded.nostrConversations.size)
+
+        // Tombstone: rev=99, nostr_conversations=null.
+        val tombstone = """{"rev":99,"nostr_conversations":null}"""
+        val tombFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.social" to tombstone))
+        assertNotNull("social tombstone frame must decode", tombFrames)
+        assertNotNull("social domain must be non-null in tombstone frame",
+            tombFrames!!.social)
+        assertNull("nostr_conversations must decode as null in tombstone",
+            tombFrames.social!!.nostrConversations)
+
+        val (cleared, accepted) = SnapshotCodec.mergeFrames(tombFrames, seeded, tracker)
+        assertTrue("tombstone must be accepted (rev=99 > rev=9)", accepted)
+        assertEquals(
+            "nostrConversations tombstone must clear composite to empty list",
+            0,
+            cleared.nostrConversations.size,
+        )
+        assertEquals(99L, tracker.social)
+    }
+
     // ── 8. DomainSchema constants match Rust schema IDs ───────────────────────
 
     @Test
