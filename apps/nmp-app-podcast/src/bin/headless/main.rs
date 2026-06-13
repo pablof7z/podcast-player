@@ -13,6 +13,7 @@ mod harness;
 mod mock_feed;
 mod relay_client;
 mod scenarios;
+mod sign_tap;
 
 use std::ffi::CString;
 use std::process::ExitCode;
@@ -29,6 +30,11 @@ fn main() -> ExitCode {
     // 2. Install the headless capability host (real HTTP, no-op stubs for
     //    audio/download/notification).
     capability_host::install(app);
+
+    // 2b. Install the signed-event capture tap (update-frame callback) BEFORE
+    //     start, so the nipf4_publish scenario can observe the kernel's signed
+    //     output via the `signed_events` push projection. See sign_tap.rs.
+    sign_tap::install(app);
 
     // 3. Register Podcast projections and action modules.
     let handle = nmp_app_podcast_register(app);
