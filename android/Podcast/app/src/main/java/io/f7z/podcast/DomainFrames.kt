@@ -35,10 +35,11 @@ import kotlinx.serialization.json.jsonPrimitive
  *   podcast.settings  — rev, settings, configured_relays
  *   podcast.identity  — rev, active_account (null = signed out / tombstone)
  *   podcast.widget    — rev, widget (null = nothing to show / tombstone)
+ *   podcast.social    — rev, social (SocialSnapshot | null), agent_notes, nostr_conversations
  *   podcast.misc      — rev, agent_tasks, feedback_threads, feedback_events, voice,
  *                       agent, wiki_articles, wiki_search_results, picks,
- *                       knowledge_search_results, memory_facts, clips, social,
- *                       agent_notes, comments, agent_context
+ *                       knowledge_search_results, memory_facts, clips, comments, agent_context
+ *                       (social + agent_notes moved to podcast.social)
  */
 
 // ── Schema IDs ────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ object DomainSchema {
     const val SETTINGS  = "podcast.settings"
     const val IDENTITY  = "podcast.identity"
     const val WIDGET    = "podcast.widget"
+    const val SOCIAL    = "podcast.social"
     const val MISC      = "podcast.misc"
 }
 
@@ -109,6 +111,54 @@ data class WidgetDomainFrame(
     val widget: WidgetSnapshot? = null,
 )
 
+// ── podcast.social ────────────────────────────────────────────────────────────
+
+/**
+ * NIP-10-threaded Nostr conversation projection + NIP-02 follow graph.
+ *
+ * `social = null` arriving in this frame signals a tombstone (account switch
+ * cleared all social state). `agentNotes` and `nostrConversations` follow the
+ * same pattern: null = tombstone / cleared, absent = no change.
+ *
+ * NOTE: social + agent_notes moved OUT of podcast.misc into this domain in
+ * the nostr-conversations-real-projection PR.
+ */
+@Serializable
+data class SocialDomainFrame(
+    val rev: Long = 0,
+    /** NIP-02 follow-list snapshot. `null` = tombstone (account switch). */
+    val social: JsonElement? = null,
+    /** Flat inbound agent-note feed (legacy; subsumed by nostr_conversations). */
+    @SerialName("agent_notes") val agentNotes: List<JsonElement>? = null,
+    /** NIP-10-threaded conversations, newest-first by last_activity. */
+    @SerialName("nostr_conversations") val nostrConversations: List<NostrConversationDto>? = null,
+)
+
+/**
+ * Wire DTO for a single NIP-10-threaded Nostr conversation.
+ * Kotlin consumers use this to render conversation lists and transcripts.
+ */
+@Serializable
+data class NostrConversationDto(
+    @SerialName("root_event_id")    val rootEventId: String = "",
+    @SerialName("counterparty_hex") val counterpartyHex: String = "",
+    val participants: List<String> = emptyList(),
+    val turns: List<NostrConversationTurnDto> = emptyList(),
+    val trusted: Boolean = false,
+    @SerialName("first_seen")   val firstSeen: Long = 0L,
+    @SerialName("last_activity") val lastActivity: Long = 0L,
+)
+
+/** Wire DTO for a single turn in a Nostr conversation. */
+@Serializable
+data class NostrConversationTurnDto(
+    @SerialName("event_id")    val eventId: String = "",
+    val direction: String = "inbound",
+    @SerialName("pubkey_hex")  val pubkeyHex: String = "",
+    @SerialName("created_at") val createdAt: Long = 0L,
+    val content: String = "",
+)
+
 // ── podcast.misc ──────────────────────────────────────────────────────────────
 
 @Serializable
@@ -137,11 +187,13 @@ data class PodcastDomainFrames(
     val settings:  SettingsDomainFrame? = null,
     val identity:  IdentityDomainFrame? = null,
     val widget:    WidgetDomainFrame? = null,
+    val social:    SocialDomainFrame? = null,
     val misc:      MiscDomainFrame? = null,
 ) {
     val hasAnyDomain: Boolean get() =
         library != null || playback != null || downloads != null ||
-        settings != null || identity != null || widget != null || misc != null
+        settings != null || identity != null || widget != null ||
+        social != null || misc != null
 
     fun presentDomainNames(): String {
         val names = mutableListOf<String>()
@@ -151,6 +203,7 @@ data class PodcastDomainFrames(
         if (settings  != null) names.add("settings")
         if (identity  != null) names.add("identity")
         if (widget    != null) names.add("widget")
+        if (social    != null) names.add("social")
         if (misc      != null) names.add("misc")
         return if (names.isEmpty()) "none" else names.joinToString(",")
     }
@@ -169,6 +222,7 @@ data class DomainRevTracker(
     var settings:  Long = 0L,
     var identity:  Long = 0L,
     var widget:    Long = 0L,
+    var social:    Long = 0L,
     var misc:      Long = 0L,
 )
 
@@ -240,6 +294,7 @@ object SnapshotCodec {
             val settings  = tryDecode(DomainSchema.SETTINGS,  SettingsDomainFrame.serializer())
             val identity  = tryDecode(DomainSchema.IDENTITY,  IdentityDomainFrame.serializer())
             val widget    = tryDecode(DomainSchema.WIDGET,     WidgetDomainFrame.serializer())
+            val social    = tryDecode(DomainSchema.SOCIAL,     SocialDomainFrame.serializer())
             val misc      = tryDecode(DomainSchema.MISC,       MiscDomainFrame.serializer())
 
             val frames = PodcastDomainFrames(
@@ -249,6 +304,7 @@ object SnapshotCodec {
                 settings  = settings,
                 identity  = identity,
                 widget    = widget,
+                social    = social,
                 misc      = misc,
             )
             if (!frames.hasAnyDomain) null else frames
@@ -345,7 +401,22 @@ object SnapshotCodec {
             }
         }
 
+        // ── social ───────────────────────────────────────────────────────────
+        // Kernel-authoritative: social + agent_notes moved out of podcast.misc.
+        // PodcastSnapshot currently has no social/agentNotes/nostrConversations
+        // fields on Android, so this block only advances the tracker (preventing
+        // future stale-rev drops) and is a no-op for state. When Android surfaces
+        // a conversations UI, add the field to PodcastSnapshot and map here.
+        frames.social?.let { soc ->
+            if (soc.rev > tracker.social) {
+                tracker.social = soc.rev
+                anyAccepted = true
+                // Future: snap = snap.copy(nostrConversations = soc.nostrConversations ?: emptyList())
+            }
+        }
+
         // ── misc ─────────────────────────────────────────────────────────────
+        // NOTE: social + agentNotes moved to podcast.social (above).
         frames.misc?.let { m ->
             if (m.rev > tracker.misc) {
                 tracker.misc = m.rev

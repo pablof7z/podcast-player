@@ -13,6 +13,16 @@ extension AppStateStore {
            let uuid = UUID(uuidString: episodeIdStr) {
             next.lastPlayedEpisodeID = uuid
         }
+
+        // ── nostrConversations: wire DTO → domain record ──────────────────────
+        // The kernel is AUTHORITATIVE for the conversation projection — when the
+        // social domain delivers a non-empty slice, it REPLACES the local slice.
+        // An empty projection (no conversations in the kernel) leaves the
+        // Swift-local slice untouched so locally-recorded outgoing turns remain
+        // visible until the next authoritative kernel push.
+        if let dtos = snapshot?.nostrConversations, !dtos.isEmpty {
+            next.nostrConversations = dtos.map { KernelModel.nostrConversationFromDTO($0) }
+        }
     }
 
     private func projectSettingsSnapshot(_ ks: SettingsSnapshot, into next: inout AppState) {

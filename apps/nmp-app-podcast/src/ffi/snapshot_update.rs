@@ -10,9 +10,9 @@ use nmp_feedback::FeedbackThreadDto;
 use super::projections::{
     AccountSummary, AgentContextSnapshot, AgentNoteSummary, AgentPickSummary, AgentSnapshot,
     AgentTaskSummary, CategoryBrowseItem, ClipSummary, CommentSummary, DownloadQueueSnapshot,
-    EpisodeSummary, InboxItem, KnowledgeSearchResult, MemoryFact, NostrShowSummary,
-    OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot, VoiceState, WidgetSnapshot,
-    WikiArticle,
+    EpisodeSummary, InboxItem, KnowledgeSearchResult, MemoryFact, NostrConversationDTO,
+    NostrShowSummary, OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot,
+    VoiceState, WidgetSnapshot, WikiArticle,
 };
 use crate::player::PlayerState;
 
@@ -145,11 +145,18 @@ pub struct PodcastUpdate {
     pub categories: Vec<CategoryBrowseItem>,
     /// Feature #44 — inbound agent-to-agent kind:1 notes addressed to the
     /// active account, newest-first. Empty until the first
-    /// `FetchAgentNotes` dispatch. Every row carries `trusted: false`
-    /// until the kind:3 contact/trust gate lands (`agent-to-agent-kind1`
-    /// in BACKLOG); the iOS shell must route them to an approval surface.
+    /// `FetchAgentNotes` dispatch. Trust verdict is computed live at
+    /// projection time against the NIP-02 follow set.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub agent_notes: Vec<AgentNoteSummary>,
+    /// NIP-10-threaded Nostr conversations between the active account and
+    /// its peers, newest-first by last_activity. Each conversation merges
+    /// inbound kind:1 notes + outbound auto-responder turns under a common
+    /// root event id. Empty until the first `FetchAgentNotes` dispatch or
+    /// outbound auto-reply. Subsumes the LEGACY flat `agent_notes` list for
+    /// UI purposes — shells should prefer this field for conversation views.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nostr_conversations: Vec<NostrConversationDTO>,
     /// User-configured app relays (NMP v0.2.1 `configured_relays` projection),
     /// each carrying the NIP-65 role string. Projected from the kernel's
     /// `AppRelaySlot` (`NmpApp::configured_relays_handle`) — NOT from
@@ -220,6 +227,7 @@ impl Default for PodcastUpdate {
             owned_podcasts: Vec::new(),
             categories: Vec::new(),
             agent_notes: Vec::new(),
+            nostr_conversations: Vec::new(),
             configured_relays: Vec::new(),
             feedback_events: Vec::new(),
             feedback_threads: Vec::new(),

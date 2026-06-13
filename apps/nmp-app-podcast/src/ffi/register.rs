@@ -31,6 +31,7 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::host_op_handler::PodcastHostOpHandler;
 use crate::store::agent_note_responder_cache::ResponderCache;
+use crate::store::outbound_turn_cache::OutboundTurnCache;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::identity::IdentityStore;
 use crate::store::PodcastStore;
@@ -211,6 +212,13 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         crate::state::social::SocialState::new(app_state_inner.social.infra.clone())
             .with_follow_set(Arc::clone(&active_follow_set));
 
+    // NOTE: outbound_turn_cache is constructed and seeded from disk below,
+    // AFTER data_dir is bound. We keep a placeholder empty Arc here so the
+    // social state has a slot to share immediately; the actual disk load
+    // happens in data_dir.rs (nmp_app_podcast_set_data_dir). The Arc<Mutex>
+    // is shared with AgentNotesObserver so the observer can persist turns.
+    let outbound_turn_cache = Arc::new(std::sync::Mutex::new(OutboundTurnCache::new()));
+
     let app_state = Arc::new(app_state_inner);
 
     // ── Agent-note auto-responder cache ──────────────────────────────────────
@@ -220,6 +228,10 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // The `Arc` is cheap to clone; the inner `Mutex` protects access between
     // the observer thread and the data_dir restore call.
     let responder_cache = Arc::new(Mutex::new(ResponderCache::default()));
+    // Outbound-turn cache is also shared between the handle (data_dir.rs seeding)
+    // and the AgentNotesObserver (append after publish). The social state's
+    // outbound_turns slot is shared via .share() so the in-memory projection
+    // sees new turns immediately. The disk cache keeps turns across restarts.
     // Step 16: feed_fetch is now app_state.feed_fetch; no local variable needed.
 
     // Seed the podcast app's default relay set (NMP v0.2.1, PR #900).
@@ -377,11 +389,16 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             app_state.infra.rev.clone(),
         )
         .with_snapshot_signal(snapshot_signal.clone())
+        // `Domain::Social`-scoped infra: inbound-note bumps advance
+        // `domain_revs.social`, driving the `podcast.social` sidecar re-emit.
+        .with_social_infra(app_state.social.infra.clone())
         .with_responder(
             app,
             Arc::clone(&active_follow_set),
             store.clone(),
             Arc::clone(&responder_cache),
+            Arc::clone(&outbound_turn_cache),
+            app_state.social.outbound_turns.share(),
             app_state.infra.runtime.clone(),
         ),
     ));
@@ -405,6 +422,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app,
         state: app_state,
         responder_cache,
+        outbound_turn_cache,
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
     });

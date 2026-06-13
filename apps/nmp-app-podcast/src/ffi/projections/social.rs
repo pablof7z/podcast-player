@@ -70,6 +70,63 @@ pub struct AgentNoteSummary {
     pub trusted: bool,
 }
 
+/// One turn within a [`NostrConversationDTO`].
+///
+/// `direction` is a plain string (`"inbound"` or `"outbound"`) rather than an
+/// enum so the wire contract is forward-compatible with new directions without a
+/// schema bump.  The iOS shell pattern-matches on the raw string.
+///
+/// **No explicit CodingKeys** — the bridge decoder uses `.convertFromSnakeCase`
+/// so `event_id` → `eventId`, `created_at` → `createdAt`, etc.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct NostrConversationTurnDTO {
+    /// Event id (lowercase hex) of the kind:1 note — stable identifier.
+    pub event_id: String,
+    /// `"inbound"` (from the peer) or `"outbound"` (published by the kernel).
+    pub direction: String,
+    /// Hex pubkey of the note's author. For inbound turns this is the
+    /// counterparty; for outbound turns it is the active account.
+    pub pubkey_hex: String,
+    /// Unix seconds (`created_at` field of the kind:1 event).
+    pub created_at: i64,
+    /// Note body — the raw `content` field.
+    pub content: String,
+}
+
+/// A NIP-10-threaded conversation between the active account and one peer,
+/// surfaced via the `podcast.social` domain projection.
+///
+/// Conversations are keyed by the NIP-10 root event id.  Both inbound notes
+/// (from the peer) and outbound turns (published by the kernel auto-responder)
+/// are merged and ordered by `created_at` so the iOS/Android shell can render
+/// a chat-bubble timeline without any client-side join.
+///
+/// **No explicit CodingKeys** — the bridge decoder uses `.convertFromSnakeCase`.
+/// Critical mapping: `root_event_id` → `rootEventId` (lowercase `d`), matching
+/// the Swift `NostrConversationRecord` merge path.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct NostrConversationDTO {
+    /// NIP-10 root event id (lowercase hex) — the conversation key.
+    pub root_event_id: String,
+    /// Hex pubkey of the primary counterparty (the peer who opened the thread
+    /// or who we most recently exchanged turns with).
+    pub counterparty_hex: String,
+    /// All unique participant hex pubkeys (active account + counterparty + any
+    /// reply participants).  Always contains at least one entry.
+    pub participants: Vec<String>,
+    /// Merged inbound + outbound turns, sorted ascending by `created_at`.
+    pub turns: Vec<NostrConversationTurnDTO>,
+    /// Whether the primary counterparty is in the active account's NIP-02
+    /// follow list at projection time. Recomputed live — follow/unfollow
+    /// immediately flips the verdict for all existing conversations (D6:
+    /// fail-closed; `false` when no follow set is wired).
+    pub trusted: bool,
+    /// Unix seconds of the earliest turn in the conversation.
+    pub first_seen: i64,
+    /// Unix seconds of the most-recent turn in the conversation.
+    pub last_activity: i64,
+}
+
 /// One contact row in [`SocialSnapshot::following`] — the user's NIP-02
 /// (kind:3) follow list, projected for the iOS "Social" tab.
 ///

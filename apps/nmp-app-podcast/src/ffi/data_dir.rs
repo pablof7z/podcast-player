@@ -173,6 +173,31 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
             }
         };
 
+        // ── Outbound-turn cache (disk → in-memory + social projection slot) ─
+        //
+        // Loaded immediately after the responder cache so the social
+        // `nostr_conversations_snapshot()` includes turns from prior sessions
+        // on the very first projection after a restart. Like the responder
+        // cache this is account-agnostic (keyed by globally-unique event ids);
+        // the social slot itself is cleared on account switch.
+        let outbound_loaded = {
+            let restored =
+                crate::store::outbound_turn_cache::load_outbound_turn_cache(&path_buf);
+            let non_empty = !restored.is_empty();
+            // Seed the in-memory projection slot so the conversation view
+            // populates immediately without waiting for a relay re-delivery.
+            if non_empty {
+                handle.state.social.seed_outbound_turns(restored.turns().to_vec());
+            }
+            // Keep the disk-persistence Arc in sync.
+            if let Ok(mut cache) = handle.outbound_turn_cache.lock() {
+                for turn in restored.turns() {
+                    cache.record(turn.clone());
+                }
+            }
+            non_empty
+        };
+
         if loaded > 0
             || !loaded_queue.is_empty()
             || identity_loaded
@@ -180,6 +205,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
             || triage_loaded
             || tasks_loaded
             || responder_loaded
+            || outbound_loaded
         {
             // Force the next snapshot poll to pick up the restored library,
             // queue, identity, owned-podcast keys, triage cache, and/or tasks

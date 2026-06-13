@@ -79,6 +79,7 @@ pub const SCHEMA_DOWNLOADS: &str = "podcast.downloads";
 pub const SCHEMA_SETTINGS: &str = "podcast.settings";
 pub const SCHEMA_IDENTITY: &str = "podcast.identity";
 pub const SCHEMA_WIDGET: &str = "podcast.widget";
+pub const SCHEMA_SOCIAL: &str = "podcast.social";
 pub const SCHEMA_MISC: &str = "podcast.misc";
 
 // ── Payload builders ──────────────────────────────────────────────────────────
@@ -161,6 +162,27 @@ fn build_widget_payload(handle: &PodcastHandle) -> Option<serde_json::Value> {
     }))
 }
 
+/// Build the `podcast.social` domain payload.
+///
+/// Returns `None` when social, agent_notes, AND nostr_conversations are all
+/// empty (so the domain's first emit is tombstoned rather than silently absent
+/// after a post-sign-out account switch that cleared the slots).
+fn build_social_payload(handle: &PodcastHandle) -> Option<serde_json::Value> {
+    let update = build_podcast_update(handle);
+    let empty = update.social.is_none()
+        && update.agent_notes.is_empty()
+        && update.nostr_conversations.is_empty();
+    if empty {
+        return None;
+    }
+    Some(serde_json::json!({
+        "rev": update.rev,
+        "social": update.social,
+        "agent_notes": update.agent_notes,
+        "nostr_conversations": update.nostr_conversations,
+    }))
+}
+
 /// Build the `podcast.misc` domain payload — the catch-all for everything
 /// not covered by a dedicated domain.
 fn build_misc_payload(handle: &PodcastHandle) -> serde_json::Value {
@@ -174,8 +196,6 @@ fn build_misc_payload(handle: &PodcastHandle) -> serde_json::Value {
         "knowledge_search_results": update.knowledge_search_results,
         "memory_facts": update.memory_facts,
         "clips": update.clips,
-        "social": update.social,
-        "agent_notes": update.agent_notes,
         "comments": update.comments,
         "voice": update.voice,
         "agent": update.agent,
@@ -209,6 +229,13 @@ fn identity_tombstone(rev: u64) -> serde_json::Value {
 /// The `widget` field is `null`.
 fn widget_tombstone(rev: u64) -> serde_json::Value {
     serde_json::json!({ "rev": rev, "widget": null })
+}
+
+/// Tombstone for `podcast.social`: signals that all social state was cleared
+/// (e.g. account switch). `social` field is `null` — the unambiguous "empty"
+/// signal for the iOS/Android social domain frame consumer.
+fn social_tombstone(rev: u64) -> serde_json::Value {
+    serde_json::json!({ "rev": rev, "social": null })
 }
 
 // ── TypedProjectionData assembly ──────────────────────────────────────────────
@@ -347,6 +374,24 @@ pub fn register_domain_projections(
                 .unwrap_or_else(|| widget_tombstone(current));
             last_emitted.store(current, Ordering::Relaxed);
             Some(make_typed(SCHEMA_WIDGET, payload))
+        });
+    }
+
+    // ── podcast.social ────────────────────────────────────────────────────────
+    {
+        let h = Arc::clone(handle);
+        let domain_rev = Arc::clone(&domain_revs.social);
+        let last_emitted = Arc::new(AtomicU64::new(0));
+        app_ref.register_typed_snapshot_projection(SCHEMA_SOCIAL, move || {
+            let current = domain_rev.load(Ordering::Relaxed);
+            let prev = last_emitted.load(Ordering::Relaxed);
+            if current == prev {
+                return None;
+            }
+            let payload = build_social_payload(&h)
+                .unwrap_or_else(|| social_tombstone(current));
+            last_emitted.store(current, Ordering::Relaxed);
+            Some(make_typed(SCHEMA_SOCIAL, payload))
         });
     }
 

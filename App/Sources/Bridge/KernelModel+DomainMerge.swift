@@ -20,6 +20,7 @@ extension KernelModel {
         var settings:  UInt64 = 0
         var identity:  UInt64 = 0
         var widget:    UInt64 = 0
+        var social:    UInt64 = 0
         var misc:      UInt64 = 0
     }
 }
@@ -146,25 +147,52 @@ extension KernelModel {
             }
         }
 
+        // ── social ───────────────────────────────────────────────────────────
+        // Kernel-authoritative: when the social domain arrives, it REPLACES
+        // the current nostrConversations slice. The kernel owns the NIP-10
+        // thread projection; the Swift side only writes to this slice via
+        // this merge path (recordNostrTurn is now LEGACY / local-only fallback).
+        if let soc = frames.social {
+            let lastRev = tracker.social
+            if soc.rev > lastRev {
+                tracker.social = soc.rev
+                anyAccepted = true
+                // agent_notes: tombstone semantics (nil = clear).
+                if let v = soc.agentNotes { composite.agentNotes = v }
+                // social snapshot: tombstone semantics (nil = logged-out, clear).
+                composite.social = soc.social
+                // nostrConversations: kernel projection → wire composite (DTO slice).
+                // The DTO→domain mapping happens downstream in
+                // `projectSnapshotDerivedState` where the wire type is translated
+                // into `[NostrConversationRecord]` and written to `AppState`.
+                if let dtos = soc.nostrConversations {
+                    composite.nostrConversations = dtos
+                }
+                dmLog.debug("social accepted rev=\(soc.rev)")
+            } else {
+                dmLog.debug("social DROPPED stale rev=\(soc.rev) last=\(lastRev)")
+            }
+        }
+
         // ── misc ─────────────────────────────────────────────────────────────
+        // NOTE: social + agentNotes have moved to podcast.social (above).
+        //       MiscDomainFrame no longer carries those fields.
         if let m = frames.misc {
             let lastRev = tracker.misc
             if m.rev > lastRev {
                 tracker.misc = m.rev
                 anyAccepted = true
-                if let v = m.wikiArticles          { composite.wikiArticles = v }
-                if let v = m.wikiSearchResults     { composite.wikiSearchResults = v }
-                if let v = m.picks                 { composite.picks = v }
-                if let v = m.agentTasks            { composite.agentTasks = v }
+                if let v = m.wikiArticles           { composite.wikiArticles = v }
+                if let v = m.wikiSearchResults      { composite.wikiSearchResults = v }
+                if let v = m.picks                  { composite.picks = v }
+                if let v = m.agentTasks             { composite.agentTasks = v }
                 if let v = m.knowledgeSearchResults { composite.knowledgeSearchResults = v }
-                if let v = m.memoryFacts           { composite.memoryFacts = v }
-                if let v = m.clips                 { composite.clips = v }
-                if let v = m.agentNotes            { composite.agentNotes = v }
-                if let v = m.comments              { composite.comments = v }
-                if let v = m.feedbackEvents        { composite.feedbackEvents = v }
-                if let v = m.feedbackThreads       { composite.feedbackThreads = v }
+                if let v = m.memoryFacts            { composite.memoryFacts = v }
+                if let v = m.clips                  { composite.clips = v }
+                if let v = m.comments               { composite.comments = v }
+                if let v = m.feedbackEvents         { composite.feedbackEvents = v }
+                if let v = m.feedbackThreads        { composite.feedbackThreads = v }
                 // Tombstone semantics: nil = domain is now empty → clear slice.
-                composite.social       = m.social
                 composite.voice        = m.voice
                 composite.agent        = m.agent
                 composite.agentContext = m.agentContext
@@ -175,5 +203,42 @@ extension KernelModel {
         }
 
         return anyAccepted
+    }
+}
+
+// ─── DTO → Domain mapping ─────────────────────────────────────────────────────
+
+extension KernelModel {
+    /// Maps a wire `NostrConversationDTO` (snake_case → camelCase, Int timestamps,
+    /// String direction) to the Swift domain type `NostrConversationRecord`
+    /// (uppercase ID suffix, `Date` timestamps, `Direction` enum).
+    ///
+    /// CONTRACT:
+    ///   - `dto.rootEventId`      → `record.rootEventID`   (lowercase d in DTO, uppercase ID in domain)
+    ///   - `dto.counterpartyHex`  → `record.counterpartyPubkey`
+    ///   - `dto.firstSeen`        → `record.firstSeen`     (Int unix → Date)
+    ///   - `dto.lastActivity`     → `record.lastTouched`   (Int unix → Date)
+    ///   - turn `"inbound"`       → `.incoming`
+    ///   - turn `"outbound"`      → `.outgoing`
+    ///   - `rawEventJSON` is not carried in the kernel projection → nil
+    static func nostrConversationFromDTO(_ dto: NostrConversationDTO) -> NostrConversationRecord {
+        let turns = dto.turns.map { t -> NostrConversationTurn in
+            let dir: NostrConversationTurn.Direction = t.direction == "outbound" ? .outgoing : .incoming
+            return NostrConversationTurn(
+                eventID:      t.eventId,
+                direction:    dir,
+                pubkey:       t.pubkeyHex,
+                createdAt:    Date(timeIntervalSince1970: Double(t.createdAt)),
+                content:      t.content,
+                rawEventJSON: nil
+            )
+        }
+        return NostrConversationRecord(
+            rootEventID:        dto.rootEventId,
+            counterpartyPubkey: dto.counterpartyHex,
+            firstSeen:          Date(timeIntervalSince1970: Double(dto.firstSeen)),
+            lastTouched:        Date(timeIntervalSince1970: Double(dto.lastActivity)),
+            turns:              turns
+        )
     }
 }

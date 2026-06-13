@@ -27,10 +27,10 @@ import Foundation
 //   podcast.settings  — settings, configured_relays
 //   podcast.identity  — active_account (may arrive nil = logged out)
 //   podcast.widget    — widget (may arrive nil = nothing to show)
+//   podcast.social    — social, agent_notes, nostr_conversations
 //   podcast.misc      — wiki_articles, wiki_search_results, picks, agent_tasks,
-//                       knowledge_search_results, memory_facts, clips, social,
-//                       agent_notes, comments, voice, agent, agent_context,
-//                       feedback_events, feedback_threads
+//                       knowledge_search_results, memory_facts, clips, comments,
+//                       voice, agent, agent_context, feedback_events, feedback_threads
 
 // ─── Schema IDs ──────────────────────────────────────────────────────────────
 
@@ -41,6 +41,7 @@ enum DomainSchema {
     static let settings  = "podcast.settings"
     static let identity  = "podcast.identity"
     static let widget    = "podcast.widget"
+    static let social    = "podcast.social"
     static let misc      = "podcast.misc"
 }
 
@@ -99,6 +100,26 @@ struct WidgetDomainFrame: Decodable {
     var widget: WidgetSnapshot?
 }
 
+// ─── podcast.social ──────────────────────────────────────────────────────────
+
+/// Social domain push frame: NIP-02 follow graph, flat agent-note feed, and
+/// NIP-10-threaded Nostr conversations (merged inbound + outbound turns).
+///
+/// CONTRACT: NO explicit CodingKeys — the bridge decoder uses `.convertFromSnakeCase`.
+/// `social: nil` arriving in this frame signals a tombstone (account switch
+/// cleared all social state); consumers should clear their social slice.
+struct SocialDomainFrame: Decodable {
+    var rev: UInt64 = 0
+    /// NIP-02 follow-list snapshot. `nil` = tombstone (cleared after account switch).
+    var social: SocialSnapshot?
+    /// Flat inbound agent-note feed (legacy; present for backward compat with
+    /// consumers not yet migrated to `nostrConversations`).
+    var agentNotes: [AgentNoteSummary]?
+    /// NIP-10-threaded conversations, newest-first by lastActivity.
+    /// Authoritative source for the `NostrConversationsView`.
+    var nostrConversations: [NostrConversationDTO]?
+}
+
 // ─── podcast.misc ─────────────────────────────────────────────────────────────
 
 struct MiscDomainFrame: Decodable {
@@ -110,8 +131,7 @@ struct MiscDomainFrame: Decodable {
     var knowledgeSearchResults: [KnowledgeSearchResult]?
     var memoryFacts: [MemoryFact]?
     var clips: [ClipSummary]?
-    var social: SocialSnapshot?
-    var agentNotes: [AgentNoteSummary]?
+    // social and agentNotes moved to SocialDomainFrame (podcast.social).
     var comments: [CommentSummary]?
     var voice: VoiceSnapshot?
     var agent: AgentSnapshot?
@@ -132,12 +152,14 @@ struct PodcastDomainFrames {
     var settings:  SettingsDomainFrame?
     var identity:  IdentityDomainFrame?
     var widget:    WidgetDomainFrame?
+    var social:    SocialDomainFrame?
     var misc:      MiscDomainFrame?
 
     /// `true` when at least one domain sidecar was present in the frame.
     var hasAnyDomain: Bool {
         library != nil || playback != nil || downloads != nil ||
-        settings != nil || identity != nil || widget != nil || misc != nil
+        settings != nil || identity != nil || widget != nil ||
+        social != nil || misc != nil
     }
 }
 
@@ -153,6 +175,7 @@ extension PodcastDomainFrames {
         if settings  != nil { names.append("settings") }
         if identity  != nil { names.append("identity") }
         if widget    != nil { names.append("widget") }
+        if social    != nil { names.append("social") }
         if misc      != nil { names.append("misc") }
         return names.isEmpty ? "none" : names.joined(separator: ",")
     }
@@ -197,6 +220,7 @@ extension PodcastDomainFrames {
         frames.settings  = tryDecode(DomainSchema.settings)
         frames.identity  = tryDecode(DomainSchema.identity)
         frames.widget    = tryDecode(DomainSchema.widget)
+        frames.social    = tryDecode(DomainSchema.social)
         frames.misc      = tryDecode(DomainSchema.misc)
 
         guard frames.hasAnyDomain else { return nil }

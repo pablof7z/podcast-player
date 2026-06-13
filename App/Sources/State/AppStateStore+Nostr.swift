@@ -59,6 +59,11 @@ extension AppStateStore {
     /// record on first sight. `counterparty` is required for the create
     /// path when the turn is outgoing (the agent's own pubkey is not the
     /// counterparty); for incoming turns `turn.pubkey` is used.
+    ///
+    /// LEGACY: The kernel (`podcast.social` domain, `nostr_conversations_snapshot`)
+    /// is now AUTHORITATIVE for the conversation projection and replaces this
+    /// slice on each push. This method remains as a local-echo / optimistic-update
+    /// path so outgoing turns appear immediately before the next kernel push.
     func recordNostrTurn(
         rootEventID: String,
         turn: NostrConversationTurn,

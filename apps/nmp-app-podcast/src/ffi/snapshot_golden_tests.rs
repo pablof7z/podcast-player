@@ -124,6 +124,7 @@ fn make_golden_handle(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
         app,
         state,
         responder_cache: Arc::new(Mutex::new(crate::store::agent_note_responder_cache::ResponderCache::default())),
+        outbound_turn_cache: Arc::new(Mutex::new(crate::store::outbound_turn_cache::OutboundTurnCache::new())),
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
     })
