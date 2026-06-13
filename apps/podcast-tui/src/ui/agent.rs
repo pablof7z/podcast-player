@@ -141,7 +141,7 @@ fn render_agent_help(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         Line::from(""),
         metric_line("Picks", state.agent_picks.len(), theme::ACCENT),
         metric_line("Tasks", state.agent_tasks.len(), theme::WARN),
-        metric_line("Notes", state.agent_notes.len(), theme::ACCENT_ALT),
+        metric_line("Notes", state.nostr_conversations.len(), theme::ACCENT_ALT),
         metric_line("Memory", state.memory_facts.len(), theme::GOOD),
     ];
     frame.render_widget(
@@ -222,9 +222,9 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
 
 fn render_notes(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
     let block = block("Agent Notes  r fetch  n publish", false);
-    if state.agent_notes.is_empty() {
+    if state.nostr_conversations.is_empty() {
         frame.render_widget(
-            Paragraph::new("No notes projected. Press 'r' to fetch inbound notes.")
+            Paragraph::new("No conversations projected. Press 'r' to fetch inbound notes.")
                 .style(theme::muted())
                 .block(block),
             area,
@@ -232,16 +232,23 @@ fn render_notes(frame: &mut Frame<'_>, area: Rect, state: &AppState) {
         return;
     }
     let items = state
-        .agent_notes
+        .nostr_conversations
         .iter()
         .enumerate()
-        .map(|(index, note)| {
-            let trust = if note.trusted { "trusted" } else { "untrusted" };
+        .map(|(index, conv)| {
+            let trust = if conv.trusted { "trusted" } else { "untrusted" };
             let base = row_style(index == state.selected_agent_note);
+            // Render the conversation's latest turn as the note-like line the
+            // flat agent_notes panel used to show.
+            let latest = conv
+                .turns
+                .last()
+                .map(|turn| turn.content.as_str())
+                .unwrap_or("(no turns)");
             ListItem::new(Line::from(vec![
                 theme::selected_prefix(index == state.selected_agent_note, state.motion_tick),
-                Span::styled(format::short_id(&note.author_npub), base),
-                Span::styled(format!("  {}  {}", trust, note.content), theme::text()),
+                Span::styled(format::short_id(&conv.counterparty_hex), base),
+                Span::styled(format!("  {}  {}", trust, latest), theme::text()),
             ]))
         })
         .collect::<Vec<_>>();

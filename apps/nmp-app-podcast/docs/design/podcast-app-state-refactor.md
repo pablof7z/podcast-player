@@ -92,7 +92,7 @@ observer (relay events, off-actor on the NMP pool). **Durability**: `P`=persiste
 | `comments_cache: Arc<Mutex<HashMap<String,Vec<CommentSummary>>>>` | A, O(comments) | A(snapshot) | **S** | **Comments** |
 | `viewed_comments_episode_id: Arc<Mutex<Option<String>>>` | A | A(snapshot) | **S** | **Comments** |
 | `social: Arc<Mutex<Option<SocialSnapshot>>>` | A(via T) | A(snapshot) | **S** | **Social** |
-| `agent_notes: Arc<Mutex<Vec<AgentNoteSummary>>>` | O(agent_notes) | A(snapshot) | **S** | **AgentNotes** |
+| `agent_notes: Arc<Mutex<Vec<CachedAgentNote>>>` (projected via `nostr_conversations`; the flat per-note projection was retired) | O(agent_notes) | A(snapshot) | **S** | **AgentNotes** |
 | `conversation: Arc<Mutex<Vec<AgentMessageSummary>>>` (handle) / inside `agent_chat` (handler) | A, T | A(snapshot) | **S** | **AgentChat** |
 | `agent_busy: Arc<AtomicBool>` | A, T | A(snapshot) | **S** | **AgentChat** |
 | `agent_touched: Arc<AtomicBool>` | A | A(snapshot) | **S** | **AgentChat** |

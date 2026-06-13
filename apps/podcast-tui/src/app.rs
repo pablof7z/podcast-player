@@ -1,4 +1,4 @@
-use nmp_app_podcast::ffi::projections::AgentNoteSummary;
+use nmp_app_podcast::ffi::projections::NostrConversationDTO;
 use nmp_app_podcast::ffi::{
     AccountSummary, AgentMessageSummary, AgentPickSummary, AgentTaskSummary, AppRelayRow,
     CategoryBrowseItem, ClipSummary, CommentSummary, ContactSummary, MemoryFact, SettingsSnapshot,
@@ -72,7 +72,7 @@ pub struct AppState {
     pub selected_agent_pick: usize,
     pub agent_tasks: Vec<AgentTaskSummary>,
     pub selected_agent_task: usize,
-    pub agent_notes: Vec<AgentNoteSummary>,
+    pub nostr_conversations: Vec<NostrConversationDTO>,
     pub selected_agent_note: usize,
     pub memory_facts: Vec<MemoryFact>,
     pub selected_memory_fact: usize,
@@ -145,7 +145,7 @@ impl Default for AppState {
             selected_agent_pick: 0,
             agent_tasks: Vec::new(),
             selected_agent_task: 0,
-            agent_notes: Vec::new(),
+            nostr_conversations: Vec::new(),
             selected_agent_note: 0,
             memory_facts: Vec::new(),
             selected_memory_fact: 0,

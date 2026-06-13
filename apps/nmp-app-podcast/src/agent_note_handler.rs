@@ -64,8 +64,8 @@ const MAX_INBOUND_NOTES: usize = 200;
 
 /// Internal cached representation of an inbound kind:1 agent note.
 ///
-/// Distinct from the wire DTO (the flat `AgentNoteSummary` projection was
-/// retired; conversations carry trust now):
+/// Distinct from the wire DTO (the flat per-note projection was retired;
+/// `NostrConversationDTO` turns carry trust now):
 /// it retains the author **hex** pubkey so the social projection can recompute
 /// the trust verdict live (against the `ActiveFollowSet`) at every snapshot
 /// build, and it carries **no** `trusted` field — the verdict is never frozen
