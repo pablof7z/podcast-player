@@ -1,63 +1,53 @@
 //! Scenario: end-to-end per-podcast NIP-F4 register→sign→publish against a
 //! LIVE kernel, guarding the signing seam rewired in #436/#438.
 //!
-//! ## What is guarded
+//! #436/#438 deleted app-side crypto and routed per-podcast signing through
+//! `register_podcast_signer_in_kernel` (`AddSigner { make_active:false }`) then
+//! `PublishRaw { signer_pubkey }` (kernel signs with the NAMED key, not the
+//! active account). The existing unit tests use a NULL app and only assert the
+//! dispatch envelope; they cannot catch a dropped register call or broken
+//! `signer_pubkey` threading. This scenario drives the REAL kernel actor.
 //!
-//! #436/#438 deleted ALL app-side crypto and rerouted per-podcast signing through:
-//!   1. `AddSigner { make_active: false }` — `nmp_app_signin_nsec(make_active=0)`
-//!      registers the per-podcast key as a NON-active signer in the kernel's
-//!      identity roster.
-//!   2. `PublishRaw { signer_pubkey }` — the kernel signs with the NAMED key,
-//!      not the active account.
-//!   3. `nmp.blossom.upload { signer_pubkey }` — the kernel signs kind:24242
-//!      Blossom auth events with the same named key.
+//! ## Assertions — and precisely what each PROVES
 //!
-//! The existing unit tests (`host_op_publish_tests.rs`) cover the dispatch
-//! envelope shape with a NULL app pointer — they never call into the real kernel,
-//! so they cannot catch a regression that drops `register_podcast_signer_in_kernel`
-//! or changes `signer_pubkey` threading.
+//! A. `podcast_pubkey_hex != active_account.pubkey_hex`.
+//!    Proves `create_owned_podcast` mints a fresh derived NIP-F4 key, not the
+//!    user's identity key.
 //!
-//! This scenario drives the REAL kernel actor end-to-end.
+//! B. Active account unchanged before AND after every publish dispatch.
+//!    Proves `nmp_app_signin_nsec(make_active=0)` registers WITHOUT activating;
+//!    fires if a regression passes `make_active=1`.
 //!
-//! ## Assertions
+//! C. **HEADLINE — the kernel signs with the per-podcast key** (correct `pubkey`
+//!    + valid Schnorr `sig`), for BOTH kind:10154 and kind:54. After the publish
+//!    dispatch registers the per-podcast signer (same seam), we drive a kernel
+//!    sign-and-return (`nmp_app_sign_event_for_return`) naming that pubkey and
+//!    read the signed event from the `signed_events` push projection, asserting
+//!    `pubkey == podcast_pubkey_hex` (NOT the active account), 128-hex `sig`,
+//!    64-hex `id`, and the requested `kind`. Sign-and-return resolves the named
+//!    signer via the IDENTICAL `sign_with_account_nonblocking(identity, pubkey,…)`
+//!    the `PublishRaw { signer_pubkey }` path uses (nmp-core
+//!    `actor/commands/publish.rs` vs `actor/dispatch.rs::SignEventForReturn`), so
+//!    dropping `register_podcast_signer_in_kernel` → named signer absent → `Err`
+//!    verdict → this fails. See `sign_tap.rs` for why this is the only
+//!    network-free seam that exposes a signed event's `pubkey` + `sig`.
 //!
-//! A. **Per-podcast key is distinct from the active account** (`podcast_pubkey_hex
-//!    != active_account.pubkey_hex`). This is the fundamental NIP-F4 invariant:
-//!    show/episode events are authored by a key the user controls but that is NOT
-//!    their Nostr identity key.
+//! D. `publish_show`/`publish_episode` are accepted by the live actor,
+//!    `last_published_at` is stamped, and the active account is unchanged.
+//!    Proves the handler runs end-to-end. (It does NOT prove the signed bytes —
+//!    `last_published_at` is stamped BEFORE the sign dispatch; assertion C is
+//!    what proves signing.)
 //!
-//! B. **Active account unchanged by publish** — `publish_show` calls
-//!    `nmp_app_signin_nsec(make_active=0)`, so the kernel's active signer MUST
-//!    NOT change. Asserted before AND after every publish dispatch.
+//! E. A second publish + sign-and-return for the same podcast still succeeds
+//!    with the per-podcast key and no active switch. Proves `AddSigner` is
+//!    idempotent and never activates the key.
 //!
-//! C. **`last_published_at` is stamped** — the actor ran the full publish path
-//!    (generate tags → register signer → dispatch PublishRaw) and bumped rev.
-//!    Observable via the snapshot without needing relay connectivity.
+//! Relay connectivity is NOT required: assertion C signs but never publishes.
 //!
-//! D. **Episode publish (kind:54) accepted** — `publish_episode` goes through
-//!    the SAME `register_podcast_signer_in_kernel` → `PublishRaw{signer_pubkey}`
-//!    path. Verified via dispatch acceptance (correlation_id returned, no error).
-//!
-//! E. **Idempotent re-registration** — a second `publish_show` for the same
-//!    podcast re-registers the same key (no error, `make_active=false` holds,
-//!    `last_published_at` remains valid). The kernel's `AddSigner` path is
-//!    documented as idempotent; this assertion catches a regression where
-//!    re-registration fails or accidentally activates the per-podcast key.
-//!
-//! ## Relay connectivity
-//!
-//! Not required. The signing layer is validated regardless of whether a relay
-//! accepted the event. `register_podcast_signer_in_kernel` is indirectly verified:
-//! without it, `PublishRaw{signer_pubkey}` would fail unknown-signer, the handler
-//! would not reach its `rev.fetch_add` + `last_published_at` stamp, and
-//! assertion C would time out — catching the regression.
-//!
-//! ## Note on `show_event_json`
-//!
-//! Prior to #436/#438 the app signed events locally and stamped the resulting
-//! event JSON into `OwnedPublishState.show_event_json`. Post-rewrite, the kernel
-//! holds the signed event; `show_event_json` is never populated. The correct
-//! observable for a successful `publish_show` is `last_published_at`.
+//! Note: post-#436/#438 the kernel holds the signed event, so
+//! `OwnedPublishState.show_event_json` is never populated; `last_published_at`
+//! is the publish-ran observable (D) and the sign-and-return seam carries the
+//! signed bytes (C).
 
 use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
@@ -67,6 +57,7 @@ use crate::fixtures;
 use crate::harness::{dispatch, snapshot, wait_for};
 use crate::mock_feed;
 use crate::scenarios::ScenarioResult;
+use crate::sign_tap::assert_kernel_signs_with;
 
 pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // ── Step 1: Establish a known active identity ─────────────────────────────
@@ -253,12 +244,13 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         ));
     }
 
-    // ── Assertion C: last_published_at is stamped by the actor ───────────────
+    // ── Assertion D (part 1): last_published_at is stamped by the actor ──────
     //
     // publish_show stamps last_published_at + bumps rev BEFORE dispatching
-    // PublishRaw. If register_podcast_signer_in_kernel is dropped or the handler
-    // early-exits (unknown key / store error), this stamp never happens and the
-    // timeout below fires — catching the regression.
+    // PublishRaw. If the handler early-exits (unknown key / store error), this
+    // stamp never happens and the timeout below fires. NOTE: this alone does
+    // NOT prove signing (the stamp precedes the sign dispatch) — assertion C
+    // below proves the signer. This proves the handler ran end-to-end.
     let target_id2 = podcast_id.clone();
     let update_after_show = match wait_for(handle, 10_000, |u| {
         u.owned_podcasts
@@ -314,7 +306,25 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         ));
     }
 
-    // ── Step 5 (Assertion D): publish_episode (kind:54) ──────────────────────
+    // ── Assertion C (HEADLINE): the kernel SIGNS kind:10154 with the ──────────
+    //                           per-podcast key (correct pubkey + valid sig).
+    //
+    // publish_show (above) just ran `register_podcast_signer_in_kernel` for this
+    // podcast's key. We now drive a kernel sign-and-return naming that same
+    // pubkey and assert the kernel produced a signed event authored by the
+    // per-podcast key — NOT the active account — with a valid Schnorr sig.
+    //
+    // This is the SAME `sign_with_account_nonblocking(identity, pubkey, …)`
+    // resolution the PublishRaw{signer_pubkey} dispatch uses. If a regression
+    // drops `register_podcast_signer_in_kernel`, the named signer is absent from
+    // the kernel roster and the kernel returns an Err verdict → this fails.
+    if let Err(msg) =
+        assert_kernel_signs_with(app, &podcast_pubkey, &active_before.pubkey_hex, 10154)
+    {
+        return ScenarioResult::Fail(format!("show (kind:10154) signing proof failed: {msg}"));
+    }
+
+    // ── Step 5 (Assertion D part 2 + Assertion C for kind:54): publish_episode ─
     //
     // The same register→sign path as publish_show but for a kind:54 episode
     // event. The mock feed provides at least 3 episodes; use the first one.
@@ -335,12 +345,24 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             ));
         }
 
-        // Give the actor a tick to process the episode publish command before
-        // reading the snapshot for the active-account check. The episode publish
-        // path does not update an observable snapshot slot (no episode-level
-        // last_published_at), so we use a short sleep + snapshot read.
-        std::thread::sleep(std::time::Duration::from_millis(600));
+        // ── Assertion C for kind:54: the kernel SIGNS the episode event with ──
+        //                            the per-podcast key.
+        //
+        // publish_episode (just dispatched) registers the per-podcast signer
+        // through the SAME seam. Drive a kernel sign-and-return for kind:54
+        // naming that pubkey and assert the signed event is authored by the
+        // per-podcast key with a valid sig. This both proves the episode
+        // signer AND deterministically waits for the actor (no fixed sleep),
+        // replacing the previous flaky 600ms sleep.
+        if let Err(msg) =
+            assert_kernel_signs_with(app, &podcast_pubkey, &active_before.pubkey_hex, 54)
+        {
+            return ScenarioResult::Fail(format!(
+                "episode (kind:54) signing proof failed: {msg}"
+            ));
+        }
 
+        // Assertion D part 2: publish_episode did not switch the active account.
         match snapshot(handle).and_then(|u| u.active_account) {
             Some(acc) if acc.pubkey_hex == active_before.pubkey_hex => {}
             Some(acc) => {
@@ -393,6 +415,19 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             .map(|t| t >= last_published_at_1)
             .unwrap_or(false)
     });
+
+    // Assertion E (signing proof after re-register): the per-podcast key still
+    // signs correctly after a SECOND registration. If AddSigner were not
+    // idempotent (e.g. the re-register corrupted or evicted the roster slot),
+    // this sign-and-return would fail.
+    if let Err(msg) =
+        assert_kernel_signs_with(app, &podcast_pubkey, &active_before.pubkey_hex, 10154)
+    {
+        return ScenarioResult::Fail(format!(
+            "idempotent re-register: kernel no longer signs with the per-podcast key \
+             after a second registration: {msg}"
+        ));
+    }
 
     // Final active-account check after idempotent re-register.
     match snapshot(handle).and_then(|u| u.active_account) {
