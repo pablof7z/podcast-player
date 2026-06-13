@@ -709,7 +709,114 @@ class DomainFrameWireTest {
         assertTrue("hasAnyDomain must be true", frames.hasAnyDomain)
     }
 
-    // ── 7. DomainSchema constants match Rust schema IDs ───────────────────────
+    // ── 7. Social domain decodes snake_case nostr_conversations fields ────────
+
+    private val socialFixture = """
+        {
+          "rev": 9,
+          "social": null,
+          "agent_notes": [],
+          "nostr_conversations": [
+            {
+              "root_event_id": "deadbeef001",
+              "counterparty_hex": "aabbccdd001",
+              "participants": ["aabbccdd001", "11223344001"],
+              "trusted": true,
+              "first_seen": 1717200000,
+              "last_activity": 1717286400,
+              "turns": [
+                {
+                  "event_id": "evt-001",
+                  "direction": "inbound",
+                  "pubkey_hex": "aabbccdd001",
+                  "created_at": 1717200001,
+                  "content": "Hello from Nostr"
+                },
+                {
+                  "event_id": "evt-002",
+                  "direction": "outbound",
+                  "pubkey_hex": "11223344001",
+                  "created_at": 1717200100,
+                  "content": "Reply from agent"
+                }
+              ]
+            }
+          ]
+        }
+    """.trimIndent()
+
+    @Test
+    fun `social domain decodes snake_case nostr_conversations correctly`() {
+        val raw = envelope("podcast.social" to socialFixture)
+        val frames = SnapshotCodec.decodeDomainFrames(raw)
+
+        assertNotNull("social frame must decode", frames)
+        val soc = frames!!.social
+        assertNotNull("social domain must be present", soc)
+        assertEquals(9L, soc!!.rev)
+
+        // social = null → tombstone shape, agent_notes = empty
+        assertNull("social field must be null (tombstone)", soc.social)
+        assertTrue("agent_notes must be empty", soc.agentNotes!!.isEmpty())
+
+        val convos = soc.nostrConversations
+        assertNotNull("nostr_conversations must decode", convos)
+        assertEquals(1, convos!!.size)
+
+        val convo = convos.single()
+        assertEquals("deadbeef001", convo.rootEventId)    // root_event_id
+        assertEquals("aabbccdd001", convo.counterpartyHex) // counterparty_hex
+        assertTrue("trusted must be true", convo.trusted)
+        assertEquals(1717200000L, convo.firstSeen)         // first_seen
+        assertEquals(1717286400L, convo.lastActivity)      // last_activity
+        assertEquals(2, convo.participants.size)
+
+        val turns = convo.turns
+        assertEquals(2, turns.size)
+
+        val inbound = turns[0]
+        assertEquals("evt-001", inbound.eventId)           // event_id
+        assertEquals("inbound", inbound.direction)
+        assertEquals("aabbccdd001", inbound.pubkeyHex)     // pubkey_hex
+        assertEquals(1717200001L, inbound.createdAt)       // created_at
+        assertEquals("Hello from Nostr", inbound.content)
+
+        val outbound = turns[1]
+        assertEquals("evt-002", outbound.eventId)
+        assertEquals("outbound", outbound.direction)
+        assertEquals("Reply from agent", outbound.content)
+
+        // Other domains must be absent
+        assertNull("library must be absent in social-only frame", frames.library)
+        assertNull("misc must be absent in social-only frame", frames.misc)
+    }
+
+    @Test
+    fun `social-only frame does not clobber other domains in mergeFrames`() {
+        // Seed composite with a library frame.
+        val libFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.library" to libraryFixture))!!
+        val tracker = DomainRevTracker()
+        val (seeded, _) = SnapshotCodec.mergeFrames(libFrames, PodcastSnapshot(), tracker)
+        assertEquals(1, seeded.library.size)
+
+        // Apply social-only frame — library domain must survive untouched.
+        val socFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.social" to socialFixture))!!
+        assertNotNull("social domain must be present", socFrames.social)
+        assertNull("library domain must be absent in social-only frame", socFrames.library)
+
+        val (afterSoc, socAccepted) = SnapshotCodec.mergeFrames(socFrames, seeded, tracker)
+        assertTrue("social frame must be accepted", socAccepted)
+        assertEquals(
+            "library slice must NOT be cleared by a social-only push frame",
+            1,
+            afterSoc.library.size
+        )
+        assertEquals(9L, tracker.social)
+    }
+
+    // ── 8. DomainSchema constants match Rust schema IDs ───────────────────────
 
     @Test
     fun `DomainSchema constants match Rust kernel schema IDs`() {
@@ -719,6 +826,7 @@ class DomainFrameWireTest {
         assertEquals("podcast.settings",  DomainSchema.SETTINGS)
         assertEquals("podcast.identity",  DomainSchema.IDENTITY)
         assertEquals("podcast.widget",    DomainSchema.WIDGET)
+        assertEquals("podcast.social",    DomainSchema.SOCIAL)
         assertEquals("podcast.misc",      DomainSchema.MISC)
     }
 }

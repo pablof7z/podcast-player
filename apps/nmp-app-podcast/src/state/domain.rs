@@ -32,6 +32,7 @@ use std::sync::Arc;
 /// | `settings` | `podcast.settings` | store settings + relays |
 /// | `identity` | `podcast.identity` | identity store |
 /// | `widget` | `podcast.widget` | player state + library (derived) |
+/// | `social` | `podcast.social` | social graph + agent notes + nostr conversations |
 /// | `misc` | `podcast.misc` | everything else (wiki/picks/clips/transcripts/…) |
 #[derive(Clone)]
 pub struct DomainRevs {
@@ -41,6 +42,7 @@ pub struct DomainRevs {
     pub settings: Arc<AtomicU64>,
     pub identity: Arc<AtomicU64>,
     pub widget: Arc<AtomicU64>,
+    pub social: Arc<AtomicU64>,
     pub misc: Arc<AtomicU64>,
 }
 
@@ -60,6 +62,7 @@ impl DomainRevs {
             settings: Arc::new(AtomicU64::new(1)),
             identity: Arc::new(AtomicU64::new(1)),
             widget: Arc::new(AtomicU64::new(1)),
+            social: Arc::new(AtomicU64::new(1)),
             misc: Arc::new(AtomicU64::new(1)),
         }
     }
@@ -77,6 +80,7 @@ impl DomainRevs {
             Domain::Settings => &self.settings,
             Domain::Identity => &self.identity,
             Domain::Widget => &self.widget,
+            Domain::Social => &self.social,
             Domain::Misc => &self.misc,
         }
     }
@@ -94,7 +98,7 @@ impl DomainRevs {
 /// each `Domain` resolves to).
 ///
 /// `Misc` is the default catch-all for substates not yet split into their own
-/// push domain (wiki/picks/clips/transcripts/social/agent/discovery/voice/
+/// push domain (wiki/picks/clips/transcripts/agent/discovery/voice/
 /// publish/tasks/comments/knowledge).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Domain {
@@ -104,5 +108,9 @@ pub enum Domain {
     Settings,
     Identity,
     Widget,
+    /// Social graph, agent notes, and Nostr conversation threads.
+    /// Bumped whenever `SocialState` is mutated (inbound note cached,
+    /// outbound turn recorded, or follow list updated).
+    Social,
     Misc,
 }

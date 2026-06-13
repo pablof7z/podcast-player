@@ -49,8 +49,10 @@ use nmp_core::KernelEventObserver;
 
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
 use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::state::Infra;
 use crate::store::agent_note_responder_cache::ResponderCache;
 use crate::store::identity::IdentityStore;
+use crate::store::outbound_turn_cache::OutboundTurnCache;
 use crate::store::PodcastStore;
 use nmp_ffi::NmpApp;
 use nmp_nip02::ActiveFollowSet;
@@ -227,9 +229,26 @@ pub struct AgentNotesObserver {
     /// Shared responder cache (dedup + turn counts).
     /// `None` in test / legacy paths → responder is disabled.
     responder_cache: Option<Arc<Mutex<ResponderCache>>>,
+    /// Outbound-turn cache for disk persistence of published auto-reply turns.
+    /// `None` in test / legacy paths → outbound capture is disabled.
+    outbound_turn_cache: Option<Arc<Mutex<OutboundTurnCache>>>,
+    /// Shared outbound-turns slot (Vec from SocialState.outbound_turns).
+    /// Updated in-memory so the conversation projection sees new outbound turns
+    /// immediately without waiting for a full reload. `None` in test paths.
+    social_outbound_slot: Option<Arc<Mutex<Vec<crate::store::outbound_turn_cache::OutboundTurn>>>>,
     /// Shared Tokio runtime for spawning responder tasks.
     /// `None` in test / legacy paths → responder is disabled.
     runtime: Option<Arc<Runtime>>,
+    /// `Domain::Social`-scoped `Infra` clone (from `SocialState.infra`).
+    ///
+    /// `infra.bump()` advances BOTH `domain_revs.social` (so the
+    /// `podcast.social` push sidecar re-emits) AND the global rev/signal (so a
+    /// tick fires at all). This is the SAME canonical mutation-site idiom every
+    /// working reactive domain uses; the bare `snapshot_signal.bump()` only
+    /// touches the global rev and would leave `domain_revs.social` frozen at 1,
+    /// making the social sidecar emit once then idle forever.
+    /// `None` in test / legacy paths (those fall back to the global rev).
+    social_infra: Option<Infra>,
     /// Raw NmpApp pointer for the responder's publish call.
     /// Null in test paths → responder is disabled.
     app: *mut NmpApp,
@@ -256,7 +275,10 @@ impl AgentNotesObserver {
             follow_set: None,
             store: None,
             responder_cache: None,
+            outbound_turn_cache: None,
+            social_outbound_slot: None,
             runtime: None,
+            social_infra: None,
             app: std::ptr::null_mut(),
         }
     }
@@ -266,22 +288,56 @@ impl AgentNotesObserver {
         self
     }
 
+    /// Wire the `Domain::Social`-scoped `Infra` so inbound-note mutations bump
+    /// `domain_revs.social` (driving the `podcast.social` sidecar re-emit) in
+    /// addition to the global rev. Pass `SocialState.infra.clone()`.
+    pub(crate) fn with_social_infra(mut self, infra: Infra) -> Self {
+        self.social_infra = Some(infra);
+        self
+    }
+
+    /// Bump the snapshot after an inbound-note cache mutation.
+    ///
+    /// Prefers the `Domain::Social`-scoped `Infra` (production): `infra.bump()`
+    /// advances `domain_revs.social` AND the global rev/signal — the canonical
+    /// reactive-domain mutation idiom. Falls back to the bare global signal,
+    /// then to a raw `rev` increment (legacy/test paths with no social infra).
+    fn bump_social(&self) {
+        if let Some(infra) = &self.social_infra {
+            infra.bump();
+        } else if let Some(signal) = &self.snapshot_signal {
+            signal.bump();
+        } else {
+            self.rev.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
     /// Wire the responder: enable auto-reply for trusted notes.
     ///
-    /// All four arguments are `Arc` clones from `register.rs`; the `app`
+    /// All arguments are `Arc` clones from `register.rs`; the `app`
     /// pointer is the live `*mut NmpApp` that `handle_publish_agent_note` uses.
+    ///
+    /// `outbound_turn_cache` + `social_outbound_slot` enable outbound-turn
+    /// capture: after a successful publish the responder records the turn for
+    /// disk persistence AND updates the in-memory projection slot so the
+    /// conversation view reflects the outbound reply immediately.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn with_responder(
         mut self,
         app: *mut NmpApp,
         follow_set: Arc<ActiveFollowSet>,
         store: Arc<Mutex<PodcastStore>>,
         responder_cache: Arc<Mutex<ResponderCache>>,
+        outbound_turn_cache: Arc<Mutex<OutboundTurnCache>>,
+        social_outbound_slot: Arc<Mutex<Vec<crate::store::outbound_turn_cache::OutboundTurn>>>,
         runtime: Arc<Runtime>,
     ) -> Self {
         self.app = app;
         self.follow_set = Some(follow_set);
         self.store = Some(store);
         self.responder_cache = Some(responder_cache);
+        self.outbound_turn_cache = Some(outbound_turn_cache);
+        self.social_outbound_slot = Some(social_outbound_slot);
         self.runtime = Some(runtime);
         self
     }
@@ -329,11 +385,6 @@ impl KernelEventObserver for AgentNotesObserver {
                 if cache.len() > MAX_INBOUND_NOTES {
                     cache.truncate(MAX_INBOUND_NOTES);
                 }
-                if let Some(signal) = &self.snapshot_signal {
-                    signal.bump();
-                } else {
-                    self.rev.fetch_add(1, Ordering::Relaxed);
-                }
                 true
             } else {
                 false
@@ -341,6 +392,14 @@ impl KernelEventObserver for AgentNotesObserver {
         } else {
             false
         };
+
+        // Bump AFTER releasing the cache lock (D8: never hold a `Slot`/`Mutex`
+        // guard across `bump()` — it posts on the actor channel). `bump_social`
+        // advances `domain_revs.social` so the `podcast.social` sidecar
+        // re-emits on the next tick (not just the global rev).
+        if is_new {
+            self.bump_social();
+        }
 
         // ── Auto-responder hook ──────────────────────────────────────────────
         // Fire ONLY for new, trusted notes (avoid double-reply on relay re-delivery).
@@ -363,8 +422,14 @@ impl KernelEventObserver for AgentNotesObserver {
                     self.identity.clone(),
                     store.clone(),
                     rc.clone(),
+                    self.outbound_turn_cache.clone(),
+                    self.social_outbound_slot.clone(),
                     rt,
                     self.snapshot_signal.clone(),
+                    // `domain_revs` from the Domain::Social-scoped infra so the
+                    // outbound-turn bump advances `domain_revs.social`, driving
+                    // the `podcast.social` sidecar re-emit (not just global rev).
+                    self.social_infra.as_ref().map(|i| i.domain_revs.clone()),
                 );
             }
         }

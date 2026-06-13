@@ -44,6 +44,35 @@ struct AgentNoteSummary: Codable, Identifiable, Equatable, Hashable {
     var trusted: Bool = false
 }
 
+/// One turn within a `NostrConversationDTO`. `direction` is `"inbound"` or
+/// `"outbound"` — a plain string so the wire contract is forward-compatible
+/// with new directions without a schema bump.
+struct NostrConversationTurnDTO: Codable, Identifiable, Equatable, Hashable {
+    var eventId: String
+    var direction: String
+    var pubkeyHex: String
+    var createdAt: Int
+    var content: String
+
+    var id: String { eventId }
+}
+
+/// A NIP-10-threaded conversation between the active account and one peer,
+/// surfaced via the `podcast.social` domain projection. Merges inbound
+/// kind:1 notes + outbound auto-responder turns under a common root event id.
+/// Use this instead of the flat `agentNotes` list for conversation views.
+struct NostrConversationDTO: Codable, Identifiable, Equatable, Hashable {
+    var rootEventId: String
+    var counterpartyHex: String
+    @DefaultEmptyArray var participants: [String] = []
+    @DefaultEmptyArray var turns: [NostrConversationTurnDTO] = []
+    var trusted: Bool = false
+    var firstSeen: Int = 0
+    var lastActivity: Int = 0
+
+    var id: String { rootEventId }
+}
+
 /// One contact in the active account's NIP-02 (kind:3) follow list.
 struct ContactSummary: Codable, Identifiable, Equatable, Hashable {
     var npub: String

@@ -652,6 +652,35 @@ struct AgentNoteSummary: Codable, Identifiable, Equatable, Hashable {
     var trusted: Bool = false
 }
 
+/// One turn within a `NostrConversationDTO`. `direction` is `"inbound"` or
+/// `"outbound"` — a plain string so the wire contract is forward-compatible
+/// with new directions without a schema bump.
+struct NostrConversationTurnDTO: Codable, Identifiable, Equatable, Hashable {
+    var eventId: String
+    var direction: String
+    var pubkeyHex: String
+    var createdAt: Int
+    var content: String
+
+    var id: String { eventId }
+}
+
+/// A NIP-10-threaded conversation between the active account and one peer,
+/// surfaced via the `podcast.social` domain projection. Merges inbound
+/// kind:1 notes + outbound auto-responder turns under a common root event id.
+/// Use this instead of the flat `agentNotes` list for conversation views.
+struct NostrConversationDTO: Codable, Identifiable, Equatable, Hashable {
+    var rootEventId: String
+    var counterpartyHex: String
+    @DefaultEmptyArray var participants: [String] = []
+    @DefaultEmptyArray var turns: [NostrConversationTurnDTO] = []
+    var trusted: Bool = false
+    var firstSeen: Int = 0
+    var lastActivity: Int = 0
+
+    var id: String { rootEventId }
+}
+
 /// One contact in the active account's NIP-02 (kind:3) follow list.
 struct ContactSummary: Codable, Identifiable, Equatable, Hashable {
     var npub: String
@@ -837,6 +866,10 @@ struct PodcastUpdate {
     /// Every row carries `trusted == false` until the kind:3 contact/trust
     /// gate lands; route to an approval surface, do not auto-respond.
     @DefaultEmptyArray var agentNotes: [AgentNoteSummary] = []
+    /// NIP-10-threaded Nostr conversations (inbound + outbound merged), newest-first
+    /// by lastActivity. Subsumes the flat `agentNotes` list for conversation views.
+    /// Empty until the first `FetchAgentNotes` or outbound auto-reply.
+    @DefaultEmptyArray var nostrConversations: [NostrConversationDTO] = []
     /// User-configured app relays (NMP v0.2.1 `configured_relays`). Each row
     /// carries the relay URL plus its NIP-65 role string. Drives the App
     /// Relays editor. Empty until the kernel seeds defaults at start or the
@@ -992,6 +1025,7 @@ extension PodcastUpdate: Codable {
         ownedPodcasts = try c.decodeIfPresent([OwnedPodcastInfo].self, forKey: .ownedPodcasts) ?? []
         categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
         agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
+        nostrConversations = try c.decodeIfPresent([NostrConversationDTO].self, forKey: .nostrConversations) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
         feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
         feedbackThreads = try c.decodeIfPresent([FeedbackThreadDTO].self, forKey: .feedbackThreads) ?? []

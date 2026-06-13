@@ -51,6 +51,10 @@ struct PodcastUpdate {
     /// Every row carries `trusted == false` until the kind:3 contact/trust
     /// gate lands; route to an approval surface, do not auto-respond.
     @DefaultEmptyArray var agentNotes: [AgentNoteSummary] = []
+    /// NIP-10-threaded Nostr conversations (inbound + outbound merged), newest-first
+    /// by lastActivity. Subsumes the flat `agentNotes` list for conversation views.
+    /// Empty until the first `FetchAgentNotes` or outbound auto-reply.
+    @DefaultEmptyArray var nostrConversations: [NostrConversationDTO] = []
     /// User-configured app relays (NMP v0.2.1 `configured_relays`). Each row
     /// carries the relay URL plus its NIP-65 role string. Drives the App
     /// Relays editor. Empty until the kernel seeds defaults at start or the
@@ -206,6 +210,7 @@ extension PodcastUpdate: Codable {
         ownedPodcasts = try c.decodeIfPresent([OwnedPodcastInfo].self, forKey: .ownedPodcasts) ?? []
         categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
         agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
+        nostrConversations = try c.decodeIfPresent([NostrConversationDTO].self, forKey: .nostrConversations) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
         feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []
         feedbackThreads = try c.decodeIfPresent([FeedbackThreadDTO].self, forKey: .feedbackThreads) ?? []

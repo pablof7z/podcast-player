@@ -137,6 +137,9 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     // the cache is filled by `FetchAgentNotes` on the actor thread and
     // projected here on every tick (no polling, no pull symbols).
     let agent_notes = handle.state.social.agent_notes_snapshot();
+    // NIP-10 threaded conversations (inbound + outbound turns merged by root_event_id).
+    // Subsumes `agent_notes` for conversation-view UIs.
+    let nostr_conversations = handle.state.social.nostr_conversations_snapshot();
 
     // In-app feedback events (kind:1 + kind:513 for this app's project coord),
     // cached and reduced by `nmp-feedback`.
@@ -201,6 +204,7 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         categories,
         social,
         agent_notes,
+        nostr_conversations,
         configured_relays,
         feedback_events,
         feedback_threads,

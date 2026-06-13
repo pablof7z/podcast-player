@@ -10,15 +10,19 @@
 //!  - `infra.bump_domain` advances both the domain rev and the global rev
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
+use nmp_core::substrate::KernelEvent;
+use nmp_core::KernelEventObserver;
 use nmp_core::{encode_snapshot_frame, SnapshotEnvelope, TypedProjectionData};
 
+use crate::agent_note_handler::AgentNotesObserver;
 use crate::ffi::handle::PodcastHandle;
 use crate::ffi::snapshot_domain_projections::{
     decode_podcast_domain_sidecars, register_domain_projections, SCHEMA_DOWNLOADS,
-    SCHEMA_IDENTITY, SCHEMA_LIBRARY, SCHEMA_MISC, SCHEMA_PLAYBACK, SCHEMA_SETTINGS, SCHEMA_WIDGET,
+    SCHEMA_IDENTITY, SCHEMA_LIBRARY, SCHEMA_MISC, SCHEMA_PLAYBACK, SCHEMA_SETTINGS,
+    SCHEMA_SOCIAL, SCHEMA_WIDGET,
 };
 use crate::state::{Domain, DomainRevs, Infra, PodcastAppState};
 use crate::store::PodcastStore;
@@ -41,6 +45,7 @@ fn make_test_handle_with_app(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
         app,
         state,
         responder_cache: Arc::new(Mutex::new(crate::store::agent_note_responder_cache::ResponderCache::default())),
+        outbound_turn_cache: Arc::new(Mutex::new(crate::store::outbound_turn_cache::OutboundTurnCache::new())),
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
     })
@@ -55,6 +60,38 @@ fn make_frame_with_sidecars(sidecars: &[TypedProjectionData]) -> Vec<u8> {
     encode_snapshot_frame(&env, sidecars)
 }
 
+/// Build a REAL `AgentNotesObserver` wired to the handle's social state — the
+/// SAME `agent_notes` cache the social projection reads AND the SAME
+/// `Domain::Social`-scoped `Infra` whose `bump()` advances `domain_revs.social`.
+///
+/// This is the production wiring (minus the auto-responder); driving a kernel
+/// event through it exercises the exact mutation→bump→re-emit path, so the test
+/// fails if a future edit stops bumping the social domain rev. NO manual
+/// `fetch_add` — that would mask the very bug this guards.
+fn make_social_observer(handle: &Arc<PodcastHandle>) -> AgentNotesObserver {
+    // Empty identity → `my_pubkey` is empty → inbound peer notes are NOT
+    // dropped as self-authored.
+    let identity = Arc::new(Mutex::new(crate::store::identity::IdentityStore::new()));
+    AgentNotesObserver::new(
+        identity,
+        handle.state.social.agent_notes.share(),
+        Arc::clone(&handle.state.infra.rev),
+    )
+    .with_social_infra(handle.state.social.infra.clone())
+}
+
+/// A minimal inbound kind:1 NIP-01 text note from `author_hex`.
+fn inbound_note(id: &str, author_hex: &str) -> KernelEvent {
+    KernelEvent {
+        id: id.to_string(),
+        author: author_hex.to_string(),
+        kind: 1,
+        created_at: 1_717_200_000,
+        tags: Vec::new(),
+        content: "hello from a followed peer".to_string(),
+    }
+}
+
 // ── DomainRevs construction ───────────────────────────────────────────────────
 
 /// `DomainRevs::new` starts all counters at 1 so the first emit always fires.
@@ -67,6 +104,7 @@ fn domain_revs_start_at_one() {
     assert_eq!(dr.settings.load(Ordering::Relaxed), 1);
     assert_eq!(dr.identity.load(Ordering::Relaxed), 1);
     assert_eq!(dr.widget.load(Ordering::Relaxed), 1);
+    assert_eq!(dr.social.load(Ordering::Relaxed), 1);
     assert_eq!(dr.misc.load(Ordering::Relaxed), 1);
 }
 
@@ -416,6 +454,188 @@ fn widget_empty_emits_tombstone_then_idles() {
 
     let idle = app_ref.run_typed_snapshot_projections();
     assert!(idle.iter().all(|p| p.schema_id != SCHEMA_WIDGET), "second empty tick must be silent");
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
+/// `podcast.social` empty → tombstone on first run, then idles on second tick.
+///
+/// When the social state is empty (no account → no follow graph, no notes, no
+/// conversations), `build_social_payload` returns `None` and the registration
+/// closure emits `social_tombstone(rev)` so the iOS/Android decoders know to
+/// clear their slice. A second tick with the same empty state returns `None`
+/// (no perpetual rebuild).
+#[test]
+fn social_empty_emits_tombstone_then_idles() {
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+    let handle = Arc::new(*make_test_handle_with_app(app));
+    register_domain_projections(app_ref, &handle);
+
+    // First run: rev 1 > last_emitted 0; no account → tombstone.
+    let first = app_ref.run_typed_snapshot_projections();
+    let soc = first.iter().find(|p| p.schema_id == SCHEMA_SOCIAL)
+        .expect("social tombstone must be emitted when state is empty");
+    let val: serde_json::Value = serde_json::from_slice(&soc.payload).unwrap();
+    assert_eq!(
+        val["social"], serde_json::Value::Null,
+        "tombstone must carry social: null; got: {val}"
+    );
+    assert!(val["rev"].is_number(), "tombstone must carry a rev field");
+
+    // Second tick — last_emitted caught up → no social sidecar.
+    let second = app_ref.run_typed_snapshot_projections();
+    assert!(
+        second.iter().all(|p| p.schema_id != SCHEMA_SOCIAL),
+        "second empty tick must NOT emit social sidecar"
+    );
+
+    // Drive a REAL inbound note through a production-wired observer (NOT a
+    // manual fetch_add). The observer's `bump_social()` must advance
+    // `domain_revs.social` so the sidecar re-emits — now carrying the note.
+    let observer = make_social_observer(&handle);
+    observer.on_kernel_event(&inbound_note(
+        "evt-empty-then-note",
+        "aabbccddeeff00112233445566778899aabbccddeeff001122334455667788aa",
+    ));
+
+    let after_note = app_ref.run_typed_snapshot_projections();
+    let soc2 = after_note
+        .iter()
+        .find(|p| p.schema_id == SCHEMA_SOCIAL)
+        .expect("social sidecar must RE-EMIT after a real inbound note (production bumped domain_revs.social)");
+    let val2: serde_json::Value = serde_json::from_slice(&soc2.payload).unwrap();
+    // No longer a tombstone — the note populated nostr_conversations.
+    assert!(
+        val2["nostr_conversations"].as_array().map(|a| !a.is_empty()).unwrap_or(false),
+        "re-emitted social payload must carry the inbound conversation; got: {val2}"
+    );
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
+/// Delta isolation: a REAL inbound note (driven through the production observer)
+/// emits ONLY `podcast.social`.
+///
+/// Mirrors the `playback_tick_excludes_library_sidecar` test but for the new
+/// `podcast.social` 8th domain, and uses the production mutation path (NOT a
+/// manual `fetch_add`) so it doubles as a guard that the inbound bump targets
+/// the social domain rev and nothing else.
+#[test]
+fn social_inbound_note_excludes_library_and_playback_sidecars() {
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+
+    let handle = Arc::new(*make_test_handle_with_app(app));
+
+    register_domain_projections(app_ref, &handle);
+
+    // Consume initial state (all domains fire once).
+    let _ = app_ref.run_typed_snapshot_projections();
+    // Second run with no bumps → all closures return None.
+    let no_change = app_ref.run_typed_snapshot_projections();
+    assert!(
+        no_change.is_empty(),
+        "second run with no bump must emit nothing; got {:?}",
+        no_change.iter().map(|p| p.schema_id.as_str()).collect::<Vec<_>>()
+    );
+
+    // Drive a REAL inbound note — production code bumps ONLY domain_revs.social.
+    let observer = make_social_observer(&handle);
+    observer.on_kernel_event(&inbound_note(
+        "evt-delta-iso",
+        "1111111111111111111111111111111111111111111111111111111111111111",
+    ));
+
+    let after = app_ref.run_typed_snapshot_projections();
+    let keys: Vec<&str> = after.iter().map(|p| p.schema_id.as_str()).collect();
+
+    assert!(
+        keys.contains(&SCHEMA_SOCIAL),
+        "podcast.social must be emitted after an inbound note; got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_LIBRARY),
+        "podcast.library must NOT be emitted after a social-only mutation (delta isolation); got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_PLAYBACK),
+        "podcast.playback must NOT be emitted after a social-only mutation; got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_MISC),
+        "podcast.misc must NOT be emitted after a social-only mutation; got {keys:?}"
+    );
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
+/// REGRESSION GUARD (the BLOCKER this PR was rejected for): a second inbound
+/// note must RE-EMIT the social sidecar.
+///
+/// The original bug: the social projection gates on `domain_revs.social`, but
+/// the inbound mutation path bumped only the GLOBAL signal — so the sidecar
+/// emitted once (current 1 > last_emitted 0) and then idled forever
+/// (current == prev), and new notes never reached iOS/Android. This test drives
+/// TWO real inbound notes through the production observer and asserts the
+/// SECOND one also re-emits `podcast.social` (proving production code advances
+/// the social domain rev on every mutation, not just the first).
+#[test]
+fn social_inbound_note_reemits_on_each_new_note_real_path() {
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+
+    let handle = Arc::new(*make_test_handle_with_app(app));
+    register_domain_projections(app_ref, &handle);
+
+    let observer = make_social_observer(&handle);
+
+    // Consume the initial tombstone tick, then confirm silence.
+    let _ = app_ref.run_typed_snapshot_projections();
+    assert!(
+        app_ref.run_typed_snapshot_projections().is_empty(),
+        "no social sidecar should emit before any note arrives"
+    );
+
+    // First inbound note → sidecar re-emits.
+    observer.on_kernel_event(&inbound_note(
+        "evt-real-1",
+        "2222222222222222222222222222222222222222222222222222222222222222",
+    ));
+    let after_first = app_ref.run_typed_snapshot_projections();
+    assert!(
+        after_first.iter().any(|p| p.schema_id == SCHEMA_SOCIAL),
+        "first inbound note must re-emit podcast.social"
+    );
+    // Idle confirms last_emitted caught up.
+    assert!(
+        app_ref.run_typed_snapshot_projections().is_empty(),
+        "social sidecar must idle after the first note is emitted"
+    );
+
+    // SECOND inbound note (different id) → MUST re-emit again. This is the line
+    // that failed before the fix (domain rev was frozen at 1).
+    observer.on_kernel_event(&inbound_note(
+        "evt-real-2",
+        "3333333333333333333333333333333333333333333333333333333333333333",
+    ));
+    let after_second = app_ref.run_typed_snapshot_projections();
+    let soc = after_second
+        .iter()
+        .find(|p| p.schema_id == SCHEMA_SOCIAL)
+        .expect("SECOND inbound note must ALSO re-emit podcast.social (the BLOCKER regression guard)");
+    let val: serde_json::Value = serde_json::from_slice(&soc.payload).unwrap();
+    let convo_count = val["nostr_conversations"].as_array().map(|a| a.len()).unwrap_or(0);
+    assert_eq!(
+        convo_count, 2,
+        "both inbound notes (distinct roots) must appear in the re-emitted payload; got: {val}"
+    );
 
     drop(handle);
     unsafe { drop(Box::from_raw(app)) };

@@ -510,6 +510,7 @@
 		AA520818B554EBB59213CC33 /* LibraryFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B93A04888D8331D4E91870B /* LibraryFilters.swift */; };
 		AB3E374FCB6BF27F7CDC797B /* EpisodeDetailLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9084CB237CC7AB68472A18ED /* EpisodeDetailLink.swift */; };
 		AB9B83CFE6982C77C88D691E /* AssemblyAICredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 587C7D9278E988FCED0A5663 /* AssemblyAICredentialStore.swift */; };
+		AC023BEA3FCBE79369B31B3D /* NostrConversationSocialDomainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B5DD6B156802C61A482823 /* NostrConversationSocialDomainTests.swift */; };
 		AC582ACB194B69A4D7FBE9B9 /* AudioCapability+Wire.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A68B971C8B62C972814482 /* AudioCapability+Wire.swift */; };
 		ACB3BFFA7CAB0C4D9B69DB5B /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DACB30A67A1166D856B816C /* CategoryDetailView.swift */; };
 		ACF0971E2A14036E46837F60 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C0676822D8B8507BB45A /* NotificationService.swift */; };
@@ -1509,6 +1510,7 @@
 		E7A69E33C9E7B75C499BDEDB /* AgentRunCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunCollector.swift; sourceTree = "<group>"; };
 		E8350DA2ECAB3BD4233213FF /* AppStateStore+Sorting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStateStore+Sorting.swift"; sourceTree = "<group>"; };
 		E9755482A5F563171C8C1343 /* AudioCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapability.swift; sourceTree = "<group>"; };
+		E9B5DD6B156802C61A482823 /* NostrConversationSocialDomainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NostrConversationSocialDomainTests.swift; sourceTree = "<group>"; };
 		EA4C9F191A49841CBD1704DB /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
 		EB700211550DA4FE9D8A7C77 /* AssemblyAISettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssemblyAISettingsView.swift; sourceTree = "<group>"; };
 		EB7944B0FB7FE399DED84E2A /* ClipComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipComposerSheet.swift; sourceTree = "<group>"; };
@@ -2374,6 +2376,7 @@
 				80D89E3501095FCCE1DCE609 /* LLMProviderTests.swift */,
 				2D27E0D8056423C267527E1E /* LocalEmbeddingsClientTests.swift */,
 				9EA05DFB9A3B8F9FD49828B1 /* LocalLLMInferenceTests.swift */,
+				E9B5DD6B156802C61A482823 /* NostrConversationSocialDomainTests.swift */,
 				97D91C71123630981BEEDF38 /* ObservationAwaitTests.swift */,
 				FDE4204B8EE4F82AE15FB6E0 /* OPMLExportTests.swift */,
 				107A4F56C8B628B04E067F78 /* OPMLImportTests.swift */,
@@ -3837,6 +3840,7 @@
 				BBCC62B1CD794D7805AA77CC /* LiquidGlassSegmentedPickerTests.swift in Sources */,
 				008E07A0F15B0176C0BDCBEB /* LocalEmbeddingsClientTests.swift in Sources */,
 				B12E11C0ECAD751DB3DAF1AA /* LocalLLMInferenceTests.swift in Sources */,
+				AC023BEA3FCBE79369B31B3D /* NostrConversationSocialDomainTests.swift in Sources */,
 				BBC61B0CFEA61C9CFCE9F636 /* OPMLExportTests.swift in Sources */,
 				641F2588DE631E18F6DCC548 /* OPMLImportTests.swift in Sources */,
 				2FA2DA9FCDCFEBD1619C0EE0 /* ObservationAwaitTests.swift in Sources */,

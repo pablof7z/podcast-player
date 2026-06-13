@@ -105,8 +105,11 @@ fn untrusted_note_never_triggers_response() {
         identity,
         store,
         Arc::clone(&cache),
+        None, // outbound_turn_cache
+        None, // social_outbound_slot
         &runtime,
-        None,
+        None, // signal
+        None, // domain_revs
     );
 
     // The runtime needs to drain its spawned tasks (if any).
@@ -137,8 +140,11 @@ fn wtd_end_tag_suppresses_response() {
         identity,
         store,
         Arc::clone(&cache),
+        None, // outbound_turn_cache
+        None, // social_outbound_slot
         &runtime,
-        None,
+        None, // signal
+        None, // domain_revs
     );
 
     runtime.block_on(async { tokio::task::yield_now().await });
@@ -175,8 +181,11 @@ fn dedup_second_delivery_suppressed() {
         identity,
         store,
         Arc::clone(&cache),
+        None, // outbound_turn_cache
+        None, // social_outbound_slot
         &runtime,
-        None,
+        None, // signal
+        None, // domain_revs
     );
 
     runtime.block_on(async { tokio::task::yield_now().await });
@@ -220,8 +229,11 @@ fn turn_cap_suppresses_after_ten_turns() {
         identity,
         store,
         Arc::clone(&cache),
+        None, // outbound_turn_cache
+        None, // social_outbound_slot
         &runtime,
-        None,
+        None, // signal
+        None, // domain_revs
     );
 
     runtime.block_on(async { tokio::task::yield_now().await });
@@ -261,8 +273,11 @@ fn trusted_note_with_no_blockers_reaches_llm_path() {
         identity,
         store,
         Arc::clone(&cache),
+        None, // outbound_turn_cache
+        None, // social_outbound_slot
         &runtime,
-        None,
+        None, // signal
+        None, // domain_revs
     );
 
     // Give the runtime a chance to execute the spawned future.

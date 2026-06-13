@@ -419,7 +419,7 @@ impl PodcastAppState {
         let comments =
             comments::CommentsState::new(infra.clone(), store.clone(), identity.clone());
         let discovery = discovery::DiscoveryState::new(infra.clone());
-        let social = social::SocialState::new(infra.clone());
+        let social = social::SocialState::new(infra.with_domain(Domain::Social));
         let agent_chat = agent_chat::AgentChatState::new(infra.clone(), store.clone());
         // Voice is constructed with a null app pointer by default.  In
         // production (`register.rs`) the caller replaces this field before

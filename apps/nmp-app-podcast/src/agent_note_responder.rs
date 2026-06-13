@@ -44,6 +44,7 @@
 //! The responder does NOT touch snapshot projections, DTOs, or the pub-path
 //! outgoing-turn capture — those are B's territory.
 
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime;
@@ -54,8 +55,10 @@ use crate::agent_llm::FAST_MODEL;
 use crate::agent_note_handler::{handle_publish_agent_note, CachedAgentNote};
 use crate::llm::complete_for_role;
 use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::state::{Domain, DomainRevs};
 use crate::store::agent_note_responder_cache::{save_responder_cache, ResponderCache};
 use crate::store::identity::IdentityStore;
+use crate::store::outbound_turn_cache::{save_outbound_turn_cache, OutboundTurn, OutboundTurnCache};
 use crate::store::PodcastStore;
 
 
@@ -95,9 +98,10 @@ fn responder_system_prompt(store: Option<&Arc<Mutex<PodcastStore>>>) -> String {
 /// * `identity` – shared identity store (read-only; used for signing identity).
 /// * `store` – shared podcast store (read-only; used for LLM model config).
 /// * `responder_cache` – shared in-memory responder state (dedup + turn counts).
+/// * `outbound_turn_cache` – disk-persistence cache for outbound turns (`None` in tests).
+/// * `social_outbound_slot` – in-memory projection slot for immediate UI update (`None` in tests).
 /// * `runtime` – shared Tokio runtime (spawn target).
-/// * `signal` – optional snapshot signal (not bumped by responder; kept for
-///   potential future outgoing-turn projection integration — TODO Item B).
+/// * `signal` – optional snapshot signal (bumped after recording an outbound turn).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn maybe_respond_to_note(
     note: CachedAgentNote,
@@ -105,8 +109,11 @@ pub(crate) fn maybe_respond_to_note(
     identity: Arc<Mutex<IdentityStore>>,
     store: Arc<Mutex<PodcastStore>>,
     responder_cache: Arc<Mutex<ResponderCache>>,
+    outbound_turn_cache: Option<Arc<Mutex<OutboundTurnCache>>>,
+    social_outbound_slot: Option<Arc<Mutex<Vec<OutboundTurn>>>>,
     runtime: &Arc<Runtime>,
-    _signal: Option<SnapshotUpdateSignal>,
+    signal: Option<SnapshotUpdateSignal>,
+    domain_revs: Option<Arc<DomainRevs>>,
 ) {
     // ── Guard 1: dedup ────────────────────────────────────────────────────────
     // Check in the caller thread (cheap, avoids spawning a task for a known dup).
@@ -161,17 +168,22 @@ pub(crate) fn maybe_respond_to_note(
             identity,
             store,
             responder_cache,
+            outbound_turn_cache,
+            social_outbound_slot,
+            signal,
+            domain_revs,
         )
         .await;
     });
 }
 
-/// Async body: build LLM reply → publish → persist dedup state.
+/// Async body: build LLM reply → publish → persist dedup state + record outbound turn.
 ///
 /// D6: any failure along the path (lock poisoning, missing identity, LLM
 /// error, publish failure) is logged and silently dropped. The dedup cache is
 /// updated ONLY on a successful publish so a failed attempt can be retried on
 /// relay re-delivery.
+#[allow(clippy::too_many_arguments)]
 async fn respond_async(
     event_id: String,
     inbound_content: String,
@@ -182,6 +194,10 @@ async fn respond_async(
     identity: Arc<Mutex<IdentityStore>>,
     store: Arc<Mutex<PodcastStore>>,
     responder_cache: Arc<Mutex<ResponderCache>>,
+    outbound_turn_cache: Option<Arc<Mutex<OutboundTurnCache>>>,
+    social_outbound_slot: Option<Arc<Mutex<Vec<OutboundTurn>>>>,
+    signal: Option<SnapshotUpdateSignal>,
+    domain_revs: Option<Arc<DomainRevs>>,
 ) {
     // ── Re-check dedup inside the task (race window guard) ───────────────────
     if let Ok(cache) = responder_cache.lock() {
@@ -265,14 +281,74 @@ async fn respond_async(
 
     if let Ok(mut cache) = responder_cache.lock() {
         cache.record_response(&event_id, &root_event_id);
-        if let Some(dir) = data_dir {
+        if let Some(dir) = &data_dir {
             // D6: persistence failure is non-fatal; in-memory cache stays authoritative.
-            if let Err(e) = save_responder_cache(&dir, &cache) {
+            if let Err(e) = save_responder_cache(dir, &cache) {
                 eprintln!(
                     "[agent_note_responder] failed to persist responder cache: {e}"
                 );
             }
         }
+    }
+
+    // ── Capture outbound turn ─────────────────────────────────────────────────
+    // Extract the published event id from the publish result. NMP returns the
+    // signed event id in publish_result["event_id"] when ok=true; fall back to
+    // a synthetic id derived from the inbound event if absent (D6 graceful).
+    let published_event_id = publish_result
+        .get("event_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&event_id)
+        .to_string();
+
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+
+    let outbound_turn = OutboundTurn {
+        event_id: published_event_id,
+        root_event_id: root_event_id.clone(),
+        counterparty_hex: author_hex.clone(),
+        content: reply.clone(),
+        created_at: now_secs,
+    };
+
+    // Update in-memory projection slot first (D8: non-blocking slot write).
+    if let Some(slot) = &social_outbound_slot {
+        if let Ok(mut turns) = slot.lock() {
+            turns.push(outbound_turn.clone());
+        }
+    }
+
+    // Update disk-persistence cache + persist.
+    if let Some(cache_arc) = &outbound_turn_cache {
+        if let Ok(mut cache) = cache_arc.lock() {
+            cache.record(outbound_turn);
+            if let Some(dir) = &data_dir {
+                if let Err(e) = save_outbound_turn_cache(dir, &cache) {
+                    eprintln!(
+                        "[agent_note_responder] failed to persist outbound turn cache: {e}"
+                    );
+                }
+            }
+        }
+    }
+
+    // Bump the snapshot so the conversation view refreshes (D8 — bump after
+    // releasing all slot locks to avoid priority inversion).
+    //
+    // This MUST advance `domain_revs.social` (not just the global rev) or the
+    // `podcast.social` push sidecar — which gates on the social domain rev —
+    // never re-emits and the outbound turn never reaches iOS/Android. We mirror
+    // the exact two-step `Infra::bump()` performs (domain rev fetch_add, then
+    // the global signal post) because the off-actor task holds a raw
+    // `Arc<DomainRevs>` rather than a full scoped `Infra`.
+    if let Some(dr) = &domain_revs {
+        dr.counter(Domain::Social).fetch_add(1, Ordering::Relaxed);
+    }
+    if let Some(s) = &signal {
+        s.bump();
     }
 
     eprintln!(
@@ -294,8 +370,11 @@ pub(crate) fn try_respond_to_trusted_note(
     identity: Arc<Mutex<IdentityStore>>,
     store: Arc<Mutex<PodcastStore>>,
     responder_cache: Arc<Mutex<ResponderCache>>,
+    outbound_turn_cache: Option<Arc<Mutex<OutboundTurnCache>>>,
+    social_outbound_slot: Option<Arc<Mutex<Vec<OutboundTurn>>>>,
     runtime: &Arc<Runtime>,
     signal: Option<SnapshotUpdateSignal>,
+    domain_revs: Option<Arc<DomainRevs>>,
 ) {
     // Gate 1: trust (only respond to followed peers).
     if !trusted {
@@ -311,8 +390,11 @@ pub(crate) fn try_respond_to_trusted_note(
         identity,
         store,
         responder_cache,
+        outbound_turn_cache,
+        social_outbound_slot,
         runtime,
         signal,
+        domain_revs,
     );
 }
 
