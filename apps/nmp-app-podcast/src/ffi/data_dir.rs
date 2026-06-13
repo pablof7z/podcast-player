@@ -149,12 +149,37 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
             None => false,
         };
 
+        // Restore the auto-responder dedup + turn-count cache from
+        // `agent-note-responder-cache.json`, if present. A missing file is a
+        // fresh start (cold install / process restart), not an error (D6). The
+        // worst outcome of losing this is a duplicate reply on the first note
+        // delivered after a restart, which is acceptable for a v1 responder.
+        //
+        // NOTE: this cache is intentionally GLOBAL / account-agnostic (one
+        // shared file, keyed by globally-unique event/root ids). It is NOT an
+        // account-leak: cross-account carryover can only ever suppress a reply,
+        // never over-reply (fail-safe). Unlike account-scoped social state, it
+        // must persist across identity switches — do not clear it on sign-out.
+        let responder_loaded = {
+            let restored =
+                crate::store::agent_note_responder_cache::load_responder_cache(&path_buf);
+            let non_empty =
+                !restored.responded_event_ids.is_empty() || !restored.outgoing_turns.is_empty();
+            if let Ok(mut cache) = handle.responder_cache.lock() {
+                *cache = restored;
+                non_empty
+            } else {
+                false
+            }
+        };
+
         if loaded > 0
             || !loaded_queue.is_empty()
             || identity_loaded
             || keys_loaded > 0
             || triage_loaded
             || tasks_loaded
+            || responder_loaded
         {
             // Force the next snapshot poll to pick up the restored library,
             // queue, identity, owned-podcast keys, triage cache, and/or tasks

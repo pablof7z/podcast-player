@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use crate::state::PodcastAppState;
+use crate::store::agent_note_responder_cache::ResponderCache;
 
 use nmp_ffi::NmpApp;
 // AtomicU64, Ordering, Runtime, SnapshotUpdateSignal removed in Step N+1 —
@@ -40,6 +41,12 @@ pub struct PodcastHandle {
     // search_results removed in Step 9 — now owned by `state.discovery` (DiscoveryState).
     // nostr_results removed in Step 9 — dead duplicate Arc; observer now shares
     // from `state.discovery.nostr_results` via register.rs.
+    /// Auto-responder dedup + turn-count persistence. Seeded in
+    /// `nmp_app_podcast_set_data_dir` from the `agent-note-responder-cache.json`
+    /// sidecar; written by `agent_note_responder` after each successful publish.
+    /// Shared with the `AgentNotesObserver` (via `with_responder`) so the guard
+    /// check and the cache update run against the same in-memory state.
+    pub(crate) responder_cache: Arc<Mutex<ResponderCache>>,
     /// Rev-keyed snapshot cache. `build_snapshot_payload` writes `(rev, json)`
     /// here after every rebuild; the next poll hit with the same `rev` returns
     /// the cached string without re-serializing the entire library.

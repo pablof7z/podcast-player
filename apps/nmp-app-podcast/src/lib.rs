@@ -35,6 +35,7 @@ pub(crate) mod ad_skip_handler;
 pub mod agent_handler;
 pub(crate) mod agent_llm;
 pub(crate) mod agent_note_handler;
+pub(crate) mod agent_note_responder;
 pub(crate) mod agent_tools;
 pub(crate) mod ai_chapters;
 pub(crate) mod ai_chapters_llm;
