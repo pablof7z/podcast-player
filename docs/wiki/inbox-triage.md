@@ -8,7 +8,7 @@ tags:
 volatility: warm
 confidence: medium
 created: 2026-05-13
-updated: 2026-06-12T18:00:00Z
+updated: 2026-06-13
 verified: 2026-05-13
 compiled-from: conversation
 sources:
@@ -29,7 +29,7 @@ sources:
 
 An autonomous AI Inbox replaces the existing "Featured" surface on Home; after each feed refresh, an agent classifies each new episode as `.inbox` (surfaced on Home with a one-line "Because …" rationale chip) or `.archived` (silently soft-hidden: stays in store but drops out of unplayed counts, Continue Listening, recent feed, and Threading topics; still visible on the show page). The AI Inbox operates with full autonomy: there is no user-facing "review mode" for archive decisions. A 10-minute cooldown (`TRIAGE_RETRY_COOLDOWN_SECS`) suppresses proactive triage re-enqueue after a failed pass. The Rust kernel is the source of truth for triage decisions; Swift InboxTriageService was a redundant producer deleted in PR #205.
 
-Inbox triage IS triggered on async subscribe completion (inbox-triage-on-async-subscribe PR): `PodcastAppState.inbox` was flipped from `InboxState` to `Arc<InboxState>` and passed as the 6th arg to `FeedFetchCoordinator::new`; `apply_subscribe_result` calls `self.inbox.maybe_enqueue_triage()` gated identically to the adjacent `auto_categorize`/`auto_refresh_picks` calls. Freshly-subscribed and OPML-imported episodes now triage immediately.
+Inbox triage fires on async subscribe (apply_subscribe_result calls maybe_enqueue_triage when snapshot_signal is present), completing the D8 trigger re-homing so fresh subscribe/OPML episodes are triaged immediately rather than waiting for the next refresh. (Previously: triage was not triggered on async subscribe because InboxState was not Arc-wrapped and FeedFetchCoordinator was at its arg ceiling; tracked as inbox-triage-on-async-subscribe backlog item.)
 
 Inbox triage uses the same agent identity and memory as the chat agent, via build_system_prompt_with_memory, rather than a separate LLM pipeline with its own system prompt. The triage agent has access to get_memory_facts, search_library, and set_episode_priorities tools, with a maximum of 6 tool turns per invocation. All needy episodes are sent in a single agent invocation (no chunking), with a user message listing every episode since the last triage check. set_episode_priorities is a single batch-write tool that accepts an array of {episode_id, score, reason, categories} objects, recording all scores in one tool call. After the agent call completes, any episode that still lacks a fresh Ready entry in the triage cache gets stamped as Pending via reconcile_pending, preventing hot-spawn loops.
 
@@ -41,9 +41,9 @@ Destructive/reset actions are not ordinary model-callable tools and require expl
 
 Triage decisions are permanent once made; there is no TTL or automatic reconsideration, though user-initiated play on an archived episode recovers it. (Previously: a reconsideration/decay mechanism was proposed but rejected; decisions persist indefinitely.)
 
-PR #383 moved maybe_enqueue_triage out of the snapshot builder and into the dispatch/feed-refresh path, which silently narrowed triage from whenever-snapshot-rebuilds to only-after-successful-feed-refresh, missing cold-start, stale-Pending retry, and fresh-subscribe scenarios. (Previously: triage was triggered on every snapshot rebuild; this was narrowed to feed-refresh only.) This regression was fixed by adding a cold-start/foreground trigger via the auto_download_evaluate op that already runs at first foreground, and by decoupling refresh_all's triage trigger from the any_succeeded gate.
+InboxState is a proper substate with its triage trigger re-homed from the projection builder (D8 violation) to post-refresh and cold-start paths. maybe_enqueue_triage fires on cold launch via auto_download_evaluate and on every refresh (including 304-only), not gated on any_succeeded. (Previously: triage was triggered on every snapshot rebuild; this was narrowed to feed-refresh only in PR #383, missing cold-start, stale-Pending retry, and fresh-subscribe scenarios; the regression was fixed by adding the cold-start/foreground trigger, decoupling refresh_all's triage from any_succeeded, and adding a 304-decoupled trigger.)
 
-<!-- citations: [^c1691-18] [^rollo-12] [^d0e67-1] [^14943-9] [^67062-4] [^2a627-2] [^55bed-3] [^rollo-143] [^rollo-147] [^c1691-101] [^c1691-115] -->
+<!-- citations: [^c1691-18] [^rollo-12] [^d0e67-1] [^14943-9] [^67062-4] [^2a627-2] [^55bed-3] [^rollo-143] [^rollo-147] [^c1691-101] [^c1691-115] [^c1691-134] [^c1691-154] -->
 ## Data Model
 
 Episode carries a triageDecision enum (.inbox | .archived) and a triageRationale string, stored as backward-compatible Codable. Triage state (triageDecision, triageRationale, triageIsHero) is preserved across feed refresh upserts so archived episodes do not reappear; the upsert path must explicitly carry forward these fields when merging RSS payloads to prevent archived items from leaking back onto Home before re-triage completes.
@@ -81,4 +81,6 @@ The EngagementBuilder logic is extracted into its own file (InboxTriageEngagemen
 <!-- citations: [^d0e67-9] [^67062-6] -->
 ## Android Surfaces
 
-Android Tier-2 Inbox and Transcripts surfaces (PR #398) are implemented as thin-shell Compose rendering on the shared kernel, with InboxAction routing (Triage/Dismiss/MarkListened) and FetchTranscript verified against the Rust podcast.inbox namespace router. <!-- [^c1691-3] -->
+Android Tier-2 surfaces are fully shipped: Inbox, Transcripts, Agent chat, AI picks, AI chapters, and auto-skip ads, all implemented as thin-shell Compose rendering on the shared kernel, with InboxAction routing (Triage/Dismiss/MarkListened) and FetchTranscript verified against the Rust podcast.inbox namespace router.
+
+<!-- citations: [^c1691-3] [^c1691-241] -->
