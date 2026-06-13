@@ -157,8 +157,6 @@ extension KernelModel {
             if soc.rev > lastRev {
                 tracker.social = soc.rev
                 anyAccepted = true
-                // agent_notes: tombstone semantics (nil = clear).
-                if let v = soc.agentNotes { composite.agentNotes = v }
                 // social snapshot: tombstone semantics (nil = logged-out, clear).
                 composite.social = soc.social
                 // nostrConversations: kernel projection → wire composite (DTO slice).
@@ -175,7 +173,7 @@ extension KernelModel {
         }
 
         // ── misc ─────────────────────────────────────────────────────────────
-        // NOTE: social + agentNotes have moved to podcast.social (above).
+        // NOTE: social has moved to podcast.social (above).
         //       MiscDomainFrame no longer carries those fields.
         if let m = frames.misc {
             let lastRev = tracker.misc

@@ -11,13 +11,14 @@
 //!
 //! ## Trust gate — computed live at projection, NOT frozen at receipt
 //!
-//! `AgentNoteSummary::trusted` reflects `ActiveFollowSet::predicate()` membership
-//! at **projection-build time**, not at the moment the kind:1 note was received.
+//! The conversation trust field (`NostrConversationDTO::trusted`) reflects
+//! `ActiveFollowSet::predicate()` membership at **projection-build time**, not at
+//! the moment the kind:1 note was received.
 //!
 //! The observer caches the raw note as a [`CachedAgentNote`] that retains the
 //! author **hex** pubkey but carries **no** `trusted` stamp. The trust verdict is
 //! recomputed every time the snapshot is built, inside
-//! [`crate::state::social::SocialState::agent_notes_snapshot`], by applying the
+//! [`crate::state::social::SocialState::nostr_conversations_snapshot`], by applying the
 //! shared live `ActiveFollowSet` predicate to each cached note's author hex.
 //!
 //! This is the load-bearing correctness property: a note from X received *before*
@@ -63,7 +64,8 @@ const MAX_INBOUND_NOTES: usize = 200;
 
 /// Internal cached representation of an inbound kind:1 agent note.
 ///
-/// Distinct from the wire DTO [`crate::ffi::projections::AgentNoteSummary`]:
+/// Distinct from the wire DTO (the flat `AgentNoteSummary` projection was
+/// retired; conversations carry trust now):
 /// it retains the author **hex** pubkey so the social projection can recompute
 /// the trust verdict live (against the `ActiveFollowSet`) at every snapshot
 /// build, and it carries **no** `trusted` field — the verdict is never frozen
@@ -209,7 +211,7 @@ pub fn handle_publish_agent_note(
 /// (author hex retained, NO trust stamp) to the cache.
 ///
 /// The trust verdict is computed later, at projection-build time, in
-/// [`crate::state::social::SocialState::agent_notes_snapshot`] — see the
+/// [`crate::state::social::SocialState::nostr_conversations_snapshot`] — see the
 /// module-level "Trust gate" doc. The observer never freezes `trusted`.
 ///
 /// When a note is TRUSTED (its author hex is in the active account's NIP-02

@@ -35,11 +35,11 @@ import kotlinx.serialization.json.jsonPrimitive
  *   podcast.settings  — rev, settings, configured_relays
  *   podcast.identity  — rev, active_account (null = signed out / tombstone)
  *   podcast.widget    — rev, widget (null = nothing to show / tombstone)
- *   podcast.social    — rev, social (SocialSnapshot | null), agent_notes, nostr_conversations
+ *   podcast.social    — rev, social (SocialSnapshot | null), nostr_conversations
  *   podcast.misc      — rev, agent_tasks, feedback_threads, feedback_events, voice,
  *                       agent, wiki_articles, wiki_search_results, picks,
  *                       knowledge_search_results, memory_facts, clips, comments, agent_context
- *                       (social + agent_notes moved to podcast.social)
+ *                       (social moved to podcast.social; flat agent_notes retired)
  */
 
 // ── Schema IDs ────────────────────────────────────────────────────────────────
@@ -117,19 +117,18 @@ data class WidgetDomainFrame(
  * NIP-10-threaded Nostr conversation projection + NIP-02 follow graph.
  *
  * `social = null` arriving in this frame signals a tombstone (account switch
- * cleared all social state). `agentNotes` and `nostrConversations` follow the
- * same pattern: null = tombstone / cleared, absent = no change.
+ * cleared all social state). `nostrConversations` follows the same pattern:
+ * null = tombstone / cleared, absent = no change.
  *
- * NOTE: social + agent_notes moved OUT of podcast.misc into this domain in
- * the nostr-conversations-real-projection PR.
+ * NOTE: social moved OUT of podcast.misc into this domain in the
+ * nostr-conversations-real-projection PR. The flat `agent_notes` field was
+ * retired in chore/retire-flat-agent-notes-projection — conversations subsume it.
  */
 @Serializable
 data class SocialDomainFrame(
     val rev: Long = 0,
     /** NIP-02 follow-list snapshot. `null` = tombstone (account switch). */
     val social: JsonElement? = null,
-    /** Flat inbound agent-note feed (legacy; subsumed by nostr_conversations). */
-    @SerialName("agent_notes") val agentNotes: List<JsonElement>? = null,
     /** NIP-10-threaded conversations, newest-first by last_activity. */
     @SerialName("nostr_conversations") val nostrConversations: List<NostrConversationDto>? = null,
 )
@@ -402,10 +401,11 @@ object SnapshotCodec {
         }
 
         // ── social ───────────────────────────────────────────────────────────
-        // Kernel-authoritative: social + agent_notes moved out of podcast.misc.
+        // Kernel-authoritative: social moved out of podcast.misc.
         // nostrConversations is wired into PodcastSnapshot so the conversations
         // list + detail screens can render directly from the snapshot flow.
         // null = tombstone (account switch / no conversations) → clear to empty.
+        // The flat agent_notes field was retired; conversations subsume it.
         frames.social?.let { soc ->
             if (soc.rev > tracker.social) {
                 tracker.social = soc.rev
@@ -417,7 +417,7 @@ object SnapshotCodec {
         }
 
         // ── misc ─────────────────────────────────────────────────────────────
-        // NOTE: social + agentNotes moved to podcast.social (above).
+        // NOTE: social moved to podcast.social (above).
         frames.misc?.let { m ->
             if (m.rev > tracker.misc) {
                 tracker.misc = m.rev

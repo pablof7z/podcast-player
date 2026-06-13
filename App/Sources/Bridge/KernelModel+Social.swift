@@ -14,7 +14,7 @@ import Foundation
 //
 // Swift NEVER re-implements that logic; it only fires these one-way commands
 // and reads the resulting `trusted` flag from the next `NostrConversationDTO`
-// or `AgentNoteSummary` emitted by the kernel.
+// or `NostrConversationDTO` emitted by the kernel.
 
 extension KernelModel {
 

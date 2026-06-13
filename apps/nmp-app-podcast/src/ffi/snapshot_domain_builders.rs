@@ -19,7 +19,7 @@
 //!  | identity  | library.identity, handle.app (kernel active account)  |
 //!  | widget    | playback.player, library.store                         |
 //!  |           | (store for unplayed_count + ep title/artwork)          |
-//!  | social    | social.social_slot, social.agent_notes,                |
+//!  | social    | social.social_slot, social.agent_notes (via convos),   |
 //!  |           | social.outbound_turns                                  |
 //!  | misc      | wiki, picks, tasks, knowledge, clips, inbox (triage),  |
 //!  |           | comments, voice, agent_chat, feedback                  |
@@ -211,25 +211,29 @@ pub(super) fn build_widget_payload(handle: &PodcastHandle) -> Option<serde_json:
 
 /// Build the `podcast.social` domain payload — slice-local.
 ///
-/// Reads: social.social_slot, social.agent_notes, social.outbound_turns.
-/// Does NOT touch library, playback, settings, or any other substate.
+/// Reads: social.social_slot, social.agent_notes (via nostr_conversations),
+/// social.outbound_turns. Does NOT touch library, playback, settings, or any
+/// other substate.
 ///
-/// Returns `None` when social, agent_notes, AND nostr_conversations are all
-/// empty (so the domain's first emit is tombstoned rather than silently absent
-/// after a post-sign-out account switch that cleared the slots).
+/// Returns `None` when social AND nostr_conversations are both empty (so the
+/// domain's first emit is tombstoned rather than silently absent after a
+/// post-sign-out account switch that cleared the slots).
+///
+/// NOTE: the flat `agent_notes` field was removed in chore/retire-flat-agent-notes-projection.
+/// The inbound agent-notes cache (`social.agent_notes`) is still used internally
+/// by `nostr_conversations_snapshot` — only the redundant flat-list wire projection
+/// was retired. Conversations already subsume it.
 pub(super) fn build_social_payload(handle: &PodcastHandle) -> Option<serde_json::Value> {
     let rev = handle.state.infra.rev.load(Ordering::Relaxed);
     let social = handle.state.social.social_snapshot();
-    let agent_notes = handle.state.social.agent_notes_snapshot();
     let nostr_conversations = handle.state.social.nostr_conversations_snapshot();
-    let empty = social.is_none() && agent_notes.is_empty() && nostr_conversations.is_empty();
+    let empty = social.is_none() && nostr_conversations.is_empty();
     if empty {
         return None;
     }
     Some(serde_json::json!({
         "rev": rev,
         "social": social,
-        "agent_notes": agent_notes,
         "nostr_conversations": nostr_conversations,
     }))
 }

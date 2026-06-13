@@ -30,20 +30,6 @@ struct CommentSummary: Codable, Identifiable, Equatable, Hashable {
     var createdAt: Int
 }
 
-/// One inbound agent-to-agent kind:1 note (feature #44) in
-/// `PodcastUpdate.agentNotes`. Public NIP-01 text note tagging the active
-/// account (`#p`), threaded with NIP-10. `trusted` is always `false`
-/// until the kind:3 contact/trust gate lands — the UI must route these to
-/// an approval surface and must not auto-respond.
-struct AgentNoteSummary: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var authorNpub: String
-    var content: String
-    var createdAt: Int
-    var rootEventId: String? = nil
-    var trusted: Bool = false
-}
-
 /// One turn within a `NostrConversationDTO`. `direction` is `"inbound"` or
 /// `"outbound"` — a plain string so the wire contract is forward-compatible
 /// with new directions without a schema bump.

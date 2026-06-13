@@ -4,7 +4,7 @@
 //!
 //! The Swift `NostrAgentResponder.swift` auto-reply loop was deleted in #248
 //! (kernel-signing refactor). The trust gate that was the only blocker landed
-//! in #419 (`ActiveFollowSet::predicate()` + `AgentNoteSummary.trusted`).
+//! in #419 (`ActiveFollowSet::predicate()` + the trust verdict on `CachedAgentNote`).
 //! This module restores autopilot IN THE KERNEL: trusted kind:1 → LLM reply
 //! → publish.
 //!
