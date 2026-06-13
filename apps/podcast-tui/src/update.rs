@@ -62,11 +62,11 @@ impl AppState {
         }
         self.agent_picks = update.picks;
         self.agent_tasks = update.agent_tasks;
-        self.agent_notes = update.agent_notes;
+        self.nostr_conversations = update.nostr_conversations;
         self.memory_facts = update.memory_facts;
         clamp_index(&mut self.selected_agent_pick, self.agent_picks.len());
         clamp_index(&mut self.selected_agent_task, self.agent_tasks.len());
-        clamp_index(&mut self.selected_agent_note, self.agent_notes.len());
+        clamp_index(&mut self.selected_agent_note, self.nostr_conversations.len());
         clamp_index(&mut self.selected_memory_fact, self.memory_facts.len());
         self.comments = update.comments;
         self.categories = update.categories;

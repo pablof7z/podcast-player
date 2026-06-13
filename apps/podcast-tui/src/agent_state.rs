@@ -92,7 +92,7 @@ impl AppState {
                 advance_index(&mut self.selected_agent_task, self.agent_tasks.len())
             }
             AgentSection::Notes => {
-                advance_index(&mut self.selected_agent_note, self.agent_notes.len())
+                advance_index(&mut self.selected_agent_note, self.nostr_conversations.len())
             }
             AgentSection::Memory => {
                 advance_index(&mut self.selected_memory_fact, self.memory_facts.len())
@@ -130,7 +130,7 @@ impl AppState {
                 self.selected_agent_task = self.agent_tasks.len().saturating_sub(1)
             }
             AgentSection::Notes => {
-                self.selected_agent_note = self.agent_notes.len().saturating_sub(1)
+                self.selected_agent_note = self.nostr_conversations.len().saturating_sub(1)
             }
             AgentSection::Memory => {
                 self.selected_memory_fact = self.memory_facts.len().saturating_sub(1)
