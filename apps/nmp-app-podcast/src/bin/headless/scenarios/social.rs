@@ -203,12 +203,11 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     // ── Trust-gate structural assertion ──────────────────────────────────────
     //
-    // The `trusted` field exists on every AgentNoteSummary and is wired to the
-    // ActiveFollowSet predicate.  We can't easily inject a kind:1 from fiatjaf
-    // without their private key, but we can verify the wiring is present by
-    // fetching existing agent notes and checking the field is present on any
-    // returned notes.  The structural check (field present on the DTO) is enough
-    // to confirm the trust-gate was not regressed.
+    // The `trusted` field exists on every NostrConversationDTO and is wired to
+    // the ActiveFollowSet predicate.  We can't easily inject a kind:1 from
+    // fiatjaf without their private key, but we can verify the wiring by
+    // fetching existing agent notes (which populate conversations) and checking
+    // the `trusted` field is present on any returned conversations.
     //
     // Full behavioural validation (trusted==true for a followed author) requires
     // a nak-published kind:1 from a followed account — left for an online-only
@@ -217,10 +216,10 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Give the subscription a moment to settle; then read whatever arrived.
     std::thread::sleep(Duration::from_millis(500));
     if let Some(u) = snapshot(handle) {
-        for note in &u.agent_notes {
+        for conv in &u.nostr_conversations {
             // Verify the field exists (not missing / serde gap).
             // The value can be true or false — both are valid here.
-            let _ = note.trusted;
+            let _ = conv.trusted;
         }
     }
 

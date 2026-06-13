@@ -27,7 +27,7 @@ import Foundation
 //   podcast.settings  — settings, configured_relays
 //   podcast.identity  — active_account (may arrive nil = logged out)
 //   podcast.widget    — widget (may arrive nil = nothing to show)
-//   podcast.social    — social, agent_notes, nostr_conversations
+//   podcast.social    — social, nostr_conversations
 //   podcast.misc      — wiki_articles, wiki_search_results, picks, agent_tasks,
 //                       knowledge_search_results, memory_facts, clips, comments,
 //                       voice, agent, agent_context, feedback_events, feedback_threads
@@ -112,9 +112,6 @@ struct SocialDomainFrame: Decodable {
     var rev: UInt64 = 0
     /// NIP-02 follow-list snapshot. `nil` = tombstone (cleared after account switch).
     var social: SocialSnapshot?
-    /// Flat inbound agent-note feed (legacy; present for backward compat with
-    /// consumers not yet migrated to `nostrConversations`).
-    var agentNotes: [AgentNoteSummary]?
     /// NIP-10-threaded conversations, newest-first by lastActivity.
     /// Authoritative source for the `NostrConversationsView`.
     var nostrConversations: [NostrConversationDTO]?
@@ -131,7 +128,7 @@ struct MiscDomainFrame: Decodable {
     var knowledgeSearchResults: [KnowledgeSearchResult]?
     var memoryFacts: [MemoryFact]?
     var clips: [ClipSummary]?
-    // social and agentNotes moved to SocialDomainFrame (podcast.social).
+    // social moved to SocialDomainFrame (podcast.social); flat agent_notes retired.
     var comments: [CommentSummary]?
     var voice: VoiceSnapshot?
     var agent: AgentSnapshot?

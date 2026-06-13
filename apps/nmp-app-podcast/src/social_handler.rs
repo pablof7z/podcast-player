@@ -26,9 +26,9 @@
 //! ## Trust gate (lives in the social PROJECTION, not here)
 //!
 //! The trust verdict for inbound agent notes is computed **live at projection
-//! time** in [`crate::state::social::SocialState::agent_notes_snapshot`], by
-//! applying the shared [`nmp_nip02::ActiveFollowSet`] predicate to each cached
-//! note's author hex.  This observer module only materialises the follow-list
+//! time** in [`crate::state::social::SocialState::nostr_conversations_snapshot`],
+//! by applying the shared [`nmp_nip02::ActiveFollowSet`] predicate to each
+//! conversation's counterparty hex.  This observer module only materialises the follow-list
 //! snapshot; it does NOT stamp `trusted`.  See `agent_note_handler.rs` for why
 //! the verdict must be recomputed at projection (follow/unfollow must flip the
 //! verdict on every existing note, with no stale freeze).

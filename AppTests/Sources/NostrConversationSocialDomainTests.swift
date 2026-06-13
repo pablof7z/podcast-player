@@ -30,7 +30,6 @@ private func socialProjection(rev: Int) -> [String: Any] {
         // social = null is the tombstone shape for the follow-graph slice;
         // a populated conversation list can still ride alongside it.
         "social": NSNull(),
-        "agent_notes": [],
         "nostr_conversations": [
             [
                 "root_event_id": "deadbeef001",
@@ -77,7 +76,6 @@ final class NostrConversationSocialDomainTests: XCTestCase {
 
         // social = null → tombstone for the follow-graph slice.
         XCTAssertNil(soc.social, "social snapshot must decode as nil (tombstone)")
-        XCTAssertEqual(soc.agentNotes?.isEmpty, true)
 
         let convos = try XCTUnwrap(soc.nostrConversations, "nostr_conversations must decode")
         XCTAssertEqual(convos.count, 1)
@@ -154,8 +152,7 @@ final class NostrConversationSocialDomainTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.social: [
                 "rev": 4,
-                "social": NSNull(),
-                "agent_notes": []
+                "social": NSNull()
             ] as [String: Any]
         ])
         let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))

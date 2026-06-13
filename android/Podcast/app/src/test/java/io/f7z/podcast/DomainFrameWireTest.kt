@@ -227,8 +227,6 @@ class DomainFrameWireTest {
           "knowledge_search_results": [],
           "memory_facts": [],
           "clips": [],
-          "social": [],
-          "agent_notes": [],
           "comments": [],
           "agent_context": null
         }
@@ -719,7 +717,6 @@ class DomainFrameWireTest {
         {
           "rev": 9,
           "social": null,
-          "agent_notes": [],
           "nostr_conversations": [
             {
               "root_event_id": "deadbeef001",
@@ -759,9 +756,8 @@ class DomainFrameWireTest {
         assertNotNull("social domain must be present", soc)
         assertEquals(9L, soc!!.rev)
 
-        // social = null → tombstone shape, agent_notes = empty
+        // social = null → tombstone shape for the follow-graph slice.
         assertNull("social field must be null (tombstone)", soc.social)
-        assertTrue("agent_notes must be empty", soc.agentNotes!!.isEmpty())
 
         val convos = soc.nostrConversations
         assertNotNull("nostr_conversations must decode", convos)

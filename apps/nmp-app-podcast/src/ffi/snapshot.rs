@@ -130,15 +130,11 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
 
     let active_account = super::snapshot_identity::build_active_account(handle);
 
-    // Step 10: social + agent_notes now read from SocialState.
+    // Step 10: social now read from SocialState.
     let social = handle.state.social.social_snapshot();
 
-    // Feature #44 — inbound agent-to-agent kind:1 notes. Reactive push:
-    // the cache is filled by `FetchAgentNotes` on the actor thread and
-    // projected here on every tick (no polling, no pull symbols).
-    let agent_notes = handle.state.social.agent_notes_snapshot();
     // NIP-10 threaded conversations (inbound + outbound turns merged by root_event_id).
-    // Subsumes `agent_notes` for conversation-view UIs.
+    // The flat `agent_notes` list was retired — conversations subsume it.
     let nostr_conversations = handle.state.social.nostr_conversations_snapshot();
 
     // In-app feedback events (kind:1 + kind:513 for this app's project coord),
@@ -203,7 +199,6 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
         agent_context,
         categories,
         social,
-        agent_notes,
         nostr_conversations,
         configured_relays,
         feedback_events,

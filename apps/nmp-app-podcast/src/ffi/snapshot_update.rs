@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use nmp_feedback::FeedbackThreadDto;
 
 use super::projections::{
-    AccountSummary, AgentContextSnapshot, AgentNoteSummary, AgentPickSummary, AgentSnapshot,
+    AccountSummary, AgentContextSnapshot, AgentPickSummary, AgentSnapshot,
     AgentTaskSummary, CategoryBrowseItem, ClipSummary, CommentSummary, DownloadQueueSnapshot,
     EpisodeSummary, InboxItem, KnowledgeSearchResult, MemoryFact, NostrConversationDTO,
     NostrShowSummary, OwnedPodcastInfo, PodcastSummary, SettingsSnapshot, SocialSnapshot,
@@ -143,12 +143,6 @@ pub struct PodcastUpdate {
     /// Browse-by-topic aggregation surfaced via the iOS Library tab.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub categories: Vec<CategoryBrowseItem>,
-    /// Feature #44 — inbound agent-to-agent kind:1 notes addressed to the
-    /// active account, newest-first. Empty until the first
-    /// `FetchAgentNotes` dispatch. Trust verdict is computed live at
-    /// projection time against the NIP-02 follow set.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub agent_notes: Vec<AgentNoteSummary>,
     /// NIP-10-threaded Nostr conversations between the active account and
     /// its peers, newest-first by last_activity. Each conversation merges
     /// inbound kind:1 notes + outbound auto-responder turns under a common
@@ -226,7 +220,6 @@ impl Default for PodcastUpdate {
             inbox_triage_in_progress: false,
             owned_podcasts: Vec::new(),
             categories: Vec::new(),
-            agent_notes: Vec::new(),
             nostr_conversations: Vec::new(),
             configured_relays: Vec::new(),
             feedback_events: Vec::new(),

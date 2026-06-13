@@ -40,7 +40,6 @@ extension AdSegment: @unchecked Sendable {}
 extension AgentContextEpisode: @unchecked Sendable {}
 extension AgentContextSnapshot: @unchecked Sendable {}
 extension AgentMessageSummary: @unchecked Sendable {}
-extension AgentNoteSummary: @unchecked Sendable {}
 extension AgentPickSummary: @unchecked Sendable {}
 extension AgentSnapshot: @unchecked Sendable {}
 extension AgentTaskSummary: @unchecked Sendable {}

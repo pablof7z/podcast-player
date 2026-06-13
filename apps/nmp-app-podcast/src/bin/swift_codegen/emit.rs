@@ -638,20 +638,6 @@ struct CommentSummary: Codable, Identifiable, Equatable, Hashable {
     var createdAt: Int
 }
 
-/// One inbound agent-to-agent kind:1 note (feature #44) in
-/// `PodcastUpdate.agentNotes`. Public NIP-01 text note tagging the active
-/// account (`#p`), threaded with NIP-10. `trusted` is always `false`
-/// until the kind:3 contact/trust gate lands — the UI must route these to
-/// an approval surface and must not auto-respond.
-struct AgentNoteSummary: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var authorNpub: String
-    var content: String
-    var createdAt: Int
-    var rootEventId: String? = nil
-    var trusted: Bool = false
-}
-
 /// One turn within a `NostrConversationDTO`. `direction` is `"inbound"` or
 /// `"outbound"` — a plain string so the wire contract is forward-compatible
 /// with new directions without a schema bump.
@@ -862,12 +848,8 @@ struct PodcastUpdate {
     @DefaultFalse var inboxTriageInProgress: Bool = false
     @DefaultEmptyArray var ownedPodcasts: [OwnedPodcastInfo] = []
     @DefaultEmptyArray var categories: [CategoryBrowseItem] = []
-    /// Feature #44 — inbound agent-to-agent kind:1 notes, newest-first.
-    /// Every row carries `trusted == false` until the kind:3 contact/trust
-    /// gate lands; route to an approval surface, do not auto-respond.
-    @DefaultEmptyArray var agentNotes: [AgentNoteSummary] = []
     /// NIP-10-threaded Nostr conversations (inbound + outbound merged), newest-first
-    /// by lastActivity. Subsumes the flat `agentNotes` list for conversation views.
+    /// by lastActivity. Subsumes the retired flat `agent_notes` list.
     /// Empty until the first `FetchAgentNotes` or outbound auto-reply.
     @DefaultEmptyArray var nostrConversations: [NostrConversationDTO] = []
     /// User-configured app relays (NMP v0.2.1 `configured_relays`). Each row
@@ -1024,7 +1006,6 @@ extension PodcastUpdate: Codable {
         inboxTriageInProgress = try c.decodeIfPresent(Bool.self, forKey: .inboxTriageInProgress) ?? false
         ownedPodcasts = try c.decodeIfPresent([OwnedPodcastInfo].self, forKey: .ownedPodcasts) ?? []
         categories = try c.decodeIfPresent([CategoryBrowseItem].self, forKey: .categories) ?? []
-        agentNotes = try c.decodeIfPresent([AgentNoteSummary].self, forKey: .agentNotes) ?? []
         nostrConversations = try c.decodeIfPresent([NostrConversationDTO].self, forKey: .nostrConversations) ?? []
         configuredRelays = try c.decodeIfPresent([AppRelayRow].self, forKey: .configuredRelays) ?? []
         feedbackEvents = try c.decodeIfPresent([FeedbackEventDTO].self, forKey: .feedbackEvents) ?? []

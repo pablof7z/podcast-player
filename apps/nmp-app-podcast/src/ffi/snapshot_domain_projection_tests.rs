@@ -962,7 +962,7 @@ fn playback_payload_contains_only_playback_keys() {
     // still calling build_podcast_update and fan-in is happening.
     for prohibited in &[
         "library", "categories", "settings", "active_account", "widget",
-        "wiki_articles", "picks", "agent_tasks", "social", "agent_notes",
+        "wiki_articles", "picks", "agent_tasks", "social",
     ] {
         assert!(
             !obj.contains_key(*prohibited),

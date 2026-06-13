@@ -34,8 +34,7 @@
 //!   `ApprovedPeerStore`. An approved-but-unfollowed sender IS auto-replied to.
 //! * `blocked` is an absolute override: a followed+blocked pubkey is untrusted.
 //!
-//! Both projection paths (`agent_notes_snapshot` and
-//! `nostr_conversations_snapshot`) use [`SocialState::trust_predicate`] which
+//! The `nostr_conversations_snapshot` projection uses [`SocialState::trust_predicate`] which
 //! builds the composed closure once per projection call.
 //!
 //! The `ActiveFollowSet` Arc is injected via [`SocialState::with_follow_set`]
@@ -54,7 +53,7 @@ use std::sync::{Arc, Mutex};
 use nmp_nip02::ActiveFollowSet;
 
 use crate::agent_note_handler::CachedAgentNote;
-use crate::ffi::projections::{AgentNoteSummary, NostrConversationDTO, NostrConversationTurnDTO, SocialSnapshot};
+use crate::ffi::projections::{NostrConversationDTO, NostrConversationTurnDTO, SocialSnapshot};
 use crate::state::slot::Session;
 use crate::state::{Infra, Slot};
 use crate::store::approved_peer_store::ApprovedPeerStore;
@@ -71,8 +70,8 @@ pub struct SocialState {
     pub social_slot: Slot<Option<SocialSnapshot>, Session>,
     /// Inbound kind:1 agent-to-agent notes (raw cache, author hex retained,
     /// NO trust stamp).  Written by `AgentNotesObserver` off the actor thread
-    /// via `.share()`; projected — with a live trust verdict — by
-    /// [`Self::agent_notes_snapshot`]. Cleared on account switch.
+    /// via `.share()`; consumed by `nostr_conversations_snapshot` which applies
+    /// the live trust verdict at projection time. Cleared on account switch.
     pub agent_notes: Slot<Vec<CachedAgentNote>, Session>,
     /// Kernel-published outbound auto-reply turns, loaded from disk at init
     /// and appended in-session via [`Self::record_outbound_turn`].
@@ -279,37 +278,6 @@ impl SocialState {
         self.social_slot.lock().ok().and_then(|s| s.clone())
     }
 
-    /// Project the cached agent notes into wire DTOs, computing `trusted`
-    /// **live** against the composed trust predicate at build time.
-    ///
-    /// `trust(pubkey) = (followed(pubkey) || approved(pubkey)) && !blocked(pubkey)`
-    ///
-    /// A follow/unfollow, approve, or block flips the verdict on ALL existing
-    /// notes immediately with no stale freeze. Fail-closed: with no follow set
-    /// AND no approved store wired (tests), the predicate returns `false` (D6).
-    pub fn agent_notes_snapshot(&self) -> Vec<AgentNoteSummary> {
-        let cached = match self.agent_notes.lock() {
-            Ok(n) => n.clone(),
-            Err(_) => return Vec::new(),
-        };
-        // Build the composed predicate ONCE per projection.
-        let predicate = self.trust_predicate();
-        cached
-            .into_iter()
-            .map(|note| {
-                let trusted = predicate(&note.author_hex);
-                AgentNoteSummary {
-                    id: note.id,
-                    author_npub: note.author_npub,
-                    content: note.content,
-                    created_at: note.created_at,
-                    root_event_id: note.root_event_id,
-                    trusted,
-                }
-            })
-            .collect()
-    }
-
     /// Project inbound agent notes + outbound turns into NIP-10-threaded
     /// [`NostrConversationDTO`]s for the `podcast.social` push sidecar.
     ///
@@ -325,7 +293,7 @@ impl SocialState {
     /// ## Trust
     ///
     /// The `trusted` field on each conversation is computed live (same
-    /// `ActiveFollowSet` predicate as `agent_notes_snapshot`), keyed on the
+    /// `ActiveFollowSet` predicate as `nostr_conversations_snapshot`), keyed on the
     /// primary counterparty's hex. Fail-closed (D6).
     pub fn nostr_conversations_snapshot(&self) -> Vec<NostrConversationDTO> {
         let notes = match self.agent_notes.lock() {
@@ -443,9 +411,12 @@ mod tests {
     }
 
     #[test]
-    fn agent_notes_empty_on_init() {
+    fn agent_notes_cache_empty_on_init() {
+        // The inbound agent_notes cache (feeds nostr_conversations) is empty at init.
         let state = SocialState::for_test();
-        assert!(state.agent_notes_snapshot().is_empty());
+        assert!(state.agent_notes.lock().unwrap().is_empty());
+        // conversations projection is also empty.
+        assert!(state.nostr_conversations_snapshot().is_empty());
     }
 
     #[test]
@@ -465,28 +436,33 @@ mod tests {
 
     #[test]
     fn agent_notes_share_is_same_arc() {
+        // Verify that .share() produces the same Arc as the internal cache —
+        // pushing via the shared handle is visible to nostr_conversations_snapshot.
         let state = SocialState::for_test();
         let shared = state.agent_notes.share();
         {
             let mut guard = shared.lock().unwrap();
             guard.push(cached_note("note1", AUTHOR_X_HEX));
         }
-        assert_eq!(state.agent_notes_snapshot().len(), 1);
+        // The note must surface via the conversations projection (the flat
+        // agent_notes_snapshot was retired; conversations are the canonical read).
+        let convs = state.nostr_conversations_snapshot();
+        assert_eq!(convs.len(), 1, "shared arc push must be visible to conversations");
     }
 
     #[test]
-    fn agent_notes_default_untrusted_without_follow_set() {
-        // No ActiveFollowSet wired (test path) → every note projects
-        // trusted:false (fail-closed).
+    fn inbound_note_default_untrusted_without_follow_set() {
+        // No ActiveFollowSet wired (test path) → every conversation projects
+        // trusted:false (fail-closed, D6).
         let state = SocialState::for_test();
         state
             .agent_notes
             .lock()
             .unwrap()
             .push(cached_note("note1", AUTHOR_X_HEX));
-        let projected = state.agent_notes_snapshot();
-        assert_eq!(projected.len(), 1);
-        assert!(!projected[0].trusted);
+        let convs = state.nostr_conversations_snapshot();
+        assert_eq!(convs.len(), 1);
+        assert!(!convs[0].trusted, "without a follow set conversations must be untrusted");
     }
 
     #[test]
@@ -505,7 +481,9 @@ mod tests {
         state.clear_for_account_switch();
 
         assert!(state.social_snapshot().is_none());
-        assert!(state.agent_notes_snapshot().is_empty());
+        // The inbound notes cache (which feeds conversations) must also clear.
+        assert!(state.agent_notes.lock().unwrap().is_empty());
+        assert!(state.nostr_conversations_snapshot().is_empty());
     }
 
     #[test]
@@ -611,6 +589,9 @@ mod tests {
     /// starts untrusted, and flips to trusted on the very next projection
     /// after the active-account kind:3 follows X — proving the verdict is
     /// computed live at projection, not frozen at receipt.
+    ///
+    /// Verified via `nostr_conversations_snapshot` (the canonical projection
+    /// since the flat `agent_notes_snapshot` was retired).
     #[test]
     fn existing_note_becomes_trusted_after_following_author() {
         // Active account.
@@ -627,11 +608,11 @@ mod tests {
             .unwrap()
             .push(cached_note("noteX", AUTHOR_X_HEX));
 
-        let before = state.agent_notes_snapshot();
+        let before = state.nostr_conversations_snapshot();
         assert_eq!(before.len(), 1);
         assert!(
             !before[0].trusted,
-            "note from an unfollowed author must be untrusted"
+            "conversation from an unfollowed author must be untrusted"
         );
 
         // Step 2: the active account publishes a kind:3 FOLLOWING X. Drive the
@@ -648,14 +629,15 @@ mod tests {
         };
         follow_set.on_kernel_event(&kind3);
 
-        // Step 3: re-project. The SAME existing note must now be trusted —
+        // Step 3: re-project. The SAME existing conversation must now be trusted —
         // no new receipt, no cache mutation, purely projection-time recompute.
-        let after = state.agent_notes_snapshot();
+        let after = state.nostr_conversations_snapshot();
         assert_eq!(after.len(), 1);
-        assert_eq!(after[0].id, "noteX");
+        // The root_event_id for a rootless note equals the note's id.
+        assert_eq!(after[0].root_event_id, "noteX");
         assert!(
             after[0].trusted,
-            "existing note must flip to trusted once its author is followed"
+            "existing conversation must flip to trusted once its author is followed"
         );
     }
 
@@ -752,6 +734,8 @@ mod tests {
     }
 
     /// `approve_peer` / `block_peer` mutation helpers change projection live
+    /// (verified via `nostr_conversations_snapshot` — the canonical projection
+    /// since the flat `agent_notes_snapshot` was retired).
     #[test]
     fn approve_peer_flips_conversation_trusted_to_true() {
         let approved_store = Arc::new(Mutex::new(ApprovedPeerStore::new()));
@@ -764,14 +748,14 @@ mod tests {
             .push(cached_note("noteA", PEER));
 
         // Before approve: untrusted (no follow, no approve).
-        let before = state.agent_notes_snapshot();
+        let before = state.nostr_conversations_snapshot();
         assert!(!before[0].trusted, "must be untrusted before approve");
 
         // Approve via mutating helper.
         state.approve_peer(PEER);
 
         // After approve: trusted.
-        let after = state.agent_notes_snapshot();
+        let after = state.nostr_conversations_snapshot();
         assert!(after[0].trusted, "must be trusted after approve");
     }
 
@@ -790,14 +774,14 @@ mod tests {
             .push(cached_note("noteB", PEER));
 
         // Before block: trusted (followed).
-        let before = state.agent_notes_snapshot();
+        let before = state.nostr_conversations_snapshot();
         assert!(before[0].trusted, "must be trusted before block");
 
         // Block via mutating helper.
         state.block_peer(PEER);
 
         // After block: untrusted despite follow.
-        let after = state.agent_notes_snapshot();
+        let after = state.nostr_conversations_snapshot();
         assert!(!after[0].trusted, "must be untrusted after block despite follow");
     }
 
