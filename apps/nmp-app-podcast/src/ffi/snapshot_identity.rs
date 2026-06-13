@@ -42,6 +42,24 @@ pub(crate) fn build_active_account(handle: &PodcastHandle) -> Option<AccountSumm
     resolve_active_account(kernel_active_hex.as_deref(), local.as_deref())
 }
 
+/// The kernel's authoritative active-account pubkey (lowercase hex), or `None`
+/// when no account is active.
+///
+/// Exposed so the `podcast.identity` typed projection can gate on the kernel
+/// slot directly (the V-82 single source of truth), not only on the app-owned
+/// `domain_revs.identity` counter. An external NIP-55 / Amber sign-in lands the
+/// account by writing this slot from inside the kernel (`set_accounts` after
+/// `AddSigner { make_active: true }`); it never touches the app's
+/// `IdentityStore`, so the app-side rev counter never advances on that path.
+/// Without a kernel-slot-aware gate the identity sidecar is omitted from the
+/// very frame that carries the new account, and the host shows "Not signed in"
+/// despite a successful sign-in (PR #417 propagation defect). This reader lets
+/// the projection observe the slot transition with no polling — it is sampled
+/// only when the closure already runs on a kernel-driven emit.
+pub(crate) fn kernel_active_account_hex(handle: &PodcastHandle) -> Option<String> {
+    read_kernel_active_account(handle)
+}
+
 /// Pure resolution policy shared by [`build_active_account`] and its tests:
 /// given the kernel's authoritative active-account hex (if any) and the
 /// app-owned local-key store (if lockable), decide the surfaced account. The

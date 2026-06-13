@@ -64,7 +64,7 @@
 //! snake_case and rely on the bridge's automatic conversion.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use nmp_core::TypedProjectionData;
 
@@ -342,14 +342,46 @@ pub fn register_domain_projections(
     }
 
     // ── podcast.identity ──────────────────────────────────────────────────────
+    //
+    // Dual-gated: the app-owned `domain_revs.identity` counter AND the kernel's
+    // authoritative active-account slot (V-82 single source of truth). The
+    // local-key path (`ImportNsec`/`Generate`/`Clear`) advances the rev counter;
+    // an external NIP-55 / Amber sign-in lands the account by writing the kernel
+    // slot from inside the kernel (`set_accounts` after `AddSigner { make_active:
+    // true }`) and never touches the app's `IdentityStore`, so it does NOT
+    // advance the rev counter. Gating on the rev alone omitted the identity
+    // sidecar from the very frame the kernel emitted for the account-change,
+    // leaving the host on "Not signed in" after a successful Amber sign-in (PR
+    // #417 propagation defect — flaky because an unrelated identity mutation
+    // occasionally bumped the rev and dragged the fresh slot along). Observing
+    // the slot value here closes the gap with no polling: the closure only
+    // samples the slot when it already runs on a kernel-driven emit, and emits
+    // when EITHER the rev advanced OR the active-account hex changed.
     {
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.identity);
         let last_emitted = Arc::new(AtomicU64::new(0));
+        let last_active_hex: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
         app_ref.register_typed_snapshot_projection(SCHEMA_IDENTITY, move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
+            let kernel_hex = super::snapshot_identity::kernel_active_account_hex(&h);
+            let rev_changed = current != prev;
+            // Compare-and-record the kernel active-account hex under the lock so
+            // the "changed?" decision and the bookkeeping update are atomic. D6:
+            // a poisoned lock degrades to "rev gate only", never a panic across
+            // the FFI boundary.
+            let kernel_changed = match last_active_hex.lock() {
+                Ok(mut guard) => {
+                    let changed = *guard != kernel_hex;
+                    if changed {
+                        *guard = kernel_hex.clone();
+                    }
+                    changed
+                }
+                Err(_) => false,
+            };
+            if !rev_changed && !kernel_changed {
                 return None;
             }
             let payload = build_identity_payload(&h)

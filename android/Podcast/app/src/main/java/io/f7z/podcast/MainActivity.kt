@@ -82,7 +82,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.i(
+            "NmpSigner",
+            "MainActivity.onCreate savedInstanceState=${savedInstanceState != null}",
+        )
         signerBridge = ExternalSignerCapabilityBridge(this) { responseJson ->
+            android.util.Log.i("NmpSigner", "kernelSink invoked, present=${kernelSink != null}")
             kernelSink?.invoke(responseJson)
         }
         signerBridge.register()
