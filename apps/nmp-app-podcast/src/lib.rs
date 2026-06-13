@@ -39,7 +39,6 @@ pub(crate) mod agent_note_responder;
 pub(crate) mod agent_tools;
 pub(crate) mod ai_chapters;
 pub(crate) mod ai_chapters_llm;
-pub(crate) mod blossom;
 pub mod capability;
 pub(crate) mod categorization;
 pub(crate) mod categorization_llm;

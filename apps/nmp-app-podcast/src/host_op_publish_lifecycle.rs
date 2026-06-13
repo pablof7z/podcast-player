@@ -214,11 +214,12 @@ pub fn update_owned(
 ///
 /// 1. Dispatch a NIP-09 `kind:5` deletion event signed by the *per-podcast*
 ///    key via the kernel's `PublishRaw { signer_pubkey }` seam (D13 — no raw
-///    secret bytes in app code). The deletion targets kind:10154/54 by their
-///    `k` tag (NIP-09 "kind-targeted deletion"). Since the kernel now signs
-///    show events and the signed event id is not returned at dispatch time,
-///    we use the kind-targeted form rather than the `e`-tag form. This MUST
-///    happen before the key is dropped.
+///    secret bytes in app code). The deletion targets the kind:10154 show via
+///    a `["k","10154"]` tag (NIP-09 "kind-targeted deletion"); the published
+///    kind:54 episode events are NOT deleted (a tracked follow-up — see
+///    docs/BACKLOG.md). Since the kernel now signs show events and the signed
+///    event id is not returned at dispatch time, we use the kind-targeted form
+///    rather than the `e`-tag form. This MUST happen before the key is dropped.
 /// 2. Drop the per-podcast key.
 /// 3. Remove the podcast row + episodes from the store.
 /// 4. Discard the publish state.

@@ -285,6 +285,25 @@ worktrees currently in flight.
 
 ## Active P1 - Social/Nostr Real Logic
 
+- **perpodcast-publish-followups.** Follow-ups surfaced by the PR #436 review
+  (which retired app-side per-podcast NIP-F4 crypto in favor of the kernel
+  `PublishRaw { signer_pubkey }` + `nmp.blossom.upload { signer_pubkey }` +
+  `AddSigner { make_active:false }` seams). Two pre-existing gaps, NOT done:
+  (a) **No end-to-end register→sign integration test against a live kernel**
+  for the per-podcast publish path. The current unit tests assert the dispatch
+  envelope shape with a null `app` pointer (status `"signed"`), proving the app
+  no longer signs locally, but they do not exercise the kernel actually
+  resolving the named signer and producing a real signature. Add a `headless`
+  scenario that registers a per-podcast key (`nmp_app_signin_nsec` make_active=0),
+  dispatches `publish_show`/`publish_episode`, and asserts a relay-bound
+  kind:10154/54 event signed by the per-podcast pubkey.
+  (b) **NIP-09 deletion only removes the kind:10154 show, not kind:54 episodes.**
+  `delete_owned` emits `["k","10154"]` (kind-targeted show deletion) but the
+  published episode events are left on relays. Decide whether `delete_owned`
+  should also emit `["k","54"]` (delete all episodes from the per-podcast
+  pubkey) — this was the behavior before PR #436 too (the old `e`-tag form only
+  referenced the single show event), so it is a pre-existing gap, not a
+  regression.
 - ~~**social-bunker-signing-kernel.**~~ DONE (D13, PR to be merged). Both
   `.localKey` and `.remoteSigner` (NIP-46 bunker) identities publish through
   `podcast.social` → kernel `publish_unsigned_event` → `sign_active_nonblocking`
