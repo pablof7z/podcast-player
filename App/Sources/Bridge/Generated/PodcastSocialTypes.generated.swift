@@ -46,6 +46,7 @@ struct NostrConversationTurnDTO: Codable, Identifiable, Equatable, Hashable {
 /// A NIP-10-threaded conversation between the active account and one peer,
 /// surfaced via the `podcast.social` domain projection. Merges inbound
 /// kind:1 notes + outbound auto-responder turns under a common root event id.
+/// Use this instead of the flat `agentNotes` list for conversation views.
 struct NostrConversationDTO: Codable, Identifiable, Equatable, Hashable {
     var rootEventId: String
     var counterpartyHex: String
