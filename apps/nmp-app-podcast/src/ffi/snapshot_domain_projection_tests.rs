@@ -459,6 +459,76 @@ fn widget_empty_emits_tombstone_then_idles() {
     unsafe { drop(Box::from_raw(app)) };
 }
 
+/// PR #417 propagation defect regression: an external NIP-55 / Amber sign-in
+/// lands the active account by writing the kernel's active-account slot (the
+/// V-82 single source of truth) WITHOUT advancing the app-owned
+/// `domain_revs.identity` counter. The `podcast.identity` projection MUST
+/// surface that account on the next emit — gating on the rev counter alone
+/// dropped the sidecar from the very frame the kernel emitted for the
+/// account-change, leaving the host on "Not signed in" after a successful
+/// sign-in (flaky because an unrelated identity mutation occasionally bumped
+/// the rev and dragged the fresh slot along). Here we write the slot directly
+/// (the kernel's `set_accounts` effect) with the identity rev held fixed and
+/// assert the identity sidecar is emitted with the Amber pubkey + `nip55` mode.
+#[test]
+fn identity_surfaces_kernel_active_account_without_rev_bump() {
+    // The Amber test key proven on the emulator (PR #417 evidence).
+    const AMBER_PUBKEY_HEX: &str =
+        "d6070609432b666c51677f606a0961e5f40730fe44b1c3bbd7ce29d5fa25b0a6";
+    const AMBER_NPUB: &str = "npub16crsvz2r9dnxc5t80asx5ztpuh6qwv87gjcu8w7hec5at739kznqzxadlu";
+
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+    let handle = Arc::new(*make_test_handle_with_app(app));
+    let domain_revs = Arc::clone(&handle.state.infra.domain_revs);
+    register_domain_projections(app_ref, &handle);
+
+    // Prime: first emit drains the initial sidecars; the next tick is silent.
+    let _ = app_ref.run_typed_snapshot_projections();
+    assert!(app_ref.run_typed_snapshot_projections().is_empty());
+
+    let rev_before = domain_revs.identity.load(Ordering::Relaxed);
+
+    // Simulate the kernel landing the Amber account: write the V-82
+    // active-account slot the kernel's `set_accounts` writes, WITHOUT bumping
+    // `domain_revs.identity` (the NIP-55 path never touches the local store).
+    {
+        let slot = app_ref.active_account_handle();
+        *slot.lock().unwrap() = Some(AMBER_PUBKEY_HEX.to_string());
+    }
+
+    // The identity sidecar MUST now be emitted, carrying the Amber account —
+    // driven purely by the kernel slot transition, with the rev unchanged.
+    let after = app_ref.run_typed_snapshot_projections();
+    let ident = after.iter().find(|p| p.schema_id == SCHEMA_IDENTITY)
+        .expect("identity sidecar must surface the kernel active account without a rev bump");
+    let val: serde_json::Value = serde_json::from_slice(&ident.payload).unwrap();
+    assert_eq!(
+        val["active_account"]["pubkey_hex"], AMBER_PUBKEY_HEX,
+        "must carry the kernel-active Amber pubkey"
+    );
+    assert_eq!(
+        val["active_account"]["npub"], AMBER_NPUB,
+        "npub must be derived from the kernel-active hex"
+    );
+    assert_eq!(
+        val["active_account"]["mode"], "nip55",
+        "external signer with no matching local key renders as nip55"
+    );
+    assert_eq!(
+        domain_revs.identity.load(Ordering::Relaxed),
+        rev_before,
+        "fix must NOT depend on the identity rev advancing"
+    );
+
+    // Idempotence: a steady kernel slot must not re-emit every tick.
+    let idle = app_ref.run_typed_snapshot_projections();
+    assert!(idle.iter().all(|p| p.schema_id != SCHEMA_IDENTITY), "a steady kernel slot must not re-emit the identity sidecar");
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
 /// `podcast.social` empty → tombstone on first run, then idles on second tick.
 ///
 /// When the social state is empty (no account → no follow graph, no notes, no
@@ -636,7 +706,6 @@ fn social_inbound_note_reemits_on_each_new_note_real_path() {
         convo_count, 2,
         "both inbound notes (distinct roots) must appear in the re-emitted payload; got: {val}"
     );
-
     drop(handle);
     unsafe { drop(Box::from_raw(app)) };
 }

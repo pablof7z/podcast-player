@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -102,7 +103,16 @@ class ExternalSignerCapabilityBridge(
         launcher = activity.registerForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val correlationId = pendingCorrelationId ?: return@registerForActivityResult
+            Log.i(
+                "NmpSigner",
+                "launcher result: code=${result.resultCode} pendingCid=$pendingCorrelationId " +
+                    "method=$pendingMethod hasData=${result.data != null} " +
+                    "extras=${result.data?.extras?.keySet()?.joinToString(",")}",
+            )
+            val correlationId = pendingCorrelationId ?: run {
+                Log.w("NmpSigner", "launcher result DROPPED: pendingCorrelationId null (activity recreated?)")
+                return@registerForActivityResult
+            }
             pendingCorrelationId = null
             val method = pendingMethod ?: "unknown"
             pendingMethod = null
@@ -174,7 +184,15 @@ class ExternalSignerCapabilityBridge(
      * `nativeDeliverSignerResponse` (see `KernelBridge`).
      */
     fun handle(request: ExternalSignerRequest) {
-        if (shouldUseContentResolver(request)) {
+        val useCr = shouldUseContentResolver(request)
+        Log.i(
+            "NmpSigner",
+            "handle method=${request.method} cid=${request.correlationId} " +
+                "transport=${if (useCr) "ContentResolver" else "Intent"} " +
+                "forceInteractive=${request.forceInteractive} " +
+                "permCount=${request.permissions.size}",
+        )
+        if (useCr) {
             dispatchContentResolver(request)
         } else {
             dispatchIntent(request)
@@ -206,6 +224,11 @@ class ExternalSignerCapabilityBridge(
         pendingMethod = request.method
 
         val l = launcher
+        Log.i(
+            "NmpSigner",
+            "dispatchIntent method=${request.method} cid=${request.correlationId} " +
+                "launcherReady=${l != null} pkg=${request.signerPackage}",
+        )
         if (l != null) {
             l.launch(intent)
         } else {
