@@ -5,20 +5,18 @@ import Foundation
 // Implements the wiring contract from
 // `docs/spec/briefs/identity-05-synthesis.md` §5.
 //
-// ## Signing seam — kernel for local keys, Swift for bunkers
+// ## Signing seam — ALL paths through the kernel
 //
-// kind:0/1/9802 signing now lives in the Rust kernel (`podcast.social.*`,
+// kind:0/1/9802 signing lives entirely in the Rust kernel (`podcast.social.*`,
 // see `apps/nmp-app-podcast/src/social_publish_handler.rs`). For a
-// `.localKey` identity the key has been forwarded to the kernel (see
-// `UserIdentityStore+Kernel.swift`), so these methods dispatch the build +
-// sign + publish to the kernel.
-//
-// A `.remoteSigner` (NIP-46 bunker) identity keeps its key remote; the
-// kernel's podcast-app `IdentityStore` has no `secret_hex` to sign with, so
-// bunker publishing stays on the Swift NIP-46 path below until a kernel
-// remote-sign seam exists (BACKLOG `social-bunker-signing-kernel`). The
-// `.none` case self-heals to a generated local key, then takes the kernel
-// path.
+// `.localKey` identity the kernel signs with the persisted local nsec; for a
+// `.remoteSigner` (NIP-46 bunker) identity the kernel parks the sign op on
+// its `PendingSign` queue and resolves it via the signer broker round-trip
+// (see `nmp-core`'s `actor/pending_sign.rs` + `commands/publish.rs`
+// `sign_active_nonblocking`). There is NO Swift signing path for either
+// identity kind; this file contains no NIP-46 code. The `.none` case
+// self-heals to a generated local key via `_ensureGeneratedKey`, then takes
+// the kernel path.
 //
 // The `author == .user` / `source != .agent` gate that keeps the user's
 // identity off agent-authored artefacts lives UPSTREAM in

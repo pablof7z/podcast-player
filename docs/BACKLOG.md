@@ -295,20 +295,20 @@ worktrees currently in flight.
 
 ## Active P1 - Social/Nostr Real Logic
 
-- **social-bunker-signing-kernel.** `podcast.social` (kind:0/1/9802) signs from
-  the kernel `IdentityStore.secret_hex`, so it only covers `.localKey`
-  identities. NIP-46 bunker (`.remoteSigner`) keys are remote, so
-  `UserIdentityStore+Publishing.swift` keeps the Swift NIP-46 signing path for
-  bunkers. Follow-up: expose a kernel remote-sign seam (delegate sign over the
-  relay via the signer broker) so bunker users also publish through
-  `podcast.social`, then delete the Swift `.remoteSigner` publish branch.
-- **nip73-formatting-kernel.** `publishUserClip` assembles the NIP-73 / NIP-84
-  highlight tag set (enclosure/feed `r`, episode `i` coordinate, `context`,
-  `alt`) Swift-side and passes it to `podcast.social publish_highlight` as a
-  verbatim `tags` array. Tag *formatting* could move kernel-side (the kernel
-  would build the `i podcast:item:guid:<guid>#t=<start>,<end>` string from
-  episode/podcast ids) so iOS hands data, not pre-formatted tags. Low priority;
-  signing already moved.
+- ~~**social-bunker-signing-kernel.**~~ DONE (D13, PR to be merged). Both
+  `.localKey` and `.remoteSigner` (NIP-46 bunker) identities publish through
+  `podcast.social` → kernel `publish_unsigned_event` → `sign_active_nonblocking`
+  → `PendingSign` park for remote signers. There was never a Swift NIP-46 signing
+  branch in `UserIdentityStore+Publishing.swift`; the stale comment that claimed
+  one was removed in this PR. Verified against NMP v0.6.2 rev 6418a7ac
+  `crates/nmp-core/src/actor/commands/publish.rs` + `pending_sign.rs` +
+  `nip46_bunker_signing.rs` integration test.
+- **nip73-formatting-kernel.** `publishUserClip` dispatches typed fields to
+  `podcast.social publish_highlight`; the kernel's `build_highlight_tags`
+  assembles the NIP-73/84 tag set (enclosure/feed `r`, episode `i` coord,
+  `context`, `alt`) from those fields. Tag formatting is already kernel-owned
+  (#355). Low priority follow-up: pass raw episode/podcast identifiers so Swift
+  never formats the `i podcast:item:guid:<guid>#t=<start>,<end>` string.
 - **social-publish-relay-target.** Kernel social publishing targets the kernel's
   primary relay (`relay.primal.net`, matching `agent_note_handler`/
   `social_handler`), whereas the old Swift path used
