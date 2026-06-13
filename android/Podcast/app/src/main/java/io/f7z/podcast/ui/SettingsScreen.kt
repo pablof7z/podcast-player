@@ -46,6 +46,7 @@ fun SettingsScreen(
     bridge: KernelBridge,
     onNavigateToIdentity: () -> Unit,
     onNavigateToModels: () -> Unit,
+    onNavigateToNostrConversations: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val settings = snapshot?.settings ?: SettingsSnapshot()
@@ -80,6 +81,13 @@ fun SettingsScreen(
         item {
             SettingsSection(title = "AI") {
                 SettingsNavRow(label = "Providers & models", onClick = onNavigateToModels)
+            }
+        }
+        item {
+            SettingsSection(title = "Nostr") {
+                val convCount = snapshot?.nostrConversations?.size ?: 0
+                val label = if (convCount > 0) "Conversations ($convCount)" else "Conversations"
+                SettingsNavRow(label = label, onClick = onNavigateToNostrConversations)
             }
         }
         item {

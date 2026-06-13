@@ -1,7 +1,9 @@
 package io.f7z.podcast.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.AccountBox
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.f7z.podcast.KernelBridge
+import io.f7z.podcast.NostrConversationDto
 import io.f7z.podcast.PodcastSnapshot
 import io.f7z.podcast.PodcastSummary
 
@@ -62,6 +65,10 @@ fun AppNavigation(
     var selectedTab by rememberSaveable { mutableStateOf(BottomTab.Home) }
     var route by rememberSaveable(stateSaver = AppRoute.Saver) { mutableStateOf<AppRoute>(AppRoute.Tab(BottomTab.Home)) }
 
+    // Conversations nav: hold the selected conversation so the detail screen
+    // can find it by root-event-id even if the snapshot ticks between taps.
+    var selectedConversationId by rememberSaveable { mutableStateOf<String?>(null) }
+
     val onTabSelected: (BottomTab) -> Unit = { tab ->
         selectedTab = tab
         route = AppRoute.Tab(tab)
@@ -90,6 +97,7 @@ fun AppNavigation(
                 onShowSelected = { route = AppRoute.ShowDetail(it.id) },
                 onOpenIdentity = { route = AppRoute.Identity },
                 onOpenModels = { route = AppRoute.ProviderModels },
+                onOpenNostrConversations = { route = AppRoute.NostrConversations },
                 modifier = contentModifier,
             )
             is AppRoute.ShowDetail -> ShowDetailScreen(
@@ -132,6 +140,33 @@ fun AppNavigation(
                 onBack = { route = AppRoute.Tab(selectedTab) },
                 modifier = contentModifier,
             )
+            AppRoute.NostrConversations -> NostrConversationsScreen(
+                snapshot = snapshot,
+                bridge = bridge,
+                onConversationSelected = { conv ->
+                    selectedConversationId = conv.rootEventId
+                    route = AppRoute.NostrConversationDetail(conv.rootEventId)
+                },
+                onBack = { route = AppRoute.Tab(selectedTab) },
+                modifier = contentModifier,
+            )
+            is AppRoute.NostrConversationDetail -> {
+                // Look up the conversation by root-event-id from the live snapshot.
+                val conv = snapshot?.nostrConversations
+                    ?.firstOrNull { it.rootEventId == current.rootEventId }
+                if (conv != null) {
+                    NostrConversationDetailScreen(
+                        conversation = conv,
+                        onBack = { route = AppRoute.NostrConversations },
+                        modifier = contentModifier,
+                    )
+                } else {
+                    // Conversation cleared from kernel state (tombstone) — go back.
+                    Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
+                        androidx.compose.material3.Text("Conversation not found.")
+                    }
+                }
+            }
         }
     }
 }
@@ -144,6 +179,7 @@ private fun TabContent(
     onShowSelected: (PodcastSummary) -> Unit,
     onOpenIdentity: () -> Unit,
     onOpenModels: () -> Unit,
+    onOpenNostrConversations: () -> Unit,
     modifier: Modifier,
 ) {
     when (tab) {
@@ -173,6 +209,7 @@ private fun TabContent(
             bridge = bridge,
             onNavigateToIdentity = onOpenIdentity,
             onNavigateToModels = onOpenModels,
+            onNavigateToNostrConversations = onOpenNostrConversations,
             modifier = modifier,
         )
     }
@@ -210,6 +247,10 @@ private sealed interface AppRoute {
     data object Identity : AppRoute
     data object ProviderModels : AppRoute
     data object AgentChat : AppRoute
+    /** Nostr conversations list — reached from Settings. */
+    data object NostrConversations : AppRoute
+    /** Nostr conversation detail — reached from [NostrConversations]. */
+    data class NostrConversationDetail(val rootEventId: String) : AppRoute
 
     companion object {
         val Saver: androidx.compose.runtime.saveable.Saver<AppRoute, Any> =
@@ -222,6 +263,8 @@ private sealed interface AppRoute {
                         Identity -> listOf("identity")
                         ProviderModels -> listOf("provider_models")
                         AgentChat -> listOf("agent_chat")
+                        NostrConversations -> listOf("nostr_conversations")
+                        is NostrConversationDetail -> listOf("nostr_conversation_detail", value.rootEventId)
                     }
                 },
                 restore = { raw ->
@@ -238,6 +281,8 @@ private sealed interface AppRoute {
                         "identity" -> Identity
                         "provider_models" -> ProviderModels
                         "agent_chat" -> AgentChat
+                        "nostr_conversations" -> NostrConversations
+                        "nostr_conversation_detail" -> list.getOrNull(1)?.let { NostrConversationDetail(it) }
                         else -> null
                     }
                 },

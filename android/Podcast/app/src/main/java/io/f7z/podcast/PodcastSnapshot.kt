@@ -103,6 +103,13 @@ data class PodcastSnapshot(
      * LLM pass. Rides the `podcast.misc` domain frame.
      */
     val picks: List<AgentPickSummary> = emptyList(),
+    /**
+     * NIP-10-threaded Nostr conversations, newest-first by last_activity.
+     * Mirror of `SocialDomainFrame.nostrConversations`. Rides the
+     * `podcast.social` domain frame. Empty until the kernel has indexed
+     * at least one conversation thread.
+     */
+    @SerialName("nostr_conversations") val nostrConversations: List<NostrConversationDto> = emptyList(),
 ) {
     /**
      * Effective subscription list — prefer the new `podcasts` projection, fall
