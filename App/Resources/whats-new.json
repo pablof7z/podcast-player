@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-14T08:05:00Z",
+      "lines": [
+        "Download rows now appear immediately after you tap Download."
+      ]
+    },
+    {
       "shipped_at": "2026-06-14T06:35:13Z",
       "lines": [
         "Home Inbox now shows when the agent last finished triaging your episodes."

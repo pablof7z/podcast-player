@@ -94,7 +94,6 @@ impl PodcastHostOpHandler {
         if let Err(e) = self.start_episode_download(&episode_id_str, &url, correlation_id, false) {
             return serde_json::json!({"ok": false, "error": e});
         }
-        self.bump_domain(crate::state::Domain::Downloads);
         serde_json::json!({"ok": true})
     }
 
@@ -136,6 +135,7 @@ impl PodcastHostOpHandler {
             }
             Err(_) => return Err("download_queue poisoned".into()),
         };
+        self.bump_domain(crate::state::Domain::Downloads);
 
         if let Ok(mut s) = self.state.library.store.lock() {
             let (kind, summary): (&str, &str) = if auto {
