@@ -405,10 +405,20 @@ impl PodcastHostOpHandler {
         // event log with the `podcast.download` op — otherwise a download started
         // here would emit no pipeline events and the Diagnostics log would stay
         // empty for it.
-        match self.start_episode_download(&episode_id, &url, correlation_id, false) {
-            Ok(()) => serde_json::json!({"ok": true}),
-            Err(e) => serde_json::json!({"ok": false, "error": e}),
+        if let Err(e) = self.start_episode_download(&episode_id, &url, correlation_id, false) {
+            return serde_json::json!({"ok": false, "error": e});
         }
+        // Bump the Downloads domain so the next snapshot frame carries the
+        // newly-enqueued row. `start_episode_download` mutates the queue but
+        // leaves rev-bumping to the caller — identical to the `handle_download`
+        // path in `podcast_actions_downloads.rs` (see line ~97 there).
+        // Without this bump, `wait_for(downloads.active …)` never observes the
+        // row on a clean run (the rev counter doesn't change, so no new frame
+        // is emitted). This was the root cause of the CI-only failure in
+        // `download_lifecycle` (PR #474): locally stale state or incidental
+        // domain bumps from other scenarios masked the missing bump.
+        self.bump_domain(crate::state::Domain::Downloads);
+        serde_json::json!({"ok": true})
     }
 
     fn handle_download_command(
