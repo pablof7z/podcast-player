@@ -172,4 +172,29 @@ final class KernelDomainMergeTests: XCTestCase {
         XCTAssertEqual(tracker.widget, 10,
                        "tracker must advance to the tombstone rev")
     }
+
+    // ── cold-start full-pull guard ──────────────────────────────────────────
+
+    func testColdStartPullAllowsEqualRevBeforeHydration() {
+        XCTAssertTrue(
+            KernelModel.shouldPullPodcastSnapshot(
+                currentRev: 7,
+                lastProcessedRev: 7,
+                hasHydratedPodcastSnapshot: false),
+            "the first full pull must re-seed even if a push frame already consumed the same rev")
+    }
+
+    func testSteadyStatePullRequiresNewerRevAfterHydration() {
+        XCTAssertFalse(
+            KernelModel.shouldPullPodcastSnapshot(
+                currentRev: 7,
+                lastProcessedRev: 7,
+                hasHydratedPodcastSnapshot: true),
+            "after the first full pull, duplicate revs must be dropped")
+        XCTAssertTrue(
+            KernelModel.shouldPullPodcastSnapshot(
+                currentRev: 8,
+                lastProcessedRev: 7,
+                hasHydratedPodcastSnapshot: true))
+    }
 }
