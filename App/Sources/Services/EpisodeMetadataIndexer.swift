@@ -5,22 +5,27 @@ import os.log
 //
 // Thin executor for the kernel-driven metadata-index backfill (D7).
 //
-// The kernel owns ALL policy:
+// The kernel owns POLICY:
 //   - Which episodes are candidates (`PodcastUpdate.pendingMetadataIndexIds`)
-//   - Batch size (kernel constant, surfaced via the push frame)
-//   - Inter-batch pacing (`PodcastUpdate.metadataIndexInterBatchDelayMs`)
-//   - Halt-on-failure: a zero-success batch causes the executor to stop
+//   - Batch size (kernel constant, surfaced via the push frame as the size of
+//     `pendingMetadataIndexIds`)
+//   - Inter-batch pacing VALUE (`PodcastUpdate.metadataIndexInterBatchDelayMs`)
+//   - Halt-on-failure: a zero-success batch stops the driver
 //
-// The shell's only responsibilities:
-//   1. Drain the kernel-provided batch of episode IDs
-//   2. Build and upsert the embedding chunks
-//   3. Dispatch `MarkEpisodesMetadataIndexed` on success
+// The shell owns EXECUTION SERIALIZATION (the correct side of the
+// "embedding stays in the shell" boundary):
+//   1. Run a SINGLE long-lived serialized driver — never two at once.
+//   2. Drain the current kernel batch, embed, dispatch `MarkEpisodesMetadataIndexed`.
+//   3. Sleep `delay_ms` BEFORE claiming the next batch (the kernel-owned cooldown
+//      actually gates successive embed calls — see `startDraining`).
 //
-// Lifecycle:
-//   `indexKernelBatch(ids:interBatchDelayMs:appStore:)` — called from the
-//   kernel-projection observer whenever `pendingMetadataIndexIds` is
-//   non-empty. Reentrancy-safe via the `inFlight` dedup set; concurrent
-//   batches on the same ID are harmlessly coalesced.
+// Why a serialized driver instead of one Task per push frame: the pacing delay
+// must gate the NEXT claim. A fire-and-forget-per-frame design put the sleep at
+// the tail of a detached task where it gated nothing, and an unrelated Library
+// bump (star toggle, download tick, feed refresh) would fire a zero-delay batch.
+// The driver reads its candidate source fresh each iteration, so a frame that
+// arrives mid-drain just refreshes what the next loop reads — it never spawns a
+// parallel driver.
 //
 // Coexistence with transcripts: `TranscriptIngestService.persistAndIndex`
 // calls `rag.index.deleteAll(forEpisodeID:)` before upserting transcript
@@ -51,25 +56,110 @@ final class EpisodeMetadataIndexer {
     /// (e.g. a feed refresh fires while the previous batch is still in flight).
     private var inFlight: Set<UUID> = []
 
+    // MARK: Serialized driver
+
+    /// The single live backfill driver, or `nil` when idle. Guarantees exactly
+    /// one driver runs at a time: `startDraining` only spawns a new driver when
+    /// this is `nil`. Because `EpisodeMetadataIndexer` is `@MainActor`, the
+    /// `nil`-check + assignment in `startDraining` is atomic (no `await` between
+    /// them), so two concurrent triggers cannot both pass the guard.
+    private var driverTask: Task<Void, Never>?
+
     // MARK: Init
 
     init(store: VectorStore = RAGService.shared.index) {
         self.store = store
     }
 
-    // MARK: Public API
+    // MARK: Public API — serialized driver
 
-    /// Execute a single kernel-provided batch of episode IDs.
+    /// Start the serialized backfill driver if it is not already running.
     ///
-    /// Called from the projection observer whenever `PodcastUpdate.pendingMetadataIndexIds`
-    /// is non-empty. Returns the count of episodes successfully indexed; `0` on
-    /// embed failure. The observer must stop calling this on a zero result (halt-on-failure
-    /// parity with the old `runBackfill` loop).
+    /// Called from the kernel-projection observer on every Library push frame
+    /// (after `applyKernelState`). The contract — all reasoning rests on
+    /// `@MainActor` serialization: a run of synchronous code with no `await`
+    /// inside it cannot interleave with another main-actor task.
     ///
-    /// The inter-batch delay is the caller's responsibility: sleep
-    /// `interBatchDelayMs` milliseconds AFTER a successful (non-zero) return
-    /// before processing the next frame's batch. This matches the old
-    /// `interBatchDelayNanoseconds` throttle, now kernel-owned.
+    /// - **Single driver:** the `driverTask == nil` guard and the
+    ///   `driverTask = Task {…}` assignment run back-to-back with no `await`
+    ///   between them, so two concurrent triggers can never both pass the guard.
+    ///   A second trigger while a driver is live is a no-op; the live driver
+    ///   re-reads `nextBatch()` next iteration, so mid-drain frames are absorbed
+    ///   without spawning a parallel driver.
+    /// - **No lost wakeup on the empty-exit path:** the driver's
+    ///   `nextBatch()` read, the `guard !batch.isEmpty else { return }`, and the
+    ///   `defer { driverTask = nil }` that fires on that return all execute in a
+    ///   SINGLE main-actor-synchronous run (no `await` between the empty read and
+    ///   the clear). A frame's `startDraining` therefore cannot observe the
+    ///   intermediate state "batch is empty but `driverTask` still non-nil" — it
+    ///   either runs entirely before this block (and the live driver picks up its
+    ///   candidates) or entirely after (and sees `driverTask == nil`, starting a
+    ///   fresh driver). Newly-arrived candidates are never dropped.
+    /// - **Inter-batch pacing:** the driver sleeps `delayMs()` BEFORE claiming
+    ///   the next batch (only after a successful, non-empty batch), so the
+    ///   kernel-owned cooldown actually gates successive embed calls. A frame
+    ///   arriving during `indexEpisodes`/`Task.sleep` does not spawn a parallel
+    ///   driver (guard fails) and is absorbed by the next loop read.
+    /// - **Halt-on-failure (intentional):** a zero-success batch stops the
+    ///   driver and clears `driverTask`. A frame that arrived during the failing
+    ///   embed already saw a live driver and bailed, so it does NOT trigger an
+    ///   immediate retry — by design. The candidates remain pending (failure does
+    ///   not mark them), so the NEXT Library bump restarts the idle driver, which
+    ///   re-reads them and retries without a fixed timer. This matches the old
+    ///   `runBackfill` "stop the backfill, resume on next launch" behavior.
+    ///
+    /// `nextBatch` and `delayMs` are `@MainActor` closures read fresh each
+    /// iteration so the driver always sees the latest projected candidates and
+    /// pacing value.
+    func startDraining(
+        appStore: AppStateStore,
+        nextBatch: @escaping @MainActor () -> [UUID],
+        delayMs: @escaping @MainActor () -> Int
+    ) {
+        // Single-driver guard: atomic on the main actor (no await before assign).
+        guard driverTask == nil else { return }
+        driverTask = Task { @MainActor [weak self, weak appStore] in
+            defer { self?.driverTask = nil }
+            while !Task.isCancelled {
+                guard let self, let appStore else { return }
+                let batch = nextBatch()
+                // Empty batch → exit. The `defer` clears `driverTask`
+                // synchronously (no await between this read and the return),
+                // so the next frame's `startDraining` starts a fresh driver.
+                guard !batch.isEmpty else { return }
+
+                let count = await self.indexEpisodes(ids: batch, appStore: appStore)
+                if count == 0 {
+                    // Halt-on-failure: stop the driver. A later Library bump
+                    // restarts it (the candidates are still pending), which
+                    // retries without a fixed timer.
+                    Self.logger.notice(
+                        "metadata-index batch failed for \(batch.count, privacy: .public) episodes — halting until next Library frame"
+                    )
+                    return
+                }
+
+                // Pace the embeddings provider BEFORE claiming the next batch.
+                let delay = delayMs()
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                }
+            }
+        }
+    }
+
+    /// Cancel the live driver (test teardown / app shutdown). Idempotent.
+    func cancelDraining() {
+        driverTask?.cancel()
+        driverTask = nil
+    }
+
+    /// Execute a single batch of episode IDs directly (test seam).
+    ///
+    /// Returns the count of episodes successfully indexed; `0` on embed failure
+    /// or an all-already-indexed batch. The serialized driver calls
+    /// `indexEpisodes` directly; this wrapper exists so unit tests can exercise
+    /// one batch without standing up the driver loop.
     @discardableResult
     func indexKernelBatch(
         ids: [UUID],
