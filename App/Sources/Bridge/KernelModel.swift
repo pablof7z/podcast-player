@@ -289,15 +289,15 @@ final class KernelModel {
     /// MainActor); the O(N×M) hashing then also runs off-main inside
     /// `applyPodcastUpdate`.
     ///
-    /// `synchronous` is accepted but IGNORED — the decode is always off-main now.
-    /// It is retained only for source-compatibility with the in-flight audio
-    /// rev-discipline PR (#265), whose `applyAudioReport` calls this with
-    /// `synchronous: false`; keeping the defaulted parameter lets the two PRs
-    /// compose in either merge order without a compile break. Remove it (and that
-    /// call site's argument) in a follow-up once both have landed.
+    /// `synchronous` is retained for source compatibility; decode is always
+    /// off-main.
     private func pullPodcastSnapshotIfChanged(synchronous: Bool = false) {
         let currentRev = kernel.podcastSnapshotRev()
-        guard currentRev > lastProcessedRev else { return }
+        guard Self.shouldPullPodcastSnapshot(
+            currentRev: currentRev,
+            lastProcessedRev: lastProcessedRev,
+            hasHydratedPodcastSnapshot: hasHydratedPodcastSnapshot
+        ) else { return }
         let handle = kernel
         snapshotDecodeQueue.async { [weak self] in
             let update = handle.podcastSnapshot()

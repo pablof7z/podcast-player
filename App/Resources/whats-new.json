@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-14T05:50:17Z",
+      "lines": [
+        "Saved shows and downloaded badges now stay visible while the app finishes launching."
+      ]
+    },
+    {
       "shipped_at": "2026-06-14T05:12:25Z",
       "lines": [
         "Remote signer setup now keeps showing connection progress until the signer finishes pairing or the attempt times out."

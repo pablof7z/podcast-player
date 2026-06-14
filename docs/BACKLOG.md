@@ -270,9 +270,11 @@ worktrees currently in flight.
 - **download-state-projection.** Runtime queue projection is now wired:
   player download actions mutate `DownloadQueue`, download reports update
   progress/paused/failed/completed state, and snapshots expose active/queued/
-  paused/failed rows instead of only completed local paths. Remaining:
-  validate background URLSession restore, deletion failure, and offline-first
-  playback on device.
+  paused/failed rows instead of only completed local paths. Cold-start full
+  pulls now accept the first equal-rev snapshot so a partial push cannot hide
+  the disk-restored library, and projection coverage proves reloaded completed
+  downloads still surface `download_path`/size. Remaining: validate background
+  URLSession restore, deletion failure, and offline-first playback on device.
 - **settings-completion.** Finish playback/settings projection parity:
   skip intervals, auto-skip ads, streaming/offline preferences, onboarding
   gate, provider settings, and persistence migration.

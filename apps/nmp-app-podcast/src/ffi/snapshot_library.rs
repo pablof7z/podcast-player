@@ -126,3 +126,108 @@ pub(super) fn build_library_snapshot(
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex};
+
+    use podcast_core::{Episode, Podcast};
+
+    use crate::ffi::handle::PodcastHandle;
+    use crate::state::{Infra, PodcastAppState};
+    use crate::store::PodcastStore;
+
+    struct TempDir {
+        path: PathBuf,
+    }
+
+    impl TempDir {
+        fn new() -> Self {
+            static SEQ: AtomicU64 = AtomicU64::new(0);
+            let n = SEQ.fetch_add(1, Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!(
+                "nmp-podcast-snapshot-library-{}-{n}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&path).expect("create temp dir");
+            Self { path }
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn make_handle() -> PodcastHandle {
+        let store = Arc::new(Mutex::new(PodcastStore::new()));
+        let state = Arc::new(PodcastAppState::new(Infra::for_test(), store));
+        state.tasks.tasks.lock().unwrap().clear();
+        PodcastHandle {
+            app: std::ptr::null_mut(),
+            state,
+            responder_cache: Arc::new(Mutex::new(
+                crate::store::agent_note_responder_cache::ResponderCache::default(),
+            )),
+            outbound_turn_cache: Arc::new(Mutex::new(
+                crate::store::outbound_turn_cache::OutboundTurnCache::new(),
+            )),
+            approved_peer_store: Arc::new(Mutex::new(
+                crate::store::approved_peer_store::ApprovedPeerStore::new(),
+            )),
+            snapshot_cache: Arc::new(Mutex::new(None)),
+            clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    #[test]
+    fn downloaded_path_projects_after_store_reload() {
+        let dir = TempDir::new();
+        let local_path = dir.path.join("downloaded-episode.mp3");
+        std::fs::write(&local_path, b"episode bytes").expect("write downloaded file");
+        let local_path = local_path.to_string_lossy().into_owned();
+
+        let episode_id;
+        {
+            let mut store = PodcastStore::new();
+            store.set_data_dir(dir.path.clone());
+            let mut podcast = Podcast::new("Downloaded Show");
+            podcast.feed_url = Some(url::Url::parse("https://example.com/feed.xml").unwrap());
+            let podcast_id = podcast.id;
+            let episode = Episode::new(
+                podcast_id,
+                "https://example.com/feed.xml",
+                "guid-downloaded",
+                "Saved Episode",
+                url::Url::parse("https://example.com/audio.mp3").unwrap(),
+                chrono::Utc::now(),
+            );
+            episode_id = episode.id.0.to_string();
+            store.subscribe(podcast, vec![episode]);
+            store.set_local_path(
+                podcast_core::EpisodeId(uuid::Uuid::parse_str(&episode_id).unwrap()),
+                local_path.clone(),
+                13,
+            );
+        }
+
+        let mut reloaded = PodcastStore::new();
+        reloaded.set_data_dir(dir.path.clone());
+        let handle = make_handle();
+        let library = build_library_snapshot(&handle, &reloaded, &HashMap::new(), &HashMap::new());
+        let episode = library
+            .iter()
+            .flat_map(|podcast| podcast.episodes.iter())
+            .find(|episode| episode.id == episode_id)
+            .expect("downloaded episode projected after reload");
+
+        assert_eq!(episode.download_path.as_deref(), Some(local_path.as_str()));
+        assert_eq!(episode.file_size_bytes, 13);
+    }
+}
