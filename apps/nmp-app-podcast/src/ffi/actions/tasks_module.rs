@@ -112,6 +112,7 @@ impl ActionModule for AgentTasksModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

@@ -124,6 +124,7 @@ impl ActionModule for NipF4PublishModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

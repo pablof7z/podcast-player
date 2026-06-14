@@ -126,10 +126,12 @@ pub(crate) fn dispatch_host_op(
     send: &dyn Fn(nmp_core::ActorCommand),
 ) -> Result<(), String> {
     let envelope = serde_json::json!({ "ns": ns, "action": action });
-    send(nmp_core::ActorCommand::DispatchHostOp {
-        action_json: envelope.to_string(),
-        correlation_id: correlation_id.to_owned(),
-    });
+    send(nmp_core::ActorCommand::Protocol(Box::new(
+        nmp_core::substrate::host_op_command(
+            envelope.to_string(),
+            correlation_id.to_owned(),
+        ),
+    )));
     Ok(())
 }
 

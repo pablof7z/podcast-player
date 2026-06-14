@@ -7,19 +7,18 @@
 //! host-registered snapshot projections re-emit without shell polling.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
-use nmp_core::ActorCommand;
+use nmp_core::{ActorCommand, CommandSender};
 
 #[derive(Clone)]
 pub(crate) struct SnapshotUpdateSignal {
     rev: Arc<AtomicU64>,
-    actor_tx: Sender<ActorCommand>,
+    actor_tx: CommandSender,
 }
 
 impl SnapshotUpdateSignal {
-    pub(crate) fn new(rev: Arc<AtomicU64>, actor_tx: Sender<ActorCommand>) -> Self {
+    pub(crate) fn new(rev: Arc<AtomicU64>, actor_tx: CommandSender) -> Self {
         Self { rev, actor_tx }
     }
 

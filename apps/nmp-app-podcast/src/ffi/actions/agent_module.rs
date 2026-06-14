@@ -73,6 +73,7 @@ impl ActionModule for AgentActionModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

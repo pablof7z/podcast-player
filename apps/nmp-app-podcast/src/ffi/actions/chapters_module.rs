@@ -46,6 +46,7 @@ impl ActionModule for ChaptersActionModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

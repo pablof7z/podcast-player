@@ -70,25 +70,25 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // from action_results[correlation_id].result on the next push frame.
     nmp_blossom::register_actions(app_mut);
 
-    app_mut.register_action::<IdentityActionModule>();
-    app_mut.register_action::<PodcastActionModule>();
-    app_mut.register_action::<PlayerActionModule>();
-    app_mut.register_action::<QueueActionModule>();
-    app_mut.register_action::<ChaptersActionModule>();
-    app_mut.register_action::<WikiActionModule>();
-    app_mut.register_action::<AgentPicksModule>();
-    app_mut.register_action::<AgentTasksModule>();
-    app_mut.register_action::<KnowledgeActionModule>();
-    app_mut.register_action::<MemoryActionModule>();
-    app_mut.register_action::<ClipActionModule>();
-    app_mut.register_action::<InboxActionModule>();
-    app_mut.register_action::<NipF4PublishModule>();
-    app_mut.register_action::<VoiceActionModule>();
-    app_mut.register_action::<AgentActionModule>();
-    app_mut.register_action::<CategorizationModule>();
-    app_mut.register_action::<SettingsActionModule>();
-    app_mut.register_action::<SiriActionModule>();
-    app_mut.register_action::<SocialActionModule>();
+    app_mut.register_action(IdentityActionModule);
+    app_mut.register_action(PodcastActionModule);
+    app_mut.register_action(PlayerActionModule);
+    app_mut.register_action(QueueActionModule);
+    app_mut.register_action(ChaptersActionModule);
+    app_mut.register_action(WikiActionModule);
+    app_mut.register_action(AgentPicksModule);
+    app_mut.register_action(AgentTasksModule);
+    app_mut.register_action(KnowledgeActionModule);
+    app_mut.register_action(MemoryActionModule);
+    app_mut.register_action(ClipActionModule);
+    app_mut.register_action(InboxActionModule);
+    app_mut.register_action(NipF4PublishModule);
+    app_mut.register_action(VoiceActionModule);
+    app_mut.register_action(AgentActionModule);
+    app_mut.register_action(CategorizationModule);
+    app_mut.register_action(SettingsActionModule);
+    app_mut.register_action(SiriActionModule);
+    app_mut.register_action(SocialActionModule);
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));

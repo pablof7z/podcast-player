@@ -66,6 +66,7 @@ impl ActionModule for InboxActionModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

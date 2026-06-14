@@ -78,6 +78,7 @@ impl ActionModule for KnowledgeActionModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

@@ -70,6 +70,7 @@ impl ActionModule for MemoryActionModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),

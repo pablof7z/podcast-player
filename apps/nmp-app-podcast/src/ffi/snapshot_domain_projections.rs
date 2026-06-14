@@ -134,6 +134,7 @@ fn make_typed(schema_id: &str, payload: serde_json::Value) -> TypedProjectionDat
         schema_version: 1,
         file_identifier: String::new(),
         payload: bytes,
+        ..Default::default()
     }
 }
 

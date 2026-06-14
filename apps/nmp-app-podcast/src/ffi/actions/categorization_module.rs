@@ -75,6 +75,7 @@ impl ActionModule for CategorizationModule {
     }
 
     fn execute(
+        &self,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),
