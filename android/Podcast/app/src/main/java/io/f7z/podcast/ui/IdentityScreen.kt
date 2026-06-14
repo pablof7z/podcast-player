@@ -70,6 +70,7 @@ fun IdentityScreen(
     onBack: () -> Unit,
     onSignInWithAmber: (() -> Unit)? = null,
     onSnapshotPull: suspend () -> Unit = {},
+    onEditProfile: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -103,14 +104,18 @@ fun IdentityScreen(
                     onSnapshotPull = onSnapshotPull,
                 )
             } else {
-                SignedInState(account = account, bridge = bridge)
+                SignedInState(account = account, bridge = bridge, onEditProfile = onEditProfile)
             }
         }
     }
 }
 
 @Composable
-private fun SignedInState(account: AccountSummary, bridge: KernelBridge) {
+private fun SignedInState(
+    account: AccountSummary,
+    bridge: KernelBridge,
+    onEditProfile: () -> Unit = {},
+) {
     val context = LocalContext.current
     var confirmSignOut by remember { mutableStateOf(false) }
 
@@ -139,6 +144,12 @@ private fun SignedInState(account: AccountSummary, bridge: KernelBridge) {
         }
     }
     ModeBadge(mode = account.mode)
+    // Edit Profile — primary CTA when signed in. Mirrors iOS IdentityRootView
+    // which pushes EditProfileView from the same signed-in surface.
+    Button(
+        onClick = onEditProfile,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text("Edit Profile") }
     OutlinedButton(
         onClick = { confirmSignOut = true },
         modifier = Modifier.fillMaxWidth(),
