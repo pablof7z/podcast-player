@@ -51,6 +51,8 @@ import io.f7z.podcast.TranscriptEntry
 import java.text.DateFormat
 import java.util.Date
 
+// ClipCreateSheet is in the same package — no additional import needed.
+
 /** Episode metadata resolved from the live Rust snapshot; all actions dispatch back to NMP. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +94,8 @@ fun EpisodeDetailScreen(
             return@Scaffold
         }
         val activeItem = snapshot?.downloads?.active?.firstOrNull { it.episodeId == episode.id }
+        var showCreateClip by rememberSaveable { mutableStateOf(false) }
+
         EpisodeDetailBody(
             episode = episode,
             podcastTitle = episode.podcastTitle ?: show?.title,
@@ -106,8 +110,20 @@ fun EpisodeDetailScreen(
                     payload = PlayPayload(episodeId = episode.id),
                 )
             },
+            onCreateClip = { showCreateClip = true },
             modifier = Modifier.padding(inner),
         )
+
+        if (showCreateClip) {
+            ClipCreateSheet(
+                episodeId = episode.id,
+                episodeTitle = episode.title,
+                durationSecs = episode.durationSecs,
+                initialStartSecs = episode.playbackPositionSecs ?: 0.0,
+                bridge = bridge,
+                onDismiss = { showCreateClip = false },
+            )
+        }
     }
 }
 
@@ -121,6 +137,7 @@ private fun EpisodeDetailBody(
     isQueued: Boolean,
     bridge: KernelBridge,
     onPlay: () -> Unit,
+    onCreateClip: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -140,6 +157,11 @@ private fun EpisodeDetailBody(
         Button(onClick = onPlay, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
             Text(text = "  Play", style = MaterialTheme.typography.titleMedium)
+        }
+
+        OutlinedButton(onClick = onCreateClip, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Filled.Subtitles, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(text = "  Create Clip", style = MaterialTheme.typography.titleMedium)
         }
 
         EpisodeQueueActions(

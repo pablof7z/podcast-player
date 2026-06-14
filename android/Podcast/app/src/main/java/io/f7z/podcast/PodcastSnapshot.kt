@@ -104,6 +104,14 @@ data class PodcastSnapshot(
      */
     val picks: List<AgentPickSummary> = emptyList(),
     /**
+     * User-saved audio clips. Mirror of `PodcastUpdate.clips` —
+     * `Vec<ClipSummary>` projected by `clip_handler::project_clips`.
+     * Rides the `podcast.misc` domain frame. Empty until the user creates
+     * the first clip. Newest-first ordering is applied by the UI at render
+     * time (kernel emits in insertion order, same as iOS).
+     */
+    val clips: List<ClipSummary> = emptyList(),
+    /**
      * NIP-10-threaded Nostr conversations, newest-first by last_activity.
      * Mirror of `SocialDomainFrame.nostrConversations`. Rides the
      * `podcast.social` domain frame. Empty until the kernel has indexed
@@ -598,6 +606,39 @@ data class InboxItem(
     @SerialName("priority_score") val priorityScore: Float = 0.0f,
     @SerialName("priority_reason") val priorityReason: String? = null,
     @SerialName("ai_categories") val aiCategories: List<String> = emptyList(),
+)
+
+/**
+ * One user-saved audio clip row. Mirror of
+ * `apps/nmp-app-podcast/src/ffi/projections/clips.rs::ClipSummary`.
+ *
+ * All snake_case wire keys are load-bearing — kotlinx does NOT auto-convert
+ * without an explicit strategy; `@SerialName` is required for every snake_case
+ * field (see FFI decode contract note in [DomainFrames.kt]).
+ *
+ * Fields:
+ *  - `id`              — kernel-assigned UUID string for the clip.
+ *  - `episode_id`      — UUID of the source episode.
+ *  - `episode_title`   — pre-resolved episode title (joined at projection time).
+ *  - `podcast_title`   — pre-resolved podcast title.
+ *  - `start_secs`      — clip start position, absolute seconds within episode.
+ *  - `end_secs`        — clip end position, must be > start_secs.
+ *  - `title`           — optional user-given clip title; null when unnamed.
+ *  - `created_at`      — Unix seconds when the clip was created.
+ *
+ * Wire shape verified against Rust `ClipSummary` in
+ * `apps/nmp-app-podcast/src/ffi/projections/clips.rs`.
+ */
+@Serializable
+data class ClipSummary(
+    val id: String = "",
+    @SerialName("episode_id")    val episodeId: String = "",
+    @SerialName("episode_title") val episodeTitle: String = "",
+    @SerialName("podcast_title") val podcastTitle: String = "",
+    @SerialName("start_secs")   val startSecs: Double = 0.0,
+    @SerialName("end_secs")     val endSecs: Double = 0.0,
+    val title: String? = null,
+    @SerialName("created_at")   val createdAt: Long = 0L,
 )
 
 // SnapshotCodec lives in DomainFrames.kt — see that file for both the

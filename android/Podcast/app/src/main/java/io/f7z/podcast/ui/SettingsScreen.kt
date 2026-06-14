@@ -47,6 +47,7 @@ fun SettingsScreen(
     onNavigateToIdentity: () -> Unit,
     onNavigateToModels: () -> Unit,
     onNavigateToNostrConversations: () -> Unit = {},
+    onNavigateToClips: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val settings = snapshot?.settings ?: SettingsSnapshot()
@@ -88,6 +89,13 @@ fun SettingsScreen(
                 val convCount = snapshot?.nostrConversations?.size ?: 0
                 val label = if (convCount > 0) "Conversations ($convCount)" else "Conversations"
                 SettingsNavRow(label = label, onClick = onNavigateToNostrConversations)
+            }
+        }
+        item {
+            SettingsSection(title = "Clippings") {
+                val clipCount = snapshot?.clips?.size ?: 0
+                val label = if (clipCount > 0) "My Clips ($clipCount)" else "My Clips"
+                SettingsNavRow(label = label, onClick = onNavigateToClips)
             }
         }
         item {
