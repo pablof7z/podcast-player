@@ -128,6 +128,13 @@ fun AppNavigation(
                 onBack = { route = AppRoute.Tab(selectedTab) },
                 onSignInWithAmber = onSignInWithAmber,
                 onSnapshotPull = onSnapshotPull,
+                onEditProfile = { route = AppRoute.EditProfile },
+                modifier = contentModifier,
+            )
+            AppRoute.EditProfile -> EditProfileScreen(
+                snapshot = snapshot,
+                bridge = bridge,
+                onBack = { route = AppRoute.Identity },
                 modifier = contentModifier,
             )
             AppRoute.ProviderModels -> ProviderModelSettingsScreen(
@@ -249,6 +256,8 @@ private sealed interface AppRoute {
     data class ShowDetail(val showId: String) : AppRoute
     data class EpisodeDetail(val episodeId: String, val podcastId: String) : AppRoute
     data object Identity : AppRoute
+    /** Edit-profile surface — reached from [Identity] when signed in. */
+    data object EditProfile : AppRoute
     data object ProviderModels : AppRoute
     data object AgentChat : AppRoute
     /** Nostr conversations list — reached from Settings. */
@@ -265,6 +274,7 @@ private sealed interface AppRoute {
                         is ShowDetail -> listOf("show", value.showId)
                         is EpisodeDetail -> listOf("episode", value.episodeId, value.podcastId)
                         Identity -> listOf("identity")
+                        EditProfile -> listOf("edit_profile")
                         ProviderModels -> listOf("provider_models")
                         AgentChat -> listOf("agent_chat")
                         NostrConversations -> listOf("nostr_conversations")
@@ -283,6 +293,7 @@ private sealed interface AppRoute {
                             if (ep != null && pod != null) EpisodeDetail(ep, pod) else null
                         }
                         "identity" -> Identity
+                        "edit_profile" -> EditProfile
                         "provider_models" -> ProviderModels
                         "agent_chat" -> AgentChat
                         "nostr_conversations" -> NostrConversations

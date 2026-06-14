@@ -1,5 +1,9 @@
 package io.f7z.podcast
 
+import android.content.Context
+import android.content.SharedPreferences
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.Json
@@ -25,6 +29,22 @@ import kotlinx.serialization.json.Json
 object IdentityActions {
     const val NAMESPACE = "podcast.identity"
 
+    /**
+     * Social publish namespace for kind:0/1/9802 events.
+     * Wire contract: `{"op":"publish_profile","name":"...","display_name":"...",...}`.
+     * Mirrors `UserIdentityStore+Publishing.swift` dispatch seam.
+     */
+    const val SOCIAL_NAMESPACE = "podcast.social"
+
+    /**
+     * SharedPreferences file for caching non-projected profile fields (name/about)
+     * between edits. Mirrors iOS `UserDefaults` `kind0CachePrefix` pattern.
+     * NOT encrypted — these are public Nostr profile fields (no secrets).
+     */
+    private const val PROFILE_CACHE_PREFS = "io.f7z.podcast.profile_cache"
+    private const val KEY_NAME = "name"
+    private const val KEY_ABOUT = "about"
+
     private val json = Json
 
     /** Dispatch `ImportNsec` for [nsec]. Returns the kernel JSON envelope or null on FFI failure. */
@@ -40,6 +60,108 @@ object IdentityActions {
     /** Dispatch `Clear` to sign out. Returns the kernel JSON envelope or null on FFI failure. */
     fun clear(bridge: KernelBridge): String? =
         bridge.dispatchAction(NAMESPACE, CLEAR_PAYLOAD)
+
+    /**
+     * Dispatch `publish_profile` to the `podcast.social` kernel namespace.
+     *
+     * Wire contract (verified against `ffi/actions/social_module.rs` `SocialAction::PublishProfile`):
+     * ```json
+     * {"op":"publish_profile","name":"slug","display_name":"Display","about":"…","picture":"https://…"}
+     * ```
+     * Field semantics (mirroring `UserIdentityStore+Publishing.swift`):
+     *  - `name`         — required; the Nostr username / slug.
+     *  - `display_name` — optional; omitted from JSON when blank (kernel skips absent fields).
+     *  - `about`        — optional; omitted when blank.
+     *  - `picture`      — optional; omitted when blank.
+     *
+     * The kernel signs the resulting kind:0 event with the active account — no
+     * signing in Android code. Mirrors the iOS `dispatchToKernel("podcast.social",
+     * body:["op":"publish_profile",…])` call exactly.
+     *
+     * After dispatching, the non-projected fields (name, about) are cached in
+     * [SharedPreferences] keyed by [pubkeyHex] so [loadCachedProfile] can prefill
+     * the form on next open (mirrors iOS `UserDefaults` `kind0CachePrefix` pattern).
+     * `display_name` and `picture_url` are already projected via [AccountSummary]
+     * and need no local cache.
+     *
+     * Returns the kernel JSON envelope or null on FFI failure.
+     */
+    fun publishProfile(
+        bridge: KernelBridge,
+        context: Context,
+        pubkeyHex: String,
+        name: String,
+        displayName: String,
+        about: String,
+        pictureUrl: String,
+    ): String? {
+        val payload = buildPublishProfilePayload(name, displayName, about, pictureUrl)
+        val result = bridge.dispatchAction(SOCIAL_NAMESPACE, payload)
+        // Cache non-projected fields locally for next form prefill.
+        cacheProfile(context, pubkeyHex, name, about)
+        return result
+    }
+
+    /**
+     * Build the `publish_profile` JSON payload.
+     *
+     * Extracted as a pure function so unit tests can assert the wire shape
+     * without a kernel bridge. Blank optional fields are omitted (the Rust
+     * `SocialAction::PublishProfile` uses `#[serde(default,
+     * skip_serializing_if = "Option::is_none")]`; sending an empty string
+     * would write an empty string to the kind:0 content, which is wrong).
+     */
+    fun buildPublishProfilePayload(
+        name: String,
+        displayName: String,
+        about: String,
+        pictureUrl: String,
+    ): String {
+        val fields = mutableMapOf<String, JsonElement>(
+            "op" to JsonPrimitive("publish_profile"),
+            "name" to JsonPrimitive(name.trim()),
+        )
+        val trimmedDisplayName = displayName.trim()
+        if (trimmedDisplayName.isNotEmpty()) {
+            fields["display_name"] = JsonPrimitive(trimmedDisplayName)
+        }
+        val trimmedAbout = about.trim()
+        if (trimmedAbout.isNotEmpty()) {
+            fields["about"] = JsonPrimitive(trimmedAbout)
+        }
+        val trimmedPicture = pictureUrl.trim()
+        if (trimmedPicture.isNotEmpty()) {
+            fields["picture"] = JsonPrimitive(trimmedPicture)
+        }
+        return json.encodeToString(JsonObject.serializer(), JsonObject(fields))
+    }
+
+    /**
+     * Locally cached profile for fields not exposed by [AccountSummary].
+     * `displayName` and `pictureUrl` come from the snapshot; `name` and `about`
+     * are persisted here to prefill the edit form.
+     */
+    data class CachedProfile(val name: String, val about: String)
+
+    /** Load the last-saved [name] and [about] for [pubkeyHex] from local cache. */
+    fun loadCachedProfile(context: Context, pubkeyHex: String): CachedProfile {
+        val prefs = profilePrefs(context)
+        return CachedProfile(
+            name = prefs.getString("${pubkeyHex}_$KEY_NAME", "") ?: "",
+            about = prefs.getString("${pubkeyHex}_$KEY_ABOUT", "") ?: "",
+        )
+    }
+
+    /** Persist non-projected profile fields for [pubkeyHex]. */
+    private fun cacheProfile(context: Context, pubkeyHex: String, name: String, about: String) {
+        profilePrefs(context).edit()
+            .putString("${pubkeyHex}_$KEY_NAME", name.trim())
+            .putString("${pubkeyHex}_$KEY_ABOUT", about.trim())
+            .apply()
+    }
+
+    private fun profilePrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(PROFILE_CACHE_PREFS, Context.MODE_PRIVATE)
 
     /** Build the `ImportNsec` payload with the nsec safely JSON-escaped. */
     fun importNsecPayload(nsec: String): String =
