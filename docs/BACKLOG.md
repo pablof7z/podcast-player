@@ -21,14 +21,14 @@ worktrees currently in flight.
 - **p0-plan-truthfulness.** Keep `docs/plan.md`,
   `docs/plan/nmp-feature-parity.md`, and this backlog synchronized with code.
   Do not mark scaffolded behavior done. Current audit: docs now reflect the
-  `0.6.2` NMP pin at rev `ac7e307e89b57a73b419ea9588275e599dcb228c`, the
-  deleted parked `ios/` shell, the resolved `nmp-blossom` packaging blocker
-  (`pablof7z/podcast-player#479`, closed after `cargo check --workspace
-  --all-targets` passed on current `main`), the local `nmp-core` vendor patch
-  from PR #492 that unblocks the headless proof while upstream
-  `pablof7z/nostr-multi-platform#1412` remains open for canonical cleanup, and
-  the fact that remaining parity debt lives in `App/Sources/` Swift
-  policy/fallback code plus the listed platform/AI gaps.
+  `0.6.2` NMP pin at rev `fbc0155031fdf862fa47673c5211fc3eebc3863c`, the
+  deleted parked `ios/` shell, the resolved local `nmp-blossom` packaging
+  blocker (`pablof7z/podcast-player#479`), and PR #498's removal of the local
+  `vendor/nmp-core` fork in favor of the upstream ADR-0055 publish-engine fix.
+  Upstream NMP issues `pablof7z/nostr-multi-platform#1408` and `#1412` remain
+  open cleanup/dependency notes, but neither is currently represented as an
+  app-local workaround on `main`. Remaining parity debt lives in `App/Sources/`
+  Swift policy/fallback code plus the listed platform/AI gaps.
 - **p0-validation-gate.** Partially established: current branch protection
   requires deterministic merge contexts for `Git diff hygiene`, `Migration
   lint gates`, `Rust workspace build gate (all members, all targets)`, `Swift
@@ -55,26 +55,30 @@ worktrees currently in flight.
   `AppTests.testPositionUpdatesAreDebounced`; the full UI lane still failed
   locally in `CoreJourneyUITests.testP0_03_PlayStartsAudio` and
   `CoreJourneyUITests.testP0_04_ResumeReopenByTitle`, so full `Build and
-  Test` should remain non-required until the playback UI failures are fixed or
-  split from the deterministic unit lane. The follow-on playback UI branch
-  fixes the seeded download path so playback uses the canonical offline file
-  after restart, isolates UI-test app lifecycle teardown, and removes a Swift
-  actor-isolation crash in Now Playing artwork publication that surfaced in
-  the relaunch playback journey.
-  Stabilize or split that iOS lane before adding `Build and Test` back to
-  required branch protection. The old `nmp-blossom` portability blocker is
-  resolved on `main`: PR #488 replaced the absolute `/tmp` dependency with
-  `vendor/nmp-blossom`, and `cargo check --workspace --all-targets` passes on
-  `be815f52` with warnings only. Local issue `pablof7z/podcast-player#479` is
-  closed. PR #492 vendors `nmp-core` with a targeted `publish_ver` bump when
-  publish-engine relay-state transitions change `publish_outbox`, and the
-  headless e2e proof passed on PR #492 and again after the OPML rebase in PR
-  #493. Upstream
-  `pablof7z/nostr-multi-platform#1412` remains open for the canonical NMP fix,
-  and `pablof7z/nostr-multi-platform#1408` remains an NMP packaging cleanup,
-  but neither currently blocks podcast-player's Rust/headless merge gates. Do
-  not replace the vendored fix with app-local fake rev bumps, `publish_outbox`
-  suppression, or ADR-0055 oracle disablement.
+  Test` should remain non-required until the post-#497 full-lane evidence is
+  clean. PR #497 fixed the local playback UI blockers by seeding downloads into
+  the canonical download store, isolating UI-test lifecycle teardown, making
+  Now Playing artwork safe for MediaPlayer's off-main renderer, and hardening
+  the playback reopen plus launch-metric flows. The focused local validations
+  passed for `UITestSeederTests/testSeededDownloadURLUsesCanonicalDownloadStorePath`,
+  `CoreJourneyUITests/testP0_03_PlayStartsAudio`,
+  `CoreJourneyUITests/testP0_04_ResumeReopenByTitle`, and
+  `SmokeUITests/testColdLaunchPerformance`. As of the 2026-06-14 audit, the
+  full `Build and Test` workflow is still intentionally not a required branch
+  protection context; observe a clean main-equivalent run before adding it.
+  The post-#497 main Test workflow exposed a separate Android CI harness bug:
+  Kotlin compile and unit tests succeeded, then `gradle/actions/setup-gradle@v3`
+  failed during cache cleanup against Gradle 8.7 with a write-only
+  `removeUnusedEntriesOlderThan` property. PR #499 upgrades the action to
+  `gradle/actions/setup-gradle@v6.2.0` and uses the current `cache-cleanup`
+  input so the required Android gate reports the real build result, and removes
+  obsolete `/tmp/nmp-at-ac7e307e` clone steps left over from the deleted NMP
+  path patch.
+  The old `nmp-blossom` portability blocker is resolved on `main`, PR #498
+  removed the temporary `vendor/nmp-core` fork, and the Rust/headless required
+  merge gates are locally unblocked by the upstream-pinned NMP rev. Do not
+  reintroduce app-local fake rev bumps, `publish_outbox` suppression, or
+  ADR-0055 oracle disablement.
 - ~~**p0-ios-test-target-compile.**~~ Fixed across PR #101 and PR #102:
   `Nip46RemoteSignerTests.swift` now accepts an optional bunker pubkey, the
   active Tuist target no longer references the dead `KernelModel` duplicate,

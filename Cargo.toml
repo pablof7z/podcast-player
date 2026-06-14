@@ -37,6 +37,6 @@ nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "63
 # The vendor copy is taken verbatim from ac7e307e crates/nmp-blossom with only
 # the workspace-inherited fields replaced by explicit values and path deps by
 # workspace refs — the Rust source is untouched. nmp-core is NOT vendored here
-# (un-vendored in this PR; the fix lives upstream at fbc0155031...).
+# (un-vendored in PR #498; the fix lives upstream at fbc0155031...).
 [patch."https://github.com/pablof7z/nostr-multi-platform.git"]
 nmp-blossom = { path = "vendor/nmp-blossom" }
