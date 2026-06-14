@@ -1,5 +1,13 @@
 import Foundation
 
+/// Capability instances that must be reachable from non-MainActor callback
+/// code. Keep this set tiny: only capabilities that are explicitly designed to
+/// run off-main belong here. Main-actor capabilities stay owned by
+/// `PodcastCapabilities.shared` and are reached through its router.
+enum PodcastCapabilityInstances {
+    static let http = HttpCapability()
+}
+
 /// Capability injection point for Podcast.
 ///
 /// The kernel grants the app a set of capability *sockets*; the app supplies
@@ -37,8 +45,9 @@ import Foundation
 /// reports the raw result (D7).
 ///
 /// There is a single C capability callback (`nmp_app_set_capability_callback`);
-/// it routes by the `namespace` field of the incoming `CapabilityRequest` —
-/// see [`handleJSON(_:)`].
+/// `SyncCapabilityBridge` adapts that actor-thread callback into the routing
+/// contract here. See `handleCapabilityCallbackJSON(_:http:)` for the
+/// thread-aware entry point and `handleJSON(_:)` for the namespace table.
 @MainActor
 final class PodcastCapabilities {
     /// Process-wide instance.
@@ -81,7 +90,7 @@ final class PodcastCapabilities {
     init(
         keyring: KeychainCapability = KeychainCapability(),
         identity: PcstIdentityCapability = PcstIdentityCapability(),
-        http: HttpCapability = HttpCapability(),
+        http: HttpCapability = PodcastCapabilityInstances.http,
         audio: AudioCapability = AudioCapability(),
         download: DownloadCapability = DownloadCapability(),
         notification: NotificationCapability = NotificationCapability(),
@@ -175,6 +184,8 @@ final class PodcastCapabilities {
             return identity.handleJSON(requestJSON)
         case HttpCapability.namespace:
             return http.handleJSON(requestJSON)
+        case HttpCapability.asyncNamespace:
+            return http.handleAsyncJSON(requestJSON)
         case AudioCapability.namespace:
             return audio.handleJSON(requestJSON)
         case DownloadCapability.namespace:
@@ -194,8 +205,70 @@ final class PodcastCapabilities {
         }
     }
 
-    private static func encode<T: Encodable>(_ value: T) -> String? {
+    private nonisolated static func encode<T: Encodable>(_ value: T) -> String? {
         guard let data = try? JSONEncoder().encode(value) else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+}
+
+extension PodcastCapabilities {
+    /// Thread-aware entry point used by the C capability callback.
+    ///
+    /// HTTP is the only current request/response capability intentionally safe
+    /// to execute on the Rust actor thread: the synchronous path blocks that
+    /// thread, and the async path returns an immediate ack. Every other
+    /// namespace routes through the canonical MainActor table in `handleJSON`.
+    /// D6 still holds: malformed requests and unknown namespaces return
+    /// populated error envelopes.
+    nonisolated static func handleCapabilityCallbackJSON(
+        _ requestJSON: String,
+        http: HttpCapability = PodcastCapabilityInstances.http
+    ) -> String {
+        guard
+            let data = requestJSON.data(using: .utf8),
+            let probe = try? JSONDecoder().decode(NamespaceProbe.self, from: data)
+        else {
+            return errorEnvelope(namespace: "", correlationID: "", message: "malformed-request")
+        }
+
+        switch probe.namespace {
+        case HttpCapability.namespace:
+            return http.handleJSON(requestJSON)
+        case HttpCapability.asyncNamespace:
+            return http.handleAsyncJSON(requestJSON)
+        default:
+            return routeOnMainActor(requestJSON)
+        }
+    }
+
+    private nonisolated static func routeOnMainActor(_ requestJSON: String) -> String {
+        if Thread.isMainThread {
+            return MainActor.assumeIsolated {
+                PodcastCapabilities.shared.handleJSON(requestJSON)
+            }
+        }
+        return DispatchQueue.main.sync {
+            MainActor.assumeIsolated {
+                PodcastCapabilities.shared.handleJSON(requestJSON)
+            }
+        }
+    }
+
+    private nonisolated static func errorEnvelope(
+        namespace: String,
+        correlationID: String,
+        message: String
+    ) -> String {
+        let env = CapabilityEnvelope(
+            namespace: namespace,
+            correlationID: correlationID,
+            resultJSON: "{\"status\":\"error\",\"message\":\"\(message)\"}")
+        return encode(env) ?? "{}"
+    }
+
+    /// Minimal decode just to read the routing namespace. Snake_case field
+    /// names match the Rust `CapabilityRequest` wire format verbatim.
+    private struct NamespaceProbe: Decodable {
+        let namespace: String
     }
 }

@@ -181,14 +181,15 @@ extension PodcastHandle {
     }
 
     /// Wire the async iOS→Rust HTTP report channel for the optimistic-subscribe
-    /// feed fetch. The async `HttpCapability` (owned by `SyncCapabilityBridge`,
-    /// the live capability-callback router) fires the report sink from its
-    /// `URLSession` completion — a private **background** queue, never main — so
-    /// the FFI call below runs off both the main and the actor threads. Unlike
-    /// audio/download there is **no** `MainActor.assumeIsolated` hop (that would
-    /// crash off-main): `nmp_app_podcast_http_report` only touches the shared
-    /// store + signal and wakes the projection push seam, returning NULL (no
-    /// follow-up command). The `podcastHandle` is captured by value here, after
+    /// feed fetch. The async `HttpCapability` is the canonical instance shared
+    /// by `PodcastCapabilities` and `SyncCapabilityBridge`; it fires the report
+    /// sink from its `URLSession` completion — a private **background** queue,
+    /// never main — so the FFI call below runs off both the main and the actor
+    /// threads. Unlike audio/download there is **no**
+    /// `MainActor.assumeIsolated` hop (that would crash off-main):
+    /// `nmp_app_podcast_http_report` only touches the shared store + signal and
+    /// wakes the projection push seam, returning NULL (no follow-up command).
+    /// The `podcastHandle` is captured by value here, after
     /// `registerPodcastProjection()` has set it; it stays valid for the app's
     /// lifetime (the callback is cleared before the handle is freed).
     @MainActor
