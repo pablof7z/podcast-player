@@ -39,10 +39,10 @@
 //! `publish_profile_via_nmp` enqueues a `PublishProfile` command in the NMP
 //! actor queue. The kernel signs the event locally with the active-account
 //! secret and schedules it for relay delivery. Relay publication is
-//! asynchronous and external; the local snapshot's `active_account.display_name`
-//! field is sourced from `IdentityStore`, which is NOT updated by this publish
-//! path (that would require a relay echo + kind:0 observer, which is a future
-//! backlog item). Therefore:
+//! asynchronous and external; however, after `handle_publish_profile` succeeds
+//! it self-applies the published fields to the local `IdentityStore` (optimistic
+//! self-apply), and `social_actions.rs` bumps `Domain::Identity` so the next
+//! push frame re-emits with an updated `AccountSummary`. Therefore:
 //!
 //! * **Seam assertion**: dispatch is accepted (`correlation_id` present, no
 //!   synchronous `error`) — proves `SocialActionModule` decoded the payload and
@@ -50,8 +50,10 @@
 //! * **Mutation-sanity guard**: a malformed payload (missing required `name`
 //!   field) must NOT produce a `correlation_id` — it must be rejected at serde
 //!   decode with an `error` field. This makes the success path meaningful.
-//! * **Snapshot integrity check**: `active_account` is present before and after
-//!   the dispatch — proves the publish path does not corrupt identity state.
+//! * **Self-apply reflection**: after dispatch, `AccountSummary.display_name`
+//!   must equal the published value within 2 s — proves the self-apply→bump-rev
+//!   chain fires and the push frame re-emits. Without the self-apply this
+//!   assertion would FAIL (the old behavior left `display_name` as `None` forever).
 //!
 //! This scenario is FULLY network-free (no relay connection needed). It always
 //! runs and always returns Pass or Fail — never Skip — because it only exercises
@@ -173,39 +175,52 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         ));
     }
 
-    // ── Snapshot integrity: active_account must survive the publish ───────────
+    // ── Self-apply reflection: AccountSummary must carry the published values ──
     //
-    // The publish path must not corrupt the identity state. Give the actor
-    // thread a moment to process the queued command (async signing), then
-    // verify the account is still intact with the same pubkey.
+    // After the dispatch is accepted, `handle_publish_profile` mirrors
+    // `display_name` and `picture` into the local `IdentityStore` (optimistic
+    // self-apply), then `social_actions.rs` bumps `Domain::Identity` so the
+    // push frame re-emits with fresh `AccountSummary` values. We wait up to 2 s
+    // for the snapshot rev to advance and the predicate to hold.
     //
-    // NOTE: We do NOT assert `display_name == TEST_DISPLAY_NAME` here because
-    // the publish path routes through `nmp.publish { PublishProfile }` (relay
-    // queue) without updating the local `IdentityStore`. The display_name in
-    // `AccountSummary` is sourced from `IdentityStore`, which is only updated
-    // on relay echo + kind:0 observer (a future backlog item). Asserting on the
-    // relay echo would make this test network-bound. The correct contract test
-    // for this action is: dispatch accepted by kernel (proven above), identity
-    // state intact (proven below).
-    std::thread::sleep(std::time::Duration::from_millis(300));
-
-    let post_account = match snapshot(handle).and_then(|u| u.active_account) {
-        Some(a) => a,
-        None => return Fail("active_account disappeared after publish_profile".into()),
-    };
-
-    if post_account.pubkey_hex != pre_account.pubkey_hex {
-        return Fail(format!(
-            "pubkey_hex changed after publish_profile: before={} after={}",
-            pre_account.pubkey_hex, post_account.pubkey_hex
-        ));
-    }
-
-    if post_account.npub != fixtures::HEADLESS_TEST_NPUB {
-        return Fail(format!(
-            "npub corrupted by publish_profile: {}",
-            post_account.npub
-        ));
+    // Mutation-sanity note: WITHOUT the self-apply (the old behavior) the
+    // `IdentityStore.display_name` field was never set after a publish, so
+    // `AccountSummary.display_name` would remain `None` forever and this
+    // `wait_for` would time out and return `Fail`. The assertion proves the
+    // fix works and CI-gates it.
+    match wait_for(handle, 2_000, |u| {
+        u.active_account
+            .as_ref()
+            .and_then(|a| a.display_name.as_deref())
+            == Some(TEST_DISPLAY_NAME)
+    }) {
+        Ok(update) => {
+            let account = update.active_account.unwrap();
+            // Also verify pubkey integrity so we catch accidental identity replacement.
+            if account.pubkey_hex != pre_account.pubkey_hex {
+                return Fail(format!(
+                    "pubkey_hex changed after publish_profile: before={} after={}",
+                    pre_account.pubkey_hex, account.pubkey_hex
+                ));
+            }
+            if account.npub != fixtures::HEADLESS_TEST_NPUB {
+                return Fail(format!(
+                    "npub corrupted by publish_profile: {}",
+                    account.npub
+                ));
+            }
+        }
+        Err(timeout_msg) => {
+            // On timeout, read the current snapshot for a diagnostic.
+            let current_display_name = snapshot(handle)
+                .and_then(|u| u.active_account)
+                .and_then(|a| a.display_name);
+            return Fail(format!(
+                "AccountSummary.display_name never reflected published value \
+                 (expected {:?}, got {:?}): {}",
+                TEST_DISPLAY_NAME, current_display_name, timeout_msg
+            ));
+        }
     }
 
     Pass

@@ -29,15 +29,25 @@ impl PodcastHostOpHandler {
                 display_name,
                 about,
                 picture,
-            } => crate::social_publish_handler::handle_publish_profile(
-                self.app,
-                &self.state.library.identity,
-                &name,
-                display_name.as_deref(),
-                about.as_deref(),
-                picture.as_deref(),
-                correlation_id,
-            ),
+            } => {
+                let result = crate::social_publish_handler::handle_publish_profile(
+                    self.app,
+                    &self.state.library.identity,
+                    &name,
+                    display_name.as_deref(),
+                    about.as_deref(),
+                    picture.as_deref(),
+                    correlation_id,
+                );
+                // Self-apply succeeded: bump the identity domain rev so the push
+                // frame re-emits `AccountSummary` with the new display_name /
+                // picture_url immediately (established doctrine: bump_domain after
+                // mutation, identical to IdentityAction::ImportNsec path).
+                if result.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+                    self.bump_domain(crate::state::Domain::Identity);
+                }
+                result
+            }
             SocialAction::PublishNote {
                 content,
                 episode_coord,

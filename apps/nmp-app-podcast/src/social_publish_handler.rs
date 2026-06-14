@@ -77,6 +77,17 @@ pub(crate) fn build_profile_fields(
 
 /// `podcast.social` `publish_profile` — publish a kind:0 metadata event with
 /// the supplied profile fields via the kernel's active-account signer.
+///
+/// After the publish is dispatched successfully, the just-published fields are
+/// mirrored into the local `IdentityStore` via `apply_profile` so the
+/// `AccountSummary` projection reflects the new values immediately — without
+/// waiting for a relay echo (optimistic-but-correct; see
+/// `agent_note_responder`'s projection-slot update for the established
+/// precedent).
+///
+/// The caller (`social_actions.rs`) must bump `Domain::Identity` after this
+/// returns `ok: true` so the identity push-frame re-emits with the fresh
+/// `AccountSummary`.
 #[allow(clippy::too_many_arguments)]
 pub fn handle_publish_profile(
     app: *mut NmpApp,
@@ -92,6 +103,18 @@ pub fn handle_publish_profile(
     }
     let fields = build_profile_fields(name, display_name, about, picture);
     let status = publish_profile_via_nmp(app, fields);
+
+    // Self-apply the published profile to the local IdentityStore so the
+    // AccountSummary projection reflects it immediately. Only apply fields the
+    // caller actually supplied — don't null-out existing values. `picture`
+    // (payload field name) maps to `picture_url` (store field name).
+    if let Ok(mut id) = identity.lock() {
+        id.apply_profile(
+            display_name.map(str::to_owned),
+            picture.map(str::to_owned),
+        );
+    }
+
     json!({"ok": true, "status": status})
 }
 

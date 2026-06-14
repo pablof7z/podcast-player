@@ -146,6 +146,92 @@ fn publish_highlight_dispatches_under_null_app() {
     assert_eq!(v["status"], "signed");
 }
 
+// ── self-apply: kind:0 publish mirrors fields into IdentityStore ──────
+
+#[test]
+fn publish_profile_self_applies_display_name_and_picture_url() {
+    // Prove the optimistic self-apply: after a successful publish the
+    // IdentityStore must carry the published display_name and picture_url so
+    // the AccountSummary projection reflects them immediately (without relay
+    // echo). Under a null app, publish_profile_via_nmp returns "signed" — the
+    // self-apply must fire regardless of the status string.
+    let identity = signed_in_identity();
+    let _ = handle_publish_profile(
+        std::ptr::null_mut(),
+        &identity,
+        "alice",
+        Some("Alice Display"),
+        None,
+        Some("https://example.com/avatar.png"),
+        "corr",
+    );
+    let id = identity.lock().unwrap();
+    assert_eq!(
+        id.display_name.as_deref(),
+        Some("Alice Display"),
+        "display_name must be mirrored into IdentityStore after publish"
+    );
+    assert_eq!(
+        id.picture_url.as_deref(),
+        Some("https://example.com/avatar.png"),
+        "picture_url must be mirrored into IdentityStore after publish"
+    );
+}
+
+#[test]
+fn publish_profile_self_apply_does_not_null_out_unset_optional_fields() {
+    // If the caller doesn't supply display_name or picture, existing values
+    // in the IdentityStore must not be cleared (partial update semantics).
+    let identity = signed_in_identity();
+    {
+        let mut id = identity.lock().unwrap();
+        id.display_name = Some("Pre-existing Name".into());
+        id.picture_url = Some("https://example.com/old.png".into());
+    }
+    let _ = handle_publish_profile(
+        std::ptr::null_mut(),
+        &identity,
+        "alice",
+        None, // display_name omitted
+        None,
+        None, // picture omitted
+        "corr",
+    );
+    let id = identity.lock().unwrap();
+    assert_eq!(
+        id.display_name.as_deref(),
+        Some("Pre-existing Name"),
+        "pre-existing display_name must survive when caller omits the field"
+    );
+    assert_eq!(
+        id.picture_url.as_deref(),
+        Some("https://example.com/old.png"),
+        "pre-existing picture_url must survive when caller omits the field"
+    );
+}
+
+#[test]
+fn publish_profile_self_apply_does_not_fire_when_not_signed_in() {
+    // The require_signed_in guard returns early — apply_profile must NOT be
+    // called (the lock would succeed on an empty store, but the function
+    // returns before reaching the apply site, so display_name stays None).
+    let identity = Arc::new(Mutex::new(IdentityStore::new())); // no key
+    let _ = handle_publish_profile(
+        std::ptr::null_mut(),
+        &identity,
+        "alice",
+        Some("Should Not Apply"),
+        None,
+        None,
+        "corr",
+    );
+    let id = identity.lock().unwrap();
+    assert!(
+        id.display_name.is_none(),
+        "display_name must not be set when not signed in"
+    );
+}
+
 // ── pure tag builders (the moved-from-Swift NIP-73/84 assembly) ───────
 
 #[test]
