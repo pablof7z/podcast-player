@@ -313,17 +313,17 @@ worktrees currently in flight.
   one was removed in this PR. Verified against NMP v0.6.2 rev 6418a7ac
   `crates/nmp-core/src/actor/commands/publish.rs` + `pending_sign.rs` +
   `nip46_bunker_signing.rs` integration test.
-- **nip73-formatting-kernel.** `publishUserClip` dispatches typed fields to
-  `podcast.social publish_highlight`; the kernel's `build_highlight_tags`
-  assembles the NIP-73/84 tag set (enclosure/feed `r`, episode `i` coord,
-  `context`, `alt`) from those fields. Tag formatting is already kernel-owned
-  (#355). Low priority follow-up: pass raw episode/podcast identifiers so Swift
-  never formats the `i podcast:item:guid:<guid>#t=<start>,<end>` string.
-- **social-publish-relay-target.** Kernel social publishing (kind:1, kind:1111, kind:10064)
-  routes via `nmp_dispatch.rs` with `target: Auto`, which uses NMP's relay pool strategy
-  (see `publish_raw_via_nmp` line 55–72). Doc comment at `host_op_publish.rs:169` is
-  stale (mentions `relay.primal.net`); actual routing is pool-aware. Verify whether
-  `Auto` target respects user's configured write relays or remains pool-only.
+- ~~**nip73-formatting-kernel.**~~ Done. `publishUserClip` sends typed
+  `enclosure_url`, `feed_url`, `item_guid`, `start_sec`, `end_sec`, and
+  `caption` fields to `podcast.social publish_highlight`; Rust
+  `build_highlight_tags` owns the NIP-73/84 `r`, `i`, `context`, and `alt` tag
+  assembly, with typed action and pure tag-builder tests locking the contract.
+- ~~**social-publish-relay-target.**~~ Done. User-signed social publishing
+  routes through `nmp_dispatch.rs` with `PublishRaw { target: Auto }`, and the
+  pinned NMP `Nip65OutboxResolver` resolves `Auto` through cached author write
+  relays plus the active account's locally configured write relays during the
+  no-kind:10002 bootstrap window. The stale `relay.primal.net` comment no
+  longer exists on current `main`.
 - ~~**episode-comments-relay-wiring.**~~ DONE (verified at `apps/nmp-app-podcast/src/comments_handler.rs`).
   Real kind-1111 relay subscribe/publish is wired: `handle_fetch_comments` 
   (line 61) subscribes via `push_interest_via_nmp` with kind:1111 + NIP-73 `#i` tag filter;

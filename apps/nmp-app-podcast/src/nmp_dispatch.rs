@@ -141,8 +141,12 @@ pub(crate) fn blossom_upload_via_nmp(
 /// the ACTIVE account signer. NMP signs with the active signer (local nsec or
 /// NIP-46 bunker — transparent to the caller; bunker ops park on the kernel's
 /// `PendingSign` queue and resolve asynchronously), stamps `created_at` (D9),
-/// and routes via Auto. No secret bytes in app code.
-/// Used for events the user signs: kind:10064 author-claims, kind:1111 comments.
+/// and routes via `PublishTarget::Auto`. NMP resolves `Auto` through the NIP-65
+/// outbox resolver: cached author write relays first, with the active account's
+/// locally configured write relays as the bootstrap fallback before the user's
+/// kind:10002 relay list has echoed back. No secret bytes in app code.
+/// Used for events the user signs: kind:10064 author-claims, kind:1111 comments,
+/// kind:1 notes, and kind:9802 highlights.
 /// For per-podcast keys use [`publish_raw_with_signer_via_nmp`] instead.
 /// Returns `"queued"` or `"signed"` (null app).
 pub(crate) fn publish_raw_via_nmp(
