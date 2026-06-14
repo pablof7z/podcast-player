@@ -203,8 +203,9 @@ pub struct PodcastUpdate {
     pub pending_metadata_index_ids: Vec<String>,
     /// Inter-batch pacing hint for the metadata-index backfill executor (ms).
     ///
-    /// The shell sleeps this many milliseconds between successive embed calls
-    /// to avoid rate-limiting the embeddings provider. Omitted when `0` per D5
+    /// The serialized driver waits this many milliseconds before claiming the
+    /// next batch, gating successive embed calls to avoid rate-limiting the
+    /// embeddings provider. Omitted when `0` per D5
     /// (but the kernel always emits a non-zero constant alongside a non-empty
     /// `pending_metadata_index_ids`).
     ///

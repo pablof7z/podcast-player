@@ -898,9 +898,10 @@ struct PodcastUpdate {
     @DefaultEmptyArray var pendingMetadataIndexIds: [String] = []
     /// Inter-batch pacing hint for the metadata-index backfill executor (ms).
     ///
-    /// The shell sleeps this many milliseconds between successive embed calls
-    /// to avoid rate-limiting the embeddings provider. `0` (and omitted) when
-    /// `pendingMetadataIndexIds` is empty.
+    /// The serialized driver in `EpisodeMetadataIndexer` waits this many
+    /// milliseconds before claiming the next batch, gating successive embed
+    /// calls to avoid rate-limiting the embeddings provider. `0` (and omitted)
+    /// when `pendingMetadataIndexIds` is empty.
     var metadataIndexInterBatchDelayMs: Int = 0
 }
 
