@@ -98,8 +98,8 @@ impl PodcastHostOpHandler {
         content: String,
         correlation_id: &str,
     ) -> serde_json::Value {
-        let parsed = match podcast_feeds::import_opml(&content) {
-            Ok(p) => p,
+        let report = match podcast_feeds::opml::import_opml_report(&content) {
+            Ok(report) => report,
             Err(e) => return serde_json::json!({"ok": false, "error": e.to_string()}),
         };
         let existing_feed_urls: HashSet<String> = match self.state.library.store.lock() {
@@ -112,7 +112,19 @@ impl PodcastHostOpHandler {
         };
         let mut imported: usize = 0;
         let mut skipped: usize = 0;
-        let mut errors: Vec<serde_json::Value> = Vec::new();
+        let total = report.podcasts.len() + report.issues.len();
+        let mut errors: Vec<serde_json::Value> = report
+            .issues
+            .iter()
+            .map(|issue| {
+                serde_json::json!({
+                    "feed_url": issue.feed_url.clone().unwrap_or_default(),
+                    "title": issue.title.clone(),
+                    "error": issue.error.clone(),
+                })
+            })
+            .collect();
+        let parsed = report.podcasts;
         for podcast in parsed.iter() {
             let Some(feed_url) = podcast.feed_url.as_ref() else {
                 continue;
@@ -142,7 +154,7 @@ impl PodcastHostOpHandler {
             "imported": imported,
             "skipped": skipped,
             "errors": errors,
-            "total": parsed.len(),
+            "total": total,
         })
     }
 

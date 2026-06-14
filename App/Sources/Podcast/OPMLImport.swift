@@ -20,13 +20,28 @@ import Foundation
 /// </opml>
 /// ```
 ///
-/// We seed `PodcastSubscription` from `xmlUrl` (the only required attribute)
-/// plus whatever metadata is present. Episodes are *not* fetched here — Lane 3
-/// queues the new subscriptions through `FeedClient` after import.
+/// We seed preview `Podcast` rows from `xmlUrl` (the only required attribute)
+/// plus whatever metadata is present. Episodes are *not* fetched here; confirmed
+/// rows subscribe through the Rust kernel.
 struct OPMLImport: Sendable {
+    static let maxFileBytes = 5 * 1024 * 1024
+    static let maxFeedCount = 5_000
+
+    struct ParseIssue: Equatable, Sendable {
+        var feedURLString: String?
+        var title: String
+        var message: String
+    }
+
+    struct ParseReport: Equatable, Sendable {
+        var podcasts: [Podcast]
+        var issues: [ParseIssue]
+    }
 
     enum OPMLError: Error, LocalizedError, Sendable {
         case malformedXML(underlying: String)
+        case fileTooLarge(limitBytes: Int)
+        case tooManyFeeds(limit: Int)
 
         /// User-facing copy. `OPMLImportSheet` reads
         /// `error.localizedDescription` directly into the inline error
@@ -41,6 +56,11 @@ struct OPMLImport: Sendable {
                 return "This file isn't a valid OPML export. " +
                     "If you exported it from another podcast app, " +
                     "check that the export completed and try again."
+            case .fileTooLarge(let limitBytes):
+                let mb = max(1, limitBytes / 1_048_576)
+                return "That OPML file is too large. Import files must be \(mb) MB or smaller."
+            case .tooManyFeeds(let limit):
+                return "That OPML file has more than \(limit) feeds. Split it into smaller imports and try again."
             }
         }
     }
@@ -50,22 +70,46 @@ struct OPMLImport: Sendable {
     /// emitted by the source app, so the Library import sheet can render the
     /// list as the user already knows it.
     func parseOPML(data: Data) throws -> [Podcast] {
-        let delegate = OPMLImportDelegate()
+        try parseOPMLReport(data: data).podcasts
+    }
+
+    /// Parses raw OPML bytes and returns both valid feeds and row-level issues
+    /// for invalid entries. Bad feed URLs are partial failures, not whole-file
+    /// failures, so a large OPML import can still bring over every valid feed.
+    func parseOPMLReport(data: Data) throws -> ParseReport {
+        guard data.count <= Self.maxFileBytes else {
+            throw OPMLError.fileTooLarge(limitBytes: Self.maxFileBytes)
+        }
+        let delegate = OPMLImportDelegate(maxFeedCount: Self.maxFeedCount)
         let parser = XMLParser(data: data)
         parser.delegate = delegate
         parser.shouldProcessNamespaces = false
         parser.shouldReportNamespacePrefixes = false
         guard parser.parse() else {
+            if let failure = delegate.failure {
+                throw failure
+            }
             let underlying = parser.parserError?.localizedDescription ?? "unknown XMLParser error"
             throw OPMLError.malformedXML(underlying: underlying)
         }
-        return delegate.podcasts
+        if let failure = delegate.failure {
+            throw failure
+        }
+        return ParseReport(podcasts: delegate.podcasts, issues: delegate.issues)
     }
 }
 
 private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
     var podcasts: [Podcast] = []
+    var issues: [OPMLImport.ParseIssue] = []
+    var failure: OPMLImport.OPMLError?
+
     private var seenFeedURLs: Set<URL> = []
+    private let maxFeedCount: Int
+
+    init(maxFeedCount: Int) {
+        self.maxFeedCount = maxFeedCount
+    }
 
     func parser(
         _ parser: XMLParser,
@@ -78,14 +122,31 @@ private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
         // Per OPML 2.0 §6, podcast feeds carry `type="rss"` and `xmlUrl`; we
         // also accept `type="link"` plus `xmlUrl` (Castro emits this).
         guard let xmlUrlString = attributeDict["xmlUrl"],
-              let feedURL = URL(string: xmlUrlString) else {
+              !xmlUrlString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return
+        }
+        let displayTitle = attributeDict["text"]?.nilIfBlank
+            ?? attributeDict["title"]?.nilIfBlank
+            ?? "Invalid feed URL"
+        guard let feedURL = FeedURLNormalizer.normalizedFeedURL(from: xmlUrlString) else {
+            issues.append(.init(
+                feedURLString: xmlUrlString,
+                title: displayTitle,
+                message: "Only public http:// and https:// feed URLs can be imported."
+            ))
             return
         }
         guard !seenFeedURLs.contains(feedURL) else { return }
+        guard podcasts.count < maxFeedCount else {
+            failure = .tooManyFeeds(limit: maxFeedCount)
+            parser.abortParsing()
+            return
+        }
         seenFeedURLs.insert(feedURL)
 
-        let title = attributeDict["text"]
-            ?? attributeDict["title"]
+        let title = attributeDict["text"]?.nilIfBlank
+            ?? attributeDict["title"]?.nilIfBlank
             ?? feedURL.host
             ?? feedURL.absoluteString
         let description = attributeDict["description"] ?? ""
@@ -98,5 +159,12 @@ private final class OPMLImportDelegate: NSObject, XMLParserDelegate {
             language: language
         )
         podcasts.append(podcast)
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

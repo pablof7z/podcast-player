@@ -25,10 +25,10 @@ pub mod rss;
 
 pub use client::{build_feed_request, handle_feed_response, FeedError, FeedResult};
 pub use http::{
-    HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult,
-    HTTP_ASYNC_CAPABILITY_NAMESPACE, HTTP_CAPABILITY_NAMESPACE,
+    HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult, HTTP_ASYNC_CAPABILITY_NAMESPACE,
+    HTTP_CAPABILITY_NAMESPACE,
 };
-pub use opml::{export_opml, import_opml, OpmlError};
+pub use opml::{export_opml, import_opml, import_opml_report, OpmlError};
 pub use podcasting2::parse_chapters_json;
 pub use refresh::{
     should_refresh, EtagCache, ExportOpmlAction, ImportOpmlAction, RefreshAllFeedsAction,

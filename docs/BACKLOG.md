@@ -292,9 +292,14 @@ worktrees currently in flight.
   invalid/non-HTTP feeds are not dispatched and bare hosts are canonicalized
   before `SubscribePayload`. Remaining: provider errors, restart persistence,
   and empty/error UI.
-- **opml-import-export-hardening.** Validate large OPML files, partial
-  failures, duplicate feeds, export fidelity, and no legacy subscription
-  service dependency.
+- **opml-import-export-hardening.** OPML import now rejects oversized files and
+  unbounded feed counts, reports invalid/non-HTTP feed URLs as partial row
+  failures instead of silently dropping them, and keeps valid rows importable.
+  OPML export now skips feed-less podcasts and de-dupes repeated feed URLs so
+  round-tripped exports do not reintroduce duplicates. iOS still previews parsed
+  rows locally for the import sheet, but all subscription writes continue
+  through `kernelSubscribe`; the Rust `import_opml` action uses the same
+  bounded parser/reporting path for non-UI callers.
 - **feed-refresh-hardening.** Validate cold start, foreground refresh,
   conditional GET, failure reporting, notification hooks, and auto-download
   hooks.

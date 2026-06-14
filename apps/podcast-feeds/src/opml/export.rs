@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use chrono::{DateTime, Utc};
 use podcast_core::Podcast;
+use url::Url;
 
 /// Produces an OPML 2.0 document from the user's current subscriptions.
 /// Ports `OPMLExport.swift`. Output shape mirrors Apple Podcasts / Pocket
@@ -7,19 +10,11 @@ use podcast_core::Podcast;
 ///
 /// Feed-less podcasts (no `feed_url`) are skipped — nothing to round-trip.
 pub fn export_opml(podcasts: &[Podcast]) -> String {
-    export_opml_with(
-        podcasts,
-        "Podcastr Subscriptions",
-        Utc::now(),
-    )
+    export_opml_with(podcasts, "Podcastr Subscriptions", Utc::now())
 }
 
 /// Test-friendly variant with explicit title and timestamp.
-pub fn export_opml_with(
-    podcasts: &[Podcast],
-    title: &str,
-    date_created: DateTime<Utc>,
-) -> String {
+pub fn export_opml_with(podcasts: &[Podcast], title: &str, date_created: DateTime<Utc>) -> String {
     let mut lines: Vec<String> = Vec::new();
     lines.push("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".to_string());
     lines.push("<opml version=\"2.0\">".to_string());
@@ -33,7 +28,13 @@ pub fn export_opml_with(
     lines.push("  <body>".to_string());
     lines.push("    <outline text=\"feeds\" title=\"feeds\">".to_string());
 
+    let mut seen_feed_urls: HashSet<Url> = HashSet::new();
     for podcast in podcasts {
+        if let Some(feed_url) = podcast.feed_url.as_ref() {
+            if !seen_feed_urls.insert(feed_url.clone()) {
+                continue;
+            }
+        }
         if let Some(line) = outline_for(podcast) {
             lines.push(line);
         }

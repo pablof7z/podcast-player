@@ -29,7 +29,11 @@ struct OPMLExport: Sendable {
         lines.append("  <body>")
         lines.append("    <outline text=\"feeds\" title=\"feeds\">")
 
+        var seenFeedURLs: Set<URL> = []
         for podcast in podcasts {
+            if let feedURL = podcast.feedURL {
+                guard seenFeedURLs.insert(feedURL).inserted else { continue }
+            }
             if let line = makeOutline(for: podcast) {
                 lines.append(line)
             }

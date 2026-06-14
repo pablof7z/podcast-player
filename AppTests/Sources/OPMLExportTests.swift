@@ -113,6 +113,23 @@ final class OPMLExportTests: XCTestCase {
         XCTAssertFalse(xml.contains("language="))
     }
 
+    func testDeduplicatesRepeatedFeedURLs() throws {
+        let first = Podcast(
+            feedURL: URL(string: "https://example.com/feed.xml")!,
+            title: "First"
+        )
+        let duplicate = Podcast(
+            feedURL: URL(string: "https://example.com/feed.xml")!,
+            title: "Duplicate"
+        )
+
+        let xml = exportXML([first, duplicate])
+
+        XCTAssertEqual(xml.components(separatedBy: "https://example.com/feed.xml").count - 1, 1)
+        XCTAssertTrue(xml.contains("First"))
+        XCTAssertFalse(xml.contains("Duplicate"))
+    }
+
     // MARK: - Header
 
     func testIncludesDateCreatedHeader() throws {
