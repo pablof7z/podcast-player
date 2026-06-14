@@ -32,6 +32,19 @@
 //! snapshot; it does NOT stamp `trusted`.  See `agent_note_handler.rs` for why
 //! the verdict must be recomputed at projection (follow/unfollow must flip the
 //! verdict on every existing note, with no stale freeze).
+//!
+//! ## Domain-scoped bump doctrine (mirrors `AgentNotesObserver`)
+//!
+//! [`FollowListObserver`] writes to the `podcast.social` sidecar slot
+//! (`social_slot`).  Bumping only the bare global signal leaves
+//! `domain_revs.social` frozen at 1, making the `podcast.social` push sidecar
+//! emit once then idle forever — the same bug that was explicitly fixed in
+//! `AgentNotesObserver` (see `agent_note_handler.rs:250-316`).
+//!
+//! The fix is identical: inject the `Domain::Social`-scoped [`crate::state::Infra`]
+//! via [`FollowListObserver::with_social_infra`] and call `infra.bump()` in
+//! [`FollowListObserver::bump_social`].  `infra.bump()` advances BOTH
+//! `domain_revs.social` AND the global rev/signal — the canonical mutation idiom.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -43,6 +56,7 @@ use nmp_nip02::FollowListProjection;
 
 use crate::ffi::projections::{ContactSummary, SocialSnapshot};
 use crate::snapshot_signal::SnapshotUpdateSignal;
+use crate::state::Infra;
 
 // ── reactive observer ────────────────────────────────────────────────────────
 
@@ -58,6 +72,16 @@ pub struct FollowListObserver {
     social_slot: Arc<Mutex<Option<SocialSnapshot>>>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<SnapshotUpdateSignal>,
+    /// `Domain::Social`-scoped `Infra` clone (from `SocialState.infra`).
+    ///
+    /// `infra.bump()` advances BOTH `domain_revs.social` (so the
+    /// `podcast.social` push sidecar re-emits) AND the global rev/signal (so a
+    /// tick fires at all).  This is the canonical mutation-site idiom every
+    /// working reactive domain uses; the bare `snapshot_signal.bump()` only
+    /// touches the global rev and would leave `domain_revs.social` frozen at 1,
+    /// making the social sidecar emit once then idle forever.
+    /// `None` in test / legacy paths (those fall back to the global signal/rev).
+    social_infra: Option<Infra>,
 }
 
 impl FollowListObserver {
@@ -79,6 +103,7 @@ impl FollowListObserver {
             social_slot,
             rev,
             snapshot_signal: None,
+            social_infra: None,
         }
     }
 
@@ -87,6 +112,34 @@ impl FollowListObserver {
     pub fn with_snapshot_signal(mut self, signal: SnapshotUpdateSignal) -> Self {
         self.snapshot_signal = Some(signal);
         self
+    }
+
+    /// Wire the `Domain::Social`-scoped `Infra` so follow-list mutations bump
+    /// `domain_revs.social` (driving the `podcast.social` sidecar re-emit) in
+    /// addition to the global rev.  Pass `SocialState.infra.clone()`.
+    ///
+    /// Mirrors [`crate::agent_note_handler::AgentNotesObserver::with_social_infra`].
+    pub fn with_social_infra(mut self, infra: Infra) -> Self {
+        self.social_infra = Some(infra);
+        self
+    }
+
+    /// Bump the snapshot after a follow-list mutation.
+    ///
+    /// Prefers the `Domain::Social`-scoped `Infra` (production): `infra.bump()`
+    /// advances `domain_revs.social` AND the global rev/signal — the canonical
+    /// reactive-domain mutation idiom.  Falls back to the bare global signal,
+    /// then to a raw `rev` increment (legacy/test paths with no social infra).
+    ///
+    /// Mirrors [`crate::agent_note_handler::AgentNotesObserver::bump_social`].
+    fn bump_social(&self) {
+        if let Some(infra) = &self.social_infra {
+            infra.bump();
+        } else if let Some(signal) = &self.snapshot_signal {
+            signal.bump();
+        } else {
+            self.rev.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 
@@ -138,12 +191,11 @@ impl KernelEventObserver for FollowListObserver {
             });
         }
 
-        // Signal the shell.
-        if let Some(signal) = &self.snapshot_signal {
-            signal.bump();
-        } else {
-            self.rev.fetch_add(1, Ordering::Relaxed);
-        }
+        // Bump `domain_revs.social` AND the global rev/signal via the
+        // Domain::Social-scoped Infra (production) — or fall back to the bare
+        // global signal / raw rev increment (test/legacy).  This matches the
+        // established doctrine from `AgentNotesObserver::bump_social`.
+        self.bump_social();
     }
 }
 
@@ -157,18 +209,26 @@ impl KernelEventObserver for FollowListObserver {
 /// on Social-tab focus) without duplicating an expensive relay pull.
 ///
 /// It reads the current `social_slot` and, if already populated, bumps the
-/// rev and signals the shell; if not yet populated, returns
-/// `{"ok":true,"status":"pending"}` — the observer will deliver when kind:3
-/// arrives.
+/// `Domain::Social`-scoped `Infra` (driving the sidecar re-emit AND the global
+/// rev); if not yet populated, returns `{"ok":true,"status":"pending"}` — the
+/// observer will deliver when kind:3 arrives.
+///
+/// `social_infra` is the `Domain::Social`-scoped [`Infra`] from
+/// `SocialState.infra`.  When `None` (test/legacy paths) the function falls
+/// back to the bare `snapshot_signal` / `rev` parameters.
 pub fn handle_fetch_contacts(
     social: Arc<Mutex<Option<SocialSnapshot>>>,
+    social_infra: Option<&Infra>,
     rev: Arc<AtomicU64>,
     snapshot_signal: Option<&SnapshotUpdateSignal>,
 ) -> serde_json::Value {
     let has_data = social.lock().ok().and_then(|s| s.clone()).is_some();
     if has_data {
         // Already populated — bump so the shell re-renders the existing data.
-        if let Some(signal) = snapshot_signal {
+        // Prefer the Domain::Social-scoped Infra so domain_revs.social advances.
+        if let Some(infra) = social_infra {
+            infra.bump();
+        } else if let Some(signal) = snapshot_signal {
             signal.bump();
         } else {
             rev.fetch_add(1, Ordering::Relaxed);
