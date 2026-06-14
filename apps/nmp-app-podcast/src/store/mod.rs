@@ -36,6 +36,7 @@ pub mod approved_peer_store;
 pub mod inbox_triage_cache;
 pub mod outbound_turn_cache;
 mod library;
+pub mod metadata_index_backfill;
 mod memory;
 pub(crate) mod owned_ext;
 mod persistence;
@@ -56,6 +57,7 @@ mod triage_state;
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
 pub use auto_download::{episodes_to_auto_download, AutoDownloadMode};
+pub use metadata_index_backfill::{METADATA_INDEX_BACKFILL_BATCH_SIZE, METADATA_INDEX_INTER_BATCH_DELAY_MS};
 use credential_metadata::ProviderCredentialMetadata;
 pub use podcast_keys::PodcastKeyStore;
 
