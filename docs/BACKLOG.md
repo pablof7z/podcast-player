@@ -56,7 +56,11 @@ worktrees currently in flight.
   locally in `CoreJourneyUITests.testP0_03_PlayStartsAudio` and
   `CoreJourneyUITests.testP0_04_ResumeReopenByTitle`, so full `Build and
   Test` should remain non-required until the playback UI failures are fixed or
-  split from the deterministic unit lane.
+  split from the deterministic unit lane. The follow-on playback UI branch
+  fixes the seeded download path so playback uses the canonical offline file
+  after restart, isolates UI-test app lifecycle teardown, and removes a Swift
+  actor-isolation crash in Now Playing artwork publication that surfaced in
+  the relaunch playback journey.
   Stabilize or split that iOS lane before adding `Build and Test` back to
   required branch protection. The old `nmp-blossom` portability blocker is
   resolved on `main`: PR #488 replaced the absolute `/tmp` dependency with
