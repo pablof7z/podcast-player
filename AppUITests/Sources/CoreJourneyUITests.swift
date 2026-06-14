@@ -7,6 +7,15 @@ import XCTest
 final class CoreJourneyUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
+    // Terminate the app after every test so lifecycle state from
+    // background/foreground tests (press home, activate) is fully cleared
+    // before the next test. Without this, simulator audio/lifecycle state
+    // contamination cascades across tests.
+    override func tearDown() {
+        XCUIApplication(bundleIdentifier: App.bundleID).terminate()
+        super.tearDown()
+    }
+
     /// Tap the first subscribed podcast (visible on Home) -> first episode detail. Returns true on success.
     @discardableResult
     private func openFirstEpisodeDetail(_ app: XCUIApplication) -> Bool {
@@ -167,22 +176,19 @@ final class CoreJourneyUITests: XCTestCase {
         let pause = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pause'")).firstMatch
         if pause.waitForExistence(timeout: 4) { pause.tap() }
         sleep(2)
-        // Navigate back to Home using the sidebar so we don't depend on the
-        // navigation stack depth. Left-edge swipe popped unpredictably (straight
-        // to Home instead of to Show Detail), and detecting the right nav bar
-        // back button is fragile. Sidebar "Home" is a stable anchor.
-        let sidebarBtn = app.buttons["Open sidebar"]
-        if sidebarBtn.waitForExistence(timeout: 3) {
-            sidebarBtn.tap(); sleep(1)
-            let homeBtn = app.buttons["Home"]
-            if homeBtn.waitForExistence(timeout: 3) { homeBtn.tap(); sleep(1) }
-        }
+        XCTAssertTrue(returnToShowOrHomeForReopen(app), "return to show/home before reopening")
         snap(app, "P0-04-back-to-show")
         // Reopen the same episode via the standard show→episode navigation.
         // The title prefix is used in the failure message only; openFirstEpisodeDetail
         // navigates by position which is safe because the seeder provides one episode.
         let prefix = String(epTitle.prefix(16))
-        XCTAssertTrue(openFirstEpisodeDetail(app), "reopen episode detail for '\(prefix)'")
+        let episodeRows = app.buttons.matching(
+            NSPredicate(format: "identifier == 'home-episode-row'")
+        )
+        let reopened = episodeRows.firstMatch.exists
+            ? openFirstEpisodeFromShow(app)
+            : openFirstEpisodeDetail(app)
+        XCTAssertTrue(reopened, "reopen episode detail for '\(prefix)'")
         sleep(2)
         snap(app, "P0-04-reopened-by-title")
         dumpTree(app, "P0-04-reopened-tree")
@@ -190,6 +196,35 @@ final class CoreJourneyUITests: XCTestCase {
             || app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'resume'")).firstMatch.exists
         XCTAssertTrue(hasResume,
             "FAIL P0-04: reopened detail for '\(prefix)' shows no Resume despite In-Progress proving the store has the position — episode-detail does not read the saved position.")
+    }
+
+    @discardableResult
+    private func returnToShowOrHomeForReopen(_ app: XCUIApplication) -> Bool {
+        let episodeRow = app.buttons.matching(
+            NSPredicate(format: "identifier == 'home-episode-row'")
+        ).firstMatch
+        if episodeRow.waitForExistence(timeout: 1) { return true }
+
+        for label in ["This American Life", "Back"] {
+            let button = app.buttons[label]
+            if button.waitForExistence(timeout: 2) {
+                robustTap(button)
+                if waitForShowDetail(app) { return true }
+            }
+        }
+
+        let sidebarBtn = app.buttons["Open sidebar"]
+        if sidebarBtn.waitForExistence(timeout: 3) {
+            sidebarBtn.tap(); sleep(1)
+            let homeBtn = app.buttons["Home"]
+            if homeBtn.waitForExistence(timeout: 3) {
+                homeBtn.tap(); sleep(1)
+                return true
+            }
+        }
+
+        app.swipeRight()
+        return waitForShowDetail(app)
     }
 
     /// GROUND TRUTH — after playing, does the store know the position?

@@ -85,7 +85,7 @@ extension XCTestCase {
                 && element.frame.minY < 320
         }
         if let visibleHomeTitle {
-            visibleHomeTitle.tap()
+            robustTap(visibleHomeTitle)
             if waitForShowDetail(app) { return true }
         }
 

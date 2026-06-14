@@ -13,6 +13,14 @@ import Foundation
 /// target) because it must run inside the app process where it has access to
 /// `applicationSupportDirectory`.
 enum UITestSeeder {
+    static func seededDownloadURL(episodeID: String, sourceURL: URL?) -> URL {
+        DownloadCapability.destinationURL(
+            for: episodeID,
+            sourceURL: sourceURL,
+            kind: .episode
+        )
+    }
+
     static func seedIfNeeded() {
         guard CommandLine.arguments.contains("--UITestSeed") else { return }
         // Request synchronous position-flush writes so that the SQLite episode
@@ -51,26 +59,24 @@ enum UITestSeeder {
         // from the NPR CDN (which the simulator's sandboxed network may block).
         // The file lands here when the episode is downloaded during an earlier
         // test run; its presence is stable across runs within the same container.
-        // Copy the bundled test MP3 into the EpisodeDownloadStore directory so
-        // AudioEngine.load() can resolve the file without any network access.
-        // EpisodeDownloadStore stores files at:
-        //   <AppSupport>/podcastr/downloads/<EPISODE-UUID>.<ext>
-        // The episode UUID and .mp3 extension are fixed by the seed below.
-        // UITestSeeder runs inside the current process (new data container), so
-        // the copy lands in the live container and survives a force-quit, giving
-        // the resume-persistence test a durable local file to play.
         let episodeUUID = "A1A1FFFF-0001-0002-0001-000000000001"
-        let downloadDir = base
-            .appendingPathComponent("podcastr", isDirectory: true)
-            .appendingPathComponent("downloads", isDirectory: true)
+        let enclosureURL = "https://npr.simplecastaudio.com/d3081dd9-fcaf-445a-977c-4f56c28f5a6e/episodes/e55b1946-2658-4592-9afe-1c2a3033a31c/audio/128/default.mp3"
+        let sourceURL = URL(string: enclosureURL)
+        // Copy the bundled test MP3 into the same canonical Downloads directory
+        // used by DownloadCapability and EpisodeDownloadStore so playback and
+        // the Rust download projection both see the local file after restart.
+        let destMP3 = seededDownloadURL(episodeID: episodeUUID, sourceURL: sourceURL)
         try? FileManager.default.createDirectory(
-            at: downloadDir, withIntermediateDirectories: true)
-        let destMP3 = downloadDir.appendingPathComponent("\(episodeUUID).mp3")
+            at: destMP3.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
         if let bundledMP3 = Bundle.main.url(forResource: "test-episode", withExtension: "mp3"),
            !FileManager.default.fileExists(atPath: destMP3.path) {
             try? FileManager.default.copyItem(at: bundledMP3, to: destMP3)
         }
-        let enclosureURL = "https://npr.simplecastaudio.com/d3081dd9-fcaf-445a-977c-4f56c28f5a6e/episodes/e55b1946-2658-4592-9afe-1c2a3033a31c/audio/128/default.mp3"
+        let attrs = try? FileManager.default.attributesOfItem(atPath: destMP3.path)
+        let localBytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+        let localPathLiteral = jsonStringLiteral(destMP3.path)
         let downloadState = "{\"state\": \"not_downloaded\"}"
 
         // Read any position the previous session wrote to the App Group SQLite
@@ -137,11 +143,20 @@ enum UITestSeeder {
           "episode_triage": [],
           "metadata_indexed_episodes": [],
           "transcript_status_overrides": [],
+          "local_paths": [["\(episodeUUID.lowercased())", \(localPathLiteral)]],
+          "file_sizes": [["\(episodeUUID.lowercased())", \(localBytes)]],
           "settings": {},
           "queue": [],
           "pending_wifi_downloads": []
         }
         """
         try? seed.data(using: .utf8)?.write(to: file, options: .atomic)
+    }
+
+    private static func jsonStringLiteral(_ value: String) -> String {
+        guard let data = try? JSONEncoder().encode(value),
+              let encoded = String(data: data, encoding: .utf8)
+        else { return "\"\"" }
+        return encoded
     }
 }

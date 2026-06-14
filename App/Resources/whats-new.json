@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-14T15:01:46Z",
+      "lines": [
+        "Now Playing artwork no longer crashes playback metadata when Control Center or the lock screen asks for it."
+      ]
+    },
+    {
       "shipped_at": "2026-06-14T12:01:00Z",
       "lines": [
         "OPML imports now skip bad feed rows without losing the rest of your list, and exports avoid duplicate feed URLs."

@@ -74,7 +74,7 @@ extension AudioCapability {
                       let uiImage = UIImage(data: data) else { return }
                 await MainActor.run {
                     var current = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-                    let artwork = MPMediaItemArtwork(boundsSize: uiImage.size) { _ in uiImage }
+                    let artwork = Self.makeMediaItemArtwork(uiImage)
                     current[MPMediaItemPropertyArtwork] = artwork
                     MPNowPlayingInfoCenter.default().nowPlayingInfo = current
                 }
@@ -110,5 +110,19 @@ extension AudioCapability {
     private func placeholderTitle(for url: String) -> String {
         guard let parsed = URL(string: url) else { return url }
         return parsed.deletingPathExtension().lastPathComponent
+    }
+
+    nonisolated private static func makeMediaItemArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+        MPMediaItemArtwork(boundsSize: image.size) { @Sendable requested in
+            if requested == image.size { return image }
+            return resize(image, to: requested) ?? image
+        }
+    }
+
+    nonisolated private static func resize(_ image: UIImage, to size: CGSize) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { @Sendable _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 }

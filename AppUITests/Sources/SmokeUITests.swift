@@ -12,6 +12,11 @@ final class SmokeUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    override func tearDown() {
+        XCUIApplication(bundleIdentifier: Self.bundleID).terminate()
+        super.tearDown()
+    }
+
     /// Launches the app and confirms it reaches the foreground with rendered
     /// content (not just a launch screen). Attaches a screenshot for review.
     func testLaunchHomeVisibleAndScreenshot() throws {
@@ -44,10 +49,15 @@ final class SmokeUITests: XCTestCase {
         let options = XCTMeasureOptions()
         options.invocationOptions = [.manuallyStop]
         measure(metrics: [XCTApplicationLaunchMetric()], options: options) {
+            if app.state != .notRunning {
+                app.terminate()
+                _ = app.wait(for: .notRunning, timeout: 5)
+            }
             app.launch()
             _ = app.wait(for: .runningForeground, timeout: 10)
             stopMeasuring()
             app.terminate()
+            _ = app.wait(for: .notRunning, timeout: 5)
         }
     }
 
