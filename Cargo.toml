@@ -15,27 +15,16 @@ resolver = "2"
 # reference the SAME nostr-multi-platform rev so the whole graph compiles
 # exactly one copy of each NMP crate (one `NmpApp` type). When bumping NMP,
 # bump nmp-feedback in lockstep to a rev that pins the same NMP rev.
+#
+# As of nmp-v0.7.2 (45ac8c3e4, #1428) nmp-blossom is un-parked — it is a normal
+# [workspace].members crate in the NMP repo, so it resolves as an ordinary git
+# dep at the same rev as the other NMP crates. No [patch] / local-clone
+# workaround is needed any more.
 [workspace.dependencies]
-nmp-defaults = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-core = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-ffi = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-signer-broker = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-blossom = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-nip02 = { version = "0.7.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "92fdfca327a782b82ee999a414190d39265b8243" }
-nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "010d993b171ba324e08260d56ea74bcd61845997" }
-
-# nmp-blossom remains parked (excluded from the NMP workspace) at 92fdfca32
-# (nmp-v0.7.1; post-v1 dead islands #1394/#1324). As of nmp-v0.7.1 (#1424) the
-# parked crates' manifests are de-inherited to literal version/edition/license
-# fields, so nmp-blossom builds standalone via the patch path with no
-# workspace-membership workaround. All NMP crates are patched via a local clone
-# at exactly 92fdfca32 so that nmp-blossom's path-based nmp-core/nmp-kinds deps
-# resolve to the same version as the git-fetched NMP deps (no diamond-version
-# split).
-[patch."https://github.com/pablof7z/nostr-multi-platform.git"]
-nmp-blossom = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-blossom" }
-nmp-core = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-core" }
-nmp-ffi = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-ffi" }
-nmp-defaults = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-defaults" }
-nmp-signer-broker = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-signer-broker" }
-nmp-nip02 = { path = "/tmp/nmp-at-92fdfca32/crates/nmp-nip02" }
+nmp-defaults = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-core = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-ffi = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-signer-broker = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-blossom = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-nip02 = { version = "0.7.2", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891" }
+nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "857dedf45be721d748bf4ed55a76144ba89018b9" }
