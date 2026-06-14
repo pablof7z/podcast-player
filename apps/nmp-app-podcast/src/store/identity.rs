@@ -94,6 +94,32 @@ impl IdentityStore {
         Ok(())
     }
 
+    /// Mirror the just-published kind:0 profile fields into the in-memory store
+    /// and persist them to disk.
+    ///
+    /// Called immediately after a successful `publish_profile_via_nmp` dispatch
+    /// so the local `AccountSummary` projection reflects what the user published
+    /// without waiting for a relay echo (optimistic-but-correct, like
+    /// `agent_note_responder`'s projection-slot update). Only fields that were
+    /// actually set in the payload are applied — `None` leaves the existing value
+    /// untouched so the user cannot accidentally null-out a field they left blank.
+    ///
+    /// Note: the NMP field name for picture is `picture` (payload) which maps to
+    /// `picture_url` (store). `display_name` maps 1:1.
+    pub fn apply_profile(
+        &mut self,
+        display_name: Option<String>,
+        picture_url: Option<String>,
+    ) {
+        if let Some(v) = display_name {
+            self.display_name = Some(v);
+        }
+        if let Some(v) = picture_url {
+            self.picture_url = Some(v);
+        }
+        self.save_to_disk();
+    }
+
     /// Wipe all key fields and delete `identity.json` from disk (if the
     /// store has a `data_dir`). Display name and picture are also cleared
     /// so the projection returns `None` for `active_account`.
@@ -241,6 +267,40 @@ mod tests {
     fn load_nonexistent_returns_none() {
         let tmp = TempDir::new().unwrap();
         assert!(IdentityStore::load_from_disk(tmp.path()).is_none());
+    }
+
+    #[test]
+    fn apply_profile_sets_display_name_and_picture_url() {
+        let mut store = IdentityStore::new();
+        store.import_nsec(TEST_NSEC).unwrap();
+        store.apply_profile(Some("Alice".into()), Some("https://example.com/a.png".into()));
+        assert_eq!(store.display_name.as_deref(), Some("Alice"));
+        assert_eq!(store.picture_url.as_deref(), Some("https://example.com/a.png"));
+    }
+
+    #[test]
+    fn apply_profile_none_leaves_existing_fields_intact() {
+        let mut store = IdentityStore::new();
+        store.import_nsec(TEST_NSEC).unwrap();
+        store.display_name = Some("Existing".into());
+        store.picture_url = Some("https://example.com/old.png".into());
+        // Neither field is set — existing values must survive.
+        store.apply_profile(None, None);
+        assert_eq!(store.display_name.as_deref(), Some("Existing"));
+        assert_eq!(store.picture_url.as_deref(), Some("https://example.com/old.png"));
+    }
+
+    #[test]
+    fn apply_profile_persists_to_disk_and_survives_reload() {
+        let tmp = TempDir::new().unwrap();
+        let mut store = IdentityStore::new();
+        store.data_dir = Some(tmp.path().to_owned());
+        store.import_nsec(TEST_NSEC).unwrap();
+        store.apply_profile(Some("Persisted Name".into()), Some("https://pic.example.com/p.png".into()));
+
+        let reloaded = IdentityStore::load_from_disk(tmp.path()).unwrap();
+        assert_eq!(reloaded.display_name.as_deref(), Some("Persisted Name"));
+        assert_eq!(reloaded.picture_url.as_deref(), Some("https://pic.example.com/p.png"));
     }
 
     #[test]
