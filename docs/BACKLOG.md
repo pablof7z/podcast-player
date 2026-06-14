@@ -66,6 +66,14 @@ worktrees currently in flight.
   `SmokeUITests/testColdLaunchPerformance`. As of the 2026-06-14 audit, the
   full `Build and Test` workflow is still intentionally not a required branch
   protection context; observe a clean main-equivalent run before adding it.
+  The post-#497 main Test workflow exposed a separate Android CI harness bug:
+  Kotlin compile and unit tests succeeded, then `gradle/actions/setup-gradle@v3`
+  failed during cache cleanup against Gradle 8.7 with a write-only
+  `removeUnusedEntriesOlderThan` property. PR #499 upgrades the action to
+  `gradle/actions/setup-gradle@v6.2.0` and uses the current `cache-cleanup`
+  input so the required Android gate reports the real build result, and removes
+  obsolete `/tmp/nmp-at-ac7e307e` clone steps left over from the deleted NMP
+  path patch.
   The old `nmp-blossom` portability blocker is resolved on `main`, PR #498
   removed the temporary `vendor/nmp-core` fork, and the Rust/headless required
   merge gates are locally unblocked by the upstream-pinned NMP rev. Do not
