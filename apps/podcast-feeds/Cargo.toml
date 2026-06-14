@@ -10,9 +10,10 @@ name = "podcast_feeds"
 
 [dependencies]
 podcast-core = { path = "../podcast-core" }
-quick-xml = { version = "0.36", features = ["serialize"] }
+quick-xml = { version = "0.36", features = ["serialize", "encoding"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
 url = { version = "2.0", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
+base64 = "0.22"

@@ -303,6 +303,7 @@ mod feed_304_tests {
                 ],
             ],
             body: String::new(),
+            body_base64: None,
         }
     }
 
@@ -311,6 +312,7 @@ mod feed_304_tests {
             status_code: 200,
             headers: vec![vec!["etag".to_owned(), "\"def456\"".to_owned()]],
             body: body.to_owned(),
+            body_base64: None,
         }
     }
 

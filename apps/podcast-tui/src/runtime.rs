@@ -10,8 +10,8 @@ use nmp_app_podcast::{
     nmp_app_podcast_unregister, nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
 };
 use nmp_ffi::{
-    nmp_app_dispatch_action, nmp_app_free, nmp_free_string, nmp_app_new,
-    nmp_app_set_capability_callback, nmp_app_start, NmpApp,
+    nmp_app_dispatch_action, nmp_app_free, nmp_app_new, nmp_app_set_capability_callback,
+    nmp_app_start, nmp_free_string, NmpApp,
 };
 use podcast_feeds::http::{
     HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult, HTTP_ASYNC_CAPABILITY_NAMESPACE,
@@ -328,8 +328,14 @@ fn run_http(http_req: HttpRequest) -> HttpResult {
             }
         }
     }
-    if let Some(body) = http_req.body {
-        builder = builder.body(body);
+    match http_req.body_bytes() {
+        Ok(Some(bytes)) => builder = builder.body(bytes.into_owned()),
+        Ok(None) => {}
+        Err(e) => {
+            return HttpResult::Error {
+                message: format!("invalid-body-base64: {e}"),
+            }
+        }
     }
 
     match builder.send() {
@@ -340,12 +346,8 @@ fn run_http(http_req: HttpRequest) -> HttpResult {
                 .iter()
                 .map(|(k, v)| vec![k.as_str().to_owned(), v.to_str().unwrap_or("").to_owned()])
                 .collect();
-            match resp.text() {
-                Ok(body) => HttpResult::Ok {
-                    status_code,
-                    headers,
-                    body,
-                },
+            match resp.bytes() {
+                Ok(bytes) => HttpResult::ok_with_body_bytes(status_code, headers, bytes.as_ref()),
                 Err(e) => HttpResult::Error {
                     message: format!("body: {e}"),
                 },

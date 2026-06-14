@@ -777,9 +777,10 @@ worktrees currently in flight.
   `podcasts`/`subscriptions` out the same way (`store.podcasts` /
   `store.subscriptions`), re-composing them at the persistence seam alongside
   `episodes` in `runStateSideEffects` / `composedState`.
-- **m5-non-utf8-feed-bodies.** Widen HTTP capability body transfer to preserve
-  non-UTF8 feed bytes. Update Swift and Rust so XML encoding declarations are
-  honored.
+- ~~**m5-non-utf8-feed-bodies.**~~ Done in `codex/non-utf8-feed-bodies`: the
+  HTTP capability now carries raw response bytes via additive `body_base64`,
+  Swift/TUI/headless executors preserve those bytes, and Rust feed parsing
+  prefers them so XML encoding declarations are honored.
 - ~~**m8-blossom-body-base64-rust-side.**~~ Done (superseded by the
   `m8-blossom-binary-body` entry below). The Rust side now emits the blob in the
   dedicated `body_base64` field (`apps/nmp-app-podcast/src/blossom.rs`,

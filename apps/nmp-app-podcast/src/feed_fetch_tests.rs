@@ -89,6 +89,7 @@ fn ok_result(body: &str) -> HttpResult {
         status_code: 200,
         headers: vec![],
         body: body.to_string(),
+        body_base64: None,
     }
 }
 
@@ -103,6 +104,7 @@ fn not_modified_result() -> HttpResult {
             ],
         ],
         body: String::new(),
+        body_base64: None,
     }
 }
 

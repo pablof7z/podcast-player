@@ -86,25 +86,20 @@ struct HttpRequest: Decodable {
 
 /// Capability-private result payload — the encoded `result_json`. Mirrors the
 /// Rust `HttpResult` (`#[serde(tag = "status", rename_all = "snake_case")]`):
-///   `{"status":"ok","status_code":200,"headers":[["ETag","…"]],"body":"…"}`
+///   `{"status":"ok","status_code":200,"headers":[["ETag","…"]],"body":"…","body_base64":"…"}`
 ///   `{"status":"error","message":"…"}`
 ///
 /// There is no error *exception*: a transport failure is data (`status ==
 /// "error"`), satisfying D6.
 ///
-/// **M5 — response headers on `Ok`.** The `headers` field on `.ok` was added
-/// to round-trip `ETag` / `Last-Modified` to Rust callers (the FeedClient
-/// conditional-GET path can't read response headers otherwise). The wire
-/// addition is purely additive — older Rust decoders that don't know the
-/// field skip it, and an empty header set is omitted to keep the payload
-/// tidy. This is a podcast-player-side extension of Chirp's `HttpCapability`
-/// contract; if Chirp adopts the same shape later we can collapse the two.
+/// `body_base64` preserves raw response bytes for feeds whose XML declaration
+/// is not UTF-8. `body` remains for legacy text consumers.
 enum HttpResult: Encodable {
     /// Transport succeeded — `statusCode` is the raw HTTP status (a 200 and a
     /// 404 are both `ok`; interpreting it is the caller's policy, D7).
     /// `headers` is the response's `allHeaderFields` flattened to ordered
     /// `[name, value]` pairs (preserves case from the server response).
-    case ok(statusCode: UInt16, headers: [[String]], body: String)
+    case ok(statusCode: UInt16, headers: [[String]], body: String, bodyBase64: String?)
     /// Transport-level failure (DNS, TLS, timeout, malformed request, …).
     case error(message: String)
 
@@ -113,23 +108,23 @@ enum HttpResult: Encodable {
         case statusCode = "status_code"
         case headers
         case body
+        case bodyBase64 = "body_base64"
         case message
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .ok(statusCode, headers, body):
+        case let .ok(statusCode, headers, body, bodyBase64):
             try c.encode("ok", forKey: .status)
             try c.encode(statusCode, forKey: .statusCode)
-            // Match the Rust `skip_serializing_if = "Vec::is_empty"`: omit the
-            // headers field entirely when empty so the wire payload stays
-            // identical to the pre-M5 shape for non-HTTP responses
-            // (`file://` short-circuit, etc.).
             if !headers.isEmpty {
                 try c.encode(headers, forKey: .headers)
             }
             try c.encode(body, forKey: .body)
+            if let bodyBase64 {
+                try c.encode(bodyBase64, forKey: .bodyBase64)
+            }
         case let .error(message):
             try c.encode("error", forKey: .status)
             try c.encode(message, forKey: .message)
@@ -295,6 +290,21 @@ final class HttpCapability: @unchecked Sendable {
         case failure(HttpResult)
     }
 
+    private static func okResult(
+        statusCode: Int,
+        headers: [[String]],
+        data: Data?
+    ) -> HttpResult {
+        let bytes = data ?? Data()
+        let body = String(data: bytes, encoding: .utf8) ?? ""
+        let bodyBase64 = bytes.isEmpty ? nil : bytes.base64EncodedString()
+        return .ok(
+            statusCode: UInt16(clamping: statusCode),
+            headers: headers,
+            body: body,
+            bodyBase64: bodyBase64)
+    }
+
     /// Build the `URLRequest` for an `HttpRequest`, shared by the synchronous
     /// and async paths. Returns the request, or an `HttpResult.error` carrying
     /// the reason (invalid URL / malformed base64 body) per D6.
@@ -374,11 +384,10 @@ final class HttpCapability: @unchecked Sendable {
             if let error {
                 result = .error(message: "transport: \(error.localizedDescription)")
             } else if let http = response as? HTTPURLResponse {
-                let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
-                result = .ok(
-                    statusCode: UInt16(clamping: http.statusCode),
+                result = Self.okResult(
+                    statusCode: http.statusCode,
                     headers: Self.headerPairs(from: http),
-                    body: body)
+                    data: data)
             } else {
                 result = .error(message: "non-http-response")
             }
@@ -435,16 +444,14 @@ final class HttpCapability: @unchecked Sendable {
                 box.set(.error(message: "non-http-response"))
                 return
             }
-            let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             let headers = Self.headerPairs(from: http)
-            box.set(.ok(
-                statusCode: UInt16(clamping: http.statusCode),
+            box.set(Self.okResult(
+                statusCode: http.statusCode,
                 headers: headers,
-                body: body))
+                data: data))
         }
         task.resume()
-        // A generous ceiling above `timeoutIntervalForRequest` so the session's
-        // own timeout fires first; this `wait` deadline is the backstop.
+        // Let the session timeout fire first; this wait deadline is the backstop.
         if semaphore.wait(timeout: .now() + timeout + 5) == .timedOut {
             task.cancel()
             return .error(message: "timeout")

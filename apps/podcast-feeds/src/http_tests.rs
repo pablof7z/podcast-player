@@ -32,10 +32,16 @@ fn http_method_as_str_matches_wire() {
 
 #[test]
 fn http_request_get_no_headers_omits_fields() {
-    let req = HttpRequest::get("https://example.com/feed.xml", std::iter::empty::<(&str, &str)>());
+    let req = HttpRequest::get(
+        "https://example.com/feed.xml",
+        std::iter::empty::<(&str, &str)>(),
+    );
     let json = serde_json::to_string(&req).expect("encode");
     // `skip_serializing_if` keeps headers + body off the wire when absent.
-    assert_eq!(json, r#"{"method":"GET","url":"https://example.com/feed.xml"}"#);
+    assert_eq!(
+        json,
+        r#"{"method":"GET","url":"https://example.com/feed.xml"}"#
+    );
     let back: HttpRequest = serde_json::from_str(&json).expect("decode");
     assert_eq!(back, req);
 }
@@ -44,7 +50,10 @@ fn http_request_get_no_headers_omits_fields() {
 fn http_request_get_serializes_headers_as_pair_arrays() {
     let req = HttpRequest::get(
         "https://example.com/feed.xml",
-        [("Accept", "application/rss+xml"), ("If-None-Match", "\"abc123\"")],
+        [
+            ("Accept", "application/rss+xml"),
+            ("If-None-Match", "\"abc123\""),
+        ],
     );
     let json = serde_json::to_string(&req).expect("encode");
     // Match the literal Swift encoder produces from the same shape.
@@ -83,18 +92,21 @@ fn http_request_absent_headers_decode_to_empty() {
 
 #[test]
 fn http_result_ok_matches_swift_wire_shape() {
-    let result = HttpResult::Ok {
-        status_code: 200,
-        headers: vec![
+    let result = HttpResult::ok_with_body_bytes(
+        200,
+        vec![
             vec!["ETag".into(), "\"abc123\"".into()],
-            vec!["Last-Modified".into(), "Wed, 31 Dec 2025 23:00:00 GMT".into()],
+            vec![
+                "Last-Modified".into(),
+                "Wed, 31 Dec 2025 23:00:00 GMT".into(),
+            ],
         ],
-        body: "<rss/>".into(),
-    };
+        b"<rss/>",
+    );
     let json = serde_json::to_string(&result).expect("encode");
     assert_eq!(
         json,
-        r#"{"status":"ok","status_code":200,"headers":[["ETag","\"abc123\""],["Last-Modified","Wed, 31 Dec 2025 23:00:00 GMT"]],"body":"<rss/>"}"#
+        r#"{"status":"ok","status_code":200,"headers":[["ETag","\"abc123\""],["Last-Modified","Wed, 31 Dec 2025 23:00:00 GMT"]],"body":"<rss/>","body_base64":"PHJzcy8+"}"#
     );
     let back: HttpResult = serde_json::from_str(&json).expect("decode");
     assert_eq!(back, result);
@@ -106,6 +118,7 @@ fn http_result_ok_omits_empty_headers() {
         status_code: 304,
         headers: vec![],
         body: String::new(),
+        body_base64: None,
     };
     let json = serde_json::to_string(&result).expect("encode");
     // Matches the legacy Swift `.ok(statusCode:body:)` wire — additive
@@ -137,10 +150,12 @@ fn http_result_decodes_legacy_ok_without_headers_field() {
             status_code,
             headers,
             body,
+            body_base64,
         } => {
             assert_eq!(status_code, 200);
             assert!(headers.is_empty());
             assert_eq!(body, "<rss/>");
+            assert!(body_base64.is_none());
         }
         HttpResult::Error { .. } => panic!("expected Ok"),
     }
@@ -152,13 +167,20 @@ fn http_result_header_lookup_is_case_insensitive() {
         status_code: 200,
         headers: vec![
             vec!["ETag".into(), "\"abc\"".into()],
-            vec!["Last-Modified".into(), "Wed, 31 Dec 2025 23:00:00 GMT".into()],
+            vec![
+                "Last-Modified".into(),
+                "Wed, 31 Dec 2025 23:00:00 GMT".into(),
+            ],
         ],
         body: String::new(),
+        body_base64: None,
     };
     assert_eq!(result.header("etag"), Some("\"abc\""));
     assert_eq!(result.header("ETAG"), Some("\"abc\""));
-    assert_eq!(result.header("Last-Modified"), Some("Wed, 31 Dec 2025 23:00:00 GMT"));
+    assert_eq!(
+        result.header("Last-Modified"),
+        Some("Wed, 31 Dec 2025 23:00:00 GMT")
+    );
     assert_eq!(result.header("missing"), None);
 }
 
@@ -168,6 +190,23 @@ fn http_result_header_lookup_on_error_returns_none() {
         message: "boom".into(),
     };
     assert_eq!(result.header("ETag"), None);
+}
+
+#[test]
+fn http_result_body_bytes_prefers_base64_payload() {
+    let result = HttpResult::Ok {
+        status_code: 200,
+        headers: vec![],
+        body: "wrong text fallback".into(),
+        body_base64: Some("PGZlZWQ+8TwvZmVlZD4=".into()),
+    };
+
+    let bytes = result
+        .body_bytes()
+        .expect("decode base64")
+        .expect("ok body");
+
+    assert_eq!(bytes.as_ref(), b"<feed>\xF1</feed>");
 }
 
 #[test]

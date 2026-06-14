@@ -21,6 +21,7 @@ fn re_export_round_trips_result_ok_with_headers() {
         status_code: 200,
         headers: vec![vec!["ETag".into(), "\"abc\"".into()]],
         body: "<rss/>".into(),
+        body_base64: None,
     };
     let json = serde_json::to_string(&result).expect("encode");
     let back: HttpResult = serde_json::from_str(&json).expect("decode");
