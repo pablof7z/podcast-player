@@ -66,6 +66,23 @@ final class OPMLImportTests: XCTestCase {
         XCTAssertEqual(subs[0].title, "First", "First-seen wins on duplicates")
     }
 
+    func testReportsInvalidFeedURLsWithoutDroppingValidRows() throws {
+        let data = makeOPML(body: """
+        <outline text="Bad" type="rss" xmlUrl="ftp://example.com/feed.xml"/>
+        <outline text="Good" type="rss" xmlUrl="https://example.com/good.xml"/>
+        <outline text="Also Bad" type="rss" xmlUrl="https://"/>
+        """)
+
+        let report = try OPMLImport().parseOPMLReport(data: data)
+
+        XCTAssertEqual(report.podcasts.count, 1)
+        XCTAssertEqual(report.podcasts[0].title, "Good")
+        XCTAssertEqual(report.podcasts[0].feedURL, URL(string: "https://example.com/good.xml")!)
+        XCTAssertEqual(report.issues.count, 2)
+        XCTAssertEqual(report.issues[0].feedURLString, "ftp://example.com/feed.xml")
+        XCTAssertEqual(report.issues[0].title, "Bad")
+    }
+
     func testSkipsOutlinesWithoutXmlUrl() throws {
         // First outline is a grouping folder (no `xmlUrl`); second is a real feed.
         let data = makeOPML(body: """
@@ -105,6 +122,34 @@ final class OPMLImportTests: XCTestCase {
         XCTAssertThrowsError(try OPMLImport().parseOPML(data: data)) { error in
             guard case OPMLImport.OPMLError.malformedXML = error else {
                 XCTFail("Expected .malformedXML, got \(error)")
+                return
+            }
+        }
+    }
+
+    func testThrowsOnOversizedOPML() {
+        let data = Data(repeating: UInt8(ascii: " "), count: OPMLImport.maxFileBytes + 1)
+
+        XCTAssertThrowsError(try OPMLImport().parseOPML(data: data)) { error in
+            guard case OPMLImport.OPMLError.fileTooLarge = error else {
+                XCTFail("Expected .fileTooLarge, got \(error)")
+                return
+            }
+        }
+    }
+
+    func testThrowsOnTooManyFeeds() {
+        var body = ""
+        for i in 0...OPMLImport.maxFeedCount {
+            body += """
+            <outline text="Show \(i)" type="rss" xmlUrl="https://example.com/\(i).xml"/>
+            """
+        }
+        let data = makeOPML(body: body)
+
+        XCTAssertThrowsError(try OPMLImport().parseOPML(data: data)) { error in
+            guard case OPMLImport.OPMLError.tooManyFeeds = error else {
+                XCTFail("Expected .tooManyFeeds, got \(error)")
                 return
             }
         }

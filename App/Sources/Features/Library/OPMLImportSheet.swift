@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 /// stacking everything at once.
 enum OPMLImportPhase: Equatable {
     case pick
-    case review(parsed: [Podcast])
+    case review(parsed: [Podcast], issues: [OPMLImportRowError])
     case progress(completed: Int, total: Int, errors: [OPMLImportRowError])
     case done(imported: Int, skipped: Int, errors: [OPMLImportRowError])
 }
@@ -20,7 +20,8 @@ enum OPMLImportPhase: Equatable {
 /// retry manually if a single feed in their OPML is broken.
 struct OPMLImportRowError: Identifiable, Equatable {
     let id = UUID()
-    let feedURL: URL
+    let feedURL: URL?
+    let displayURL: String
     let title: String
     let message: String
 }
@@ -86,8 +87,8 @@ struct OPMLImportContent: View {
         switch phase {
         case .pick:
             pickPhase
-        case .review(let parsed):
-            reviewPhase(parsed: parsed)
+        case .review(let parsed, let issues):
+            reviewPhase(parsed: parsed, issues: issues)
         case .progress(let c, let t, let errors):
             progressPhase(completed: c, total: t, errors: errors)
         case .done(let imported, let skipped, let errors):
@@ -154,12 +155,12 @@ struct OPMLImportContent: View {
 
     // MARK: - Review phase
 
-    private func reviewPhase(parsed: [Podcast]) -> some View {
+    private func reviewPhase(parsed: [Podcast], issues: [OPMLImportRowError]) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
                 Text("\(parsed.count) feeds parsed")
                     .font(AppTheme.Typography.title)
-                Text("Review and confirm. Existing subscriptions will be skipped.")
+                Text(reviewSummary(validCount: parsed.count, issueCount: issues.count))
                     .font(AppTheme.Typography.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -191,9 +192,11 @@ struct OPMLImportContent: View {
             }
             .frame(maxHeight: 240)
 
+            errorList(issues)
+
             Button {
                 Haptics.medium()
-                Task { await runImport(entries: parsed) }
+                Task { await runImport(entries: parsed, initialErrors: issues) }
             } label: {
                 Label("Import \(parsed.count) shows", systemImage: "arrow.down.circle.fill")
                     .frame(maxWidth: .infinity)
@@ -292,6 +295,14 @@ struct OPMLImportContent: View {
                             .font(AppTheme.Typography.caption)
                             .foregroundStyle(AppTheme.Tint.error)
                             .lineLimit(2)
+                        if !row.displayURL.isEmpty {
+                            Text(row.displayURL)
+                                .font(AppTheme.Typography.monoCaption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .textSelection(.enabled)
+                                .copyableTextMenu(row.displayURL)
+                        }
                     }
                     .padding(AppTheme.Spacing.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -329,6 +340,13 @@ struct OPMLImportContent: View {
         UTType(filenameExtension: "opml") ?? .xml
     }
 
+    private func reviewSummary(validCount: Int, issueCount: Int) -> String {
+        if issueCount == 0 {
+            return "Review and confirm. Existing subscriptions will be skipped."
+        }
+        return "Review and confirm. \(issueCount) invalid feed \(issueCount == 1 ? "entry was" : "entries were") skipped."
+    }
+
     private func handleFileImport(_ result: Result<[URL], Error>) {
         switch result {
         case .failure(let error):
@@ -359,18 +377,28 @@ struct OPMLImportContent: View {
     }
 
     private func parseAndAdvance(data: Data) throws {
-        let entries = try OPMLImport().parseOPML(data: data)
-        guard !entries.isEmpty else {
-            parseError = "No feeds found in that OPML."
+        let report = try OPMLImport().parseOPMLReport(data: data)
+        guard !report.podcasts.isEmpty else {
+            parseError = report.issues.isEmpty
+                ? "No feeds found in that OPML."
+                : "No valid feeds found in that OPML."
             return
         }
         parseError = nil
-        withAnimation { phase = .review(parsed: entries) }
+        let issueRows = report.issues.map { issue in
+            OPMLImportRowError(
+                feedURL: nil,
+                displayURL: issue.feedURLString ?? "",
+                title: issue.title,
+                message: issue.message
+            )
+        }
+        withAnimation { phase = .review(parsed: report.podcasts, issues: issueRows) }
     }
 
-    private func runImport(entries: [Podcast]) async {
+    private func runImport(entries: [Podcast], initialErrors: [OPMLImportRowError]) async {
         let total = entries.count
-        var errors: [OPMLImportRowError] = []
+        var errors: [OPMLImportRowError] = initialErrors
         var imported = 0
         var skipped = 0
         withAnimation { phase = .progress(completed: 0, total: total, errors: errors) }
@@ -386,9 +414,19 @@ struct OPMLImportContent: View {
             } catch SubscriptionService.AddError.alreadySubscribed(_) {
                 skipped += 1
             } catch let addError as SubscriptionService.AddError {
-                errors.append(.init(feedURL: feedURL, title: entry.title, message: addError.localizedDescription))
+                errors.append(.init(
+                    feedURL: feedURL,
+                    displayURL: feedURL.absoluteString,
+                    title: entry.title,
+                    message: addError.localizedDescription
+                ))
             } catch {
-                errors.append(.init(feedURL: feedURL, title: entry.title, message: error.localizedDescription))
+                errors.append(.init(
+                    feedURL: feedURL,
+                    displayURL: feedURL.absoluteString,
+                    title: entry.title,
+                    message: error.localizedDescription
+                ))
             }
             withAnimation { phase = .progress(completed: index + 1, total: total, errors: errors) }
         }
