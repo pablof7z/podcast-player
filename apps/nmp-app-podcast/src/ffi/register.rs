@@ -373,13 +373,19 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // state.social.social_slot.  Uses the kernel's standing
     // account_profile_interest subscription (kind:0 + kind:3 + kind:10002) —
     // no extra relay subscription needed.
+    //
+    // `with_social_infra` wires the Domain::Social-scoped Infra so every
+    // kind:3 mutation bumps `domain_revs.social` (driving the podcast.social
+    // sidecar re-emit) AND the global rev/signal.  Mirrors the same wiring
+    // applied to AgentNotesObserver below.
     let _follow_list_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
         crate::social_handler::FollowListObserver::new(
             app_ref.active_account_handle(),
             app_state.social.social_slot.share(),
             app_state.infra.rev.clone(),
         )
-        .with_snapshot_signal(snapshot_signal.clone()),
+        .with_snapshot_signal(snapshot_signal.clone())
+        .with_social_infra(app_state.social.infra.clone()),
     ));
 
     // kind:1 agent-notes observer — receives events from push_interest_via_nmp

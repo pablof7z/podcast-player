@@ -136,8 +136,12 @@ impl PodcastHostOpHandler {
                 // Reactive path: the FollowListObserver registered in register.rs
                 // populates social_slot automatically on every kind:3 push frame.
                 // This call is a lightweight refresh trigger — no relay pull.
+                // Pass the Domain::Social-scoped Infra so handle_fetch_contacts
+                // bumps domain_revs.social (driving the podcast.social sidecar
+                // re-emit) in addition to the global rev.
                 crate::social_handler::handle_fetch_contacts(
                     self.state.social.social_slot.share(),
+                    Some(&self.state.social.infra),
                     self.state.infra.rev.clone(),
                     self.state.infra.signal.as_ref(),
                 )

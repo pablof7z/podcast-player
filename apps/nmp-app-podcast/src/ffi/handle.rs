@@ -198,4 +198,79 @@ impl PodcastHandle {
         }
         cleaned
     }
+
+    // ── Headless-only test surface ────────────────────────────────────────────
+    //
+    // These methods are compiled only when the `headless` feature is active
+    // (the headless scenario binary).  They expose internal state mutation
+    // points that would be inappropriate for production code but are required
+    // to drive account-switch and leak-guard scenarios without a live relay.
+
+    /// Inject a synthetic [`crate::ffi::projections::SocialSnapshot`] into the
+    /// social slot — simulating a kind:3 push frame from `FollowListObserver`.
+    ///
+    /// Used by the `account_switch` headless scenario to pre-populate social
+    /// state for account A before triggering the identity-change hook.
+    #[cfg(feature = "headless")]
+    pub fn headless_inject_social_snapshot(
+        &self,
+        snap: crate::ffi::projections::SocialSnapshot,
+    ) {
+        if let Ok(mut slot) = self.state.social.social_slot.lock() {
+            *slot = Some(snap);
+        }
+    }
+
+    /// Inject a synthetic [`crate::agent_note_handler::CachedAgentNote`] into
+    /// the agent-notes cache — simulating an inbound kind:1 from `AgentNotesObserver`.
+    ///
+    /// Used by the `account_switch` headless scenario to pre-populate agent
+    /// notes for account A before triggering the identity-change hook.
+    #[cfg(feature = "headless")]
+    pub fn headless_inject_agent_note(
+        &self,
+        note: crate::agent_note_handler::CachedAgentNote,
+    ) {
+        if let Ok(mut notes) = self.state.social.agent_notes.lock() {
+            notes.push(note);
+        }
+    }
+
+    /// Read the current social snapshot slot (for post-switch leak assertions).
+    ///
+    /// Returns `None` if the slot is empty (cleared by `clear_for_account_switch`)
+    /// or if the mutex is poisoned.
+    #[cfg(feature = "headless")]
+    pub fn headless_social_snapshot(
+        &self,
+    ) -> Option<crate::ffi::projections::SocialSnapshot> {
+        self.state.social.social_slot.lock().ok().and_then(|s| s.clone())
+    }
+
+    /// Read the current agent-notes cache length (for post-switch leak assertions).
+    ///
+    /// Returns `0` if the cache is empty (cleared by `clear_for_account_switch`)
+    /// or if the mutex is poisoned.
+    #[cfg(feature = "headless")]
+    pub fn headless_agent_notes_len(&self) -> usize {
+        self.state
+            .social
+            .agent_notes
+            .lock()
+            .map(|n| n.len())
+            .unwrap_or(0)
+    }
+
+    /// Drive `SocialState::clear_for_account_switch` directly — used by the
+    /// headless `account_switch` scenario to test the leak-guard path without
+    /// requiring a live NMP kernel signer switch (which would need a relay
+    /// sign-in flow not supported in the headless harness).
+    ///
+    /// This invokes the exact same `clear_for_account_switch` code path that
+    /// `register_identity_change_observer` fires in production.  Assertions
+    /// immediately after this call validate the slot-clearing contract.
+    #[cfg(feature = "headless")]
+    pub fn headless_trigger_account_switch_clear(&self) {
+        self.state.social.clear_for_account_switch();
+    }
 }

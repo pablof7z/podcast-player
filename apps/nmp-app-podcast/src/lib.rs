@@ -115,6 +115,13 @@ pub use nmp_ffi::{
 pub use player::{PlayerActor, PlayerState};
 pub use queue::PlaybackQueue;
 
+// Headless-scenario test surface: re-export the agent-note type so the
+// headless binary can construct `CachedAgentNote` values for injection via
+// `PodcastHandle::headless_inject_agent_note`.  Guarded by the `headless`
+// feature flag so it does not widen the public API in production builds.
+#[cfg(feature = "headless")]
+pub use agent_note_handler::CachedAgentNote;
+
 pub(crate) const PODCAST_FEEDBACK_PROJECT_COORDINATE: &str =
     "31933:09d48a1a5dbe13404a729634f1d6ba722d40513468dd713c8ea38ca9b7b6f2c7:podcast";
 pub(crate) const PODCAST_FEEDBACK_INTEREST_NAMESPACE: &str = "podcast.feedback";

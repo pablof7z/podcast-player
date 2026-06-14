@@ -3,6 +3,7 @@
 use nmp_app_podcast::PodcastHandle;
 use nmp_ffi::NmpApp;
 
+mod account_switch;
 mod agent_chat;
 mod agent_notes;
 mod comments;
@@ -59,5 +60,6 @@ pub fn run_all(
         ("social", social::run(app, handle)),
         ("publish_profile", profile::run(app, handle)),
         ("download_lifecycle", download::run(app, handle)),
+        ("account_switch", account_switch::run(app, handle)),
     ]
 }
