@@ -60,9 +60,10 @@ pub enum AutoDownloadMode {
     /// new arrivals per refresh.
     LatestN { n: u32 },
     /// Download every new episode the feed reports, with no episode cap.
-    /// The backfill pass uses `AUTO_DOWNLOAD_BACKFILL_LIMIT` as a safety
-    /// ceiling so a cold-start "All new" on a 500-episode archive doesn't
-    /// queue the entire history at once.
+    /// The backfill pass is library-size-aware: all episodes are queued for
+    /// small/normal libraries; only genuinely large archives hit the
+    /// `AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP` ceiling to prevent queuing a
+    /// 500-episode download storm on first enable.
     AllNew,
 }
 
@@ -72,15 +73,20 @@ impl AutoDownloadMode {
         !matches!(self, AutoDownloadMode::Off)
     }
 
-    /// Effective per-show backfill limit:
+    /// Effective per-show backfill ceiling given the show's total episode count.
+    ///
     /// - `Off` → 0 (caller short-circuits before this)
-    /// - `LatestN(n)` → n as usize
-    /// - `AllNew` → `AUTO_DOWNLOAD_BACKFILL_LIMIT` (safety ceiling on backfill)
-    pub fn backfill_limit(self) -> usize {
+    /// - `LatestN(n)` → n as usize (exact count, unchanged)
+    /// - `AllNew` → `candidate_count.min(AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP)`
+    ///   Queues every episode for normal-sized libraries; only engages the safety
+    ///   clamp when the archive is genuinely large. This is a storage/bandwidth
+    ///   guard on first-enable, not a product cap — forward-path episodes
+    ///   (fresh-feed arrivals) are always uncapped via `fresh_cap()`.
+    pub fn backfill_limit(self, candidate_count: usize) -> usize {
         match self {
             AutoDownloadMode::Off => 0,
             AutoDownloadMode::LatestN { n } => n as usize,
-            AutoDownloadMode::AllNew => AUTO_DOWNLOAD_BACKFILL_LIMIT,
+            AutoDownloadMode::AllNew => candidate_count.min(AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP),
         }
     }
 
@@ -105,14 +111,20 @@ impl Default for AutoDownloadMode {
     }
 }
 
-/// Safety ceiling for `AllNew` backfill: how many of a show's most-recent
-/// undownloaded episodes the catch-up pass queues per show. Prevents
-/// a user who flips "All new" on a 500-episode archive from queuing the
-/// entire history in one shot.
+/// Storage/bandwidth guard for `AllNew` backfill on first-enable of a large archive.
+///
+/// `backfill_limit()` for `AllNew` returns `candidate_count.min(this)`:
+/// - Normal-sized libraries (episode count ≤ this) backfill ALL eligible episodes.
+/// - Genuinely large archives (> this) are capped here to prevent queuing a
+///   500-episode download storm the moment a user enables "All new".
+///
+/// This is NOT a product limit — it only governs the one-shot catch-up pass.
+/// Every new episode arriving via a future feed refresh is still queued
+/// unconditionally by the forward path (`fresh_cap()` for `AllNew` is `None`).
 ///
 /// Does NOT apply to `LatestN(n)` (which uses `n` directly) or to the
-/// fresh-feed path (which always queues every new arrival, uncapped).
-pub const AUTO_DOWNLOAD_BACKFILL_LIMIT: usize = 3;
+/// fresh-feed path.
+pub const AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP: usize = 50;
 
 /// Decide which freshly-parsed episodes deserve to be auto-queued for
 /// download.
@@ -180,13 +192,17 @@ impl super::PodcastStore {
     /// every existing episode, so flipping the toggle downloaded nothing).
     ///
     /// For each podcast with auto-download enabled, takes its most-recent
-    /// `mode.backfill_limit()` episodes that have no recorded local file,
-    /// splitting them into `(ready, deferred)` by the show's Wi-Fi-only
+    /// `mode.backfill_limit(episode_count)` episodes that have no recorded local
+    /// file, splitting them into `(ready, deferred)` by the show's Wi-Fi-only
     /// policy and the current `is_on_wifi` state. Episodes already in flight
     /// are filtered by the caller's idempotent enqueue, so re-running is safe.
     ///
+    /// For `AllNew` shows the limit is library-size-aware: small/normal libraries
+    /// backfill all episodes; only archives exceeding `AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP`
+    /// are capped. `LatestN(n)` always uses exactly `n`.
+    ///
     /// The `limit_per_show` parameter is kept for API stability but is now
-    /// overridden per-show by `mode.backfill_limit()`.
+    /// overridden per-show by `mode.backfill_limit(episode_count)`.
     pub fn auto_download_backfill_candidates(
         &self,
         is_on_wifi: bool,
@@ -199,7 +215,8 @@ impl super::PodcastStore {
             if !mode.is_enabled() {
                 continue;
             }
-            let limit = mode.backfill_limit();
+            // Pass the show's episode count so AllNew can be library-size-aware.
+            let limit = mode.backfill_limit(episodes.len());
             let wifi_only = self.wifi_only_for(podcast_id);
             let mut taken = 0usize;
             for ep in episodes.iter() {

@@ -246,9 +246,11 @@ fn backfill_skips_shows_without_auto_download() {
     assert!(deferred.is_empty());
 }
 
-/// D7: `AllNew` backfill uses `AUTO_DOWNLOAD_BACKFILL_LIMIT` as safety ceiling.
+/// D7: `AllNew` backfill on a normal-sized library (10 episodes) backfills ALL of them.
+/// This is the key regression test for the fix: the old code capped at 3, which silently
+/// recreated the "UI says All-new, kernel does 3" lying affordance.
 #[test]
-fn backfill_all_new_uses_safety_ceiling() {
+fn backfill_all_new_normal_library_backfills_all() {
     let guids: Vec<String> = (1..=10u8).map(|i| format!("g{i}")).collect();
     let guid_refs: Vec<&str> = guids.iter().map(String::as_str).collect();
     let (mut store, pid) = store_with_show(&guid_refs);
@@ -256,14 +258,32 @@ fn backfill_all_new_uses_safety_ceiling() {
     let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
     assert_eq!(
         ready.len(),
-        AUTO_DOWNLOAD_BACKFILL_LIMIT,
-        "AllNew backfill is bounded by AUTO_DOWNLOAD_BACKFILL_LIMIT={AUTO_DOWNLOAD_BACKFILL_LIMIT}, not unbounded"
+        10,
+        "AllNew on a 10-episode library must backfill all 10 episodes, not a flat 3"
     );
 }
 
-/// D7: `LatestN(2)` backfill is bounded to exactly 2 episodes, not the safety ceiling.
+/// D7: `AllNew` backfill on a large archive engages `AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP`
+/// to prevent queuing a download storm on first enable.
 #[test]
-fn backfill_latest_n_uses_n_not_safety_ceiling() {
+fn backfill_all_new_large_archive_hits_safety_clamp() {
+    // Build a show with more episodes than the safety clamp.
+    let episode_count = AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP + 20;
+    let guids: Vec<String> = (1..=episode_count).map(|i| format!("g{i}")).collect();
+    let guid_refs: Vec<&str> = guids.iter().map(String::as_str).collect();
+    let (mut store, pid) = store_with_show(&guid_refs);
+    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew);
+    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
+    assert_eq!(
+        ready.len(),
+        AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP,
+        "AllNew on a {episode_count}-episode archive must be capped at AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP={AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP}"
+    );
+}
+
+/// D7: `LatestN(2)` backfill is bounded to exactly 2 episodes, not the safety clamp.
+#[test]
+fn backfill_latest_n_uses_n_not_safety_clamp() {
     let (mut store, pid) = store_with_show(&["g1", "g2", "g3", "g4"]);
     store.set_auto_download_mode(pid, AutoDownloadMode::LatestN { n: 2 });
     let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
@@ -283,17 +303,6 @@ fn backfill_off_returns_nothing() {
     let (ready, deferred) = store.auto_download_backfill_candidates(true, 0);
     assert!(ready.is_empty(), "Off mode must not backfill");
     assert!(deferred.is_empty());
-}
-
-/// D7: `AllNew` backfill can backfill MORE than the old hardcoded limit of 3 when there are fewer
-/// candidates (e.g. 2 episodes → 2 backfills, not capped at 3).
-#[test]
-fn backfill_all_new_can_exceed_3_when_n_is_greater() {
-    // AUTO_DOWNLOAD_BACKFILL_LIMIT is 3, but what if there are only 2 undownloaded?
-    let (mut store, pid) = store_with_show(&["g1", "g2"]);
-    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew);
-    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
-    assert_eq!(ready.len(), 2, "AllNew with 2 episodes should backfill 2");
 }
 
 #[test]

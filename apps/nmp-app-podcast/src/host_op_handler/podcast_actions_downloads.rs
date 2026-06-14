@@ -250,14 +250,15 @@ impl PodcastHostOpHandler {
     /// `auto_download_evaluate`). Dispatched on cold start (the foreground
     /// `RefreshAll` is skipped on first activation) and after enabling
     /// auto-download on a show. Queues each enabled show's most-recent
-    /// undownloaded episodes (bounded by `AUTO_DOWNLOAD_BACKFILL_LIMIT`),
-    /// deferring Wi-Fi-only shows while on cellular. Idempotent via the
-    /// queue-backed [`Self::start_episode_download`].
+    /// undownloaded episodes (library-size-aware for `AllNew`; exact-n for
+    /// `LatestN`), deferring Wi-Fi-only shows while on cellular. Idempotent
+    /// via the queue-backed [`Self::start_episode_download`].
     pub(super) fn handle_evaluate_auto_downloads(&self, correlation_id: &str) -> serde_json::Value {
-        // `auto_download_backfill_candidates` now derives the per-show limit from the
+        // `auto_download_backfill_candidates` derives the per-show limit from the
         // show's typed `AutoDownloadMode` — the `limit_per_show` parameter is
-        // ignored (0 passed as sentinel). `AllNew` uses `AUTO_DOWNLOAD_BACKFILL_LIMIT`
-        // as a safety ceiling; `LatestN(n)` uses `n`; `Off` skips the show entirely.
+        // ignored (0 passed as sentinel). `AllNew` uses library-size-aware logic
+        // (all episodes up to `AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP`); `LatestN(n)`
+        // uses `n`; `Off` skips the show entirely.
         let (ready, deferred) = match self.state.library.store.lock() {
             Ok(s) => {
                 let is_on_wifi = s.is_on_wifi();
