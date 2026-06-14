@@ -232,10 +232,12 @@ worktrees currently in flight.
   content-hash gates instead of the old fixed 500 ms snapshot poll. Remaining
   terminal-client snapshot-revision polling is tracked separately in
   `docs/plan/shared-llm-task-architecture.md`.
-- **capability-router-unify.** Collapse `SyncCapabilityBridge` and
-  `PodcastCapabilities.shared.handleJSON()` into one routing contract. Each
-  capability owns its threading; Rust has one path to dispatch commands and
-  receive reports.
+- ~~**capability-router-unify.**~~ Done in this PR: `SyncCapabilityBridge` is
+  now only the non-MainActor C callback adapter. `PodcastCapabilities` owns the
+  namespace routing contract, including the async HTTP namespace, and the bridge
+  uses the same canonical `HttpCapability` instance instead of constructing a
+  second executor/report path. HTTP remains actor-thread safe; main-actor
+  capabilities route through the shared table on the main thread.
 
 ## Active P1 - Tier 1 Usability Hardening
 
