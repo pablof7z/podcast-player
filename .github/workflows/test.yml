@@ -75,6 +75,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Clone NMP sources for Cargo patch
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/pablof7z/nostr-multi-platform.git \
+            /tmp/nmp-at-ac7e307e
+          git -C /tmp/nmp-at-ac7e307e checkout ac7e307e89b57a73b419ea9588275e599dcb228c
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -129,6 +136,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Clone NMP sources for Cargo patch
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/pablof7z/nostr-multi-platform.git \
+            /tmp/nmp-at-ac7e307e
+          git -C /tmp/nmp-at-ac7e307e checkout ac7e307e89b57a73b419ea9588275e599dcb228c
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -190,6 +204,13 @@ jobs:
       #   compileOptions { sourceCompatibility = JavaVersion.VERSION_17
       #                    targetCompatibility = JavaVersion.VERSION_17 }
       #   kotlinOptions { jvmTarget = "17" }
+      - name: Clone NMP sources for Cargo patch
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/pablof7z/nostr-multi-platform.git \
+            /tmp/nmp-at-ac7e307e
+          git -C /tmp/nmp-at-ac7e307e checkout ac7e307e89b57a73b419ea9588275e599dcb228c
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -292,6 +313,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Clone NMP sources for Cargo patch
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/pablof7z/nostr-multi-platform.git \
+            /tmp/nmp-at-ac7e307e
+          git -C /tmp/nmp-at-ac7e307e checkout ac7e307e89b57a73b419ea9588275e599dcb228c
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -321,6 +349,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Clone NMP sources for Cargo patch
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/pablof7z/nostr-multi-platform.git \
+            /tmp/nmp-at-ac7e307e
+          git -C /tmp/nmp-at-ac7e307e checkout ac7e307e89b57a73b419ea9588275e599dcb228c
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
