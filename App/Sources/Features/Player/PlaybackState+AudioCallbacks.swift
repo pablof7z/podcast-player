@@ -137,7 +137,10 @@ extension PlaybackState {
                 // auto-advance plays already carry a populated `nowPlaying`, so
                 // the guard is a no-op there.)
                 let stagedEpisodeID = self.store?.kernel?.podcastSnapshot?.nowPlaying?.episodeId
-                if (stagedEpisodeID?.isEmpty ?? true), let episodeID = self.episode?.id {
+                if let episodeID = Self.restoredEpisodeIDToStageBeforeRemotePlay(
+                    kernelNowPlayingEpisodeID: stagedEpisodeID,
+                    restoredEpisodeID: self.episode?.id
+                ) {
                     self.store?.kernelLoad(episodeID: episodeID)
                 }
                 self.engine.play()
@@ -163,5 +166,14 @@ extension PlaybackState {
 
     func setRate(_ newRate: Double) {
         engine.setRate(newRate)
+    }
+
+    static func restoredEpisodeIDToStageBeforeRemotePlay(
+        kernelNowPlayingEpisodeID: String?,
+        restoredEpisodeID: UUID?
+    ) -> UUID? {
+        let stagedEpisodeID = kernelNowPlayingEpisodeID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard stagedEpisodeID?.isEmpty ?? true else { return nil }
+        return restoredEpisodeID
     }
 }

@@ -259,15 +259,14 @@ worktrees currently in flight.
   behavior on simulator and device.
 - **queue-hardening.** Validate item-ended advancement, duplicate handling,
   remove/clear, persistence expectations, and UI sync.
-- **remote-command-kernel-routing.** Lock-screen / Control Center commands
-  (`AudioCapability+RemoteCommands`) call `execute(.play)`/`.seek` which run the
-  engine directly through the same `commandHandler` that Rust-issued commands
-  use. After a cold restart where the player restored a paused episode but Rust
-  never staged it, a lock-screen Play starts audio without a `kernelLoad`, so
-  Rust has no `episode_id` for the subsequent position reports. Fix by routing
-  lock-screen-originated commands through a report-to-Rust path (or staging the
-  restored episode in Rust on restore) — distinct from Rust-issued playback
-  commands so it doesn't loop through `handle_load`'s echoed `Load`.
+- ~~**remote-command-kernel-routing.**~~ Done in this PR. Lock-screen /
+  Control Center Play still enters through `AudioCapability.execute(.play)`,
+  but the `PlaybackState` command handler now stages the restored episode in
+  Rust with `kernelLoad` before starting the engine whenever the kernel
+  snapshot has no `nowPlaying.episodeId`. Rust-originated plays already have a
+  staged episode, so the guard is a no-op and cannot loop through the echoed
+  `.load` command. Regression coverage lives in
+  `PlaybackRemoteCommandRoutingTests`.
 - **download-state-projection.** Runtime queue projection is now wired:
   player download actions mutate `DownloadQueue`, download reports update
   progress/paused/failed/completed state, and snapshots expose active/queued/
