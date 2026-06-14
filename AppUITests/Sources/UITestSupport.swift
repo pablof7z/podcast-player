@@ -85,7 +85,14 @@ extension XCTestCase {
             NSPredicate(format: "identifier == 'library-podcast-row'")
         ).firstMatch
         if row.waitForExistence(timeout: 4) {
-            row.tap()
+            // SwiftUI sometimes reports the row non-hittable; a raw `.tap()` then
+            // throws ("not hittable") and aborts the test. Guard hittability and
+            // fall back to a centre-coordinate tap, same as `robustTap`.
+            if row.isHittable {
+                row.tap()
+            } else {
+                row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            }
             if waitForShowDetail(app) { return true }
 
             let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
