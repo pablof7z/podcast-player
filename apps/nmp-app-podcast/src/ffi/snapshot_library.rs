@@ -6,7 +6,7 @@ use podcast_core::{Episode, Podcast};
 
 use crate::ffi::handle::PodcastHandle;
 use crate::ffi::projections::{ChapterSummary, EpisodeSummary, PodcastSummary, TranscriptEntry};
-use crate::store::PodcastStore;
+use crate::store::{AutoDownloadMode, PodcastStore};
 
 /// Build a single [`EpisodeSummary`] from one stored episode, populating every
 /// derived field from the store + caches.
@@ -118,6 +118,16 @@ pub(super) fn build_library_snapshot(
                 podcast_core::NostrVisibility::Public => "public".to_string(),
             },
             auto_download: store.is_auto_download_enabled(podcast.id),
+            // D7: typed mode fields — additive projection; Android ignores them.
+            auto_download_mode: match store.auto_download_mode_for(podcast.id) {
+                AutoDownloadMode::Off => String::new(),        // skip_serializing_if omits
+                AutoDownloadMode::AllNew => "all_new".to_string(),
+                AutoDownloadMode::LatestN { .. } => "latest_n".to_string(),
+            },
+            auto_download_count: match store.auto_download_mode_for(podcast.id) {
+                AutoDownloadMode::LatestN { n } => n,
+                _ => 0, // skip_serializing_if omits 0
+            },
             cellular_allowed: !store.wifi_only_for(podcast.id),
             episodes: episodes
                 .iter()

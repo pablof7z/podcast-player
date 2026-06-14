@@ -73,6 +73,8 @@ pub(crate) fn parse_itunes_results(body: &str) -> Vec<PodcastSummary> {
                 owner_pubkey_hex: None,
                 nostr_visibility: "public".to_string(),
                 auto_download: false,
+                auto_download_mode: String::new(),
+                auto_download_count: 0,
                 cellular_allowed: false,
                 episodes: vec![],
             })

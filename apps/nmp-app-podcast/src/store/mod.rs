@@ -55,7 +55,7 @@ mod triage_state;
 
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
-pub use auto_download::episodes_to_auto_download;
+pub use auto_download::{episodes_to_auto_download, AutoDownloadMode};
 use credential_metadata::ProviderCredentialMetadata;
 pub use podcast_keys::PodcastKeyStore;
 
@@ -106,7 +106,17 @@ pub struct PodcastStore {
     /// freshly-discovered episodes via the download capability; absent ⇒
     /// new episodes are surfaced in the snapshot but not downloaded.
     /// Cleared by `unsubscribe` so a later re-subscribe starts fresh.
+    ///
+    /// Kept for legacy `is_auto_download_enabled` queries and back-compat
+    /// disk load (old files that lack `auto_download_mode`). When
+    /// `auto_download_modes` has an entry for a podcast, that entry is
+    /// authoritative; this set is derived from it (non-Off ⇒ present).
     auto_download_enabled: HashSet<PodcastId>,
+    /// Per-podcast typed auto-download mode (D7). Supersedes the old bool.
+    /// `Off` / `LatestN(n)` / `AllNew`. Absent ⇒ derived from
+    /// `auto_download_enabled` on disk load (true→AllNew, false/absent→Off).
+    /// Cleared by `unsubscribe`.
+    auto_download_modes: HashMap<PodcastId, AutoDownloadMode>,
     /// Podcasts for which cellular auto-download is **explicitly allowed**
     /// (i.e. the user set Wi-Fi-only to `false`). Absence means the default
     /// applies: Wi-Fi-only (matching `AutoDownloadPolicy.default.wifiOnly`).
@@ -317,6 +327,7 @@ impl PodcastStore {
             last_flushed_positions: HashMap::new(),
             has_completed_onboarding: false,
             auto_download_enabled: HashSet::new(),
+            auto_download_modes: HashMap::new(),
             auto_download_cellular_allowed: HashSet::new(),
             pending_wifi_downloads: Vec::new(),
             memory_facts: HashMap::new(),

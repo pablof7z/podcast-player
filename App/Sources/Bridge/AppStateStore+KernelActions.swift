@@ -402,17 +402,29 @@ extension AppStateStore {
     // MARK: - Subscription settings
 
     /// Update the auto-download policy for a single podcast (namespace: podcast).
-    /// Rust receives both `enabled` and `wifi_only` so the cellular-allowed
-    /// override is stored. iOS `.latestN` and `.allNew` both map to
-    /// `enabled: true` since the Rust store records only on/off.
+    ///
+    /// Sends the typed mode + optional count to the Rust kernel (D7) so the
+    /// kernel can honor `.latestN(N)` vs `.allNew` vs `.off` precisely.
+    /// Also sends the legacy `enabled` bool for back-compat with any receiver
+    /// that hasn't been updated yet.
     func kernelSetAutoDownload(podcastID: UUID, policy: AutoDownloadPolicy) {
-        kernel?.dispatch(namespace: "podcast",
-                         body: [
-                             "op": "set_auto_download",
-                             "podcast_id": podcastID.uuidString,
-                             "enabled": policy.mode != .off,
-                             "wifi_only": policy.wifiOnly
-                         ])
+        var body: [String: Any] = [
+            "op": "set_auto_download",
+            "podcast_id": podcastID.uuidString,
+            "wifi_only": policy.wifiOnly,
+            // Legacy bool — kept for back-compat with stale kernel versions.
+            "enabled": policy.mode != .off
+        ]
+        switch policy.mode {
+        case .off:
+            body["mode"] = "off"
+        case .allNew:
+            body["mode"] = "all_new"
+        case .latestN(let n):
+            body["mode"] = "latest_n"
+            body["count"] = n
+        }
+        kernel?.dispatch(namespace: "podcast", body: body)
     }
 
     // MARK: - Downloads

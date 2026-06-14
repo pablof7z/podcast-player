@@ -273,9 +273,26 @@ extension AppStateStore {
                 // the default Wi-Fi-only behaviour. Round-trip the flag so a
                 // user who turned off Wi-Fi-only doesn't find it silently
                 // re-enabled after the next kernel snapshot.
-                let autoDownload: AutoDownloadPolicy = summary.autoDownload
-                    ? AutoDownloadPolicy(mode: .allNew, wifiOnly: !summary.cellularAllowed)
-                    : AutoDownloadPolicy(mode: .off, wifiOnly: !summary.cellularAllowed)
+                //
+                // D7: prefer the typed `autoDownloadMode` + `autoDownloadCount`
+                // fields when present. Fall back to the legacy bool for kernels
+                // that haven't shipped the typed projection yet.
+                let wifiOnly = !summary.cellularAllowed
+                let autoDownload: AutoDownloadPolicy
+                switch summary.autoDownloadMode {
+                case "all_new":
+                    autoDownload = AutoDownloadPolicy(mode: .allNew, wifiOnly: wifiOnly)
+                case "latest_n":
+                    let n = summary.autoDownloadCount > 0 ? summary.autoDownloadCount : 3
+                    autoDownload = AutoDownloadPolicy(mode: .latestN(n), wifiOnly: wifiOnly)
+                case "off":
+                    autoDownload = AutoDownloadPolicy(mode: .off, wifiOnly: wifiOnly)
+                default:
+                    // Legacy fallback: old kernel only projects the bool.
+                    autoDownload = summary.autoDownload
+                        ? AutoDownloadPolicy(mode: .allNew, wifiOnly: wifiOnly)
+                        : AutoDownloadPolicy(mode: .off, wifiOnly: wifiOnly)
+                }
                 subscriptions.append(PodcastSubscription(
                     podcastID: uuid,
                     autoDownload: autoDownload

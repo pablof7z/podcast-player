@@ -218,14 +218,14 @@ impl PodcastHostOpHandler {
                                 .map(|ep| (ep.id.0.to_string(), ep.title.clone()))
                                 .collect()
                         };
-                        let auto_on = s.is_auto_download_enabled(podcast_id);
+                        let auto_mode = s.auto_download_mode_for(podcast_id);
                         let wifi_only = s.wifi_only_for(podcast_id);
                         let is_on_wifi = s.is_on_wifi();
                         let (to_auto_download, deferred) = episodes_to_auto_download(
                             &parsed.episodes,
                             &existing_guids,
                             s.local_paths(),
-                            auto_on,
+                            auto_mode,
                             wifi_only,
                             is_on_wifi,
                         );

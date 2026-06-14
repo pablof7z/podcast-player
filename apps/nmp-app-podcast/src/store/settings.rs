@@ -8,7 +8,7 @@
 
 use podcast_core::PodcastId;
 
-use super::PodcastStore;
+use super::{AutoDownloadMode, PodcastStore};
 
 impl PodcastStore {
     /// Whether the user has finished the iOS onboarding flow. Read by the iOS
@@ -29,24 +29,55 @@ impl PodcastStore {
         self.persist();
     }
 
-    /// Set the auto-download opt-in flag for a podcast. Idempotent and
-    /// silent when the podcast isn't subscribed (the flag will just
-    /// hang around in the set; `unsubscribe` clears it). Flushes to
-    /// disk when a data dir is bound so the preference survives
-    /// app relaunches.
-    pub fn set_auto_download(&mut self, podcast_id: PodcastId, enabled: bool) {
-        let changed = if enabled {
-            self.auto_download_enabled.insert(podcast_id)
-        } else {
-            self.auto_download_enabled.remove(&podcast_id)
-        };
-        if changed {
-            self.persist();
+    /// Set the typed auto-download mode for a podcast (D7).
+    ///
+    /// Replaces `set_auto_download(bool)` as the authoritative mutator.
+    /// The derived `auto_download_enabled` set is kept in sync so existing
+    /// callers and the legacy disk format stay coherent:
+    /// - `Off` → removed from the enabled set
+    /// - `LatestN` / `AllNew` → inserted into the enabled set
+    ///
+    /// Idempotent: writes only when the stored mode differs.
+    /// Flushes to disk when a data dir is bound.
+    pub fn set_auto_download_mode(&mut self, podcast_id: PodcastId, mode: AutoDownloadMode) {
+        let old_mode = self.auto_download_modes.get(&podcast_id).copied();
+        if old_mode == Some(mode) {
+            return;
         }
+        if mode.is_enabled() {
+            self.auto_download_enabled.insert(podcast_id);
+            self.auto_download_modes.insert(podcast_id, mode);
+        } else {
+            self.auto_download_enabled.remove(&podcast_id);
+            self.auto_download_modes.remove(&podcast_id);
+        }
+        self.persist();
+    }
+
+    /// Legacy bool setter — retained for callers that haven't migrated.
+    /// Maps `true` → `AllNew`, `false` → `Off`. Consider using
+    /// `set_auto_download_mode` directly.
+    pub fn set_auto_download(&mut self, podcast_id: PodcastId, enabled: bool) {
+        let mode = if enabled {
+            AutoDownloadMode::AllNew
+        } else {
+            AutoDownloadMode::Off
+        };
+        self.set_auto_download_mode(podcast_id, mode);
+    }
+
+    /// Read the typed auto-download mode for a podcast.
+    /// Defaults to `Off` for unknown / never-toggled podcasts.
+    pub fn auto_download_mode_for(&self, podcast_id: PodcastId) -> AutoDownloadMode {
+        self.auto_download_modes
+            .get(&podcast_id)
+            .copied()
+            .unwrap_or(AutoDownloadMode::Off)
     }
 
     /// Read the auto-download opt-in flag for a podcast. Defaults to
     /// `false` for unknown / never-toggled podcasts.
+    /// Prefer `auto_download_mode_for` for typed policy checks.
     pub fn is_auto_download_enabled(&self, podcast_id: PodcastId) -> bool {
         self.auto_download_enabled.contains(&podcast_id)
     }

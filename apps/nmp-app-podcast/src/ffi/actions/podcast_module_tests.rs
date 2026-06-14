@@ -213,18 +213,51 @@ fn update_settings_action_round_trips() {
 }
 
 #[test]
-fn set_auto_download_action_round_trips() {
+fn set_auto_download_action_round_trips_all_new() {
     let action = PodcastAction::SetAutoDownload {
         podcast_id: "abc-123".into(),
+        mode: Some("all_new".into()),
+        count: None,
         enabled: true,
         wifi_only: true,
     };
     let json = serde_json::to_string(&action).expect("encode");
     assert!(json.contains(r#""op":"set_auto_download""#));
     assert!(json.contains(r#""podcast_id":"abc-123""#));
-    assert!(json.contains(r#""enabled":true"#));
+    assert!(json.contains(r#""mode":"all_new""#));
     let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, action);
+}
+
+#[test]
+fn set_auto_download_action_round_trips_latest_n() {
+    let action = PodcastAction::SetAutoDownload {
+        podcast_id: "abc-123".into(),
+        mode: Some("latest_n".into()),
+        count: Some(5),
+        enabled: true,
+        wifi_only: false,
+    };
+    let json = serde_json::to_string(&action).expect("encode");
+    assert!(json.contains(r#""mode":"latest_n""#));
+    assert!(json.contains(r#""count":5"#));
+    let decoded: PodcastAction = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded, action);
+}
+
+/// Back-compat: a stale client sends only `enabled: bool` (no `mode` field).
+/// The decoder must still parse it without error.
+#[test]
+fn set_auto_download_legacy_bool_payload_decodes() {
+    let json = r#"{"op":"set_auto_download","podcast_id":"abc-123","enabled":true,"wifi_only":true}"#;
+    let action: PodcastAction = serde_json::from_str(json).expect("decode legacy payload");
+    if let PodcastAction::SetAutoDownload { podcast_id, mode, enabled, .. } = action {
+        assert_eq!(podcast_id, "abc-123");
+        assert!(mode.is_none(), "legacy payload has no mode field");
+        assert!(enabled, "legacy enabled=true preserved");
+    } else {
+        panic!("wrong variant");
+    }
 }
 
 #[test]

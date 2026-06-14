@@ -19,35 +19,75 @@ fn auto_dl(
     fresh: &[Episode],
     existing: &HashSet<String>,
     local: &HashMap<EpisodeId, String>,
-    auto_on: bool,
+    mode: AutoDownloadMode,
 ) -> Vec<(EpisodeId, String)> {
-    episodes_to_auto_download(fresh, existing, local, auto_on, false, true).0
+    episodes_to_auto_download(fresh, existing, local, mode, false, true).0
 }
+
+// ── Basic mode tests ─────────────────────────────────────────────────────────
 
 #[test]
 fn auto_download_off_does_not_queue_download() {
     let pid = PodcastId::generate();
     let fresh = vec![make_episode(pid, "g1", "https://ex.com/a.mp3")];
-    let (ready, deferred) =
-        episodes_to_auto_download(&fresh, &HashSet::new(), &HashMap::new(), false, false, true);
+    let (ready, deferred) = episodes_to_auto_download(
+        &fresh,
+        &HashSet::new(),
+        &HashMap::new(),
+        AutoDownloadMode::Off,
+        false,
+        true,
+    );
     assert!(ready.is_empty());
     assert!(deferred.is_empty());
 }
 
 #[test]
-fn auto_download_on_queues_new_episodes() {
+fn all_new_queues_every_new_episode() {
     let pid = PodcastId::generate();
     let ep_known = make_episode(pid, "known", "https://ex.com/known.mp3");
     let ep_new = make_episode(pid, "new", "https://ex.com/new.mp3");
     let fresh = vec![ep_known.clone(), ep_new.clone()];
     let mut existing = HashSet::new();
     existing.insert("known".to_string());
-    let (ready, deferred) =
-        episodes_to_auto_download(&fresh, &existing, &HashMap::new(), true, false, true);
+    let (ready, deferred) = episodes_to_auto_download(
+        &fresh,
+        &existing,
+        &HashMap::new(),
+        AutoDownloadMode::AllNew,
+        false,
+        true,
+    );
     assert_eq!(ready.len(), 1);
     assert_eq!(ready[0].0, ep_new.id);
     assert_eq!(ready[0].1, "https://ex.com/new.mp3");
     assert!(deferred.is_empty());
+}
+
+/// D7 core: `LatestN(3)` caps `episodes_to_auto_download` to the 3 newest candidates.
+#[test]
+fn latest_n_caps_fresh_feed_to_n() {
+    let pid = PodcastId::generate();
+    let eps: Vec<Episode> = (1..=5u8)
+        .map(|i| make_episode(pid, &format!("g{i}"), &format!("https://ex.com/{i}.mp3")))
+        .collect();
+    let out = auto_dl(&eps, &HashSet::new(), &HashMap::new(), AutoDownloadMode::LatestN { n: 3 });
+    assert_eq!(out.len(), 3, "LatestN(3) must cap at 3 episodes");
+    // Should be the first 3 in input order (newest-first per parser contract).
+    assert_eq!(out[0].0, eps[0].id);
+    assert_eq!(out[1].0, eps[1].id);
+    assert_eq!(out[2].0, eps[2].id);
+}
+
+/// D7 core: `AllNew` imposes no cap — all 5 episodes are queued.
+#[test]
+fn all_new_is_uncapped() {
+    let pid = PodcastId::generate();
+    let eps: Vec<Episode> = (1..=5u8)
+        .map(|i| make_episode(pid, &format!("g{i}"), &format!("https://ex.com/{i}.mp3")))
+        .collect();
+    let out = auto_dl(&eps, &HashSet::new(), &HashMap::new(), AutoDownloadMode::AllNew);
+    assert_eq!(out.len(), 5, "AllNew must not cap the fresh-feed queue");
 }
 
 #[test]
@@ -57,7 +97,7 @@ fn auto_download_skips_episodes_with_existing_local_path() {
     let fresh = vec![ep.clone()];
     let mut local = HashMap::new();
     local.insert(ep.id, "/tmp/already-here.mp3".to_string());
-    let out = auto_dl(&fresh, &HashSet::new(), &local, true);
+    let out = auto_dl(&fresh, &HashSet::new(), &local, AutoDownloadMode::AllNew);
     assert!(out.is_empty());
 }
 
@@ -68,7 +108,7 @@ fn auto_download_preserves_input_order() {
     let ep2 = make_episode(pid, "g2", "https://ex.com/2.mp3");
     let ep3 = make_episode(pid, "g3", "https://ex.com/3.mp3");
     let fresh = vec![ep1.clone(), ep2.clone(), ep3.clone()];
-    let out = auto_dl(&fresh, &HashSet::new(), &HashMap::new(), true);
+    let out = auto_dl(&fresh, &HashSet::new(), &HashMap::new(), AutoDownloadMode::AllNew);
     assert_eq!(out.len(), 3);
     assert_eq!(out[0].0, ep1.id);
     assert_eq!(out[1].0, ep2.id);
@@ -77,7 +117,7 @@ fn auto_download_preserves_input_order() {
 
 #[test]
 fn auto_download_with_empty_fresh_list_returns_empty() {
-    let out = auto_dl(&[], &HashSet::new(), &HashMap::new(), true);
+    let out = auto_dl(&[], &HashSet::new(), &HashMap::new(), AutoDownloadMode::AllNew);
     assert!(out.is_empty());
 }
 
@@ -85,7 +125,7 @@ fn auto_download_with_empty_fresh_list_returns_empty() {
 fn auto_download_off_ignores_other_inputs() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "g1", "https://ex.com/a.mp3");
-    let out = auto_dl(&[ep], &HashSet::new(), &HashMap::new(), false);
+    let out = auto_dl(&[ep], &HashSet::new(), &HashMap::new(), AutoDownloadMode::Off);
     assert!(out.is_empty());
 }
 
@@ -96,7 +136,7 @@ fn auto_download_matches_local_paths_by_episode_id() {
     ep.id = EpisodeId::new(Uuid::nil());
     let mut local = HashMap::new();
     local.insert(ep.id, "/var/mobile/Downloads/a.mp3".to_string());
-    let out = auto_dl(&[ep], &HashSet::new(), &local, true);
+    let out = auto_dl(&[ep], &HashSet::new(), &local, AutoDownloadMode::AllNew);
     assert!(out.is_empty());
 }
 
@@ -110,7 +150,7 @@ fn wifi_only_on_wifi_queues_episodes() {
         &[ep.clone()],
         &HashSet::new(),
         &HashMap::new(),
-        true,
+        AutoDownloadMode::AllNew,
         true,
         true,
     );
@@ -126,7 +166,7 @@ fn wifi_only_on_cellular_defers_not_discards() {
         &[ep.clone()],
         &HashSet::new(),
         &HashMap::new(),
-        true,
+        AutoDownloadMode::AllNew,
         true,
         false,
     );
@@ -150,7 +190,7 @@ fn cellular_allowed_queues_on_cellular() {
         &[ep.clone()],
         &HashSet::new(),
         &HashMap::new(),
-        true,
+        AutoDownloadMode::AllNew,
         false,
         false,
     );
@@ -166,8 +206,14 @@ fn cellular_allowed_queues_on_cellular() {
 fn auto_download_off_with_wifi_still_returns_empty() {
     let pid = PodcastId::generate();
     let ep = make_episode(pid, "new", "https://ex.com/new.mp3");
-    let (ready, deferred) =
-        episodes_to_auto_download(&[ep], &HashSet::new(), &HashMap::new(), false, true, true);
+    let (ready, deferred) = episodes_to_auto_download(
+        &[ep],
+        &HashSet::new(),
+        &HashMap::new(),
+        AutoDownloadMode::Off,
+        true,
+        true,
+    );
     assert!(ready.is_empty());
     assert!(deferred.is_empty());
 }
@@ -200,29 +246,63 @@ fn backfill_skips_shows_without_auto_download() {
     assert!(deferred.is_empty());
 }
 
+/// D7: `AllNew` backfill on a normal-sized library (10 episodes) backfills ALL of them.
+/// This is the key regression test for the fix: the old code capped at 3, which silently
+/// recreated the "UI says All-new, kernel does 3" lying affordance.
 #[test]
-fn backfill_queues_undownloaded_for_enabled_show() {
-    let (mut store, pid) = store_with_show(&["g1", "g2"]);
-    store.set_auto_download(pid, true);
-    let (ready, deferred) = store.auto_download_backfill_candidates(true, 10);
+fn backfill_all_new_normal_library_backfills_all() {
+    let guids: Vec<String> = (1..=10u8).map(|i| format!("g{i}")).collect();
+    let guid_refs: Vec<&str> = guids.iter().map(String::as_str).collect();
+    let (mut store, pid) = store_with_show(&guid_refs);
+    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew);
+    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
     assert_eq!(
         ready.len(),
-        2,
-        "both undownloaded episodes should be candidates"
+        10,
+        "AllNew on a 10-episode library must backfill all 10 episodes, not a flat 3"
     );
-    assert!(deferred.is_empty());
 }
 
+/// D7: `AllNew` backfill on a large archive engages `AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP`
+/// to prevent queuing a download storm on first enable.
 #[test]
-fn backfill_honours_limit_per_show() {
+fn backfill_all_new_large_archive_hits_safety_clamp() {
+    // Build a show with more episodes than the safety clamp.
+    let episode_count = AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP + 20;
+    let guids: Vec<String> = (1..=episode_count).map(|i| format!("g{i}")).collect();
+    let guid_refs: Vec<&str> = guids.iter().map(String::as_str).collect();
+    let (mut store, pid) = store_with_show(&guid_refs);
+    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew);
+    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
+    assert_eq!(
+        ready.len(),
+        AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP,
+        "AllNew on a {episode_count}-episode archive must be capped at AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP={AUTO_DOWNLOAD_BACKFILL_SAFETY_CLAMP}"
+    );
+}
+
+/// D7: `LatestN(2)` backfill is bounded to exactly 2 episodes, not the safety clamp.
+#[test]
+fn backfill_latest_n_uses_n_not_safety_clamp() {
     let (mut store, pid) = store_with_show(&["g1", "g2", "g3", "g4"]);
-    store.set_auto_download(pid, true);
-    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 2);
+    store.set_auto_download_mode(pid, AutoDownloadMode::LatestN { n: 2 });
+    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
     assert_eq!(
         ready.len(),
         2,
-        "limit caps how many a single show contributes"
+        "LatestN(2) backfill must cap to exactly 2 episodes"
     );
+}
+
+/// D7: `Off` backfill returns nothing even if the old bool happened to be set.
+#[test]
+fn backfill_off_returns_nothing() {
+    let (mut store, pid) = store_with_show(&["g1", "g2"]);
+    // Explicitly set Off (should be the default, but be explicit for clarity)
+    store.set_auto_download_mode(pid, AutoDownloadMode::Off);
+    let (ready, deferred) = store.auto_download_backfill_candidates(true, 0);
+    assert!(ready.is_empty(), "Off mode must not backfill");
+    assert!(deferred.is_empty());
 }
 
 #[test]
@@ -230,20 +310,142 @@ fn backfill_skips_already_downloaded_episodes() {
     let (mut store, pid) = store_with_show(&["g1", "g2"]);
     let downloaded_id = make_episode(pid, "g1", "https://ex.com/g1.mp3").id;
     store.set_local_path(downloaded_id, "/tmp/g1.mp3".to_string(), 100);
-    store.set_auto_download(pid, true);
-    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 10);
-    // g1 is on disk → only g2 remains a candidate (and counts toward the limit).
+    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew);
+    let (ready, _deferred) = store.auto_download_backfill_candidates(true, 0);
+    // g1 is on disk → only g2 remains a candidate.
     assert_eq!(ready.len(), 1);
 }
 
 #[test]
 fn backfill_defers_wifi_only_show_on_cellular() {
     let (mut store, pid) = store_with_show(&["g1"]);
-    store.set_auto_download(pid, true); // wifi_only defaults to true
-    let (ready, deferred) = store.auto_download_backfill_candidates(false, 10);
+    store.set_auto_download_mode(pid, AutoDownloadMode::AllNew); // wifi_only defaults to true
+    let (ready, deferred) = store.auto_download_backfill_candidates(false, 0);
     assert!(
         ready.is_empty(),
         "wifi-only show must not download on cellular"
     );
     assert_eq!(deferred.len(), 1, "deferred for later Wi-Fi dispatch");
+}
+
+// ── Back-compat migration tests ───────────────────────────────────────────────
+
+/// D7: old bool `enabled: true` migrates to `AllNew` when no typed mode is stored.
+#[test]
+fn legacy_bool_true_migrates_to_all_new() {
+    let (mut store, pid) = store_with_show(&["g1", "g2", "g3", "g4", "g5"]);
+    // Use the legacy bool setter (simulates a stale client or an old persisted store).
+    store.set_auto_download(pid, true);
+    // The mode should have been promoted to AllNew.
+    assert_eq!(
+        store.auto_download_mode_for(pid),
+        AutoDownloadMode::AllNew,
+        "legacy enabled=true must map to AllNew"
+    );
+    assert!(store.is_auto_download_enabled(pid));
+}
+
+/// D7: old bool `enabled: false` maps to `Off`.
+#[test]
+fn legacy_bool_false_maps_to_off() {
+    let (mut store, pid) = store_with_show(&["g1"]);
+    store.set_auto_download(pid, false);
+    assert_eq!(
+        store.auto_download_mode_for(pid),
+        AutoDownloadMode::Off,
+        "legacy enabled=false must map to Off"
+    );
+    assert!(!store.is_auto_download_enabled(pid));
+}
+
+// ── Projection round-trip tests ───────────────────────────────────────────────
+
+use crate::ffi::projections::PodcastSummary;
+
+/// The projection emits `auto_download_mode = "all_new"` and omits `auto_download_count`.
+#[test]
+fn projection_all_new_round_trip() {
+    let summary = PodcastSummary {
+        id: "p1".to_string(),
+        title: "Show".to_string(),
+        auto_download: true,
+        auto_download_mode: "all_new".to_string(),
+        auto_download_count: 0,
+        ..Default::default()
+    };
+    let json = serde_json::to_string(&summary).expect("encode");
+    assert!(json.contains(r#""auto_download_mode":"all_new""#));
+    assert!(
+        !json.contains("auto_download_count"),
+        "count must be omitted when 0 (D5)"
+    );
+    let decoded: PodcastSummary = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.auto_download_mode, "all_new");
+    assert_eq!(decoded.auto_download_count, 0);
+}
+
+/// The projection emits `auto_download_mode = "latest_n"` and `auto_download_count = 5`.
+#[test]
+fn projection_latest_n_round_trip() {
+    let summary = PodcastSummary {
+        id: "p2".to_string(),
+        title: "Show".to_string(),
+        auto_download: true,
+        auto_download_mode: "latest_n".to_string(),
+        auto_download_count: 5,
+        ..Default::default()
+    };
+    let json = serde_json::to_string(&summary).expect("encode");
+    assert!(json.contains(r#""auto_download_mode":"latest_n""#));
+    assert!(json.contains(r#""auto_download_count":5"#));
+    let decoded: PodcastSummary = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.auto_download_mode, "latest_n");
+    assert_eq!(decoded.auto_download_count, 5);
+}
+
+/// Off mode omits both mode and count from the wire (D5 skip-if-default).
+#[test]
+fn projection_off_omits_mode_and_count() {
+    let summary = PodcastSummary {
+        id: "p3".to_string(),
+        title: "Show".to_string(),
+        auto_download: false,
+        auto_download_mode: String::new(),
+        auto_download_count: 0,
+        ..Default::default()
+    };
+    let json = serde_json::to_string(&summary).expect("encode");
+    assert!(
+        !json.contains("auto_download_mode"),
+        "Off must omit mode field"
+    );
+    assert!(
+        !json.contains("auto_download_count"),
+        "Off must omit count field"
+    );
+    // A snapshot that predates the field must decode cleanly with defaults.
+    // The Rust PodcastSummary has required fields (episode_count, unplayed_count,
+    // is_subscribed, nostr_visibility, episodes) so we provide them.
+    let json_legacy = r#"{"id":"p3","title":"Show","episode_count":0,"unplayed_count":0,"is_subscribed":false,"nostr_visibility":"public","episodes":[]}"#;
+    let decoded: PodcastSummary = serde_json::from_str(json_legacy).expect("decode legacy");
+    assert_eq!(decoded.auto_download_mode, "");
+    assert_eq!(decoded.auto_download_count, 0);
+    assert!(!decoded.auto_download);
+}
+
+/// Android toleration: a snapshot with new fields must decode via a struct that
+/// has only `auto_download: bool` (simulates Android's current decoder which
+/// uses `serde(default)` and ignores unknown fields).
+#[test]
+fn android_decode_ignores_new_mode_fields() {
+    #[derive(serde::Deserialize)]
+    struct AndroidPodcastSummary {
+        id: String,
+        #[serde(default)]
+        auto_download: bool,
+    }
+    let json = r#"{"id":"p4","title":"Show","auto_download":true,"auto_download_mode":"latest_n","auto_download_count":5}"#;
+    let decoded: AndroidPodcastSummary = serde_json::from_str(json).expect("android decode");
+    assert_eq!(decoded.id, "p4");
+    assert!(decoded.auto_download, "bool field must still decode");
 }
