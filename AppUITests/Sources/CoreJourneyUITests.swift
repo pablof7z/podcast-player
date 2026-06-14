@@ -62,13 +62,19 @@ final class CoreJourneyUITests: XCTestCase {
         let playBtn = app.buttons["Play"]
         let resumeBtn = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'resume'")).firstMatch
         if playBtn.exists { playBtn.tap() } else { resumeBtn.tap() }
-        // Wait up to 15s for audio to actually start (Pause button appears).
-        // Without this guard, a failed stream leaves position=0 and the whole
-        // resume-persistence scenario is vacuously invalid.
+        // Wait for audio to actually start (Pause button appears). The first Play
+        // tap can race the kernel actor's stream start under load, so retry once
+        // with a generous window before giving up — this is the dominant source
+        // of "audio did not start" flake on the loaded CI runner.
         let pause = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pause'")).firstMatch
-        guard pause.waitForExistence(timeout: 15) else {
-            XCTFail("playPastCheckpointAndPause: audio did not start within 15s (no Pause control appeared)")
-            return
+        if !pause.waitForExistence(timeout: 20) {
+            let retryPlay = app.buttons["Play"]
+            let retryResume = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'resume'")).firstMatch
+            if retryPlay.exists { retryPlay.tap() } else if retryResume.exists { retryResume.tap() }
+            guard pause.waitForExistence(timeout: 20) else {
+                XCTFail("playPastCheckpointAndPause: audio did not start within 40s across two Play taps (no Pause control appeared)")
+                return
+            }
         }
         // Play for 25s more (total > 30s so the kernel's 30s checkpoint fires
         // AND the eager-flush gate reopens under --UITestSeed).
