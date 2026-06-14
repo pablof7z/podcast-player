@@ -60,13 +60,16 @@ pub(super) fn build_library_payload(handle: &PodcastHandle) -> Option<serde_json
     let transcripts = handle.state.transcripts.snapshot();
     let categories_cache = handle.state.categories.categories_snapshot();
 
-    // Single store lock → library + memory_facts (settings NOT read here).
-    let library = handle
-        .state.library.store
-        .lock()
-        .ok()
-        .map(|s| build_library_snapshot(handle, &s, &transcripts, &categories_cache))
-        .unwrap_or_default();
+    // Single store lock → library + memory_facts + backfill candidates
+    // (settings NOT read here).
+    let (library, pending_metadata_index_ids) = match handle.state.library.store.lock() {
+        Ok(s) => {
+            let lib = build_library_snapshot(handle, &s, &transcripts, &categories_cache);
+            let candidates = s.metadata_index_backfill_candidates();
+            (lib, candidates)
+        }
+        Err(_) => (Vec::new(), Vec::new()),
+    };
 
     if library.is_empty() {
         return None;
@@ -86,6 +89,13 @@ pub(super) fn build_library_payload(handle: &PodcastHandle) -> Option<serde_json
     let inbox_triage_in_progress = handle.state.inbox.triage_in_progress_snapshot();
     let inbox_last_triaged_at = handle.state.inbox.last_triaged_at_snapshot();
 
+    // Surface the pacing hint only when there is work to do (D5 omit-when-default).
+    let inter_batch_delay_ms: Option<u32> = if pending_metadata_index_ids.is_empty() {
+        None
+    } else {
+        Some(crate::store::METADATA_INDEX_INTER_BATCH_DELAY_MS)
+    };
+
     Some(serde_json::json!({
         "rev": rev,
         "library": library,
@@ -96,6 +106,8 @@ pub(super) fn build_library_payload(handle: &PodcastHandle) -> Option<serde_json
         "inbox": inbox,
         "inbox_triage_in_progress": inbox_triage_in_progress,
         "inbox_last_triaged_at": inbox_last_triaged_at,
+        "pending_metadata_index_ids": pending_metadata_index_ids,
+        "metadata_index_inter_batch_delay_ms": inter_batch_delay_ms,
     }))
 }
 

@@ -66,15 +66,10 @@ struct PodcastrApp: App {
                         whatsNewPresentation = WhatsNewPresentation(entries: unseen)
                     }
                 }
-                .task {
-                    // One-shot backfill: ensure every episode the user
-                    // already has in the library has its title +
-                    // description embedded so `find_similar_episodes` /
-                    // `search_episodes` can surface untranscribed
-                    // episodes. Throttled + reentrancy-safe; subsequent
-                    // launches no-op once everything is flagged.
-                    await EpisodeMetadataIndexer.shared.runBackfill(appStore: store)
-                }
+                // Metadata-index backfill is now kernel-driven (D7).
+                // The kernel surfaces `pendingMetadataIndexIds` via the
+                // push frame; the projection observer in
+                // AppStateStore+KernelProjection wires EpisodeMetadataIndexer.
                 .sheet(item: $whatsNewPresentation) { presentation in
                     WhatsNewSheet(entries: presentation.entries)
                 }

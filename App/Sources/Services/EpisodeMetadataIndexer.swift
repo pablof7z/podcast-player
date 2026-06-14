@@ -3,24 +3,24 @@ import os.log
 
 // MARK: - EpisodeMetadataIndexer
 //
-// Embeds a single "title + description" Chunk per Episode into the RAG
-// vector index, so `search_episodes` / `find_similar_episodes` can surface
-// episodes that have not been (or never will be) transcribed.
+// Thin executor for the kernel-driven metadata-index backfill (D7).
 //
-// Why a separate indexer rather than folding into TranscriptIngestService:
-// transcript ingestion only runs for episodes the user opens or that the
-// auto-ingest pipeline picks up. Subscribing to a new podcast dumps an
-// entire back-catalog whose episodes never receive a transcript — those
-// were previously invisible to similarity search. This service guarantees
-// every episode gets at least the title/description signal indexed.
+// The kernel owns ALL policy:
+//   - Which episodes are candidates (`PodcastUpdate.pendingMetadataIndexIds`)
+//   - Batch size (kernel constant, surfaced via the push frame)
+//   - Inter-batch pacing (`PodcastUpdate.metadataIndexInterBatchDelayMs`)
+//   - Halt-on-failure: a zero-success batch causes the executor to stop
+//
+// The shell's only responsibilities:
+//   1. Drain the kernel-provided batch of episode IDs
+//   2. Build and upsert the embedding chunks
+//   3. Dispatch `MarkEpisodesMetadataIndexed` on success
 //
 // Lifecycle:
-// 1. `indexNewlyInserted(...)` — fired from `AppStateStore.upsertEpisodes`
-//    immediately after new rows land. Covers both the steady-state feed
-//    refresh path and the initial-subscribe back-catalog dump.
-// 2. `runBackfill(appStore:)` — fired once at launch from `AppMain`. Picks
-//    up everything `state.episodes.filter { !$0.metadataIndexed }` so
-//    pre-existing libraries get covered exactly once.
+//   `indexKernelBatch(ids:interBatchDelayMs:appStore:)` — called from the
+//   kernel-projection observer whenever `pendingMetadataIndexIds` is
+//   non-empty. Reentrancy-safe via the `inFlight` dedup set; concurrent
+//   batches on the same ID are harmlessly coalesced.
 //
 // Coexistence with transcripts: `TranscriptIngestService.persistAndIndex`
 // calls `rag.index.deleteAll(forEpisodeID:)` before upserting transcript
@@ -44,30 +44,12 @@ final class EpisodeMetadataIndexer {
 
     private let store: VectorStore
 
-    // MARK: Tuning
-
-    /// Episodes embedded per network round-trip. The provider embedder
-    /// batches internally; this caps how many chunks we ship in one
-    /// `upsert(chunks:)` so a 5,000-episode backfill stays responsive
-    /// and respects rate limits.
-    private let batchSize: Int = 32
-
-    /// Pause between backfill batches. Cheap insurance against hammering
-    /// the embeddings provider on a cold launch with a large library.
-    private let interBatchDelayNanoseconds: UInt64 = 200_000_000  // 0.2s
-
     // MARK: In-flight tracking (dedup)
 
-    /// Set of episode IDs currently being indexed. Prevents a backfill +
-    /// `indexNewlyInserted` from racing on the same episode after a feed
-    /// refresh fires mid-launch.
+    /// Set of episode IDs currently being indexed. Prevents a batch from the
+    /// push frame racing with a concurrent incremental call on the same episode
+    /// (e.g. a feed refresh fires while the previous batch is still in flight).
     private var inFlight: Set<UUID> = []
-
-    /// `true` while `runBackfill` is iterating. Subsequent calls no-op
-    /// — `upsertEpisodes`-driven incremental indexing still runs and
-    /// keeps newly-arriving episodes covered while the backfill drains
-    /// the back-catalog.
-    private var backfillRunning: Bool = false
 
     // MARK: Init
 
@@ -77,59 +59,33 @@ final class EpisodeMetadataIndexer {
 
     // MARK: Public API
 
-    /// Index the metadata for the given newly-inserted episodes. Called from
-    /// `AppStateStore.upsertEpisodes`. Best-effort: on embed failure we log
-    /// and leave `metadataIndexed=false` so the next launch's backfill
-    /// retries.
-    func indexNewlyInserted(_ ids: [UUID], appStore: AppStateStore) {
-        guard !ids.isEmpty else { return }
-        Task { @MainActor [weak self, weak appStore] in
-            guard let self, let appStore else { return }
-            await self.indexEpisodes(ids: ids, appStore: appStore)
-        }
-    }
-
-    /// Walk the library once and embed metadata for every episode that
-    /// doesn't yet have `metadataIndexed = true`. Reentrancy-safe: a
-    /// second call while one is in flight is a no-op.
-    func runBackfill(appStore: AppStateStore) async {
-        guard !backfillRunning else { return }
-        backfillRunning = true
-        defer { backfillRunning = false }
-
-        let pending = appStore.episodes
-            .filter { !$0.metadataIndexed }
-            .map(\.id)
-        guard !pending.isEmpty else {
-            Self.logger.debug("backfill: nothing to index")
-            return
-        }
-        Self.logger.info(
-            "backfill starting — \(pending.count, privacy: .public) episodes to metadata-index"
-        )
-
-        var indexedSoFar = 0
-        for batch in pending.chunked(into: batchSize) {
-            let succeeded = await indexEpisodes(ids: batch, appStore: appStore)
-            indexedSoFar += succeeded
-            // If a batch fails (e.g. provider down, missing key), stop
-            // the backfill — there's no point burning more API calls in
-            // the same condition. Next launch will resume.
-            if succeeded == 0 { break }
-            try? await Task.sleep(nanoseconds: interBatchDelayNanoseconds)
-        }
-        Self.logger.info(
-            "backfill done — indexed \(indexedSoFar, privacy: .public) of \(pending.count, privacy: .public)"
-        )
+    /// Execute a single kernel-provided batch of episode IDs.
+    ///
+    /// Called from the projection observer whenever `PodcastUpdate.pendingMetadataIndexIds`
+    /// is non-empty. Returns the count of episodes successfully indexed; `0` on
+    /// embed failure. The observer must stop calling this on a zero result (halt-on-failure
+    /// parity with the old `runBackfill` loop).
+    ///
+    /// The inter-batch delay is the caller's responsibility: sleep
+    /// `interBatchDelayMs` milliseconds AFTER a successful (non-zero) return
+    /// before processing the next frame's batch. This matches the old
+    /// `interBatchDelayNanoseconds` throttle, now kernel-owned.
+    @discardableResult
+    func indexKernelBatch(
+        ids: [UUID],
+        appStore: AppStateStore
+    ) async -> Int {
+        return await indexEpisodes(ids: ids, appStore: appStore)
     }
 
     // MARK: Core
 
     /// Returns the number of episodes successfully indexed (and thus
     /// flagged `metadataIndexed = true`). Zero means the embed call
-    /// failed; the caller can choose to halt a bulk backfill.
+    /// failed; the caller should halt the backfill loop.
     @discardableResult
     private func indexEpisodes(ids: [UUID], appStore: AppStateStore) async -> Int {
+        guard !ids.isEmpty else { return 0 }
         let claimable = ids.filter { !inFlight.contains($0) }
         guard !claimable.isEmpty else { return 0 }
         inFlight.formUnion(claimable)
@@ -157,9 +113,9 @@ final class EpisodeMetadataIndexer {
             )
             return preparedIDs.count
         } catch {
-            // Don't flip the flag — next backfill retries. Common causes
-            // are missing embeddings key, rate limits, or transient
-            // network errors; all resolved by a later run.
+            // Don't flip the flag — next kernel frame re-surfaces the same IDs.
+            // Common causes: missing embeddings key, rate limits, transient
+            // network errors — all resolved by a later run.
             Self.logger.notice(
                 "metadata index batch failed (\(preparedIDs.count, privacy: .public) episodes): \(String(describing: error), privacy: .public)"
             )
@@ -186,24 +142,5 @@ final class EpisodeMetadataIndexer {
             endMS: 0,
             speakerID: nil
         )
-    }
-}
-
-// MARK: - Array chunking
-
-private extension Array {
-    /// Splits the array into contiguous slices of at most `size` elements.
-    /// `size` must be positive; a non-positive argument returns `[self]`.
-    func chunked(into size: Int) -> [[Element]] {
-        guard size > 0 else { return [self] }
-        var result: [[Element]] = []
-        result.reserveCapacity((count + size - 1) / size)
-        var idx = 0
-        while idx < count {
-            let end = Swift.min(idx + size, count)
-            result.append(Array(self[idx..<end]))
-            idx = end
-        }
-        return result
     }
 }

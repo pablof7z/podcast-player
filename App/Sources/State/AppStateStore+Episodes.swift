@@ -112,15 +112,12 @@ extension AppStateStore {
             self.episodes = updated
             invalidateEpisodeProjections()
         }
-        if automaticEpisodeMetadataIndexingEnabled {
-            // Metadata-index the newly-inserted episodes for similarity search —
-            // the agent-synthesized back-catalog needs title/description coverage
-            // exactly like a feed's would.
-            EpisodeMetadataIndexer.shared.indexNewlyInserted(
-                newlyInserted,
-                appStore: self
-            )
-        }
+        // Metadata-index backfill is now kernel-driven (D7). Newly-inserted
+        // episodes appear in `PodcastUpdate.pendingMetadataIndexIds` on the
+        // next projection frame; the projection observer (AppStateStore+
+        // KernelProjection) wires EpisodeMetadataIndexer.indexKernelBatch.
+        // The `automaticEpisodeMetadataIndexingEnabled` flag is retained on
+        // AppStateStore for test-isolation but no longer drives this path.
         return newlyInserted
     }
 

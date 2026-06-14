@@ -98,6 +98,13 @@ extension AppStateStore {
                         libraryGeneration: kernel.libraryGeneration,
                         prevEpisodeSummaries: &prevEpisodeSummaries,
                         lastProjectedLibraryGeneration: &lastProjectedLibraryGeneration)
+                    // D7: kernel-driven metadata-index backfill. The kernel
+                    // surfaces the next batch of pending episode IDs via the
+                    // Library push frame. The executor fires-and-forgets a Task
+                    // so the observation loop stays unblocked.
+                    if let snapshot = kernel.podcastSnapshot {
+                        self?.applyMetadataIndexBatch(from: snapshot)
+                    }
                 }
                 // Diagnostic tap: one entry per snapshot tick. Logged at the
                 // call site (not inside `applyKernelState`) so it covers both
