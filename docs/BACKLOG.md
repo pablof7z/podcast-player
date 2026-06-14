@@ -53,7 +53,7 @@ worktrees currently in flight.
 
 ## Active P1 - Compat And Ownership Burn-Down
 
-- **inbox-triage-on-async-subscribe.** DONE (PR #383 deferred; completed in
+- ~~**inbox-triage-on-async-subscribe.**~~ Done (PR #383 deferred; completed in
   this PR). `PodcastAppState.inbox` flipped to `Arc<InboxState>`; 6th ctor
   arg added to `FeedFetchCoordinator::new`; `apply_subscribe_result` calls
   `self.inbox.maybe_enqueue_triage()` gated identically to
@@ -199,7 +199,7 @@ worktrees currently in flight.
   seed in `register.rs` remains unconditional (the slot is empty at register
   time because the actor hasn't run `Start` yet), but persisted edits now
   correctly override it on subsequent launches.
-- **app-relays-config-ui.** DONE (`feat/app-relays-ui`). The App Relays editor
+- ~~**app-relays-config-ui.**~~ Done (`feat/app-relays-ui`). The App Relays editor
   ships at Settings → Networking → App Relays: `AppRelaysView` lists
   `configuredRelays` (color-coded role pill, swipe-to-delete → `kernelRemoveRelay`,
   tap-row → `ChangeRelayRoleSheet` role picker, empty state), `AddRelaySheet`
@@ -330,9 +330,9 @@ worktrees currently in flight.
   `handle_post_comment` (line 103) publishes via `publish_raw_via_nmp` (line 140);
   `CommentsObserver` (line 164) receives inbound events and caches by episode.
   Episodes are mapped to anchors via `episode_nip73_anchor` (line 70, 129).
-- **social-graph-store-wiring.** ~~Replace `social_handler.rs` `nostr_pending`
+- ~~**social-graph-store-wiring.**~~ ~~Replace `social_handler.rs` `nostr_pending`
   with NMP kind:3 contact-list store reads, kind:0 metadata hydration,
-  subscription refresh, and snapshot updates.~~ **CLOSED** — replaced by reactive
+  subscription refresh, and snapshot updates.~~ Closed — replaced by reactive
   `FollowListProjection` + `ActiveFollowSet` (nmp-nip02) in PR
   `feat/social-graph-reactive-trust-gate`. `handle_fetch_contacts` is now a
   lightweight refresh trigger; the NIP-02 follow list populates via the kernel's
