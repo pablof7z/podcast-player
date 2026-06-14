@@ -75,6 +75,8 @@ fun AppNavigation(
         route = AppRoute.Tab(tab)
     }
 
+    val onOpenClips: () -> Unit = { route = AppRoute.ClipList }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -99,6 +101,7 @@ fun AppNavigation(
                 onOpenIdentity = { route = AppRoute.Identity },
                 onOpenModels = { route = AppRoute.ProviderModels },
                 onOpenNostrConversations = { route = AppRoute.NostrConversations },
+                onOpenClips = onOpenClips,
                 modifier = contentModifier,
             )
             is AppRoute.ShowDetail -> ShowDetailScreen(
@@ -192,6 +195,12 @@ fun AppNavigation(
                     }
                 }
             }
+            AppRoute.ClipList -> ClipListScreen(
+                snapshot = snapshot,
+                bridge = bridge,
+                onBack = { route = AppRoute.Tab(selectedTab) },
+                modifier = contentModifier,
+            )
         }
     }
 }
@@ -205,6 +214,7 @@ private fun TabContent(
     onOpenIdentity: () -> Unit,
     onOpenModels: () -> Unit,
     onOpenNostrConversations: () -> Unit,
+    onOpenClips: () -> Unit,
     modifier: Modifier,
 ) {
     when (tab) {
@@ -235,6 +245,7 @@ private fun TabContent(
             onNavigateToIdentity = onOpenIdentity,
             onNavigateToModels = onOpenModels,
             onNavigateToNostrConversations = onOpenNostrConversations,
+            onNavigateToClips = onOpenClips,
             modifier = modifier,
         )
     }
@@ -282,6 +293,8 @@ private sealed interface AppRoute {
     data object RemoteSigner : AppRoute
     /** NIP-46 nostrconnect:// QR pairing flow — reached from [RemoteSigner]. */
     data object NostrConnect : AppRoute
+    /** Global clip list — reachable from Settings (mirrors iOS Clippings tab). */
+    data object ClipList : AppRoute
 
     companion object {
         val Saver: androidx.compose.runtime.saveable.Saver<AppRoute, Any> =
@@ -299,6 +312,7 @@ private sealed interface AppRoute {
                         is NostrConversationDetail -> listOf("nostr_conversation_detail", value.rootEventId)
                         RemoteSigner -> listOf("remote_signer")
                         NostrConnect -> listOf("nostr_connect")
+                        ClipList -> listOf("clip_list")
                     }
                 },
                 restore = { raw ->
@@ -320,6 +334,7 @@ private sealed interface AppRoute {
                         "nostr_conversation_detail" -> list.getOrNull(1)?.let { NostrConversationDetail(it) }
                         "remote_signer" -> RemoteSigner
                         "nostr_connect" -> NostrConnect
+                        "clip_list" -> ClipList
                         else -> null
                     }
                 },

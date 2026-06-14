@@ -198,6 +198,17 @@ data class MiscDomainFrame(
     val agent: AgentSnapshot? = null,
     /** AI-curated picks rail. Populated by `picks_handler.rs`; null = not yet projected. */
     val picks: List<AgentPickSummary>? = null,
+    /**
+     * User-saved audio clips from `clip_handler::project_clips`. Null when the
+     * kernel hasn't projected clips yet (no clips created this session). An
+     * empty list is a valid state (all clips deleted). Null means "no change"
+     * in the delta-merge protocol; empty list means "clips are empty now".
+     *
+     * Wire contract verified against `apps/nmp-app-podcast/src/ffi/projections/clips.rs`.
+     * Snake_case keys: `episode_id`, `episode_title`, `podcast_title`, `start_secs`,
+     * `end_secs`, `created_at` — all load-bearing `@SerialName` in [ClipSummary].
+     */
+    val clips: List<ClipSummary>? = null,
 )
 
 // ── Composite push-frame result ───────────────────────────────────────────────
@@ -482,6 +493,9 @@ object SnapshotCodec {
                     voice           = m.voice ?: snap.voice,
                     agent           = m.agent ?: snap.agent,
                     picks           = m.picks ?: snap.picks,
+                    // clips: null = no change (retain prior); non-null = authoritative
+                    // list from the kernel (may be empty if all clips deleted).
+                    clips           = m.clips ?: snap.clips,
                 )
             }
         }
