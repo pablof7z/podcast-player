@@ -8,6 +8,15 @@ import XCTest
 final class P0PlaybackUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
+    // Terminate the app after every test so the Rust audio session is fully
+    // torn down before the next test launches. Without this, testP0_BackgroundPlaybackContinues
+    // (which runs first alphabetically) leaves audio playing in the background,
+    // and the corrupted audio session causes the next tests to crash on launch.
+    override func tearDown() {
+        XCUIApplication(bundleIdentifier: App.bundleID).terminate()
+        super.tearDown()
+    }
+
     // MARK: - P0: skip-forward-back-15
 
     /// Open the full player, skip +15s and confirm position advances,

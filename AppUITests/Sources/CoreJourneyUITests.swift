@@ -7,6 +7,15 @@ import XCTest
 final class CoreJourneyUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
+    // Terminate the app after every test so lifecycle state from
+    // background/foreground tests (press home, activate) is fully cleared
+    // before the next test. Without this, simulator audio/lifecycle state
+    // contamination cascades across tests.
+    override func tearDown() {
+        XCUIApplication(bundleIdentifier: App.bundleID).terminate()
+        super.tearDown()
+    }
+
     /// Tap the first subscribed podcast (visible on Home) -> first episode detail. Returns true on success.
     @discardableResult
     private func openFirstEpisodeDetail(_ app: XCUIApplication) -> Bool {
