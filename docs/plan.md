@@ -31,12 +31,12 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 
 | Area | Status |
 |---|---|
-| NMP dependency pin | `0.6.2` crates pinned to rev `ac7e307e89b57a73b419ea9588275e599dcb228c` in `Cargo.toml`; `nmp-blossom` portability is blocked upstream by `pablof7z/nostr-multi-platform#1408` and tracked locally as `pablof7z/podcast-player#479`. PR #488 removes the non-portable `/tmp` path patch, but its headless gate is blocked upstream by `pablof7z/nostr-multi-platform#1412` (`publish_outbox` projection rev stale stamp). |
+| NMP dependency pin | `0.6.2` crates pinned to rev `ac7e307e89b57a73b419ea9588275e599dcb228c` in `Cargo.toml`; PR #488 replaced the non-portable `/tmp/nmp-at-ac7e307e` path patch with reproducible `vendor/nmp-blossom`, so local blocker `pablof7z/podcast-player#479` is closed. Upstream `pablof7z/nostr-multi-platform#1408` remains an upstream packaging cleanup, but current podcast-player `main` validates with `cargo check --workspace --all-targets`. |
 | Feature parity | Not achieved — many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked — `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Parked iOS shell | Deleted — there is no `ios/` tree on current `main`; remaining parity debt lives in `App/Sources/` Swift policy/fallback code and the cross-platform surfaces listed in `docs/BACKLOG.md`. |
 | NIP-F4 Keychain flip | Cancelled — `podcast-keys.json` is the canonical and final store for per-podcast secrets. No Keychain migration. |
-| Validation gate | Incomplete — code parity work must run focused Rust/Swift tests plus the merge gate; current validation is blocked first by the `nmp-blossom` dependency packaging issue on `main`, then by the NMP `publish_outbox` projection-rev oracle failure surfaced by PR #488. |
+| Validation gate | Incomplete — code parity work must run focused Rust/Swift tests plus the merge gate. The old `nmp-blossom` packaging blocker is resolved on `main`; the remaining known runtime proof blocker is upstream `pablof7z/nostr-multi-platform#1412`, where NMP's `publish_outbox` projection changes through `publish_engine` in-flight state without advancing the `publish_ver` source stamp. |
 
 ## Next Execution Order
 
