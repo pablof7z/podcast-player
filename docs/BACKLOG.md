@@ -27,7 +27,11 @@ worktrees currently in flight.
 - **p0-validation-gate.** Establish the merge gate for this migration:
   `git diff --check`, focused Rust tests for touched crates,
   focused Swift/iOS tests for touched targets, and full-suite validation before
-  declaring feature parity.
+  declaring feature parity. Current audit: the Test workflow now has a
+  `Git diff hygiene` job that runs `git diff --check` against the actual PR or
+  push range instead of a clean checkout. Remaining: make touched-target test
+  selection explicit and keep the full simulator suite as the merge/supervisor
+  gate.
 - ~~**p0-ios-test-target-compile.**~~ Fixed across PR #101 and PR #102:
   `Nip46RemoteSignerTests.swift` now accepts an optional bunker pubkey, the
   active Tuist target no longer references the dead `KernelModel` duplicate,
