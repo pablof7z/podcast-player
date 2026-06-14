@@ -7,6 +7,7 @@ mod agent_chat;
 mod agent_notes;
 mod comments;
 mod discover_nostr;
+mod download;
 mod identity;
 mod inbox_triage;
 mod key_persistence;
@@ -57,5 +58,6 @@ pub fn run_all(
         ("agent_notes", agent_notes::run(app, handle)),
         ("social", social::run(app, handle)),
         ("publish_profile", profile::run(app, handle)),
+        ("download_lifecycle", download::run(app, handle)),
     ]
 }
