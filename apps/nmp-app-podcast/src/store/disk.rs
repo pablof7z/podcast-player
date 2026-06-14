@@ -53,6 +53,7 @@ impl PodcastStore {
         // doesn't immediately re-flush on the next `Playing` tick.
         self.last_flushed_positions.clear();
         self.auto_download_enabled.clear();
+        self.auto_download_modes.clear();
         self.auto_download_cellular_allowed.clear();
         self.memory_facts.clear();
         self.ad_segments.clear();
@@ -72,8 +73,22 @@ impl PodcastStore {
             if row.is_subscribed {
                 self.followed_podcasts.insert(id);
             }
-            if row.auto_download {
+            // Hydrate typed mode. `auto_download_mode` is new (additive field);
+            // absent in older files means we fall back to the legacy bool:
+            //   true  → AllNew  (matches the iOS default `.allNew`)
+            //   false → Off
+            let mode = row
+                .auto_download_mode
+                .unwrap_or_else(|| {
+                    if row.auto_download {
+                        crate::store::AutoDownloadMode::AllNew
+                    } else {
+                        crate::store::AutoDownloadMode::Off
+                    }
+                });
+            if mode.is_enabled() {
                 self.auto_download_enabled.insert(id);
+                self.auto_download_modes.insert(id, mode);
             }
             if row.cellular_allowed {
                 self.auto_download_cellular_allowed.insert(id);
@@ -340,7 +355,16 @@ impl PodcastStore {
                 podcast: podcast.clone(),
                 episodes: self.episodes.get(id).cloned().unwrap_or_default(),
                 is_subscribed: self.followed_podcasts.contains(id),
+                // Legacy bool kept for back-compat with older readers that
+                // only understand the bool field.
                 auto_download: self.auto_download_enabled.contains(id),
+                // Typed mode for new readers. `None` if Off (omitted on wire
+                // via `skip_serializing_if`).
+                auto_download_mode: self
+                    .auto_download_modes
+                    .get(id)
+                    .copied()
+                    .filter(|m| m.is_enabled()),
                 cellular_allowed: self.auto_download_cellular_allowed.contains(id),
             })
             .collect();

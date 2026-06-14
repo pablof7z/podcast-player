@@ -221,12 +221,23 @@ pub enum PodcastAction {
         episode_id: String,
         content: String,
     },
-    /// Toggle the per-podcast auto-download policy. When `enabled` is
-    /// `true`, subsequent `handle_refresh` calls will dispatch
-    /// `DownloadCommand::StartDownload` for every freshly-discovered
-    /// episode (matched by `guid` against the previously-known set).
-    /// When `false`, the policy is removed and refreshes go back to
-    /// only surfacing new episodes in the snapshot.
+    /// Set the per-podcast auto-download policy (D7). The kernel now owns the
+    /// typed mode (Off / LatestN(n) / AllNew) and enforces the cap.
+    ///
+    /// ## Wire format (new)
+    ///
+    /// ```json
+    /// {"op":"set_auto_download","podcast_id":"...","mode":"all_new","wifi_only":true}
+    /// {"op":"set_auto_download","podcast_id":"...","mode":"latest_n","count":3}
+    /// {"op":"set_auto_download","podcast_id":"...","mode":"off"}
+    /// ```
+    ///
+    /// ## Back-compat shim
+    ///
+    /// A stale client or replayed action that only sends `enabled: bool`
+    /// (and omits `mode`) is handled by the deserializer:
+    /// `enabled: true` → `mode = "all_new"`, `enabled: false` → `mode = "off"`.
+    /// `mode` takes precedence when present.
     ///
     /// Per D0: Rust owns the decision; iOS only renders the toggle
     /// state from the projection.
@@ -236,6 +247,16 @@ pub enum PodcastAction {
     /// that only sent `enabled`).
     SetAutoDownload {
         podcast_id: String,
+        /// Typed mode. When present, overrides the legacy `enabled` field.
+        /// One of `"off"`, `"all_new"`, `"latest_n"`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mode: Option<String>,
+        /// Episode cap used with `mode = "latest_n"`. Ignored for other modes.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        count: Option<u32>,
+        /// Legacy bool — kept for back-compat with stale clients that only send
+        /// `enabled`. Ignored when `mode` is present.
+        #[serde(default)]
         enabled: bool,
         #[serde(default = "default_true")]
         wifi_only: bool,

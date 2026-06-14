@@ -12,6 +12,14 @@
 //!   the handler emits from these results.
 //! * **D6 — pure data in/out.** No I/O, no logging, no side effects.
 //!
+//! ## D7 — Typed mode
+//!
+//! The kernel owns the typed `AutoDownloadMode` (Off / LatestN(u32) / AllNew).
+//! iOS sends `mode` + `count` in the action; the kernel enforces the cap.
+//! The projection surfaces `auto_download_mode` + `auto_download_count` so
+//! the iOS picker can rehydrate real kernel state. A legacy `enabled: bool`
+//! payload migrates: `true` → `AllNew`, `false` → `Off`.
+//!
 //! ## Identity
 //!
 //! Episodes are matched against the previously-known set by `guid` in the
@@ -24,15 +32,86 @@
 use std::collections::{HashMap, HashSet};
 
 use podcast_core::{Episode, EpisodeId};
+use serde::{Deserialize, Serialize};
 
-/// How many of a show's most-recent *undownloaded* episodes a backfill /
-/// evaluate pass queues. The fresh-feed refresh path (`episodes_to_auto_download`)
-/// handles genuinely-new arrivals unbounded; this bound applies only to the
-/// catch-up scan that runs on cold start and when the user *enables*
-/// auto-download on a show that already has a back catalog — without it,
-/// flipping "All new" on a 500-episode feed would queue the entire archive.
-/// Chosen as "keep the latest few episodes local" rather than the full
-/// back catalog. See [`super::PodcastStore::auto_download_backfill_candidates`].
+/// Typed auto-download policy a show can be set to.
+///
+/// Wire representation: a JSON object `{"mode": "off"}`,
+/// `{"mode": "all_new"}`, or `{"mode": "latest_n", "n": 5}`.
+/// Rust uses `#[serde(tag = "mode", rename_all = "snake_case")]` so the
+/// variant name maps to the `mode` field and `LatestN` carries an `n`
+/// integer. This is the canonical form on both the action wire and the
+/// projection wire — the iOS bridge's `.convertFromSnakeCase` turns
+/// `auto_download_mode` → `autoDownloadMode` but the *value* of the
+/// field is a plain String (`"all_new"`, `"latest_n"`, `"off"`), which
+/// Swift handles separately from the key path.
+///
+/// Back-compat: `PersistedPodcast::auto_download_mode` is `Option<…>`;
+/// absent (old file) ⇒ derived from the legacy `auto_download: bool`
+/// field by `load_from_disk` (true→AllNew, false→Off).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "mode", rename_all = "snake_case")]
+pub enum AutoDownloadMode {
+    /// Auto-download disabled. New episodes appear in the snapshot but are
+    /// never queued for download automatically.
+    Off,
+    /// Keep the N most-recent undownloaded episodes on device. The backfill
+    /// pass is bounded to `n` episodes; the fresh-feed pass takes at most `n`
+    /// new arrivals per refresh.
+    LatestN { n: u32 },
+    /// Download every new episode the feed reports, with no episode cap.
+    /// The backfill pass uses `AUTO_DOWNLOAD_BACKFILL_LIMIT` as a safety
+    /// ceiling so a cold-start "All new" on a 500-episode archive doesn't
+    /// queue the entire history at once.
+    AllNew,
+}
+
+impl AutoDownloadMode {
+    /// Returns `true` for any non-Off mode.
+    pub fn is_enabled(self) -> bool {
+        !matches!(self, AutoDownloadMode::Off)
+    }
+
+    /// Effective per-show backfill limit:
+    /// - `Off` → 0 (caller short-circuits before this)
+    /// - `LatestN(n)` → n as usize
+    /// - `AllNew` → `AUTO_DOWNLOAD_BACKFILL_LIMIT` (safety ceiling on backfill)
+    pub fn backfill_limit(self) -> usize {
+        match self {
+            AutoDownloadMode::Off => 0,
+            AutoDownloadMode::LatestN { n } => n as usize,
+            AutoDownloadMode::AllNew => AUTO_DOWNLOAD_BACKFILL_LIMIT,
+        }
+    }
+
+    /// Effective cap for the fresh-feed path:
+    /// - `Off` → 0
+    /// - `LatestN(n)` → Some(n as usize)
+    /// - `AllNew` → None (no cap)
+    pub fn fresh_cap(self) -> Option<usize> {
+        match self {
+            AutoDownloadMode::Off => Some(0),
+            AutoDownloadMode::LatestN { n } => Some(n as usize),
+            AutoDownloadMode::AllNew => None,
+        }
+    }
+}
+
+impl Default for AutoDownloadMode {
+    /// Default for newly-subscribed shows: download every new episode.
+    /// Matches `AutoDownloadPolicy.default` in Swift (`.allNew`).
+    fn default() -> Self {
+        AutoDownloadMode::AllNew
+    }
+}
+
+/// Safety ceiling for `AllNew` backfill: how many of a show's most-recent
+/// undownloaded episodes the catch-up pass queues per show. Prevents
+/// a user who flips "All new" on a 500-episode archive from queuing the
+/// entire history in one shot.
+///
+/// Does NOT apply to `LatestN(n)` (which uses `n` directly) or to the
+/// fresh-feed path (which always queues every new arrival, uncapped).
 pub const AUTO_DOWNLOAD_BACKFILL_LIMIT: usize = 3;
 
 /// Decide which freshly-parsed episodes deserve to be auto-queued for
@@ -40,27 +119,22 @@ pub const AUTO_DOWNLOAD_BACKFILL_LIMIT: usize = 3;
 ///
 /// Inputs:
 ///
-/// * `fresh` — the new episode list returned by the feed parser.
+/// * `fresh` — the new episode list returned by the feed parser, newest-first.
 /// * `existing_guids` — `guid` set captured *before* the store
 ///   accepted the refresh (any guid in this set is by definition
 ///   known and is not a "new" episode).
 /// * `local_paths` — currently-known on-disk paths keyed by
-///   `EpisodeId`. Used as a belt-and-suspenders filter so a fresh
-///   episode that somehow already has a local file recorded for it
-///   isn't re-queued.
-/// * `auto_download_on` — whether the user has enabled auto-download
-///   for the owning podcast. Short-circuits to an empty Vec when
-///   `false`.
-///
-/// Output: an ordered list of `(EpisodeId, enclosure_url)` pairs the
-/// handler should dispatch as `DownloadCommand::StartDownload` (one per
-/// command). Ordering mirrors the input `fresh` slice (newest-first
-/// per the parser's contract).
-///
+///   `EpisodeId`. Belt-and-suspenders filter to avoid re-queuing a
+///   fresh episode that somehow already has a local file.
+/// * `mode` — the typed auto-download policy for this podcast.
+///   `Off` short-circuits to an empty result immediately.
+///   `LatestN(n)` caps the output to the `n` newest candidates.
+///   `AllNew` imposes no cap.
 /// * `wifi_only_on` — when `true`, only downloads when `is_on_wifi` is also
 ///   `true`. When `false`, downloads on any interface (cellular + Wi-Fi).
 /// * `is_on_wifi` — current network-path state reported by
 ///   `nmp.network.capability`. Ignored when `wifi_only_on` is `false`.
+///
 /// Returns `(ready, deferred)` where:
 /// - `ready` — episodes to dispatch for download immediately.
 /// - `deferred` — episodes that would auto-download but are gated on Wi-Fi
@@ -72,17 +146,19 @@ pub fn episodes_to_auto_download(
     fresh: &[Episode],
     existing_guids: &HashSet<String>,
     local_paths: &HashMap<EpisodeId, String>,
-    auto_download_on: bool,
+    mode: AutoDownloadMode,
     wifi_only_on: bool,
     is_on_wifi: bool,
 ) -> (Vec<(EpisodeId, String)>, Vec<(EpisodeId, String)>) {
-    if !auto_download_on {
+    if !mode.is_enabled() {
         return (Vec::new(), Vec::new());
     }
+    let cap = mode.fresh_cap(); // None = uncapped (AllNew), Some(n) = cap to n
     let candidates: Vec<(EpisodeId, String)> = fresh
         .iter()
         .filter(|ep| !existing_guids.contains(&ep.guid))
         .filter(|ep| !local_paths.contains_key(&ep.id))
+        .take(cap.unwrap_or(usize::MAX))
         .map(|ep| (ep.id, ep.enclosure_url.to_string()))
         .collect();
 
@@ -104,25 +180,30 @@ impl super::PodcastStore {
     /// every existing episode, so flipping the toggle downloaded nothing).
     ///
     /// For each podcast with auto-download enabled, takes its most-recent
-    /// `limit_per_show` episodes that have no recorded local file, splitting
-    /// them into `(ready, deferred)` by the show's Wi-Fi-only policy and the
-    /// current `is_on_wifi` state. Episodes already in flight are filtered by
-    /// the caller's idempotent enqueue, so re-running this is safe.
+    /// `mode.backfill_limit()` episodes that have no recorded local file,
+    /// splitting them into `(ready, deferred)` by the show's Wi-Fi-only
+    /// policy and the current `is_on_wifi` state. Episodes already in flight
+    /// are filtered by the caller's idempotent enqueue, so re-running is safe.
+    ///
+    /// The `limit_per_show` parameter is kept for API stability but is now
+    /// overridden per-show by `mode.backfill_limit()`.
     pub fn auto_download_backfill_candidates(
         &self,
         is_on_wifi: bool,
-        limit_per_show: usize,
+        _limit_per_show: usize,
     ) -> (Vec<(EpisodeId, String)>, Vec<(EpisodeId, String)>) {
         let mut ready = Vec::new();
         let mut deferred = Vec::new();
         for (&podcast_id, episodes) in self.episodes.iter() {
-            if !self.is_auto_download_enabled(podcast_id) {
+            let mode = self.auto_download_mode_for(podcast_id);
+            if !mode.is_enabled() {
                 continue;
             }
+            let limit = mode.backfill_limit();
             let wifi_only = self.wifi_only_for(podcast_id);
             let mut taken = 0usize;
             for ep in episodes.iter() {
-                if taken >= limit_per_show {
+                if taken >= limit {
                     break;
                 }
                 if self.local_paths().contains_key(&ep.id) {

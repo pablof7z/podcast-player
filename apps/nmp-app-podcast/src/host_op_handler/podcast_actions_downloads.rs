@@ -194,10 +194,35 @@ impl PodcastHostOpHandler {
     pub(super) fn handle_set_auto_download(
         &self,
         podcast_id_str: String,
-        enabled: bool,
+        mode_str: Option<String>,
+        count: Option<u32>,
+        enabled_legacy: bool,
         wifi_only: bool,
         correlation_id: &str,
     ) -> serde_json::Value {
+        use crate::store::AutoDownloadMode;
+
+        // Resolve the typed mode. `mode` field takes precedence; fall back to
+        // the legacy bool for stale clients that only send `enabled`.
+        let mode = match mode_str.as_deref() {
+            Some("off") => AutoDownloadMode::Off,
+            Some("latest_n") => AutoDownloadMode::LatestN {
+                n: count.unwrap_or(3),
+            },
+            Some("all_new") | Some("allNew") => AutoDownloadMode::AllNew,
+            Some(other) => {
+                return serde_json::json!({"ok": false, "error": format!("unknown mode: {other}")})
+            }
+            // Back-compat: no `mode` field → use legacy `enabled` bool.
+            None => {
+                if enabled_legacy {
+                    AutoDownloadMode::AllNew
+                } else {
+                    AutoDownloadMode::Off
+                }
+            }
+        };
+
         let uuid = match podcast_id_str.parse::<Uuid>() {
             Ok(u) => u,
             Err(_) => return serde_json::json!({"ok": false, "error": "invalid podcast_id"}),
@@ -205,7 +230,7 @@ impl PodcastHostOpHandler {
         let podcast_id = podcast_core::PodcastId::new(uuid);
         match self.state.library.store.lock() {
             Ok(mut s) => {
-                s.set_auto_download(podcast_id, enabled);
+                s.set_auto_download_mode(podcast_id, mode);
                 s.set_wifi_only(podcast_id, wifi_only);
                 self.bump_domain(crate::state::Domain::Library);
             }
@@ -215,7 +240,7 @@ impl PodcastHostOpHandler {
         // most-recent undownloaded episodes — the fresh-GUID refresh filter
         // skips every existing episode, so without this the toggle downloaded
         // nothing the user could see.
-        if enabled {
+        if mode.is_enabled() {
             self.handle_evaluate_auto_downloads(correlation_id);
         }
         serde_json::json!({"ok": true})
@@ -229,11 +254,14 @@ impl PodcastHostOpHandler {
     /// deferring Wi-Fi-only shows while on cellular. Idempotent via the
     /// queue-backed [`Self::start_episode_download`].
     pub(super) fn handle_evaluate_auto_downloads(&self, correlation_id: &str) -> serde_json::Value {
-        use crate::store::auto_download::AUTO_DOWNLOAD_BACKFILL_LIMIT;
+        // `auto_download_backfill_candidates` now derives the per-show limit from the
+        // show's typed `AutoDownloadMode` — the `limit_per_show` parameter is
+        // ignored (0 passed as sentinel). `AllNew` uses `AUTO_DOWNLOAD_BACKFILL_LIMIT`
+        // as a safety ceiling; `LatestN(n)` uses `n`; `Off` skips the show entirely.
         let (ready, deferred) = match self.state.library.store.lock() {
             Ok(s) => {
                 let is_on_wifi = s.is_on_wifi();
-                s.auto_download_backfill_candidates(is_on_wifi, AUTO_DOWNLOAD_BACKFILL_LIMIT)
+                s.auto_download_backfill_candidates(is_on_wifi, 0)
             }
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };

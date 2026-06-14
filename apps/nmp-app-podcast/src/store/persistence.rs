@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
+use crate::store::AutoDownloadMode;
 
 /// Schema marker for `podcasts.json`. Bump on incompatible format changes.
 pub const PERSIST_SCHEMA_VERSION: u32 = 1;
@@ -303,8 +304,18 @@ pub(super) struct PersistedPodcast {
     /// deliberately do NOT bump `PERSIST_SCHEMA_VERSION` for this addition
     /// — bumping wipes the user's library because `load()` treats unknown
     /// schemas as empty (see this file, line ~60).
+    ///
+    /// Kept as back-compat: new files also write `auto_download_mode`; the
+    /// load path prefers `auto_download_mode` when present, and falls back
+    /// to this bool (`true` → `AllNew`) for old files that lack the field.
     #[serde(default)]
     pub auto_download: bool,
+    /// Typed auto-download mode (D7). `None` / absent means Off (the legacy
+    /// reader sees `auto_download: false` for the same podcast). Additive:
+    /// written when enabled, absent when Off. Serde `tag = "mode"` repr:
+    /// `{"mode":"all_new"}`, `{"mode":"latest_n","n":5}`, or absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_download_mode: Option<AutoDownloadMode>,
     /// When `true`, the user explicitly allowed cellular auto-downloads
     /// for this show (i.e. Wi-Fi-only is off). Absent in older files ⇒
     /// `false` (cellular not allowed — default Wi-Fi-only behaviour).

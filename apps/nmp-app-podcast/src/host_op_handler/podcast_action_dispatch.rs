@@ -123,9 +123,11 @@ impl PodcastHostOpHandler {
             ),
             PodcastAction::SetAutoDownload {
                 podcast_id,
+                mode,
+                count,
                 enabled,
                 wifi_only,
-            } => self.handle_set_auto_download(podcast_id, enabled, wifi_only, correlation_id),
+            } => self.handle_set_auto_download(podcast_id, mode, count, enabled, wifi_only, correlation_id),
             PodcastAction::DispatchDeferredWifiDownloads => {
                 self.handle_dispatch_deferred_wifi_downloads(correlation_id)
             }

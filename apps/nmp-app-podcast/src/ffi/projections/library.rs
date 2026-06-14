@@ -48,8 +48,27 @@ pub struct PodcastSummary {
     /// `PodcastAction::SetAutoDownload` to flip the bit. Defaults to
     /// `false` so the field is omitted from the wire payload (and from
     /// iTunes search rows, which never have a real `PodcastId`).
+    ///
+    /// Kept for Android back-compat (Android ignores the new typed fields for
+    /// now and reads this bool). iOS should prefer `auto_download_mode` +
+    /// `auto_download_count` (D7).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub auto_download: bool,
+    /// Typed auto-download mode string. One of `"off"`, `"all_new"`, or
+    /// `"latest_n"`. Omitted from the wire when `"off"` (D5). The iOS
+    /// picker reads this to rehydrate the `AutoDownloadPolicy.Mode`
+    /// without conflating `.latestN` and `.allNew` into a single bool.
+    ///
+    /// Wire contract: snake_case value so `.convertFromSnakeCase` on the
+    /// key path (`auto_download_mode` → `autoDownloadMode`) is independent
+    /// of the value string. iOS reads the value as a raw `String` and
+    /// switches on `"all_new"` / `"latest_n"` / `"off"`.
+    #[serde(default, skip_serializing_if = "str::is_empty")]
+    pub auto_download_mode: String,
+    /// Episode count for `mode = "latest_n"`. `0` when the mode is not
+    /// `latest_n`. Omitted from the wire when `0` (D5).
+    #[serde(default, skip_serializing_if = "zero_u32")]
+    pub auto_download_count: u32,
     /// When `true`, cellular auto-download is explicitly allowed for this
     /// show (Wi-Fi-only is off). Omitted from the wire when `false` (D5).
     /// The iOS subscription list reads this to correctly rebuild
@@ -79,6 +98,12 @@ fn str_is_public(s: &str) -> bool {
 /// D5 skip predicate: omit a byte-count field when it is the `0` default
 /// (episode not downloaded, or size unknown).
 fn zero_i64(v: &i64) -> bool {
+    *v == 0
+}
+
+/// D5 skip predicate: omit `auto_download_count` when it is `0` (not a
+/// `latest_n` mode).
+fn zero_u32(v: &u32) -> bool {
     *v == 0
 }
 
