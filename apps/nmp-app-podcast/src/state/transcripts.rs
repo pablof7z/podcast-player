@@ -75,7 +75,11 @@ impl TranscriptsState {
     /// `snapshot_library::build_library_snapshot` which does
     /// `transcript_for` lookups — byte-identical to the pre-migration path.
     pub fn snapshot(&self) -> HashMap<String, Vec<TranscriptEntry>> {
-        self.cache.lock().ok().map(|t| t.clone()).unwrap_or_default()
+        self.cache
+            .lock()
+            .ok()
+            .map(|t| t.clone())
+            .unwrap_or_default()
     }
 
     // ── Action handler ────────────────────────────────────────────────────
@@ -180,8 +184,7 @@ mod tests {
             chrono::Utc::now(),
         );
         // Attach a publisher transcript URL.
-        ep.publisher_transcript_url =
-            Some(Url::parse("https://cdn.example.com/ep.vtt").unwrap());
+        ep.publisher_transcript_url = Some(Url::parse("https://cdn.example.com/ep.vtt").unwrap());
         ep.publisher_transcript_type = Some(TranscriptKind::Vtt);
         store.subscribe(podcast, vec![ep]);
         let store = Arc::new(Mutex::new(store));
@@ -205,6 +208,7 @@ mod tests {
                 body: vtt_body.to_owned(),
                 status_code: 200,
                 headers: vec![],
+                body_base64: None,
             })
         });
         assert_eq!(out["ok"], true);

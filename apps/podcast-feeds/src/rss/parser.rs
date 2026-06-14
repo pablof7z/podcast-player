@@ -1,7 +1,7 @@
 use std::fmt;
 
 use chrono::Utc;
-use podcast_core::{NostrVisibility, Episode, Podcast, PodcastId};
+use podcast_core::{Episode, NostrVisibility, Podcast, PodcastId};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use url::Url;
@@ -61,9 +61,9 @@ pub fn parse_feed(
 
     loop {
         match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ref e)) => state.handle_start(e)?,
+            Ok(Event::Start(ref e)) => state.handle_start(e, reader.decoder())?,
             Ok(Event::Empty(ref e)) => {
-                state.handle_start(e)?;
+                state.handle_start(e, reader.decoder())?;
                 state.handle_end(&local_name(e.name().as_ref()));
             }
             Ok(Event::End(ref e)) => state.handle_end(&local_name(e.name().as_ref())),
@@ -74,7 +74,10 @@ pub fn parse_feed(
                 state.text_buffer.push_str(&s);
             }
             Ok(Event::CData(c)) => {
-                let s = String::from_utf8_lossy(c.as_ref());
+                let s = reader
+                    .decoder()
+                    .decode(c.as_ref())
+                    .map_err(|e| ParseError::MalformedXml(e.to_string()))?;
                 state.text_buffer.push_str(&s);
             }
             Ok(Event::Eof) => break,

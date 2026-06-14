@@ -24,16 +24,16 @@ use std::ffi::{c_char, c_void, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::OnceLock;
 
-use nmp_core::substrate::{CapabilityEnvelope, CapabilityRequest};
-use nmp_ffi::NmpApp;
 use nmp_app_podcast::capability::{
     NostrRelayRequest, NostrRelayResult, NOSTR_RELAY_CAPABILITY_NAMESPACE,
 };
 use nmp_app_podcast::ffi::PodcastHandle;
 use nmp_app_podcast::nmp_app_podcast_http_report;
+use nmp_core::substrate::{CapabilityEnvelope, CapabilityRequest};
+use nmp_ffi::NmpApp;
 use podcast_feeds::http::{
-    HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult,
-    HTTP_ASYNC_CAPABILITY_NAMESPACE, HTTP_CAPABILITY_NAMESPACE,
+    HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult, HTTP_ASYNC_CAPABILITY_NAMESPACE,
+    HTTP_CAPABILITY_NAMESPACE,
 };
 use reqwest::header::{HeaderName, HeaderValue};
 
@@ -84,10 +84,7 @@ use nmp_ffi::nmp_app_set_capability_callback;
 /// namespace, and returns a `CapabilityEnvelope` JSON pointer.
 ///
 /// D6: never returns null; every failure is data in the envelope.
-extern "C" fn capability_handler(
-    _ctx: *mut c_void,
-    request_json: *const c_char,
-) -> *mut c_char {
+extern "C" fn capability_handler(_ctx: *mut c_void, request_json: *const c_char) -> *mut c_char {
     // Local guard mirrors ffi/guard.rs for this binary entry point (pub(crate)
     // ffi_guard is not reachable from [[bin]] crates). The fallback CString is
     // constructed ONLY on the panic path — building it eagerly would leak its
@@ -137,10 +134,10 @@ fn handle_request(request_str: &str) -> String {
         "nmp.keyring.capability" => {
             use nmp_core::substrate::KeyringRequest;
             match serde_json::from_str::<KeyringRequest>(&req.payload_json) {
-                Ok(KeyringRequest::Retrieve { .. }) => serde_json::to_string(
-                    &nmp_core::substrate::KeyringResult::not_found(),
-                )
-                .unwrap_or_else(|_| "{}".into()),
+                Ok(KeyringRequest::Retrieve { .. }) => {
+                    serde_json::to_string(&nmp_core::substrate::KeyringResult::not_found())
+                        .unwrap_or_else(|_| "{}".into())
+                }
                 _ => serde_json::to_string(&nmp_core::substrate::KeyringResult::ok(None))
                     .unwrap_or_else(|_| "{}".into()),
             }
@@ -178,7 +175,10 @@ fn handle_http_async(payload_json: &str) {
     let handle_addr = match PODCAST_HANDLE_ADDR.get() {
         Some(&addr) => addr,
         None => {
-            eprintln!("[headless] http_async: handle not set; dropping {}", cmd.request_id);
+            eprintln!(
+                "[headless] http_async: handle not set; dropping {}",
+                cmd.request_id
+            );
             return;
         }
     };
@@ -243,20 +243,35 @@ fn handle_nostr_relay(payload_json: &str) -> String {
     };
 
     let result = match relay_req {
-        NostrRelayRequest::Publish { event_json, relay_urls } => {
+        NostrRelayRequest::Publish {
+            event_json,
+            relay_urls,
+        } => {
             let timeout = std::time::Duration::from_secs(15);
-            let (accepted, errors) =
-                rt.block_on(relay_client::publish_event(&event_json, &relay_urls, timeout));
+            let (accepted, errors) = rt.block_on(relay_client::publish_event(
+                &event_json,
+                &relay_urls,
+                timeout,
+            ));
             NostrRelayResult::Published {
                 ok: !accepted.is_empty(),
                 accepted_relays: accepted,
                 errors,
             }
         }
-        NostrRelayRequest::Subscribe { sub_id, filter, relay_urls, timeout_ms } => {
+        NostrRelayRequest::Subscribe {
+            sub_id,
+            filter,
+            relay_urls,
+            timeout_ms,
+        } => {
             let timeout = std::time::Duration::from_millis(timeout_ms);
-            let events =
-                rt.block_on(relay_client::subscribe_until_eose(&sub_id, &filter, &relay_urls, timeout));
+            let events = rt.block_on(relay_client::subscribe_until_eose(
+                &sub_id,
+                &filter,
+                &relay_urls,
+                timeout,
+            ));
             NostrRelayResult::Events {
                 eose: true, // best-effort; we always return after EOSE or timeout
                 events,
@@ -272,7 +287,9 @@ fn handle_http(payload_json: &str) -> String {
     let http_req: HttpRequest = match serde_json::from_str(payload_json) {
         Ok(r) => r,
         Err(e) => {
-            let res = HttpResult::Error { message: format!("decode: {e}") };
+            let res = HttpResult::Error {
+                message: format!("decode: {e}"),
+            };
             return serde_json::to_string(&res).unwrap_or_else(|_| "{}".into());
         }
     };
@@ -303,8 +320,14 @@ fn execute_http_request(http_req: &HttpRequest) -> HttpResult {
             }
         }
     }
-    if let Some(body) = &http_req.body {
-        builder = builder.body(body.clone());
+    match http_req.body_bytes() {
+        Ok(Some(bytes)) => builder = builder.body(bytes.into_owned()),
+        Ok(None) => {}
+        Err(e) => {
+            return HttpResult::Error {
+                message: format!("invalid-body-base64: {e}"),
+            }
+        }
     }
 
     match builder.send() {
@@ -315,12 +338,16 @@ fn execute_http_request(http_req: &HttpRequest) -> HttpResult {
                 .iter()
                 .map(|(k, v)| vec![k.as_str().to_owned(), v.to_str().unwrap_or("").to_owned()])
                 .collect();
-            match resp.text() {
-                Ok(body) => HttpResult::Ok { status_code, headers, body },
-                Err(e) => HttpResult::Error { message: format!("body: {e}") },
+            match resp.bytes() {
+                Ok(bytes) => HttpResult::ok_with_body_bytes(status_code, headers, bytes.as_ref()),
+                Err(e) => HttpResult::Error {
+                    message: format!("body: {e}"),
+                },
             }
         }
-        Err(e) => HttpResult::Error { message: format!("transport: {e}") },
+        Err(e) => HttpResult::Error {
+            message: format!("transport: {e}"),
+        },
     }
 }
 

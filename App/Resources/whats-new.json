@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-14T10:40:41Z",
+      "lines": [
+        "Feeds that declare non-UTF-8 text encodings now refresh and subscribe with the right titles instead of dropping characters."
+      ]
+    },
+    {
       "shipped_at": "2026-06-14T10:09:00Z",
       "lines": [
         "Failed download deletes now keep the episode marked as downloaded and show the failure in Diagnostics."

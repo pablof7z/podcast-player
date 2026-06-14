@@ -1,5 +1,6 @@
 use podcast_core::types::transcript::TranscriptKind;
 use podcast_core::{Episode, Person, PodcastId, SoundBite};
+use quick_xml::encoding::Decoder;
 use quick_xml::events::BytesStart;
 use url::Url;
 
@@ -51,7 +52,11 @@ impl ParserState {
         }
     }
 
-    pub(crate) fn handle_start(&mut self, e: &BytesStart) -> Result<(), ParseError> {
+    pub(crate) fn handle_start(
+        &mut self,
+        e: &BytesStart,
+        decoder: Decoder,
+    ) -> Result<(), ParseError> {
         let name = local_name(e.name().as_ref());
         self.text_buffer.clear();
 
@@ -62,13 +67,13 @@ impl ParserState {
                 self.item = RssItemAccumulator::default();
             }
             "image" if !self.in_item => self.in_channel_image = true,
-            "enclosure" if self.in_item => self.start_enclosure(e),
-            "itunes:image" => self.start_itunes_image(e),
-            "itunes:category" if !self.in_item => self.start_itunes_category(e),
-            "podcast:transcript" if self.in_item => self.start_transcript(e),
-            "podcast:chapters" if self.in_item => self.start_chapters(e),
-            "podcast:person" if self.in_item => self.start_person(e),
-            "podcast:soundbite" if self.in_item => self.start_soundbite(e),
+            "enclosure" if self.in_item => self.start_enclosure(e, decoder),
+            "itunes:image" => self.start_itunes_image(e, decoder),
+            "itunes:category" if !self.in_item => self.start_itunes_category(e, decoder),
+            "podcast:transcript" if self.in_item => self.start_transcript(e, decoder),
+            "podcast:chapters" if self.in_item => self.start_chapters(e, decoder),
+            "podcast:person" if self.in_item => self.start_person(e, decoder),
+            "podcast:soundbite" if self.in_item => self.start_soundbite(e, decoder),
             _ => {}
         }
         Ok(())
@@ -130,17 +135,17 @@ impl ParserState {
         }
     }
 
-    fn start_enclosure(&mut self, e: &BytesStart) {
-        if let Some(raw) = attribute(e, "url") {
+    fn start_enclosure(&mut self, e: &BytesStart, decoder: Decoder) {
+        if let Some(raw) = attribute(e, "url", decoder) {
             if let Some(url) = resolve_url(&raw, &self.feed_url) {
                 self.item.enclosure_url = Some(url);
             }
         }
-        self.item.enclosure_mime_type = attribute(e, "type");
+        self.item.enclosure_mime_type = attribute(e, "type", decoder);
     }
 
-    fn start_itunes_image(&mut self, e: &BytesStart) {
-        if let Some(href) = attribute(e, "href") {
+    fn start_itunes_image(&mut self, e: &BytesStart, decoder: Decoder) {
+        if let Some(href) = attribute(e, "href", decoder) {
             if let Some(url) = resolve_url(&href, &self.feed_url) {
                 if self.in_item {
                     self.item.itunes_image_url = Some(url);
@@ -151,18 +156,22 @@ impl ParserState {
         }
     }
 
-    fn start_itunes_category(&mut self, e: &BytesStart) {
-        if let Some(text) = attribute(e, "text") {
+    fn start_itunes_category(&mut self, e: &BytesStart, decoder: Decoder) {
+        if let Some(text) = attribute(e, "text", decoder) {
             if !text.is_empty() && !self.channel_categories.contains(&text) {
                 self.channel_categories.push(text);
             }
         }
     }
 
-    fn start_transcript(&mut self, e: &BytesStart) {
-        let Some(raw) = attribute(e, "url") else { return };
-        let Some(url) = resolve_url(&raw, &self.feed_url) else { return };
-        let kind = attribute(e, "type")
+    fn start_transcript(&mut self, e: &BytesStart, decoder: Decoder) {
+        let Some(raw) = attribute(e, "url", decoder) else {
+            return;
+        };
+        let Some(url) = resolve_url(&raw, &self.feed_url) else {
+            return;
+        };
+        let kind = attribute(e, "type", decoder)
             .as_deref()
             .and_then(TranscriptKind::from_mime);
         let current = transcript_rank(self.item.preferred_transcript.as_ref().and_then(|p| p.kind));
@@ -172,30 +181,30 @@ impl ParserState {
         }
     }
 
-    fn start_chapters(&mut self, e: &BytesStart) {
-        if let Some(raw) = attribute(e, "url") {
+    fn start_chapters(&mut self, e: &BytesStart, decoder: Decoder) {
+        if let Some(raw) = attribute(e, "url", decoder) {
             if let Some(url) = resolve_url(&raw, &self.feed_url) {
                 self.item.chapters_url = Some(url);
             }
         }
     }
 
-    fn start_person(&mut self, e: &BytesStart) {
+    fn start_person(&mut self, e: &BytesStart, decoder: Decoder) {
         let mut person = Person::new("");
-        person.role = attribute(e, "role");
-        person.group = attribute(e, "group");
-        person.image_url = attribute(e, "img")
+        person.role = attribute(e, "role", decoder);
+        person.group = attribute(e, "group", decoder);
+        person.image_url = attribute(e, "img", decoder)
             .as_deref()
             .and_then(|s| resolve_url(s, &self.feed_url));
-        person.link_url = attribute(e, "href")
+        person.link_url = attribute(e, "href", decoder)
             .as_deref()
             .and_then(|s| resolve_url(s, &self.feed_url));
         self.item.pending_person = Some(person);
     }
 
-    fn start_soundbite(&mut self, e: &BytesStart) {
-        let start = attribute(e, "startTime").and_then(|s| s.parse::<f64>().ok());
-        let dur = attribute(e, "duration").and_then(|s| s.parse::<f64>().ok());
+    fn start_soundbite(&mut self, e: &BytesStart, decoder: Decoder) {
+        let start = attribute(e, "startTime", decoder).and_then(|s| s.parse::<f64>().ok());
+        let dur = attribute(e, "duration", decoder).and_then(|s| s.parse::<f64>().ok());
         if let (Some(s), Some(d)) = (start, dur) {
             self.item.pending_soundbite_start = Some(s);
             self.item.pending_soundbite_duration = Some(d);
@@ -233,11 +242,11 @@ pub(crate) fn local_name(qualified: &[u8]) -> String {
     String::from_utf8_lossy(qualified).to_string()
 }
 
-fn attribute(start: &BytesStart, key: &str) -> Option<String> {
+fn attribute(start: &BytesStart, key: &str, decoder: Decoder) -> Option<String> {
     for attr in start.attributes().with_checks(false).flatten() {
         if attr.key.as_ref() == key.as_bytes() {
             return attr
-                .decode_and_unescape_value(quick_xml::Reader::<&[u8]>::from_reader(&[]).decoder())
+                .decode_and_unescape_value(decoder)
                 .ok()
                 .map(|c| c.into_owned());
         }

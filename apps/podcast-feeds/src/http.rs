@@ -29,7 +29,7 @@
 //!
 //! ```text
 //! request:  {"method":"GET","url":"https://…","headers":[["Accept","application/rss+xml"]]}
-//! result:   {"status":"ok","status_code":200,"headers":[["ETag","\"abc\""]],"body":"<rss>…</rss>"}
+//! result:   {"status":"ok","status_code":200,"headers":[["ETag","\"abc\""]],"body":"<rss>…</rss>","body_base64":"..."}
 //! error:    {"status":"error","message":"transport: timeout"}
 //! ```
 //!
@@ -42,12 +42,9 @@
 //!   (`Vec<Vec<String>>`), not a map — RSS feeds sometimes send the same
 //!   header twice and we want to preserve order/multiplicity. The iOS side
 //!   reads `[[String]]` and writes them with `setValue(_:forHTTPHeaderField:)`.
-//! - The response body is a UTF-8 string. The iOS executor lossy-converts the
-//!   `Data` to a `String` via `String(data:encoding:.utf8)`. RSS feeds with
-//!   non-UTF-8 encodings (Windows-1252, ISO-8859-1) lose the original bytes
-//!   here. This is a pre-existing limitation inherited from the shipped
-//!   Swift contract and the legacy Swift `RSSParser`; tracked for follow-up
-//!   in BACKLOG. Don't widen the contract in this PR.
+//! - Response bodies keep the legacy UTF-8 `body` field and add
+//!   `body_base64` for the raw bytes. Feed parsing should prefer
+//!   [`HttpResult::body_bytes`] so XML encoding declarations are honored.
 //!
 //! ## Schema stability
 //!
@@ -56,6 +53,9 @@
 //! has not landed upstream yet (no `nmp-core/src/substrate/http.rs` exists).
 //! When that upstream type does land, this module reconciles against it.
 
+use std::borrow::Cow;
+
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 /// Capability namespace string. Mirrors `HttpCapability::namespace` in the
@@ -155,6 +155,21 @@ impl HttpRequest {
             body_base64: None,
         }
     }
+
+    /// Return the request body bytes, preferring `body_base64` over `body`.
+    pub fn body_bytes(&self) -> Result<Option<Cow<'_, [u8]>>, String> {
+        if let Some(body_base64) = &self.body_base64 {
+            return base64::engine::general_purpose::STANDARD
+                .decode(body_base64)
+                .map(Cow::Owned)
+                .map(Some)
+                .map_err(|e| e.to_string());
+        }
+        Ok(self
+            .body
+            .as_ref()
+            .map(|body| Cow::Borrowed(body.as_bytes())))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -191,9 +206,13 @@ pub enum HttpResult {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         headers: Vec<Vec<String>>,
         /// UTF-8 body. Non-UTF-8 bytes are lossy-converted by the iOS
-        /// executor — see the file-level doc on this pre-existing
-        /// limitation.
+        /// executor; callers that need exact bytes must prefer
+        /// [`Self::body_bytes`].
         body: String,
+        /// Standard-alphabet base64 (`+/`, padded) response body bytes.
+        /// Additive: older executors omit it and Rust falls back to `body`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body_base64: Option<String>,
     },
     /// Transport-level failure (DNS, TLS, timeout, malformed request,
     /// capability stopped, etc.). The message is a human-readable
@@ -202,6 +221,43 @@ pub enum HttpResult {
 }
 
 impl HttpResult {
+    /// Construct a successful result from raw response bytes while preserving
+    /// the legacy UTF-8 `body` field for older consumers.
+    #[must_use]
+    pub fn ok_with_body_bytes(status_code: u16, headers: Vec<Vec<String>>, bytes: &[u8]) -> Self {
+        let body = std::str::from_utf8(bytes)
+            .map(str::to_owned)
+            .unwrap_or_default();
+        let body_base64 = if bytes.is_empty() {
+            None
+        } else {
+            Some(base64::engine::general_purpose::STANDARD.encode(bytes))
+        };
+        Self::Ok {
+            status_code,
+            headers,
+            body,
+            body_base64,
+        }
+    }
+
+    /// Return the raw body bytes when the platform supplied them, otherwise
+    /// fall back to the legacy UTF-8 `body` string.
+    pub fn body_bytes(&self) -> Result<Option<Cow<'_, [u8]>>, String> {
+        match self {
+            Self::Ok {
+                body_base64: Some(body_base64),
+                ..
+            } => base64::engine::general_purpose::STANDARD
+                .decode(body_base64)
+                .map(Cow::Owned)
+                .map(Some)
+                .map_err(|e| e.to_string()),
+            Self::Ok { body, .. } => Ok(Some(Cow::Borrowed(body.as_bytes()))),
+            Self::Error { .. } => Ok(None),
+        }
+    }
+
     /// Case-insensitive header lookup. Returns the first matching value or
     /// `None`. Header names from the wire are whatever case the upstream
     /// server returned (preserved by `HTTPURLResponse.allHeaderFields`),

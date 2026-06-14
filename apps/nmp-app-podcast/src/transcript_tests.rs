@@ -147,6 +147,7 @@ fn handle_fetch_transcript_stores_entries_and_bumps_rev() {
             status_code: 200,
             headers: vec![],
             body: body.to_owned(),
+            body_base64: None,
         })
     });
 

@@ -22,6 +22,23 @@ final class CapabilityRoutingTests: XCTestCase {
         XCTAssertEqual(result.message, "capability-stopped")
     }
 
+    func testHttpResultOkEncodesRawBodyBase64WhenPresent() throws {
+        let result = HttpResult.ok(
+            statusCode: 200,
+            headers: [["Content-Type", "application/rss+xml"]],
+            body: "",
+            bodyBase64: "Q2Fm6Q==")
+
+        let data = try JSONEncoder().encode(result)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertEqual(object["status"] as? String, "ok")
+        XCTAssertEqual(object["status_code"] as? Int, 200)
+        XCTAssertEqual(object["body"] as? String, "")
+        XCTAssertEqual(object["body_base64"] as? String, "Q2Fm6Q==")
+    }
+
     @MainActor
     func testCapabilityHolderRoutesAsyncHTTPNamespace() throws {
         let http = HttpCapability(timeout: 0.01)

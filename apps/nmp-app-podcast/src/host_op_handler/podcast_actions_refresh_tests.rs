@@ -63,6 +63,7 @@ fn http_200(body: &str) -> HttpResult {
             ],
         ],
         body: body.to_owned(),
+        body_base64: None,
     }
 }
 
@@ -77,6 +78,7 @@ fn http_304() -> HttpResult {
             ],
         ],
         body: String::new(),
+        body_base64: None,
     }
 }
 

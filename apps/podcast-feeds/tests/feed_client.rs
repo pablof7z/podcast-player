@@ -95,8 +95,7 @@ fn build_feed_request_with_full_cache_adds_conditional_headers() {
 
 #[test]
 fn build_feed_request_with_etag_only_omits_if_modified_since() {
-    let cache =
-        EtagCache::with_headers(t("2026-01-01T12:00:00Z"), Some("\"abc123\"".into()), None);
+    let cache = EtagCache::with_headers(t("2026-01-01T12:00:00Z"), Some("\"abc123\"".into()), None);
     let req = build_feed_request(&feed_url(), Some(&cache));
     assert_eq!(req.headers.len(), 3);
     let names: Vec<_> = req.headers.iter().map(|h| h[0].as_str()).collect();
@@ -131,6 +130,7 @@ fn handle_response_304_returns_not_modified_with_carried_cache() {
         status_code: 304,
         headers: vec![],
         body: String::new(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let result = handle_feed_response(
@@ -164,11 +164,11 @@ fn handle_response_304_without_prior_cache_yields_empty_cache() {
         status_code: 304,
         headers: vec![],
         body: String::new(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
-    let result =
-        handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)
-            .expect("304 should not error");
+    let result = handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)
+        .expect("304 should not error");
     match result {
         FeedResult::NotModified { cache } => {
             assert_eq!(cache.last_refreshed, now);
@@ -192,6 +192,7 @@ fn handle_response_200_parses_and_captures_new_headers() {
             vec!["Content-Type".into(), "application/rss+xml".into()],
         ],
         body: minimal_rss(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let podcast_id = PodcastId::generate();
@@ -219,6 +220,36 @@ fn handle_response_200_parses_and_captures_new_headers() {
 }
 
 #[test]
+fn handle_response_200_prefers_raw_body_bytes_for_declared_encoding() {
+    let body = b"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>
+<rss version=\"2.0\">
+  <channel>
+    <title>Caf\xe9 Podcasts</title>
+    <description>Latin-1 feed.</description>
+    <item>
+      <title>Ni\xf1o Episode</title>
+      <enclosure url=\"https://example.com/ep1.mp3\" type=\"audio/mpeg\"/>
+      <guid>latin-1</guid>
+    </item>
+  </channel>
+</rss>";
+    let response = HttpResult::ok_with_body_bytes(
+        200,
+        vec![vec!["Content-Type".into(), "application/rss+xml".into()]],
+        body,
+    );
+    let now = t("2026-01-01T12:00:00Z");
+    let result = handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)
+        .expect("latin-1 RSS should parse through raw body bytes");
+
+    let FeedResult::Parsed { parsed, .. } = result else {
+        panic!("expected Parsed");
+    };
+    assert_eq!(parsed.podcast.title, "Café Podcasts");
+    assert_eq!(parsed.episodes[0].title, "Niño Episode");
+}
+
+#[test]
 fn handle_response_200_missing_response_headers_carries_prior_cache_forward() {
     // If a server stops sending ETag (some CDNs strip them on cache hits) we
     // must keep our previously-known ETag instead of clearing it — otherwise
@@ -232,6 +263,7 @@ fn handle_response_200_missing_response_headers_carries_prior_cache_forward() {
         status_code: 200,
         headers: vec![],
         body: minimal_rss(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let result = handle_feed_response(
@@ -262,6 +294,7 @@ fn handle_response_etag_lookup_is_case_insensitive_on_response_headers() {
         status_code: 200,
         headers: vec![vec!["etag".into(), "\"lower-abc\"".into()]],
         body: minimal_rss(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let result = handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)
@@ -280,6 +313,7 @@ fn handle_response_5xx_status_returns_http_error() {
         status_code: 503,
         headers: vec![],
         body: String::new(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let err = handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)
@@ -307,6 +341,7 @@ fn handle_response_malformed_body_returns_parse_error() {
         status_code: 200,
         headers: vec![],
         body: "not actually xml".into(),
+        body_base64: None,
     };
     let now = t("2026-01-01T12:00:00Z");
     let err = handle_feed_response(&feed_url(), PodcastId::generate(), &response, None, now)

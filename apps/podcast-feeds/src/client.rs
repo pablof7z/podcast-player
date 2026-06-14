@@ -168,6 +168,7 @@ pub fn handle_feed_response(
             status_code,
             headers: _,
             body: _,
+            body_base64: _,
         } if *status_code == 304 => {
             let cache = response_cache(response, prior_cache, now);
             Ok(FeedResult::NotModified { cache })
@@ -176,18 +177,25 @@ pub fn handle_feed_response(
             status_code,
             headers: _,
             body: _,
+            body_base64: _,
         } if *status_code != 200 => Err(FeedError::Http {
             status_code: *status_code,
         }),
-        HttpResult::Ok { headers, body, .. } => {
-            let parsed = parse_feed(body.as_bytes(), feed_url, podcast_id)?;
+        HttpResult::Ok { headers, .. } => {
+            let body_bytes = response
+                .body_bytes()
+                .map_err(|e| FeedError::Transport(format!("invalid body_base64: {e}")))?;
+            let parsed = parse_feed(
+                body_bytes.as_deref().unwrap_or_default(),
+                feed_url,
+                podcast_id,
+            )?;
             let cache = response_cache(response, prior_cache, now);
-            // We deliberately replicated `headers` / `body` in the match arms
-            // above to keep the borrow checker happy when we then call
+            // We deliberately replicated `headers` in the match arm above to
+            // keep the borrow checker happy when we then call
             // `response.header(...)` here, which needs an immutable borrow of
             // the whole `response`.
             let _ = headers;
-            let _ = body;
             Ok(FeedResult::Parsed {
                 feed_url: feed_url.clone(),
                 parsed,
@@ -226,6 +234,7 @@ mod tests {
             status_code,
             headers,
             body: body.to_owned(),
+            body_base64: None,
         }
     }
 
