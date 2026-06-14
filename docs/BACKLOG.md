@@ -29,17 +29,17 @@ worktrees currently in flight.
   open cleanup/dependency notes, but neither is currently represented as an
   app-local workaround on `main`. Remaining parity debt lives in `App/Sources/`
   Swift policy/fallback code plus the listed platform/AI gaps.
-- **p0-validation-gate.** Partially established: current branch protection
+- **p0-validation-gate.** Established for current merge gates: branch protection
   requires deterministic merge contexts for `Git diff hygiene`, `Migration
   lint gates`, `Rust workspace build gate (all members, all targets)`, `Swift
   bridge codegen drift gate`, `Android Kotlin compile + unit tests`, `Android
   cross-compile check (aarch64-linux-android)`, and `Headless e2e kernel
-  proofs (nipf4 signing + offline scenarios)`. Do not mark the full iOS
-  simulator lane established yet. `Build and Test` runs
+  proofs (nipf4 signing + offline scenarios)`, plus the full iOS simulator
+  `Build and Test` lane. `Build and Test` runs
   `ci_scripts/run_tests.sh`, which builds the Rust core for
   `aarch64-apple-ios-sim` and runs `xcodebuild ... test` without
-  `SKIP_UI_TESTS` in the regular Test workflow, but it is not currently a
-  passing required merge gate: PR #495's run
+  `SKIP_UI_TESTS` in the regular Test workflow. The route back to making it
+  required started after PR #495's run
   `27500102726` failed on the main-equivalent merge commit with the test host
   restarting during `AppTests.testPositionUpdatesAreDebounced`, a failing
   `AppStateStorePerformanceTests.testUnplayedCountIsConstantTime`, and a
@@ -63,9 +63,7 @@ worktrees currently in flight.
   passed for `UITestSeederTests/testSeededDownloadURLUsesCanonicalDownloadStorePath`,
   `CoreJourneyUITests/testP0_03_PlayStartsAudio`,
   `CoreJourneyUITests/testP0_04_ResumeReopenByTitle`, and
-  `SmokeUITests/testColdLaunchPerformance`. As of the 2026-06-14 audit, the
-  full `Build and Test` workflow is still intentionally not a required branch
-  protection context; observe a clean main-equivalent run before adding it.
+  `SmokeUITests/testColdLaunchPerformance`.
   The post-#497 main Test workflow exposed a separate Android CI harness bug:
   Kotlin compile and unit tests succeeded, then `gradle/actions/setup-gradle@v3`
   failed during cache cleanup against Gradle 8.7 with a write-only
@@ -91,7 +89,12 @@ worktrees currently in flight.
   `tuist generate`, because
   LiteRT-LM's remote binary artifacts exceed the 30-minute simulator lane
   budget and its device-only local-model probes skip on simulator; default
-  local/TestFlight generation still includes the real package.
+  local/TestFlight generation still includes the real package. The clean
+  main-equivalent evidence is Test workflow run `27509095557` on commit
+  `bde6e7695066ea7e3ae3f37ad01ad44cc1778d90`: `Build and Test` completed
+  successfully at `2026-06-14T19:43:14Z` after PR #504 landed, and branch
+  protection now includes `Build and Test` in the required status-check
+  contexts.
   The old `nmp-blossom` portability blocker is resolved on `main`, PR #498
   removed the temporary `vendor/nmp-core` fork, and the Rust/headless required
   merge gates are locally unblocked by the upstream-pinned NMP rev. Do not
