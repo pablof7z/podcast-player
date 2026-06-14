@@ -227,6 +227,16 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// decode must tolerate its absence — synthesized `Decodable` would otherwise
     /// throw `keyNotFound`.
     @DefaultFalse var autoDownload: Bool = false
+    /// Typed auto-download mode string (D7). One of `"all_new"`, `"latest_n"`,
+    /// or `"off"`. Empty string when the mode is Off (Rust omits the field via
+    /// `skip_serializing_if`). The iOS picker reads this to reconstruct
+    /// `AutoDownloadPolicy.Mode` precisely — no more conflating `.allNew` and
+    /// `.latestN` into a single bool. Prefer this over `autoDownload` for
+    /// mode decisions.
+    var autoDownloadMode: String = ""
+    /// Episode count for `autoDownloadMode == "latest_n"`. `0` for other modes.
+    /// Omitted from the wire when `0` (D5).
+    var autoDownloadCount: Int = 0
     /// When `true`, the user explicitly allowed cellular auto-downloads
     /// for this show (Wi-Fi-only is off). Omitted from the wire when `false`
     /// (D5 — `#[serde(skip_serializing_if)]`). The iOS subscription list
@@ -388,6 +398,8 @@ extension PodcastSummary: Codable {
         lastRefreshedAt = try c.decodeIfPresent(Int.self, forKey: .lastRefreshedAt)
         titleIsPlaceholder = try c.decodeIfPresent(Bool.self, forKey: .titleIsPlaceholder) ?? false
         autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
+        autoDownloadMode = try c.decodeIfPresent(String.self, forKey: .autoDownloadMode) ?? ""
+        autoDownloadCount = try c.decodeIfPresent(Int.self, forKey: .autoDownloadCount) ?? 0
         cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
         ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
         nostrVisibility = try c.decodeIfPresent(String.self, forKey: .nostrVisibility) ?? "public"
