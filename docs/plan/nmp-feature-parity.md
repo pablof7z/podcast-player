@@ -20,20 +20,20 @@ delete it until all exit criteria at the bottom of this file pass.
 ## Current Snapshot - 2026-06-14
 
 The large PR stack has merged, but it does not equal feature parity. Current
-main is through PR #498 and pins NMP `0.6.2` crates to
-`fbc0155031fdf862fa47673c5211fc3eebc3863c`. The old local `nmp-blossom`
-packaging blocker (`#479`) is closed: PR #488 replaced the `/tmp` path patch
-with reproducible `vendor/nmp-blossom`. PR #498 removed the temporary
-`vendor/nmp-core` fork and uses the upstream ADR-0055 `publish_ver` fix for
-publish-engine relay-state transitions that change `publish_outbox`.
+main pins NMP `0.7.2` crates to
+`45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891` (nmp-v0.7.2) as ordinary git deps.
+The old local `nmp-blossom` packaging blocker (`#479`) is closed and the
+vendoring workaround it spawned is now retired: as of nmp-v0.7.2 `nmp-blossom`
+is un-parked upstream (a first-class `[workspace].members` crate of the NMP
+repo), so the `vendor/nmp-blossom` copy and its `[patch]` redirect were deleted
+and `nmp-blossom` resolves directly via git like every other NMP crate.
 `nmp-feedback` is pinned in lockstep at
-`630d1a9f0e3256c9fe0ab1480f2a35e058f8c9e0`. Upstream NMP issues
-`pablof7z/nostr-multi-platform#1408` and `#1412` remain open for canonical
-packaging/projection-rev cleanup, but current podcast-player `main` no longer
-carries an app-local `nmp-core` workaround. Many branches created screens,
+`857dedf45be721d748bf4ed55a76144ba89018b9`. Many branches created screens,
 projections, action namespaces, and local heuristics; several still need real
 logic, relay/provider integration, device validation, or removal of Swift-side
-policy/fallback code in `App/Sources/`.
+policy/fallback code in `App/Sources/`. The full iOS simulator `Build and Test`
+lane is required again after clean main-equivalent Test workflow run
+`27509095557` on commit `bde6e7695066ea7e3ae3f37ad01ad44cc1778d90`.
 
 Recent corrective PRs changed the status, but not the final exit criteria.
 The active NIP-F4 path now has canonical wire builders/parsers, real
@@ -173,7 +173,7 @@ completion, not absence of all infrastructure.
 ## Immediate Priority Order
 
 1. Finish remaining NIP-F4 hardening: configured write-relay routing, durable retry, stale NIP74 naming cleanup, and device validation.
-2. iOS validation gate: observe a clean main-equivalent full `Build and Test` run after the PR #497 playback UI fixes, then make the lane required.
+2. Keep the required iOS `Build and Test` gate green. Clean main-equivalent evidence exists on Test workflow run `27509095557` for commit `bde6e7695066ea7e3ae3f37ad01ad44cc1778d90`, and `Build and Test` is now a required branch-protection context.
 3. Remaining compat shims and identity/settings ownership.
 4. Capability push/routing cleanup and validation gate.
 5. Tier 1 device-level usability validation.
