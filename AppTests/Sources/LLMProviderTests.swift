@@ -22,8 +22,7 @@ final class LLMProviderTests: XCTestCase {
         var settings = Settings()
         settings.markOllamaBYOK(
             keyID: "key_ollama",
-            keyLabel: "Podcast Ollama",
-            connectedAt: Date(timeIntervalSince1970: 1_700_000_000)
+            keyLabel: "Podcast Ollama"
         )
         settings.embeddingsModel = "ollama:qwen3-embedding"
         settings.embeddingsModelName = "qwen3-embedding"
