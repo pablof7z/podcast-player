@@ -12,6 +12,7 @@ mod inbox_triage;
 mod key_persistence;
 mod llm_setup;
 mod nipf4_publish;
+mod profile;
 mod relay_smoke;
 mod rss_subscribe;
 mod social;
@@ -55,5 +56,6 @@ pub fn run_all(
         ("comments", comments::run(app, handle)),
         ("agent_notes", agent_notes::run(app, handle)),
         ("social", social::run(app, handle)),
+        ("publish_profile", profile::run(app, handle)),
     ]
 }
