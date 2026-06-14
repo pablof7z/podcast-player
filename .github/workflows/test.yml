@@ -9,6 +9,16 @@ on:
 permissions:
   contents: read
 
+# Rapid-fire pushes to the same branch/PR (a fast multi-agent merge cadence)
+# otherwise stack one self-hosted iOS `test` run per commit, queuing the single
+# runner many-deep. Cancel the older in-flight run for a ref when a newer commit
+# arrives — only the latest commit needs validating. Safe now that run_tests.sh
+# self-heals the secp256k1 DerivedData on each run (a cancelled build no longer
+# leaves read-only plugin outputs that wedge the next build).
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   diff-check:
     name: Git diff hygiene
