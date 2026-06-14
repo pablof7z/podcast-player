@@ -140,4 +140,3 @@ pub(super) fn compact_count(n: u64) -> String {
         format!("{v:.1}B")
     }
 }
-

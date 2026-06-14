@@ -457,4 +457,3 @@ pub fn finish_size_prefixed_accounts_snapshot_buffer<'a, 'b, A: ::flatbuffers::A
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

@@ -485,4 +485,3 @@ pub fn finish_size_prefixed_action_stages_snapshot_buffer<'a, 'b, A: ::flatbuffe
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

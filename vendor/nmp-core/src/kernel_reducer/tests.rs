@@ -441,4 +441,3 @@ fn tick_invokes_claim_expansion_drain_without_panicking_with_relay() {
     let _out = r.tick();
     // Pass: no panic is the primary assertion.
 }
-

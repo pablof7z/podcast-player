@@ -361,4 +361,3 @@ pub fn finish_size_prefixed_signer_state_buffer<'a, 'b, A: ::flatbuffers::Alloca
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

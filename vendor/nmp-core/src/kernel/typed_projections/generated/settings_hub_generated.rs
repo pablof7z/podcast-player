@@ -191,4 +191,3 @@ pub fn finish_size_prefixed_settings_hub_snapshot_buffer<'a, 'b, A: ::flatbuffer
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

@@ -457,4 +457,3 @@ pub fn finish_size_prefixed_nip_46_onboarding_buffer<'a, 'b, A: ::flatbuffers::A
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

@@ -420,4 +420,3 @@ fn run_gc_step_drives_ram_eviction() {
         kernel.events.len()
     );
 }
-

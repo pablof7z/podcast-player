@@ -208,4 +208,3 @@ pub fn finish_size_prefixed_active_account_snapshot_buffer<'a, 'b, A: ::flatbuff
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

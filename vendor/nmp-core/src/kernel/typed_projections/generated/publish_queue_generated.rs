@@ -536,4 +536,3 @@ pub fn finish_size_prefixed_publish_queue_snapshot_buffer<'a, 'b, A: ::flatbuffe
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

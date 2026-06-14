@@ -355,4 +355,3 @@ pub fn finish_size_prefixed_action_lifecycle_snapshot_buffer<'a, 'b, A: ::flatbu
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

@@ -666,4 +666,3 @@ pub fn finish_size_prefixed_claimed_events_snapshot_buffer<'a, 'b, A: ::flatbuff
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

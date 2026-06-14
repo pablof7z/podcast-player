@@ -307,4 +307,3 @@ pub fn finish_size_prefixed_resolved_profiles_snapshot_buffer<'a, 'b, A: ::flatb
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

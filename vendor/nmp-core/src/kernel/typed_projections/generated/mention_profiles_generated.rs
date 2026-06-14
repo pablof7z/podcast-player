@@ -468,4 +468,3 @@ pub fn finish_size_prefixed_mention_profiles_snapshot_buffer<'a, 'b, A: ::flatbu
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

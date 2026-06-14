@@ -327,4 +327,3 @@ pub fn finish_size_prefixed_bunker_handshake_buffer<'a, 'b, A: ::flatbuffers::Al
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

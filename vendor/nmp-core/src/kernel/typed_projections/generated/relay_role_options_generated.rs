@@ -338,4 +338,3 @@ pub fn finish_size_prefixed_relay_role_options_snapshot_buffer<'a, 'b, A: ::flat
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

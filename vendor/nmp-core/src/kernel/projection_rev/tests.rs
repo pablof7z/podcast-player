@@ -496,4 +496,3 @@ fn s9_ram_eviction_of_profiles_advances_profile_rev() {
     );
     emit(&mut kernel);
 }
-

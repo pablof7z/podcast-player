@@ -293,4 +293,3 @@ pub fn finish_size_prefixed_outbox_summary_snapshot_buffer<'a, 'b, A: ::flatbuff
 }
 }  // pub mod kernel
 }  // pub mod nmp
-

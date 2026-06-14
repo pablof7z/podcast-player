@@ -252,4 +252,3 @@ fn s1_bite_oracle_catches_stale_claimed_events() {
          does not advance (the F1 regression); got {violations:?}"
     );
 }
-
