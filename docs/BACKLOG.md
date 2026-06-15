@@ -4,6 +4,8 @@ This is the tactical queue for active work, follow-ups, and pending decisions.
 Do not duplicate these items in `WIP.md`; `WIP.md` only records branches and
 worktrees currently in flight.
 
+- **knowledge-ann-index.** `top_k_search` is O(N) linear scan over all embedded chunks (fine for < ~50k chunks). When the corpus exceeds ~50k chunks, replace with an ANN index (e.g. HNSW via `usearch` or `instant-distance`). Slot in `podcast-knowledge::search::top_k_search` call site in `knowledge_search.rs`. <!-- TODO: ANN index when corpus > ~50k chunks -->
+
 ## Active P0 - Correctness Before More Features
 
 - ~~**p0-nipf4-wire-contract.**~~ Done in PR #89: aligned kind `10154`/`54`
