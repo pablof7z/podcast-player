@@ -82,7 +82,6 @@ impl KnowledgeStore {
             .map(|c| ((c.chunk.episode_id.as_str(), c.chunk.chunk_index), c))
             .collect()
     }
-}
 
     /// Return all chunks for the given episode. Used by the embed task to
     /// collect texts after the synchronous NULL-chunk write.
@@ -108,6 +107,7 @@ impl KnowledgeStore {
             slot.embedding = Some(embedding);
         }
     }
+}
 
 #[cfg(test)]
 #[path = "store_tests.rs"]

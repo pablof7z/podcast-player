@@ -1,7 +1,3 @@
-/// Expected dimensionality of all embeddings stored in knowledge.sqlite.
-/// Used to validate provider output before writing to the store.
-pub const EXPECTED_EMBEDDING_DIM: usize = 1024;
-
 //! `podcast-knowledge` — RAG-ready chunk store + semantic search baseline.
 //!
 //! M6.A baseline. The crate owns:
@@ -27,6 +23,10 @@ pub use bm25::{normalize_scores, tokenize, Bm25Index};
 pub use search::{cosine_similarity, top_k_search};
 pub use store::KnowledgeStore;
 pub use types::{EmbeddingVector, KnowledgeChunk, SearchResult, TranscriptChunk};
+
+/// Expected dimensionality of all embeddings stored in knowledge.sqlite.
+/// Used to validate provider output before writing to the store.
+pub const EXPECTED_EMBEDDING_DIM: usize = 1024;
 
 #[cfg(test)]
 mod sqlite_tests;
