@@ -117,14 +117,17 @@ struct CategoryDetailView: View {
     private func transcriptionToggleBinding(for category: PodcastCategory) -> Binding<Bool> {
         Binding(
             get: {
-                // Aggregate: true if ALL podcasts in category have transcription on
-                let pods = category.subscriptionIDs.compactMap { uuid in
-                    self.store.state.podcasts.first(where: { UUID(uuidString: $0.id) == uuid })
+                // Aggregate: true if ALL podcasts in the category have transcription
+                // on. The per-podcast flag lives on the kernel `PodcastSummary`
+                // projection (`id` is the lowercased UUID string), not on the host
+                // `Podcast` model.
+                let summaries = category.subscriptionIDs.compactMap { uuid in
+                    self.store.kernel?.library.first(where: { $0.id == uuid.uuidString.lowercased() })
                 }
-                if pods.isEmpty {
+                if summaries.isEmpty {
                     return self.store.categorySettings(for: self.categoryID).transcriptionEnabled
                 }
-                return pods.allSatisfy { $0.transcriptionEnabled }
+                return summaries.allSatisfy { $0.transcriptionEnabled }
             },
             set: { newValue in
                 // 1. Update legacy category settings

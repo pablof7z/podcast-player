@@ -46,8 +46,12 @@ extension AppStateStore {
     /// which survives library rebuilds. Falls back to the legacy category scan
     /// when no kernel snapshot is available yet.
     func effectiveTranscriptionEnabled(forPodcast podcastID: UUID) -> Bool {
-        // Prefer the kernel-owned per-podcast flag (D4/D7).
-        if let summary = state.podcasts.first(where: { UUID(uuidString: $0.id) == podcastID }) {
+        // Prefer the kernel-owned per-podcast flag (D4/D7). The flag lives on
+        // `PodcastSummary` in the kernel library projection (its `id` is the
+        // string form of the podcast UUID), not on the host `Podcast` model.
+        // This is a linear scan over the kernel library, same cost class as the
+        // legacy category scan but reading the durable kernel-owned source.
+        if let summary = kernel?.library.first(where: { $0.id == podcastID.uuidString.lowercased() }) {
             return summary.transcriptionEnabled
         }
         // Legacy fallback: scan categories (pre-kernel path, kept for safety).

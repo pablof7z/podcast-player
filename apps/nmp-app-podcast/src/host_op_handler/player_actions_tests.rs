@@ -425,3 +425,77 @@ fn real_settings_mutation_bumps_only_settings_domain() {
         "a settings mutation must NOT advance the library domain rev (delta proof)"
     );
 }
+
+/// Per-domain real-bump discipline for the transcription override: dispatching
+/// `set_podcast_transcription_enabled` through the handler MUST advance the
+/// Library domain rev on a genuine change (the flag rides the Library
+/// `PodcastSummary` projection) and MUST NOT advance it on a no-op (same value).
+/// Mirrors the settings delta-proof above.
+#[test]
+fn set_transcription_enabled_bumps_library_only_on_change() {
+    use crate::state::Domain;
+    use std::sync::atomic::Ordering;
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let podcast = Podcast::new("Transcribe Show");
+    let pid = podcast.id;
+    store.lock().unwrap().subscribe(podcast, vec![]);
+    let pid_str = pid.0.to_string();
+
+    let handler = handler_with_store(store);
+    let dr = &handler.state.infra.domain_revs;
+
+    // Default is enabled; disabling is a real change → Library rev advances.
+    let lib_before = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    let result = handler.handle_set_podcast_transcription_enabled(pid_str.clone(), false);
+    assert_eq!(result["ok"], serde_json::json!(true));
+    let lib_after_change = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    assert!(
+        lib_after_change > lib_before,
+        "a real transcription-flag change MUST advance the library domain rev (got {lib_before}->{lib_after_change})"
+    );
+
+    // Re-dispatching the SAME value is a no-op → Library rev must NOT advance.
+    let result = handler.handle_set_podcast_transcription_enabled(pid_str.clone(), false);
+    assert_eq!(result["ok"], serde_json::json!(true));
+    let lib_after_noop = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    assert_eq!(
+        lib_after_noop, lib_after_change,
+        "a no-op transcription-flag dispatch must NOT advance the library domain rev (delta proof)"
+    );
+}
+
+/// A poisoned store lock must surface a structured error and must NOT bump any
+/// domain rev.
+#[test]
+fn set_transcription_enabled_poisoned_lock_errors_without_bump() {
+    use crate::state::Domain;
+    use std::sync::atomic::Ordering;
+
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let podcast = Podcast::new("Poison Show");
+    let pid = podcast.id;
+    store.lock().unwrap().subscribe(podcast, vec![]);
+    let pid_str = pid.0.to_string();
+
+    // Poison the lock.
+    let store_for_panic = store.clone();
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _guard = store_for_panic.lock().unwrap();
+        panic!("poison");
+    }));
+
+    let handler = handler_with_store(store);
+    let dr = &handler.state.infra.domain_revs;
+    let lib_before = dr.counter(Domain::Library).load(Ordering::Relaxed);
+
+    let result = handler.handle_set_podcast_transcription_enabled(pid_str, false);
+    assert_eq!(result["ok"], serde_json::json!(false));
+    assert_eq!(result["error"], serde_json::json!("store poisoned"));
+
+    let lib_after = dr.counter(Domain::Library).load(Ordering::Relaxed);
+    assert_eq!(
+        lib_after, lib_before,
+        "a poisoned-lock error must NOT advance the library domain rev"
+    );
+}
