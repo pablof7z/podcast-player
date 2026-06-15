@@ -176,6 +176,51 @@ final class KernelBridgeWireTests: XCTestCase {
         XCTAssertTrue(summary.titleIsPlaceholder)
     }
 
+    /// The kernel emits `transcription_enabled: false` only when the user
+    /// disabled transcription for a show. It must decode through the
+    /// .convertFromSnakeCase seam to `transcriptionEnabled == false` (D4/D7).
+    func testPodcastSummaryDecodesTranscriptionDisabledFromSnakeCase() throws {
+        let data = Data("""
+        {
+          "id": "pod-1",
+          "title": "Muted Show",
+          "transcription_enabled": false,
+          "episodes": []
+        }
+        """.utf8)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        let summary = try decoder.decode(PodcastSummary.self, from: data)
+
+        XCTAssertFalse(
+            summary.transcriptionEnabled,
+            "transcription_enabled:false must decode to transcriptionEnabled == false"
+        )
+    }
+
+    /// The kernel OMITS `transcription_enabled` when it is the default (`true`,
+    /// D5 skip-if-true). An absent key must default to `true` via the
+    /// `@DefaultTrue` wrapper — never throw keyNotFound (the #371 frame-drop trap).
+    func testPodcastSummaryDefaultsTranscriptionEnabledWhenKeyOmitted() throws {
+        let data = Data("""
+        {
+          "id": "pod-1",
+          "title": "Default Show",
+          "episodes": []
+        }
+        """.utf8)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        let summary = try decoder.decode(PodcastSummary.self, from: data)
+
+        XCTAssertTrue(
+            summary.transcriptionEnabled,
+            "an omitted transcription_enabled key must default to true"
+        )
+    }
+
     // ── Per-domain wire decode tests (the #371/#384 lesson) ───────────────────
 
     /// A playback-domain frame decodes through the KernelDecoding seam
