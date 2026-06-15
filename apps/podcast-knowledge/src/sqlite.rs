@@ -46,12 +46,12 @@ impl KnowledgeSqliteStore {
                     .unwrap_or(0);
                 let quarantine = format!("{}.corrupt-{}", path.display(), ts);
                 if let Err(rename_err) = std::fs::rename(path, &quarantine) {
-                    eprintln!(
+                    log::error!(
                         "[knowledge-sqlite] quarantine rename failed: {rename_err}; \
                          original open error: {e}"
                     );
                 } else {
-                    eprintln!(
+                    log::warn!(
                         "[knowledge-sqlite] corrupt DB quarantined to {quarantine}: {e}"
                     );
                 }
@@ -116,7 +116,7 @@ impl KnowledgeSqliteStore {
             Some(v) => {
                 // Future slices add ALTER TABLE migration steps here,
                 // chaining v1→v2→… with explicit UPDATE schema_meta calls.
-                eprintln!("[knowledge-sqlite] unknown schema version {v}; treating as current");
+                log::warn!("[knowledge-sqlite] unknown schema version {v}; treating as current");
             }
         }
         Ok(())
@@ -174,7 +174,7 @@ impl KnowledgeSqliteStore {
         ) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("[knowledge-sqlite] load_all prepare failed: {e}");
+                log::error!("[knowledge-sqlite] load_all prepare failed: {e}");
                 return Vec::new();
             }
         };
@@ -214,14 +214,14 @@ impl KnowledgeSqliteStore {
             Ok(iter) => iter
                 .filter_map(|r| {
                     r.map_err(|e| {
-                        eprintln!("[knowledge-sqlite] row decode error: {e}");
+                        log::error!("[knowledge-sqlite] row decode error: {e}");
                         e
                     })
                     .ok()
                 })
                 .collect(),
             Err(e) => {
-                eprintln!("[knowledge-sqlite] load_all query failed: {e}");
+                log::error!("[knowledge-sqlite] load_all query failed: {e}");
                 Vec::new()
             }
         }
