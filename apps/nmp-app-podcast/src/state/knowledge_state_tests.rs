@@ -275,13 +275,12 @@ fn embed_wiring_no_op_on_chat_model() {
     }
 }
 
-/// `search` with the default chat model writes BM25 results synchronously
-/// and emits exactly one rev bump before returning `{"ok":true}`.
-/// The spawned async task will no-op (chat model → warn_once + return).
-/// No second bump happens, no panic.
-///
-/// This test mirrors `embed_wiring_no_op_on_chat_model` but for the search
-/// path specifically (D-degrade-on-chat-model requirement).
+/// `search` with the default `:cloud` model writes BM25 results synchronously
+/// and emits exactly one rev bump before returning `{"ok":true}`. The spawned
+/// async task resolves `:cloud` → Ollama, attempts an embed, and (with no
+/// Ollama server) degrades via the embed-Err branch — BM25 results remain,
+/// no second bump. The execution-driven variant lives in `knowledge_search`
+/// tests (`degrade_*` via `block_on`); this asserts the synchronous contract.
 #[test]
 fn search_degrade_on_chat_model_no_panic() {
     let mut store = PodcastStore::new();

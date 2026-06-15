@@ -353,51 +353,26 @@ mod tests {
             EmbeddingVector::new(emb_semantic),
         ));
 
-        // Vector hits: ep-semantic-winner is rank 0 (cosine 1.0),
-        // ep-bm25-winner is rank 1 (cosine 0.0, but included since k=2).
-        let vector_hits = top_k_search(&ks, &query_vec, 2);
-        assert_eq!(vector_hits.len(), 2, "both chunks must be found");
-        assert_eq!(
-            vector_hits[0].chunk.episode_id, "ep-semantic-winner",
-            "semantic winner must be top cosine hit"
-        );
+        // The query is orthogonal to ep-bm25-winner (cosine 0.0), so top_k_search
+        // with k=1 returns ONLY ep-semantic-winner — it's the sole vector hit.
+        let vector_hits = top_k_search(&ks, &query_vec, 1);
+        assert_eq!(vector_hits.len(), 1);
+        assert_eq!(vector_hits[0].chunk.episode_id, "ep-semantic-winner");
 
-        // BM25 list: ep-bm25-winner is rank 0, ep-semantic-winner rank 1.
-        // (We simulate this manually — in production BM25 runs over title/desc.)
+        // BM25 list: ep-bm25-winner rank 0 (keyword match), ep-semantic-winner
+        // rank 1 (weak lexical overlap). In production BM25 runs over title/desc.
         let bm25 = vec![
-            make_bm25("ep-bm25-winner", 1.0),    // rank 0
+            make_bm25("ep-bm25-winner", 1.0),     // rank 0
             make_bm25("ep-semantic-winner", 0.5), // rank 1
         ];
-
         let labels = labels_for(&["ep-bm25-winner", "ep-semantic-winner"]);
 
-        // Fuse: ep-semantic-winner appears in both lists (vector rank 0 + BM25 rank 1).
-        // ep-bm25-winner appears in both lists (BM25 rank 0 + vector rank 1).
-        // Scores:
-        //   ep-semantic-winner = 1/61 (vector rank 0) + 1/62 (BM25 rank 1) ≈ 0.03249
-        //   ep-bm25-winner     = 1/62 (vector rank 1) + 1/61 (BM25 rank 0) ≈ 0.03249
-        //
-        // Wait — these are identical. Let's instead have ep-semantic-winner NOT in
-        // BM25 (it mentions cooking, not quantum). Then:
-        //   ep-semantic-winner = 1/61 (vector rank 0 only) ≈ 0.01639
-        //   ep-bm25-winner     = 1/61 (BM25 rank 0) + 1/62 (vector rank 1) ≈ 0.01639+0.01613 = 0.03252
-        //
-        // With that setup BM25-winner would win. For semantic to win without BM25
-        // we need ep-semantic-winner to be ONLY in the vector list AND rank 0
-        // there. But we also want ep-bm25-winner to NOT appear in the vector list.
-        //
-        // The real test: query is orthogonal to ep-bm25-winner (cosine 0.0) so
-        // top_k_search with k=1 returns ONLY ep-semantic-winner.
-        let vector_hits_k1 = top_k_search(&ks, &query_vec, 1);
-        assert_eq!(vector_hits_k1.len(), 1);
-        assert_eq!(vector_hits_k1[0].chunk.episode_id, "ep-semantic-winner");
-
-        // With only ep-semantic-winner in the vector list (k=1) and ep-bm25-winner
-        // only in BM25, fused scores:
+        // Fused scores (k=60):
         //   ep-semantic-winner: BM25 rank 1 + vector rank 0 = 1/62 + 1/61 ≈ 0.03252
         //   ep-bm25-winner:     BM25 rank 0 only            = 1/61          ≈ 0.01639
-        // ep-semantic-winner wins.
-        let fused = fuse_rrf(bm25.clone(), vector_hits_k1, &labels, 10, 60.0);
+        // The semantic winner ranks first: the vector signal lifts a chunk that
+        // BM25 alone would have ranked below ep-bm25-winner.
+        let fused = fuse_rrf(bm25, vector_hits, &labels, 10, 60.0);
 
         assert!(fused.len() >= 2, "both episodes must appear in fused result");
         assert_eq!(
