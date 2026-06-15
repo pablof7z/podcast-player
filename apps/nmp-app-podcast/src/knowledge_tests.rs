@@ -60,6 +60,35 @@ fn returns_at_most_top_k_results() {
     assert_eq!(results.len(), KNOWLEDGE_SEARCH_TOP_K);
 }
 
+/// The fusion path over-fetches BM25 candidates to `KNOWLEDGE_SEARCH_TOP_K * 4`
+/// so a lexical hit at rank 11–40 (which the vector list might rescue) can
+/// still enter RRF fusion. With >10 matching episodes, the over-fetch candidate
+/// set must exceed the default `KNOWLEDGE_SEARCH_TOP_K` cap.
+#[test]
+fn over_fetch_returns_more_than_top_k() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Show");
+    let id = podcast.id;
+    // 25 matching episodes — more than TOP_K (10) but fewer than TOP_K*4 (40).
+    let episodes: Vec<Episode> = (0..25)
+        .map(|i| make_episode(id, &format!("nostr episode {i}"), "about nostr"))
+        .collect();
+    store.subscribe(podcast, episodes);
+
+    // Default cap = TOP_K.
+    let capped = collect_knowledge_matches(&store, "nostr");
+    assert_eq!(capped.len(), KNOWLEDGE_SEARCH_TOP_K);
+
+    // Fusion over-fetch cap = TOP_K * 4 → must surface more candidates.
+    let over = collect_knowledge_matches_n(&store, "nostr", KNOWLEDGE_SEARCH_TOP_K * 4);
+    assert!(
+        over.len() > KNOWLEDGE_SEARCH_TOP_K,
+        "over-fetch must exceed TOP_K (got {})",
+        over.len()
+    );
+    assert_eq!(over.len(), 25, "all 25 lexical matches must enter the fusion pool");
+}
+
 #[test]
 fn title_match_outranks_description_match() {
     let mut store = PodcastStore::new();

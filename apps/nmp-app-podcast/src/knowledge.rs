@@ -80,7 +80,24 @@ pub const KNOWLEDGE_SNIPPET_MAX_CHARS: usize = 200;
 /// other is [`merge_chunk_matches`] over the indexed transcript chunks.
 /// Kept as a standalone function (read-only `&PodcastStore`, owned
 /// `Vec<KnowledgeSearchResult>`) so it stays directly unit-testable.
+///
+/// Thin wrapper over [`collect_knowledge_matches_n`] with the default
+/// [`KNOWLEDGE_SEARCH_TOP_K`] cap — the sync BM25 baseline path.
 pub fn collect_knowledge_matches(store: &PodcastStore, query: &str) -> Vec<KnowledgeSearchResult> {
+    collect_knowledge_matches_n(store, query, KNOWLEDGE_SEARCH_TOP_K)
+}
+
+/// Like [`collect_knowledge_matches`] but with an explicit candidate cap.
+///
+/// The hybrid-fusion path over-fetches to `KNOWLEDGE_SEARCH_TOP_K * 4` so a
+/// BM25 hit at lexical rank 11–40 — which the vector list might rescue — can
+/// still enter RRF fusion. The sync baseline keeps the default
+/// [`KNOWLEDGE_SEARCH_TOP_K`] cap so the immediate lexical result is unchanged.
+pub fn collect_knowledge_matches_n(
+    store: &PodcastStore,
+    query: &str,
+    limit: usize,
+) -> Vec<KnowledgeSearchResult> {
     let query_terms = tokenize(query);
     if query_terms.is_empty() {
         return Vec::new();
@@ -114,7 +131,7 @@ pub fn collect_knowledge_matches(store: &PodcastStore, query: &str) -> Vec<Knowl
 
     ranked
         .into_iter()
-        .take(KNOWLEDGE_SEARCH_TOP_K)
+        .take(limit)
         .map(|(doc, base)| {
             let row = &rows[doc];
             // Title hits weigh more than description-only hits.
