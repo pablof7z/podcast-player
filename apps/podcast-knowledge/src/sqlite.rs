@@ -46,12 +46,12 @@ impl KnowledgeSqliteStore {
                     .unwrap_or(0);
                 let quarantine = format!("{}.corrupt-{}", path.display(), ts);
                 if let Err(rename_err) = std::fs::rename(path, &quarantine) {
-                    eprintln!(
+                    log::error!(
                         "[knowledge-sqlite] quarantine rename failed: {rename_err}; \
                          original open error: {e}"
                     );
                 } else {
-                    eprintln!(
+                    log::warn!(
                         "[knowledge-sqlite] corrupt DB quarantined to {quarantine}: {e}"
                     );
                 }
@@ -116,7 +116,7 @@ impl KnowledgeSqliteStore {
             Some(v) => {
                 // Future slices add ALTER TABLE migration steps here,
                 // chaining v1→v2→… with explicit UPDATE schema_meta calls.
-                eprintln!("[knowledge-sqlite] unknown schema version {v}; treating as current");
+                log::warn!("[knowledge-sqlite] unknown schema version {v}; treating as current");
             }
         }
         Ok(())
@@ -174,7 +174,7 @@ impl KnowledgeSqliteStore {
         ) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("[knowledge-sqlite] load_all prepare failed: {e}");
+                log::error!("[knowledge-sqlite] load_all prepare failed: {e}");
                 return Vec::new();
             }
         };
@@ -214,14 +214,106 @@ impl KnowledgeSqliteStore {
             Ok(iter) => iter
                 .filter_map(|r| {
                     r.map_err(|e| {
-                        eprintln!("[knowledge-sqlite] row decode error: {e}");
+                        log::error!("[knowledge-sqlite] row decode error: {e}");
                         e
                     })
                     .ok()
                 })
                 .collect(),
             Err(e) => {
-                eprintln!("[knowledge-sqlite] load_all query failed: {e}");
+                log::error!("[knowledge-sqlite] load_all query failed: {e}");
+                Vec::new()
+            }
+        }
+    }
+
+    /// Replace all chunks for an episode atomically (BEGIN/DELETE/INSERT.../COMMIT).
+    /// Faster and atomic compared to separate delete + N×upsert.
+    /// On error the transaction is rolled back; the caller swallows the error (D6).
+    pub fn replace_episode_chunks(
+        &self,
+        episode_id: &str,
+        chunks: &[KnowledgeChunk],
+    ) -> Result<(), rusqlite::Error> {
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM chunks WHERE episode_id = ?1", params![episode_id])?;
+        for chunk in chunks {
+            let (embedding_bytes, embedding_dim): (Option<Vec<u8>>, Option<i64>) =
+                match &chunk.embedding {
+                    Some(ev) => {
+                        let bytes = f32_slice_to_bytes(ev.as_slice());
+                        let dim = ev.dim() as i64;
+                        (Some(bytes), Some(dim))
+                    }
+                    None => (None, None),
+                };
+            tx.execute(
+                "INSERT OR REPLACE INTO chunks
+                 (episode_id, chunk_index, start_secs, end_secs, word_count, text,
+                  embedding, embedding_dim)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    chunk.chunk.episode_id,
+                    chunk.chunk.chunk_index as i64,
+                    chunk.chunk.start_secs,
+                    chunk.chunk.end_secs,
+                    chunk.chunk.word_count as i64,
+                    chunk.chunk.text,
+                    embedding_bytes,
+                    embedding_dim,
+                ],
+            )?;
+        }
+        tx.commit()
+    }
+
+    /// Attach an embedding to an already-persisted chunk row (UPDATE only).
+    /// Used by the off-actor embed task to write back embeddings without
+    /// rewriting the full text column.
+    ///
+    /// `text` is the EXACT chunk text the embed task captured at spawn. The
+    /// UPDATE is guarded on it so that a concurrent re-ingest (which deletes +
+    /// reinserts the row with DIFFERENT text via `replace_episode_chunks`)
+    /// cannot have a STALE embedding bound to it: if the text no longer
+    /// matches, the WHERE matches zero rows, the stale write is silently
+    /// dropped, and the fresh NULL row is picked up by `backfill_embeddings`
+    /// on a later pass. Returns Ok even when zero rows match (no-op).
+    pub fn upsert_embedding(
+        &self,
+        episode_id: &str,
+        chunk_index: u32,
+        text: &str,
+        embedding: &EmbeddingVector,
+    ) -> Result<(), rusqlite::Error> {
+        let bytes = f32_slice_to_bytes(embedding.as_slice());
+        let dim = embedding.dim() as i64;
+        self.conn.execute(
+            "UPDATE chunks SET embedding = ?1, embedding_dim = ?2 \
+             WHERE episode_id = ?3 AND chunk_index = ?4 AND text = ?5",
+            params![bytes, dim, episode_id, chunk_index as i64, text],
+        )?;
+        Ok(())
+    }
+
+    /// Return up to `limit` (episode_id, chunk_index) pairs whose `embedding`
+    /// column is NULL. Used by the backfill scanner.
+    pub fn null_embedding_chunks(&self, limit: usize) -> Vec<(String, i64)> {
+        let mut stmt = match self.conn.prepare(
+            "SELECT episode_id, chunk_index FROM chunks              WHERE embedding IS NULL LIMIT ?1",
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("[knowledge-sqlite] null_embedding_chunks prepare failed: {e}");
+                return Vec::new();
+            }
+        };
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        });
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(e) => {
+                log::error!("[knowledge-sqlite] null_embedding_chunks query failed: {e}");
                 Vec::new()
             }
         }

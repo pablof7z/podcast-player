@@ -24,5 +24,9 @@ pub use search::{cosine_similarity, top_k_search};
 pub use store::KnowledgeStore;
 pub use types::{EmbeddingVector, KnowledgeChunk, SearchResult, TranscriptChunk};
 
+/// Expected dimensionality of all embeddings stored in knowledge.sqlite.
+/// Used to validate provider output before writing to the store.
+pub const EXPECTED_EMBEDDING_DIM: usize = 1024;
+
 #[cfg(test)]
 mod sqlite_tests;

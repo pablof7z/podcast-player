@@ -82,6 +82,31 @@ impl KnowledgeStore {
             .map(|c| ((c.chunk.episode_id.as_str(), c.chunk.chunk_index), c))
             .collect()
     }
+
+    /// Return all chunks for the given episode. Used by the embed task to
+    /// collect texts after the synchronous NULL-chunk write.
+    pub fn chunks_for_episode(&self, episode_id: &str) -> Vec<KnowledgeChunk> {
+        self.chunks
+            .iter()
+            .filter(|c| c.chunk.episode_id == episode_id)
+            .cloned()
+            .collect()
+    }
+
+    /// Set the embedding on a chunk that is already present in the store.
+    /// No-ops silently if the chunk is not found (safe to call on evicted data).
+    pub fn attach_embedding(
+        &mut self,
+        episode_id: &str,
+        chunk_index: u32,
+        embedding: EmbeddingVector,
+    ) {
+        if let Some(slot) = self.chunks.iter_mut().find(|c| {
+            c.chunk.episode_id == episode_id && c.chunk.chunk_index == chunk_index
+        }) {
+            slot.embedding = Some(embedding);
+        }
+    }
 }
 
 #[cfg(test)]
