@@ -1,3 +1,7 @@
+/// Expected dimensionality of all embeddings stored in knowledge.sqlite.
+/// Used to validate provider output before writing to the store.
+pub const EXPECTED_EMBEDDING_DIM: usize = 1024;
+
 //! `podcast-knowledge` — RAG-ready chunk store + semantic search baseline.
 //!
 //! M6.A baseline. The crate owns:

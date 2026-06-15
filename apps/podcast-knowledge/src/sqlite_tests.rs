@@ -182,3 +182,106 @@ fn corrupt_file_quarantined() {
         .any(|name| name.starts_with("knowledge_corrupt.sqlite.corrupt-"));
     assert!(quarantine_exists, "quarantine file must exist; found: {siblings:?}");
 }
+
+/// replace_episode_chunks replaces all chunks atomically.
+#[test]
+fn replace_episode_chunks_is_atomic() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("replace_atomic.sqlite");
+
+    let store = KnowledgeSqliteStore::open(&db_path);
+    // Insert 3 initial chunks.
+    store.upsert(&make_chunk("ep-1", 0, "alpha")).unwrap();
+    store.upsert(&make_chunk("ep-1", 1, "beta")).unwrap();
+    store.upsert(&make_chunk("ep-1", 2, "gamma")).unwrap();
+
+    // Replace with a single new chunk.
+    let new_chunk = make_chunk("ep-1", 0, "replaced");
+    store.replace_episode_chunks("ep-1", &[new_chunk]).unwrap();
+
+    let loaded = store.load_all();
+    assert_eq!(loaded.len(), 1, "only 1 row must remain after replace");
+    assert_eq!(loaded[0].chunk.text, "replaced");
+}
+
+/// replace_episode_chunks with empty slice leaves zero rows for the episode.
+#[test]
+fn replace_episode_chunks_empty_slice_clears_episode() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("replace_empty.sqlite");
+
+    let store = KnowledgeSqliteStore::open(&db_path);
+    store.upsert(&make_chunk("ep-2", 0, "keep")).unwrap();
+    store.upsert(&make_chunk("ep-clear", 0, "will be gone")).unwrap();
+
+    store.replace_episode_chunks("ep-clear", &[]).unwrap();
+
+    let loaded = store.load_all();
+    assert_eq!(loaded.len(), 1);
+    assert_eq!(loaded[0].chunk.episode_id, "ep-2");
+}
+
+/// upsert_embedding attaches to a NULL-embedding row.
+#[test]
+fn upsert_embedding_attaches_to_null_row() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("upsert_emb.sqlite");
+
+    let store = KnowledgeSqliteStore::open(&db_path);
+    store.upsert(&make_chunk("ep-emb", 0, "some text")).unwrap();
+
+    let emb: Vec<f32> = (0..1024).map(|i| i as f32 / 1024.0).collect();
+    let ev = EmbeddingVector::new(emb.clone());
+    store.upsert_embedding("ep-emb", 0, &ev).unwrap();
+
+    let loaded = store.load_all();
+    assert_eq!(loaded.len(), 1);
+    let got = loaded[0].embedding.as_ref().expect("embedding must be present");
+    assert_eq!(got.dim(), 1024);
+    for (got_v, exp_v) in got.as_slice().iter().zip(&emb) {
+        assert!((got_v - exp_v).abs() < 1e-6, "value mismatch");
+    }
+}
+
+/// null_embedding_chunks returns only NULL rows and respects limit.
+#[test]
+fn null_embedding_chunks_returns_only_null_rows_and_respects_limit() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("null_emb.sqlite");
+
+    let store = KnowledgeSqliteStore::open(&db_path);
+    store.upsert(&make_chunk("ep-a", 0, "no emb 1")).unwrap();
+    store.upsert(&make_chunk("ep-a", 1, "no emb 2")).unwrap();
+    store.upsert(&make_chunk("ep-a", 2, "no emb 3")).unwrap();
+    // One chunk WITH embedding.
+    store
+        .upsert(&make_chunk_with_embedding("ep-a", 3, vec![1.0_f32; 4]))
+        .unwrap();
+
+    let null_rows = store.null_embedding_chunks(2);
+    assert_eq!(null_rows.len(), 2, "limit must be respected");
+    // None of the returned rows should be chunk_index=3 (which has an embedding).
+    for (_, idx) in &null_rows {
+        assert_ne!(*idx, 3, "embedded chunk must not appear in null list");
+    }
+}
+
+/// 1024-dim round-trip via replace_episode_chunks.
+#[test]
+fn replace_episode_chunks_1024_dim_round_trip() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("replace_1024.sqlite");
+
+    let store = KnowledgeSqliteStore::open(&db_path);
+    let emb: Vec<f32> = (0..1024).map(|i| (i as f32) * 0.001).collect();
+    let chunk = make_chunk_with_embedding("ep-rt", 0, emb.clone());
+    store.replace_episode_chunks("ep-rt", &[chunk]).unwrap();
+
+    let loaded = store.load_all();
+    assert_eq!(loaded.len(), 1);
+    let got = loaded[0].embedding.as_ref().expect("embedding must be present");
+    assert_eq!(got.dim(), 1024);
+    for (got_v, exp_v) in got.as_slice().iter().zip(&emb) {
+        assert!((got_v - exp_v).abs() < 1e-5, "bit mismatch: {got_v} vs {exp_v}");
+    }
+}

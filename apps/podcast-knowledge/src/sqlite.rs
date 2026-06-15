@@ -226,6 +226,88 @@ impl KnowledgeSqliteStore {
             }
         }
     }
+
+    /// Replace all chunks for an episode atomically (BEGIN/DELETE/INSERT.../COMMIT).
+    /// Faster and atomic compared to separate delete + N×upsert.
+    /// On error the transaction is rolled back; the caller swallows the error (D6).
+    pub fn replace_episode_chunks(
+        &self,
+        episode_id: &str,
+        chunks: &[KnowledgeChunk],
+    ) -> Result<(), rusqlite::Error> {
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM chunks WHERE episode_id = ?1", params![episode_id])?;
+        for chunk in chunks {
+            let (embedding_bytes, embedding_dim): (Option<Vec<u8>>, Option<i64>) =
+                match &chunk.embedding {
+                    Some(ev) => {
+                        let bytes = f32_slice_to_bytes(ev.as_slice());
+                        let dim = ev.dim() as i64;
+                        (Some(bytes), Some(dim))
+                    }
+                    None => (None, None),
+                };
+            tx.execute(
+                "INSERT OR REPLACE INTO chunks
+                 (episode_id, chunk_index, start_secs, end_secs, word_count, text,
+                  embedding, embedding_dim)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    chunk.chunk.episode_id,
+                    chunk.chunk.chunk_index as i64,
+                    chunk.chunk.start_secs,
+                    chunk.chunk.end_secs,
+                    chunk.chunk.word_count as i64,
+                    chunk.chunk.text,
+                    embedding_bytes,
+                    embedding_dim,
+                ],
+            )?;
+        }
+        tx.commit()
+    }
+
+    /// Attach an embedding to an already-persisted chunk row (UPDATE only).
+    /// Used by the off-actor embed task to write back embeddings without
+    /// rewriting the full text column.
+    pub fn upsert_embedding(
+        &self,
+        episode_id: &str,
+        chunk_index: u32,
+        embedding: &EmbeddingVector,
+    ) -> Result<(), rusqlite::Error> {
+        let bytes = f32_slice_to_bytes(embedding.as_slice());
+        let dim = embedding.dim() as i64;
+        self.conn.execute(
+            "UPDATE chunks SET embedding = ?1, embedding_dim = ?2              WHERE episode_id = ?3 AND chunk_index = ?4",
+            params![bytes, dim, episode_id, chunk_index as i64],
+        )?;
+        Ok(())
+    }
+
+    /// Return up to `limit` (episode_id, chunk_index) pairs whose `embedding`
+    /// column is NULL. Used by the backfill scanner.
+    pub fn null_embedding_chunks(&self, limit: usize) -> Vec<(String, i64)> {
+        let mut stmt = match self.conn.prepare(
+            "SELECT episode_id, chunk_index FROM chunks              WHERE embedding IS NULL LIMIT ?1",
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("[knowledge-sqlite] null_embedding_chunks prepare failed: {e}");
+                return Vec::new();
+            }
+        };
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        });
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(e) => {
+                log::error!("[knowledge-sqlite] null_embedding_chunks query failed: {e}");
+                Vec::new()
+            }
+        }
+    }
 }
 
 // ── Embedding serialization helpers ──────────────────────────────────────────
