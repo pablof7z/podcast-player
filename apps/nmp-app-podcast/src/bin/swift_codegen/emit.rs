@@ -252,6 +252,11 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// NIP-F4 publish visibility — `"public"` (default) or `"private"`.
     /// The Rust projection omits this when `"public"` (D5).
     var nostrVisibility: String = "public"
+    /// User-curated category labels assigned to this podcast by the user.
+    /// Empty until the user assigns labels via `set_podcast_user_categories`.
+    /// Rust omits the key when empty (D5 — `skip_serializing_if`); decoded
+    /// with a `?? []` fallback so absent keys deserialise to an empty array.
+    @DefaultEmptyStrings var userCategories: [String] = []
     @DefaultEmptyArray var episodes: [EpisodeSummary] = []
 }
 
@@ -404,6 +409,7 @@ extension PodcastSummary: Codable {
         cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
         ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
         nostrVisibility = try c.decodeIfPresent(String.self, forKey: .nostrVisibility) ?? "public"
+        userCategories = try c.decodeIfPresent([String].self, forKey: .userCategories) ?? []
         episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []
     }
 }

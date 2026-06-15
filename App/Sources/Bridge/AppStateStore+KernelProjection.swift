@@ -45,6 +45,10 @@ extension AppStateStore {
         // is re-dispatched after every Settings credential mutation so the
         // kernel always has the current Keychain values.
         kernelSetProviderApiKeys()
+        // One-shot migration of legacy Swift-side user categories into the
+        // kernel-owned `podcast_user_categories` substate (D0/D4). Guarded by a
+        // UserDefaults flag so it runs exactly once; a no-op on fresh installs.
+        migrateUserCategoriesToKernel()
         // Register the local LLM service callback so Rust can invoke Swift-side
         // inference through the loaded LiteRT-LM engine.
         let localService = localLLMService

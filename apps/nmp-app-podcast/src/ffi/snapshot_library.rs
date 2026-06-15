@@ -129,6 +129,9 @@ pub(super) fn build_library_snapshot(
                 _ => 0, // skip_serializing_if omits 0
             },
             cellular_allowed: !store.wifi_only_for(podcast.id),
+            user_categories: store
+                .podcast_user_categories_for(&podcast.id.0.to_string())
+                .to_vec(),
             episodes: episodes
                 .iter()
                 .map(|ep| episode_summary(handle, store, podcast, ep, transcripts, categories_cache))

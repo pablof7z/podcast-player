@@ -408,6 +408,14 @@ pub enum PodcastAction {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         reply_to_pubkey: Option<String>,
     },
+    /// Assign user-curated category labels to a podcast.
+    /// Wire: `{"op":"set_podcast_user_categories","podcast_id":"<uuid>","categories":["AI","News"]}`
+    /// An empty categories array clears all labels for the podcast.
+    SetPodcastUserCategories {
+        podcast_id: String,
+        #[serde(default)]
+        categories: Vec<String>,
+    },
 }
 
 /// One chapter for an [`PodcastAction::AddEpisode`] op. `image_url` +

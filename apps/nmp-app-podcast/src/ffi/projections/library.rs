@@ -86,6 +86,10 @@ pub struct PodcastSummary {
     /// to keep the wire payload byte-compatible with older snapshots (D5).
     #[serde(default, skip_serializing_if = "str_is_public")]
     pub nostr_visibility: String,
+    /// User-curated category labels assigned to this podcast. Empty when the
+    /// user has not assigned any. Per D5 omitted from the wire when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub user_categories: Vec<String>,
     /// Recent episodes — ordered newest-first by the projection layer.
     pub episodes: Vec<EpisodeSummary>,
 }

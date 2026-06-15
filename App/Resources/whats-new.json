@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-15T10:00:00Z",
+      "lines": [
+        "Podcast categories are now stored in the kernel for durability and sync."
+      ]
+    },
+    {
       "shipped_at": "2026-06-14T15:01:46Z",
       "lines": [
         "Now Playing artwork no longer crashes playback metadata when Control Center or the lock screen asks for it."

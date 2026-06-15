@@ -249,6 +249,10 @@ impl PodcastHostOpHandler {
             PodcastAction::DiscoverNostr { .. } => {
                 serde_json::json!({"ok": false, "error": "discover_nostr must be handled by execute()"})
             }
+            PodcastAction::SetPodcastUserCategories {
+                podcast_id,
+                categories,
+            } => self.handle_set_podcast_user_categories(podcast_id, categories),
         }
     }
 }

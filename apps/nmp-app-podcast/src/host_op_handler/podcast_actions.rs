@@ -295,4 +295,19 @@ impl PodcastHostOpHandler {
         serde_json::json!({"ok": true})
     }
 
+    pub(super) fn handle_set_podcast_user_categories(
+        &self,
+        podcast_id: String,
+        categories: Vec<String>,
+    ) -> serde_json::Value {
+        let changed = match self.state.library.store.lock() {
+            Ok(mut s) => s.set_podcast_user_categories(&podcast_id, categories),
+            Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
+        };
+        if changed {
+            self.bump_domain(crate::state::Domain::Library);
+        }
+        serde_json::json!({"ok": true})
+    }
+
 }

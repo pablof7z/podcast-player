@@ -94,6 +94,10 @@ pub(super) struct PersistedStore {
     /// files that lack this field.
     #[serde(default)]
     pub pending_wifi_downloads: Vec<(String, String)>,
+    /// User-curated podcast category labels. Keyed by PodcastId string;
+    /// value is a Vec of label strings. `#[serde(default)]` for backward compat.
+    #[serde(default)]
+    pub podcast_user_categories: Vec<(String, Vec<String>)>,
 }
 
 /// On-disk settings envelope.
