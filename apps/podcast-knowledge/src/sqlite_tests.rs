@@ -183,25 +183,88 @@ fn corrupt_file_quarantined() {
     assert!(quarantine_exists, "quarantine file must exist; found: {siblings:?}");
 }
 
-/// replace_episode_chunks replaces all chunks atomically.
+/// Rename of the former `replace_episode_chunks_is_atomic` — this asserts the
+/// happy-path final row set (full replacement), not rollback.
 #[test]
-fn replace_episode_chunks_is_atomic() {
+fn replace_episode_chunks_replaces_full_set() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let db_path = dir.path().join("replace_atomic.sqlite");
-
+    let db_path = dir.path().join("knowledge_replace.sqlite");
     let store = KnowledgeSqliteStore::open(&db_path);
-    // Insert 3 initial chunks.
-    store.upsert(&make_chunk("ep-1", 0, "alpha")).unwrap();
-    store.upsert(&make_chunk("ep-1", 1, "beta")).unwrap();
-    store.upsert(&make_chunk("ep-1", 2, "gamma")).unwrap();
+
+    // Seed 3 chunks.
+    store.upsert(&make_chunk("ep-1", 0, "old zero")).unwrap();
+    store.upsert(&make_chunk("ep-1", 1, "old one")).unwrap();
+    store.upsert(&make_chunk("ep-1", 2, "old two")).unwrap();
 
     // Replace with a single new chunk.
-    let new_chunk = make_chunk("ep-1", 0, "replaced");
-    store.replace_episode_chunks("ep-1", &[new_chunk]).unwrap();
+    store
+        .replace_episode_chunks("ep-1", &[make_chunk("ep-1", 0, "new only")])
+        .unwrap();
 
     let loaded = store.load_all();
-    assert_eq!(loaded.len(), 1, "only 1 row must remain after replace");
-    assert_eq!(loaded[0].chunk.text, "replaced");
+    assert_eq!(loaded.len(), 1, "replace must leave exactly the new set");
+    assert_eq!(loaded[0].chunk.text, "new only");
+}
+
+/// Real rollback proof: a transaction shaped like `replace_episode_chunks`
+/// that aborts on the Nth INSERT (CHECK violation) must leave the prior
+/// committed rows untouched — no partial write.
+#[test]
+fn transaction_rolls_back_leaving_no_partial_state() {
+    use rusqlite::{params, Connection};
+
+    let conn = Connection::open_in_memory().unwrap();
+    // A table with a CHECK that the failing row violates.
+    conn.execute_batch(
+        "CREATE TABLE t (
+             episode_id TEXT NOT NULL,
+             chunk_index INTEGER NOT NULL CHECK (chunk_index >= 0),
+             text TEXT NOT NULL,
+             PRIMARY KEY (episode_id, chunk_index)
+         );",
+    )
+    .unwrap();
+
+    // Prior committed state: one row for a DIFFERENT episode that must survive.
+    conn.execute(
+        "INSERT INTO t (episode_id, chunk_index, text) VALUES ('keep', 0, 'survivor')",
+        [],
+    )
+    .unwrap();
+
+    // Transaction shaped like replace_episode_chunks: DELETE target + INSERT batch,
+    // where the 2nd INSERT violates the CHECK (chunk_index = -1) and aborts.
+    let result: Result<(), rusqlite::Error> = (|| {
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM t WHERE episode_id = ?1", params!["keep"])?;
+        tx.execute(
+            "INSERT INTO t (episode_id, chunk_index, text) VALUES ('keep', 0, 'rewrite')",
+            [],
+        )?;
+        // This violates CHECK (chunk_index >= 0) → aborts the transaction.
+        tx.execute(
+            "INSERT INTO t (episode_id, chunk_index, text) VALUES ('keep', -1, 'bad')",
+            [],
+        )?;
+        tx.commit()
+    })();
+
+    assert!(result.is_err(), "the bad INSERT must error out");
+
+    // The original survivor row must be intact — the DELETE + first INSERT
+    // rolled back with the failed transaction (no partial write).
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM t", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(count, 1, "exactly the original committed row survives");
+    let text: String = conn
+        .query_row(
+            "SELECT text FROM t WHERE episode_id = 'keep' AND chunk_index = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(text, "survivor", "the row must be the pre-transaction value, not 'rewrite'");
 }
 
 /// replace_episode_chunks with empty slice leaves zero rows for the episode.
@@ -232,7 +295,7 @@ fn upsert_embedding_attaches_to_null_row() {
 
     let emb: Vec<f32> = (0..1024).map(|i| i as f32 / 1024.0).collect();
     let ev = EmbeddingVector::new(emb.clone());
-    store.upsert_embedding("ep-emb", 0, &ev).unwrap();
+    store.upsert_embedding("ep-emb", 0, "some text", &ev).unwrap();
 
     let loaded = store.load_all();
     assert_eq!(loaded.len(), 1);
@@ -241,6 +304,48 @@ fn upsert_embedding_attaches_to_null_row() {
     for (got_v, exp_v) in got.as_slice().iter().zip(&emb) {
         assert!((got_v - exp_v).abs() < 1e-6, "value mismatch");
     }
+}
+
+/// Race guard: if a chunk's text changed (concurrent re-ingest) between the
+/// embed-task spawn and its write-back, `upsert_embedding` guarded on the
+/// captured text must NOT bind the stale embedding — the row stays NULL.
+#[test]
+fn upsert_embedding_skips_when_text_changed() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("knowledge_race.sqlite");
+    let store = KnowledgeSqliteStore::open(&db_path);
+
+    // Persist a NULL-embedding chunk with text "A" (the text the embed task captured).
+    store.upsert(&make_chunk("ep-race", 0, "text A")).unwrap();
+
+    // Simulate a concurrent re-ingest that replaced the row with text "B".
+    store
+        .replace_episode_chunks("ep-race", &[make_chunk("ep-race", 0, "text B")])
+        .unwrap();
+
+    // Late embed write-back keyed on the STALE captured text "text A".
+    let stale = EmbeddingVector::new(vec![0.5_f32; 1024]);
+    store
+        .upsert_embedding("ep-race", 0, "text A", &stale)
+        .unwrap();
+
+    // The stale embedding must NOT have landed — text mismatch → zero rows updated.
+    let loaded = store.load_all();
+    assert_eq!(loaded.len(), 1);
+    assert_eq!(loaded[0].chunk.text, "text B", "current text must be B");
+    assert!(
+        loaded[0].embedding.is_none(),
+        "stale embedding for text A must NOT bind to the text-B row (stays NULL)"
+    );
+
+    // And a fresh write-back keyed on the CURRENT text "text B" must succeed.
+    let fresh = EmbeddingVector::new(vec![0.25_f32; 1024]);
+    store
+        .upsert_embedding("ep-race", 0, "text B", &fresh)
+        .unwrap();
+    let loaded2 = store.load_all();
+    let ev = loaded2[0].embedding.as_ref().expect("fresh embedding must bind");
+    assert_eq!(ev.dim(), 1024);
 }
 
 /// null_embedding_chunks returns only NULL rows and respects limit.

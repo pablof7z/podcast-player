@@ -270,17 +270,27 @@ impl KnowledgeSqliteStore {
     /// Attach an embedding to an already-persisted chunk row (UPDATE only).
     /// Used by the off-actor embed task to write back embeddings without
     /// rewriting the full text column.
+    ///
+    /// `text` is the EXACT chunk text the embed task captured at spawn. The
+    /// UPDATE is guarded on it so that a concurrent re-ingest (which deletes +
+    /// reinserts the row with DIFFERENT text via `replace_episode_chunks`)
+    /// cannot have a STALE embedding bound to it: if the text no longer
+    /// matches, the WHERE matches zero rows, the stale write is silently
+    /// dropped, and the fresh NULL row is picked up by `backfill_embeddings`
+    /// on a later pass. Returns Ok even when zero rows match (no-op).
     pub fn upsert_embedding(
         &self,
         episode_id: &str,
         chunk_index: u32,
+        text: &str,
         embedding: &EmbeddingVector,
     ) -> Result<(), rusqlite::Error> {
         let bytes = f32_slice_to_bytes(embedding.as_slice());
         let dim = embedding.dim() as i64;
         self.conn.execute(
-            "UPDATE chunks SET embedding = ?1, embedding_dim = ?2              WHERE episode_id = ?3 AND chunk_index = ?4",
-            params![bytes, dim, episode_id, chunk_index as i64],
+            "UPDATE chunks SET embedding = ?1, embedding_dim = ?2 \
+             WHERE episode_id = ?3 AND chunk_index = ?4 AND text = ?5",
+            params![bytes, dim, episode_id, chunk_index as i64, text],
         )?;
         Ok(())
     }

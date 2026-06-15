@@ -42,6 +42,26 @@ const EMBED_BACKFILL_BATCH_SIZE: usize = 32;
 /// Millisecond delay between backfill batch embed calls to avoid flooding the provider.
 const EMBED_BACKFILL_INTER_BATCH_DELAY_MS: u64 = 200;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Process-global guard so a misconfigured `embeddings_model` (e.g. the default
+/// chat model `deepseek-v4-flash:cloud`, which is not an embedding model) logs
+/// the "not a usable embedding model" warning at most ONCE per process instead
+/// of once per indexed episode (a bulk re-index would otherwise spam the log).
+/// Gates both the ingest-task and backfill no-op branches.
+static EMBED_MODEL_WARNED: AtomicBool = AtomicBool::new(false);
+
+/// Emit the "not a usable embedding model" warning at most once per process.
+fn warn_unusable_embedding_model_once(model: &str) {
+    if !EMBED_MODEL_WARNED.swap(true, Ordering::Relaxed) {
+        log::warn!(
+            "[knowledge] embeddings_model '{model}' is not a usable embedding model \
+             — skipping embed (NULL rows remain, BM25 works). This warning fires \
+             once per process. Follow-up: flip default to openai/text-embedding-3-large."
+        );
+    }
+}
+
 /// Knowledge feature substate.
 ///
 /// Constructed once in `PodcastAppState::new` and referenced via
@@ -221,12 +241,7 @@ impl KnowledgeState {
                 } else if model_str.ends_with(":cloud") {
                     crate::llm::provider_transport::ProviderKind::Ollama
                 } else {
-                    log::warn!(
-                        "[knowledge] embeddings_model '{}' for episode {} is not a usable \
-                         embedding model — skipping embed (NULL rows remain, BM25 works). \
-                         Follow-up: flip default to openai/text-embedding-3-large.",
-                        model_str, ep_id
-                    );
+                    warn_unusable_embedding_model_once(&model_str);
                     return;
                 };
                 (provider, model_str)
@@ -261,7 +276,7 @@ impl KnowledgeState {
                 };
 
             // Validate dimensions and attach.
-            for ((chunk_index, _text), raw_embedding) in
+            for ((chunk_index, chunk_text), raw_embedding) in
                 texts.iter().zip(result.embeddings.iter())
             {
                 if raw_embedding.len() != podcast_knowledge::EXPECTED_EMBEDDING_DIM {
@@ -278,10 +293,11 @@ impl KnowledgeState {
                 if let Ok(mut ks) = index_c.lock() {
                     ks.attach_embedding(&ep_id, *chunk_index, ev.clone());
                 }
-                // Persist to SQLite.
+                // Persist to SQLite, guarded on the captured text so a concurrent
+                // re-ingest can't bind a stale embedding to changed text.
                 if let Ok(guard) = sqlite_c.lock() {
                     if let Some(sq) = guard.as_ref() {
-                        if let Err(e) = sq.upsert_embedding(&ep_id, *chunk_index, &ev) {
+                        if let Err(e) = sq.upsert_embedding(&ep_id, *chunk_index, chunk_text, &ev) {
                             log::warn!("[knowledge] upsert_embedding failed: {e}");
                         }
                     }
@@ -334,11 +350,7 @@ impl KnowledgeState {
                     } else if model_str.ends_with(":cloud") {
                         crate::llm::provider_transport::ProviderKind::Ollama
                     } else {
-                        log::warn!(
-                            "[knowledge] backfill: embeddings_model '{}' is not a usable \
-                             embedding model — halting backfill (BM25 still works).",
-                            model_str
-                        );
+                        warn_unusable_embedding_model_once(&model_str);
                         break;
                     };
                     (provider, model_str)
@@ -392,7 +404,7 @@ impl KnowledgeState {
                         }
                     };
 
-                    for ((chunk_index, _), raw_embedding) in
+                    for ((chunk_index, chunk_text), raw_embedding) in
                         texts.iter().zip(result.embeddings.iter())
                     {
                         if raw_embedding.len() != podcast_knowledge::EXPECTED_EMBEDDING_DIM {
@@ -410,7 +422,7 @@ impl KnowledgeState {
                         }
                         if let Ok(guard) = sqlite_c.lock() {
                             if let Some(sq) = guard.as_ref() {
-                                let _ = sq.upsert_embedding(ep_id, *chunk_index, &ev);
+                                let _ = sq.upsert_embedding(ep_id, *chunk_index, chunk_text, &ev);
                             }
                         }
                     }
