@@ -154,6 +154,7 @@ fn library_with_show(ep_id: &str, episode_title: &str, show_title: &str) -> Vec<
         auto_download_mode: String::new(),
         auto_download_count: 0,
         cellular_allowed: false,
+        user_categories: Vec::new(),
         episodes: vec![EpisodeSummary {
             id: ep_id.into(),
             title: episode_title.into(),

@@ -46,4 +46,46 @@ extension AppStateStore {
     func category(forPodcast podcastID: UUID) -> PodcastCategory? {
         state.categories.first(where: { $0.subscriptionIDs.contains(podcastID) })
     }
+
+    // MARK: - Kernel migration (D0/D4)
+
+    /// UserDefaults flag guarding the one-shot legacy→kernel category migration.
+    private static let migrationFlagKey = "userCategoriesMigratedToKernel"
+
+    /// One-shot migration: seed the kernel-owned `podcast_user_categories`
+    /// substate from the legacy Swift `state.categories` model. Each podcast
+    /// inherits the names of every legacy category it belonged to (a podcast can
+    /// live in more than one), dispatched as a single
+    /// `set_podcast_user_categories` op per podcast. Idempotent across launches
+    /// via the `UserDefaults` flag — runs exactly once even if the legacy data
+    /// persists. A no-op on fresh installs (no legacy categories).
+    func migrateUserCategoriesToKernel() {
+        guard !UserDefaults.standard.bool(forKey: Self.migrationFlagKey) else { return }
+        UserDefaults.standard.set(true, forKey: Self.migrationFlagKey)
+
+        // Accumulate every legacy category name per podcast (preserving order,
+        // de-duplicated) so a podcast in multiple categories migrates all labels
+        // in one dispatch rather than clobbering with the last one.
+        var labelsByPodcast: [UUID: [String]] = [:]
+        for category in state.categories {
+            let label = category.name
+            guard !label.isEmpty else { continue }
+            for podcastUUID in category.subscriptionIDs {
+                var labels = labelsByPodcast[podcastUUID] ?? []
+                if !labels.contains(label) {
+                    labels.append(label)
+                }
+                labelsByPodcast[podcastUUID] = labels
+            }
+        }
+
+        for (podcastUUID, labels) in labelsByPodcast {
+            kernel?.dispatch(namespace: "podcast",
+                             body: [
+                                 "op": "set_podcast_user_categories",
+                                 "podcast_id": podcastUUID.uuidString.lowercased(),
+                                 "categories": labels,
+                             ])
+        }
+    }
 }

@@ -60,6 +60,8 @@ impl PodcastStore {
         self.episode_triage.clear();
         self.metadata_indexed_episodes.clear();
         self.transcript_status_overrides.clear();
+        self.podcast_user_categories =
+            loaded.podcast_user_categories.into_iter().collect();
         for row in loaded.podcasts {
             let id = row.podcast.id;
             for ep in &row.episodes {
@@ -420,6 +422,11 @@ impl PodcastStore {
             settings: self.persisted_settings(),
             queue: Vec::new(), // filled by persist() from self.cached_queue after return
             pending_wifi_downloads: self.pending_wifi_downloads.clone(),
+            podcast_user_categories: self
+                .podcast_user_categories
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
         }
     }
 

@@ -51,6 +51,7 @@ pub(crate) mod summary;
 mod tests;
 #[cfg(test)]
 mod tests_ext;
+mod podcast_user_categories;
 mod transcripts;
 mod triage_state;
 
@@ -305,6 +306,11 @@ pub struct PodcastStore {
     /// Perplexity API key (in-memory only, never persisted to disk).
     /// Set via `set_provider_api_keys`; credential never touches disk.
     perplexity_api_key: Option<String>,
+    /// User-curated podcast category labels. Keyed by PodcastId string;
+    /// value is a Vec of free-form label strings (e.g. "AI", "News").
+    /// Orthogonal to the AI-derived `CategoryBrowseItem` taxonomy.
+    /// Persisted in `podcasts.json` under `podcast_user_categories`.
+    pub(super) podcast_user_categories: HashMap<String, Vec<String>>,
 }
 
 impl PodcastStore {
@@ -400,6 +406,7 @@ impl PodcastStore {
             eleven_labs_api_key: None,
             assembly_ai_api_key: None,
             perplexity_api_key: None,
+            podcast_user_categories: HashMap::new(),
         }
     }
 }

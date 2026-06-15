@@ -189,6 +189,21 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
             throw PodcastCategoryAdapterError.moveFailed
         }
         let updated = store.category(id: target.id) ?? target
+        // Repoint the write into the kernel-owned substate (D0/D4): the kernel
+        // is now the source of truth for podcast→user-category-label assignment.
+        // The legacy Swift `PodcastCategory` model is retained read-only this
+        // slice to serve the agent-tool result contract (category UUID/slug);
+        // its removal is the named follow-up. Dispatch the full label set the
+        // podcast belongs to after the move so the kernel mirrors Swift exactly.
+        let labels = store.state.categories
+            .filter { $0.subscriptionIDs.contains(podcastUUID) }
+            .map(\.name)
+        store.kernel?.dispatch(namespace: "podcast",
+                               body: [
+                                   "op": "set_podcast_user_categories",
+                                   "podcast_id": podcastUUID.uuidString.lowercased(),
+                                   "categories": labels,
+                               ])
         return PodcastCategoryChangeResult(
             podcastID: podcastID,
             title: podcast.title,

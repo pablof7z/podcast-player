@@ -1035,3 +1035,110 @@ fn settings_payload_contains_only_settings_keys() {
     drop(handle);
     unsafe { drop(Box::from_raw(app)) };
 }
+
+// ── User-curated podcast categories (D0/D4) ─────────────────────────────────
+
+#[test]
+fn set_podcast_user_categories_bumps_library_domain() {
+    use crate::host_op_handler::PodcastHostOpHandler;
+    use crate::state::{Infra, PodcastAppState};
+    use nmp_core::substrate::HostOpHandler;
+    use std::sync::atomic::Ordering;
+    use std::sync::{Arc, Mutex};
+
+    // Build a test handler (no NmpApp needed for this action).
+    let store = Arc::new(Mutex::new(crate::store::PodcastStore::new()));
+    let state = Arc::new(PodcastAppState::new(Infra::for_test(), store.clone()));
+    state.tasks.tasks.lock().unwrap().clear();
+    let handler = PodcastHostOpHandler::new(std::ptr::null_mut(), state.clone());
+
+    let lib_rev_before = state.infra.domain_revs.library.load(Ordering::Relaxed);
+    let global_rev_before = state.infra.rev.load(Ordering::Relaxed);
+
+    // Dispatch through the namespace router using the envelope format.
+    let action_json = r#"{"ns":"podcast","action":{"op":"set_podcast_user_categories","podcast_id":"11111111-1111-1111-1111-111111111111","categories":["AI","News"]}}"#;
+    let result = handler.handle(action_json, "test-corr");
+    assert_eq!(result["ok"], true, "action should succeed: {:?}", result);
+
+    let lib_rev_after = state.infra.domain_revs.library.load(Ordering::Relaxed);
+    let global_rev_after = state.infra.rev.load(Ordering::Relaxed);
+
+    assert!(lib_rev_after > lib_rev_before, "library domain rev must advance");
+    assert!(global_rev_after > global_rev_before, "global rev must advance");
+
+    // Verify store was mutated.
+    let store_guard = store.lock().unwrap();
+    assert_eq!(
+        store_guard.podcast_user_categories_for("11111111-1111-1111-1111-111111111111"),
+        &["AI", "News"]
+    );
+}
+
+#[test]
+fn set_podcast_user_categories_noop_does_not_bump_library_domain() {
+    use crate::host_op_handler::PodcastHostOpHandler;
+    use crate::state::{Infra, PodcastAppState};
+    use nmp_core::substrate::HostOpHandler;
+    use std::sync::atomic::Ordering;
+    use std::sync::{Arc, Mutex};
+
+    let store = Arc::new(Mutex::new(crate::store::PodcastStore::new()));
+    // Pre-populate so the no-op is genuine.
+    store.lock().unwrap().set_podcast_user_categories(
+        "22222222-2222-2222-2222-222222222222",
+        vec!["AI".to_string()],
+    );
+
+    let state = Arc::new(PodcastAppState::new(Infra::for_test(), store.clone()));
+    state.tasks.tasks.lock().unwrap().clear();
+    let handler = PodcastHostOpHandler::new(std::ptr::null_mut(), state.clone());
+
+    let lib_rev_before = state.infra.domain_revs.library.load(Ordering::Relaxed);
+
+    let action_json = r#"{"ns":"podcast","action":{"op":"set_podcast_user_categories","podcast_id":"22222222-2222-2222-2222-222222222222","categories":["AI"]}}"#;
+    let result = handler.handle(action_json, "test-corr");
+    assert_eq!(result["ok"], true);
+
+    let lib_rev_after = state.infra.domain_revs.library.load(Ordering::Relaxed);
+    assert_eq!(lib_rev_after, lib_rev_before, "no-op must NOT bump domain rev");
+}
+
+#[test]
+fn user_categories_appear_in_library_snapshot() {
+    use crate::ffi::snapshot_library::build_library_snapshot;
+    use podcast_core::Podcast;
+
+    // Real (unstarted) NmpApp so build_library_snapshot's clean_html path is safe.
+    let app = nmp_ffi::nmp_app_new();
+    let handle = make_test_handle_with_app(app);
+
+    // Subscribe a podcast and assign user-curated category labels to it.
+    let podcast_id_str;
+    {
+        let mut s = handle.state.library.store.lock().unwrap();
+        let mut podcast = Podcast::new("Categorized Show");
+        podcast.feed_url = Some(url::Url::parse("https://example.com/feed.xml").unwrap());
+        podcast_id_str = podcast.id.0.to_string();
+        s.subscribe(podcast, Vec::new());
+        assert!(s.set_podcast_user_categories(&podcast_id_str, vec!["AI".into(), "News".into()]));
+    }
+
+    let (transcripts, categories_cache) = (HashMap::new(), HashMap::new());
+    let library = {
+        let s = handle.state.library.store.lock().unwrap();
+        build_library_snapshot(&handle, &s, &transcripts, &categories_cache)
+    };
+
+    let row = library
+        .iter()
+        .find(|p| p.id == podcast_id_str)
+        .expect("subscribed podcast must project");
+    assert_eq!(row.user_categories, vec!["AI".to_string(), "News".to_string()]);
+
+    // Wire contract: present when non-empty.
+    let json = serde_json::to_string(row).expect("encode");
+    assert!(json.contains(r#""user_categories":["AI","News"]"#));
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}

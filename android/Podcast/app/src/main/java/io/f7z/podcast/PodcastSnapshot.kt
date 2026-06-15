@@ -354,6 +354,12 @@ data class PodcastSummary(
     val author: String? = null,
     /** HTML-stripped podcast description. Mirror of `PodcastSummary.description`. */
     val description: String? = null,
+    /**
+     * User-curated category labels assigned to this podcast. Mirror of
+     * `PodcastSummary.user_categories`. Default `emptyList()` keeps decode
+     * safe for snapshots that predate the field (D5 omits it when empty).
+     */
+    @SerialName("user_categories") val userCategories: List<String> = emptyList(),
     val episodes: List<EpisodeSummary> = emptyList(),
 )
 
