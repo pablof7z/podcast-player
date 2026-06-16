@@ -272,6 +272,38 @@ char *nmp_app_podcast_provider_complete(void *handle, const char *intent_json);
 // or {"error":"..."}.
 char *nmp_app_podcast_provider_embed(void *handle, const char *intent_json);
 
+// Synchronous hybrid RAG query: BM25 + optional semantic (OpenRouter embed) + RRF fusion.
+// Slice 5b kernel query surface — distinct from the reactive KnowledgeAction::Search
+// which stages results into PodcastUpdate. These are request/response, read-only,
+// no domain bump. Call from a background thread / detached Swift Task — NEVER the actor.
+//
+// Request JSON:
+//   {"query":"…","scope":{"podcast_id":"…"},"limit":10}
+// Scope variants: {"podcast_id":"…"} | {"episode_id":"…"} | absent/{}
+//
+// Response JSON:
+//   {"result":[{"episode_id":"…","podcast_id":"…","episode_title":"…",
+//               "podcast_title":"…","chunk_index":0,"start_secs":0.0,
+//               "end_secs":30.0,"text":"…","relevance_score":0.85},...]}
+// or {"error":"…"}.
+// The caller MUST free the returned pointer via `nmp_free_string`.
+// Threading: BLOCKS (block_on). Call from a background thread / detached Task.
+char *nmp_app_podcast_knowledge_query(void *handle, const char *request_json);
+
+// Synchronous chunk lookup by (episode_id, chunk_index). Read-only in-memory lookup.
+//
+// Request JSON:
+//   {"episode_id":"…","chunk_index":0}
+//
+// Response JSON:
+//   {"result":{"episode_id":"…","podcast_id":"…","episode_title":"…",
+//              "podcast_title":"…","chunk_index":0,"start_secs":0.0,
+//              "end_secs":30.0,"text":"…","relevance_score":0.0}}
+// or {"result":null} when the chunk is absent.
+// The caller MUST free the returned pointer via `nmp_free_string`.
+// Threading: cheap in-memory lookup; callable from any non-actor thread.
+char *nmp_app_podcast_knowledge_chunk(void *handle, const char *request_json);
+
 // Shared online-search transport. Swift passes a typed query intent:
 //   {"query":"..."}
 // Rust chooses direct Perplexity when a Perplexity key is loaded, otherwise

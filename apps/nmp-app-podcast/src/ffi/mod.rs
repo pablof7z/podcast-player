@@ -45,6 +45,7 @@ pub(crate) mod handle;
 mod helpers;
 mod http_report;
 mod image_generation;
+mod knowledge_query;
 mod local_model_catalog;
 mod local_llm;
 mod network_report;
@@ -141,6 +142,7 @@ pub use projections::{
     WikiArticle,
 };
 pub use provider_complete::nmp_app_podcast_provider_complete;
+pub use knowledge_query::{nmp_app_podcast_knowledge_chunk, nmp_app_podcast_knowledge_query};
 pub use provider_embeddings::nmp_app_podcast_provider_embed;
 pub use provider_key_validation::{
     nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
