@@ -7,22 +7,33 @@
 //! path: assert no panic, BM25 results untouched, and the second-bump return
 //! flag matches the design.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use podcast_core::{Episode, Podcast, PodcastId};
 use url::Url;
 use uuid::Uuid;
 
+use podcast_knowledge::sqlite::KnowledgeSqliteStore;
 use podcast_knowledge::{EmbeddingVector, KnowledgeChunk, KnowledgeStore};
 use podcast_transcripts::TranscriptChunk;
 
 use crate::ffi::projections::KnowledgeSearchResult;
-use crate::state::Infra;
+use crate::state::{Domain, Infra};
 use crate::store::PodcastStore;
 
 use super::{
-    resolve_embeddings_provider, spawn_semantic_search_inner, validate_query_embedding,
+    metadata_index_backfill_inner, resolve_embeddings_provider, spawn_backfill_embeddings,
+    spawn_semantic_search_inner, validate_query_embedding,
 };
+
+/// Read a domain's push-sidecar counter (for asserting the RIGHT domain bumped).
+fn library_rev(infra: &Infra) -> u64 {
+    infra
+        .domain_revs
+        .counter(Domain::Library)
+        .load(Ordering::Relaxed)
+}
 
 fn make_episode(podcast_id: PodcastId, title: &str, description: &str) -> Episode {
     let mut ep = Episode::new(
@@ -227,4 +238,225 @@ fn inner_no_bump_when_index_empty_and_model_unusable() {
     assert!(!bumped);
     assert_eq!(infra.rev(), rev0);
     assert_eq!(results.lock().unwrap().len(), 1, "BM25 baseline intact");
+}
+
+// ── metadata_index_backfill_inner — kernel self-drain (D13) ──────────────────
+
+type SqliteSlot = Arc<Mutex<Option<KnowledgeSqliteStore>>>;
+
+fn empty_sqlite() -> SqliteSlot {
+    Arc::new(Mutex::new(None))
+}
+
+/// The core regression test: a subscribed, no-transcript episode is indexed
+/// (its title+description becomes a chunk in the in-memory index) AND the
+/// pending list drains (the episode is marked `metadata_indexed`).
+#[test]
+fn metadata_drain_indexes_no_transcript_episode_and_drains_pending() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Science Weekly");
+    let pid = podcast.id;
+    let ep_a = make_episode(pid, "Black holes explained", "Event horizons and singularities.");
+    let ep_b = make_episode(pid, "The standard model", "Quarks, leptons, and bosons.");
+    store.subscribe(podcast, vec![ep_a.clone(), ep_b.clone()]);
+    let store = Arc::new(Mutex::new(store));
+
+    // Before: both episodes are pending (no transcript, not yet indexed).
+    assert_eq!(
+        store.lock().unwrap().metadata_index_backfill_candidates().len(),
+        2,
+        "both no-transcript episodes start pending"
+    );
+
+    let index = Arc::new(Mutex::new(KnowledgeStore::new()));
+    let sqlite = empty_sqlite();
+    let infra = Infra::for_test();
+    let rev0 = infra.rev();
+    let lib0 = library_rev(&infra);
+    let runtime = Arc::clone(&infra.runtime);
+
+    let drained = runtime.block_on(metadata_index_backfill_inner(
+        &store, &index, &sqlite, &infra,
+    ));
+
+    // Drained both, pending list now empty (the contract is no longer dangling).
+    assert_eq!(drained, 2, "both episodes drained");
+    assert!(
+        store.lock().unwrap().metadata_index_backfill_candidates().is_empty(),
+        "pending_metadata_index_ids must be drained"
+    );
+    assert!(store.lock().unwrap().is_metadata_indexed(&ep_a.id.0.to_string()));
+    assert!(store.lock().unwrap().is_metadata_indexed(&ep_b.id.0.to_string()));
+    assert!(infra.rev() > rev0, "draining a batch bumps the global rev");
+    // The bump MUST land on the LIBRARY domain counter — that's the one the
+    // `pending_metadata_index_ids` payload + library delta sidecar watch. A
+    // plain `bump()` would advance only `misc` and leave the projected list
+    // stale (the per-domain real-bump trap, #399/#400/#423).
+    assert!(
+        library_rev(&infra) > lib0,
+        "drain must bump domain_revs.library, not just the global rev"
+    );
+
+    // No-transcript episode is now vector-searchable: its synthetic title+desc
+    // chunk lives in the index (NULL embedding — the embed backfill fills it).
+    let ks = index.lock().unwrap();
+    let chunks_a = ks.chunks_for_episode(&ep_a.id.0.to_string());
+    assert_eq!(chunks_a.len(), 1, "metadata chunk indexed for no-transcript ep");
+    assert!(chunks_a[0].chunk.text.contains("Black holes explained"));
+    assert!(chunks_a[0].chunk.text.contains("singularities"));
+    assert!(chunks_a[0].embedding.is_none(), "metadata chunk starts NULL-embedding");
+    assert_eq!(ks.chunks_for_episode(&ep_b.id.0.to_string()).len(), 1);
+}
+
+/// An episode already carrying index chunks (e.g. a transcript indexed live)
+/// is NOT re-chunked by the drain — it is only marked indexed (drained). The
+/// pre-existing chunk survives untouched.
+#[test]
+fn metadata_drain_skips_already_indexed_episode() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Tech Podcast");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Episode title here", "Episode description here.");
+    store.subscribe(podcast, vec![ep.clone()]);
+    let ep_id = ep.id.0.to_string();
+    let store = Arc::new(Mutex::new(store));
+
+    // Pre-seed the index with a transcript chunk whose text differs from the
+    // metadata text, so a re-index would be observable.
+    let mut ks = KnowledgeStore::new();
+    ks.upsert(KnowledgeChunk::without_embedding(TranscriptChunk {
+        episode_id: ep_id.clone(),
+        chunk_index: 0,
+        start_secs: 12.5,
+        end_secs: 30.0,
+        text: "real transcript words from the audio".to_owned(),
+        word_count: 6,
+    }));
+    let index = Arc::new(Mutex::new(ks));
+    let sqlite = empty_sqlite();
+    let infra = Infra::for_test();
+    let runtime = Arc::clone(&infra.runtime);
+
+    let drained = runtime.block_on(metadata_index_backfill_inner(
+        &store, &index, &sqlite, &infra,
+    ));
+
+    assert_eq!(drained, 1, "the episode is still drained (marked)");
+    assert!(store.lock().unwrap().is_metadata_indexed(&ep_id));
+    // The original transcript chunk is untouched — NOT replaced by metadata.
+    let ks = index.lock().unwrap();
+    let chunks = ks.chunks_for_episode(&ep_id);
+    assert_eq!(chunks.len(), 1);
+    assert_eq!(chunks[0].chunk.text, "real transcript words from the audio");
+    assert_eq!(chunks[0].chunk.start_secs, 12.5, "real timestamp preserved");
+}
+
+/// An episode with neither a transcript nor any title/description text builds
+/// no chunk, but is still marked indexed so it stops re-surfacing in the
+/// pending list (the loop must not spin forever on it).
+#[test]
+fn metadata_drain_marks_blank_episode_without_chunk() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Blank Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "", ""); // no title, no description
+    store.subscribe(podcast, vec![ep.clone()]);
+    let ep_id = ep.id.0.to_string();
+    let store = Arc::new(Mutex::new(store));
+
+    let index = Arc::new(Mutex::new(KnowledgeStore::new()));
+    let sqlite = empty_sqlite();
+    let infra = Infra::for_test();
+    let runtime = Arc::clone(&infra.runtime);
+
+    let drained = runtime.block_on(metadata_index_backfill_inner(
+        &store, &index, &sqlite, &infra,
+    ));
+
+    assert_eq!(drained, 1, "blank episode is still drained");
+    assert!(store.lock().unwrap().is_metadata_indexed(&ep_id));
+    assert!(
+        store.lock().unwrap().metadata_index_backfill_candidates().is_empty(),
+        "blank episode must not loop forever"
+    );
+    assert!(
+        index.lock().unwrap().chunks_for_episode(&ep_id).is_empty(),
+        "no chunk built for a blank episode"
+    );
+}
+
+/// Nothing pending → the drain is a clean no-op (returns 0, no bump on either
+/// the global rev OR the library counter).
+#[test]
+fn metadata_drain_noop_when_nothing_pending() {
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let index = Arc::new(Mutex::new(KnowledgeStore::new()));
+    let sqlite = empty_sqlite();
+    let infra = Infra::for_test();
+    let rev0 = infra.rev();
+    let lib0 = library_rev(&infra);
+    let runtime = Arc::clone(&infra.runtime);
+
+    let drained = runtime.block_on(metadata_index_backfill_inner(
+        &store, &index, &sqlite, &infra,
+    ));
+
+    assert_eq!(drained, 0);
+    assert_eq!(infra.rev(), rev0, "no work → no global bump");
+    assert_eq!(library_rev(&infra), lib0, "no work → no library bump");
+}
+
+// ── spawn_backfill_embeddings — single-flight guard ──────────────────────────
+
+/// The embed backfill is single-flight: a second spawn while one is in flight
+/// is a no-op. The metadata drain now chains the embed backfill on EVERY feed
+/// refresh, so without this guard rapid refreshes would spawn overlapping embed
+/// loops (double-scan NULL rows, redundant provider calls, racing writes).
+///
+/// `Infra::for_test`'s current-thread runtime is never driven here, so the
+/// spawned task body never runs to release the flag — which is exactly what
+/// lets us observe the guard: the first call claims the flag and it stays
+/// claimed, so the second call must bail.
+#[test]
+fn embed_backfill_single_flight_guard() {
+    let running = Arc::new(AtomicBool::new(false));
+    let sqlite = empty_sqlite(); // None → loop would break immediately
+    let index = Arc::new(Mutex::new(KnowledgeStore::new()));
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let infra = Infra::for_test();
+
+    // First call claims the flag (the in-flight loop owns it).
+    spawn_backfill_embeddings(
+        Arc::clone(&running),
+        Arc::clone(&sqlite),
+        Arc::clone(&index),
+        Arc::clone(&store),
+        infra.clone(),
+    );
+    assert!(
+        running.load(Ordering::SeqCst),
+        "first call must claim the running flag"
+    );
+
+    // Second call while the flag is set must bail (no overlap, no panic).
+    spawn_backfill_embeddings(running.clone(), sqlite, index, store, infra.clone());
+    assert!(
+        running.load(Ordering::SeqCst),
+        "second call is a no-op; the first loop still owns the flag"
+    );
+}
+
+/// The `RunningGuard` clears its flag on drop — proving the panic-safe release
+/// path (a panic in the loop body unwinds through the guard's `Drop`).
+#[test]
+fn running_guard_clears_flag_on_drop() {
+    let flag = Arc::new(AtomicBool::new(true));
+    {
+        let _g = super::RunningGuard(Arc::clone(&flag));
+        assert!(flag.load(Ordering::SeqCst));
+    } // guard dropped here (the same path an unwind would take)
+    assert!(
+        !flag.load(Ordering::SeqCst),
+        "RunningGuard must clear the flag on drop"
+    );
 }

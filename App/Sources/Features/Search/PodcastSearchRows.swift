@@ -52,34 +52,6 @@ struct PodcastEpisodeSearchRow: View {
     }
 }
 
-struct PodcastTranscriptSearchRow: View {
-    let hit: PodcastTranscriptSearchHit
-    let episode: Episode?
-    let podcast: Podcast?
-    let query: String
-
-    var body: some View {
-        SearchResultRow(
-            icon: "text.quote",
-            tint: podcast?.accentColor ?? AppTheme.Tint.agentSurface,
-            title: episode?.title ?? "Episode",
-            subtitle: podcast?.title ?? "Transcript",
-            bodyText: hit.snippet,
-            footnote: "\(formatTime(hit.chunk.startMS)) · \(String(format: "%.2f", hit.score))",
-            query: query
-        )
-    }
-
-    private func formatTime(_ ms: Int) -> String {
-        let total = max(0, ms / 1000)
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        if h > 0 { return "\(h):\(String(format: "%02d:%02d", m, s))" }
-        return "\(m):\(String(format: "%02d", s))"
-    }
-}
-
 /// Row for a kernel `KnowledgeSearchResult` (Slice 4).
 ///
 /// `KnowledgeSearchResult` is episode-level (one row per episode, not per

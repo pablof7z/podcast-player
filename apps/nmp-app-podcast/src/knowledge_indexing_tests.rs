@@ -224,8 +224,11 @@ fn chunk_text_for_unknown_episode_is_skipped() {
     assert!(state.results_snapshot().is_empty());
 }
 
+/// A whitespace-only transcript yields no chunks; with no episode record (and
+/// thus no title/description metadata) to fall back on, `index_episode` reports
+/// `no_transcript` rather than the old degenerate "indexed with 0 chunks".
 #[test]
-fn empty_transcript_indexes_zero_chunks() {
+fn empty_transcript_with_no_metadata_reports_no_transcript() {
     let store = shared(PodcastStore::new());
     store
         .lock()
@@ -235,8 +238,8 @@ fn empty_transcript_indexes_zero_chunks() {
     let out = state.handle(KnowledgeAction::IndexEpisode {
         episode_id: "ep-1".to_owned(),
     });
-    assert_eq!(out["status"], "indexed");
-    assert_eq!(out["chunk_count"], 0);
+    assert_eq!(out["status"], "no_transcript");
+    assert!(state.index.lock().unwrap().is_empty());
 }
 
 #[test]

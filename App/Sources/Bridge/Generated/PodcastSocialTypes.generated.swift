@@ -53,6 +53,8 @@ struct NostrConversationDTO: Codable, Identifiable, Equatable, Hashable {
     @DefaultEmptyArray var participants: [String] = []
     @DefaultEmptyArray var turns: [NostrConversationTurnDTO] = []
     var trusted: Bool = false
+    var peerBlocked: Bool = false
+    var peerApproved: Bool = false
     var firstSeen: Int = 0
     var lastActivity: Int = 0
 
@@ -62,6 +64,10 @@ struct NostrConversationDTO: Codable, Identifiable, Equatable, Hashable {
 /// One contact in the active account's NIP-02 (kind:3) follow list.
 struct ContactSummary: Codable, Identifiable, Equatable, Hashable {
     var npub: String
+    /// Raw lowercase-hex pubkey — used by Android claimProfile; iOS can also use
+    /// it for resolved_profiles lookup. Decoded via convertFromSnakeCase
+    /// (pubkey_hex → pubkeyHex). Empty string on decode failure (never in practice).
+    var pubkeyHex: String = ""
     var displayName: String? = nil
     var pictureUrl: String? = nil
 

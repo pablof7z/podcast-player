@@ -19,110 +19,12 @@ pub(super) fn c_string_opt(ptr: *const c_char) -> Option<String> {
 /// field so the host receives plain text. Both iOS and Android benefit from
 /// this at the kernel level (D0 — policy in Rust).
 ///
-/// Strategy: replace each tag with a single space (so `<p>A</p><p>B</p>`
-/// → `A  B` rather than `AB`), decode named + numeric entities, then
-/// collapse runs of whitespace.
+/// Thin delegate to the canonical [`podcast_core::strip_html`] so the FFI
+/// snapshot projection and the kernel knowledge metadata-index path share one
+/// implementation (one canonical representation, AGENTS.md §Engineering
+/// discipline).
 pub(super) fn strip_html(raw: &str) -> String {
-    let stripped = strip_tags(raw);
-    let decoded = decode_entities(&stripped);
-    collapse_whitespace(&decoded)
-}
-
-fn strip_tags(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    let mut in_tag = false;
-    for c in input.chars() {
-        match c {
-            '<' => {
-                in_tag = true;
-                if !out.ends_with(' ') {
-                    out.push(' ');
-                }
-            }
-            '>' => in_tag = false,
-            _ if !in_tag => out.push(c),
-            _ => {}
-        }
-    }
-    out
-}
-
-static NAMED_ENTITIES: &[(&str, &str)] = &[
-    ("&amp;", "&"),
-    ("&lt;", "<"),
-    ("&gt;", ">"),
-    ("&quot;", "\""),
-    ("&apos;", "'"),
-    ("&nbsp;", " "),
-    ("&rsquo;", "\u{2019}"),
-    ("&lsquo;", "\u{2018}"),
-    ("&rdquo;", "\u{201D}"),
-    ("&ldquo;", "\u{201C}"),
-    ("&hellip;", "\u{2026}"),
-    ("&mdash;", "\u{2014}"),
-    ("&ndash;", "\u{2013}"),
-];
-
-fn decode_entities(input: &str) -> String {
-    let mut out = input.to_owned();
-    for (entity, replacement) in NAMED_ENTITIES {
-        if out.contains(entity) {
-            out = out.replace(entity, replacement);
-        }
-    }
-    if out.contains("&#") {
-        out = decode_numeric_entities(&out);
-    }
-    out
-}
-
-fn decode_numeric_entities(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    let bytes = input.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'&' && i + 2 < bytes.len() && bytes[i + 1] == b'#' {
-            // Scan up to 12 chars ahead for the closing `;`
-            let end = (i + 2..bytes.len().min(i + 14)).find(|&j| bytes[j] == b';');
-            if let Some(semi) = end {
-                let body = &input[i + 2..semi];
-                let scalar = if body.starts_with('x') || body.starts_with('X') {
-                    u32::from_str_radix(&body[1..], 16).ok()
-                } else {
-                    body.parse::<u32>().ok()
-                };
-                if let Some(v) = scalar.and_then(char::from_u32) {
-                    out.push(v);
-                    i = semi + 1;
-                    continue;
-                }
-            }
-        }
-        out.push(input[i..].chars().next().unwrap());
-        i += input[i..].chars().next().map_or(1, |c| c.len_utf8());
-    }
-    out
-}
-
-fn collapse_whitespace(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    let mut last_was_space = true; // trim leading
-    for c in input.chars() {
-        if c.is_whitespace() {
-            if !last_was_space {
-                out.push(' ');
-                last_was_space = true;
-            }
-        } else {
-            out.push(c);
-            last_was_space = false;
-        }
-    }
-    // trim trailing space
-    if out.ends_with(' ') {
-        out.pop();
-    }
-    out
+    podcast_core::strip_html(raw)
 }
 
 #[cfg(test)]

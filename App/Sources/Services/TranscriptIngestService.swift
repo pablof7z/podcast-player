@@ -6,10 +6,8 @@ import os.log
 // Owns the end-to-end transcript ingestion pipeline:
 //   1. Pick a publisher transcript URL (or fall back to the selected STT provider).
 //   2. Fetch + parse via `PublisherTranscriptIngestor`.
-//   3. Slice into `Chunk`s via `ChunkBuilder`, supplying podcast/episode FKs.
-//   4. Embed + upsert via `RAGService.shared.index` (which calls the embedder).
-//   5. Persist the parsed `Transcript` JSON to disk for the EpisodeDetail view.
-//   6. Update `Episode.transcriptState` on the live `AppStateStore`.
+//   3. Persist the parsed `Transcript` JSON to disk for the EpisodeDetail view.
+//   4. Update `Episode.transcriptState` on the live `AppStateStore`.
 //
 // The service stays `@MainActor` because every input + output it touches
 // (state store, episode model, status flips) lives on the main actor; the
@@ -28,14 +26,23 @@ final class TranscriptIngestService {
 
     // MARK: Dependencies
 
-    let rag: RAGService
     private let ingestor: PublisherTranscriptIngestor
     private let scribe: ElevenLabsScribeClient
     private let whisper: OpenRouterWhisperClient
     private let assemblyAI: AssemblyAITranscriptClient
     private let appleSTT: AppleNativeSTTClient
-    private let chunkBuilder: ChunkBuilder
     private let store: TranscriptStore
+
+    // MARK: AppStateStore handle
+
+    /// Weak reference to the live store. Set once by `AppStateStore.init`
+    /// via `attach(appStore:)`. The service is a singleton; `AppStateStore`
+    /// keeps no back-reference so there is no retain cycle.
+    weak var appStore: AppStateStore?
+
+    func attach(appStore: AppStateStore) {
+        self.appStore = appStore
+    }
 
     // MARK: In-flight tracking (dedup)
 
@@ -44,22 +51,18 @@ final class TranscriptIngestService {
     // MARK: Init
 
     init(
-        rag: RAGService = .shared,
         ingestor: PublisherTranscriptIngestor = PublisherTranscriptIngestor(),
         scribe: ElevenLabsScribeClient = ElevenLabsScribeClient(),
         whisper: OpenRouterWhisperClient = OpenRouterWhisperClient(),
         assemblyAI: AssemblyAITranscriptClient = AssemblyAITranscriptClient(),
         appleSTT: AppleNativeSTTClient = AppleNativeSTTClient(),
-        chunkBuilder: ChunkBuilder = ChunkBuilder(),
         store: TranscriptStore = .shared
     ) {
-        self.rag = rag
         self.ingestor = ingestor
         self.scribe = scribe
         self.whisper = whisper
         self.assemblyAI = assemblyAI
         self.appleSTT = appleSTT
-        self.chunkBuilder = chunkBuilder
         self.store = store
     }
 
@@ -78,7 +81,7 @@ final class TranscriptIngestService {
     ///   provider for one call without flipping their global setting. `nil`
     ///   preserves existing publisher-first behaviour.
     func ingest(episodeID: UUID, forceProvider: STTProvider? = nil) async {
-        guard let appStore = rag.appStore else {
+        guard let appStore = appStore else {
             Self.logger.warning(
                 "ingest(\(episodeID, privacy: .public)): no AppStateStore attached — skipping"
             )
@@ -392,60 +395,7 @@ final class TranscriptIngestService {
         // episodes in a tight loop at cold start.
         appStore.kernelIndexEpisodeKnowledge(episodeID: episode.id)
 
-        // STEP 2: Best-effort embed. Failures are logged but don't throw.
-        let chunkable = ChunkableTranscript(
-            transcript: transcript,
-            podcastID: episode.podcastID
-        )
-        let chunks = chunkBuilder.build(from: chunkable)
-
-        do {
-            // Drop any prior chunks for this episode so re-ingestion
-            // replaces rather than accumulates. Idempotent on chunk.id,
-            // but old chunks from a different segment-boundary run would
-            // otherwise linger. This also wipes any synthetic
-            // title/description chunk produced by `EpisodeMetadataIndexer`
-            // — transcript chunks subsume that signal.
-            try await rag.index.deleteAll(forEpisodeID: episode.id)
-            if !chunks.isEmpty {
-                try await rag.index.upsert(chunks: chunks)
-                // Transcript chunks cover this episode in the RAG index,
-                // so the metadata-indexer backfill should skip it next
-                // launch.
-                appStore.setEpisodesMetadataIndexed([episode.id])
-            }
-            Self.logger.info(
-                "ingested transcript for \(episode.id, privacy: .public) — \(chunks.count, privacy: .public) chunks indexed, source=\(String(describing: source), privacy: .public)"
-            )
-            // Surface RAG indexing in Diagnostics — the transcript is readable
-            // before this, but whether search can find it is invisible
-            // otherwise. Empty chunks ⇒ nothing to index (still informative).
-            appStore.kernelRecordEpisodeEvent(
-                episodeID: episode.id,
-                kind: "transcript.indexed",
-                severity: "success",
-                summary: chunks.isEmpty
-                    ? "No transcript chunks to index"
-                    : "Indexed for search · \(chunks.count) chunks",
-                details: [("Chunks", String(chunks.count))]
-            )
-        } catch {
-            Self.logger.notice(
-                "transcript saved for \(episode.id, privacy: .public) but RAG indexing failed: \(String(describing: error), privacy: .public) — episode is readable; search won't find it until the user re-embeds with a configured key"
-            )
-            // A failed embed isn't fatal (the transcript reads fine), but the
-            // user should be able to see *why* search can't find this episode.
-            appStore.kernelRecordEpisodeEvent(
-                episodeID: episode.id,
-                kind: "transcript.index.failed",
-                severity: "warning",
-                summary: "Search indexing failed — transcript still readable",
-                details: [("Error", (error as? LocalizedError)?.errorDescription
-                    ?? error.localizedDescription)]
-            )
-        }
-
-        // STEP 3: Fire-and-forget AI chapter compilation via the kernel (D0).
+        // STEP 2: Fire-and-forget AI chapter compilation via the kernel (D0).
         // The kernel runs FULL or ENRICH-ONLY mode depending on whether publisher
         // chapters already exist and gates on whether ad detection has already run.
         // Decoupled from the embed step: chapter compilation runs even when

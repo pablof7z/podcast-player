@@ -100,10 +100,10 @@ struct Episode: Codable, Sendable, Identifiable, Hashable {
     /// At most one episode per triage pass should carry this flag.
     var triageIsHero: Bool
 
-    /// `true` once `EpisodeMetadataIndexer` has embedded the episode's
-    /// title + description into the RAG index. Lets `search_episodes` /
+    /// `true` once the kernel has indexed the episode's title + description
+    /// into the knowledge corpus. Lets `search_episodes` /
     /// `find_similar_episodes` discover episodes that have no transcript.
-    /// Flipped to `true` after a successful metadata upsert OR after a
+    /// Flipped to `true` after a successful metadata index OR after a
     /// transcript ingestion lands real chunks for the episode (transcript
     /// chunks subsume the synthetic title/description match).
     var metadataIndexed: Bool

@@ -32,4 +32,5 @@ final class PodcastSearchTests: XCTestCase {
         XCTAssertEqual(results.episodes.first?.episode.guid, "keto-1")
         XCTAssertEqual(results.shows.first?.podcast.title, "Nutrition Lab")
     }
+
 }

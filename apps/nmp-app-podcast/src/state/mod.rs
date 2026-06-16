@@ -36,6 +36,7 @@
 //!          god-structs.  All other substates keep their existing Arc clones.
 
 pub mod agent_chat;
+pub mod bump;
 pub mod categories;
 pub mod clips;
 pub mod comments;
@@ -60,6 +61,7 @@ use tokio::runtime::Runtime;
 
 use crate::snapshot_signal::SnapshotUpdateSignal;
 
+pub use bump::BumpHandle;
 pub use domain::{Domain, DomainRevs};
 pub use slot::{Derived, Durability, Persisted, Session, Slot};
 
@@ -125,17 +127,30 @@ impl Infra {
     /// Replaces the `match self.snapshot_signal { Some(s)=>s.bump(), … }`
     /// pattern repeated in ~12 handlers.
     pub fn bump(&self) {
-        // Advance the domain rev first so a consumer reading the frame produced
-        // by the global-rev tick observes the matching domain delta.
-        self.domain_revs
-            .counter(self.domain)
-            .fetch_add(1, Ordering::Relaxed);
-        match &self.signal {
-            Some(s) => s.bump(),
-            None => {
-                self.rev.fetch_add(1, Ordering::Relaxed);
-            }
-        }
+        // Delegate to a `BumpHandle` so the bump logic lives in exactly ONE
+        // place.  `BumpHandle` holds NO `Arc<Runtime>`, so a task spawned ON the
+        // runtime can capture a bump handle without pinning the runtime alive
+        // (the UAF that a full `Infra` capture would create — see
+        // [`Self::bump_handle`]).
+        self.bump_handle().bump();
+    }
+
+    /// Build a [`BumpHandle`] — a clonable bump primitive that carries the
+    /// rev/signal/domain-rev counters but **not** the `Arc<Runtime>`.
+    ///
+    /// A background task spawned on `infra.runtime` MUST NOT capture a full
+    /// `Infra` (which holds `runtime: Arc<Runtime>`): that makes the task hold a
+    /// strong ref to the runtime it runs on, so the runtime never drops, the
+    /// task never stops, and at teardown it dereferences a freed `NmpApp`
+    /// (use-after-free).  Capture a `BumpHandle` instead — it bumps the snapshot
+    /// without keeping the runtime alive.
+    pub fn bump_handle(&self) -> BumpHandle {
+        BumpHandle::new(
+            self.rev.clone(),
+            self.signal.clone(),
+            self.domain_revs.clone(),
+            self.domain,
+        )
     }
 
     /// Bump only when `changed` is true — avoids a no-op bump that would
@@ -402,7 +417,7 @@ impl PodcastAppState {
         ));
         let clips = clips::ClipsState::new(infra.clone(), store.clone());
         let transcripts = transcripts::TranscriptsState::new(infra.clone(), store.clone());
-        let tasks = tasks::TasksState::new(infra.clone(), store.clone());
+        let tasks = tasks::TasksState::new(infra.with_domain(Domain::Tasks), store.clone());
         let inbox = Arc::new(inbox::InboxState::new(infra.clone(), store.clone()));
         let comments =
             comments::CommentsState::new(infra.clone(), store.clone(), identity.clone());

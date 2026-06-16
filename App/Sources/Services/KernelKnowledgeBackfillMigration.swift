@@ -15,9 +15,6 @@ import os
 //     crash leaves no partial state — `index_episode` is idempotent
 //     (deletes + re-upserts) — and the migration retries on next launch.
 //   - Idempotent: safe to run multiple times; the kernel deduplicates.
-//   - No data loss: vectors.sqlite is untouched. The Swift VectorIndex /
-//     RAGService / agent adapter remain intact as dormant fallback (slice 5
-//     territory).
 //   - Reactive: waits for the first kernel snapshot via `awaitState` so we
 //     don't race against a cold-start with no episodes yet.
 //   - PACED: each `index_episode` synchronously chunks on the actor, calls

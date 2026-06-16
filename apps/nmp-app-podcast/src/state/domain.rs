@@ -34,6 +34,7 @@ use std::sync::Arc;
 /// | `widget` | `podcast.widget` | player state + library (derived) |
 /// | `social` | `podcast.social` | social graph + agent notes + nostr conversations |
 /// | `misc` | `podcast.misc` | everything else (wiki/picks/clips/transcripts/…) |
+/// | `tasks` | (internal) | agent-task list mutations; used for test assertions |
 #[derive(Clone)]
 pub struct DomainRevs {
     pub library: Arc<AtomicU64>,
@@ -44,6 +45,11 @@ pub struct DomainRevs {
     pub widget: Arc<AtomicU64>,
     pub social: Arc<AtomicU64>,
     pub misc: Arc<AtomicU64>,
+    /// Tasks domain rev — advanced when the kernel-owned periodic tick fires
+    /// due tasks.  There is no `podcast.tasks` push-sidecar yet (tasks ride
+    /// `podcast.misc`); this counter lets test assertions distinguish a
+    /// tasks-domain bump from an unrelated `misc` mutation.
+    pub tasks: Arc<AtomicU64>,
 }
 
 impl Default for DomainRevs {
@@ -64,6 +70,7 @@ impl DomainRevs {
             widget: Arc::new(AtomicU64::new(1)),
             social: Arc::new(AtomicU64::new(1)),
             misc: Arc::new(AtomicU64::new(1)),
+            tasks: Arc::new(AtomicU64::new(1)),
         }
     }
 
@@ -82,6 +89,7 @@ impl DomainRevs {
             Domain::Widget => &self.widget,
             Domain::Social => &self.social,
             Domain::Misc => &self.misc,
+            Domain::Tasks => &self.tasks,
         }
     }
 }
@@ -99,7 +107,7 @@ impl DomainRevs {
 ///
 /// `Misc` is the default catch-all for substates not yet split into their own
 /// push domain (wiki/picks/clips/transcripts/agent/discovery/voice/
-/// publish/tasks/comments/knowledge).
+/// publish/comments/knowledge).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Domain {
     Library,
@@ -113,4 +121,11 @@ pub enum Domain {
     /// outbound turn recorded, or follow list updated).
     Social,
     Misc,
+    /// Agent-task list domain.  The kernel-owned periodic tick fires
+    /// `maybe_run_due_tasks` every 60 s and bumps this counter when at least
+    /// one task was dispatched.  Tasks still ride the `podcast.misc` push
+    /// sidecar; this counter exists for precise test assertions (a test
+    /// asserting only the global rev cannot distinguish a tasks-tick from an
+    /// unrelated misc mutation).
+    Tasks,
 }

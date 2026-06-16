@@ -76,11 +76,23 @@ pub struct NostrConversationDTO {
     pub participants: Vec<String>,
     /// Merged inbound + outbound turns, sorted ascending by `created_at`.
     pub turns: Vec<NostrConversationTurnDTO>,
-    /// Whether the primary counterparty is in the active account's NIP-02
-    /// follow list at projection time. Recomputed live — follow/unfollow
-    /// immediately flips the verdict for all existing conversations (D6:
-    /// fail-closed; `false` when no follow set is wired).
+    /// Composed trust verdict for the primary counterparty:
+    /// `(followed || approved) && !blocked`. Recomputed live — follow/unfollow,
+    /// approve, and block immediately flip the verdict for all existing
+    /// conversations (D6: fail-closed; `false` when no follow set is wired).
     pub trusted: bool,
+    /// Whether the primary counterparty has an EXPLICIT block in the
+    /// `ApprovedPeerStore`. Distinct from `trusted` (the composed verdict) so the
+    /// shell can distinguish blocked-vs-untrusted and offer the correct recovery
+    /// action (Unblock). Always present — bools are never omitted (D5
+    /// omit-when-empty applies to Option/collections, not bools).
+    pub peer_blocked: bool,
+    /// Whether the primary counterparty has an EXPLICIT approval in the
+    /// `ApprovedPeerStore`. EXPLICIT approval only — NOT follow-derived, so a
+    /// pure-follow trusted peer reports `peer_approved = false`. Lets the shell
+    /// avoid offering a no-op "Remove approval" on follow-only peers. Always
+    /// present.
+    pub peer_approved: bool,
     /// Unix seconds of the earliest turn in the conversation.
     pub first_seen: i64,
     /// Unix seconds of the most-recent turn in the conversation.
@@ -98,11 +110,21 @@ pub struct NostrConversationDTO {
 ///
 /// `npub` is pre-encoded so the iOS shell doesn't need a bech32 dependency
 /// just to render the avatar fallback (truncated key).
+///
+/// `pubkey_hex` is the raw lowercase-hex encoding of the same pubkey that
+/// `npub` bech32-encodes.  Android calls `bridge.claimProfile(pubkeyHex)`
+/// to trigger kind:0 resolution via the NMP `resolved_profiles` seam;
+/// iOS decodes it via `convertFromSnakeCase` (pubkey_hex → pubkeyHex).
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub struct ContactSummary {
     /// Author bech32 (`npub1…`) — pre-encoded so iOS can render the
     /// truncated-key fallback without a bech32 dep.
     pub npub: String,
+    /// Raw lowercase-hex encoding of the pubkey — required by Android's
+    /// `bridge.claimProfile(pubkeyHex)` to trigger kind:0 profile resolution
+    /// via the `resolved_profiles` seam.  Empty string only when the hex
+    /// encoding fails (should never occur for a valid Nostr pubkey).
+    pub pubkey_hex: String,
     /// Cached display name from the contact's NIP-01 metadata, when
     /// known. `None` means the grid renders the truncated npub instead.
     #[serde(default, skip_serializing_if = "Option::is_none")]

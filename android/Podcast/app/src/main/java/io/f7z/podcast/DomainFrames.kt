@@ -144,11 +144,48 @@ data class ResolvedProfile(
 // ── podcast.social ────────────────────────────────────────────────────────────
 
 /**
+ * One contact in the NIP-02 (kind:3) follow list.
+ *
+ * Mirror of `apps/nmp-app-podcast/src/ffi/projections/social.rs::ContactSummary`.
+ * `npub` is pre-encoded bech32 for direct rendering. `pubkeyHex` is the raw
+ * lowercase-hex pubkey used for `bridge.claimProfile(pubkeyHex)` to trigger
+ * kind:0 profile resolution via the `resolved_profiles` seam (slice 2).
+ *
+ * Wire contract: `@SerialName` is load-bearing — Android does NOT
+ * auto-convert snake_case → camelCase (no `convertFromSnakeCase` strategy).
+ */
+@Serializable
+data class ContactSummaryDto(
+    val npub: String = "",
+    /** Raw lowercase-hex pubkey — used to call bridge.claimProfile for kind:0 resolution. */
+    @SerialName("pubkey_hex") val pubkeyHex: String = "",
+    @SerialName("display_name") val displayName: String? = null,
+    @SerialName("picture_url") val pictureUrl: String? = null,
+)
+
+/**
+ * NIP-02 follow-list snapshot projected by the social domain.
+ *
+ * Mirror of `apps/nmp-app-podcast/src/ffi/projections/social.rs::SocialSnapshot`.
+ * `following` is the full list of contacts; `followingCount` equals
+ * `following.size` and is provided as a sugar for badge rendering.
+ */
+@Serializable
+data class SocialSnapshotDto(
+    val following: List<ContactSummaryDto> = emptyList(),
+    @SerialName("following_count") val followingCount: Int = 0,
+)
+
+/**
  * NIP-10-threaded Nostr conversation projection + NIP-02 follow graph.
  *
  * `social = null` arriving in this frame signals a tombstone (account switch
  * cleared all social state). `nostrConversations` follows the same pattern:
  * null = tombstone / cleared, absent = no change.
+ *
+ * Both `social` and `nostrConversations` are emitted atomically by the same
+ * `build_social_payload` builder — a tombstone (`social = null`) clears
+ * BOTH the follow list and the conversations list.
  *
  * NOTE: social moved OUT of podcast.misc into this domain in the
  * nostr-conversations-real-projection PR. The flat `agent_notes` field was
@@ -158,7 +195,7 @@ data class ResolvedProfile(
 data class SocialDomainFrame(
     val rev: Long = 0,
     /** NIP-02 follow-list snapshot. `null` = tombstone (account switch). */
-    val social: JsonElement? = null,
+    val social: SocialSnapshotDto? = null,
     /** NIP-10-threaded conversations, newest-first by last_activity. */
     @SerialName("nostr_conversations") val nostrConversations: List<NostrConversationDto>? = null,
 )
@@ -173,7 +210,20 @@ data class NostrConversationDto(
     @SerialName("counterparty_hex") val counterpartyHex: String = "",
     val participants: List<String> = emptyList(),
     val turns: List<NostrConversationTurnDto> = emptyList(),
+    /** Composed trust verdict: `(followed || approved) && !blocked`. */
     val trusted: Boolean = false,
+    /**
+     * Explicit block on the counterparty in the kernel `ApprovedPeerStore`.
+     * Distinct from `trusted` so the trust menu can offer Unblock as the
+     * recovery action. Mirror of `NostrConversationDTO.peer_blocked`.
+     */
+    @SerialName("peer_blocked")  val peerBlocked: Boolean = false,
+    /**
+     * Explicit approval on the counterparty (NOT follow-derived). A pure-follow
+     * trusted peer reports `false`, so the menu avoids offering a no-op
+     * "Remove approval". Mirror of `NostrConversationDTO.peer_approved`.
+     */
+    @SerialName("peer_approved") val peerApproved: Boolean = false,
     @SerialName("first_seen")   val firstSeen: Long = 0L,
     @SerialName("last_activity") val lastActivity: Long = 0L,
 )
@@ -469,16 +519,18 @@ object SnapshotCodec {
 
         // ── social ───────────────────────────────────────────────────────────
         // Kernel-authoritative: social moved out of podcast.misc.
-        // nostrConversations is wired into PodcastSnapshot so the conversations
-        // list + detail screens can render directly from the snapshot flow.
-        // null = tombstone (account switch / no conversations) → clear to empty.
-        // The flat agent_notes field was retired; conversations subsume it.
+        // nostrConversations + following are wired into PodcastSnapshot so the
+        // conversations list, detail, and following screens can render directly.
+        // Both fields are emitted atomically — a tombstone (social=null) clears
+        // BOTH the follow list and the conversations list in one copy().
+        // null = tombstone (account switch) → clear both to empty.
         frames.social?.let { soc ->
             if (soc.rev > tracker.social) {
                 tracker.social = soc.rev
                 anyAccepted = true
                 snap = snap.copy(
                     nostrConversations = soc.nostrConversations ?: emptyList(),
+                    following = soc.social?.following ?: emptyList(),
                 )
             }
         }

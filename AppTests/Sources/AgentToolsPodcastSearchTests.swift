@@ -1,8 +1,8 @@
 import XCTest
 @testable import Podcastr
 
-/// Tests for search, transcript, perplexity, summarize, and find-similar
-/// dispatch paths. Playback and action tool tests live in
+/// Tests for search, transcript, perplexity, summarize, and
+/// find-similar dispatch paths. Playback and action tool tests live in
 /// `AgentToolsPodcastTests.swift`.
 @MainActor
 final class AgentToolsPodcastSearchTests: XCTestCase {

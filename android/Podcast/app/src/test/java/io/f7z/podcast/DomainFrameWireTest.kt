@@ -1060,4 +1060,181 @@ class DomainFrameWireTest {
         assertTrue("resolvedProfiles must be empty when absent from envelope",
             frames!!.resolvedProfiles.isEmpty())
     }
+
+    // ── 10. social domain — SocialSnapshot.following (NIP-02 follow list) ───────
+    //
+    // These tests guard the `ContactSummaryDto` / `SocialSnapshotDto` wire contract.
+    // Slice 1 added ContactSummaryDto / SocialSnapshotDto (npub stubs).
+    // Slice 2 adds `pubkey_hex` → `pubkeyHex` (@SerialName load-bearing on Android)
+    // for bridge.claimProfile(pubkeyHex) profile hydration via resolved_profiles.
+    //
+    // Contract under test:
+    //  a. A `podcast.social` frame with a populated `social` object decodes
+    //     `ContactSummaryDto` fields including snake_case `display_name`,
+    //     `picture_url`, and (new in slice 2) `pubkey_hex`.
+    //  b. `mergeFrames` wires `social.following` into `PodcastSnapshot.following`.
+    //  c. A tombstone `{"rev":N,"social":null}` clears both `following` AND
+    //     `nostrConversations` atomically (same rev gate).
+    //  d. (slice 2) pubkey_hex → pubkeyHex @SerialName decodes correctly;
+    //     old frames that omit pubkey_hex default to "".
+
+    private val socialWithFollowingFixture = """
+        {
+          "rev": 10,
+          "social": {
+            "following": [
+              {
+                "npub": "npub1alice000000",
+                "pubkey_hex": "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011",
+                "display_name": "Alice",
+                "picture_url": "https://example.com/alice.jpg"
+              },
+              {
+                "npub": "npub1bob000000",
+                "pubkey_hex": "bbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff001122",
+                "display_name": null,
+                "picture_url": null
+              },
+              {
+                "npub": "npub1carol000000",
+                "pubkey_hex": "ccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff00112233"
+              }
+            ],
+            "following_count": 3
+          },
+          "nostr_conversations": []
+        }
+    """.trimIndent()
+
+    @Test
+    fun `social domain decodes ContactSummaryDto snake_case fields correctly`() {
+        val raw = envelope("podcast.social" to socialWithFollowingFixture)
+        val frames = SnapshotCodec.decodeDomainFrames(raw)
+
+        assertNotNull("social frame must decode", frames)
+        val soc = frames!!.social
+        assertNotNull("social domain must be present", soc)
+        assertEquals(10L, soc!!.rev)
+
+        val snap = soc.social
+        assertNotNull("social.social must not be null (populated)", snap)
+        assertEquals(3, snap!!.followingCount)    // following_count → followingCount
+        assertEquals(3, snap.following.size)
+
+        val alice = snap.following[0]
+        assertEquals("npub1alice000000", alice.npub)
+        assertEquals("Alice", alice.displayName)  // display_name → displayName
+        assertEquals("https://example.com/alice.jpg", alice.pictureUrl) // picture_url
+        // slice-2: pubkey_hex → pubkeyHex (@SerialName load-bearing on Android)
+        assertEquals(
+            "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011",
+            alice.pubkeyHex,
+        )
+
+        val bob = snap.following[1]
+        assertEquals("npub1bob000000", bob.npub)
+        assertNull("bob display_name must be null", bob.displayName)
+        assertNull("bob picture_url must be null", bob.pictureUrl)
+        assertEquals(
+            "bbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff001122",
+            bob.pubkeyHex,
+        )
+
+        // Carol: optional fields omitted from wire — must default to null/""
+        val carol = snap.following[2]
+        assertEquals("npub1carol000000", carol.npub)
+        assertNull("carol display_name must default to null", carol.displayName)
+        assertNull("carol picture_url must default to null", carol.pictureUrl)
+        assertEquals(
+            "ccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff00112233",
+            carol.pubkeyHex,
+        )
+    }
+
+    @Test
+    fun `ContactSummaryDto pubkey_hex defaults to empty string when field absent`() {
+        // Old kernel builds (pre-slice-2) may omit pubkey_hex; must not crash.
+        val oldFrame = """
+            {
+              "rev": 5,
+              "social": {
+                "following": [
+                  { "npub": "npub1old000000" }
+                ],
+                "following_count": 1
+              }
+            }
+        """.trimIndent()
+        val frames = SnapshotCodec.decodeDomainFrames(envelope("podcast.social" to oldFrame))
+        assertNotNull("old frame must decode (forward compat)", frames)
+        val contact = frames!!.social?.social?.following?.firstOrNull()
+        assertNotNull("contact must be present", contact)
+        assertEquals("npub1old000000", contact!!.npub)
+        // Must default to "" — not throw / not crash on missing key.
+        assertEquals("pubkey_hex absent must default to empty string", "", contact.pubkeyHex)
+    }
+
+    @Test
+    fun `mergeFrames wires social_following into PodcastSnapshot_following`() {
+        val raw = envelope("podcast.social" to socialWithFollowingFixture)
+        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        assertNotNull("social frame must decode", frames)
+
+        val tracker = DomainRevTracker()
+        val (snap, accepted) = SnapshotCodec.mergeFrames(frames!!, PodcastSnapshot(), tracker)
+
+        assertTrue("social frame must be accepted", accepted)
+        assertEquals(
+            "following must have 3 entries after mergeFrames",
+            3,
+            snap.following.size,
+        )
+        assertEquals("npub1alice000000", snap.following[0].npub)
+        assertEquals("Alice", snap.following[0].displayName)
+        // slice-2: pubkeyHex must survive through mergeFrames into PodcastSnapshot.
+        assertEquals(
+            "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011",
+            snap.following[0].pubkeyHex,
+        )
+        assertEquals("npub1bob000000", snap.following[1].npub)
+        assertNull(snap.following[1].displayName)
+        assertEquals("npub1carol000000", snap.following[2].npub)
+        assertEquals(10L, tracker.social)
+    }
+
+    @Test
+    fun `social tombstone clears both following and nostrConversations atomically`() {
+        // Seed: populate both following and conversations via the full social fixture.
+        val seedFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.social" to socialWithFollowingFixture))!!
+        val tracker = DomainRevTracker()
+        val (seeded, _) = SnapshotCodec.mergeFrames(seedFrames, PodcastSnapshot(), tracker)
+        assertEquals("seeded following must have 3 entries", 3, seeded.following.size)
+        // (nostrConversations is empty list from the seed fixture — still valid seed)
+
+        // Tombstone: social=null, nostr_conversations=null, rev=99 > rev=10.
+        val tombstone = """{"rev":99,"social":null,"nostr_conversations":null}"""
+        val tombFrames = SnapshotCodec.decodeDomainFrames(
+            envelope("podcast.social" to tombstone))
+        assertNotNull("social tombstone frame must decode", tombFrames)
+        val socDomain = tombFrames!!.social
+        assertNotNull("social domain must be present in tombstone frame", socDomain)
+        assertNull("social.social must be null in tombstone", socDomain!!.social)
+        assertNull("social.nostrConversations must be null in tombstone",
+            socDomain.nostrConversations)
+
+        val (cleared, accepted) = SnapshotCodec.mergeFrames(tombFrames, seeded, tracker)
+        assertTrue("tombstone must be accepted (rev=99 > rev=10)", accepted)
+        assertEquals(
+            "following must be cleared to empty list by social tombstone",
+            0,
+            cleared.following.size,
+        )
+        assertEquals(
+            "nostrConversations must be cleared to empty list by social tombstone",
+            0,
+            cleared.nostrConversations.size,
+        )
+        assertEquals(99L, tracker.social)
+    }
 }
