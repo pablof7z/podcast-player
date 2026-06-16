@@ -48,8 +48,7 @@ enum AppStateTestSupport {
         }
         let persistence = Persistence(fileURL: fileURL)
         let store = AppStateStore(
-            persistence: persistence,
-            automaticEpisodeMetadataIndexingEnabled: false
+            persistence: persistence
         )
         return (store, fileURL)
     }

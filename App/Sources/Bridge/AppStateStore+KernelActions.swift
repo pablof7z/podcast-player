@@ -579,16 +579,6 @@ extension AppStateStore {
                          body: ["op": "set_episode_triage", "decisions": decisions])
     }
 
-    /// Report a batch of RAG-metadata-indexed episodes to the Rust kernel.
-    /// Batched so a whole backfill pass costs one dispatch (one rev bump +
-    /// one library re-encode) rather than one per episode.
-    func kernelMarkEpisodesMetadataIndexed(_ ids: [UUID]) {
-        guard !ids.isEmpty else { return }
-        kernel?.dispatch(namespace: "podcast",
-                         body: ["op": "mark_episodes_metadata_indexed",
-                                "episode_ids": ids.map(\.uuidString)])
-    }
-
     /// Report the transient transcript-ingestion status for an episode. Rust
     /// derives `.ready` from the stored transcript; iOS reports the in-progress
     /// / failed / cleared states here. `status` is `"queued"` |

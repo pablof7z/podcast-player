@@ -142,7 +142,7 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
 
     /// Disambiguate a scope UUID string as either a podcast_id or episode_id.
     ///
-    /// Resolution order (mirrors the legacy `ChunkScope` logic):
+    /// Resolution order (episode-first, then subscription, then fallback):
     /// 1. Episode-first: a UUID that resolves via `store.episode(id:)` → episode scope.
     /// 2. Subscription: a UUID present in `store.state.subscriptions` → podcast scope.
     /// 3. Default fallback: treat as episode scope (defensive — narrows rather than widens).

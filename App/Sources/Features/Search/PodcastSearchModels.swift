@@ -25,12 +25,6 @@ struct PodcastEpisodeSearchHit: Identifiable, Hashable, Sendable {
     var id: UUID { episode.id }
 }
 
-struct PodcastTranscriptSearchHit: Identifiable, Hashable, Sendable {
-    var chunk: Chunk
-    var score: Float
-    var snippet: String
-    var id: UUID { chunk.id }
-}
 
 enum PodcastSearchEngine {
     static func localResults(

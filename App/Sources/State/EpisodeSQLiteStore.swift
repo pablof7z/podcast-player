@@ -1,5 +1,5 @@
 import Foundation
-import CSQLiteVec
+import SQLite3
 
 struct EpisodeSQLiteSignature: Equatable, Sendable {
     let count: Int

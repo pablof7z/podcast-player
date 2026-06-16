@@ -1,5 +1,5 @@
 {
-  "originHash" : "80c8a56df7b5adff73eb393f82415e0f3a0abe365d28d229734196d84db8dcf9",
+  "originHash" : "aba2dee4e7dfd63272c4f77f049de41145a2d8c12ae604c770fbffd32631df4d",
   "pins" : [
     {
       "identity" : "kingfisher",
@@ -15,14 +15,6 @@
       "location" : "https://github.com/google-ai-edge/LiteRT-LM",
       "state" : {
         "revision" : "bbc5181df03c6962d7786ce4ad72c8565232d2b2"
-      }
-    },
-    {
-      "identity" : "sqlitevec",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jkrukowski/SQLiteVec",
-      "state" : {
-        "revision" : "1504246d0900db950a5065f43fce964bf4adceda"
       }
     }
   ],

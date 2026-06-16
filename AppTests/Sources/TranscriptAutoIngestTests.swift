@@ -7,11 +7,10 @@ import XCTest
 /// this hook, the dormant-toggle bug meant publisher transcripts only
 /// landed for episodes the user manually opened in detail view.
 ///
-/// We can't exercise the real fetch (network + Kingfisher + sqlite-vec
-/// indexing) in a unit test, so the assertions focus on the gating + filter
-/// logic via the empty-input fast paths the helper uses. The service's
-/// `inFlight` set + `attach` requirement prevent any actual network call
-/// from firing here.
+/// We can't exercise the real fetch (network + Kingfisher) in a unit test,
+/// so the assertions focus on the gating + filter logic via the empty-input
+/// fast paths the helper uses. The service's `inFlight` set + `attach`
+/// requirement prevent any actual network call from firing here.
 @MainActor
 final class TranscriptAutoIngestTests: XCTestCase {
 
@@ -26,8 +25,8 @@ final class TranscriptAutoIngestTests: XCTestCase {
     }
 
     func testNoOpWhenStoreUnattached() {
-        // The shared RAGService starts unattached in test contexts. The
-        // helper logs a warning and returns rather than crashing.
+        // No store is attached in test contexts. The helper logs a warning
+        // and returns rather than crashing.
         let service = TranscriptIngestService()
         service.evaluateAutoIngest(newEpisodeIDs: [UUID(), UUID()])
     }

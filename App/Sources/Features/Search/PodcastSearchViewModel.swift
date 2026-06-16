@@ -10,13 +10,8 @@ final class PodcastSearchViewModel {
     /// True from the moment a `search` dispatch fires until the store
     /// delivers the first result batch for that query.
     private(set) var isSearchingTranscripts = false
-    /// The Search tab no longer drives `rag.search` — kernel results arrive
-    /// reactively via `store.kernel?.podcastSnapshot?.knowledgeSearchResults`.
-    private let rag: RAGSearch
 
-    init(rag: RAGSearch? = nil) {
-        self.rag = rag ?? RAGService.shared.search
-    }
+    init() {}
 
     // MARK: - Kernel transcript search (Slice 4)
 

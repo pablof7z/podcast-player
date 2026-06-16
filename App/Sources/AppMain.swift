@@ -66,10 +66,6 @@ struct PodcastrApp: App {
                         whatsNewPresentation = WhatsNewPresentation(entries: unseen)
                     }
                 }
-                // Metadata-index backfill is now kernel-driven (D7).
-                // The kernel surfaces `pendingMetadataIndexIds` via the
-                // push frame; the projection observer in
-                // AppStateStore+KernelProjection wires EpisodeMetadataIndexer.
                 .sheet(item: $whatsNewPresentation) { presentation in
                     WhatsNewSheet(entries: presentation.entries)
                 }

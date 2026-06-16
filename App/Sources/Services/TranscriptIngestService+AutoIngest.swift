@@ -28,7 +28,7 @@ extension TranscriptIngestService {
     /// are not yet `.ready` and have a publisher transcript URL. Useful as a
     /// background warmup once the user lands on the library.
     func ingestPending(maxCount: Int = 5) async {
-        guard let appStore = rag.appStore else {
+        guard let appStore = appStore else {
             return
         }
         let candidates = appStore.episodes
@@ -58,7 +58,7 @@ extension TranscriptIngestService {
     /// RAG layer comes up dark for those subscriptions.
     func evaluateAutoIngest(newEpisodeIDs: [UUID]) {
         guard !newEpisodeIDs.isEmpty else { return }
-        guard let appStore = rag.appStore else { return }
+        guard let appStore = appStore else { return }
         let episodes = newEpisodeIDs.compactMap { appStore.episode(id: $0) }
         let effectiveRaw = appStore.kernel?.podcastSnapshot?.settings.effectiveSttProvider
             ?? STTProvider.appleNative.rawValue
