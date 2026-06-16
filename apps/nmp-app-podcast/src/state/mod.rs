@@ -402,7 +402,7 @@ impl PodcastAppState {
         ));
         let clips = clips::ClipsState::new(infra.clone(), store.clone());
         let transcripts = transcripts::TranscriptsState::new(infra.clone(), store.clone());
-        let tasks = tasks::TasksState::new(infra.clone(), store.clone());
+        let tasks = tasks::TasksState::new(infra.with_domain(Domain::Tasks), store.clone());
         let inbox = Arc::new(inbox::InboxState::new(infra.clone(), store.clone()));
         let comments =
             comments::CommentsState::new(infra.clone(), store.clone(), identity.clone());

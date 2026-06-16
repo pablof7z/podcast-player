@@ -50,15 +50,17 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
-use nmp_core::substrate::ActionModule;
 use uuid::Uuid;
 
-use crate::ffi::actions::{
-    AgentActionModule, AgentChatAction, AgentTaskIntent, AgentTasksAction, InboxAction,
-    InboxActionModule, MemoryAction, MemoryActionModule,
-};
+use crate::ffi::actions::{AgentTaskIntent, AgentTasksAction};
 use crate::ffi::projections::AgentTaskSummary;
 use crate::tasks_schedule::{next_run_after, next_run_after_attempt};
+
+// Intent-to-payload helpers live in a sibling file to keep this file under
+// the 500-line hard limit (AGENTS.md).
+#[path = "tasks_intent.rs"]
+mod intent;
+use intent::{task_intent_metadata, task_payload_from_intent, TaskIntentMetadata, TaskPayload};
 
 /// Seed value installed on first kernel boot — gives the iOS UI rows to
 /// render before the user has scheduled anything. Returned by value so
@@ -252,17 +254,6 @@ pub fn handle_tasks_action(
     }
 }
 
-struct TaskPayload {
-    action_namespace: String,
-    action_body: String,
-}
-
-struct TaskIntentMetadata {
-    intent_type: String,
-    intent_label: String,
-    intent_detail: Option<String>,
-}
-
 fn create_task(
     guard: &mut Vec<AgentTaskSummary>,
     rev: &Arc<AtomicU64>,
@@ -296,74 +287,6 @@ fn create_task(
     });
     rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": true, "task_id": task_id})
-}
-
-fn task_intent_metadata(intent: Option<&AgentTaskIntent>) -> TaskIntentMetadata {
-    match intent {
-        Some(AgentTaskIntent::InboxTriage) => TaskIntentMetadata {
-            intent_type: "inbox_triage".to_owned(),
-            intent_label: "Triage inbox".to_owned(),
-            intent_detail: Some("Prioritize new episodes".to_owned()),
-        },
-        Some(AgentTaskIntent::ClearAgent) => TaskIntentMetadata {
-            intent_type: "clear_agent".to_owned(),
-            intent_label: "Clear agent chat".to_owned(),
-            intent_detail: None,
-        },
-        Some(AgentTaskIntent::RememberMemory { key, value }) => TaskIntentMetadata {
-            intent_type: "remember_memory".to_owned(),
-            intent_label: "Remember memory".to_owned(),
-            intent_detail: Some(format!("{key} = {value}")),
-        },
-        Some(AgentTaskIntent::AgentPrompt { prompt }) => TaskIntentMetadata {
-            intent_type: "agent_prompt".to_owned(),
-            intent_label: "Agent prompt".to_owned(),
-            intent_detail: Some(prompt.clone()),
-        },
-        None => TaskIntentMetadata {
-            intent_type: "custom".to_owned(),
-            intent_label: "Custom task".to_owned(),
-            intent_detail: None,
-        },
-    }
-}
-
-fn task_payload_from_intent(intent: &AgentTaskIntent) -> Result<TaskPayload, String> {
-    match intent {
-        AgentTaskIntent::InboxTriage => task_payload(
-            <InboxActionModule as ActionModule>::NAMESPACE,
-            &InboxAction::Triage,
-        ),
-        AgentTaskIntent::ClearAgent => task_payload(
-            <AgentActionModule as ActionModule>::NAMESPACE,
-            &AgentChatAction::Clear,
-        ),
-        AgentTaskIntent::RememberMemory { key, value } => task_payload(
-            <MemoryActionModule as ActionModule>::NAMESPACE,
-            &MemoryAction::Remember {
-                key: key.clone(),
-                value: value.clone(),
-                source: Some("task".into()),
-            },
-        ),
-        AgentTaskIntent::AgentPrompt { prompt } => task_payload(
-            <AgentActionModule as ActionModule>::NAMESPACE,
-            &AgentChatAction::Send {
-                message: prompt.clone(),
-            },
-        ),
-    }
-}
-
-fn task_payload<T: serde::Serialize>(
-    action_namespace: &str,
-    action: &T,
-) -> Result<TaskPayload, String> {
-    Ok(TaskPayload {
-        action_namespace: action_namespace.to_owned(),
-        action_body: serde_json::to_string(action)
-            .map_err(|e| format!("failed to encode task intent action: {e}"))?,
-    })
 }
 
 fn update_task(
@@ -441,6 +364,61 @@ fn run_task_by_id(
     serde_json::json!({"ok": accepted, "status": status})
 }
 
+/// Kernel-owned periodic task firing: dispatch all tasks that are due before
+/// `now_unix`, are enabled, and are NOT already in-flight (`status != "running"`).
+///
+/// Returns the number of tasks that were dispatched (accepted or failed — the
+/// important thing is `next_run_at` was advanced past `now_unix` so subsequent
+/// calls with the same wall-clock cannot re-fire the same task).
+///
+/// ## Contract guarantees
+///
+/// * **Single-fire per window**: `run_task_by_id` sets `status = "running"` and
+///   bumps `next_run_at` via [`next_run_after_attempt`] under the tasks lock
+///   before any dispatch call, so a second call with the same `now_unix` finds
+///   no due tasks.
+/// * **In-flight guard**: tasks with `status == "running"` (fired but not yet
+///   advanced by a dispatch response) are skipped; they cannot be double-fired.
+/// * **Idempotent with host `RunDue`**: both paths call `run_task_by_id`.  If
+///   the host fires `RunDue` in the same 60-second window as the kernel tick,
+///   one of the two calls reaches `run_task_by_id` after `next_run_at` has
+///   already advanced and finds no due tasks.
+/// * **`once` semantics preserved**: `next_run_after_attempt("once", …)` returns
+///   `None`, so a once task fires exactly once and never re-appears in the due
+///   filter.
+///
+/// D9 contract: callers MUST pass `Utc::now().timestamp()` — never host-supplied
+/// time.  The periodic ticker in [`crate::state::tasks::TasksState`] is the
+/// canonical caller.
+pub(crate) fn maybe_run_due_tasks(
+    tasks: &Arc<Mutex<Vec<AgentTaskSummary>>>,
+    rev: &Arc<AtomicU64>,
+    dispatch: Option<&TaskDispatchFn<'_>>,
+    now_unix: i64,
+) -> usize {
+    let task_ids: Vec<String> = match tasks.lock() {
+        Ok(guard) => guard
+            .iter()
+            .filter(|t| {
+                t.is_enabled
+                    && t.status != "running"
+                    && t.next_run_at.is_some_and(|due| due <= now_unix)
+            })
+            .map(|t| t.id.clone())
+            .collect(),
+        Err(_) => return 0,
+    };
+
+    let mut fired = 0;
+    for task_id in &task_ids {
+        let result = run_task_by_id(tasks, rev, task_id, dispatch, now_unix);
+        if result["ok"].as_bool().unwrap_or(false) {
+            fired += 1;
+        }
+    }
+    fired
+}
+
 fn set_enabled(
     guard: &mut [AgentTaskSummary],
     task_id: &str,
@@ -460,3 +438,7 @@ fn set_enabled(
 #[cfg(test)]
 #[path = "tasks_handler_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tasks_tick_tests.rs"]
+mod tick_tests;

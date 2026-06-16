@@ -44,6 +44,14 @@ use crate::state::{Infra, Slot};
 use crate::store::PodcastStore;
 use crate::tasks_handler;
 
+/// Interval between kernel-owned task-due checks (D9 / D13).
+///
+/// 60 seconds is short enough for minute-granularity task scheduling while
+/// cheap enough to leave the Tokio runtime idle (the check is O(n) on a
+/// small list).  Slice 2 will delete the host-side foreground poll and may
+/// adjust this interval.
+const TICK_INTERVAL_SECS: u64 = 60;
+
 /// Tasks feature substate.
 ///
 /// Constructed once in `PodcastAppState::new` and referenced via
@@ -100,6 +108,101 @@ impl TasksState {
     /// `handle.agent_tasks` directly.
     pub fn tasks_snapshot(&self) -> Vec<AgentTaskSummary> {
         self.tasks.lock().ok().map(|t| t.clone()).unwrap_or_default()
+    }
+
+    // ── Kernel-owned periodic tick ────────────────────────────────────────
+
+    /// Spawn the kernel-owned periodic task-firing loop.
+    ///
+    /// Called from `register.rs` after the `PodcastHandle` is sealed so the
+    /// real `*mut NmpApp` pointer is available.  The loop wakes every
+    /// [`TICK_INTERVAL_SECS`] seconds, reads kernel wall-clock (`Utc::now()`),
+    /// and fires any tasks whose `next_run_at <= now` via the same
+    /// [`crate::tasks_handler::run_task_by_id`] path that `RunDue` / `RunNow`
+    /// use (D13: single firing path).
+    ///
+    /// ## Safety contract
+    ///
+    /// `app` MUST outlive the spawned task.  `nmp_app_podcast_unregister` frees
+    /// the `NmpApp` allocation; it MUST be called — and the Tokio runtime MUST
+    /// have finished any in-flight tasks — BEFORE `nmp_app_free`.  The handle's
+    /// `nmp_app_podcast_unregister` drops the `PodcastHandle` (which owns the
+    /// Tokio runtime via `Infra`); the runtime's `Drop` waits for spawned tasks
+    /// to finish before freeing, so the ordering is guaranteed.
+    ///
+    /// ## Idempotency with host `RunDue`
+    ///
+    /// The host's foreground `run_due` calls the same `run_task_by_id` under the
+    /// same `tasks` lock.  Whichever caller wins the lock first advances
+    /// `next_run_at` past `now`; the other finds no due tasks.  No double-fire
+    /// is possible.  Slice 2 will delete the host poll; this tick path is the
+    /// sole survivor.
+    pub fn start_ticker(&self, app: *mut NmpApp) {
+        // Wrap the raw pointer so it can cross the `spawn` boundary.
+        // SAFETY: `app` outlives the runtime (see contract above); the spawned
+        // task only dereferences `app` while the runtime is alive.
+        struct SendApp(usize); // store as usize to be explicit about the cast
+        unsafe impl Send for SendApp {}
+
+        let tasks = self.tasks.share();
+        let rev = self.infra.rev.clone();
+        let infra = self.infra.clone();
+        let send_app = SendApp(app as usize);
+
+        self.infra.runtime.spawn(async move {
+            // Reconvert usize → raw pointer inside each loop body — NEVER held
+            // across an `.await` point so the future remains `Send`.
+            let app_addr = send_app.0;
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(TICK_INTERVAL_SECS))
+                    .await;
+
+                // Reconstruct the pointer AFTER the await — NOT across it.
+                let app_ptr: *mut NmpApp = app_addr as *mut NmpApp;
+                let now_unix = chrono::Utc::now().timestamp();
+
+                // Build the dispatch closure — identical to TasksState::handle.
+                // SAFETY: app_ptr is valid for the runtime's lifetime (contract).
+                let dispatch = move |namespace: &str, body: &str| -> bool {
+                    if app_ptr.is_null() {
+                        return false;
+                    }
+                    let (Ok(ns_c), Ok(body_c)) =
+                        (CString::new(namespace), CString::new(body))
+                    else {
+                        return false;
+                    };
+                    // app_ptr valid for the runtime lifetime; dispatch
+                    // only enqueues (D8: non-blocking on the caller thread).
+                    let raw = nmp_ffi::nmp_app_dispatch_action(
+                        app_ptr,
+                        ns_c.as_ptr(),
+                        body_c.as_ptr(),
+                    );
+                    if raw.is_null() {
+                        return false;
+                    }
+                    // SAFETY: raw is a heap-owned NUL-terminated C string.
+                    let envelope = unsafe { std::ffi::CStr::from_ptr(raw) }
+                        .to_string_lossy()
+                        .into_owned();
+                    nmp_ffi::nmp_free_string(raw);
+                    envelope.contains("\"correlation_id\"")
+                };
+
+                let fired = tasks_handler::maybe_run_due_tasks(
+                    &tasks,
+                    &rev,
+                    Some(&dispatch),
+                    now_unix,
+                );
+                if fired > 0 {
+                    // Bump Domain::Tasks rev (+ global) so the snapshot
+                    // projection delivers the updated task statuses.
+                    infra.bump();
+                }
+            }
+        });
     }
 
     // ── Action handler ────────────────────────────────────────────────────
@@ -159,6 +262,14 @@ impl TasksState {
         )
     }
 }
+
+// SAFETY: `TasksState` stores no raw pointer directly.  The `start_ticker`
+// method captures the `app` pointer as a `usize` inside an async task owned
+// by the Tokio runtime — not in the struct itself.  All Arc fields are already
+// Send + Sync.  The Tokio runtime (`infra.runtime`) is `Send + Sync` and its
+// `Drop` joins spawned tasks before freeing, preventing UAF.
+unsafe impl Send for TasksState {}
+unsafe impl Sync for TasksState {}
 
 #[cfg(test)]
 mod tests {

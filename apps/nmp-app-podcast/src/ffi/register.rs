@@ -187,6 +187,19 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app,
     );
 
+    // ── Kernel-owned task scheduler tick (D9 / D13) ───────────────────────────
+    //
+    // Spawn the periodic 60-second due-task check NOW — after the real `app`
+    // pointer is available and before `app_state_inner` is sealed into `Arc`.
+    // The ticker captures `app` (wrapped as a `usize` for Send) and runs for
+    // the lifetime of the Tokio runtime (dropped with the handle).
+    //
+    // Slice 2 will delete the iOS / Android host foreground poll paths
+    // (`AppStateStore.runDueScheduledTasksIfNeeded` / Android `TaskRunDuePayload`);
+    // until then both paths are idempotent — whichever reaches `run_task_by_id`
+    // first advances `next_run_at`, and the other finds no due tasks.
+    app_state_inner.tasks.start_ticker(app);
+
     // ── Reactive social-graph trust set ──────────────────────────────────────
     //
     // ActiveFollowSet (nmp-nip02): observes kind:3 events and maintains a live
