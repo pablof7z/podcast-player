@@ -243,7 +243,7 @@ async fn run_knowledge_query_inner(
     let top_k = req.limit.unwrap_or(KNOWLEDGE_SEARCH_TOP_K);
     let over_k = top_k * 4;
 
-    // ── Phase 1: build labels + scope, collect BM25 (store lock) ────────────
+    // ── Phase 1a: build labels + scope, collect title/description BM25 (store lock) ──
     let (rich_labels, scope_set, lean_labels, mut bm25_rows) = {
         let Ok(s) = store_arc.lock() else {
             return Vec::new();
@@ -251,17 +251,33 @@ async fn run_knowledge_query_inner(
         let rich = build_rich_labels(&s);
         let scope = scope_set_from(&req.scope, &rich);
         let lean = lean_labels_from(&rich);
-        let mut bm25 = collect_knowledge_matches_n(&s, &query, over_k);
-        if let Some(ref sc) = scope {
-            bm25.retain(|r| sc.contains(&r.episode_id));
-        }
+        let bm25 = collect_knowledge_matches_n(&s, &query, over_k);
         (rich, scope, lean, bm25)
     };
+
+    // ── Phase 1b: merge transcript-chunk BM25 hits into the candidate pool ───
+    // Mirrors the reactive `KnowledgeState::search` path: a query that matches
+    // only transcript content (no title/description hit) must still surface the
+    // episode. Without this, chunk-content queries return nothing on the common
+    // no-embeddings degrade path. `merge_chunk_matches_pub` dedups by episode and
+    // carries chunk `start_secs`; Phase 5 re-derives the precise matched chunk
+    // for full text + chunk_index. Store lock released above before this index
+    // lock (sequential, never nested — lock-order rule §6.2).
+    if let Ok(ks) = index_arc.lock() {
+        crate::knowledge::merge_chunk_matches_pub(&mut bm25_rows, &ks, &query, &lean_labels);
+    }
+
+    // Apply scope filter AFTER the chunk merge (merge adds episodes from the
+    // whole store; scope restricts to the requested podcast/episode).
+    if let Some(ref sc) = scope_set {
+        bm25_rows.retain(|r| sc.contains(&r.episode_id));
+    }
     bm25_rows.sort_by(|a, b| {
         b.relevance_score
             .partial_cmp(&a.relevance_score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
+    bm25_rows.truncate(over_k);
 
     // ── Phase 2: embed query (async — no locks held) ─────────────────────────
     let maybe_qvec = embed_query_for_rag(&store_arc, &query).await;
@@ -293,14 +309,23 @@ async fn run_knowledge_query_inner(
         crate::knowledge_fusion::fuse_rrf(bm25_rows, vector_hits, &lean_labels, top_k, 60.0);
 
     // ── Phase 5: enrich to rich DTO ─────────────────────────────────────────
+    // Tokenize the query once so BM25-only rows can be enriched with the chunk
+    // that actually produced the match (not an arbitrary chunk 0). Lock the
+    // index once for the whole enrichment pass rather than per-row.
+    let query_terms = podcast_knowledge::bm25::tokenize(&query);
+    let ks_guard = index_arc.lock().ok();
     fused
         .into_iter()
         .map(|lean| {
             let (podcast_id, podcast_title, episode_title) =
                 rich_labels.get(&lean.episode_id).cloned().unwrap_or_default();
 
-            // Vector-hit chunk carries real chunk_index/end_secs/full text.
-            // For BM25-only episodes: look up the first indexed chunk (best-effort).
+            // Vector-hit chunk carries real chunk_index/end_secs/full text — use
+            // it directly. For a BM25-only episode (no vector hit), enrich with the
+            // chunk that ACTUALLY matched the query (highest BM25 score over that
+            // episode's chunks), so text/chunk_index/start_secs/end_secs reflect the
+            // matched passage. Falls back to the lean BM25 snippet only when the
+            // episode has no indexed transcript chunks (title/description-only match).
             let (chunk_index, start_secs, end_secs, text) =
                 if let Some(hit) = best_vector_chunk.get(&lean.episode_id) {
                     (
@@ -310,12 +335,18 @@ async fn run_knowledge_query_inner(
                         hit.chunk.text.clone(),
                     )
                 } else {
-                    let maybe_chunk = index_arc
-                        .lock()
-                        .ok()
-                        .and_then(|ks| ks.chunks_for_episode(&lean.episode_id).into_iter().next());
-                    maybe_chunk
-                        .map(|c| (c.chunk.chunk_index, c.chunk.start_secs, c.chunk.end_secs, c.chunk.text.clone()))
+                    let matched = ks_guard
+                        .as_ref()
+                        .and_then(|ks| best_matching_chunk(ks, &lean.episode_id, &query_terms));
+                    matched
+                        .map(|c| {
+                            (
+                                c.chunk.chunk_index,
+                                c.chunk.start_secs,
+                                c.chunk.end_secs,
+                                c.chunk.text.clone(),
+                            )
+                        })
                         .unwrap_or((0, lean.start_secs.unwrap_or(0.0), 0.0, lean.snippet.clone()))
                 };
 
@@ -335,6 +366,39 @@ async fn run_knowledge_query_inner(
 }
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
+
+/// For a BM25-only result episode, pick the chunk that best matches the query
+/// (highest BM25 score over that episode's transcript chunks) so the enriched
+/// row's `text` / `chunk_index` / `start_secs` / `end_secs` reflect the matched
+/// passage — not an arbitrary chunk 0.
+///
+/// Returns `None` when the episode has no indexed chunks (caller falls back to
+/// the lean BM25 snippet — the episode matched on title/description only). When
+/// the episode has chunks but none score against the query terms (the BM25
+/// match came from title/description), returns the first chunk as a stable
+/// best-effort anchor rather than nothing.
+pub(crate) fn best_matching_chunk(
+    ks: &KnowledgeStore,
+    episode_id: &str,
+    query_terms: &[String],
+) -> Option<podcast_knowledge::KnowledgeChunk> {
+    let chunks = ks.chunks_for_episode(episode_id);
+    if chunks.is_empty() {
+        return None;
+    }
+    if query_terms.is_empty() {
+        return chunks.into_iter().next();
+    }
+    // BM25 over this episode's chunks only — the top-ranked doc is the matched passage.
+    let texts: Vec<&str> = chunks.iter().map(|c| c.chunk.text.as_str()).collect();
+    let index = podcast_knowledge::bm25::Bm25Index::from_texts(&texts);
+    match index.rank(query_terms).into_iter().next() {
+        Some((doc, _)) => chunks.into_iter().nth(doc),
+        // No chunk matched the query terms (title/description-only match) —
+        // fall back to the first chunk as a stable anchor.
+        None => chunks.into_iter().next(),
+    }
+}
 
 /// Build `episode_id → (podcast_id, podcast_title, episode_title)`.
 ///

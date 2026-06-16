@@ -302,6 +302,80 @@ fn knowledge_query_degrade_to_bm25_when_no_embeddings() {
     assert!(rows[0].relevance_score > 0.0, "relevance_score must be positive");
 }
 
+/// N1 regression: a BM25-only result must enrich with the chunk that ACTUALLY
+/// matched the query — NOT an arbitrary chunk 0. Seed an episode whose matched
+/// passage is chunk 2 (chunks 0/1 contain unrelated text) and assert the
+/// returned row's text / chunk_index / start_secs reflect chunk 2.
+#[test]
+fn knowledge_query_bm25_only_enriches_with_matched_chunk_not_chunk_zero() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Cooking Show");
+    let pid = podcast.id;
+    // Title/description deliberately do NOT contain the query term so the
+    // episode-level BM25 match is weak and the chunk match is what matters.
+    let ep = make_episode(pid, "weekly episode", "a cooking discussion");
+    let ep_id = ep.id.0.to_string();
+    store.subscribe(podcast, vec![ep]);
+
+    let store_arc = Arc::new(Mutex::new(store));
+
+    // Three NULL-embedding chunks; only chunk 2 mentions "sourdough".
+    let mut ks = KnowledgeStore::new();
+    ks.upsert(make_chunk(&ep_id, 0, "intro pasta tomatoes basil olive oil", 0.0, 30.0));
+    ks.upsert(make_chunk(&ep_id, 1, "main course roast chicken potatoes", 30.0, 60.0));
+    ks.upsert(make_chunk(
+        &ep_id,
+        2,
+        "sourdough bread fermentation starter levain crumb",
+        60.0,
+        95.0,
+    ));
+    let index_arc = Arc::new(Mutex::new(ks));
+
+    let rt = test_runtime();
+    let req = KnowledgeQueryRequest {
+        query: "sourdough".to_owned(),
+        scope: QueryScope::default(),
+        limit: None,
+    };
+    let rows = rt.block_on(run_knowledge_query_inner(req, store_arc, index_arc));
+
+    assert!(!rows.is_empty(), "BM25-only path must return the episode");
+    let row = rows
+        .iter()
+        .find(|r| r.episode_id == ep_id)
+        .expect("episode must appear");
+
+    // The matched passage is chunk 2 — enrichment must surface it, not chunk 0.
+    assert_eq!(
+        row.chunk_index, 2,
+        "BM25-only row must carry the MATCHED chunk_index (2), not arbitrary chunk 0"
+    );
+    assert!(
+        row.text.contains("sourdough"),
+        "row text must be the matched chunk's text, got: {}",
+        row.text
+    );
+    assert_eq!(
+        row.start_secs, 60.0,
+        "start_secs must reflect the matched chunk (60.0), not chunk 0 (0.0)"
+    );
+    assert_eq!(
+        row.end_secs, 95.0,
+        "end_secs must reflect the matched chunk (95.0)"
+    );
+}
+
+/// `best_matching_chunk` returns None for an episode with no indexed chunks
+/// (caller falls back to the lean BM25 snippet).
+#[test]
+fn best_matching_chunk_none_when_no_chunks() {
+    let ks = KnowledgeStore::new();
+    let terms = podcast_knowledge::bm25::tokenize("anything");
+    let got = super::best_matching_chunk(&ks, "ep-absent", &terms);
+    assert!(got.is_none(), "no chunks → None");
+}
+
 // ── Tests for knowledge_chunk lookup (unit-testing the lookup logic) ──────────
 
 /// `build_rich_labels` must include the correct podcast_id alongside titles.
@@ -394,4 +468,56 @@ fn rich_dto_serializes_snake_case_keys() {
     assert_eq!(json["episode_id"], "ep-1");
     assert_eq!(json["chunk_index"], 3);
     assert_eq!(json["relevance_score"], 0.85_f32);
+}
+
+// ── N2: direct FFI entry-point smoke tests ────────────────────────────────────
+//
+// Exercise the `extern "C"` wrappers themselves (null-pointer + free path),
+// proving the guard returns a valid error-JSON pointer rather than NULL or UB.
+// A full happy-path FFI test needs a live `PodcastHandle` (constructed only via
+// `nmp_app_podcast_register` against an `NmpApp`); the inner logic is covered by
+// the `run_knowledge_query_inner` tests above, so these smoke tests focus on the
+// FFI boundary contract (null safety + freeable CString).
+
+use std::ffi::{CStr, CString};
+
+/// Decode the FFI return pointer to a JSON value, then free it via the same
+/// `CString::from_raw` that mirrors `into_raw` (Swift uses `nmp_free_string`).
+unsafe fn decode_and_free(ptr: *mut std::os::raw::c_char) -> serde_json::Value {
+    assert!(!ptr.is_null(), "FFI must never return a null pointer (D6)");
+    let s = CStr::from_ptr(ptr).to_str().expect("valid UTF-8");
+    let v: serde_json::Value = serde_json::from_str(s).expect("valid JSON envelope");
+    // Reclaim ownership and drop — frees the allocation `into_raw` leaked.
+    let _ = CString::from_raw(ptr);
+    v
+}
+
+/// `nmp_app_podcast_knowledge_query` with a null handle must return a valid
+/// error-JSON pointer (not null, not UB).
+#[test]
+fn ffi_knowledge_query_null_handle_returns_error_json() {
+    let req = CString::new(r#"{"query":"test"}"#).unwrap();
+    let ptr = super::nmp_app_podcast_knowledge_query(std::ptr::null_mut(), req.as_ptr());
+    let v = unsafe { decode_and_free(ptr) };
+    assert!(v.get("error").is_some(), "null handle must yield {{\"error\":…}}");
+}
+
+/// `nmp_app_podcast_knowledge_query` with a null request pointer must return a
+/// valid error-JSON pointer.
+#[test]
+fn ffi_knowledge_query_null_request_returns_error_json() {
+    let ptr =
+        super::nmp_app_podcast_knowledge_query(std::ptr::null_mut(), std::ptr::null());
+    let v = unsafe { decode_and_free(ptr) };
+    assert!(v.get("error").is_some(), "null request must yield error JSON");
+}
+
+/// `nmp_app_podcast_knowledge_chunk` with a null handle must return a valid
+/// error-JSON pointer.
+#[test]
+fn ffi_knowledge_chunk_null_handle_returns_error_json() {
+    let req = CString::new(r#"{"episode_id":"ep-1","chunk_index":0}"#).unwrap();
+    let ptr = super::nmp_app_podcast_knowledge_chunk(std::ptr::null_mut(), req.as_ptr());
+    let v = unsafe { decode_and_free(ptr) };
+    assert!(v.get("error").is_some(), "null handle must yield error JSON");
 }
