@@ -77,6 +77,7 @@ fun AppNavigation(
 
     val onOpenClips: () -> Unit = { route = AppRoute.ClipList }
     val onOpenBookmarks: () -> Unit = { route = AppRoute.Bookmarks }
+    val onOpenFollowing: () -> Unit = { route = AppRoute.Following }
 
     Scaffold(
         bottomBar = {
@@ -104,6 +105,7 @@ fun AppNavigation(
                 onOpenNostrConversations = { route = AppRoute.NostrConversations },
                 onOpenClips = onOpenClips,
                 onOpenBookmarks = onOpenBookmarks,
+                onOpenFollowing = onOpenFollowing,
                 modifier = contentModifier,
             )
             is AppRoute.ShowDetail -> ShowDetailScreen(
@@ -215,6 +217,12 @@ fun AppNavigation(
                 },
                 modifier = contentModifier,
             )
+            AppRoute.Following -> FollowingScreen(
+                snapshot = snapshot,
+                bridge = bridge,
+                onBack = { route = AppRoute.Tab(selectedTab) },
+                modifier = contentModifier,
+            )
         }
     }
 }
@@ -230,6 +238,7 @@ private fun TabContent(
     onOpenNostrConversations: () -> Unit,
     onOpenClips: () -> Unit,
     onOpenBookmarks: () -> Unit,
+    onOpenFollowing: () -> Unit,
     modifier: Modifier,
 ) {
     when (tab) {
@@ -262,6 +271,7 @@ private fun TabContent(
             onNavigateToNostrConversations = onOpenNostrConversations,
             onNavigateToClips = onOpenClips,
             onNavigateToBookmarks = onOpenBookmarks,
+            onNavigateToFollowing = onOpenFollowing,
             modifier = modifier,
         )
     }
@@ -313,6 +323,8 @@ private sealed interface AppRoute {
     data object ClipList : AppRoute
     /** Global bookmarks list — starred episodes, reachable from Settings (mirrors iOS Bookmarks tab). */
     data object Bookmarks : AppRoute
+    /** NIP-02 follow list — reached from Settings > Nostr > Following (social parity slice 1). */
+    data object Following : AppRoute
 
     companion object {
         val Saver: androidx.compose.runtime.saveable.Saver<AppRoute, Any> =
@@ -332,6 +344,7 @@ private sealed interface AppRoute {
                         NostrConnect -> listOf("nostr_connect")
                         ClipList -> listOf("clip_list")
                         Bookmarks -> listOf("bookmarks")
+                        Following -> listOf("following")
                     }
                 },
                 restore = { raw ->
@@ -355,6 +368,7 @@ private sealed interface AppRoute {
                         "nostr_connect" -> NostrConnect
                         "clip_list" -> ClipList
                         "bookmarks" -> Bookmarks
+                        "following" -> Following
                         else -> null
                     }
                 },

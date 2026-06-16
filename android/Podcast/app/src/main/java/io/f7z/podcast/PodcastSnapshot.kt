@@ -124,6 +124,18 @@ data class PodcastSnapshot(
      */
     @SerialName("nostr_conversations") val nostrConversations: List<NostrConversationDto> = emptyList(),
     /**
+     * NIP-02 follow list (kind:3), projected by the `podcast.social` domain frame.
+     *
+     * Rides the same atomic co-emit as `nostrConversations` — both clear together
+     * on a social tombstone (account switch). Empty until the kernel has fetched
+     * the active account's follow list.
+     *
+     * NOT a `@SerialName` field — populated by [SnapshotCodec.mergeFrames] from
+     * `SocialDomainFrame.social.following`. Profile hydration (display name /
+     * avatar) is slice-2 work; this slice renders npub stubs only.
+     */
+    val following: List<ContactSummaryDto> = emptyList(),
+    /**
      * Kernel-resolved Nostr profiles keyed by hex pubkey.
      *
      * Populated by the NMP kernel from `projections["resolved_profiles"]` on
