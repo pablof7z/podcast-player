@@ -49,6 +49,7 @@ fun SettingsScreen(
     onNavigateToNostrConversations: () -> Unit = {},
     onNavigateToClips: () -> Unit = {},
     onNavigateToBookmarks: () -> Unit = {},
+    onNavigateToFollowing: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val settings = snapshot?.settings ?: SettingsSnapshot()
@@ -88,8 +89,12 @@ fun SettingsScreen(
         item {
             SettingsSection(title = "Nostr") {
                 val convCount = snapshot?.nostrConversations?.size ?: 0
-                val label = if (convCount > 0) "Conversations ($convCount)" else "Conversations"
-                SettingsNavRow(label = label, onClick = onNavigateToNostrConversations)
+                val convLabel = if (convCount > 0) "Conversations ($convCount)" else "Conversations"
+                SettingsNavRow(label = convLabel, onClick = onNavigateToNostrConversations)
+                HorizontalDivider()
+                val followingCount = snapshot?.following?.size ?: 0
+                val followingLabel = if (followingCount > 0) "Following ($followingCount)" else "Following"
+                SettingsNavRow(label = followingLabel, onClick = onNavigateToFollowing)
             }
         }
         item {
