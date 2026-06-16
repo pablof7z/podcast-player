@@ -1,8 +1,8 @@
 import XCTest
 @testable import Podcastr
 
-/// Tests for search, wiki, transcript, perplexity, summarize, and
-/// find-similar dispatch paths. Playback and action tool tests live in
+/// Tests for search, transcript, perplexity, summarize, and find-similar
+/// dispatch paths. Playback and action tool tests live in
 /// `AgentToolsPodcastTests.swift`.
 @MainActor
 final class AgentToolsPodcastSearchTests: XCTestCase {
@@ -48,57 +48,6 @@ final class AgentToolsPodcastSearchTests: XCTestCase {
             deps: makeDeps()
         )
         XCTAssertNotNil(try decode(json)["error"])
-    }
-
-    // MARK: - query_wiki
-
-    func testQueryWikiReturnsExcerpts() async throws {
-        let deps = makeDeps(wiki: MockWiki(result: [
-            WikiHit(pageID: "zone-2", title: "Zone 2 Training", excerpt: "Sustained effort below..."),
-        ]))
-        let json = await AgentTools.dispatchPodcast(
-            name: AgentTools.PodcastNames.queryWiki,
-            args: ["topic": "Zone 2"],
-            deps: deps
-        )
-        let decoded = try decode(json)
-        XCTAssertEqual(decoded["success"] as? Bool, true)
-        XCTAssertEqual(decoded["total_found"] as? Int, 1)
-        let rows = decoded["results"] as? [[String: Any]]
-        XCTAssertEqual(rows?.first?["page_id"] as? String, "zone-2")
-    }
-
-    func testLiveWikiStorageAdapterSearchesClaimBodies() async throws {
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("wiki-agent-search-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: tmp) }
-
-        let storage = WikiStorage(root: tmp)
-        let page = WikiPage(
-            slug: "metabolic-health",
-            title: "Metabolic Health",
-            kind: .topic,
-            scope: .global,
-            summary: "A broad page about nutrition.",
-            sections: [
-                WikiSection(
-                    heading: "Claims",
-                    kind: .definition,
-                    ordinal: 0,
-                    claims: [
-                        WikiClaim(text: "Keto diet discussion focused on appetite and insulin sensitivity.")
-                    ]
-                )
-            ]
-        )
-        try storage.write(page)
-
-        let hits = try await LiveWikiStorageAdapter(storage: storage)
-            .queryWiki(topic: "keto diet", scope: nil, limit: 5)
-
-        XCTAssertEqual(hits.first?.title, "Metabolic Health")
-        XCTAssertTrue(hits.first?.excerpt.lowercased().contains("keto diet") == true)
-        XCTAssertGreaterThan(hits.first?.score ?? 0, 0)
     }
 
     // MARK: - query_transcripts
@@ -220,14 +169,12 @@ final class AgentToolsPodcastSearchTests: XCTestCase {
 
     private func makeDeps(
         rag: PodcastAgentRAGSearchProtocol = MockRAG(),
-        wiki: WikiStorageProtocol = MockWiki(),
         summarizer: EpisodeSummaryProviding = MockSummarizer(),
         fetcher: EpisodeFetcherProtocol = MockFetcher(),
         perplexity: PerplexityClientProtocol = MockPerplexity()
     ) -> PodcastAgentToolDeps {
         PodcastAgentToolDeps(
             rag: rag,
-            wiki: wiki,
             summarizer: summarizer,
             fetcher: fetcher,
             playback: MockPlayback(),
