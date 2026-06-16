@@ -103,7 +103,7 @@ final class RAGService {
                 "failed to open on-disk vectors.sqlite (\(String(describing: error), privacy: .public)) — falling back to in-memory store"
             )
             // The in-memory `VectorIndex` keeps the app runnable; data won't
-            // survive a relaunch but the wiki/search code paths still work.
+            // survive a relaunch but the search code paths still work.
             do {
                 openedIndex = try VectorIndex(embedder: embedder, inMemory: true)
                 resolvedURL = nil
