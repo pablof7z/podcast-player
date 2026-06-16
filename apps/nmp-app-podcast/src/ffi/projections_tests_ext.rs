@@ -242,12 +242,16 @@ fn contact_summary_omits_none_optionals() {
     use super::projections::ContactSummary;
     let c = ContactSummary {
         npub: "npub1example".into(),
+        pubkey_hex: "aabbccddeeff".into(),
         display_name: None,
         picture_url: None,
     };
     let json = serde_json::to_string(&c).expect("encode");
     assert!(!json.contains("display_name"));
     assert!(!json.contains("picture_url"));
+    // pubkey_hex is always serialized (not optional)
+    assert!(json.contains("pubkey_hex"));
+    assert!(json.contains("aabbccddeeff"));
     let decoded: ContactSummary = serde_json::from_str(&json).expect("decode");
     assert_eq!(decoded, c);
 }
@@ -257,6 +261,7 @@ fn contact_summary_round_trips_with_metadata() {
     use super::projections::ContactSummary;
     let c = ContactSummary {
         npub: "npub1example".into(),
+        pubkey_hex: "deadbeef1234".into(),
         display_name: Some("Satoshi".into()),
         picture_url: Some("https://ex.com/avatar.png".into()),
     };
@@ -266,17 +271,45 @@ fn contact_summary_round_trips_with_metadata() {
 }
 
 #[test]
+fn contact_summary_pubkey_hex_matches_npub() {
+    use super::projections::ContactSummary;
+    // Verify that pubkey_hex round-trips correctly and is always present in JSON.
+    let hex = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+    let c = ContactSummary {
+        npub: "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6".into(),
+        pubkey_hex: hex.into(),
+        display_name: None,
+        picture_url: None,
+    };
+    let json = serde_json::to_string(&c).expect("encode");
+    // pubkey_hex must be present in the wire payload — Android claimProfile needs it.
+    assert!(
+        json.contains("\"pubkey_hex\""),
+        "pubkey_hex must be serialized (not skipped)"
+    );
+    assert!(
+        json.contains(hex),
+        "raw hex must appear in the serialized JSON"
+    );
+    let decoded: ContactSummary = serde_json::from_str(&json).expect("decode");
+    assert_eq!(decoded.pubkey_hex, hex);
+    assert_eq!(decoded.npub, c.npub);
+}
+
+#[test]
 fn social_snapshot_round_trips_with_contacts() {
     use super::projections::ContactSummary;
     let snap = SocialSnapshot {
         following: vec![
             ContactSummary {
                 npub: "npub1aaa".into(),
+                pubkey_hex: "aaa000".into(),
                 display_name: Some("Alice".into()),
                 picture_url: None,
             },
             ContactSummary {
                 npub: "npub1bbb".into(),
+                pubkey_hex: "bbb000".into(),
                 display_name: None,
                 picture_url: Some("https://ex.com/b.png".into()),
             },
