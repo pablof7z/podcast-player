@@ -50,15 +50,17 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
-use nmp_core::substrate::ActionModule;
 use uuid::Uuid;
 
-use crate::ffi::actions::{
-    AgentActionModule, AgentChatAction, AgentTaskIntent, AgentTasksAction, InboxAction,
-    InboxActionModule, MemoryAction, MemoryActionModule,
-};
+use crate::ffi::actions::{AgentTaskIntent, AgentTasksAction};
 use crate::ffi::projections::AgentTaskSummary;
 use crate::tasks_schedule::{next_run_after, next_run_after_attempt};
+
+// Intent-to-payload helpers live in a sibling file to keep this file under
+// the 500-line hard limit (AGENTS.md).
+#[path = "tasks_intent.rs"]
+mod intent;
+use intent::{task_intent_metadata, task_payload_from_intent, TaskPayload};
 
 /// Seed value installed on first kernel boot — gives the iOS UI rows to
 /// render before the user has scheduled anything. Returned by value so
@@ -222,9 +224,18 @@ pub fn handle_tasks_action(
         }
         AgentTasksAction::RunDue => {
             let now = Utc::now().timestamp();
+            // Skip already-in-flight tasks (`status == "running"`) — symmetric
+            // with `maybe_run_due_tasks` (the kernel tick).  Combined with
+            // `run_task_by_id` advancing `next_run_at` under the same lock that
+            // sets `status = "running"`, this closes the double-fire window
+            // between the host `RunDue` poll and the kernel tick.
             let task_ids = guard
                 .iter()
-                .filter(|task| task.is_enabled && task.next_run_at.is_some_and(|due| due <= now))
+                .filter(|task| {
+                    task.is_enabled
+                        && task.status != "running"
+                        && task.next_run_at.is_some_and(|due| due <= now)
+                })
                 .map(|task| task.id.clone())
                 .collect::<Vec<_>>();
             drop(guard);
@@ -250,17 +261,6 @@ pub fn handle_tasks_action(
             })
         }
     }
-}
-
-struct TaskPayload {
-    action_namespace: String,
-    action_body: String,
-}
-
-struct TaskIntentMetadata {
-    intent_type: String,
-    intent_label: String,
-    intent_detail: Option<String>,
 }
 
 fn create_task(
@@ -296,74 +296,6 @@ fn create_task(
     });
     rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": true, "task_id": task_id})
-}
-
-fn task_intent_metadata(intent: Option<&AgentTaskIntent>) -> TaskIntentMetadata {
-    match intent {
-        Some(AgentTaskIntent::InboxTriage) => TaskIntentMetadata {
-            intent_type: "inbox_triage".to_owned(),
-            intent_label: "Triage inbox".to_owned(),
-            intent_detail: Some("Prioritize new episodes".to_owned()),
-        },
-        Some(AgentTaskIntent::ClearAgent) => TaskIntentMetadata {
-            intent_type: "clear_agent".to_owned(),
-            intent_label: "Clear agent chat".to_owned(),
-            intent_detail: None,
-        },
-        Some(AgentTaskIntent::RememberMemory { key, value }) => TaskIntentMetadata {
-            intent_type: "remember_memory".to_owned(),
-            intent_label: "Remember memory".to_owned(),
-            intent_detail: Some(format!("{key} = {value}")),
-        },
-        Some(AgentTaskIntent::AgentPrompt { prompt }) => TaskIntentMetadata {
-            intent_type: "agent_prompt".to_owned(),
-            intent_label: "Agent prompt".to_owned(),
-            intent_detail: Some(prompt.clone()),
-        },
-        None => TaskIntentMetadata {
-            intent_type: "custom".to_owned(),
-            intent_label: "Custom task".to_owned(),
-            intent_detail: None,
-        },
-    }
-}
-
-fn task_payload_from_intent(intent: &AgentTaskIntent) -> Result<TaskPayload, String> {
-    match intent {
-        AgentTaskIntent::InboxTriage => task_payload(
-            <InboxActionModule as ActionModule>::NAMESPACE,
-            &InboxAction::Triage,
-        ),
-        AgentTaskIntent::ClearAgent => task_payload(
-            <AgentActionModule as ActionModule>::NAMESPACE,
-            &AgentChatAction::Clear,
-        ),
-        AgentTaskIntent::RememberMemory { key, value } => task_payload(
-            <MemoryActionModule as ActionModule>::NAMESPACE,
-            &MemoryAction::Remember {
-                key: key.clone(),
-                value: value.clone(),
-                source: Some("task".into()),
-            },
-        ),
-        AgentTaskIntent::AgentPrompt { prompt } => task_payload(
-            <AgentActionModule as ActionModule>::NAMESPACE,
-            &AgentChatAction::Send {
-                message: prompt.clone(),
-            },
-        ),
-    }
-}
-
-fn task_payload<T: serde::Serialize>(
-    action_namespace: &str,
-    action: &T,
-) -> Result<TaskPayload, String> {
-    Ok(TaskPayload {
-        action_namespace: action_namespace.to_owned(),
-        action_body: serde_json::to_string(action)
-            .map_err(|e| format!("failed to encode task intent action: {e}"))?,
-    })
 }
 
 fn update_task(
@@ -419,8 +351,17 @@ fn run_task_by_id(
     let action_namespace = task.action_namespace.clone();
     let action_body = task.action_body.clone();
     let schedule = task.schedule.clone();
+    // Advance `next_run_at` NOW — under the SAME lock that marks the task
+    // `"running"` — BEFORE releasing the guard to dispatch.  This closes the
+    // double-fire window: a concurrent `RunDue` (host poll) or kernel tick that
+    // re-collects after this point sees both `status == "running"` AND an
+    // already-advanced `next_run_at`, so it cannot re-dispatch the same task.
+    // `now` is fixed for this call, so recomputing the re-arm later would be
+    // identical anyway — we just commit it eagerly under the lock.
+    let next_run_at = next_run_after_attempt(&schedule, now).ok().flatten();
     task.last_run_at = Some(now);
     task.status = "running".into();
+    task.next_run_at = next_run_at;
     rev.fetch_add(1, Ordering::Relaxed);
     drop(guard);
 
@@ -432,13 +373,79 @@ fn run_task_by_id(
     let status = if accepted { "completed" } else { "failed" };
     if let Ok(mut g) = tasks.lock() {
         if let Some(t) = g.iter_mut().find(|t| t.id == task_id) {
+            // `next_run_at` was already advanced under the first lock — do NOT
+            // recompute it here (it is unchanged for the same `now`).
             t.status = status.into();
             t.last_run_at = Some(now);
-            t.next_run_at = next_run_after_attempt(&schedule, now).ok().flatten();
         }
     }
     rev.fetch_add(1, Ordering::Relaxed);
     serde_json::json!({"ok": accepted, "status": status})
+}
+
+/// Kernel-owned periodic task firing: dispatch all tasks that are due before
+/// `now_unix`, are enabled, and are NOT already in-flight (`status != "running"`).
+///
+/// Returns the number of tasks that were ATTEMPTED — i.e. a run was started and
+/// the task's `status`/`next_run_at` were mutated, whether the dispatch was
+/// accepted (`status = "completed"`) OR rejected (`status = "failed"`). The
+/// caller bumps the snapshot whenever this is non-zero, so a rejected run's
+/// `"failed"` status pushes reactively on the same frame (not on some unrelated
+/// later bump). Tasks that did not run (not found / disabled between the filter
+/// snapshot and the call) do NOT count — they mutated nothing to push.
+///
+/// ## Contract guarantees
+///
+/// * **Single-fire per window**: `run_task_by_id` sets `status = "running"` and
+///   bumps `next_run_at` via [`next_run_after_attempt`] under the tasks lock
+///   before any dispatch call, so a second call with the same `now_unix` finds
+///   no due tasks.
+/// * **In-flight guard**: tasks with `status == "running"` (fired but not yet
+///   advanced by a dispatch response) are skipped; they cannot be double-fired.
+/// * **Idempotent with host `RunDue`**: both paths call `run_task_by_id`.  If
+///   the host fires `RunDue` in the same 60-second window as the kernel tick,
+///   one of the two calls reaches `run_task_by_id` after `next_run_at` has
+///   already advanced and finds no due tasks.
+/// * **`once` semantics preserved**: `next_run_after_attempt("once", …)` returns
+///   `None`, so a once task fires exactly once and never re-appears in the due
+///   filter.
+///
+/// D9 contract: callers MUST pass `Utc::now().timestamp()` — never host-supplied
+/// time.  The periodic ticker in [`crate::state::tasks::TasksState`] is the
+/// canonical caller.
+pub(crate) fn maybe_run_due_tasks(
+    tasks: &Arc<Mutex<Vec<AgentTaskSummary>>>,
+    rev: &Arc<AtomicU64>,
+    dispatch: Option<&TaskDispatchFn<'_>>,
+    now_unix: i64,
+) -> usize {
+    let task_ids: Vec<String> = match tasks.lock() {
+        Ok(guard) => guard
+            .iter()
+            .filter(|t| {
+                t.is_enabled
+                    && t.status != "running"
+                    && t.next_run_at.is_some_and(|due| due <= now_unix)
+            })
+            .map(|t| t.id.clone())
+            .collect(),
+        Err(_) => return 0,
+    };
+
+    let mut fired = 0;
+    for task_id in &task_ids {
+        let result = run_task_by_id(tasks, rev, task_id, dispatch, now_unix);
+        // Count any ATTEMPT, not just an accepted one: a `"status"` field is
+        // present iff the task actually ran (completed / failed / running) and
+        // its status + next_run_at were mutated. A rejected dispatch
+        // (`status = "failed"`, `ok = false`) still mutated state, so it must
+        // trigger the caller's bump → the "failed" status pushes reactively.
+        // Not-found / disabled results carry no `"status"` and mutated nothing.
+        if result["status"].is_string() {
+            fired += 1;
+        }
+    }
+    fired
 }
 
 fn set_enabled(
@@ -460,3 +467,7 @@ fn set_enabled(
 #[cfg(test)]
 #[path = "tasks_handler_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tasks_tick_tests.rs"]
+mod tick_tests;
