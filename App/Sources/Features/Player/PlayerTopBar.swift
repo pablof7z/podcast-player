@@ -20,7 +20,6 @@ struct PlayerTopBar: View {
     let onDismiss: () -> Void
     let onShare: () -> Void
     let onShowSleepTimer: () -> Void
-    let onShowSpeed: () -> Void
     let onShowQueue: () -> Void
 
     @Environment(AppStateStore.self) private var store
@@ -70,13 +69,12 @@ struct PlayerTopBar: View {
 
                 if let episode = state.episode {
                     PlayerMoreMenu(
+                        state: state,
                         episode: episode,
                         podcast: podcast,
-                        speedLabel: state.rate.label,
                         onMarkPlayed: { store.markEpisodePlayed(episode.id) },
                         onMarkUnplayed: { store.markEpisodeUnplayed(episode.id) },
                         onShowSleepTimer: onShowSleepTimer,
-                        onShowSpeed: onShowSpeed,
                         onShowQueue: onShowQueue
                     )
                 }

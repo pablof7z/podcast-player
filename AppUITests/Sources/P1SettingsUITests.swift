@@ -63,15 +63,7 @@ final class P1SettingsUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8))
         app.buttons["Play"].tap()
-        // Wait for the mini-player bar to appear (it has a stable identifier).
-        let miniBar = app.otherElements["mini-player-bar"]
-        let miniBarBtn = app.buttons.matching(NSPredicate(format: "identifier == 'mini-player-bar'")).firstMatch
-        let miniAppeared = miniBar.waitForExistence(timeout: 10)
-        sleep(1)
-        // Tap the mini-player bar to expand to the full player sheet.
-        if miniAppeared { robustTap(miniBar) }
-        else if miniBarBtn.waitForExistence(timeout: 2) { robustTap(miniBarBtn) }
-        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.92)).tap() }
+        XCTAssertTrue(openFullPlayerFromMiniPlayer(app), "scrub: mini-player did not appear")
         sleep(2)
         snap(app, "scrub-01-full-player")
         dumpTree(app, "scrub-01-tree")
@@ -120,14 +112,7 @@ final class P1SettingsUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 8))
         app.buttons["Play"].tap()
-        // Wait for the mini-player bar to appear, then tap it to open the full player.
-        let miniBar2 = app.otherElements["mini-player-bar"]
-        let miniBarBtn2 = app.buttons.matching(NSPredicate(format: "identifier == 'mini-player-bar'")).firstMatch
-        let miniAppeared2 = miniBar2.waitForExistence(timeout: 10)
-        sleep(1)
-        if miniAppeared2 { robustTap(miniBar2) }
-        else if miniBarBtn2.waitForExistence(timeout: 2) { robustTap(miniBarBtn2) }
-        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.92)).tap() }
+        XCTAssertTrue(openFullPlayerFromMiniPlayer(app), "speed: mini-player did not appear")
         sleep(2)
         snap(app, "speed-01-full-player")
         dumpTree(app, "speed-01-tree")

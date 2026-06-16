@@ -44,6 +44,17 @@ struct PlayerScrubberView: View {
             .accessibilityLabel("Playback scrubber")
             .accessibilityValue(PlayerTimeFormat.progress(state.currentTime, state.duration))
             .accessibilityHint("Swipe up or down to skip")
+            .accessibilityRepresentation {
+                Slider(
+                    value: Binding(
+                        get: { min(max(state.currentTime, 0), accessibilityDuration) },
+                        set: { state.seekSnapping(to: $0) }
+                    ),
+                    in: 0...accessibilityDuration
+                ) {
+                    Text("Playback scrubber")
+                }
+            }
             .accessibilityAdjustableAction { direction in
                 switch direction {
                 case .increment: state.skipForward()
@@ -89,5 +100,9 @@ struct PlayerScrubberView: View {
                 }
                 isScrubbing = false
             }
+    }
+
+    private var accessibilityDuration: TimeInterval {
+        max(state.duration, 1)
     }
 }

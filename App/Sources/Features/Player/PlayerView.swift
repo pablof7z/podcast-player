@@ -20,7 +20,6 @@ struct PlayerView: View {
     let glassNamespace: Namespace.ID
 
     @State private var isScrubbing: Bool = false
-    @State private var showSpeedSheet: Bool = false
     @State private var showSleepSheet: Bool = false
     @State private var showQueueSheet: Bool = false
     @State private var showShareSheet: Bool = false
@@ -77,7 +76,6 @@ struct PlayerView: View {
         .background {
             PlayerEditorialBackdrop(artworkURL: artworkURL)
         }
-        .sheet(isPresented: $showSpeedSheet) { PlayerSpeedSheet(state: state) }
         .sheet(isPresented: $showSleepSheet) { PlayerSleepTimerSheet(state: state) }
         .sheet(isPresented: $showQueueSheet) { PlayerQueueSheet(state: state) }
         .sheet(isPresented: $showVoiceNoteSheet) {
@@ -149,7 +147,6 @@ struct PlayerView: View {
             onDismiss: { dismiss() },
             onShare: { showShareSheet = true },
             onShowSleepTimer: { showSleepSheet = true },
-            onShowSpeed: { showSpeedSheet = true },
             onShowQueue: { showQueueSheet = true }
         )
     }
