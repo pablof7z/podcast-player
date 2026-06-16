@@ -100,6 +100,27 @@ fn disabled_task_not_fired_by_tick() {
     assert_eq!(rev.load(Ordering::Relaxed), 0, "rev unchanged for skipped task");
 }
 
+/// A REJECTED dispatch (kernel returned no correlation_id) must STILL count as
+/// fired: the task flipped to `"failed"` and `next_run_at` advanced, so the
+/// caller must bump the snapshot for the `"failed"` status to push reactively.
+#[test]
+fn rejected_dispatch_still_counts_as_fired_and_marks_failed() {
+    let (tasks, rev) = new_state_with(past_due_task("daily", 60));
+    // Dispatch rejects (e.g. unknown namespace / bad body) → accepted == false.
+    let dispatch = |_ns: &str, _body: &str| false;
+
+    let fired = maybe_run_due_tasks(&tasks, &rev, Some(&dispatch), NOW);
+    assert_eq!(
+        fired, 1,
+        "a rejected (failed) run must still count as fired so the caller bumps"
+    );
+
+    let guard = tasks.lock().unwrap();
+    assert_eq!(guard[0].status, "failed", "rejected dispatch marks task failed");
+    let next = guard[0].next_run_at.expect("daily task re-arms even when failed");
+    assert!(next > NOW, "next_run_at={next} must advance past NOW even on failure");
+}
+
 /// A task whose status is already "running" (in-flight from a previous tick
 /// that hasn't received a dispatch response yet) MUST NOT be re-dispatched.
 #[test]

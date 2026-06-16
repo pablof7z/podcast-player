@@ -386,9 +386,13 @@ fn run_task_by_id(
 /// Kernel-owned periodic task firing: dispatch all tasks that are due before
 /// `now_unix`, are enabled, and are NOT already in-flight (`status != "running"`).
 ///
-/// Returns the number of tasks that were dispatched (accepted or failed — the
-/// important thing is `next_run_at` was advanced past `now_unix` so subsequent
-/// calls with the same wall-clock cannot re-fire the same task).
+/// Returns the number of tasks that were ATTEMPTED — i.e. a run was started and
+/// the task's `status`/`next_run_at` were mutated, whether the dispatch was
+/// accepted (`status = "completed"`) OR rejected (`status = "failed"`). The
+/// caller bumps the snapshot whenever this is non-zero, so a rejected run's
+/// `"failed"` status pushes reactively on the same frame (not on some unrelated
+/// later bump). Tasks that did not run (not found / disabled between the filter
+/// snapshot and the call) do NOT count — they mutated nothing to push.
 ///
 /// ## Contract guarantees
 ///
@@ -431,7 +435,13 @@ pub(crate) fn maybe_run_due_tasks(
     let mut fired = 0;
     for task_id in &task_ids {
         let result = run_task_by_id(tasks, rev, task_id, dispatch, now_unix);
-        if result["ok"].as_bool().unwrap_or(false) {
+        // Count any ATTEMPT, not just an accepted one: a `"status"` field is
+        // present iff the task actually ran (completed / failed / running) and
+        // its status + next_run_at were mutated. A rejected dispatch
+        // (`status = "failed"`, `ok = false`) still mutated state, so it must
+        // trigger the caller's bump → the "failed" status pushes reactively.
+        // Not-found / disabled results carry no `"status"` and mutated nothing.
+        if result["status"].is_string() {
             fired += 1;
         }
     }
