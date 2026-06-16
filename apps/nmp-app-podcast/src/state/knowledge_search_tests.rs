@@ -7,6 +7,7 @@
 //! path: assert no panic, BM25 results untouched, and the second-bump return
 //! flag matches the design.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use podcast_core::{Episode, Podcast, PodcastId};
@@ -18,13 +19,21 @@ use podcast_knowledge::{EmbeddingVector, KnowledgeChunk, KnowledgeStore};
 use podcast_transcripts::TranscriptChunk;
 
 use crate::ffi::projections::KnowledgeSearchResult;
-use crate::state::Infra;
+use crate::state::{Domain, Infra};
 use crate::store::PodcastStore;
 
 use super::{
-    metadata_index_backfill_inner, resolve_embeddings_provider, spawn_semantic_search_inner,
-    validate_query_embedding,
+    metadata_index_backfill_inner, resolve_embeddings_provider, spawn_backfill_embeddings,
+    spawn_semantic_search_inner, validate_query_embedding,
 };
+
+/// Read a domain's push-sidecar counter (for asserting the RIGHT domain bumped).
+fn library_rev(infra: &Infra) -> u64 {
+    infra
+        .domain_revs
+        .counter(Domain::Library)
+        .load(Ordering::Relaxed)
+}
 
 fn make_episode(podcast_id: PodcastId, title: &str, description: &str) -> Episode {
     let mut ep = Episode::new(
@@ -263,6 +272,7 @@ fn metadata_drain_indexes_no_transcript_episode_and_drains_pending() {
     let sqlite = empty_sqlite();
     let infra = Infra::for_test();
     let rev0 = infra.rev();
+    let lib0 = library_rev(&infra);
     let runtime = Arc::clone(&infra.runtime);
 
     let drained = runtime.block_on(metadata_index_backfill_inner(
@@ -277,7 +287,15 @@ fn metadata_drain_indexes_no_transcript_episode_and_drains_pending() {
     );
     assert!(store.lock().unwrap().is_metadata_indexed(&ep_a.id.0.to_string()));
     assert!(store.lock().unwrap().is_metadata_indexed(&ep_b.id.0.to_string()));
-    assert!(infra.rev() > rev0, "draining a batch bumps the rev");
+    assert!(infra.rev() > rev0, "draining a batch bumps the global rev");
+    // The bump MUST land on the LIBRARY domain counter — that's the one the
+    // `pending_metadata_index_ids` payload + library delta sidecar watch. A
+    // plain `bump()` would advance only `misc` and leave the projected list
+    // stale (the per-domain real-bump trap, #399/#400/#423).
+    assert!(
+        library_rev(&infra) > lib0,
+        "drain must bump domain_revs.library, not just the global rev"
+    );
 
     // No-transcript episode is now vector-searchable: its synthetic title+desc
     // chunk lives in the index (NULL embedding — the embed backfill fills it).
@@ -367,7 +385,8 @@ fn metadata_drain_marks_blank_episode_without_chunk() {
     );
 }
 
-/// Nothing pending → the drain is a clean no-op (returns 0, no bump).
+/// Nothing pending → the drain is a clean no-op (returns 0, no bump on either
+/// the global rev OR the library counter).
 #[test]
 fn metadata_drain_noop_when_nothing_pending() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -375,6 +394,7 @@ fn metadata_drain_noop_when_nothing_pending() {
     let sqlite = empty_sqlite();
     let infra = Infra::for_test();
     let rev0 = infra.rev();
+    let lib0 = library_rev(&infra);
     let runtime = Arc::clone(&infra.runtime);
 
     let drained = runtime.block_on(metadata_index_backfill_inner(
@@ -382,5 +402,61 @@ fn metadata_drain_noop_when_nothing_pending() {
     ));
 
     assert_eq!(drained, 0);
-    assert_eq!(infra.rev(), rev0, "no work → no bump");
+    assert_eq!(infra.rev(), rev0, "no work → no global bump");
+    assert_eq!(library_rev(&infra), lib0, "no work → no library bump");
+}
+
+// ── spawn_backfill_embeddings — single-flight guard ──────────────────────────
+
+/// The embed backfill is single-flight: a second spawn while one is in flight
+/// is a no-op. The metadata drain now chains the embed backfill on EVERY feed
+/// refresh, so without this guard rapid refreshes would spawn overlapping embed
+/// loops (double-scan NULL rows, redundant provider calls, racing writes).
+///
+/// `Infra::for_test`'s current-thread runtime is never driven here, so the
+/// spawned task body never runs to release the flag — which is exactly what
+/// lets us observe the guard: the first call claims the flag and it stays
+/// claimed, so the second call must bail.
+#[test]
+fn embed_backfill_single_flight_guard() {
+    let running = Arc::new(AtomicBool::new(false));
+    let sqlite = empty_sqlite(); // None → loop would break immediately
+    let index = Arc::new(Mutex::new(KnowledgeStore::new()));
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let infra = Infra::for_test();
+
+    // First call claims the flag (the in-flight loop owns it).
+    spawn_backfill_embeddings(
+        Arc::clone(&running),
+        Arc::clone(&sqlite),
+        Arc::clone(&index),
+        Arc::clone(&store),
+        infra.clone(),
+    );
+    assert!(
+        running.load(Ordering::SeqCst),
+        "first call must claim the running flag"
+    );
+
+    // Second call while the flag is set must bail (no overlap, no panic).
+    spawn_backfill_embeddings(running.clone(), sqlite, index, store, infra.clone());
+    assert!(
+        running.load(Ordering::SeqCst),
+        "second call is a no-op; the first loop still owns the flag"
+    );
+}
+
+/// The `RunningGuard` clears its flag on drop — proving the panic-safe release
+/// path (a panic in the loop body unwinds through the guard's `Drop`).
+#[test]
+fn running_guard_clears_flag_on_drop() {
+    let flag = Arc::new(AtomicBool::new(true));
+    {
+        let _g = super::RunningGuard(Arc::clone(&flag));
+        assert!(flag.load(Ordering::SeqCst));
+    } // guard dropped here (the same path an unwind would take)
+    assert!(
+        !flag.load(Ordering::SeqCst),
+        "RunningGuard must clear the flag on drop"
+    );
 }

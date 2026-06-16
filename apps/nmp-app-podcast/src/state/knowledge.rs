@@ -85,6 +85,10 @@ pub struct KnowledgeState {
     /// drain loop is in flight so concurrent triggers (cold-load + every feed
     /// refresh) collapse into one paced loop instead of spawning many.
     metadata_backfill_running: Arc<AtomicBool>,
+    /// Single-flight guard for the embedding backfill the drain chains into.
+    /// Without it, the per-refresh trigger could spawn overlapping embed loops
+    /// that double-scan NULL rows and race SQLite writes.
+    embed_backfill_running: Arc<AtomicBool>,
 }
 
 impl KnowledgeState {
@@ -97,6 +101,7 @@ impl KnowledgeState {
             store,
             sqlite: Arc::new(Mutex::new(None)),
             metadata_backfill_running: Arc::new(AtomicBool::new(false)),
+            embed_backfill_running: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -342,6 +347,7 @@ impl KnowledgeState {
     pub fn trigger_metadata_index_backfill(&self) {
         knowledge_search::spawn_metadata_index_backfill(
             Arc::clone(&self.metadata_backfill_running),
+            Arc::clone(&self.embed_backfill_running),
             Arc::clone(&self.store),
             self.index.share(),
             Arc::clone(&self.sqlite),
