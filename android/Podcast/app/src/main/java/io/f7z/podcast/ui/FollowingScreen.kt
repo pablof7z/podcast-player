@@ -1,5 +1,6 @@
 package io.f7z.podcast.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,7 @@ fun FollowingScreen(
     snapshot: PodcastSnapshot?,
     bridge: KernelBridge,
     onBack: () -> Unit,
+    onFriendSelected: (pubkeyHex: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val isSignedIn = snapshot?.activeAccount != null
@@ -106,6 +108,7 @@ fun FollowingScreen(
             else -> FollowingList(
                 following = following,
                 resolvedProfiles = resolvedProfiles,
+                onFriendSelected = onFriendSelected,
                 modifier = Modifier.fillMaxSize().padding(inner),
             )
         }
@@ -116,6 +119,7 @@ fun FollowingScreen(
 private fun FollowingList(
     following: List<ContactSummaryDto>,
     resolvedProfiles: Map<String, ResolvedProfile>,
+    onFriendSelected: (pubkeyHex: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
@@ -127,7 +131,11 @@ private fun FollowingList(
             },
         ) { _, contact ->
             val resolvedProfile = resolvedProfiles[contact.pubkeyHex]
-            ContactRow(contact = contact, resolvedProfile = resolvedProfile)
+            ContactRow(
+                contact = contact,
+                resolvedProfile = resolvedProfile,
+                onFriendSelected = onFriendSelected,
+            )
             HorizontalDivider()
         }
     }
@@ -137,10 +145,14 @@ private fun FollowingList(
 private fun ContactRow(
     contact: ContactSummaryDto,
     resolvedProfile: ResolvedProfile?,
+    onFriendSelected: (pubkeyHex: String) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = contact.pubkeyHex.isNotEmpty()) {
+                onFriendSelected(contact.pubkeyHex)
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -209,7 +221,7 @@ private fun ZeroFollowsEmptyState(modifier: Modifier = Modifier) {
  * Named `shortNpubLabel` to avoid a package-level name collision with the
  * hex-variant `shortNpub` in `NostrConversationsScreen.kt`.
  */
-private fun shortNpubLabel(npub: String): String {
+internal fun shortNpubLabel(npub: String): String {
     if (npub.length <= 20) return npub
     return "${npub.take(12)}…${npub.takeLast(8)}"
 }
