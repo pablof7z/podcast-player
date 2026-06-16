@@ -114,6 +114,8 @@ fun NostrConversationDetailScreen(
                     NostrConversationTrustMenu(
                         counterpartyHex = conversation.counterpartyHex,
                         trusted = conversation.trusted,
+                        peerBlocked = conversation.peerBlocked,
+                        peerApproved = conversation.peerApproved,
                         bridge = bridge,
                     )
                 },

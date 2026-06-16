@@ -21,32 +21,40 @@ import io.f7z.podcast.SocialActions
  * Overflow menu for conversation-level trust actions, placed in the
  * [NostrConversationDetailScreen] TopAppBar.
  *
- * Surfaces Approve / Remove-Approval / Block for the conversation's
- * counterparty, wired into the kernel's `podcast.social` namespace via
- * [SocialActions].
+ * The action set is driven by [conversationTrustActions] from the kernel's
+ * explicit per-peer flags ([trusted], [peerBlocked], [peerApproved]) — so the
+ * menu correctly distinguishes blocked vs explicitly-approved vs follow-only,
+ * which the composed `trusted` bool alone cannot. Each action maps 1:1 to a
+ * `podcast.social` kernel op via [SocialActions].
  *
- * Trust semantics (kernel-owned, from `social_module.rs`):
- *
- *   trust(pubkey) = (followed || approved) && !blocked
- *
- * When [trusted] is false: "Approve" + "Block" are shown.
- * When [trusted] is true: "Remove Approval" + "Block" are shown.
- * Block is always available and requires a confirmation dialog.
- *
- * **REACTIVE contract**: this composable NEVER mutates the [trusted] flag
- * locally. It dispatches commands and lets the kernel push an updated
- * `NostrConversationDto.trusted` on the next snapshot frame, which flows
- * through the reactive push seam and recomposes this menu automatically.
+ * **REACTIVE contract**: this composable NEVER mutates trust state locally. It
+ * dispatches commands and lets the kernel push updated
+ * `NostrConversationDto.{trusted,peerBlocked,peerApproved}` on the next snapshot
+ * frame, which flows through the reactive push seam and recomposes this menu.
  * No polling, no optimistic state (android_reactive_path_and_datadir).
+ *
+ * Guards against a blank counterparty hex (filtered conversation / tombstone):
+ * the menu is not rendered, so no `pubkey_hex`-less dispatch can reach the kernel.
  */
 @Composable
 fun NostrConversationTrustMenu(
     counterpartyHex: String,
     trusted: Boolean,
+    peerBlocked: Boolean,
+    peerApproved: Boolean,
     bridge: KernelBridge,
 ) {
+    // Do not surface trust controls without a valid peer to act on.
+    if (counterpartyHex.isBlank()) return
+
     var showMenu by remember { mutableStateOf(false) }
     var showBlockConfirm by remember { mutableStateOf(false) }
+
+    val actions = conversationTrustActions(
+        trusted = trusted,
+        peerBlocked = peerBlocked,
+        peerApproved = peerApproved,
+    )
 
     IconButton(onClick = { showMenu = true }) {
         Icon(
@@ -59,30 +67,24 @@ fun NostrConversationTrustMenu(
         expanded = showMenu,
         onDismissRequest = { showMenu = false },
     ) {
-        if (!trusted) {
+        actions.forEach { action ->
             DropdownMenuItem(
-                text = { Text("Approve") },
+                text = { Text(action.label()) },
                 onClick = {
-                    SocialActions.approvePeer(bridge, counterpartyHex)
                     showMenu = false
-                },
-            )
-        } else {
-            DropdownMenuItem(
-                text = { Text("Remove Approval") },
-                onClick = {
-                    SocialActions.removeApproval(bridge, counterpartyHex)
-                    showMenu = false
+                    when (action) {
+                        // Block is destructive + absolute → confirm first.
+                        ConversationTrustAction.Block -> showBlockConfirm = true
+                        ConversationTrustAction.Approve ->
+                            SocialActions.approvePeer(bridge, counterpartyHex)
+                        ConversationTrustAction.RemoveApproval ->
+                            SocialActions.removeApproval(bridge, counterpartyHex)
+                        ConversationTrustAction.Unblock ->
+                            SocialActions.removeBlock(bridge, counterpartyHex)
+                    }
                 },
             )
         }
-        DropdownMenuItem(
-            text = { Text("Block") },
-            onClick = {
-                showMenu = false
-                showBlockConfirm = true
-            },
-        )
     }
 
     if (showBlockConfirm) {
@@ -92,8 +94,8 @@ fun NostrConversationTrustMenu(
             text = {
                 Text(
                     "This peer will be blocked from contacting your agent. " +
-                        "Block overrides follow status and explicit approval. " +
-                        "You can unblock from Settings → Access Control.",
+                        "Block overrides follow status and any approval. " +
+                        "You can unblock this person later from this menu.",
                 )
             },
             confirmButton = {
@@ -113,4 +115,12 @@ fun NostrConversationTrustMenu(
             },
         )
     }
+}
+
+/** User-facing label for each trust action. */
+internal fun ConversationTrustAction.label(): String = when (this) {
+    ConversationTrustAction.Approve -> "Approve"
+    ConversationTrustAction.Block -> "Block"
+    ConversationTrustAction.RemoveApproval -> "Remove approval"
+    ConversationTrustAction.Unblock -> "Unblock"
 }
