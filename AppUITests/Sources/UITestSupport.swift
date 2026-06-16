@@ -59,6 +59,53 @@ extension XCTestCase {
         return true
     }
 
+    /// Expands the mini-player into the full player.
+    ///
+    /// In long UI-test suite runs SwiftUI can expose `mini-player-bar` with an
+    /// invalid activation point even though the bar is visibly present. Wait on
+    /// the identifier for synchronization, then tap through an app-origin
+    /// coordinate so XCTest does not need to derive a hit point from the element.
+    @discardableResult
+    func openFullPlayerFromMiniPlayer(_ app: XCUIApplication, timeout: TimeInterval = 10) -> Bool {
+        let miniBar = app.otherElements["mini-player-bar"]
+        let miniBarButton = app.buttons.matching(
+            NSPredicate(format: "identifier == 'mini-player-bar'")
+        ).firstMatch
+
+        guard miniBar.waitForExistence(timeout: timeout)
+                || miniBarButton.waitForExistence(timeout: 2) else {
+            return false
+        }
+
+        if tapValidFrameCenter(miniBar, in: app)
+            || tapValidFrameCenter(miniBarButton, in: app) {
+            return waitForFullPlayer(app)
+        }
+
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.88)).tap()
+        return waitForFullPlayer(app)
+    }
+
+    private func tapValidFrameCenter(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
+        guard element.exists else { return false }
+        let frame = element.frame
+        guard frame.width > 1,
+              frame.height > 1,
+              frame.midX.isFinite,
+              frame.midY.isFinite else {
+            return false
+        }
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+            .withOffset(CGVector(dx: frame.midX, dy: frame.midY))
+            .tap()
+        return true
+    }
+
+    private func waitForFullPlayer(_ app: XCUIApplication) -> Bool {
+        app.buttons["More options"].waitForExistence(timeout: 4)
+            || app.sliders["Playback scrubber"].waitForExistence(timeout: 2)
+    }
+
     /// First static text whose label contains `substring` (case-insensitive).
     func staticTextContaining(_ app: XCUIApplication, _ substring: String) -> XCUIElement {
         let p = NSPredicate(format: "label CONTAINS[c] %@", substring)
@@ -79,6 +126,9 @@ extension XCTestCase {
     /// then fall back to the row identifier and a frame-based title-area tap.
     @discardableResult
     func openFirstPodcastFromHome(_ app: XCUIApplication) -> Bool {
+        let seededTitle = staticTextContaining(app, "This American Life")
+        _ = seededTitle.waitForExistence(timeout: 8)
+
         let visibleHomeTitle = app.staticTexts.allElementsBoundByIndex.first { element in
             element.label.localizedCaseInsensitiveContains("This American Life")
                 && element.frame.minY > 100
@@ -90,9 +140,9 @@ extension XCTestCase {
         }
 
         let row = app.buttons.matching(
-            NSPredicate(format: "identifier == 'library-podcast-row'")
+                NSPredicate(format: "identifier == 'library-podcast-row'")
         ).firstMatch
-        if row.waitForExistence(timeout: 4) {
+        if row.waitForExistence(timeout: 8) {
             let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
             origin.withOffset(CGVector(dx: row.frame.minX + 72, dy: row.frame.midY)).tap()
             if waitForShowDetail(app) { return true }
