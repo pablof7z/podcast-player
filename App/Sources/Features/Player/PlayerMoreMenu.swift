@@ -123,7 +123,6 @@ struct PlayerMoreMenu: View {
                 .contentShape(Circle())
                 .glassEffect(.regular.interactive(), in: .circle)
         }
-        .buttonStyle(.pressable)
         .accessibilityLabel("More options")
     }
 
