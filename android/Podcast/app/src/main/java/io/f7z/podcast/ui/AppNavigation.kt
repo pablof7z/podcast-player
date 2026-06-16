@@ -221,6 +221,21 @@ fun AppNavigation(
                 snapshot = snapshot,
                 bridge = bridge,
                 onBack = { route = AppRoute.Tab(selectedTab) },
+                onFriendSelected = { hex ->
+                    // Look up npub from the live snapshot so the detail screen has a
+                    // bech32 fallback label before the kernel resolves kind:0.
+                    val npub = snapshot?.following
+                        ?.firstOrNull { it.pubkeyHex == hex }?.npub ?: ""
+                    route = AppRoute.FriendDetail(hex, npub)
+                },
+                modifier = contentModifier,
+            )
+            is AppRoute.FriendDetail -> FriendDetailScreen(
+                pubkeyHex = current.pubkeyHex,
+                npub = current.npub,
+                snapshot = snapshot,
+                bridge = bridge,
+                onBack = { route = AppRoute.Following },
                 modifier = contentModifier,
             )
         }
@@ -302,7 +317,7 @@ enum class BottomTab(val label: String, val icon: ImageVector) {
  * pushes are narrow detail/settings surfaces. M14 may swap this for
  * `androidx.navigation.compose` if deep links land.
  */
-private sealed interface AppRoute {
+internal sealed interface AppRoute {
     data class Tab(val tab: BottomTab) : AppRoute
     data class ShowDetail(val showId: String) : AppRoute
     data class EpisodeDetail(val episodeId: String, val podcastId: String) : AppRoute
@@ -325,53 +340,77 @@ private sealed interface AppRoute {
     data object Bookmarks : AppRoute
     /** NIP-02 follow list — reached from Settings > Nostr > Following (social parity slice 1). */
     data object Following : AppRoute
+    /**
+     * Friend detail — reached by tapping a row in [FollowingScreen] (social parity slice 4).
+     * [npub] is the bech32-encoded public key, carried so the detail screen can show a
+     * short-npub fallback before the kernel resolves the kind:0 profile.
+     */
+    data class FriendDetail(val pubkeyHex: String, val npub: String) : AppRoute
 
     companion object {
         val Saver: androidx.compose.runtime.saveable.Saver<AppRoute, Any> =
             androidx.compose.runtime.saveable.Saver(
-                save = { value ->
-                    when (value) {
-                        is Tab -> listOf("tab", value.tab.name)
-                        is ShowDetail -> listOf("show", value.showId)
-                        is EpisodeDetail -> listOf("episode", value.episodeId, value.podcastId)
-                        Identity -> listOf("identity")
-                        EditProfile -> listOf("edit_profile")
-                        ProviderModels -> listOf("provider_models")
-                        AgentChat -> listOf("agent_chat")
-                        NostrConversations -> listOf("nostr_conversations")
-                        is NostrConversationDetail -> listOf("nostr_conversation_detail", value.rootEventId)
-                        RemoteSigner -> listOf("remote_signer")
-                        NostrConnect -> listOf("nostr_connect")
-                        ClipList -> listOf("clip_list")
-                        Bookmarks -> listOf("bookmarks")
-                        Following -> listOf("following")
-                    }
-                },
+                save = { value -> saveAppRoute(value) },
                 restore = { raw ->
                     @Suppress("UNCHECKED_CAST")
                     val list = raw as? List<String> ?: return@Saver null
-                    when (list.firstOrNull()) {
-                        "tab" -> Tab(BottomTab.entries.firstOrNull { it.name == list.getOrNull(1) } ?: BottomTab.Home)
-                        "show" -> list.getOrNull(1)?.let { ShowDetail(it) }
-                        "episode" -> {
-                            val ep = list.getOrNull(1)
-                            val pod = list.getOrNull(2)
-                            if (ep != null && pod != null) EpisodeDetail(ep, pod) else null
-                        }
-                        "identity" -> Identity
-                        "edit_profile" -> EditProfile
-                        "provider_models" -> ProviderModels
-                        "agent_chat" -> AgentChat
-                        "nostr_conversations" -> NostrConversations
-                        "nostr_conversation_detail" -> list.getOrNull(1)?.let { NostrConversationDetail(it) }
-                        "remote_signer" -> RemoteSigner
-                        "nostr_connect" -> NostrConnect
-                        "clip_list" -> ClipList
-                        "bookmarks" -> Bookmarks
-                        "following" -> Following
-                        else -> null
-                    }
+                    restoreAppRoute(list)
                 },
             )
     }
+}
+
+/**
+ * Encodes an [AppRoute] as a [List<String>] for [rememberSaveable] persistence.
+ * Extracted to a top-level function so JVM unit tests can verify the mapping
+ * without a Compose [SaverScope].
+ */
+internal fun saveAppRoute(value: AppRoute): List<String> = when (value) {
+    is AppRoute.Tab -> listOf("tab", value.tab.name)
+    is AppRoute.ShowDetail -> listOf("show", value.showId)
+    is AppRoute.EpisodeDetail -> listOf("episode", value.episodeId, value.podcastId)
+    AppRoute.Identity -> listOf("identity")
+    AppRoute.EditProfile -> listOf("edit_profile")
+    AppRoute.ProviderModels -> listOf("provider_models")
+    AppRoute.AgentChat -> listOf("agent_chat")
+    AppRoute.NostrConversations -> listOf("nostr_conversations")
+    is AppRoute.NostrConversationDetail -> listOf("nostr_conversation_detail", value.rootEventId)
+    AppRoute.RemoteSigner -> listOf("remote_signer")
+    AppRoute.NostrConnect -> listOf("nostr_connect")
+    AppRoute.ClipList -> listOf("clip_list")
+    AppRoute.Bookmarks -> listOf("bookmarks")
+    AppRoute.Following -> listOf("following")
+    is AppRoute.FriendDetail -> listOf("friend_detail", value.pubkeyHex, value.npub)
+}
+
+/**
+ * Decodes a [List<String>] produced by [saveAppRoute] back into an [AppRoute].
+ * Returns `null` for unrecognised or malformed input so [rememberSaveable] falls
+ * back to the initial value rather than crashing on a stale bundle.
+ */
+internal fun restoreAppRoute(list: List<String>): AppRoute? = when (list.firstOrNull()) {
+    "tab" -> AppRoute.Tab(BottomTab.entries.firstOrNull { it.name == list.getOrNull(1) } ?: BottomTab.Home)
+    "show" -> list.getOrNull(1)?.let { AppRoute.ShowDetail(it) }
+    "episode" -> {
+        val ep = list.getOrNull(1)
+        val pod = list.getOrNull(2)
+        if (ep != null && pod != null) AppRoute.EpisodeDetail(ep, pod) else null
+    }
+    "identity" -> AppRoute.Identity
+    "edit_profile" -> AppRoute.EditProfile
+    "provider_models" -> AppRoute.ProviderModels
+    "agent_chat" -> AppRoute.AgentChat
+    "nostr_conversations" -> AppRoute.NostrConversations
+    "nostr_conversation_detail" -> list.getOrNull(1)?.let { AppRoute.NostrConversationDetail(it) }
+    "remote_signer" -> AppRoute.RemoteSigner
+    "nostr_connect" -> AppRoute.NostrConnect
+    "clip_list" -> AppRoute.ClipList
+    "bookmarks" -> AppRoute.Bookmarks
+    "following" -> AppRoute.Following
+    "friend_detail" -> {
+        val hex = list.getOrNull(1)
+        val npub = list.getOrNull(2)
+        if (hex != null && npub != null) AppRoute.FriendDetail(hex, npub) else null
+    }
+    else -> null
 }
