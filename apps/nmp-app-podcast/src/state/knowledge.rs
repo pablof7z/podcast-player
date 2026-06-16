@@ -81,6 +81,10 @@ pub struct KnowledgeState {
     /// Interior-mutable so `set_data_dir` can take `&self` like all other
     /// methods on this type.
     sqlite: Arc<Mutex<Option<KnowledgeSqliteStore>>>,
+    /// Single-flight guard for the metadata-index self-drain. `true` while a
+    /// drain loop is in flight so concurrent triggers (cold-load + every feed
+    /// refresh) collapse into one paced loop instead of spawning many.
+    metadata_backfill_running: Arc<AtomicBool>,
 }
 
 impl KnowledgeState {
@@ -92,6 +96,7 @@ impl KnowledgeState {
             infra,
             store,
             sqlite: Arc::new(Mutex::new(None)),
+            metadata_backfill_running: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -142,11 +147,18 @@ impl KnowledgeState {
             *guard = Some(sq);
         }
 
-        // Kick off paced backfill for any NULL-embedding rows from prior sessions.
-        // Off-actor — returns immediately; halts on provider error + resumes next cold start.
-        if count > 0 {
-            self.backfill_embeddings();
-        }
+        // Kick off the metadata-index self-drain. Off-actor — returns
+        // immediately; paced, halts on provider error + resumes next cold
+        // start. It drains `pending_metadata_index_ids` (indexing no-transcript
+        // episodes' title+description as NULL-embedding chunks + marking them),
+        // THEN chains into the embedding backfill so both the freshly-inserted
+        // metadata chunks AND any prior-session NULL rows get embedded.
+        //
+        // Run unconditionally (not gated on `count`): on a fresh launch the
+        // sidecar is empty (`count == 0`) yet the library may hold many
+        // subscribed, no-transcript episodes that need metadata coverage — the
+        // exact case the retired Swift `EpisodeMetadataIndexer` handled.
+        self.trigger_metadata_index_backfill();
 
         count
     }
@@ -181,49 +193,19 @@ impl KnowledgeState {
 
     fn index_episode(&self, episode_id: String) -> serde_json::Value {
         use podcast_knowledge::KnowledgeChunk;
-        use podcast_transcripts::{chunk_transcript, ChunkPolicy, Transcript, TranscriptKind,
-                                   TranscriptSource, TranscriptState};
 
-        // Prefer timed entries (real seek timestamps) over plain text (start_secs=0.0).
-        // Acquiring the store lock once covers both checks so we release it before
-        // any expensive work (lock-order rule §6.2).
-        let (maybe_timed, maybe_text) = match self.store.lock() {
-            Ok(s) => {
-                let timed = s.timed_transcript_for(&episode_id).map(|e| e.to_vec());
-                // Only fall through to plain text when no timed entries are stored;
-                // when entries are present we derive text from them in the timed path.
-                let text = if timed.is_some() {
-                    None
-                } else {
-                    s.transcript_for(&episode_id).map(str::to_owned)
-                };
-                (timed, text)
-            }
+        // Build the index chunks via the single canonical path (timed → plain
+        // → metadata fallback). One lock acquisition covers the whole decision
+        // so we release it before any expensive work (lock-order rule §6.2).
+        let chunks = match self.store.lock() {
+            Ok(s) => crate::knowledge::build_episode_index_chunks(&s, &episode_id),
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
-
-        // Build transcript chunks using the time-aware chunker when entries exist,
-        // or fall back to the word-window plain-text chunker (start_secs=0.0) for
-        // legacy transcripts that arrived without timing.
-        let chunks = if let Some(entries) = maybe_timed {
-            // Slice 5a: time-aware chunking — real start_secs/end_secs per chunk.
-            let transcript = Transcript {
-                episode_id: episode_id.clone(),
-                entries,
-                source_url: String::new(),
-                kind: TranscriptKind::Json,
-                status: TranscriptState::Ready {
-                    source: TranscriptSource::Other,
-                },
-                language: "en-US".to_owned(),
-            };
-            chunk_transcript(&transcript, ChunkPolicy::default())
-        } else if let Some(text) = maybe_text {
-            // Legacy plain-text fallback — start_secs=0.0 as before.
-            crate::knowledge::chunk_transcript_text(&episode_id, &text)
-        } else {
+        // Empty only when the episode is unknown or carries no transcript AND
+        // no title/description text — nothing to index.
+        if chunks.is_empty() {
             return serde_json::json!({"ok": true, "status": "no_transcript"});
-        };
+        }
         let chunk_count = chunks.len();
 
         // Build KnowledgeChunk wrappers once (always NULL embedding on the sync path;
@@ -343,14 +325,26 @@ impl KnowledgeState {
         serde_json::json!({"ok": true, "status": "indexed", "chunk_count": chunk_count})
     }
 
-    /// Invoked from `set_data_dir` after cold-load to schedule paced embed tasks
-    /// for any NULL-embedding chunks already in SQLite.
-    /// Spawn body lives in `knowledge_search.rs` (file-length budget).
-    fn backfill_embeddings(&self) {
-        knowledge_search::spawn_backfill_embeddings(
-            Arc::clone(&self.sqlite),
-            self.index.share(),
+    /// Drain `pending_metadata_index_ids` kernel-side, then embed.
+    ///
+    /// Spawns the off-actor, paced metadata-index self-drain (single-flight
+    /// via `metadata_backfill_running`). The drain loop indexes each pending
+    /// episode through the canonical chunk path — no-transcript episodes get a
+    /// synthetic title+description chunk — marks the batch indexed (so
+    /// `pending_metadata_index_ids` actually drains), and finally chains into
+    /// the embedding backfill so the NULL-embedding rows it inserted (plus any
+    /// prior-session NULL rows) get cloud-embedded.
+    ///
+    /// Idempotent + cheap to call repeatedly: re-triggering while a loop is in
+    /// flight is a no-op (the running loop re-scans candidates each iteration,
+    /// so episodes added mid-loop are still drained). Called from
+    /// `set_data_dir` (cold load) and after every feed refresh.
+    pub fn trigger_metadata_index_backfill(&self) {
+        knowledge_search::spawn_metadata_index_backfill(
+            Arc::clone(&self.metadata_backfill_running),
             Arc::clone(&self.store),
+            self.index.share(),
+            Arc::clone(&self.sqlite),
             self.infra.clone(),
         );
     }

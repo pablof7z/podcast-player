@@ -18,10 +18,11 @@
 //! Failures at any step degrade gracefully: the first BM25 results remain
 //! visible, no second bump is emitted, and no panic occurs.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use podcast_knowledge::sqlite::KnowledgeSqliteStore;
-use podcast_knowledge::KnowledgeStore;
+use podcast_knowledge::{KnowledgeChunk, KnowledgeStore};
 
 use crate::ffi::projections::KnowledgeSearchResult;
 use crate::llm::provider_transport::ProviderKind;
@@ -34,6 +35,12 @@ use super::warn_unusable_embedding_model_once;
 const EMBED_BACKFILL_BATCH_SIZE: usize = 32;
 /// Millisecond delay between backfill batch embed calls to avoid flooding the provider.
 const EMBED_BACKFILL_INTER_BATCH_DELAY_MS: u64 = 200;
+
+/// Millisecond pause between metadata-index self-drain batches. Mirrors the
+/// 200 ms the retired Swift `EpisodeMetadataIndexer` used (and the embed
+/// backfill above) — cheap insurance against monopolising the runtime / the
+/// store lock during a large cold-start backfill.
+const METADATA_BACKFILL_INTER_BATCH_DELAY_MS: u64 = 200;
 
 /// Resolve the embeddings `(provider, model)` from settings — the SINGLE
 /// policy used by BOTH the query-embed (search) and backfill paths so they
@@ -319,6 +326,135 @@ pub(super) fn spawn_backfill_embeddings(
             .await;
         }
     });
+}
+
+/// Spawn the off-actor, paced metadata-index self-drain.
+///
+/// Single-flight: if a drain loop is already running (`running` is `true`)
+/// this is a no-op — the in-flight loop re-scans candidates each iteration so
+/// episodes added by a concurrent feed refresh are still drained.
+///
+/// On completion (or if there is nothing to drain) it chains into the
+/// embedding backfill so the NULL-embedding metadata chunks it inserted — plus
+/// any prior-session NULL rows — get cloud-embedded.
+pub(super) fn spawn_metadata_index_backfill(
+    running: Arc<AtomicBool>,
+    store_c: Arc<Mutex<PodcastStore>>,
+    index_c: Arc<Mutex<KnowledgeStore>>,
+    sqlite_c: Arc<Mutex<Option<KnowledgeSqliteStore>>>,
+    infra_c: Infra,
+) {
+    // Single-flight gate: claim the running flag; bail if another loop holds it.
+    if running.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let runtime = Arc::clone(&infra_c.runtime);
+    runtime.spawn(async move {
+        // Brief startup delay — let the main cold-load settle first.
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+        metadata_index_backfill_inner(&store_c, &index_c, &sqlite_c, &infra_c).await;
+
+        // Release the single-flight gate BEFORE chaining the embed backfill so
+        // a feed refresh that lands now can re-trigger a fresh drain.
+        running.store(false, Ordering::SeqCst);
+
+        // Chain into the embedding backfill: embed the NULL metadata chunks we
+        // just inserted plus any prior-session NULL rows. Paced + halt-on-error.
+        spawn_backfill_embeddings(sqlite_c, index_c, store_c, infra_c);
+    });
+}
+
+/// The metadata-index drain loop body. Extracted so tests can `block_on` it
+/// directly (the `Infra::for_test` runtime is never driven, so a spawned task
+/// body would otherwise never run).
+///
+/// Returns the number of episodes marked indexed (drained) across all batches.
+///
+/// Per batch (≤ [`crate::store::metadata_index_backfill::METADATA_INDEX_BACKFILL_BATCH_SIZE`]):
+/// for each candidate WITHOUT chunks already in the index, build its chunks via
+/// the canonical path (no-transcript → synthetic title+description chunk),
+/// insert them with NULL embeddings (write-through to SQLite), then mark the
+/// whole batch indexed — which removes them from `pending_metadata_index_ids`.
+/// Candidates that already have chunks (e.g. a transcript indexed live) are
+/// just marked, never re-indexed.
+pub(super) async fn metadata_index_backfill_inner(
+    store_c: &Arc<Mutex<PodcastStore>>,
+    index_c: &Arc<Mutex<KnowledgeStore>>,
+    sqlite_c: &Arc<Mutex<Option<KnowledgeSqliteStore>>>,
+    infra_c: &Infra,
+) -> usize {
+    let mut drained = 0usize;
+    loop {
+        // Scan the next batch of un-indexed episode IDs (the pending list).
+        let candidates: Vec<String> = {
+            let Ok(s) = store_c.lock() else { break };
+            s.metadata_index_backfill_candidates()
+        };
+        if candidates.is_empty() {
+            break;
+        }
+
+        for ep_id in &candidates {
+            // Skip episodes already covered (live transcript ingest indexed
+            // them) — they only need the mark below to drain.
+            let already_indexed = {
+                let Ok(ks) = index_c.lock() else { break };
+                !ks.chunks_for_episode(ep_id).is_empty()
+            };
+            if already_indexed {
+                continue;
+            }
+
+            // Build chunks via the single canonical path (transcript if present,
+            // else a synthetic title+description metadata chunk).
+            let chunks = {
+                let Ok(s) = store_c.lock() else { break };
+                crate::knowledge::build_episode_index_chunks(&s, ep_id)
+            };
+            if chunks.is_empty() {
+                // Unknown episode or blank title+description — nothing to index,
+                // but still mark it below so it stops re-surfacing.
+                continue;
+            }
+
+            let kchunks: Vec<KnowledgeChunk> = chunks
+                .into_iter()
+                .map(KnowledgeChunk::without_embedding)
+                .collect();
+
+            // Replace any prior chunks for this episode, then insert the batch.
+            if let Ok(mut ks) = index_c.lock() {
+                ks.delete_episode(ep_id);
+                for chunk in &kchunks {
+                    ks.upsert(chunk.clone());
+                }
+            }
+            // Write-through to SQLite (D6 — errors silently ignored).
+            if let Ok(guard) = sqlite_c.lock() {
+                if let Some(sq) = guard.as_ref() {
+                    let _ = sq.replace_episode_chunks(ep_id, &kchunks);
+                }
+            }
+        }
+
+        // DRAIN: mark the whole batch indexed. This removes them from
+        // `metadata_index_backfill_candidates` so the next scan advances, and
+        // bumps `Domain::Library` so the projection re-emits with the next
+        // batch (or an empty `pending_metadata_index_ids`).
+        if let Ok(mut s) = store_c.lock() {
+            s.mark_episodes_metadata_indexed(candidates.iter().cloned());
+        }
+        drained += candidates.len();
+        infra_c.bump();
+
+        // Pace between batches.
+        tokio::time::sleep(tokio::time::Duration::from_millis(
+            METADATA_BACKFILL_INTER_BATCH_DELAY_MS,
+        ))
+        .await;
+    }
+    drained
 }
 
 #[cfg(test)]

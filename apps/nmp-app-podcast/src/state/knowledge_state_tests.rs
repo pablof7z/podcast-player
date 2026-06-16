@@ -444,14 +444,17 @@ fn legacy_plain_text_transcript_produces_chunks_with_zero_start_secs() {
     );
 }
 
-/// `index_episode` returns `no_transcript` (not an error) when neither timed
-/// entries nor plain text are stored for the given episode.
+/// `index_episode` falls back to indexing the episode's **metadata**
+/// (title + description) when no transcript is stored — so no-transcript
+/// episodes still get semantic / lexical coverage (parity with the retired
+/// Swift `EpisodeMetadataIndexer`). The synthetic chunk carries the title and
+/// description text.
 #[test]
-fn index_episode_with_no_transcript_returns_no_transcript() {
+fn index_episode_with_no_transcript_indexes_metadata() {
     let mut store = PodcastStore::new();
     let podcast = Podcast::new("Empty Show");
     let pid = podcast.id;
-    let ep = make_episode(pid, "No transcript episode", "");
+    let ep = make_episode(pid, "Quantum computing primer", "A gentle intro to qubits.");
     store.subscribe(podcast, vec![ep.clone()]);
 
     let state = KnowledgeState::for_test(shared(store));
@@ -459,6 +462,27 @@ fn index_episode_with_no_transcript_returns_no_transcript() {
         episode_id: ep.id.0.to_string(),
     });
 
+    assert_eq!(out["ok"], true);
+    assert_eq!(out["status"], "indexed");
+    assert_eq!(out["chunk_count"].as_u64().unwrap(), 1);
+
+    // The synthetic metadata chunk carries title + description text.
+    let chunks = state.index.lock().unwrap().chunks_for_episode(&ep.id.0.to_string());
+    assert_eq!(chunks.len(), 1);
+    assert!(chunks[0].chunk.text.contains("Quantum computing primer"));
+    assert!(chunks[0].chunk.text.contains("qubits"));
+    // No real timestamps for metadata chunks.
+    assert_eq!(chunks[0].chunk.start_secs, 0.0);
+}
+
+/// `index_episode` still returns `no_transcript` (not an error) for an
+/// **unknown** episode — there is genuinely nothing to index.
+#[test]
+fn index_episode_unknown_episode_returns_no_transcript() {
+    let state = KnowledgeState::for_test(shared(PodcastStore::new()));
+    let out = state.handle(KnowledgeAction::IndexEpisode {
+        episode_id: Uuid::new_v4().to_string(),
+    });
     assert_eq!(out["ok"], true);
     assert_eq!(out["status"], "no_transcript");
 }

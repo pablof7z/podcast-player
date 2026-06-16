@@ -59,6 +59,71 @@ pub(crate) fn chunk_transcript_text(episode_id: &str, text: &str) -> Vec<Transcr
         .collect()
 }
 
+/// Build the index chunks for one episode, choosing the best available
+/// source. **Single canonical chunking path** shared by the live
+/// `IndexEpisode` action and the kernel metadata-index backfill so they can
+/// never diverge.
+///
+/// Resolution order (highest fidelity first):
+/// 1. **Timed transcript** — real `start_secs`/`end_secs` per chunk via the
+///    time-aware chunker (transcript-search hits can seek accurately).
+/// 2. **Plain-text transcript** — word-window chunks with `start_secs = 0.0`
+///    (legacy transcripts delivered without timing).
+/// 3. **Episode metadata** (title + stripped description) — a single
+///    synthetic chunk so **no-transcript episodes still get vector / lexical
+///    coverage** (parity with the retired Swift `EpisodeMetadataIndexer`).
+///
+/// Returns an empty `Vec` only when the episode is unknown or has neither a
+/// transcript nor any title/description text.
+///
+/// Takes a `&PodcastStore` (caller holds the lock) so the whole decision is
+/// one lock acquisition (lock-order rule §6.2).
+pub(crate) fn build_episode_index_chunks(
+    store: &PodcastStore,
+    episode_id: &str,
+) -> Vec<TranscriptChunk> {
+    use podcast_transcripts::{
+        chunk_transcript, ChunkPolicy, Transcript, TranscriptKind, TranscriptSource,
+        TranscriptState,
+    };
+
+    // 1. Timed transcript — time-aware chunking.
+    if let Some(entries) = store.timed_transcript_for(episode_id) {
+        let transcript = Transcript {
+            episode_id: episode_id.to_owned(),
+            entries: entries.to_vec(),
+            source_url: String::new(),
+            kind: TranscriptKind::Json,
+            status: TranscriptState::Ready {
+                source: TranscriptSource::Other,
+            },
+            language: "en-US".to_owned(),
+        };
+        let chunks = chunk_transcript(&transcript, ChunkPolicy::default());
+        if !chunks.is_empty() {
+            return chunks;
+        }
+        // Empty timed transcript → fall through to the lower-fidelity sources.
+    }
+
+    // 2. Plain-text transcript — word-window chunking (start_secs = 0.0).
+    if let Some(text) = store.transcript_for(episode_id) {
+        let chunks = chunk_transcript_text(episode_id, text);
+        if !chunks.is_empty() {
+            return chunks;
+        }
+        // Blank / whitespace-only transcript → fall through to metadata so the
+        // episode still gets coverage instead of indexing nothing.
+    }
+
+    // 3. Metadata fallback — title + description as one synthetic chunk.
+    if let Some(meta) = store.episode_metadata_index_text(episode_id) {
+        return chunk_transcript_text(episode_id, &meta);
+    }
+
+    Vec::new()
+}
+
 /// Maximum results returned per `podcast.knowledge.search` (stub).
 pub const KNOWLEDGE_SEARCH_TOP_K: usize = 10;
 /// Snippet character budget surfaced in the projection.
