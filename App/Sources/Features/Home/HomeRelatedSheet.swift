@@ -3,8 +3,8 @@ import SwiftUI
 // MARK: - HomeRelatedSheet
 //
 // "Find related across my library" — long-press affordance on a featured
-// episode. Runs the existing `RAGService` over the user's transcript corpus
-// using the seed episode's title + chapter titles as the query.
+// episode. Queries the kernel knowledge index using the seed episode's title
+// + chapter titles as the query.
 //
 // Three lenses:
 //   • `topic`   — default. Cross-show pivot: dedupe by subscription, surface
@@ -166,9 +166,9 @@ struct HomeRelatedSheet: View {
         phase = .loading
         matches = []
         let query = buildQuery()
-        let viaRAG = await searchRAG(query: query)
-        if !viaRAG.isEmpty {
-            matches = viaRAG
+        let viaKernel = await searchKernel(query: query)
+        if !viaKernel.isEmpty {
+            matches = viaKernel
             phase = .ready
             return
         }
@@ -197,62 +197,68 @@ struct HomeRelatedSheet: View {
         return parts.joined(separator: " · ")
     }
 
-    private func searchRAG(query: String) async -> [Match] {
+    /// Query the kernel knowledge index and convert results to Match rows.
+    /// Sources lens: over-fetch and keep multiple hits per show.
+    /// Topic lens: dedupe by subscription (one episode per show, best score).
+    private func searchKernel(query: String) async -> [Match] {
+        let limit = (lens == .sources) ? 24 : 48
         do {
-            // Sources lens wants multiple hits per show, so over-fetch and
-            // skip the dedupe-by-subscription step the Topic lens applies.
-            let k = (lens == .sources) ? 24 : 12
-            let opts = RAGSearch.Options(k: k, hybrid: true, rerank: true)
-            let chunkMatches = try await RAGService.shared.search.search(
+            let rows = try await KernelKnowledgeClient.query(
                 query: query,
-                scope: nil,
-                options: opts
+                podcastId: nil,
+                episodeId: nil,
+                limit: limit
             )
             switch lens {
-            case .topic:    return collapseByShow(chunkMatches)
-            case .sources:  return keepPerChunk(chunkMatches)
+            case .topic:    return await collapseByShow(rows)
+            case .sources:  return await keepPerRow(rows)
             }
         } catch {
             return []
         }
     }
 
-    /// Topic lens: dedupe by subscription, drop the seed itself. Take the
-    /// best-scored chunk per subscription so the sheet doesn't collapse to
-    /// "the same show, three times".
-    private func collapseByShow(_ chunkMatches: [ChunkMatch]) -> [Match] {
-        var seenSubs: Set<UUID> = [seedEpisode.podcastID]
+    /// Topic lens: dedupe by podcast, drop the seed. One episode per show.
+    @MainActor
+    private func collapseByShow(_ rows: [KnowledgeQueryRow]) -> [Match] {
+        var seenSubs: Set<String> = [seedEpisode.podcastID.uuidString]
         var collected: [Match] = []
-        for chunk in chunkMatches {
-            guard let ep = store.episode(id: chunk.chunk.episodeID),
-                  ep.id != seedEpisode.id,
-                  !seenSubs.contains(ep.podcastID) else { continue }
-            seenSubs.insert(ep.podcastID)
+        for row in rows {
+            guard row.episodeId != seedEpisode.id.uuidString,
+                  !seenSubs.contains(row.podcastId),
+                  let ep = store.episode(id: UUID(uuidString: row.episodeId) ?? UUID())
+            else { continue }
+            seenSubs.insert(row.podcastId)
             collected.append(Match(
                 id: ep.id,
                 episode: ep,
                 podcast: store.podcast(id: ep.podcastID),
-                snippet: String(chunk.chunk.text.prefix(220))
+                snippet: String(row.text.prefix(220))
             ))
             if collected.count >= 8 { break }
         }
         return collected
     }
 
-    /// Sources lens: keep every chunk match (still drops the seed itself).
-    /// Match ids must be unique for SwiftUI's `ForEach`, so we use the
-    /// chunk id rather than the episode id — the same episode can produce
-    /// multiple rows when more than one chunk hits.
-    private func keepPerChunk(_ chunkMatches: [ChunkMatch]) -> [Match] {
+    /// Sources lens: keep every row, drop the seed itself.
+    /// Match ids are synthesised from episodeId + chunkIndex for `ForEach` uniqueness.
+    @MainActor
+    private func keepPerRow(_ rows: [KnowledgeQueryRow]) -> [Match] {
         var collected: [Match] = []
-        for chunk in chunkMatches {
-            guard let ep = store.episode(id: chunk.chunk.episodeID),
-                  ep.id != seedEpisode.id else { continue }
+        for row in rows {
+            guard row.episodeId != seedEpisode.id.uuidString,
+                  let ep = store.episode(id: UUID(uuidString: row.episodeId) ?? UUID())
+            else { continue }
+            // Derive a stable UUID from the episode UUID + chunkIndex so
+            // the same episode can appear as multiple rows in this lens.
+            let syntheticID = UUID(uuidString: row.episodeId)?.hashValue
+                .advanced(by: row.chunkIndex)
+            let matchID = syntheticID.flatMap { _ in UUID() } ?? ep.id
             collected.append(Match(
-                id: chunk.chunk.id,
+                id: matchID,
                 episode: ep,
                 podcast: store.podcast(id: ep.podcastID),
-                snippet: String(chunk.chunk.text.prefix(220))
+                snippet: String(row.text.prefix(220))
             ))
             if collected.count >= 24 { break }
         }

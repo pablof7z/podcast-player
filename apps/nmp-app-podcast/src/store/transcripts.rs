@@ -63,6 +63,33 @@ impl PodcastStore {
         }
         None
     }
+
+    /// Build the synthetic "metadata" text for an episode — its `title`
+    /// followed by the HTML-stripped `description`.
+    ///
+    /// This is what the kernel knowledge metadata-index backfill embeds for
+    /// **no-transcript** episodes so they remain discoverable in semantic /
+    /// vector search (parity with the retired Swift `EpisodeMetadataIndexer`,
+    /// which indexed title + description). Returns `None` when the episode is
+    /// unknown, and an empty string is possible only when both fields are
+    /// blank (the caller treats an empty result as "nothing to index").
+    pub fn episode_metadata_index_text(&self, id_str: &str) -> Option<String> {
+        for episodes in self.episodes.values() {
+            if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {
+                let title = ep.title.trim();
+                let body = podcast_core::strip_html(&ep.description);
+                let body = body.trim();
+                let text = match (title.is_empty(), body.is_empty()) {
+                    (true, true) => String::new(),
+                    (false, true) => title.to_owned(),
+                    (true, false) => body.to_owned(),
+                    (false, false) => format!("{title}. {body}"),
+                };
+                return Some(text);
+            }
+        }
+        None
+    }
 }
 
 #[cfg(test)]

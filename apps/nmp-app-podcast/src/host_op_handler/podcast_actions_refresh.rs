@@ -47,6 +47,10 @@ impl PodcastHostOpHandler {
             // D8: proactive triage trigger fires from the feed-refresh path
             // (pure-projection doctrine — not from build_snapshot_payload).
             self.state.inbox.maybe_enqueue_triage();
+            // Drain newly-added episodes into the knowledge metadata index so
+            // no-transcript episodes become searchable without waiting for the
+            // next cold start (single-flight; cheap no-op if already running).
+            self.state.knowledge.trigger_metadata_index_backfill();
         }
         result
     }
@@ -86,6 +90,9 @@ impl PodcastHostOpHandler {
         // internally guarded (`episodes_needing_triage`/`in_progress`), so it is
         // a cheap no-op when nothing is due.
         self.state.inbox.maybe_enqueue_triage();
+        // Drain newly-added episodes into the knowledge metadata index (see
+        // `handle_refresh`). Single-flight; cheap no-op if already running.
+        self.state.knowledge.trigger_metadata_index_backfill();
         if errors.is_empty() {
             serde_json::json!({"ok": true})
         } else {

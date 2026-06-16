@@ -72,12 +72,11 @@ extension DownloadCapability {
         return localModelsDirectory().appendingPathComponent("\(safeID).litertlm")
     }
 
-    /// Canonical on-disk path of a downloaded Core ML embedding model:
+    /// Canonical on-disk path of a downloaded Core ML model:
     /// `<Application Support>/LocalModels/<id>.mlpackage`. Distinct from the
     /// `.litertlm` LLM helper above because Core ML compiles `.mlpackage`
     /// bundles (not single weight blobs); kept separate so each model kind has
-    /// one canonical destination. Read by `CoreMLEmbeddingProvider` to decide
-    /// readiness (issue #236).
+    /// one canonical destination.
     nonisolated static func embeddingModelFileURL(for modelID: String) -> URL {
         let safeID = modelID.replacingOccurrences(of: "/", with: "_")
         return localModelsDirectory().appendingPathComponent("\(safeID).mlpackage")

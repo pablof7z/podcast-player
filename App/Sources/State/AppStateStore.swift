@@ -182,12 +182,6 @@ final class AppStateStore {
     /// in-memory suite so fixtures never leak into the real app.
     let persistence: Persistence
 
-    /// Whether Swift-side episode inserts should fire the production metadata
-    /// indexer. Live stores keep this enabled so agent/search coverage stays
-    /// current; isolated unit-test stores turn it off and exercise the indexer
-    /// explicitly with fake vector stores.
-    let automaticEpisodeMetadataIndexingEnabled: Bool
-
     /// Weak handle to the Rust kernel. Set once by `attachKernel`; used by
     /// mutation methods to dispatch actions without requiring every call site
     /// to hold its own reference.
@@ -298,11 +292,9 @@ final class AppStateStore {
     var lastPositionFlush: Date?
 
     init(
-        persistence: Persistence = .shared,
-        automaticEpisodeMetadataIndexingEnabled: Bool = true
+        persistence: Persistence = .shared
     ) {
         self.persistence = persistence
-        self.automaticEpisodeMetadataIndexingEnabled = automaticEpisodeMetadataIndexingEnabled
         var loadedState: AppState
         do {
             loadedState = try persistence.load()
@@ -340,11 +332,6 @@ final class AppStateStore {
         // sees populated caches — otherwise the Library grid would briefly
         // read empty unplayed dots until the first mutation.
         recomputeEpisodeProjections()
-        // Bootstrap the live RAG stack so the SQLite vector store is opened
-        // (and its file path logged) before any view tries to query it.
-        // Hand `self` to the service so the retrieval adapters and transcript
-        // ingester can resolve episode/subscription metadata.
-        RAGService.shared.attach(appStore: self)
         // Prune agent-activity entries older than 30 days so the persisted log
         // doesn't grow unboundedly across many months of use. This fires one
         // Persistence.save only when stale entries are actually found.
@@ -363,6 +350,10 @@ final class AppStateStore {
         // retained on `self` so the observer outlives the init call but
         // dies with the store. See `AppStateStore+PositionDebounce.swift`.
         backgroundObserver = registerBackgroundFlushObserver()
+        // Wire the transcript ingest service so it can reach this store.
+        // RAGService.shared.attach was the previous host for this wiring;
+        // slice 5f retired RAGService, so TranscriptIngestService owns it now.
+        TranscriptIngestService.shared.attach(appStore: self)
     }
 
     /// Wipes all user data while preserving API credentials and Nostr identity.

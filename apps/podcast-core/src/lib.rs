@@ -5,9 +5,11 @@
 //! a kernel observer.
 
 pub mod projections;
+pub mod text;
 pub mod types;
 
 pub use projections::{EpisodeProjection, EpisodeSummary, LibraryProjection, PodcastSummary};
+pub use text::strip_html;
 pub use types::{
     AdKind, AdSegment, Anchor, AutoDownloadMode, AutoDownloadPolicy, CategorySettings, Chapter,
     ChapterSource, Clip, ClipBoundary, ClipSource, DownloadState, ElevenLabsCredentialSource,

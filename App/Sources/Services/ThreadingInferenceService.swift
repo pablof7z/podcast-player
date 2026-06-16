@@ -7,9 +7,9 @@ import Observation
 /// corpus into a set of `ThreadingTopic`s and a flat list of per-episode
 /// `ThreadingMention`s the timeline view renders.
 ///
-/// v1 is intentionally thin — the heavy lifting (semantic clustering over
-/// `RAGService`, contradiction detection) is stubbed out so the surfaces can
-/// be wired and reviewed end-to-end without blocking on the full pipeline.
+/// v1 is intentionally thin — the heavy lifting (semantic clustering,
+/// contradiction detection) is stubbed out so the surfaces can be wired and
+/// reviewed end-to-end without blocking on the full pipeline.
 /// The public API here matches what the views and the eventual real
 /// recompute will both call:
 ///
@@ -18,10 +18,9 @@ import Observation
 /// - `ensureTopic(slug:displayName:)` — idempotent get-or-create used by
 ///   deep-links from the wiki and from the in-episode agent.
 ///
-/// The store reference is wired through `attach(store:)` (mirroring the
-/// `RAGService.attach(appStore:)` pattern) so views and the eventual real
-/// recompute can call the read/write API without threading the store
-/// through every call site. The view layer also calls
+/// The store reference is wired through `attach(store:)` so views and the
+/// eventual real recompute can call the read/write API without threading
+/// the store through every call site. The view layer also calls
 /// `seedMockIfEmpty(store:)` on first appearance — a debug-only path that
 /// injects a small fixture so the UI is reviewable on a fresh install.
 /// Production state is never touched once topics exist.
@@ -31,8 +30,8 @@ final class ThreadingInferenceService {
 
     // MARK: Singleton
 
-    /// Process-wide handle. Mirrors `RAGService.shared`
-    /// so views can reach the service without dependency injection.
+    /// Process-wide handle. Provides access to the service without
+    /// dependency injection.
     static let shared = ThreadingInferenceService()
 
     // MARK: State
@@ -78,10 +77,10 @@ final class ThreadingInferenceService {
         isRecomputing = true
         defer { isRecomputing = false }
         attach(store: store)
-        // TODO: run noun-phrase extraction over the transcript corpus hosted
-        // by `RAGService.shared.search`, cluster mentions per canonical slug,
-        // score contradictions via prompt-driven verification, then
-        // bulk-replace `state.threadingTopics` and `state.threadingMentions`.
+        // TODO: run noun-phrase extraction over the kernel transcript corpus,
+        // cluster mentions per canonical slug, score contradictions via
+        // prompt-driven verification, then bulk-replace
+        // `state.threadingTopics` and `state.threadingMentions`.
         // Until that ships, `recompute` simply advances the timestamp so the
         // UI's "last refreshed" chrome is exercised — existing topics are
         // not disturbed so a mid-build seed keeps surfacing.

@@ -112,12 +112,6 @@ extension AppStateStore {
             self.episodes = updated
             invalidateEpisodeProjections()
         }
-        // Metadata-index backfill is now kernel-driven (D7). Newly-inserted
-        // episodes appear in `PodcastUpdate.pendingMetadataIndexIds` on the
-        // next projection frame; the projection observer (AppStateStore+
-        // KernelProjection) wires EpisodeMetadataIndexer.indexKernelBatch.
-        // The `automaticEpisodeMetadataIndexingEnabled` flag is retained on
-        // AppStateStore for test-isolation but no longer drives this path.
         return newlyInserted
     }
 
@@ -237,30 +231,6 @@ extension AppStateStore {
             // Cached `hasDownloadedByShow` set may now need to add or drop this subscription.
             invalidateEpisodeProjections()
         }
-    }
-
-    /// Marks every episode in `ids` as covered by the RAG metadata index.
-    /// Single batched mutation so a backfill pass over the whole library
-    /// only triggers one persisted save, regardless of episode count.
-    func setEpisodesMetadataIndexed(_ ids: [UUID]) {
-        guard !ids.isEmpty else { return }
-        let target = Set(ids)
-        var episodes = self.episodes
-        var changed = false
-        var newlyIndexed: [UUID] = []
-        for idx in episodes.indices where target.contains(episodes[idx].id) && !episodes[idx].metadataIndexed {
-            episodes[idx].metadataIndexed = true
-            newlyIndexed.append(episodes[idx].id)
-            changed = true
-        }
-        guard changed else { return }
-        performMutationBatch {
-            self.episodes = episodes
-        }
-        // M4 / D7: report coverage to Rust so the flag survives a feed refresh
-        // via the projection (replaces the deleted preserved-state merge).
-        // Batched: one dispatch for the whole pass.
-        kernelMarkEpisodesMetadataIndexed(newlyIndexed)
     }
 
     /// Updates the episode's transcript ingestion lifecycle.
