@@ -363,17 +363,20 @@ final class TranscriptIngestService {
             episode.id,
             state: .ready(source: source)
         )
-        // M5.2: report the plain-text transcript to the Rust kernel so AI
+        // M5.2 / slice 5a: report the transcript to the Rust kernel so AI
         // features (wiki, chapters, RAG context, agent chat) can access it
         // without going through Swift's TranscriptStore. D7: the iOS
         // capability performs the work and reports the result; Rust decides
         // what to do with it.
-        let plainText = transcript.segments.map(\.text).joined(separator: " ")
-        // Name the producing service so the kernel's `transcript.ready`
-        // Diagnostics event reads "Transcript ready · ElevenLabs Scribe".
+        //
+        // Slice 5a: pass the full Transcript (with timed segments) so the
+        // kernel can produce RAG chunks with real start_secs/end_secs. The
+        // kernel derives plain text from the entries itself.  Name the
+        // producing service so the `transcript.ready` Diagnostics event reads
+        // "Transcript ready · ElevenLabs Scribe".
         appStore.kernelTranscriptReport(
             episodeID: episode.id,
-            text: plainText,
+            transcript: transcript,
             source: Self.sourceDisplayName(source)
         )
 

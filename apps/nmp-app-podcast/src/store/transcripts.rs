@@ -32,6 +32,27 @@ impl PodcastStore {
         self.transcripts.insert(episode_id_str, text);
     }
 
+    /// Store time-stamped transcript entries for `episode_id_str` (slice 5a).
+    ///
+    /// Called when the iOS `transcript_report` payload carries the structured
+    /// `"entries"` form.  Enables `index_episode` to produce RAG chunks with
+    /// real `start_secs` / `end_secs` so transcript-search hits can seek to the
+    /// correct position instead of always seeking to 0.0.
+    pub fn set_timed_transcript(
+        &mut self,
+        episode_id_str: String,
+        entries: Vec<podcast_transcripts::TranscriptEntry>,
+    ) {
+        self.timed_transcripts.insert(episode_id_str, entries);
+    }
+
+    /// Return the timed entries for `id_str`, if stored via the structured
+    /// `transcript_report` form.  Returns `None` for episodes where only
+    /// the legacy plain-text form was delivered.
+    pub fn timed_transcript_for(&self, id_str: &str) -> Option<&[podcast_transcripts::TranscriptEntry]> {
+        self.timed_transcripts.get(id_str).map(Vec::as_slice)
+    }
+
     pub fn episode_publisher_transcript(&self, id_str: &str) -> Option<(String, TranscriptKind)> {
         for episodes in self.episodes.values() {
             if let Some(ep) = episodes.iter().find(|e| e.id.0.to_string() == id_str) {

@@ -335,3 +335,130 @@ fn search_returns_ok_synchronously() {
         "first (BM25) bump must complete before search returns"
     );
 }
+
+// ── Slice 5a: timed-chunking tests ───────────────────────────────────────────
+
+/// When `index_episode` is called and the store holds timed transcript entries,
+/// the resulting RAG chunks must carry the real `start_secs` / `end_secs`
+/// from those entries so transcript-search hits can seek to the right position.
+#[test]
+fn timed_transcript_produces_chunks_with_real_timestamps() {
+    use podcast_transcripts::TranscriptEntry;
+
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Timed Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Episode with timing", "An episode.");
+    store.subscribe(podcast, vec![ep.clone()]);
+
+    // Seed two timed entries spanning different time ranges.
+    let ep_id = ep.id.0.to_string();
+    store.set_timed_transcript(
+        ep_id.clone(),
+        vec![
+            TranscriptEntry {
+                start_secs: 10.0,
+                end_secs: 20.0,
+                text: "first entry text word1 word2 word3".to_owned(),
+                speaker: None,
+                words: None,
+            },
+            TranscriptEntry {
+                start_secs: 25.0,
+                end_secs: 40.0,
+                text: "second entry text word4 word5 word6".to_owned(),
+                speaker: None,
+                words: None,
+            },
+        ],
+    );
+
+    let state = KnowledgeState::for_test(shared(store));
+    let out = state.handle(KnowledgeAction::IndexEpisode {
+        episode_id: ep_id.clone(),
+    });
+
+    assert_eq!(out["ok"], true);
+    assert_eq!(out["status"], "indexed");
+    let chunk_count = out["chunk_count"].as_u64().unwrap_or(0);
+    assert!(chunk_count >= 1, "must produce at least one chunk");
+
+    // Verify chunks have real timestamps via search (the knowledge store is
+    // populated after IndexEpisode; searching surfaces the chunks via BM25).
+    let search_out = state.handle(KnowledgeAction::Search {
+        query: "first entry".to_owned(),
+    });
+    assert_eq!(search_out["ok"], true);
+
+    let results = state.results_snapshot();
+    let hit = results.iter().find(|r| r.episode_id == ep_id);
+    assert!(hit.is_some(), "indexed episode must appear in search results");
+    // The chunk hit must carry a non-None, non-zero start_secs — proof that
+    // the timed chunker was used (legacy plain-text path always produces 0.0).
+    let start = hit.unwrap().start_secs;
+    assert!(
+        start.is_some() && start.unwrap() >= 10.0,
+        "chunk start_secs must reflect timed entry (>= 10.0), got {:?}",
+        start
+    );
+}
+
+/// When `index_episode` is called and only plain text was stored (legacy path),
+/// the resulting chunks must have start_secs = 0.0 and the call must not panic.
+#[test]
+fn legacy_plain_text_transcript_produces_chunks_with_zero_start_secs() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Legacy Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "Untimed Episode", "No timing info.");
+    store.subscribe(podcast, vec![ep.clone()]);
+
+    let ep_id = ep.id.0.to_string();
+    // Store only plain text — no timed entries.
+    store.set_transcript(ep_id.clone(), "hello world from the legacy path".to_owned());
+
+    let state = KnowledgeState::for_test(shared(store));
+    let out = state.handle(KnowledgeAction::IndexEpisode {
+        episode_id: ep_id.clone(),
+    });
+
+    assert_eq!(out["ok"], true);
+    assert_eq!(out["status"], "indexed");
+    let chunk_count = out["chunk_count"].as_u64().unwrap_or(0);
+    assert!(chunk_count >= 1, "must produce at least one chunk");
+
+    // Search to verify the chunk was indexed with start_secs = Some(0.0).
+    let search_out = state.handle(KnowledgeAction::Search {
+        query: "hello".to_owned(),
+    });
+    assert_eq!(search_out["ok"], true);
+
+    let results = state.results_snapshot();
+    let hit = results.iter().find(|r| r.episode_id == ep_id);
+    assert!(hit.is_some(), "legacy episode must appear in search results");
+    // Plain-text chunker sets start_secs=0.0, projected as Some(0.0).
+    assert_eq!(
+        hit.unwrap().start_secs,
+        Some(0.0),
+        "legacy path must produce start_secs = 0.0"
+    );
+}
+
+/// `index_episode` returns `no_transcript` (not an error) when neither timed
+/// entries nor plain text are stored for the given episode.
+#[test]
+fn index_episode_with_no_transcript_returns_no_transcript() {
+    let mut store = PodcastStore::new();
+    let podcast = Podcast::new("Empty Show");
+    let pid = podcast.id;
+    let ep = make_episode(pid, "No transcript episode", "");
+    store.subscribe(podcast, vec![ep.clone()]);
+
+    let state = KnowledgeState::for_test(shared(store));
+    let out = state.handle(KnowledgeAction::IndexEpisode {
+        episode_id: ep.id.0.to_string(),
+    });
+
+    assert_eq!(out["ok"], true);
+    assert_eq!(out["status"], "no_transcript");
+}

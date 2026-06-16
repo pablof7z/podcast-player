@@ -548,15 +548,36 @@ final class KernelModel {
     // ── Transcript report ───────────────────────────────────────────────
 
     /// Report a completed transcript to the Rust kernel so AI features
-    /// can access the plain text without going through Swift's TranscriptStore.
-    /// `source` names the service that produced it (e.g. "ElevenLabs Scribe");
-    /// the kernel surfaces it on the `transcript.ready` Diagnostics event so
-    /// the log says *which* service finished, not just that one did.
-    func sendTranscriptReport(episodeID: UUID, text: String, source: String? = nil) {
+    /// can access it without going through Swift's TranscriptStore.
+    ///
+    /// Slice 5a: sends the full timed segment list as `"entries"` so the
+    /// kernel's `index_episode` can produce RAG chunks with real
+    /// `start_secs` / `end_secs` (enables seek-to-timestamp in search).
+    /// `source` names the service (e.g. "ElevenLabs Scribe"); the kernel
+    /// surfaces it on the `transcript.ready` Diagnostics event.
+    func sendTranscriptReport(episodeID: UUID, transcript: Transcript, source: String? = nil) {
         guard let handle = kernel.podcastHandle else { return }
+
+        // Build the timed-entries payload (slice 5a).  Each segment maps to a
+        // Rust `TimedEntryPayload` { start_secs, end_secs, text, speaker? }.
+        // Speaker labels are resolved via the Transcript's speaker lookup so
+        // the kernel can surface them in future transcript-search UI.
+        let entries: [[String: Any]] = transcript.segments.map { seg in
+            var entry: [String: Any] = [
+                "start_secs": seg.start,
+                "end_secs": seg.end,
+                "text": seg.text
+            ]
+            if let speakerID = seg.speakerID,
+               let speaker = transcript.speaker(for: speakerID) {
+                entry["speaker"] = speaker.label
+            }
+            return entry
+        }
+
         var payload: [String: Any] = [
             "episode_id": episodeID.uuidString,
-            "text": text
+            "entries": entries
         ]
         if let source { payload["source"] = source }
         guard let json = try? JSONSerialization.data(withJSONObject: payload),

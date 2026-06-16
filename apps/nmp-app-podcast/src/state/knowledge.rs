@@ -181,16 +181,49 @@ impl KnowledgeState {
 
     fn index_episode(&self, episode_id: String) -> serde_json::Value {
         use podcast_knowledge::KnowledgeChunk;
+        use podcast_transcripts::{chunk_transcript, ChunkPolicy, Transcript, TranscriptKind,
+                                   TranscriptSource, TranscriptState};
 
-        let text = match self.store.lock() {
-            Ok(s) => match s.transcript_for(&episode_id) {
-                Some(t) => t.to_owned(),
-                None => return serde_json::json!({"ok": true, "status": "no_transcript"}),
-            },
+        // Prefer timed entries (real seek timestamps) over plain text (start_secs=0.0).
+        // Acquiring the store lock once covers both checks so we release it before
+        // any expensive work (lock-order rule §6.2).
+        let (maybe_timed, maybe_text) = match self.store.lock() {
+            Ok(s) => {
+                let timed = s.timed_transcript_for(&episode_id).map(|e| e.to_vec());
+                // Only fall through to plain text when no timed entries are stored;
+                // when entries are present we derive text from them in the timed path.
+                let text = if timed.is_some() {
+                    None
+                } else {
+                    s.transcript_for(&episode_id).map(str::to_owned)
+                };
+                (timed, text)
+            }
             Err(_) => return serde_json::json!({"ok": false, "error": "store poisoned"}),
         };
 
-        let chunks = crate::knowledge::chunk_transcript_text(&episode_id, &text);
+        // Build transcript chunks using the time-aware chunker when entries exist,
+        // or fall back to the word-window plain-text chunker (start_secs=0.0) for
+        // legacy transcripts that arrived without timing.
+        let chunks = if let Some(entries) = maybe_timed {
+            // Slice 5a: time-aware chunking — real start_secs/end_secs per chunk.
+            let transcript = Transcript {
+                episode_id: episode_id.clone(),
+                entries,
+                source_url: String::new(),
+                kind: TranscriptKind::Json,
+                status: TranscriptState::Ready {
+                    source: TranscriptSource::Other,
+                },
+                language: "en-US".to_owned(),
+            };
+            chunk_transcript(&transcript, ChunkPolicy::default())
+        } else if let Some(text) = maybe_text {
+            // Legacy plain-text fallback — start_secs=0.0 as before.
+            crate::knowledge::chunk_transcript_text(&episode_id, &text)
+        } else {
+            return serde_json::json!({"ok": true, "status": "no_transcript"});
+        };
         let chunk_count = chunks.len();
 
         // Build KnowledgeChunk wrappers once (always NULL embedding on the sync path;
