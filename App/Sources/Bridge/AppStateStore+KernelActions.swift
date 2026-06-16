@@ -485,11 +485,14 @@ extension AppStateStore {
 
     // MARK: - Transcripts
 
-    /// Report a completed transcript to the Rust kernel (M5.2).
-    /// Delegates to `KernelModel.sendTranscriptReport` which has access to
-    /// the raw `podcastHandle` pointer.
-    func kernelTranscriptReport(episodeID: UUID, text: String, source: String? = nil) {
-        kernel?.sendTranscriptReport(episodeID: episodeID, text: text, source: source)
+    /// Report a completed transcript to the Rust kernel (M5.2 / slice 5a).
+    ///
+    /// Sends the full timed segment list so the kernel can produce RAG chunks
+    /// with real `start_secs` / `end_secs` for seek-to-timestamp in search
+    /// (slice 5a). Delegates to `KernelModel.sendTranscriptReport` which has
+    /// access to the raw `podcastHandle` pointer.
+    func kernelTranscriptReport(episodeID: UUID, transcript: Transcript, source: String? = nil) {
+        kernel?.sendTranscriptReport(episodeID: episodeID, transcript: transcript, source: source)
     }
 
     /// Record one host-authored pipeline event onto an episode's Diagnostics

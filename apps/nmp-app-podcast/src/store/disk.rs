@@ -48,6 +48,7 @@ impl PodcastStore {
         self.local_paths.clear();
         self.file_sizes.clear();
         self.transcripts.clear();
+        self.timed_transcripts.clear();
         // Hydrated episode positions are themselves the most-recent flushed
         // checkpoint: seed the throttling marker so the writeback layer
         // doesn't immediately re-flush on the next `Playing` tick.

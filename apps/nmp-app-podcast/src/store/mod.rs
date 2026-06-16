@@ -90,6 +90,14 @@ pub struct PodcastStore {
     file_sizes: HashMap<EpisodeId, i64>,
     /// Plain-text transcripts keyed by the string form of `EpisodeId`.
     transcripts: HashMap<String, String>,
+    /// Timed transcript entries keyed by the string form of `EpisodeId`.
+    /// Populated when iOS sends the structured `transcript_report` payload
+    /// with `"entries"` (slice 5a). Absent for legacy plain-text callers.
+    /// Used by `index_episode` to produce RAG chunks with real
+    /// `start_secs` / `end_secs` so transcript-search hits can seek to the
+    /// right position. Session durability (not persisted; re-populated on
+    /// each STT run).
+    timed_transcripts: HashMap<String, Vec<podcast_transcripts::TranscriptEntry>>,
     /// Last position (seconds) committed to disk for each episode, keyed by
     /// the string form of `EpisodeId`. Used by the writeback layer to decide
     /// whether the live playhead has drifted enough from the on-disk
@@ -338,6 +346,7 @@ impl PodcastStore {
             local_paths: HashMap::new(),
             file_sizes: HashMap::new(),
             transcripts: HashMap::new(),
+            timed_transcripts: HashMap::new(),
             last_flushed_positions: HashMap::new(),
             has_completed_onboarding: false,
             auto_download_enabled: HashSet::new(),
