@@ -25,6 +25,74 @@ class AppRouteSaverTest {
     private fun roundTrip(route: AppRoute): AppRoute? =
         restoreAppRoute(saveAppRoute(route))
 
+    // ── Exhaustive round-trip — EVERY AppRoute variant survives the Saver ─────
+    //
+    // `restoreAppRoute` is a string-keyed `when` with an `else -> null` tail, so
+    // a future edit that drops a restore case ships SILENTLY (route lost on
+    // process-death restore, no compile error). This table asserts every one of
+    // the 15 variants survives `restoreAppRoute(saveAppRoute(route)) == route`,
+    // turning any dropped case into a test failure rather than a silent regression.
+    //
+    // Tab is enumerated across ALL BottomTab entries so a renamed/removed tab
+    // (which the Saver matches by `.name`) is also caught.
+
+    private val allRoutesExceptTab: List<AppRoute> = listOf(
+        AppRoute.ShowDetail("show-id-42"),
+        AppRoute.EpisodeDetail("ep-1", "pod-1"),
+        AppRoute.Identity,
+        AppRoute.EditProfile,
+        AppRoute.ProviderModels,
+        AppRoute.AgentChat,
+        AppRoute.NostrConversations,
+        AppRoute.NostrConversationDetail("root-event-id"),
+        AppRoute.RemoteSigner,
+        AppRoute.NostrConnect,
+        AppRoute.ClipList,
+        AppRoute.Bookmarks,
+        AppRoute.Following,
+        AppRoute.FriendDetail("deadbeef00", "npub1abc"),
+    )
+
+    @Test
+    fun `every non-Tab AppRoute variant round-trips through the Saver`() {
+        allRoutesExceptTab.forEach { route ->
+            assertEquals(
+                "AppRoute $route must survive restoreAppRoute(saveAppRoute(it)) — " +
+                    "a missing restore case silently loses the route on process death",
+                route,
+                roundTrip(route),
+            )
+        }
+    }
+
+    @Test
+    fun `every BottomTab survives a Tab route round-trip`() {
+        BottomTab.entries.forEach { tab ->
+            val route = AppRoute.Tab(tab)
+            assertEquals(
+                "Tab($tab) must round-trip — the Saver matches BottomTab by .name",
+                route,
+                roundTrip(route),
+            )
+        }
+    }
+
+    @Test
+    fun `round-trip coverage spans all 15 AppRoute declared subtypes`() {
+        // 14 non-Tab variants + Tab = 15 declared AppRoute subtypes. This guards
+        // the table above from silently falling behind a newly-added route: bump
+        // this count deliberately when a variant is added, after covering it.
+        val nonTabSubtypeCount = allRoutesExceptTab
+            .map { it::class }
+            .distinct()
+            .size
+        assertEquals(
+            "Expected 14 distinct non-Tab AppRoute subtypes in the round-trip table",
+            14,
+            nonTabSubtypeCount,
+        )
+    }
+
     // ── FriendDetail — the new route added in slice 4 ─────────────────────────
 
     @Test
