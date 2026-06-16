@@ -7,8 +7,8 @@
 use nmp_core::substrate::ActionModule;
 
 use crate::ffi::actions::{
-    AgentChatAction, AgentTaskIntent, InboxAction, InboxActionModule, MemoryAction,
-    MemoryActionModule, AgentActionModule,
+    AgentActionModule, AgentChatAction, AgentTaskIntent, InboxAction, InboxActionModule,
+    MemoryAction, MemoryActionModule,
 };
 
 pub(super) struct TaskPayload {
@@ -59,11 +59,11 @@ pub(super) fn task_payload_from_intent(intent: &AgentTaskIntent) -> Result<TaskP
             &InboxAction::Triage,
         ),
         AgentTaskIntent::ClearAgent => task_payload(
-            <crate::ffi::actions::AgentActionModule as ActionModule>::NAMESPACE,
+            <AgentActionModule as ActionModule>::NAMESPACE,
             &AgentChatAction::Clear,
         ),
         AgentTaskIntent::RememberMemory { key, value } => task_payload(
-            <crate::ffi::actions::MemoryActionModule as ActionModule>::NAMESPACE,
+            <MemoryActionModule as ActionModule>::NAMESPACE,
             &MemoryAction::Remember {
                 key: key.clone(),
                 value: value.clone(),

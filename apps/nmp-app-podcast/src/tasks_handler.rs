@@ -60,7 +60,7 @@ use crate::tasks_schedule::{next_run_after, next_run_after_attempt};
 // the 500-line hard limit (AGENTS.md).
 #[path = "tasks_intent.rs"]
 mod intent;
-use intent::{task_intent_metadata, task_payload_from_intent, TaskIntentMetadata, TaskPayload};
+use intent::{task_intent_metadata, task_payload_from_intent, TaskPayload};
 
 /// Seed value installed on first kernel boot — gives the iOS UI rows to
 /// render before the user has scheduled anything. Returned by value so
@@ -224,9 +224,18 @@ pub fn handle_tasks_action(
         }
         AgentTasksAction::RunDue => {
             let now = Utc::now().timestamp();
+            // Skip already-in-flight tasks (`status == "running"`) — symmetric
+            // with `maybe_run_due_tasks` (the kernel tick).  Combined with
+            // `run_task_by_id` advancing `next_run_at` under the same lock that
+            // sets `status = "running"`, this closes the double-fire window
+            // between the host `RunDue` poll and the kernel tick.
             let task_ids = guard
                 .iter()
-                .filter(|task| task.is_enabled && task.next_run_at.is_some_and(|due| due <= now))
+                .filter(|task| {
+                    task.is_enabled
+                        && task.status != "running"
+                        && task.next_run_at.is_some_and(|due| due <= now)
+                })
                 .map(|task| task.id.clone())
                 .collect::<Vec<_>>();
             drop(guard);
@@ -342,8 +351,17 @@ fn run_task_by_id(
     let action_namespace = task.action_namespace.clone();
     let action_body = task.action_body.clone();
     let schedule = task.schedule.clone();
+    // Advance `next_run_at` NOW — under the SAME lock that marks the task
+    // `"running"` — BEFORE releasing the guard to dispatch.  This closes the
+    // double-fire window: a concurrent `RunDue` (host poll) or kernel tick that
+    // re-collects after this point sees both `status == "running"` AND an
+    // already-advanced `next_run_at`, so it cannot re-dispatch the same task.
+    // `now` is fixed for this call, so recomputing the re-arm later would be
+    // identical anyway — we just commit it eagerly under the lock.
+    let next_run_at = next_run_after_attempt(&schedule, now).ok().flatten();
     task.last_run_at = Some(now);
     task.status = "running".into();
+    task.next_run_at = next_run_at;
     rev.fetch_add(1, Ordering::Relaxed);
     drop(guard);
 
@@ -355,9 +373,10 @@ fn run_task_by_id(
     let status = if accepted { "completed" } else { "failed" };
     if let Ok(mut g) = tasks.lock() {
         if let Some(t) = g.iter_mut().find(|t| t.id == task_id) {
+            // `next_run_at` was already advanced under the first lock — do NOT
+            // recompute it here (it is unchanged for the same `now`).
             t.status = status.into();
             t.last_run_at = Some(now);
-            t.next_run_at = next_run_after_attempt(&schedule, now).ok().flatten();
         }
     }
     rev.fetch_add(1, Ordering::Relaxed);

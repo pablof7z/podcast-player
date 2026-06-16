@@ -319,6 +319,12 @@ pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
         // Teardown ordering: shutdown BEFORE drop (i.e. before the `reclaimed`
         // Arc falls out of scope) — unchanged from the pre-migration fence.
         reclaimed.state.voice.shutdown();
+        // Same fence for the kernel-owned task scheduler tick: abort + join the
+        // periodic ticker so no spawned Tokio task can dereference `app`
+        // (`nmp_app_dispatch_action`) after `nmp_app_free`.  MUST run before the
+        // `reclaimed` Arc drops (i.e. before `nmp_app_free`), beside the voice
+        // fence above.
+        reclaimed.state.tasks.shutdown();
         let _ = reclaimed.app;
     });
 }
