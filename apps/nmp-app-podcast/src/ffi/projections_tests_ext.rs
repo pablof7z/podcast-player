@@ -273,27 +273,47 @@ fn contact_summary_round_trips_with_metadata() {
 #[test]
 fn contact_summary_pubkey_hex_matches_npub() {
     use super::projections::ContactSummary;
-    // Verify that pubkey_hex round-trips correctly and is always present in JSON.
+    use nostr::nips::nip19::ToBech32;
+
+    // Start from a known raw hex pubkey — the same shape `FollowListObserver`
+    // reads from `entry.pubkey` (the inner FollowListProjection stores raw hex).
     let hex = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+
+    // Replicate EXACTLY the observer's npub-encode path (social_handler.rs:177):
+    //   nostr::PublicKey::parse(hex) -> to_bech32()
+    let pk = nostr::PublicKey::parse(hex).expect("hex parses to a valid pubkey");
+    let npub = pk.to_bech32().expect("pubkey encodes to bech32 npub");
+
+    // This is what the observer would emit for this entry.
     let c = ContactSummary {
-        npub: "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6".into(),
-        pubkey_hex: hex.into(),
+        npub: npub.clone(),
+        pubkey_hex: hex.to_string(),
         display_name: None,
         picture_url: None,
     };
+
+    // ── Key-equivalence assertion (the real guarantee) ───────────────────────
+    // Decode the emitted npub back to its 32-byte pubkey, hex-encode it, and
+    // assert it equals `pubkey_hex`. This FAILS if pubkey_hex and npub ever
+    // describe DIFFERENT keys — not merely a JSON round-trip.
+    let decoded_pk = nostr::PublicKey::parse(&c.npub).expect("npub decodes back to a pubkey");
+    assert_eq!(
+        decoded_pk.to_hex(),
+        c.pubkey_hex,
+        "npub decoded back to hex must equal pubkey_hex (same key)"
+    );
+    // And the input hex is exactly what we put in pubkey_hex.
+    assert_eq!(c.pubkey_hex, hex, "pubkey_hex must carry the raw entry hex");
+
+    // ── Wire presence assertion (Android claimProfile needs the hex) ─────────
     let json = serde_json::to_string(&c).expect("encode");
-    // pubkey_hex must be present in the wire payload — Android claimProfile needs it.
     assert!(
         json.contains("\"pubkey_hex\""),
         "pubkey_hex must be serialized (not skipped)"
     );
-    assert!(
-        json.contains(hex),
-        "raw hex must appear in the serialized JSON"
-    );
-    let decoded: ContactSummary = serde_json::from_str(&json).expect("decode");
-    assert_eq!(decoded.pubkey_hex, hex);
-    assert_eq!(decoded.npub, c.npub);
+    assert!(json.contains(hex), "raw hex must appear in the serialized JSON");
+    let roundtrip: ContactSummary = serde_json::from_str(&json).expect("decode");
+    assert_eq!(roundtrip, c);
 }
 
 #[test]
