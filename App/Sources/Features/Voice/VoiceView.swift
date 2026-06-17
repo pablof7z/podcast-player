@@ -33,6 +33,17 @@ struct VoiceView: View {
     /// transition does not re-arm listening for another turn.
     @State private var isClosing = false
 
+    /// True once a non-empty partial transcript has been seen during the
+    /// current listening turn. Gates the inferred "thinking" state so a
+    /// no-speech stop (or a permission/activation failure) does not show
+    /// "Thinking…" with nothing coming.
+    @State private var heardSpeech = false
+
+    /// Set right before a user-initiated `stop` so the resulting
+    /// speaking→idle transition does NOT auto-re-arm the mic — tapping stop
+    /// should end the assistant's turn, not silently reopen listening.
+    @State private var suppressRearm = false
+
     // MARK: - Kernel state accessors
 
     private var voice: VoiceSnapshot? { store.kernel?.podcastSnapshot?.voice }
@@ -61,23 +72,34 @@ struct VoiceView: View {
         .preferredColorScheme(.dark)
         .onAppear { activate() }
         .onDisappear {
-            // Belt-and-braces: the close path already deactivates, but a
-            // system dismissal (call, swipe) must also release the mic.
-            if !isClosing { dispatchVoice("deactivate") }
+            // Always release the mic on teardown. `deactivate` (StopListening)
+            // is idempotent kernel-side, so dispatching it unconditionally is
+            // safe and closes the window where an external dismissal would
+            // otherwise leave recognition running.
+            dispatchVoice("deactivate")
+        }
+        .onChange(of: partialTranscript) { _, partial in
+            if let partial, !partial.isEmpty { heardSpeech = true }
         }
         .onChange(of: isListening) { _, listening in
-            // Listening stopped without the user closing → a turn was
-            // submitted; show the thinking orb until speech begins.
-            if !listening && !isSpeaking && !isClosing {
+            if listening {
+                heardSpeech = false
+            } else if heardSpeech && !isSpeaking && !isClosing {
+                // Listening stopped after the user actually spoke → a turn
+                // was submitted; show the thinking orb until speech begins.
                 awaitingResponse = true
             }
         }
         .onChange(of: isSpeaking) { _, speaking in
             if speaking {
                 awaitingResponse = false
-            } else if !isClosing {
-                // Assistant finished — re-arm listening so the conversation
-                // continues hands-free (the kernel STT is single-utterance).
+            } else if isClosing || suppressRearm {
+                // User-initiated stop or dismissal — do not reopen the mic.
+                suppressRearm = false
+            } else {
+                // Assistant finished naturally — re-arm listening so the
+                // conversation continues hands-free (kernel STT is
+                // single-utterance).
                 activate()
             }
         }
@@ -198,6 +220,8 @@ struct VoiceView: View {
     private var talkButton: some View {
         Button {
             if isSpeaking {
+                // Interrupt the assistant without reopening the mic.
+                suppressRearm = true
                 dispatchVoice("stop")
             } else if isListening {
                 dispatchVoice("deactivate")
@@ -248,13 +272,12 @@ struct VoiceView: View {
 
     private var switchToTextButton: some View {
         Button {
+            // `onDisappear` releases the mic; flag close so we don't re-arm
+            // during the transition, and always dismiss so the cover never
+            // lingers if the caller's handler doesn't dismiss synchronously.
             isClosing = true
-            dispatchVoice("deactivate")
-            if let onSwitchToText {
-                onSwitchToText()
-            } else {
-                dismiss()
-            }
+            onSwitchToText?()
+            dismiss()
         } label: {
             actionLabel(icon: "keyboard", title: "Text")
         }
