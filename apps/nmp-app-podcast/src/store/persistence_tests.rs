@@ -3,6 +3,7 @@
 //! Extracted from `persistence.rs` to keep that file under the 500-line hard limit.
 
 use super::*;
+use crate::clip_handler::ClipRecord;
 use podcast_core::{Episode, Podcast, PodcastId};
 use std::sync::atomic::{AtomicU64, Ordering};
 use uuid::Uuid;
@@ -323,4 +324,150 @@ fn skip_intervals_persist_and_reload() {
     let loaded = load(&dir.path).unwrap().expect("file present");
     assert!((loaded.settings.skip_forward_secs - 45.0).abs() < f64::EPSILON);
     assert!((loaded.settings.skip_backward_secs - 10.0).abs() < f64::EPSILON);
+}
+
+// ── Clip persistence tests ────────────────────────────────────────────────────
+
+fn make_clip(id: &str, episode_id: &str, created_at: i64) -> PersistedClip {
+    PersistedClip {
+        id: id.to_owned(),
+        episode_id: episode_id.to_owned(),
+        episode_title: "Test Episode".to_owned(),
+        podcast_title: "Test Show".to_owned(),
+        start_secs: 10.0,
+        end_secs: 40.0,
+        title: Some("My Clip".to_owned()),
+        created_at,
+    }
+}
+
+#[test]
+fn clips_round_trip_all_fields() {
+    // Round-trip: save N clips → load → assert all fields preserved.
+    let dir = TempDir::new();
+    let clips = vec![
+        make_clip("clip-1", "ep-abc", 1_700_000_001),
+        make_clip("clip-2", "ep-def", 1_700_000_002),
+    ];
+    let payload = PersistedStore {
+        schema_version: PERSIST_SCHEMA_VERSION,
+        podcasts: vec![],
+        clips: clips.clone(),
+        ..PersistedStore::default()
+    };
+    save(&dir.path, &payload).unwrap();
+    let loaded = load(&dir.path).unwrap().expect("file present");
+    assert_eq!(loaded.clips.len(), 2);
+    // Save sorts by (created_at, id), so order is deterministic.
+    assert_eq!(loaded.clips[0].id, "clip-1");
+    assert_eq!(loaded.clips[0].episode_id, "ep-abc");
+    assert_eq!(loaded.clips[0].start_secs, 10.0);
+    assert_eq!(loaded.clips[0].end_secs, 40.0);
+    assert_eq!(loaded.clips[0].title, Some("My Clip".to_owned()));
+    assert_eq!(loaded.clips[0].created_at, 1_700_000_001);
+    assert_eq!(loaded.clips[1].id, "clip-2");
+}
+
+#[test]
+fn legacy_file_without_clips_field_loads_with_empty_clips() {
+    // Backward-compat: a `podcasts.json` written before clips persistence
+    // shipped has no `clips` key.  Must load with empty clips, no error.
+    let dir = TempDir::new();
+    let raw = serde_json::json!({
+        "schema_version": PERSIST_SCHEMA_VERSION,
+        "podcasts": []
+    });
+    std::fs::write(podcasts_path(&dir.path), serde_json::to_vec(&raw).unwrap()).unwrap();
+    let loaded = load(&dir.path).unwrap().expect("file present");
+    assert!(
+        loaded.clips.is_empty(),
+        "pre-clips file must load with empty clips"
+    );
+}
+
+#[test]
+fn clips_persisted_clip_converts_losslessly_from_clip_record() {
+    // Verify the ClipRecord ↔ PersistedClip mapping is lossless in both
+    // directions (all fields round-trip through the From impls).
+    let record = ClipRecord {
+        id: "round-trip-id".to_owned(),
+        episode_id: "ep-xyz".to_owned(),
+        episode_title: "Episode Title".to_owned(),
+        podcast_title: "Podcast Title".to_owned(),
+        start_secs: 12.5,
+        end_secs: 87.3,
+        title: Some("My Clip Label".to_owned()),
+        created_at: 1_750_000_000,
+    };
+    let persisted = PersistedClip::from(&record);
+    let back: ClipRecord = persisted.into();
+    assert_eq!(back.id, record.id);
+    assert_eq!(back.episode_id, record.episode_id);
+    assert_eq!(back.episode_title, record.episode_title);
+    assert_eq!(back.podcast_title, record.podcast_title);
+    assert_eq!(back.start_secs, record.start_secs);
+    assert_eq!(back.end_secs, record.end_secs);
+    assert_eq!(back.title, record.title);
+    assert_eq!(back.created_at, record.created_at);
+}
+
+#[test]
+fn clips_sort_is_deterministic() {
+    // Serialize the same clip set twice; the bytes must be identical.
+    let dir1 = TempDir::new();
+    let dir2 = TempDir::new();
+    let clips = vec![
+        make_clip("b-later", "ep-1", 1_700_000_002),
+        make_clip("a-earlier", "ep-2", 1_700_000_001),
+        make_clip("c-same-ts", "ep-3", 1_700_000_002),
+    ];
+    let payload = PersistedStore {
+        schema_version: PERSIST_SCHEMA_VERSION,
+        podcasts: vec![],
+        clips: clips.clone(),
+        ..PersistedStore::default()
+    };
+    save(&dir1.path, &payload).unwrap();
+    // Reverse order before second save to verify sort is applied.
+    let payload2 = PersistedStore {
+        schema_version: PERSIST_SCHEMA_VERSION,
+        podcasts: vec![],
+        clips: clips.into_iter().rev().collect(),
+        ..PersistedStore::default()
+    };
+    save(&dir2.path, &payload2).unwrap();
+    let bytes1 = std::fs::read(podcasts_path(&dir1.path)).unwrap();
+    let bytes2 = std::fs::read(podcasts_path(&dir2.path)).unwrap();
+    assert_eq!(bytes1, bytes2, "two saves of same clip set must produce identical bytes");
+}
+
+#[test]
+fn clip_without_title_omits_title_in_json() {
+    // title: None must not appear in the JSON at all (skip_serializing_if).
+    let dir = TempDir::new();
+    let clip = PersistedClip {
+        id: "no-title".to_owned(),
+        episode_id: "ep-1".to_owned(),
+        episode_title: "E".to_owned(),
+        podcast_title: "P".to_owned(),
+        start_secs: 0.0,
+        end_secs: 30.0,
+        title: None,
+        created_at: 1,
+    };
+    let payload = PersistedStore {
+        schema_version: PERSIST_SCHEMA_VERSION,
+        podcasts: vec![],
+        clips: vec![clip],
+        ..PersistedStore::default()
+    };
+    save(&dir.path, &payload).unwrap();
+    let raw = std::fs::read_to_string(podcasts_path(&dir.path)).unwrap();
+    assert!(
+        !raw.contains("\"title\""),
+        "None title must be omitted from JSON: {raw}"
+    );
+    // And reload must produce None (not Some("")).
+    let loaded = load(&dir.path).unwrap().expect("file present");
+    assert_eq!(loaded.clips[0].title, None);
 }

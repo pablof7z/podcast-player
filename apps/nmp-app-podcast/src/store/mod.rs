@@ -24,6 +24,7 @@ use crate::llm::provider_config::DEFAULT_OLLAMA_CHAT_URL;
 
 mod ad_segments;
 pub mod agent_tasks;
+mod clips;
 pub mod auto_download;
 mod chapters;
 mod credential_metadata;
@@ -55,6 +56,7 @@ mod podcast_user_categories;
 mod transcripts;
 mod triage_state;
 
+use crate::clip_handler::ClipRecord;
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
 pub use auto_download::{episodes_to_auto_download, AutoDownloadMode};
@@ -155,6 +157,10 @@ pub struct PodcastStore {
     /// Per-episode ad-break intervals keyed by the string form of
     /// `EpisodeId`. See [`mod@ad_segments`] for the accessor surface.
     pub(super) ad_segments: HashMap<String, Vec<AdSegment>>,
+    /// User-saved audio clips. Persisted durability — survives app restart.
+    /// Owned here so `ClipHandler` can write through the store's atomic
+    /// `persist()` path without a separate persistence file.
+    pub(super) clips: Vec<ClipRecord>,
     /// AI Inbox triage decisions reported by iOS (M4 / D7). Keyed by the
     /// string form of `EpisodeId`; value is `(decision, is_hero, rationale)`
     /// where `decision` is `"inbox"` | `"archived"`. See [`mod@triage_state`].
@@ -356,6 +362,7 @@ impl PodcastStore {
             pending_wifi_downloads: Vec::new(),
             memory_facts: HashMap::new(),
             ad_segments: HashMap::new(),
+            clips: Vec::new(),
             episode_triage: HashMap::new(),
             metadata_indexed_episodes: HashSet::new(),
             transcript_status_overrides: HashMap::new(),
