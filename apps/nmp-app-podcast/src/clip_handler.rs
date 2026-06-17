@@ -30,6 +30,8 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use uuid::Uuid;
 
+use podcast_core::Chapter;
+
 use crate::ffi::actions::clip_module::ClipAction;
 use crate::ffi::projections::{ClipSummary, PodcastSummary};
 use crate::store::PodcastStore;
@@ -161,22 +163,24 @@ impl ClipHandler {
         // Silently degrade on poison — the in-memory slot stays authoritative (D6).
     }
 
+    /// Chapter-snapped AutoSnip: resolve `position_secs` to the chapter that
+    /// contains it, then clip `[chapter.start_secs, next_chapter.start_secs)`.
+    ///
+    /// Falls back to the legacy ±30 s window when the episode has no chapters
+    /// (field absent or empty). This preserves existing behaviour for
+    /// chapter-less episodes and does not change any wire shape.
     fn handle_auto_snip(&self, episode_id: String, position_secs: f64) -> serde_json::Value {
-        let Some((_, _, duration)) = self.episode_meta(&episode_id) else {
+        let Some((_, _, chapters, duration)) = self.episode_snip_context(&episode_id) else {
             return serde_json::json!({
                 "ok": false,
                 "error": format!("episode not found: {episode_id}")
             });
         };
-        let pos = position_secs.max(0.0);
-        let raw_start = pos - 30.0;
-        let raw_end = pos + 30.0;
-        let start = raw_start.max(0.0);
-        let end = match duration {
-            Some(d) if d > 0.0 => raw_end.min(d),
-            _ => raw_end,
-        };
-        self.handle_create(episode_id, start, end, None)
+
+        let (start, end, chapter_title) =
+            chapter_snap(position_secs, chapters.as_deref(), duration);
+
+        self.handle_create(episode_id, start, end, chapter_title)
     }
 
     /// Look up `(episode_title, podcast_title, duration_secs)` for an
@@ -185,6 +189,16 @@ impl ClipHandler {
         let store = self.store.lock().ok()?;
         store.episode_titles_and_duration(episode_id)
     }
+
+    /// Fetch all AutoSnip context in one lock acquisition:
+    /// `(episode_title, podcast_title, chapters, duration_secs)`.
+    fn episode_snip_context(
+        &self,
+        episode_id: &str,
+    ) -> Option<(String, String, Option<Vec<Chapter>>, Option<f64>)> {
+        let store = self.store.lock().ok()?;
+        store.episode_auto_snip_context(episode_id)
+    }
 }
 
 fn normalize_range(a: f64, b: f64) -> (f64, f64) {
@@ -192,6 +206,90 @@ fn normalize_range(a: f64, b: f64) -> (f64, f64) {
         (a, b)
     } else {
         (b, a)
+    }
+}
+
+/// Compute `(start, end, title)` for an AutoSnip at `position_secs`.
+///
+/// ## Chapter path
+///
+/// When `chapters` is `Some` and non-empty the chapters are sorted by
+/// `start_secs` and the one whose half-open interval
+/// `[chapter.start, next_chapter.start)` contains `position_secs` is
+/// selected. Edge cases:
+///
+/// - `pos` before the first chapter's start → `[0.0, first.start_secs]`
+///   (or `[0.0, duration]` if the first chapter starts at 0).
+/// - `pos` inside the last chapter → `[last.start_secs, duration]`
+///   (or unclamped `last.start_secs + 30.0` when duration is unknown).
+/// - `pos` past duration → same as last chapter rule, clamped by duration.
+///
+/// The chapter's `title` is returned so the `ClipRecord` can surface it
+/// as the clip title (optional nice-to-have; nil when no match).
+///
+/// ## Fallback path
+///
+/// When `chapters` is `None` or empty the legacy ±30 s window is used,
+/// clamped to `[0, duration]` when duration is known.
+pub(crate) fn chapter_snap(
+    position_secs: f64,
+    chapters: Option<&[Chapter]>,
+    duration: Option<f64>,
+) -> (f64, f64, Option<String>) {
+    let pos = position_secs.max(0.0);
+
+    // Sort chapters by start time for reliable interval arithmetic.
+    if let Some(chs) = chapters {
+        if !chs.is_empty() {
+            let mut sorted: Vec<&Chapter> = chs.iter().collect();
+            sorted.sort_by(|a, b| a.start_secs.partial_cmp(&b.start_secs).unwrap_or(std::cmp::Ordering::Equal));
+
+            // pos before the first chapter's start → [0, first.start_secs].
+            // When first.start_secs == 0 this degenerates to a 0-length clip,
+            // which handle_create would reject — instead fall through to the
+            // within-chapter logic (pos < first.start means we land in the
+            // implicit pre-chapter segment).
+            if pos < sorted[0].start_secs {
+                let end = sorted[0].start_secs.max(1.0); // at least 1 s
+                let end = clamp_duration(end, duration);
+                return (0.0, end, None);
+            }
+
+            // Find the chapter containing pos.
+            for (i, ch) in sorted.iter().enumerate() {
+                let next_start = sorted.get(i + 1).map(|n| n.start_secs);
+                let ch_end = next_start
+                    .or(duration)
+                    .unwrap_or(ch.start_secs + 30.0);
+
+                if pos < ch_end || next_start.is_none() {
+                    // pos is inside this chapter (or this is the last chapter).
+                    let start = ch.start_secs;
+                    let end = clamp_duration(ch_end, duration);
+                    let title = Some(ch.title.clone());
+                    return (start, end, title);
+                }
+            }
+        }
+    }
+
+    // Fallback: ±30 s window clamped to [0, duration].
+    let raw_start = pos - 30.0;
+    let raw_end = pos + 30.0;
+    let start = raw_start.max(0.0);
+    let end = match duration {
+        Some(d) if d > 0.0 => raw_end.min(d),
+        _ => raw_end,
+    };
+    (start, end, None)
+}
+
+/// Clamp `value` to at most `duration` when duration is known and positive.
+#[inline]
+fn clamp_duration(value: f64, duration: Option<f64>) -> f64 {
+    match duration {
+        Some(d) if d > 0.0 => value.min(d),
+        _ => value,
     }
 }
 
