@@ -38,7 +38,9 @@ import os.log
 final class VoiceCapability: NSObject {
     static let namespace = "nmp.voice.capability"
 
-    private let logger = Logger(subsystem: "io.f7z.podcast", category: "VoiceCapability")
+    // `internal` (not `private`) so the `VoiceCapability+ElevenLabs`
+    // extension in its sibling file can log fallback decisions.
+    let logger = Logger(subsystem: "io.f7z.podcast", category: "VoiceCapability")
 
     // ── STT runtime ──────────────────────────────────────────────────────
     private let audioEngine = AVAudioEngine()
@@ -59,6 +61,21 @@ final class VoiceCapability: NSObject {
     /// Voice id (locale identifier) the Rust side most recently picked
     /// via `SetVoice`. `nil` falls back to the device default.
     var activeVoiceID: String?
+
+    // ── ElevenLabs TTS playback sink ──────────────────────────────────────
+    // When the user has selected an ElevenLabs voice, voice-mode `Speak`
+    // synthesizes through the shared Rust transport and plays the returned
+    // audio bytes here, instead of the on-device `AVSpeechSynthesizer`. See
+    // `VoiceCapability+ElevenLabs.swift`.
+    let elevenLabsTTS = ElevenLabsTTSBackendClient()
+    /// Player for the most recent ElevenLabs synthesis. Held so a `Stop` /
+    /// barge-in can tear it down mid-playback.
+    var elevenLabsPlayer: AVAudioPlayer?
+    var elevenLabsPlayerDelegate: VoiceAudioPlayerDelegate?
+    /// In-flight synthesis task. Retained so a `Stop` / barge-in arriving
+    /// *before* audio starts can cancel the round-trip rather than letting
+    /// a stale utterance begin playing after the user has moved on.
+    var elevenLabsSynthTask: Task<Void, Never>?
 
     // ── Out-of-band event sink to Rust ──────────────────────────────────
     /// Defaults to a no-op so the executor is exercisable from tests /
@@ -100,6 +117,7 @@ final class VoiceCapability: NSObject {
         started = false
         tearDownRecognition(reason: nil)
         synthesizer.stopSpeaking(at: .immediate)
+        cancelElevenLabsPlayback()
     }
 
     // MARK: - Command entry points
@@ -249,25 +267,33 @@ final class VoiceCapability: NSObject {
         // ── TTS provider routing ─────────────────────────────────────────
         // The kernel projects the user's ElevenLabs voice selection via
         // `eleven_labs_voice_id`. When set, the user has chosen ElevenLabs
-        // TTS. We honour that selection by *routing* to it here — but the
-        // ElevenLabs path cannot emit audio yet: `ElevenLabsTTSClient`
-        // yields raw audio `Data` frames and there is no playback sink in
-        // this kernel-driven executor (the only consumer,
-        // `AudioConversationManager.beginSpeaking`, records frames for
-        // barge-in and explicitly marks playback as future work — there is
-        // no `AVAudioPlayerNode` route wired through `AudioCapability`).
+        // TTS: synthesize through the shared Rust transport and play the
+        // returned audio bytes through the ElevenLabs sink
+        // (`VoiceCapability+ElevenLabs.swift`). When unset (or on any
+        // ElevenLabs failure) we fall back to on-device `AVSpeechSynthesizer`
+        // so a turn is never silently dropped.
         //
-        // So we log the selection honestly and fall back to AVSpeech rather
-        // than silently dropping the utterance or pretending ElevenLabs ran.
-        // This wires the setting to the dispatch path and sets the stage for
-        // the playback sink to land later; see docs/BACKLOG.md
-        // ("voice-mode ElevenLabs TTS playback sink").
+        // NOTE: the command's `voiceID` is an AVSpeech locale identifier and
+        // is intentionally ignored on the ElevenLabs path — the ElevenLabs
+        // voice id comes from the projected settings, not the `Speak` wire
+        // field (see docs/BACKLOG.md "voice-provider-selection").
+        activeSpeakRequestID = requestID
         let elevenLabsVoiceID = appStore?.state.settings.elevenLabsVoiceID ?? ""
         if !elevenLabsVoiceID.isEmpty {
-            logger.notice(
-                "Speak: ElevenLabs TTS selected (voice_id=\(elevenLabsVoiceID, privacy: .public)) but no playback sink is wired in the kernel-driven voice executor — falling back to AVSpeech")
+            let model = appStore?.state.settings.elevenLabsTTSModel ?? ""
+            speakViaElevenLabs(
+                text: text,
+                voiceID: elevenLabsVoiceID,
+                model: model,
+                requestID: requestID)
+            return
         }
+        speakViaAVSpeech(text: text, voiceID: voiceID, requestID: requestID)
+    }
 
+    /// On-device `AVSpeechSynthesizer` synthesis. The default path when no
+    /// ElevenLabs voice is selected, and the fallback when ElevenLabs fails.
+    func speakViaAVSpeech(text: String, voiceID: String?, requestID: String) {
         let utterance = AVSpeechUtterance(string: text)
         if let voiceID, !voiceID.isEmpty {
             utterance.voice = AVSpeechSynthesisVoice(identifier: voiceID)
@@ -282,13 +308,20 @@ final class VoiceCapability: NSObject {
     }
 
     func stopSpeaking() {
+        // Tear down any ElevenLabs synth/playback first (its player's
+        // `stop()` does NOT fire the completion delegate, so the single
+        // `.stopped` below is the only report for that path).
+        cancelElevenLabsPlayback()
         if synthesizer.isSpeaking {
+            // AVSpeech path: the delegate's `didCancel` emits `.stopped`.
             synthesizer.stopSpeaking(at: .immediate)
-        } else {
-            // No active utterance — still report so the kernel can drop
-            // any speaking flag idempotently.
-            emit(.stopped)
+            return
         }
+        // No AVSpeech utterance active — emit a single `.stopped` so the
+        // kernel can drop any speaking flag idempotently (also covers the
+        // ElevenLabs-was-playing and nothing-active cases).
+        activeSpeakRequestID = nil
+        emit(.stopped)
     }
 
     // MARK: - Permission

@@ -17,13 +17,20 @@ import Foundation
 
 extension VoiceCapability {
     /// Hook called from the recognition handler on every partial result.
-    /// While the synthesizer is actively speaking, a non-empty partial
-    /// is treated as a barge-in: cancel the in-flight utterance and
-    /// let the delegate's `didCancel` report `Stopped` back to Rust.
+    /// While a TTS utterance is actively playing (AVSpeech *or* the
+    /// ElevenLabs sink), a non-empty partial is treated as a barge-in:
+    /// cancel the in-flight utterance so the user's voice wins the turn.
     func notifyPartialForBargeIn(text: String) {
-        guard synthesizer.isSpeaking, !text.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return
+        guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        if synthesizer.isSpeaking {
+            // AVSpeech path: the delegate's `didCancel` emits `.stopped`.
+            synthesizer.stopSpeaking(at: .immediate)
+        } else if isElevenLabsActive {
+            // ElevenLabs path: tear down playback and report the interrupt
+            // ourselves (the player's `stop()` fires no completion callback).
+            cancelElevenLabsPlayback()
+            activeSpeakRequestID = nil
+            emit(.stopped)
         }
-        synthesizer.stopSpeaking(at: .immediate)
     }
 }

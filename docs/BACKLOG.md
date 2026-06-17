@@ -596,22 +596,23 @@ worktrees currently in flight.
   keyless `apple_native` default already landed in PR #178); (5) design
   barge-in-threshold + OpenRouter-TTS
   settings, then wire barge-in and OpenRouter TTS.
-- **voice-mode-elevenlabs-tts-playback-sink.** The kernel-driven voice executor
-  (`VoiceCapability.speak`) now *routes* on the projected `eleven_labs_voice_id`
-  (set ⇒ user chose ElevenLabs TTS) but falls back to AVSpeech with an honest
-  log line because there is no audio playback sink in this path:
-  `ElevenLabsTTSClient.synthesizeStream` yields raw audio `Data` frames and the
-  only consumer (`AudioConversationManager.beginSpeaking`) records them for
-  barge-in and marks playback "future work" — no `AVAudioPlayerNode` route is
-  wired through `AudioCapability`. Non-realtime ElevenLabs TTS now uses the
-  shared Rust backend; this item is only about realtime voice-mode streaming
-  playback. To make ElevenLabs TTS audible in the
-  kernel-driven path: add a player-node sink (likely via `AudioCapability`),
-  feed `ElevenLabsTTSClient` frames into it, and emit `started`/`finished`
-  `VoiceReport`s from real playback callbacks. Until then the fallback is the
-  correct behavior. Note: this is separate from the parallel SwiftUI
-  `AudioConversationManager` voice path used by `VoiceView`, which has the same
-  missing-sink gap.
+- **voice-mode-elevenlabs-tts-playback-sink — RESOLVED (kernel-driven path).**
+  The kernel-driven voice executor (`VoiceCapability.speak`) now plays
+  ElevenLabs audio: when the projected `eleven_labs_voice_id` is set it
+  synthesizes via the shared Rust transport (`ElevenLabsTTSBackendClient`,
+  one-shot `nmp_app_podcast_elevenlabs_tts_synthesize`) and plays the returned
+  bytes through an `AVAudioPlayer` sink (`VoiceCapability+ElevenLabs.swift`),
+  emitting `started`/`finished` from real playback callbacks and `stopped` from
+  `Stop`/barge-in. Any synthesis or playback failure falls back to AVSpeech so a
+  turn is never silently dropped (#550). Implemented with the non-realtime
+  one-shot synthesize call rather than `ElevenLabsTTSClient.synthesizeStream`:
+  the one-shot backend is already Rust-owned and the turn-grained
+  `Speak`→`Started`→`Finished` contract does not need per-frame streaming. Two
+  follow-ups remain: (1) the parallel SwiftUI `AudioConversationManager` voice
+  path used by `VoiceView` still has the same missing-sink gap (it records
+  frames for barge-in and marks playback "future work"); (2) true low-latency
+  streaming playback (first-byte before full synthesis) is still future work and
+  depends on the canonical streaming-session capability seam.
 - **voice-view-kernel-reconcile — DONE (VoiceView repointed).** `VoiceView`
   (the user-facing voice screen, reachable via `StartVoiceModeIntent`) was driven
   by `AudioConversationManager`, wired entirely to defaults: a `StubVoiceTurnDelegate`
