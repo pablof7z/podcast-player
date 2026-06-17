@@ -27,9 +27,58 @@ use std::path::{Path, PathBuf};
 use podcast_core::{Episode, Podcast};
 use serde::{Deserialize, Serialize};
 
+use crate::clip_handler::ClipRecord;
 use crate::ffi::projections::MemoryFact;
 use crate::player::AdSegment;
 use crate::store::AutoDownloadMode;
+
+/// On-disk representation of a user-saved audio clip.
+///
+/// Maps 1:1 with [`ClipRecord`] — all fields are preserved so a load/save
+/// round-trip is lossless.  Separate from `ClipRecord` so the wire format is
+/// explicit and independently versionable.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub(super) struct PersistedClip {
+    pub id: String,
+    pub episode_id: String,
+    pub episode_title: String,
+    pub podcast_title: String,
+    pub start_secs: f64,
+    pub end_secs: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    pub created_at: i64,
+}
+
+impl From<&ClipRecord> for PersistedClip {
+    fn from(r: &ClipRecord) -> Self {
+        Self {
+            id: r.id.clone(),
+            episode_id: r.episode_id.clone(),
+            episode_title: r.episode_title.clone(),
+            podcast_title: r.podcast_title.clone(),
+            start_secs: r.start_secs,
+            end_secs: r.end_secs,
+            title: r.title.clone(),
+            created_at: r.created_at,
+        }
+    }
+}
+
+impl From<PersistedClip> for ClipRecord {
+    fn from(p: PersistedClip) -> Self {
+        Self {
+            id: p.id,
+            episode_id: p.episode_id,
+            episode_title: p.episode_title,
+            podcast_title: p.podcast_title,
+            start_secs: p.start_secs,
+            end_secs: p.end_secs,
+            title: p.title,
+            created_at: p.created_at,
+        }
+    }
+}
 
 /// Schema marker for `podcasts.json`. Bump on incompatible format changes.
 pub const PERSIST_SCHEMA_VERSION: u32 = 1;
@@ -102,6 +151,12 @@ pub(super) struct PersistedStore {
     /// transcription is disabled. `#[serde(default)]` for backward compat.
     #[serde(default)]
     pub transcription_disabled: Vec<String>,
+    /// User-saved audio clips. Sorted by `(created_at, id)` on write for
+    /// deterministic bytes. `#[serde(default)]` so pre-existing files without
+    /// this field load with empty clips (no schema version bump needed —
+    /// additive field).
+    #[serde(default)]
+    pub clips: Vec<PersistedClip>,
 }
 
 /// On-disk settings envelope.
@@ -362,11 +417,28 @@ pub(super) fn load(data_dir: &Path) -> std::io::Result<Option<PersistedStore>> {
 /// Strategy: serialize → write to `podcasts.json.tmp` → `fs::rename` over the
 /// final path. `rename` is atomic on the same filesystem, so the only failure
 /// modes are "old file intact" or "new file in place" — never a partial write.
+///
+/// Clips are sorted by `(created_at, id)` before serialization so two
+/// consecutive saves of the same logical state produce identical bytes
+/// (deterministic-serialization discipline).
 pub(super) fn save(data_dir: &Path, payload: &PersistedStore) -> std::io::Result<()> {
     // Ensure the directory exists. `create_dir_all` is a no-op when present.
     std::fs::create_dir_all(data_dir)?;
 
-    let json = serde_json::to_vec_pretty(payload)
+    // Sort clips for deterministic bytes — works on a local clone so the
+    // caller's `payload` is not mutated.
+    let mut owned;
+    let normalized: &PersistedStore = if !payload.clips.is_empty() {
+        owned = payload.clone();
+        owned
+            .clips
+            .sort_by(|a, b| a.created_at.cmp(&b.created_at).then(a.id.cmp(&b.id)));
+        &owned
+    } else {
+        payload
+    };
+
+    let json = serde_json::to_vec_pretty(normalized)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
     let final_path = podcasts_path(data_dir);

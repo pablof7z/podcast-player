@@ -2,13 +2,15 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::clip_handler::ClipRecord;
 use crate::ffi::projections::MemoryFact;
 use crate::llm::provider_config::normalize_ollama_chat_url;
 use crate::player::AdSegment;
 
 use super::credential_metadata::ProviderCredentialMetadata;
 use super::persistence::{
-    self, PersistedPodcast, PersistedSettings, PersistedStore, PERSIST_SCHEMA_VERSION,
+    self, PersistedClip, PersistedPodcast, PersistedSettings, PersistedStore,
+    PERSIST_SCHEMA_VERSION,
 };
 use super::PodcastStore;
 
@@ -58,6 +60,7 @@ impl PodcastStore {
         self.auto_download_cellular_allowed.clear();
         self.memory_facts.clear();
         self.ad_segments.clear();
+        self.clips.clear();
         self.episode_triage.clear();
         self.metadata_indexed_episodes.clear();
         self.transcript_status_overrides.clear();
@@ -114,6 +117,8 @@ impl PodcastStore {
         for (ep_id, segs) in loaded.ad_segments {
             self.ad_segments.insert(ep_id, segs);
         }
+        // Hydrate persisted clips — convert PersistedClip → ClipRecord losslessly.
+        self.clips = loaded.clips.into_iter().map(ClipRecord::from).collect();
         for (ep_id, decision, is_hero, rationale) in loaded.episode_triage {
             self.episode_triage
                 .insert(ep_id, (decision, is_hero, rationale));
@@ -415,6 +420,10 @@ impl PodcastStore {
             .into_iter()
             .map(|(k, (status, message))| (k.clone(), status.clone(), message.clone()))
             .collect();
+        // Note: clips are sorted by (created_at, id) in persistence::save()
+        // so the on-disk bytes are always deterministic regardless of
+        // insertion order. No sort needed here.
+        let clips: Vec<PersistedClip> = self.clips.iter().map(PersistedClip::from).collect();
         PersistedStore {
             schema_version: PERSIST_SCHEMA_VERSION,
             podcasts: rows,
@@ -441,6 +450,7 @@ impl PodcastStore {
                 .collect::<std::collections::BTreeSet<_>>()
                 .into_iter()
                 .collect(),
+            clips,
         }
     }
 
