@@ -2,6 +2,12 @@
   "schema_version": 1,
   "entries": [
     {
+      "shipped_at": "2026-06-17T00:00:00Z",
+      "lines": [
+        "Voice mode now speaks in your chosen ElevenLabs voice — pick a voice in AI settings and the assistant uses it, with the on-device voice as a fallback."
+      ]
+    },
+    {
       "shipped_at": "2026-06-16T07:00:00Z",
       "lines": [
         "Now Playing controls respond more cleanly, and the playback scrubber is easier to adjust with accessibility tools."

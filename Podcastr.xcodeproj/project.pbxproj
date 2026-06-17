@@ -152,6 +152,7 @@
 		2C45DF1647123B1B3A80747B /* AgentChatTitleGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C79DBBF0068142A08A48C807 /* AgentChatTitleGenerator.swift */; };
 		2D717E9E6B036A84F7786C79 /* PlayerTimeFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9680026FBE01F6C15E610D65 /* PlayerTimeFormat.swift */; };
 		2DC3F3FE1DD455FB32BE0E9D /* HomeActiveFilterChipsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64DB68ECE06F82597B5DCE9E /* HomeActiveFilterChipsTests.swift */; };
+		2DE01CB09C3AAFFED7FD73DB /* VoiceCapability+ElevenLabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8D5BFBD86DDE2B721FEEB3 /* VoiceCapability+ElevenLabs.swift */; };
 		2DE69BD3733E4A10555977E6 /* PlayerGenerationSourceChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AF4BBAADE2F45A33CD06E1 /* PlayerGenerationSourceChip.swift */; };
 		2E5D3053787336D7BF51CD6B /* PodcastCategorizationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A1F5D29BDC0B8355BC7378 /* PodcastCategorizationPrompt.swift */; };
 		2E62019DE271D8073992AC44 /* OllamaModelCatalogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309D206C26BE174476D056B9 /* OllamaModelCatalogService.swift */; };
@@ -967,6 +968,7 @@
 		3A6C1274B3B348EF9D1A50B5 /* HomeFeaturedSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFeaturedSection.swift; sourceTree = "<group>"; };
 		3AB897B9154A9E3DA3DA3D83 /* AgentTools+PodcastInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTools+PodcastInventory.swift"; sourceTree = "<group>"; };
 		3ABC2DEEFBE58AA45D6E33C8 /* BYOKCredentialImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BYOKCredentialImporter.swift; sourceTree = "<group>"; };
+		3B8D5BFBD86DDE2B721FEEB3 /* VoiceCapability+ElevenLabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VoiceCapability+ElevenLabs.swift"; sourceTree = "<group>"; };
 		3BE27605784D2C6B087874B4 /* AgentPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPrompt.swift; sourceTree = "<group>"; };
 		3BF895FB2B737238699AD80D /* test-episode.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "test-episode.mp3"; sourceTree = "<group>"; };
 		3C0F6CC93B8FEAEE7818D2A9 /* ChapterRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterRailView.swift; sourceTree = "<group>"; };
@@ -2716,6 +2718,7 @@
 				38ED1D5BCC3BDC5333A6B05E /* SyncCapabilityBridge.swift */,
 				D9679D72BAC3D3E389E1162F /* VoiceCapability.swift */,
 				89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */,
+				3B8D5BFBD86DDE2B721FEEB3 /* VoiceCapability+ElevenLabs.swift */,
 				52228D50085F0D3BDBF92839 /* VoiceCapability+Synthesizer.swift */,
 				6D2F903F30309A24307C4FDA /* VoiceCapability+Wire.swift */,
 			);
@@ -3109,6 +3112,7 @@
 				68F3E3209CCC838B64C1233C /* SpotlightCapability.swift in Sources */,
 				151C9FACE986EF777D58DAB2 /* SyncCapabilityBridge.swift in Sources */,
 				F4E111B81EA568C2F171813C /* VoiceCapability+Barge.swift in Sources */,
+				2DE01CB09C3AAFFED7FD73DB /* VoiceCapability+ElevenLabs.swift in Sources */,
 				D3782D13906D7E20094FB022 /* VoiceCapability+Synthesizer.swift in Sources */,
 				599A48C437946BF59A27F421 /* VoiceCapability+Wire.swift in Sources */,
 				B17FECF8487236979BDBE5C9 /* VoiceCapability.swift in Sources */,
