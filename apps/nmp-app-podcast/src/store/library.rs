@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use podcast_core::{Chapter, Episode, EpisodeId, Podcast, PodcastId};
+use podcast_transcripts::TranscriptEntry;
 
 use super::PodcastStore;
 
@@ -229,18 +230,28 @@ impl PodcastStore {
         None
     }
 
-    /// All context needed for chapter-snapped AutoSnip — titles, chapters, and
-    /// duration — fetched in a **single store-lock acquisition**.
+    /// All context needed for transcript-refined, chapter-snapped AutoSnip —
+    /// titles, chapters, duration, and timed transcript entries — fetched in a
+    /// **single store-lock acquisition**.
     ///
-    /// Returns `(episode_title, podcast_title, chapters, duration_secs)`.
-    /// `chapters` is `None` when the episode carries no chapter metadata; an
-    /// explicitly empty `Vec` is returned as `Some(vec![])` so the caller can
-    /// distinguish the two (both fall back to the ±30 s window, but they are
-    /// semantically different). Neither case changes the wire shape.
+    /// Returns `(episode_title, podcast_title, chapters, duration_secs,
+    /// timed_entries)`.
+    ///
+    /// - `chapters` is `None` when the episode carries no chapter metadata; an
+    ///   explicitly empty `Vec` is returned as `Some(vec![])` so the caller can
+    ///   distinguish the two (both fall back to the ±30 s window, but they are
+    ///   semantically different).
+    /// - `timed_entries` is `None` when no structured transcript has been
+    ///   ingested for this episode in the current session. When `None` the
+    ///   caller skips the transcript-refine post-pass (falls back to
+    ///   chapter-snap or ±30 s — S2 behavior).
+    ///
+    /// Neither field changes the wire shape.
     pub fn episode_auto_snip_context(
         &self,
         id_str: &str,
-    ) -> Option<(String, String, Option<Vec<Chapter>>, Option<f64>)> {
+    ) -> Option<(String, String, Option<Vec<Chapter>>, Option<f64>, Option<Vec<TranscriptEntry>>)>
+    {
         for (podcast_id, episodes) in &self.episodes {
             // Case-insensitive: iOS sends UPPERCASE `UUID.uuidString`; stored
             // ids render lowercase.
@@ -249,11 +260,25 @@ impl PodcastStore {
                 .find(|e| e.id.0.to_string().eq_ignore_ascii_case(id_str))
             {
                 let pod = self.podcasts.get(podcast_id)?;
+                // Clone timed entries under the same lock so the caller does
+                // not need a second store acquisition.
+                // Case-insensitive lookup: iOS may report transcript with a
+                // different case than the stored episode id. Try exact first,
+                // then lowercase to cover UPPERCASE UUID keys from iOS.
+                let timed = self
+                    .timed_transcripts
+                    .get(id_str)
+                    .or_else(|| {
+                        let lower = id_str.to_ascii_lowercase();
+                        self.timed_transcripts.get(lower.as_str())
+                    })
+                    .map(|v| v.clone());
                 return Some((
                     ep.title.clone(),
                     pod.title.clone(),
                     ep.chapters.clone(),
                     ep.duration_secs,
+                    timed,
                 ));
             }
         }
