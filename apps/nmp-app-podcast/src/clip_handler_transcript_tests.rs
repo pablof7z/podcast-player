@@ -136,6 +136,36 @@ fn refine_unsorted_entries_sorted_before_snap() {
 }
 
 #[test]
+fn refine_start_in_silence_gap_snaps_back_to_previous_utterance() {
+    // FIX 2: entries [10,20) and [50,60) leave a silence gap (20..50).
+    // start=35 falls in the gap. Documented rule is "last entry whose
+    // start_secs <= start" → that's the [10,20) entry → snap start back to 10.
+    // end=55 ∈ [50,60) → end snaps forward to 60.
+    let es = entries_vec(&[(10.0, 20.0), (50.0, 60.0)]);
+    let r = transcript_refine(35.0, 55.0, Some(&es), Some(300.0));
+    let (s, e) = r.expect("should refine across a silence gap");
+    assert!((s - 10.0).abs() < 1e-9, "gap start snaps back to prev utterance start (10), got {s}");
+    assert!((e - 60.0).abs() < 1e-9, "end snaps forward to 60, got {e}");
+}
+
+#[test]
+fn refine_overlapping_entries_no_inversion() {
+    // Overlapping entries: [0,100) and [50,60). Sorted by start: [(0,100),(50,60)].
+    // start=55, end=55.
+    // START: last entry whose start_secs <= 55 is [50,60) (start=50) → 50.
+    // END: walks sorted order, first entry whose end_secs >= 55 is [0,100)
+    //   (end=100) → 100. (end=55 < last.end_secs=60, so the "past last" shortcut
+    //   does NOT fire here.) Result [50,100] — non-degenerate.
+    let es = vec![entry(0.0, 100.0, "wide"), entry(50.0, 60.0, "inner")];
+    let r = transcript_refine(55.0, 55.0, Some(&es), Some(300.0));
+    let (s, e) = r.expect("overlapping entries should still produce a usable range");
+    // The core guarantee: never inverted / never zero-length regardless of overlap.
+    assert!(e > s, "range must be non-degenerate with overlapping entries: [{s}, {e}]");
+    assert!((s - 50.0).abs() < 1e-9, "start = last entry starting at/before 55, got {s}");
+    assert!((e - 100.0).abs() < 1e-9, "end = first entry ending at/after 55, got {e}");
+}
+
+#[test]
 fn refine_degenerate_after_snap_returns_none() {
     // Pathological: entry is [50, 51). start=50.5, end=50.6.
     // Both snap to the same entry: start→50, end→51 → not degenerate.
@@ -316,4 +346,44 @@ fn handle_auto_snip_empty_transcript_entries_keeps_chapter_range() {
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 60.0).abs() < 1e-9, "chapter start when empty entries");
     assert!((stored[0].end_secs - 120.0).abs() < 1e-9, "chapter end when empty entries");
+}
+
+#[test]
+fn handle_auto_snip_transcript_lookup_is_case_insensitive() {
+    // FIX 1: transcript stored under one casing, autosnip id arrives in a
+    // different casing. The READ path must match case-insensitively (as robust
+    // as the episode/chapter lookup) → refinement still applies. Before the
+    // fix, the exact-then-lowercase QUERY missed when the stored key was
+    // UPPERCASE, silently falling back to chapter bounds.
+    let ep_id = Uuid::new_v4().to_string(); // lowercase UUID string
+    let ep_id_upper = ep_id.to_uppercase();
+    let chs = vec![ch("Main", 60.0), ch("Outro", 120.0)];
+    let ts = vec![entry(55.0, 115.0, "main discussion")];
+
+    // Store the episode by the canonical (lowercase) id, but key the timed
+    // transcript under the UPPERCASE form — mimicking an iOS report casing skew.
+    let store = build_store_with_transcript(&ep_id, Some(300.0), Some(chs), None);
+    store
+        .lock()
+        .unwrap()
+        .set_timed_transcript(ep_id_upper, ts);
+
+    let (h, clips, _rev) = fresh_handler(store);
+    // Autosnip id arrives lowercase; transcript key is UPPERCASE.
+    let v = h.handle_auto_snip(ep_id, 90.0);
+    assert_eq!(v["ok"], true);
+    let stored = clips.lock().unwrap();
+    // Transcript-refined bounds, NOT chapter bounds [60,120):
+    //   start: entry starting at/before 60 → 55.
+    //   end: 120 > last entry end 115 → snap to 115.
+    assert!(
+        (stored[0].start_secs - 55.0).abs() < 1e-9,
+        "case-insensitive transcript match should refine start to 55, got {}",
+        stored[0].start_secs
+    );
+    assert!(
+        (stored[0].end_secs - 115.0).abs() < 1e-9,
+        "case-insensitive transcript match should refine end to 115, got {}",
+        stored[0].end_secs
+    );
 }

@@ -260,19 +260,18 @@ impl PodcastStore {
                 .find(|e| e.id.0.to_string().eq_ignore_ascii_case(id_str))
             {
                 let pod = self.podcasts.get(podcast_id)?;
-                // Clone timed entries under the same lock so the caller does
-                // not need a second store acquisition.
-                // Case-insensitive lookup: iOS may report transcript with a
-                // different case than the stored episode id. Try exact first,
-                // then lowercase to cover UPPERCASE UUID keys from iOS.
+                // Clone timed entries under the same lock (no 2nd acquisition).
+                // Case-insensitive match — as robust as the episode lookup above.
+                // `timed_transcripts` is keyed by whatever casing iOS reported in
+                // `transcript_report`, so a plain `.get(id_str)` could silently
+                // miss on a casing mismatch. We iterate + `eq_ignore_ascii_case`.
+                // The INSERT key in `transcript_report.rs` is left untouched —
+                // other readers (knowledge.rs) key in with the original casing.
                 let timed = self
                     .timed_transcripts
-                    .get(id_str)
-                    .or_else(|| {
-                        let lower = id_str.to_ascii_lowercase();
-                        self.timed_transcripts.get(lower.as_str())
-                    })
-                    .map(|v| v.clone());
+                    .iter()
+                    .find(|(k, _)| k.eq_ignore_ascii_case(id_str))
+                    .map(|(_, v)| v.clone());
                 return Some((
                     ep.title.clone(),
                     pod.title.clone(),
