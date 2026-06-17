@@ -8,11 +8,12 @@
 //! ## Storage model
 //!
 //! Clips are kept in process memory on the actor thread, behind the same
-//! `Arc<Mutex<…>>` discipline as `search_results`. Persistence to disk is
-//! out of scope for this PR — clips evaporate on app restart. The wire
-//! shape (`ffi::projections::ClipSummary`) is what the iOS shell reads;
-//! the internal `ClipRecord` captures everything the snapshot builder
-//! needs to re-project on every tick.
+//! `Arc<Mutex<…>>` discipline as `search_results`. After every create /
+//! delete the handler writes through to `PodcastStore::set_clips` which
+//! atomically persists the clip list to `podcasts.json` — clips survive
+//! app restart (D0). The wire shape (`ffi::projections::ClipSummary`) is
+//! what the iOS shell reads; the internal `ClipRecord` captures everything
+//! the snapshot builder needs to re-project on every tick.
 //!
 //! ## Title freshness
 //!
@@ -120,6 +121,9 @@ impl ClipHandler {
             Ok(mut c) => {
                 c.push(record);
                 self.rev.fetch_add(1, Ordering::Relaxed);
+                let snapshot = c.clone();
+                drop(c); // release clips lock before acquiring store lock
+                self.persist_clips(snapshot);
                 serde_json::json!({"ok": true, "clip_id": id})
             }
             Err(_) => serde_json::json!({"ok": false, "error": "clips poisoned"}),
@@ -133,11 +137,28 @@ impl ClipHandler {
                 c.retain(|rec| rec.id != clip_id);
                 if c.len() != before {
                     self.rev.fetch_add(1, Ordering::Relaxed);
+                    let snapshot = c.clone();
+                    drop(c); // release clips lock before acquiring store lock
+                    self.persist_clips(snapshot);
+                } else {
+                    drop(c);
                 }
                 serde_json::json!({"ok": true})
             }
             Err(_) => serde_json::json!({"ok": false, "error": "clips poisoned"}),
         }
+    }
+
+    /// Persist `clips` snapshot to disk via the store's atomic write path.
+    ///
+    /// Lock ordering: clips lock must be **released** before calling this
+    /// (callers `drop(c)` first) to avoid a potential inversion with the
+    /// store's own Mutex.
+    fn persist_clips(&self, clips: Vec<ClipRecord>) {
+        if let Ok(mut store) = self.store.lock() {
+            store.set_clips(clips);
+        }
+        // Silently degrade on poison — the in-memory slot stays authoritative (D6).
     }
 
     fn handle_auto_snip(&self, episode_id: String, position_secs: f64) -> serde_json::Value {

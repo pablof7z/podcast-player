@@ -209,6 +209,105 @@ fn project_clips_falls_back_to_frozen_titles_when_episode_missing() {
     assert_eq!(projected[0].podcast_title, "Frozen Show");
 }
 
+// ── Persistence integration tests ─────────────────────────────────────────
+
+/// Minimal RAII temp dir for tests that need a data directory.
+struct TempDir {
+    path: std::path::PathBuf,
+}
+impl TempDir {
+    fn new() -> Self {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir()
+            .join(format!("clip-handler-test-{}-{}", std::process::id(), n));
+        std::fs::create_dir_all(&path).unwrap();
+        Self { path }
+    }
+}
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
+/// Build a store that has a data dir and one subscribable episode.
+fn store_with_dir_and_episode(dir: &TempDir) -> (Arc<Mutex<PodcastStore>>, String) {
+    let ep_id = Uuid::new_v4().to_string();
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    {
+        let mut s = store.lock().unwrap();
+        s.set_data_dir(dir.path.clone());
+        let podcast = Podcast::new("Persist Show");
+        let episode = Episode::new(
+            podcast.id,
+            "https://example.com/feed.xml",
+            format!("guid-{}", Uuid::new_v4()),
+            "Persist Episode",
+            Url::parse("https://example.com/ep.mp3").unwrap(),
+            Utc::now(),
+        );
+        // Override the episode id to a known UUID string.
+        let mut ep = episode;
+        ep.id = EpisodeId(Uuid::parse_str(&ep_id).unwrap());
+        s.subscribe(podcast, vec![ep]);
+    }
+    (store, ep_id)
+}
+
+#[test]
+fn create_clip_persists_survives_restart() {
+    // Round-trip: create a clip → reload store from the same dir → clip present.
+    let dir = TempDir::new();
+    let (store, ep_id) = store_with_dir_and_episode(&dir);
+    let clips_arc = Arc::new(Mutex::new(Vec::new()));
+    let rev = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let h = ClipHandler::new(clips_arc.clone(), store.clone(), rev.clone());
+
+    let out = h.handle_create(ep_id.clone(), 10.0, 40.0, Some("keep me".into()));
+    assert_eq!(out["ok"], true, "create must succeed");
+    let clip_id = out["clip_id"].as_str().unwrap().to_owned();
+
+    // Simulate restart: fresh store from same data dir.
+    let mut store2 = PodcastStore::new();
+    store2.set_data_dir(dir.path.clone());
+    let reloaded = store2.clips().to_vec();
+    assert_eq!(reloaded.len(), 1, "clip must survive restart");
+    assert_eq!(reloaded[0].id, clip_id);
+    assert_eq!(reloaded[0].episode_id, ep_id);
+    assert_eq!(reloaded[0].start_secs, 10.0);
+    assert_eq!(reloaded[0].end_secs, 40.0);
+    assert_eq!(reloaded[0].title, Some("keep me".to_owned()));
+}
+
+#[test]
+fn delete_clip_persists_survives_restart() {
+    // Create two clips, delete one, reload — only the remaining one is present.
+    let dir = TempDir::new();
+    let (store, ep_id) = store_with_dir_and_episode(&dir);
+    let clips_arc = Arc::new(Mutex::new(Vec::new()));
+    let rev = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let h = ClipHandler::new(clips_arc.clone(), store.clone(), rev.clone());
+
+    let out1 = h.handle_create(ep_id.clone(), 0.0, 30.0, Some("first".into()));
+    let out2 = h.handle_create(ep_id.clone(), 30.0, 60.0, Some("second".into()));
+    let id1 = out1["clip_id"].as_str().unwrap().to_owned();
+    let id2 = out2["clip_id"].as_str().unwrap().to_owned();
+
+    // Delete the first clip.
+    let del = h.handle_delete(id1.clone());
+    assert_eq!(del["ok"], true);
+
+    // Simulate restart.
+    let mut store2 = PodcastStore::new();
+    store2.set_data_dir(dir.path.clone());
+    let reloaded = store2.clips().to_vec();
+    assert_eq!(reloaded.len(), 1, "only second clip survives");
+    assert_eq!(reloaded[0].id, id2);
+    assert_eq!(reloaded[0].title, Some("second".to_owned()));
+}
+
 #[test]
 fn project_clips_returns_newest_first() {
     let clips = Arc::new(Mutex::new(vec![

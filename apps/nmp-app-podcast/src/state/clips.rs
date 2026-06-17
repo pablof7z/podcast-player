@@ -3,8 +3,8 @@
 //! Owns the single slot that was previously mirrored between
 //! `PodcastHandle` and `PodcastHostOpHandler`:
 //!
-//! * `clips` — in-memory list of user-saved audio clips.  **Session**
-//!   durability (clips evaporate on restart; persistence is a follow-up).
+//! * `clips` — in-memory list of user-saved audio clips.  **Persisted**
+//!   durability — survives app restart via `PodcastStore::set_clips`.
 //!
 //! `ClipHandler` (the existing struct in `crate::clip_handler`) already
 //! encapsulates the action logic.  This substate composes it: the slot and
@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex};
 use crate::clip_handler::{ClipHandler, ClipRecord};
 use crate::ffi::actions::clip_module::ClipAction;
 use crate::ffi::projections::{ClipSummary, PodcastSummary};
-use crate::state::slot::Session;
+use crate::state::slot::Persisted;
 use crate::state::{Infra, Slot};
 use crate::store::PodcastStore;
 
@@ -32,8 +32,10 @@ use crate::store::PodcastStore;
 /// Constructed once in `PodcastAppState::new` and referenced via
 /// `state.clips` on both seams.  All methods are `&self`.
 pub struct ClipsState {
-    /// In-memory clip list.  Session durability — evaporates on restart.
-    pub clips: Slot<Vec<ClipRecord>, Session>,
+    /// In-memory clip list.  Persisted durability — survives app restart.
+    /// Hydrated from `PodcastStore` at construction time; written back on
+    /// every create / delete via `ClipHandler::persist_clips`.
+    pub clips: Slot<Vec<ClipRecord>, Persisted>,
     /// Rev + signal + runtime (cloned from `PodcastAppState::infra`).
     infra: Infra,
     /// The canonical persisted library — read by `ClipHandler` at create /
@@ -43,9 +45,16 @@ pub struct ClipsState {
 
 impl ClipsState {
     /// Production constructor — called from `PodcastAppState::new`.
+    ///
+    /// Seeds the in-memory slot from any clips already persisted in the
+    /// store so user-saved clips survive app restart.
     pub fn new(infra: Infra, store: Arc<Mutex<PodcastStore>>) -> Self {
+        let initial = store
+            .lock()
+            .map(|s| s.clips().to_vec())
+            .unwrap_or_default();
         Self {
-            clips: Slot::new(Vec::new()),
+            clips: Slot::new(initial),
             infra,
             store,
         }
