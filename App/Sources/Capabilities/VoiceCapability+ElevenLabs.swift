@@ -66,8 +66,10 @@ extension VoiceCapability {
         do {
             configureElevenLabsAudioPlaybackSession()
             let player = try AVAudioPlayer(data: data, fileTypeHint: "mp3")
-            let delegate = VoiceAudioPlayerDelegate { [weak self] in
-                Task { @MainActor in self?.onElevenLabsPlaybackFinished(requestID: requestID) }
+            let delegate = VoiceAudioPlayerDelegate { [weak self] success in
+                Task { @MainActor in
+                    self?.onElevenLabsPlaybackEnded(requestID: requestID, success: success)
+                }
             }
             player.delegate = delegate
             player.prepareToPlay()
@@ -86,13 +88,19 @@ extension VoiceCapability {
         }
     }
 
-    /// Player completion callback — natural end of an ElevenLabs utterance.
-    private func onElevenLabsPlaybackFinished(requestID: String) {
+    /// Player end callback. `success == false` means an unsuccessful finish
+    /// or a decode error, which must report `.failed` — not `.finished` —
+    /// so the kernel doesn't treat broken playback as a completed turn.
+    private func onElevenLabsPlaybackEnded(requestID: String, success: Bool) {
         // Ignore a stale callback from a player we already replaced.
         guard activeSpeakRequestID == requestID else { return }
         teardownElevenLabsPlayer()
         activeSpeakRequestID = nil
-        emit(.finished(requestID: requestID))
+        if success {
+            emit(.finished(requestID: requestID))
+        } else {
+            emit(.failed(requestID: requestID, error: "ElevenLabs audio playback failed"))
+        }
     }
 
     /// Cancel any in-flight ElevenLabs synthesis and stop active playback.
@@ -122,17 +130,19 @@ extension VoiceCapability {
 // completion callback off the audio player. Mirrors the pattern in
 // `RationaleNarrator`.
 final class VoiceAudioPlayerDelegate: NSObject, AVAudioPlayerDelegate, @unchecked Sendable {
-    private let onFinish: () -> Void
+    /// `Bool` is the success flag: `true` on a clean finish, `false` on an
+    /// unsuccessful finish or a decode error.
+    private let onEnd: (Bool) -> Void
 
-    init(onFinish: @escaping () -> Void) {
-        self.onFinish = onFinish
+    init(onEnd: @escaping (Bool) -> Void) {
+        self.onEnd = onEnd
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        onFinish()
+        onEnd(flag)
     }
 
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        onFinish()
+        onEnd(false)
     }
 }
