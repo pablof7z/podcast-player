@@ -495,15 +495,25 @@ extension AgentTools {
     }
 
     static func actionTool(op: String, payload: [String: Any]) async -> String? {
-        let handleBits = await MainActor.run {
-            KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
-        }
-        guard let handleBits else { return nil }
+        // Serialize the non-Sendable `[String: Any]` payload to a Sendable JSON
+        // string synchronously (no `await` before this point), then hand off to
+        // the string-based variant. Keeps the non-Sendable dict from being
+        // `sending` across an actor boundary under Swift 6 concurrency.
         var request = payload
         request["op"] = op
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
+        return await actionToolJSON(json)
+    }
+
+    /// JSON-string variant of `actionTool`. Only `Sendable` values (a `String`
+    /// and an `Int` bit pattern) cross actor boundaries here.
+    static func actionToolJSON(_ json: String) async -> String? {
+        let handleBits = await MainActor.run {
+            KernelModel.shared?.podcastHandlePointer.map { Int(bitPattern: $0) }
+        }
+        guard let handleBits else { return nil }
         return await Task.detached(priority: .userInitiated) {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
@@ -523,7 +533,14 @@ extension AgentTools {
         op: String,
         args: [String: Any]
     ) async -> T? {
-        guard let envelope = await actionTool(op: op, payload: args),
+        // Serialize synchronously so the non-Sendable `args` dict is not sent
+        // across the `await` into `actionToolJSON`.
+        var request = args
+        request["op"] = op
+        guard let data = try? JSONSerialization.data(withJSONObject: request),
+              let json = String(data: data, encoding: .utf8)
+        else { return nil }
+        guard let envelope = await actionToolJSON(json),
               let data = envelope.data(using: .utf8)
         else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)

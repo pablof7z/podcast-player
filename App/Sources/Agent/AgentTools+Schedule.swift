@@ -87,11 +87,13 @@ extension AgentTools {
             if let description = task.description {
                 entry["description"] = description
             }
+            // `nextRunAt` / `lastRunAt` are already Unix epoch seconds (`Int?`)
+            // on the generated summary — emit them directly.
             if let nextRunAt = task.nextRunAt {
-                entry["next_run_at"] = Int(nextRunAt.timeIntervalSince1970)
+                entry["next_run_at"] = nextRunAt
             }
             if let lastRunAt = task.lastRunAt {
-                entry["last_run_at"] = Int(lastRunAt.timeIntervalSince1970)
+                entry["last_run_at"] = lastRunAt
             }
             return entry
         }

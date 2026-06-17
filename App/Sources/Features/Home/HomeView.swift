@@ -423,6 +423,12 @@ struct HomeView: View {
 private struct HomeContinueListeningEnvelope: Decodable {
     var episodeIds: [String] = []
 
+    // Explicit CodingKeys: a custom `init(from:)` on a Decodable-only type with
+    // an all-defaulted stored property suppresses synthesized `CodingKeys`.
+    private enum CodingKeys: String, CodingKey {
+        case episodeIds
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         episodeIds = try c.decodeIfPresent([String].self, forKey: .episodeIds) ?? []

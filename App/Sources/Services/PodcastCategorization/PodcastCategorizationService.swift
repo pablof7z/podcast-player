@@ -98,6 +98,7 @@ final class PodcastCategorizationService {
         // reads from. Reconcile against the followed set so podcasts dropped
         // from all categories by this recompute have their stale kernel labels
         // cleared (not just the ones that gained labels).
+        let followedPodcastIDs = Set(store.state.subscriptions.map(\.podcastID))
         store.syncUserCategoriesToKernel(reconcilingFollowed: followedPodcastIDs)
         // Mirror per-category transcription disabled state into per-podcast kernel
         // overrides so both projection fields stay in sync after AI recompute.

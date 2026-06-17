@@ -80,7 +80,7 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
             Self.logger.info("Enqueuing transcription for \(episode.id, privacy: .public)")
             await TranscriptIngestService.shared.ingest(episodeID: episode.id)
             let refreshed = await store.episode(id: episode.id)
-            transcriptStatus = Self.transcriptResultStatus(for: refreshed?.transcriptState)
+            transcriptStatus = await Self.transcriptResultStatus(for: refreshed?.transcriptState)
         }
 
         return YouTubeIngestionResult(
@@ -116,6 +116,11 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
         let error: String?
     }
 
+    // `@MainActor`: reads `KernelModel.shared?.podcastHandlePointer` and uses
+    // `AppStateStore.transcriptStatePayload`, both main-actor isolated
+    // (`AppStateStore` is an `@MainActor` type). The sole caller already runs
+    // in an async/main-actor context.
+    @MainActor
     private static func transcriptResultStatus(for state: TranscriptState?) -> String? {
         guard let handle = KernelModel.shared?.podcastHandlePointer else { return nil }
         var request = state.map(AppStateStore.transcriptStatePayload) ?? ["state": "missing"]

@@ -10,6 +10,9 @@ struct CategoryLibraryProjection {
     let podcastIDsByCategory: [UUID: [UUID]]
     let allTranscriptionEnabledByCategory: [UUID: Bool]
 
+    // `@MainActor`: reads main-actor `store.kernel`; all callers are SwiftUI
+    // views (already `@MainActor`).
+    @MainActor
     static func load(categories: [PodcastCategory], store: AppStateStore) -> CategoryLibraryProjection {
         let request = categories.map { category in
             [
@@ -46,6 +49,7 @@ struct CategoryLibraryProjection {
         return categoryIDs.compactMap { byID[$0] }
     }
 
+    @MainActor
     func podcasts(in categoryID: UUID, store: AppStateStore) -> [Podcast] {
         (podcastIDsByCategory[categoryID] ?? []).compactMap { store.podcast(id: $0) }
     }

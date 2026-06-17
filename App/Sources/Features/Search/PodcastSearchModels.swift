@@ -27,6 +27,9 @@ struct PodcastEpisodeSearchHit: Identifiable, Hashable, Sendable {
 
 
 enum PodcastSearchEngine {
+    // `@MainActor`: reads main-actor `store.kernel` / `store.podcast(id:)` /
+    // `store.episode(id:)`. The sole caller is a SwiftUI view property.
+    @MainActor
     static func localResults(
         query: String,
         store: AppStateStore,

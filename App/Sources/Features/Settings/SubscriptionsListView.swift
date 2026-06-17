@@ -98,11 +98,13 @@ struct SubscriptionsListView: View {
     }
 
     private var subscriptionsSection: some View {
+        // A leading `let` turns this property body into a non-@ViewBuilder
+        // closure, so the trailing view must be returned explicitly.
         let libraryStats = LibraryPodcastStatsProjection.load(
             podcastIDs: store.sortedFollowedPodcasts.map(\.id),
             store: store
         )
-        Section {
+        return Section {
             ForEach(store.sortedFollowedPodcasts) { sub in
                 row(for: sub, libraryStats: libraryStats)
             }

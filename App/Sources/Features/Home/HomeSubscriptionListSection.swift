@@ -52,7 +52,7 @@ struct HomeSubscriptionListSection: View {
             podcastIDs: podcasts.map(\.id),
             store: store
         )
-        LazyVStack(alignment: .leading, spacing: 0) {
+        return LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(podcasts) { sub in
                 HomeSubscriptionRow(
                     podcast: sub,

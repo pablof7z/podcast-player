@@ -14,6 +14,8 @@ struct DownloadsManagerProjection {
     var failedCount: Int { failedEpisodeIDs.count }
     var downloadedCount: Int { downloadedEpisodeIDs.count }
 
+    // `@MainActor`: reads main-actor `store.kernel`; callers are SwiftUI views.
+    @MainActor
     static func load(store: AppStateStore) -> DownloadsManagerProjection {
         guard let envelope = store.kernel?.libraryDownloadRowsEnvelope(),
               let data = envelope.data(using: .utf8),

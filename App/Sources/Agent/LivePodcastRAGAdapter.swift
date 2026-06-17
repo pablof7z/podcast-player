@@ -158,23 +158,41 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
 
     // MARK: - Helpers
 
+    /// Sendable carrier for per-episode metadata gathered on the main actor.
+    /// `[[String: Any]]` is not `Sendable`, so only these primitives cross the
+    /// `MainActor.run` boundary; the heterogeneous dictionary is assembled after.
+    private struct EpisodeMetadata: Sendable {
+        let episodeID: String
+        let publishedAt: Int
+        let durationSeconds: Int?
+    }
+
     private func episodeMetadataRows(for rows: [KnowledgeQueryRow]) async -> [[String: Any]] {
-        await MainActor.run {
+        let gathered: [EpisodeMetadata] = await MainActor.run {
             var seen = Set<String>()
-            return rows.compactMap { row -> [String: Any]? in
+            return rows.compactMap { row -> EpisodeMetadata? in
                 guard seen.insert(row.episodeId).inserted,
                       let uuid = UUID(uuidString: row.episodeId),
                       let episode = store?.episode(id: uuid)
                 else { return nil }
-                var metadata: [String: Any] = ["episode_id": row.episodeId]
-                if let pubDate = episode.pubDate {
-                    metadata["published_at"] = Int(pubDate.timeIntervalSince1970)
-                }
-                if let duration = episode.duration {
-                    metadata["duration_seconds"] = Int(duration)
-                }
-                return metadata
+                // `Episode.pubDate` is a non-optional `Date` (defaults to the
+                // epoch when the feed omitted `<pubDate>`).
+                return EpisodeMetadata(
+                    episodeID: row.episodeId,
+                    publishedAt: Int(episode.pubDate.timeIntervalSince1970),
+                    durationSeconds: episode.duration.map(Int.init)
+                )
             }
+        }
+        return gathered.map { meta in
+            var metadata: [String: Any] = [
+                "episode_id": meta.episodeID,
+                "published_at": meta.publishedAt,
+            ]
+            if let duration = meta.durationSeconds {
+                metadata["duration_seconds"] = duration
+            }
+            return metadata
         }
     }
 

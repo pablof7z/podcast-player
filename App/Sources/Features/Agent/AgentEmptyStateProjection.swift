@@ -14,6 +14,8 @@ enum AgentEmptyStateSuggestionContext: String, Decodable {
 struct AgentEmptyStateProjection: Decodable {
     let suggestionContext: AgentEmptyStateSuggestionContext
 
+    // `@MainActor`: reads main-actor `store.kernel`; callers are SwiftUI views.
+    @MainActor
     static func load(store: AppStateStore) -> AgentEmptyStateProjection {
         guard let envelope = store.kernel?.agentEmptyStateEnvelope(),
               let data = envelope.data(using: .utf8),

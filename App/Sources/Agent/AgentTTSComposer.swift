@@ -162,7 +162,14 @@ final class AgentTTSComposer: TTSPublisherProtocol, @unchecked Sendable {
         for (index, turn) in turns.enumerated() {
             switch turn.kind {
             case .speech(let text, let voiceIDOverride):
-                let voice = voiceIDOverride ?? await defaultVoiceID()
+                // `await` cannot appear in the autoclosure on the right of `??`,
+                // so resolve the default explicitly when there is no override.
+                let voice: String
+                if let voiceIDOverride {
+                    voice = voiceIDOverride
+                } else {
+                    voice = await defaultVoiceID()
+                }
                 let audioURL = try await synthesizeSpeech(text: text, voiceID: voice, index: index)
                 let duration: TimeInterval
                 do {

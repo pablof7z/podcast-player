@@ -202,7 +202,47 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
 
     private struct RustPodcastDeleteSnapshot: Decodable {
         let error: String?
-        let result: PodcastDeleteResult?
+        private let resultDTO: RustPodcastDeleteResult?
+
+        var result: PodcastDeleteResult? { resultDTO?.result }
+
+        enum CodingKeys: String, CodingKey {
+            case error
+            case resultDTO = "result"
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            error = try c.decodeIfPresent(String.self, forKey: .error)
+            resultDTO = try c.decodeIfPresent(RustPodcastDeleteResult.self, forKey: .resultDTO)
+        }
+    }
+
+    /// Wire-shape mirror of `PodcastDeleteResult`. The domain type is
+    /// `Sendable, Equatable` (not `Decodable`), so the JSON envelope is decoded
+    /// into this DTO and mapped, matching the `RustPodcastSubscribeResult`
+    /// pattern above.
+    private struct RustPodcastDeleteResult: Decodable {
+        let podcastID: String
+        let title: String?
+        let wasSubscribed: Bool
+        let episodesDeleted: Int
+
+        enum CodingKeys: String, CodingKey {
+            case podcastID = "podcast_id"
+            case title
+            case wasSubscribed = "was_subscribed"
+            case episodesDeleted = "episodes_deleted"
+        }
+
+        var result: PodcastDeleteResult {
+            PodcastDeleteResult(
+                podcastID: podcastID,
+                title: title,
+                wasSubscribed: wasSubscribed,
+                episodesDeleted: episodesDeleted
+            )
+        }
     }
 
     weak var store: AppStateStore?

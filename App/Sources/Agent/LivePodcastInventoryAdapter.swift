@@ -105,14 +105,20 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
             reference: reference,
             store: store
         )
+        // `planCategoryChange` already throws when the kernel returns no result
+        // (see its `guard let result = decoded.result` arm), so `.result` is
+        // non-nil here. Unwrap once to satisfy the non-optional return contract.
+        guard let result = response.result else {
+            throw PodcastCategoryAdapterError.moveFailed
+        }
         store.setCategories(response.categories)
         store.kernel?.dispatch(namespace: "podcast",
                                body: [
                                    "op": "set_podcast_user_categories",
-                                   "podcast_id": response.result.podcastID.lowercased(),
+                                   "podcast_id": result.podcastID.lowercased(),
                                    "categories": response.labels,
                                ])
-        return response.result
+        return result
     }
 
     // MARK: - Helpers
@@ -289,6 +295,14 @@ private struct RustCategorySummariesResponse: Decodable {
     let error: String?
     let categories: [RustCategorySummaryDTO]
 
+    // Explicit CodingKeys: a custom `init(from:)` on a Decodable-only type
+    // suppresses synthesized `CodingKeys`, so it must be declared. The decoder's
+    // `.convertFromSnakeCase` strategy maps the camelCase names to wire keys.
+    private enum CodingKeys: String, CodingKey {
+        case error
+        case categories
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         error = try c.decodeIfPresent(String.self, forKey: .error)
@@ -407,6 +421,18 @@ private struct AgentInventoryEnvelope: Decodable {
     var episodes: [AgentInventoryEpisodeDTO] = []
     var found: Bool?
     var error: String?
+
+    // Explicit CodingKeys: providing a custom `init(from:)` on a Decodable-only
+    // type whose stored properties all have defaults suppresses the synthesized
+    // `CodingKeys`, so it must be declared. Names are camelCase; the decoder's
+    // `.convertFromSnakeCase` strategy maps them to the snake_case wire keys.
+    private enum CodingKeys: String, CodingKey {
+        case subscriptions
+        case podcasts
+        case episodes
+        case found
+        case error
+    }
 
     init() {}
 

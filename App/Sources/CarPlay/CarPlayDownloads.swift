@@ -83,6 +83,11 @@ enum CarPlayDownloads {
     private struct DownloadsProjection: Decodable {
         let episodeIds: [UUID]
 
+        // `@MainActor`: a nested type does not inherit the outer `@MainActor`
+        // isolation, so these helpers — which read `store.kernel` /
+        // `store.episode(id:)` (main-actor state) — must be annotated. The only
+        // caller (`makeTemplate`) is already `@MainActor`.
+        @MainActor
         static func load(limit: Int, store: AppStateStore) -> DownloadsProjection {
             guard let envelope = store.kernel?.carplayDownloadsEnvelope(limit: limit),
                   let data = envelope.data(using: .utf8),
@@ -94,6 +99,7 @@ enum CarPlayDownloads {
             return decoded
         }
 
+        @MainActor
         func episodes(in store: AppStateStore) -> [Episode] {
             episodeIds.compactMap { store.episode(id: $0) }
         }

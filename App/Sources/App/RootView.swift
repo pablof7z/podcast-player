@@ -382,7 +382,6 @@ struct RootView: View {
         var id: String {
             switch link {
             case .note(let id):         return "note:\(id)"
-            case .memory(let id):       return "memory:\(id)"
             case .subscription(let id): return "subscription:\(id)"
             case .episode(let id):      return "episode:\(id)"
             }

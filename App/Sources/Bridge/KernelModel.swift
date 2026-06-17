@@ -713,6 +713,10 @@ final class KernelModel {
         kernel.homeCategoryCardsEnvelope(categories: categories)
     }
 
+    func storageBreakdownEnvelope(files: [[String: Any]]) -> String? {
+        kernel.storageBreakdownEnvelope(files: files)
+    }
+
     func agentTTSEpisodePlanEnvelope(request: [String: Any]) -> String? {
         kernel.agentTTSEpisodePlanEnvelope(request: request)
     }
