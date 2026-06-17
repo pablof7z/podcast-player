@@ -87,7 +87,13 @@ let project = Project(
             sources: ["App/Sources/**"],
             resources: [
                 "App/Resources/Assets.xcassets",
-                "App/Resources/whats-new.json",
+                // Changelog is bundled as a FOLDER REFERENCE (not a glob) so
+                // the whole `changelog/` directory lands intact at the app
+                // bundle root. `WhatsNewService` enumerates it at runtime via
+                // `Bundle.main.url(forResource: "changelog", withExtension: nil)`
+                // + `FileManager.contentsOfDirectory`. One file per entry means
+                // concurrent PRs adding entries never collide on a shared file.
+                .folderReference(path: "App/Resources/changelog"),
                 "App/Resources/test-episode.mp3",
             ],
             entitlements: .file(path: "App/Resources/Podcastr.entitlements"),

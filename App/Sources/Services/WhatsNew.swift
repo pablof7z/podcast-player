@@ -20,24 +20,20 @@ struct WhatsNewEntry: Decodable, Sendable, Identifiable, Equatable {
     }
 }
 
-// MARK: - Decoded payload shape
-
-private struct WhatsNewPayload: Decodable {
-    let schemaVersion: Int
-    let entries: [WhatsNewEntry]
-
-    private enum CodingKeys: String, CodingKey {
-        case schemaVersion = "schema_version"
-        case entries
-    }
-}
-
 // MARK: - WhatsNewService
 //
-// Loads the bundled `whats-new.json` and answers two questions:
+// Loads the bundled `changelog/` directory and answers two questions:
 //   1) Which entries have shipped since the user's last-seen marker?
 //   2) Persists the "I've seen up to timestamp X" marker so the same
 //      content doesn't re-surface on every cold launch.
+//
+// On-disk layout: one file per entry under `App/Resources/changelog/`,
+// each holding a single entry object `{ "shipped_at", "lines" }`. The
+// filename only needs to be unique (a compact UTC timestamp such as
+// `20260617T120000Z.json`); `shipped_at` inside the file stays the
+// canonical key for ordering and the last-seen comparison. One file per
+// entry means concurrent PRs adding entries never collide on a shared
+// file.
 //
 // The marker is a timestamp (ISO-8601, stored in `UserDefaults.standard`
 // under `whatsNew.lastSeenAt`).
@@ -46,7 +42,7 @@ private struct WhatsNewPayload: Decodable {
 // silently seeded to the newest entry's `shippedAt`. The user sees an
 // empty sheet on first install — i.e. NO sheet is shown, because there's
 // nothing newer than "everything that already shipped." From the next
-// build forward, any newly appended entry surfaces.
+// build forward, any newly added entry surfaces.
 
 @MainActor
 enum WhatsNewService {
@@ -55,33 +51,50 @@ enum WhatsNewService {
 
     static let lastSeenAtKey = "whatsNew.lastSeenAt"
 
-    private static let resourceName = "whats-new"
-    private static let resourceExtension = "json"
+    /// Folder-reference resource bundled into the app: enumerated at
+    /// runtime so adding a new entry is "drop a file in this directory."
+    private static let changelogDirectoryName = "changelog"
+    private static let entryFileExtension = "json"
 
     // MARK: Loading
 
-    /// Loads `whats-new.json` from the app bundle. Empty when missing or
-    /// malformed — the sheet just won't surface in that case (we'd rather
-    /// fail closed than crash on launch).
+    /// Enumerates every `*.json` file in the bundled `changelog/` directory,
+    /// decoding each as a single entry. Returns `[]` when the directory is
+    /// missing or empty — the sheet just won't surface in that case (we'd
+    /// rather fail closed than crash on launch). Individual malformed files
+    /// are skipped so one bad entry can't disable the whole changelog.
     static func loadEntries(bundle: Bundle = .main) -> [WhatsNewEntry] {
-        guard let url = bundle.url(forResource: resourceName, withExtension: resourceExtension) else {
+        guard let dir = bundle.url(
+            forResource: changelogDirectoryName,
+            withExtension: nil
+        ) else {
             return []
         }
+        let urls: [URL]
         do {
-            let data = try Data(contentsOf: url)
-            return try decode(data)
+            urls = try FileManager.default.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            )
         } catch {
             return []
         }
+        return urls
+            .filter { $0.pathExtension.lowercased() == entryFileExtension }
+            .compactMap { url in
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                return try? decode(data)
+            }
     }
 
-    /// Internal decode helper — exposed so tests can feed a JSON literal
-    /// through it without depending on the bundled file.
-    static func decode(_ data: Data) throws -> [WhatsNewEntry] {
+    /// Internal decode helper — decodes a SINGLE entry file. Exposed so
+    /// tests can feed a JSON literal through it without depending on the
+    /// bundled directory.
+    static func decode(_ data: Data) throws -> WhatsNewEntry {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let payload = try decoder.decode(WhatsNewPayload.self, from: data)
-        return payload.entries
+        return try decoder.decode(WhatsNewEntry.self, from: data)
     }
 
     // MARK: Marker
