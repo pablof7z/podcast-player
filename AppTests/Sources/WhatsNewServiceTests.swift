@@ -4,38 +4,48 @@ import XCTest
 /// Coverage for `WhatsNewService` — the changelog-diff helper that
 /// decides which entries to surface on the next cold launch.
 ///
-/// Tests use a fixture JSON literal rather than the real bundled
-/// `whats-new.json` so they don't drift as the changelog grows.
+/// Tests use fixture JSON literals rather than the real bundled
+/// `changelog/` directory so they don't drift as the changelog grows.
+/// Each literal is a SINGLE entry file, matching the on-disk
+/// one-file-per-entry layout `WhatsNewService.decode` now expects.
 @MainActor
 final class WhatsNewServiceTests: XCTestCase {
 
     // MARK: - Fixture
 
-    /// Three entries, newest first. Dates are spaced one day apart so
-    /// sort-by-shippedAt is unambiguous.
-    private let fixtureJSON = #"""
-    {
-      "schema_version": 1,
-      "entries": [
+    /// Three single-entry files, newest first. Dates are spaced one day
+    /// apart so sort-by-shippedAt is unambiguous. Mirrors the per-file
+    /// changelog layout: each string is the full contents of one
+    /// `changelog/<timestamp>.json`.
+    private let entryFilesJSON: [String] = [
+        #"""
         {
           "shipped_at": "2026-05-10T22:00:00Z",
           "lines": ["Newest line"]
-        },
+        }
+        """#,
+        #"""
         {
           "shipped_at": "2026-05-09T12:00:00Z",
           "lines": ["Middle line A", "Middle line B"]
-        },
+        }
+        """#,
+        #"""
         {
           "shipped_at": "2026-05-08T08:00:00Z",
           "lines": ["Oldest line"]
         }
-      ]
-    }
-    """#
+        """#,
+    ]
 
+    /// Decodes each per-file fixture and sorts newest-first to mirror what
+    /// `loadEntries` + the diff helpers would produce from the bundled dir
+    /// (directory enumeration order is not guaranteed, so the production
+    /// loader never relies on it either).
     private func fixtureEntries() throws -> [WhatsNewEntry] {
-        let data = Data(fixtureJSON.utf8)
-        return try WhatsNewService.decode(data)
+        try entryFilesJSON
+            .map { try WhatsNewService.decode(Data($0.utf8)) }
+            .sorted { $0.shippedAt > $1.shippedAt }
     }
 
     private func date(_ iso: String) -> Date {
@@ -46,19 +56,27 @@ final class WhatsNewServiceTests: XCTestCase {
 
     // MARK: - Decoding
 
-    func testFixtureJSONDecodes() throws {
+    func testSingleEntryFileDecodes() throws {
+        let entry = try WhatsNewService.decode(Data(entryFilesJSON[0].utf8))
+        XCTAssertEqual(entry.lines, ["Newest line"])
+        XCTAssertEqual(entry.shippedAt, date("2026-05-10T22:00:00Z"))
+    }
+
+    func testFixtureEntriesDecodeAndSortNewestFirst() throws {
         let entries = try fixtureEntries()
         XCTAssertEqual(entries.count, 3)
         XCTAssertEqual(entries[0].lines, ["Newest line"])
         XCTAssertEqual(entries[1].lines.count, 2)
+        XCTAssertEqual(entries[2].lines, ["Oldest line"])
     }
 
-    /// The bundled `whats-new.json` shipped with the app must remain
-    /// well-formed — a parse failure would silently disable the sheet
-    /// for every user. The list itself is allowed to evolve.
+    /// The bundled `changelog/` directory shipped with the app must
+    /// enumerate and decode into at least one well-formed entry — a parse
+    /// failure or an empty/missing directory would silently disable the
+    /// sheet for every user. The set of entries is allowed to evolve.
     func testBundledChangelogParses() {
         let entries = WhatsNewService.loadEntries()
-        XCTAssertFalse(entries.isEmpty, "Bundled whats-new.json should ship with at least one entry.")
+        XCTAssertFalse(entries.isEmpty, "Bundled changelog/ should ship with at least one entry.")
         XCTAssertFalse(entries.contains { $0.lines.isEmpty }, "Every bundled entry needs at least one line.")
         let timestamps = entries.map(\.shippedAt)
         XCTAssertEqual(Set(timestamps).count, timestamps.count, "Every entry needs a unique shipped_at timestamp.")

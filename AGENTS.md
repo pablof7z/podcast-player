@@ -50,7 +50,17 @@ Without it the build fails with "Validate plug-in SharedSourcesPlugin… BUILD F
 
 ## Whats-new changelog
 
-Every commit that ships a user-facing change to the iPhone MUST add an entry to `App/Resources/whats-new.json` with a one-liner the user will read. An entry needs only `shipped_at` (current UTC, ISO-8601) and `lines`. The app surfaces entries whose `shipped_at` is newer than the user's last-seen marker — no commit SHA needed. Timestamps must be unique across entries; if two land in the same minute, bump one by a minute. Skip entries for purely-internal commits (encoder caches, log line tweaks, formatting). When in doubt: would the user notice? If yes, add a line.
+Every commit that ships a user-facing change to the iPhone MUST **add a new file** under `App/Resources/changelog/` with a one-liner the user will read. **Never edit a shared file** — one file per entry is what keeps concurrent PRs from colliding on the changelog.
+
+- **Add a file, don't edit one.** Name it with the change's creation time as a compact, filesystem-safe UTC timestamp (no colons), e.g. `App/Resources/changelog/20260617T120000Z.json`. The filename only needs to be unique; if two land in the same second, bump one by a second.
+- **One entry per file.** Each file holds a single JSON object with just `shipped_at` (the canonical ordering/last-seen key — current UTC, ISO-8601, e.g. `"2026-06-17T12:00:00Z"`) and `lines` (an array of one-liners):
+
+  ```json
+  { "shipped_at": "2026-06-17T12:00:00Z", "lines": ["What the user will read."] }
+  ```
+
+- The app reads **every** file in `changelog/` at launch (the directory is bundled as a folder reference and enumerated by `WhatsNewService`) and surfaces entries whose `shipped_at` is newer than the user's last-seen marker — no commit SHA needed. `shipped_at` values must be unique across entries.
+- Skip a changelog file for purely-internal commits (encoder caches, log line tweaks, formatting). When in doubt: would the user notice? If yes, add a file.
 
 ## Typography
 
