@@ -428,6 +428,64 @@ fn chapter_snap_fallback_clamps_near_end() {
     assert!((e - 300.0).abs() < 1e-9);
 }
 
+#[test]
+fn chapter_snap_sorts_unsorted_input_then_snaps() {
+    // Chapters arrive out of order: starts [120, 0, 60]. pos = 90 must still
+    // snap to the "Main" chapter [60, 120) — proving the internal sort runs.
+    let chs = vec![ch("Outro", 120.0), ch("Intro", 0.0), ch("Main", 60.0)];
+    let (s, e, title) = chapter_snap(90.0, Some(&chs), Some(300.0));
+    assert!((s - 60.0).abs() < 1e-9, "start = sorted ch2.start");
+    assert!((e - 120.0).abs() < 1e-9, "end = sorted ch3.start");
+    assert_eq!(title.as_deref(), Some("Main"));
+}
+
+#[test]
+fn chapter_snap_duplicate_start_chapters_no_inverted_range() {
+    // Two chapters share start 60.0: starts [0, 60, 60, 120]. pos = 70 lands
+    // in the 60-region. Result must be deterministic and non-degenerate
+    // (end > start) — never an inverted/zero range, never a panic.
+    let chs = vec![
+        ch("Intro", 0.0),
+        ch("Main A", 60.0),
+        ch("Main B", 60.0),
+        ch("Outro", 120.0),
+    ];
+    let (s, e, title) = chapter_snap(70.0, Some(&chs), Some(300.0));
+    assert!(e > s, "range must be non-degenerate: got [{s}, {e}]");
+    // Stable sort keeps "Main A" before "Main B"; the first 60-start chapter
+    // has a zero-width interval [60, 60) (next is also 60), so the resolver
+    // advances to "Main B" whose interval [60, 120) actually contains pos=70.
+    assert!((s - 60.0).abs() < 1e-9, "start snaps to the 60 s boundary");
+    assert!((e - 120.0).abs() < 1e-9, "end = next distinct boundary (120)");
+    assert_eq!(title.as_deref(), Some("Main B"));
+}
+
+#[test]
+fn chapter_snap_pos_exactly_on_boundary_belongs_to_starting_chapter() {
+    // Half-open [start, next) semantics: pos exactly == a chapter.start
+    // belongs to the chapter that STARTS at it, not the previous one.
+    let chs = vec![ch("Intro", 0.0), ch("Main", 60.0), ch("Outro", 120.0)];
+    let (s, e, title) = chapter_snap(60.0, Some(&chs), Some(300.0));
+    assert!((s - 60.0).abs() < 1e-9, "pos==60 → owned by 'Main' (starts at 60)");
+    assert!((e - 120.0).abs() < 1e-9);
+    assert_eq!(title.as_deref(), Some("Main"));
+}
+
+#[test]
+fn chapter_snap_last_chapter_at_duration_falls_back_to_30s() {
+    // FIX 1: last chapter starts exactly at duration → chapter range would be
+    // [300, 300] (degenerate), which handle_create rejects. The resolver must
+    // fall back to the ±30 s clamped window so AutoSnip still produces a
+    // usable clip (end > start).
+    let chs = vec![ch("Intro", 0.0), ch("End Marker", 300.0)];
+    let (s, e, title) = chapter_snap(300.0, Some(&chs), Some(300.0));
+    assert!(e > s, "must be usable, not degenerate: got [{s}, {e}]");
+    // ±30 s window around pos=300 clamped to duration=300 → [270, 300].
+    assert!((s - 270.0).abs() < 1e-9, "fallback start = pos-30");
+    assert!((e - 300.0).abs() < 1e-9, "fallback end clamped to duration");
+    assert!(title.is_none(), "fallback path carries no chapter title");
+}
+
 // ── handler-level chapter snap tests (store integration) ─────────────────────
 
 fn fresh_store_with_episode_and_chapters(
