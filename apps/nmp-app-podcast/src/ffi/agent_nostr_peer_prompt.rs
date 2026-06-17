@@ -118,7 +118,7 @@ fn non_empty(value: Option<String>) -> Option<String> {
 
 fn npub_from_hex(hex: &str) -> String {
     nostr::PublicKey::parse(hex)
-        .and_then(|pk| pk.to_bech32())
+        .map(|pk| pk.to_bech32().unwrap_or_else(|_| hex.to_string()))
         .unwrap_or_else(|_| hex.to_string())
 }
 

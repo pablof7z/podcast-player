@@ -68,9 +68,9 @@ fn episode_metadata(
     store.all_podcasts().into_iter().find_map(|(podcast, episodes)| {
         episodes.into_iter().find(|ep| ep.id.0.to_string() == episode_id).map(|ep| {
             EpisodeMetadata {
-                episode_title: ep.title,
+                episode_title: ep.title.clone(),
                 podcast_id: podcast.id.0.to_string(),
-                podcast_title: podcast.title,
+                podcast_title: podcast.title.clone(),
                 duration_seconds: ep.duration_secs.map(|d| d.round() as i64),
             }
         })

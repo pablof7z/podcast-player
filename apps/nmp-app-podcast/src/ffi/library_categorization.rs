@@ -172,7 +172,7 @@ fn followed_podcasts(store: &crate::store::PodcastStore) -> Vec<podcast_core::Po
         .into_iter()
         .filter(|(podcast, _)| store.is_subscribed(podcast.id))
         .filter(|(podcast, _)| podcast.feed_url.is_some())
-        .map(|(podcast, _)| podcast)
+        .map(|(podcast, _)| podcast.clone())
         .collect();
     podcasts.sort_by(|a, b| {
         a.title

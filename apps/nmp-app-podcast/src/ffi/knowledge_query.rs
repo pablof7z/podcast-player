@@ -19,6 +19,7 @@ use std::sync::{Arc, Mutex};
 use podcast_knowledge::{cosine_similarity, KnowledgeStore, SearchResult};
 use serde::{Deserialize, Serialize};
 
+use crate::ffi::actions::categorization_module::categorize_text;
 use crate::ffi::guard::ffi_guard;
 use crate::ffi::handle::PodcastHandle;
 use crate::llm::provider_transport::{EmbeddingIntent, ProviderKind};

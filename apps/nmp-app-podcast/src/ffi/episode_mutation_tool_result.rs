@@ -80,8 +80,8 @@ pub extern "C" fn nmp_app_podcast_episode_mutation_tool_result(
                                 ok: true,
                                 episode_id: episode_id.clone(),
                                 podcast_id: Some(podcast.id.0.to_string()),
-                                episode_title: episode.title,
-                                podcast_title: Some(podcast.title),
+                                episode_title: episode.title.clone(),
+                                podcast_title: Some(podcast.title.clone()),
                                 state: request.state.clone(),
                                 message: None,
                             })

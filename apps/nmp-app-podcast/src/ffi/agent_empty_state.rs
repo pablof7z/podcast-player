@@ -30,7 +30,7 @@ fn is_archived(store: &crate::store::PodcastStore, episode: &podcast_core::Episo
     let episode_id = episode.id.0.to_string();
     let stored_triage = store.triage_for(&episode_id).map(|(d, _, _)| d);
     episode.triage_decision.as_ref() == Some(&TriageDecision::Archived)
-        || stored_triage == Some(&TriageDecision::Archived)
+        || stored_triage.map(|d| d.as_str()) == Some("archived")
 }
 
 #[no_mangle]

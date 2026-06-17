@@ -123,6 +123,16 @@ impl PodcastStore {
         }
         // Hydrate persisted clips — convert PersistedClip → ClipRecord losslessly.
         self.clips = loaded.clips.into_iter().map(ClipRecord::from).collect();
+        // Override with the Rust-owned clips sidecar (`clips.json`) when present.
+        // `ClipHandler::persist_clips` writes this file directly; it is the
+        // authoritative source for clips created after the last `podcasts.json`
+        // flush. When the sidecar exists it supersedes whatever clips arrived
+        // from `podcasts.json`.
+        if let Some(dir) = self.data_dir.clone() {
+            if let Some(sidecar) = crate::store::clip_records::load_clip_records(&dir) {
+                self.clips = sidecar;
+            }
+        }
         for (ep_id, decision, is_hero, rationale) in loaded.episode_triage {
             self.episode_triage
                 .insert(ep_id, (decision, is_hero, rationale));

@@ -102,7 +102,7 @@ pub extern "C" fn nmp_app_podcast_home_category_cards(
                                     !episode.played
                                         && episode.triage_decision.as_ref()
                                             != Some(&TriageDecision::Archived)
-                                        && stored_triage != Some(&TriageDecision::Archived)
+                                        && stored_triage.map(|d| d.as_str()) != Some("archived")
                                 })
                                 .count();
                         }

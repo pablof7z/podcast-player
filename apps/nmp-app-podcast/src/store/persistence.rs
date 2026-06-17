@@ -49,6 +49,25 @@ pub(super) struct PersistedClip {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     pub created_at: i64,
+    /// Transcript text captured at clip create/refinement time. `#[serde(default)]`
+    /// so pre-autosnip persisted clips (missing this field) load as empty string.
+    #[serde(default)]
+    pub transcript_text: String,
+    /// Speaker attribution from the transcript, if available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speaker: Option<String>,
+    /// Clip source string (e.g. "touch", "auto"). `#[serde(default)]` for
+    /// backward compat.
+    #[serde(default)]
+    pub source: String,
+    /// Refinement lifecycle status: "manual" | "pending_transcript" | "ready".
+    /// `#[serde(default)]` so pre-autosnip clips load as empty (treated as "manual"
+    /// at projection time).
+    #[serde(default)]
+    pub refinement_status: String,
+    /// Autosnip anchor position in seconds (None for manual clips).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_snip_anchor_secs: Option<f64>,
 }
 
 impl From<&ClipRecord> for PersistedClip {
@@ -62,6 +81,11 @@ impl From<&ClipRecord> for PersistedClip {
             end_secs: r.end_secs,
             title: r.title.clone(),
             created_at: r.created_at,
+            transcript_text: r.transcript_text.clone(),
+            speaker: r.speaker.clone(),
+            source: r.source.clone(),
+            refinement_status: r.refinement_status.clone(),
+            auto_snip_anchor_secs: r.auto_snip_anchor_secs,
         }
     }
 }
@@ -77,6 +101,17 @@ impl From<PersistedClip> for ClipRecord {
             end_secs: p.end_secs,
             title: p.title,
             created_at: p.created_at,
+            transcript_text: p.transcript_text,
+            speaker: p.speaker,
+            // Treat empty source string from pre-autosnip persisted data as "touch".
+            source: if p.source.is_empty() { "touch".to_owned() } else { p.source },
+            // Treat empty refinement_status from pre-autosnip data as "manual".
+            refinement_status: if p.refinement_status.is_empty() {
+                "manual".to_owned()
+            } else {
+                p.refinement_status
+            },
+            auto_snip_anchor_secs: p.auto_snip_anchor_secs,
         }
     }
 }

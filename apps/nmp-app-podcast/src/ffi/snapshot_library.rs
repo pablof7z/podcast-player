@@ -84,6 +84,10 @@ pub(super) fn episode_summary(
             .map(|(st, _)| st.clone())
             .unwrap_or_default(),
         transcript_status_message: transcript_override.and_then(|(_, m)| m.clone()),
+        // Library rows are not queue-specific; queue fields are None.
+        queue_start_secs: None,
+        queue_end_secs: None,
+        queue_slot_id: None,
     }
 }
 
@@ -198,6 +202,8 @@ mod tests {
             )),
             snapshot_cache: Arc::new(Mutex::new(None)),
             clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
+            ask_state: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskState::default())),
+            ask_callback: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskCallbackState::default())),
         }
     }
 

@@ -339,6 +339,11 @@ fn make_clip(id: &str, episode_id: &str, created_at: i64) -> PersistedClip {
         end_secs: 40.0,
         title: Some("My Clip".to_owned()),
         created_at,
+        transcript_text: String::new(),
+        speaker: None,
+        source: "touch".to_owned(),
+        refinement_status: "manual".to_owned(),
+        auto_snip_anchor_secs: None,
     }
 }
 
@@ -399,6 +404,11 @@ fn clips_persisted_clip_converts_losslessly_from_clip_record() {
         end_secs: 87.3,
         title: Some("My Clip Label".to_owned()),
         created_at: 1_750_000_000,
+        transcript_text: "some text".to_owned(),
+        speaker: Some("Alice".to_owned()),
+        source: "touch".to_owned(),
+        refinement_status: "manual".to_owned(),
+        auto_snip_anchor_secs: None,
     };
     let persisted = PersistedClip::from(&record);
     let back: ClipRecord = persisted.into();
@@ -455,6 +465,11 @@ fn clip_without_title_omits_title_in_json() {
         end_secs: 30.0,
         title: None,
         created_at: 1,
+        transcript_text: String::new(),
+        speaker: None,
+        source: "touch".to_owned(),
+        refinement_status: "manual".to_owned(),
+        auto_snip_anchor_secs: None,
     };
     let payload = PersistedStore {
         schema_version: PERSIST_SCHEMA_VERSION,

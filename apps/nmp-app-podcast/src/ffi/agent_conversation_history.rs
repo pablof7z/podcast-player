@@ -342,7 +342,7 @@ fn display_name(pubkey: &str, friends: &std::collections::HashMap<String, String
 
 fn short_npub(hex: &str) -> String {
     let full = nostr::PublicKey::parse(hex)
-        .and_then(|pk| pk.to_bech32())
+        .map(|pk| pk.to_bech32().unwrap_or_else(|_| hex.to_string()))
         .unwrap_or_else(|_| hex.to_string());
     if full.starts_with("npub1") && full.chars().count() > 17 {
         let head = full.chars().take(12).collect::<String>();
