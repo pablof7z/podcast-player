@@ -329,7 +329,8 @@ final class AppTests: XCTestCase {
         let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("## Subscriptions (4)"))
-        XCTAssertTrue(prompt.contains("…and 3 more"))
+        // The Rust renderer uses ASCII "..." (three dots), not the Unicode ellipsis "…".
+        XCTAssertTrue(prompt.contains("...and 3 more"))
     }
 
     func testAgentPromptRendersKernelInProgressEpisodes() {
