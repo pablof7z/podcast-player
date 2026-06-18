@@ -289,16 +289,21 @@ final class AppTests: XCTestCase {
         var state = AppState()
         state.friends.append(Friend(displayName: "Alice", identifier: "alice_id"))
 
-        let prompt = AgentPrompt.build(for: state, agentContext: nil)
+        let prompt = AgentPrompt.build(for: state, agentContext: nil, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("Alice"))
     }
 
     func testAgentPromptIncludesMemories() {
-        var state = AppState()
-        state.agentMemories.append(AgentMemory(content: "User prefers mornings"))
+        let memory = MemoryFact(
+            id: "mem-1",
+            key: "schedule_preference",
+            value: "User prefers mornings",
+            source: "user",
+            createdAt: 0
+        )
 
-        let prompt = AgentPrompt.build(for: state, agentContext: nil)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: nil, memoryFacts: [memory])
 
         XCTAssertTrue(prompt.contains("User prefers mornings"))
     }
@@ -308,7 +313,7 @@ final class AppTests: XCTestCase {
         ctx.subscriptions = ["The Tim Ferriss Show", "Acquired"]
         ctx.subscriptionsTotal = 2
 
-        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("## Subscriptions (2)"))
         XCTAssertTrue(prompt.contains("The Tim Ferriss Show"))
@@ -321,7 +326,7 @@ final class AppTests: XCTestCase {
         // Kernel capped a larger followed set; renderer shows the overflow.
         ctx.subscriptionsTotal = 4
 
-        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("## Subscriptions (4)"))
         XCTAssertTrue(prompt.contains("…and 3 more"))
@@ -333,7 +338,7 @@ final class AppTests: XCTestCase {
             AgentContextEpisode(title: "Episode about something", showTitle: "Lex Fridman"),
         ]
 
-        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("## In Progress"))
         XCTAssertTrue(prompt.contains("Episode about something"))
@@ -347,14 +352,14 @@ final class AppTests: XCTestCase {
         ]
         ctx.recentWindowDays = 7
 
-        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: ctx, memoryFacts: [])
 
         XCTAssertTrue(prompt.contains("## Recent (last 7 days, unplayed)"))
         XCTAssertTrue(prompt.contains("Brand new episode"))
     }
 
     func testAgentPromptOmitsInventorySectionsWhenContextNil() {
-        let prompt = AgentPrompt.build(for: AppState(), agentContext: nil)
+        let prompt = AgentPrompt.build(for: AppState(), agentContext: nil, memoryFacts: [])
 
         XCTAssertFalse(prompt.contains("## Subscriptions"))
         XCTAssertFalse(prompt.contains("## In Progress"))
