@@ -100,6 +100,13 @@ enum UITestSeeder {
             }
         }
 
+        // ep2 UUID — seeded into the kernel library so the Queue action is accepted
+        // and the authoritative projection includes it. Without this entry the
+        // kernel silently drops the ep2 enqueue, the snapshot clobbers the
+        // optimistic local state, and the "Queued" label reverts to "Queue".
+        let episode2UUID = "A1A1FFFF-0001-0002-0001-000000000002"
+        let enclosure2URL = "https://test.podcast.local/episodes/ep2.mp3"
+
         let seed = """
         {
           "schema_version": 1,
@@ -130,6 +137,23 @@ enum UITestSeeder {
               "played": false,
               "is_starred": false,
               "download_state": \(downloadState),
+              "transcript_state": {"state": "none"},
+              "triage_is_hero": false,
+              "metadata_indexed": false
+            },{
+              "id": "\(episode2UUID.lowercased())",
+              "podcast_id": "a1a1ffff-0001-0001-0001-000000000001",
+              "guid": "37537 at https://www.thisamericanlife.org",
+              "title": "136: Once More with Feeling",
+              "description": "People who tried something a second time.",
+              "pub_date": "2026-04-01T00:00:00Z",
+              "duration_secs": 240.0,
+              "enclosure_url": "\(enclosure2URL)",
+              "enclosure_mime_type": "audio/mpeg",
+              "position_secs": 0.0,
+              "played": false,
+              "is_starred": false,
+              "download_state": {"state": "not_downloaded"},
               "transcript_state": {"state": "none"},
               "triage_is_hero": false,
               "metadata_indexed": false

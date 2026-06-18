@@ -50,6 +50,13 @@ final class PlaybackState {
     }
 
     var queue: [QueueItem] = []
+    /// Transient set of episode ids for which an enqueue was dispatched to the
+    /// kernel and returned `.accepted`, but whose authoritative confirmation
+    /// (via `onQueueFromKernel`) has not yet arrived. Drives the "Queued"
+    /// button state between tap and the next kernel projection tick, giving
+    /// instant feedback without making Swift a second writer to `queue`.
+    /// Items are removed as each id appears in the kernel's queue projection.
+    var pendingEnqueue: Set<UUID> = []
     var seekHistory: [SeekHistoryEntry] = []
     var canJumpBack: Bool { !seekHistory.isEmpty }
 
