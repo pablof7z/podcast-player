@@ -26,8 +26,14 @@ extension RootView {
         }
 
         // Render the Up Next queue from the Rust-owned projection.
+        // Also clears `pendingEnqueue` for any episode the kernel has now
+        // confirmed — the projection becomes the authoritative source of truth.
         let seedQueue: ([QueueItem]) -> Void = { [playbackState] items in
             playbackState.queue = items
+            if !playbackState.pendingEnqueue.isEmpty {
+                let confirmedIDs = Set(items.map(\.episodeID))
+                playbackState.pendingEnqueue.subtract(confirmedIDs)
+            }
         }
         if !store.pendingKernelQueue.isEmpty {
             seedQueue(store.pendingKernelQueue)
@@ -47,7 +53,17 @@ extension RootView {
         AutoSnipController.shared.attach(playback: playbackState, store: store)
 
         // Restore last-played episode so the mini-player reappears on restart.
-        if playbackState.episode == nil,
+        // Skip for UITestSeed (non-relaunch): the seeder gives a clean-state
+        // launch and the kernel's own internal now-playing may still point at
+        // the seeded episode from a prior run. Loading it here would make that
+        // episode the `PlaybackState.episode`, causing `enqueue` to silently
+        // drop it via the "don't queue the now-playing episode" guard.
+        // Relaunch tests (--UITestSeedRelaunch) DO need the restore because
+        // their scenario depends on the mini-player appearing after a cold restart.
+        let isCleanTestSeed = CommandLine.arguments.contains("--UITestSeed")
+            && !CommandLine.arguments.contains("--UITestSeedRelaunch")
+        if !isCleanTestSeed,
+           playbackState.episode == nil,
            let lastID = store.state.lastPlayedEpisodeID,
            let episode = store.episode(id: lastID) {
             playbackState.setEpisode(episode)

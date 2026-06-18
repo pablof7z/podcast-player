@@ -11,12 +11,21 @@ extension PlaybackState {
     /// `[UUID]`-based queue, the same episode *can* appear multiple times as
     /// bounded segments — but whole-episode duplicates are still deduplicated
     /// so a library-row "Queue" button can't stack the same full episode twice.
+    ///
+    /// Instant feedback is achieved via `pendingEnqueue`: on a synchronous
+    /// `.accepted` result, the id is added to `pendingEnqueue` so `isQueued`
+    /// returns `true` immediately. The kernel's authoritative queue projection
+    /// (delivered via `onQueueFromKernel` / `PlaybackState.queue`) is the sole
+    /// writer to `queue`; `pendingEnqueue` entries are cleared as each id is
+    /// confirmed by the projection. Swift never writes to `queue` here.
     func enqueue(_ episodeID: UUID) {
         guard episodeID != episode?.id else { return }
         let alreadyWhole = queue.contains { $0.episodeID == episodeID && $0.startSeconds == nil }
         guard !alreadyWhole else { return }
-        queue.append(.episode(episodeID))
-        store?.kernelEnqueueLast(episodeID: episodeID)
+        guard !pendingEnqueue.contains(episodeID) else { return }
+        if case .accepted = store?.kernelEnqueueLast(episodeID: episodeID) {
+            pendingEnqueue.insert(episodeID)
+        }
     }
 
     /// Append a `QueueItem` (possibly bounded) to the end of the queue.
@@ -93,10 +102,11 @@ extension PlaybackState {
     // MARK: - Convenience
 
     /// Returns `true` when any queue item targets the given episode (by full-
-    /// episode whole or bounded segment). Used by UI affordances to show
+    /// episode whole or bounded segment), OR when an enqueue dispatch for this
+    /// episode is pending kernel confirmation. Used by UI affordances to show
     /// "Remove from queue" vs "Add to queue".
     func isQueued(_ episodeID: UUID) -> Bool {
-        queue.contains { $0.episodeID == episodeID }
+        queue.contains { $0.episodeID == episodeID } || pendingEnqueue.contains(episodeID)
     }
 
 }
