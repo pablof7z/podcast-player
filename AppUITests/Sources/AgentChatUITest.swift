@@ -64,7 +64,7 @@ final class AgentChatUITest: XCTestCase {
         let replyPredicate = NSPredicate(
             format: "label CONTAINS %@", "UITestStubReply"
         )
-        let replyElement = app.staticTexts.containing(replyPredicate).firstMatch
+        let replyElement = app.staticTexts.matching(replyPredicate).firstMatch
         XCTAssertTrue(
             replyElement.waitForExistence(timeout: 30),
             "UITEST-SIM: agent stub reply never appeared in transcript — " +
