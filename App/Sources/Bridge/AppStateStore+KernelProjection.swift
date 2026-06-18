@@ -371,7 +371,8 @@ extension AppStateStore {
                 if prevEpisodeSummaries[ep.id] == ep,
                    let parsedID = UUID(uuidString: ep.id),
                    let prior = priorEpisodesByID[parsedID] {
-                    // Reused summary: apply position cache and nowPlaying as overlays.
+                    // Reused summary: apply the live nowPlaying position as a
+                    // render-only overlay (the kernel remains the sole writer).
                     // The kernel excludes position_secs from the library content hash
                     // so the summary is never "changed" by a position tick alone —
                     // the prior episode would otherwise keep its stale playbackPosition.

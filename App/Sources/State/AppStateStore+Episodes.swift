@@ -6,11 +6,12 @@ extension AppStateStore {
 
     // MARK: - Reads
     //
-    // Reads fold the position-debounce cache into the result so a freshly-
-    // updated playhead is visible to UI surfaces (in-progress carousel,
-    // resume-from-position, episode detail) without waiting for the next
-    // disk flush. See `AppStateStore+PositionDebounce.swift` for the
-    // cache's lifecycle.
+    // Reads apply the live kernel playhead (`kernel.nowPlaying.positionSecs`)
+    // as a render-only floor so a freshly-updated position is visible to UI
+    // surfaces (in-progress carousel, resume-from-position, episode detail)
+    // without waiting for the kernel's next disk flush. This is display-only;
+    // the kernel remains the sole writer of `position_secs` (see
+    // `audio_report.rs::apply_writeback`).
 
     /// Returns the live episode record matching `id`, or `nil` when not found.
     /// Applies the live kernel position as a render-only floor when the episode

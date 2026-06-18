@@ -255,10 +255,12 @@ final class P0PlaybackUITests: XCTestCase {
         app.terminate()
         sleep(2)
 
-        // ── Cold relaunch: carry persisted position from SQLite/podcasts.json ─
-        // --UITestSeedRelaunch tells UITestSeeder to read the previous session's
-        // SQLite row and seed position_secs into podcasts.json so the kernel
-        // projection sees a non-zero start position.
+        // ── Cold relaunch: resume from the kernel's own persisted position ───
+        // --UITestSeedRelaunch tells UITestSeeder to PRESERVE the kernel's
+        // podcasts.json (which already carries position_secs written by
+        // audio_report.rs::apply_writeback) and wipe only the Swift SQLite
+        // mirror, so the resume point comes solely from the kernel — proving
+        // the single-source-of-truth contract end-to-end.
         app.launchArguments = ["--UITestSeed", "--UITestSeedRelaunch"]
         XCTAssertTrue(launchApp(app), "cold relaunch")
         sleep(2)

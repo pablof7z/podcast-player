@@ -19,8 +19,8 @@
 //! so the resume point survives a process restart. `Playing` ticks arrive at
 //! ≤4 Hz (`AudioReport` D8) so the mutation stays in-memory; we only flush to
 //! disk on terminal events (`Paused` / `Stopped` / `SleepTimerFired`) and on
-//! a coarse position-delta threshold so a long unbroken playback session
-//! still checkpoints every ~30 seconds of playhead.
+//! a position-delta threshold (`POSITION_FLUSH_DELTA_SECS`) so a long unbroken
+//! playback session still checkpoints every ~10 seconds of playhead.
 //!
 //! ## D6 — degrade silently
 //!
