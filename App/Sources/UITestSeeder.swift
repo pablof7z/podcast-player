@@ -37,6 +37,11 @@ enum UITestSeeder {
         // replaced a prior seed with real RSS data (or a stale seed from the last
         // test run). Re-seeding gives every test run a known-good starting state.
         try? FileManager.default.removeItem(at: file)
+        // Also wipe the kernel-owned clips sidecar on EVERY --UITestSeed so a
+        // prior run's seeded clip (e.g. the orphan clip below) can't contaminate
+        // a later test that seeds without --UITestSeedOrphanClip. The orphan
+        // branch rewrites clips.json afterwards when that flag IS present.
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent("clips.json"))
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         // On a fresh seed (NOT relaunch), wipe the Swift persistence store so
         // stale playback positions from a prior test don't bleed into this run.

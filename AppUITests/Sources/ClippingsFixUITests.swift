@@ -5,17 +5,18 @@ import XCTest
 /// header ("Earlier") over blank space.
 ///
 /// The test is self-seeding: it launches the app with `--UITestSeed
-/// --UITestSeedOrphanClip` so that `UITestSeeder` writes a `clips` entry in
-/// `podcasts.json` whose `episode_id` is not present in the episode list. No
-/// pre-seeding by an external QA fixture is required.
+/// --UITestSeedOrphanClip` so that `UITestSeeder` writes an orphan clip to the
+/// kernel-owned `clips.json` sidecar (the authoritative clip source) whose
+/// `episode_id` is not present in the episode list. No pre-seeding by an
+/// external QA fixture is required.
 final class ClippingsFixUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
     func testOrphanClipRendersCard() {
         // Launch with both seed flags: --UITestSeed for the standard library
         // fixture and --UITestSeedOrphanClip for the orphan clip injection.
-        // UITestSeeder writes the clip into podcasts.json and removes any stale
-        // clips.json sidecar so the kernel loads our clip on startup.
+        // UITestSeeder writes the orphan clip into the kernel-owned clips.json
+        // sidecar (the authoritative clip source) so the kernel loads it on start.
         let app = XCUIApplication(bundleIdentifier: App.bundleID)
         app.launchArguments = ["--UITestSeed", "--UITestSeedOrphanClip"]
         app.launch()
