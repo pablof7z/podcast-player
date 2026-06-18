@@ -21,11 +21,12 @@
 //! panics across the FFI.
 
 use std::ffi::{c_char, CStr};
+use std::sync::atomic::Ordering;
 
 use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
-use crate::capability::{VoiceCommand, VoiceReport, VOICE_CAPABILITY_NAMESPACE};
-use crate::voice_handler::apply_report;
+use crate::capability::{TtsProvider, VoiceCommand, VoiceReport, VOICE_CAPABILITY_NAMESPACE};
+use crate::voice_handler::{apply_report, barge_in_text};
 
 /// Deliver a JSON-encoded [`VoiceReport`] to the kernel-side voice
 /// projection. Returns `NULL` — voice mode currently has no
@@ -64,26 +65,69 @@ pub extern "C" fn nmp_app_podcast_voice_report(
             _ => None,
         };
 
-        // Check barge-in eligibility before apply_report: a partial transcript
-        // arriving while TTS is speaking means the user is interrupting.
-        // Rust owns this policy (D7 — capability never decides); Swift's
-        // notifyPartialForBargeIn is now a no-op.
-        let is_partial_transcript = matches!(&report, VoiceReport::TranscriptPartial { .. });
-
-        // Apply the report and capture was_speaking in a single lock window.
-        let (changed, was_speaking) = match handle_ref.state.voice.voice_state.lock() {
-            Ok(mut state) => {
-                let was_speaking = state.is_speaking;
-                let changed = apply_report(&mut state, report);
-                (changed, was_speaking)
-            }
-            Err(_) => (false, false),
+        // Capture failed request id for ElevenLabs fallback matching.
+        let failed_request_id = match &report {
+            VoiceReport::Failed { request_id, .. } => Some(request_id.clone()),
+            _ => None,
         };
+
+        // Barge-in fires only on non-empty/non-whitespace partial transcripts
+        // (D7 — empty partials are STT noise; Rust owns barge-in policy).
+        // Delegate to the canonical helper in voice_handler.
+        let should_barge_in = barge_in_text(&report).is_some();
+
+        // Apply the report and capture was_speaking + ElevenLabs fallback info
+        // in a single lock window. Fallback text is read BEFORE apply_report
+        // clears the tracking fields.
+        let (changed, was_speaking, el_fallback_text) =
+            match handle_ref.state.voice.voice_state.lock() {
+                Ok(mut state) => {
+                    let was_speaking = state.is_speaking;
+                    // Snapshot ElevenLabs fallback text before apply_report clears it.
+                    let el_fallback_text = if state.current_is_elevenlabs
+                        && failed_request_id.as_deref()
+                            == state.current_request_id.as_deref()
+                    {
+                        state.current_speak_text.clone()
+                    } else {
+                        None
+                    };
+                    let changed = apply_report(&mut state, report);
+                    (changed, was_speaking, el_fallback_text)
+                }
+                Err(_) => (false, false, None),
+            };
         handle_ref.bump_snapshot_rev_if(changed);
 
-        // Barge-in: partial transcript while TTS was speaking → Stop the
-        // in-flight utterance so the user's voice wins the turn.
-        if is_partial_transcript && was_speaking {
+        // ElevenLabs fallback: on a Failed report for the in-flight ElevenLabs
+        // Speak, retry with AvSpeech so the turn is still spoken.
+        // `current_is_elevenlabs` is already cleared by apply_report (D7 —
+        // no second retry on the AvSpeech fallback).
+        if let Some(speak_text) = el_fallback_text {
+            let fallback_request_id = format!(
+                "fallback-{}",
+                handle_ref.state.infra.rev.load(Ordering::Relaxed)
+            );
+            let cmd = VoiceCommand::Speak {
+                text: speak_text,
+                request_id: fallback_request_id,
+                provider: TtsProvider::AvSpeech { voice_id: None },
+            };
+            if let Ok(payload_json) = serde_json::to_string(&cmd) {
+                let req = nmp_core::substrate::CapabilityRequest {
+                    namespace: VOICE_CAPABILITY_NAMESPACE.to_owned(),
+                    correlation_id: String::new(),
+                    payload_json,
+                };
+                // SAFETY: `handle_ref.app` is owned by `NmpApp` whose lifetime
+                // brackets every report call (fenced by the actor join in Drop).
+                let _ = unsafe { &*handle_ref.app }.dispatch_capability(&req);
+            }
+        }
+
+        // Barge-in: non-empty partial transcript while TTS was speaking →
+        // Stop the in-flight utterance so the user's voice wins the turn.
+        if should_barge_in && was_speaking {
             if let Ok(payload_json) = serde_json::to_string(&VoiceCommand::Stop) {
                 let req = nmp_core::substrate::CapabilityRequest {
                     namespace: VOICE_CAPABILITY_NAMESPACE.to_owned(),

@@ -50,6 +50,7 @@ use crate::capability::voice::{TtsProvider, VoiceCommand, VOICE_CAPABILITY_NAMES
 use crate::ffi::projections::VoiceState;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
+use crate::voice_handler;
 
 /// System prompt for voice-mode turns. Kept terse on purpose: TTS replies
 /// that run long are a poor voice UX, so we bias the model toward 1–3
@@ -296,27 +297,10 @@ impl VoiceConversationManager {
 
             let request_id = format!("voice-{}", rev.load(Ordering::Relaxed));
 
-            // Resolve TTS provider from store settings. Hold the lock only briefly.
-            let provider = {
-                let store_guard = store_for_provider.lock();
-                let (el_voice_id, el_model) = store_guard
-                    .ok()
-                    .map(|s| {
-                        let vid = s.eleven_labs_voice_id().trim().to_owned();
-                        let model = s.eleven_labs_tts_model().trim().to_owned();
-                        let model = if model.is_empty() { None } else { Some(model) };
-                        (vid, model)
-                    })
-                    .unwrap_or_default();
-                if !el_voice_id.is_empty() {
-                    TtsProvider::ElevenLabs {
-                        voice_id: el_voice_id,
-                        model: el_model,
-                    }
-                } else {
-                    TtsProvider::AvSpeech { voice_id: None }
-                }
-            };
+            // Resolve TTS provider via the canonical helper (deduplicates the
+            // ElevenLabs-vs-AvSpeech selection from voice_handler).
+            let provider =
+                voice_handler::resolve_tts_provider(&store_for_provider, &voice_state, None);
 
             // Update voice_state with the resolved voice id for UI feedback.
             if let Ok(mut v) = voice_state.lock() {

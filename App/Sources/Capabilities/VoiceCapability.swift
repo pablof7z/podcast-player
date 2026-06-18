@@ -55,9 +55,6 @@ final class VoiceCapability: NSObject {
     /// `SpeakingStarted` / `SpeakingFinished` / `Failed`. `nil` between
     /// turns.
     var activeSpeakRequestID: String?
-    /// Voice id (locale identifier) the Rust side most recently picked
-    /// via `SetVoice`. `nil` falls back to the device default.
-    var activeVoiceID: String?
 
     // ── ElevenLabs TTS playback sink ──────────────────────────────────────
     // When the user has selected an ElevenLabs voice, voice-mode `Speak`
@@ -144,8 +141,10 @@ final class VoiceCapability: NSObject {
             speak(text: text, requestID: requestID, provider: provider)
         case .stop:
             stopSpeaking()
-        case let .setVoice(voiceID):
-            activeVoiceID = voiceID.isEmpty ? nil : voiceID
+        case .setVoice:
+            // Voice id is owned exclusively by Rust VoiceState; no Swift-side
+            // state needed. Keep the case to avoid decode errors on old clients.
+            break
         }
     }
 
@@ -265,16 +264,13 @@ final class VoiceCapability: NSObject {
     }
 
     /// On-device `AVSpeechSynthesizer` synthesis. The default path when no
-    /// ElevenLabs voice is selected, and the fallback when ElevenLabs fails.
+    /// ElevenLabs voice is selected. `voiceID` is resolved by Rust in
+    /// `resolve_tts_provider` (Swift no longer holds `activeVoiceID` state).
     func speakViaAVSpeech(text: String, voiceID: String?, requestID: String) {
         let utterance = AVSpeechUtterance(string: text)
         if let voiceID, !voiceID.isEmpty {
             utterance.voice = AVSpeechSynthesisVoice(identifier: voiceID)
                 ?? AVSpeechSynthesisVoice(language: voiceID)
-            activeVoiceID = voiceID
-        } else if let activeVoiceID {
-            utterance.voice = AVSpeechSynthesisVoice(identifier: activeVoiceID)
-                ?? AVSpeechSynthesisVoice(language: activeVoiceID)
         }
         activeSpeakRequestID = requestID
         synthesizer.speak(utterance)
