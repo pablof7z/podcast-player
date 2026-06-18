@@ -69,9 +69,11 @@ struct AudioReportResponse {
 }
 
 /// Minimum position delta (seconds) between disk flushes while a `Playing`
-/// stream is in flight. Keeps the on-disk checkpoint within ~30 s of the live
-/// playhead without burning a write on every `Playing` tick (≤4 Hz).
-const POSITION_FLUSH_DELTA_SECS: f64 = 30.0;
+/// stream is in flight. Keeps the on-disk checkpoint within ~10 s of the live
+/// playhead without burning a write on every `Playing` tick (≤4 Hz). This
+/// bounds the crash-loss window to at most one flush interval — tighter than
+/// the old 30 s threshold that the Swift debounce used to cover.
+const POSITION_FLUSH_DELTA_SECS: f64 = 10.0;
 
 /// Deliver a JSON-encoded `AudioReport` to the Rust `PlayerActor` and return
 /// the JSON-encoded follow-up `AudioCommand`, if any.

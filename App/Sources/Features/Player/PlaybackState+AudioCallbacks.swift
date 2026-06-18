@@ -34,10 +34,10 @@ extension PlaybackState {
         let audio = PodcastCapabilities.shared.audio
         engine.onPlayingTick = { [weak audio] url, position, duration in
             // The Rust kernel's apply_writeback (audio_report.rs) is the sole
-            // owner of ep.position_secs persistence. Swift does not duplicate
-            // the write — the emitReport below drives the kernel path and the
-            // resulting nowPlaying tick propagates position to the UI via
-            // KernelModel.onPositionTick → AppStateStore.setEpisodePlaybackPosition.
+            // owner of ep.position_secs persistence. Swift is render-only —
+            // the emitReport below drives the kernel path; the resulting
+            // nowPlaying tick propagates position to the UI via
+            // KernelModel.onPositionTick → AppStateStore.onPositionTick.
             audio?.emitReport(.playing(url: url, positionSecs: position, durationSecs: duration))
         }
         engine.onPauseEvent = { [weak audio] url, position in
