@@ -12,27 +12,16 @@ import XCTest
 final class PlaybackQueueTests: XCTestCase {
 
     // MARK: - enqueue
-
-    func testEnqueueAppendsInOrder() {
-        let state = PlaybackState()
-        let a = UUID(), b = UUID(), c = UUID()
-
-        state.enqueue(a)
-        state.enqueue(b)
-        state.enqueue(c)
-
-        XCTAssertEqual(state.queue.map(\.episodeID), [a, b, c])
-    }
-
-    func testEnqueueIgnoresDuplicate() {
-        let state = PlaybackState()
-        let a = UUID()
-
-        state.enqueue(a)
-        state.enqueue(a)
-
-        XCTAssertEqual(state.queue.map(\.episodeID), [a])
-    }
+    //
+    // `enqueue` ordering and whole-episode de-duplication are now owned by the
+    // Rust kernel queue (`PlaybackQueue::add_to_end`, covered by
+    // `cargo test -p nmp-app-podcast queue`). On the Swift side `enqueue` only
+    // dispatches to the kernel and marks a transient `pendingEnqueue` until the
+    // authoritative projection arrives via `onQueueFromKernel` — it no longer
+    // writes `PlaybackState.queue` directly, so a kernel-less unit test can't
+    // assert ordering here. The end-to-end enqueue→"Queued" flow is covered by
+    // the `testP0_QueueAddMultiple` UI test. The current-episode guard below is
+    // pure Swift policy and stays unit-tested.
 
     func testEnqueueIgnoresCurrentEpisode() {
         let state = PlaybackState()
@@ -49,8 +38,9 @@ final class PlaybackQueueTests: XCTestCase {
     func testRemoveFromQueueDropsEntry() {
         let state = PlaybackState()
         let a = UUID(), b = UUID()
-        state.enqueue(a)
-        state.enqueue(b)
+        // Seed the projection directly (the kernel is the queue's writer);
+        // removeFromQueue is a pure Swift array op on the projection.
+        state.queue = [a, b].map { .episode($0) }
 
         state.removeFromQueue(a)
 
@@ -62,7 +52,7 @@ final class PlaybackQueueTests: XCTestCase {
         let a = UUID()
 
         state.removeFromQueue(a)  // no-op on empty queue
-        state.enqueue(a)
+        state.queue = [.episode(a)]
         state.removeFromQueue(a)
         state.removeFromQueue(a)  // no-op the second time
 
@@ -74,9 +64,7 @@ final class PlaybackQueueTests: XCTestCase {
     func testMoveQueueReordersEntries() {
         let state = PlaybackState()
         let a = UUID(), b = UUID(), c = UUID()
-        state.enqueue(a)
-        state.enqueue(b)
-        state.enqueue(c)
+        state.queue = [a, b, c].map { .episode($0) }
 
         // Move first item to the end. SwiftUI .onMove convention: destination
         // index is in the post-removal array, so end-of-list is `count`.
@@ -89,9 +77,7 @@ final class PlaybackQueueTests: XCTestCase {
 
     func testClearQueueEmptiesEverything() {
         let state = PlaybackState()
-        state.enqueue(UUID())
-        state.enqueue(UUID())
-        state.enqueue(UUID())
+        state.queue = [UUID(), UUID(), UUID()].map { .episode($0) }
 
         state.clearQueue()
 
