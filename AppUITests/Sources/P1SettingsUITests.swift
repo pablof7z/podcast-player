@@ -245,11 +245,15 @@ final class P1SettingsUITests: XCTestCase {
         snap(app, "creds-02-providers")
 
         // --- Step 2: Providers → OpenRouter ---
-        let openRouterRow = staticTextContaining(app, "OpenRouter")
+        // Target the navigable OpenRouter row (NavigationLink → OpenRouterSettingsView)
+        // by its stable identifier — the plain "OpenRouter" text also appears as a
+        // non-navigating BYOK-vault status row, so firstMatch on the text would tap
+        // the wrong (non-navigating) one and never reach the API-key field.
+        let openRouterRow = app.buttons["ai-provider-openrouter"]
         guard openRouterRow.waitForExistence(timeout: 5) else {
             snap(app, "creds-NOOPENROUTER")
             dumpTree(app, "creds-NOOPENROUTER-tree")
-            XCTFail("FAIL settings-credentials-save: 'OpenRouter' row not found in Providers")
+            XCTFail("FAIL settings-credentials-save: navigable 'OpenRouter' row (ai-provider-openrouter) not found in Providers")
             return
         }
         robustTap(openRouterRow); sleep(2)
@@ -306,7 +310,7 @@ final class P1SettingsUITests: XCTestCase {
         let backBtn = app.navigationBars.buttons.element(boundBy: 0)
         if backBtn.waitForExistence(timeout: 3) { backBtn.tap(); sleep(1) }
 
-        let openRouterRow2 = staticTextContaining(app, "OpenRouter")
+        let openRouterRow2 = app.buttons["ai-provider-openrouter"]
         guard openRouterRow2.waitForExistence(timeout: 5) else {
             XCTFail("FAIL settings-credentials-save: could not return to Providers list after save")
             return
@@ -449,7 +453,9 @@ extension XCUIElement {
     func clearText() {
         guard let s = value as? String, !s.isEmpty else { return }
         tap()
-        let selectAll = XCUIApplication().menuItems["Select All"]
+        // Detached UI-test runner: a bare XCUIApplication() has no target app path
+        // ("No target application path specified"). Address the app by bundle id.
+        let selectAll = XCUIApplication(bundleIdentifier: "io.f7z.podcast").menuItems["Select All"]
         if selectAll.waitForExistence(timeout: 2) {
             selectAll.tap()
             typeText(XCUIKeyboardKey.delete.rawValue)
