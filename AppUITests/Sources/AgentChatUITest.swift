@@ -71,7 +71,7 @@ final class AgentChatUITest: XCTestCase {
             "turn-loop or rendering failed. Visible texts: " +
             app.staticTexts.allElementsBoundByIndex
                 .prefix(40)
-                .map(\.label)
+                .map { $0.label }
                 .filter { !$0.isEmpty }
                 .joined(separator: " | ")
         )
