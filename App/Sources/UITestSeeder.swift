@@ -3,9 +3,10 @@ import Foundation
 /// Writes a minimal This American Life library seed to the kernel's
 /// `podcasts.json` when the app is launched with `--UITestSeed`.
 ///
-/// Call from `AppMain.body` before `kernelModel.start()`. The write is
-/// synchronous; the kernel reads `podcasts.json` at `nmp_app_start` time, so
-/// the seed must land before that call. Two modes:
+/// Called from `AppDelegate.didFinishLaunchingWithOptions` (before the kernel
+/// opens the store in `KernelModel.start()`). The write is synchronous; the
+/// kernel reads `podcasts.json` at `set_data_dir`/`nmp_app_start` time, so the
+/// seed must land before that call. Two modes:
 ///   • `--UITestSeed` (fresh): always overwrites `podcasts.json` with a
 ///     known-good seed and wipes the Swift SQLite mirror, so every test
 ///     starts from a clean, position-0 state.
