@@ -4,9 +4,14 @@ import Foundation
 /// `podcasts.json` when the app is launched with `--UITestSeed`.
 ///
 /// Call from `AppMain.body` before `kernelModel.start()`. The write is
-/// synchronous and idempotent (skipped if the file already has real content).
-/// The kernel reads `podcasts.json` at `nmp_app_start` time, so the seed
-/// must land before that call.
+/// synchronous; the kernel reads `podcasts.json` at `nmp_app_start` time, so
+/// the seed must land before that call. Two modes:
+///   • `--UITestSeed` (fresh): always overwrites `podcasts.json` with a
+///     known-good seed and wipes the Swift SQLite mirror, so every test
+///     starts from a clean, position-0 state.
+///   • `--UITestSeedRelaunch`: preserves the kernel's existing `podcasts.json`
+///     (which already carries the position the kernel persisted last session)
+///     and wipes only the SQLite mirror, proving resume comes from the kernel.
 ///
 /// Never compiled out — the `CommandLine.arguments` guard is the safety valve
 /// so this is a no-op in production. Kept in the main target (not the test
