@@ -7,6 +7,15 @@ import XCTest
 final class P1SettingsUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = true }
 
+    /// Terminate the app after every test so the Rust audio session is fully
+    /// torn down before the next test launches. Without this, a test that starts
+    /// playback can leave audio running in the background, and the stale audio
+    /// session corrupts the accessibility state for the next test's navigation.
+    override func tearDown() {
+        XCUIApplication(bundleIdentifier: App.bundleID).terminate()
+        super.tearDown()
+    }
+
     // MARK: - P1: unsubscribe-from-library
 
     /// Open the subscribed podcast, open the show-options overflow menu (the

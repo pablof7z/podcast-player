@@ -157,31 +157,59 @@ extension XCTestCase {
     }
 
     /// Opens the first episode detail from a show detail screen.
+    ///
+    /// Waits up to 15 s for an episode row to appear — the show-detail screen
+    /// fetches episodes asynchronously via `.task`, so the list may be empty
+    /// for several seconds on a cold launch before the Rust kernel returns the
+    /// episode projection. The identifier-based path is tried first (stable,
+    /// preferred); the cell-based fallback covers edge cases where the
+    /// identifier hasn't propagated through the accessibility tree yet.
     @discardableResult
     func openFirstEpisodeFromShow(_ app: XCUIApplication) -> Bool {
-        let episodeRow = app.buttons.matching(
-            NSPredicate(format: "identifier == 'home-episode-row'")
-        ).firstMatch
-        if episodeRow.waitForExistence(timeout: 8) {
-            episodeRow.tap()
+        // Wait up to 15 s for an episode row to appear. The show-detail view
+        // fetches episodes via an async .task; on cold or slow launches the
+        // list is empty until the Rust projection completes.
+        let episodeRowPred = NSPredicate(format: "identifier == 'home-episode-row'")
+        let episodeRow = app.buttons.matching(episodeRowPred).firstMatch
+        if episodeRow.waitForExistence(timeout: 15) {
+            robustTap(episodeRow)
         } else {
-            let cells = app.cells
-            guard cells.count > 2 else { return false }
-            robustTap(cells.element(boundBy: 2))
+            // Cell-based fallback: wait for at least 3 cells (2 header cells +
+            // at least 1 episode row). Poll with explicit existence wait rather
+            // than an instantaneous count check.
+            let thirdCell = app.cells.element(boundBy: 2)
+            guard thirdCell.waitForExistence(timeout: 5) else { return false }
+            robustTap(thirdCell)
         }
 
-        return app.buttons["Play"].waitForExistence(timeout: 8)
+        // Wait for episode detail to confirm navigation succeeded. Accept
+        // "Play", "Resume", or "Queue" as signals that the detail screen loaded.
+        return app.buttons["Play"].waitForExistence(timeout: 10)
+            || app.buttons["Resume"].waitForExistence(timeout: 4)
             || app.buttons["Queue"].waitForExistence(timeout: 4)
             || app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'resume'")).firstMatch.waitForExistence(timeout: 2)
     }
 
+    /// Waits for the show detail screen to confirm the episode list has
+    /// populated. Checks for "Episodes" section header first (fast path), then
+    /// waits for a `home-episode-row` button to confirm the async fetch
+    /// completed and at least one episode row is present.
     @discardableResult
     func waitForShowDetail(_ app: XCUIApplication) -> Bool {
-        if staticTextContaining(app, "Episodes").waitForExistence(timeout: 4) { return true }
+        // "Episodes" section header appears as soon as the screen loads.
+        if staticTextContaining(app, "Episodes").waitForExistence(timeout: 8) {
+            // Wait an additional moment for the async episode-fetch .task to
+            // populate the list so the caller can immediately tap a row.
+            let episodeRow = app.buttons.matching(
+                NSPredicate(format: "identifier == 'home-episode-row'")
+            ).firstMatch
+            _ = episodeRow.waitForExistence(timeout: 8)
+            return true
+        }
         let episodeRow = app.buttons.matching(
             NSPredicate(format: "identifier == 'home-episode-row'")
         ).firstMatch
-        return episodeRow.waitForExistence(timeout: 2) || app.cells.count > 2
+        return episodeRow.waitForExistence(timeout: 4) || app.cells.element(boundBy: 2).waitForExistence(timeout: 2)
     }
 
     /// Attach the full accessibility tree as a kept string attachment.
