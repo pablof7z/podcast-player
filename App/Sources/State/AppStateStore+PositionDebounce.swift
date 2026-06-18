@@ -1,49 +1,42 @@
 import Foundation
 import UIKit
 
-// MARK: - AppStateStore + PositionDebounce
+// MARK: - AppStateStore + PositionDebounce (render-only position cache)
 //
-// **Why this exists.** The audio engine ticks once per second while playback
-// runs and forwards the playhead through `setEpisodePlaybackPosition`. Before
-// this file landed, every one of those ticks mutated `self.episodes`, which
-// fires `state.didSet`, which atomically rewrites the entire ~8 MB JSON blob
-// at `<App Group>/Library/Application Support/podcastr-state.v1.json`. That's
-// 480 MB of disk I/O per minute of playback — battery, NAND wear, and a main-
-// actor stall every second.
+// **Role after the kernel single-source-of-truth migration.**
+// The Rust kernel is the sole owner of ep.position_secs persistence.
+// `audio_report.rs:apply_writeback` writes position on every Playing tick
+// and flushes to disk on pause/stop. Swift does NOT mirror position back
+// to the kernel (`kernelPersistPosition` is no longer called from here).
 //
-// **The fix (Option A — debounce position writes only).** Position updates
-// flow through a side cache (`positionCache`) instead of straight into
-// `self.episodes`. The cache is folded back into reads (`episode(id:)`,
-// `inProgressEpisodes`, `recentEpisodes`) so UI surfaces always see the
-// latest playhead. Disk writes happen only when we need them:
+// This file's remaining job is **render-only**: the audio engine ticks at
+// ≤4 Hz while playback runs and `KernelModel.onPositionTick` forwards the
+// kernel-reported position here via `setEpisodePlaybackPosition`. The
+// `positionCache` keeps the live playhead in memory so UI reads (`episode(id:)`,
+// `inProgressEpisodes`, `recentEpisodes`) always see the current scrubber
+// position without waiting for a full `@Observable` write on every tick.
+//
+// Flushing the cache into `self.episodes` (so the position lands in the
+// observable store for downstream consumers) is still debounced:
 //
 //   - **Eager-first:** the very first position update after a flush is
-//     written immediately. Rationale: a crash 0.5 sec after playback starts
-//     mustn't lose all progress. It also keeps the existing single-call
-//     `setEpisodePlaybackPosition` semantics — the position lands in
-//     `self.episodes` straight away when the loop hasn't started yet.
-//   - **Trailing debounce:** once the eager save fires, subsequent rapid
-//     updates queue in the cache. A `Task` schedules a flush 5 sec after
-//     the last update — covering the "user paused mid-episode" case where
-//     no other natural flush event will fire.
-//   - **Max-interval cap:** if updates keep streaming faster than the
-//     debounce can settle (continuous playback), the eager-first gate
-//     re-opens after `maxInterval` (30 sec). So the worst case is one
-//     write per 30 sec during continuous playback — meeting the "≤ 30 sec
-//     of position lost on crash" constraint without hammering the file.
+//     written immediately — a crash 0.5 sec after playback starts must
+//     not lose all UI-side progress state.
+//   - **Trailing debounce (5 s):** subsequent rapid updates queue in the
+//     cache; the Task fires 5 s after the last update.
+//   - **Max-interval cap (30 s):** the eager-first gate re-opens after
+//     30 s so continuous playback gets at most one `self.episodes` write
+//     per 30 s.
 //
-// **Hard flush events.** Some transitions need the cache on disk *now*:
-//
-//   - `markEpisodePlayed(_:)` — the played-true mutation resets the
-//     position to 0; the cache must drain *before* that or we'd silently
-//     overwrite the user's actual end-position.
+// **Hard flush events** (need cache in self.episodes *now*):
+//   - `markEpisodePlayed(_:)` — played-true mutation must see the latest pos.
 //   - `UIApplication.didEnterBackgroundNotification` — force-quit window.
-//   - `clearAllData()` — the cache holds positions for episodes that are
-//     about to be wiped; flush would attempt to mutate gone records.
+//   - `clearAllData()` — cache holds positions for episodes about to be wiped.
 //
-// All other state mutations (subscribe, settings change, etc.) are rare and
-// the user expects them durable, so they stay on the existing
-// `state.didSet → save` path.
+// Kernel persistence guarantee: the kernel flushes ep.position_secs to
+// podcasts.json on every Paused/Stopped/SleepTimerFired event AND on a
+// coarse ≥POSITION_FLUSH_DELTA_SECS (30 s) interval during Playing. A cold
+// relaunch reads that file; no Swift mirror-back is needed or correct.
 
 extension AppStateStore {
 
@@ -143,15 +136,11 @@ extension AppStateStore {
             }
         }
 
-        // Mirror the same positions into the kernel store so that a cold relaunch
-        // (force-quit) reads the correct ep.position_secs. The kernel only updates
-        // position_secs on explicit PersistPosition actions (seek/skip while paused);
-        // without this sync the kernel snapshot always shows 0 on next launch,
-        // overriding the Swift-persisted value via KernelProjection.
-        for (id, position) in positionCache where position > 0 {
-            kernelPersistPosition(episodeID: id, positionSecs: position)
-        }
-
+        // The Rust kernel persists ep.position_secs directly from audio reports
+        // (audio_report.rs apply_writeback). Swift does not mirror position back
+        // into the kernel — that was a split-brain write path. The kernel is now
+        // the single source of truth for position persistence; Swift's cache here
+        // is render-only (feeds episode(id:) so the UI shows a live playhead).
         positionCache.removeAll(keepingCapacity: true)
         lastPositionFlush = Date()
 

@@ -404,12 +404,14 @@ extension AppStateStore {
                         episode.playbackPosition = 0
                     } else if episode.playbackPosition == 0,
                               let parsedID = UUID(uuidString: ep.id) {
-                        // The kernel only writes ep.position_secs on explicit
-                        // PersistPosition actions (seek/skip while paused). For
-                        // episodes rebuilt from a changed summary (e.g. RSS metadata
-                        // refresh), ep.position_secs is still 0 even though the user
-                        // listened part-way. Recover from positionCache first (most
-                        // accurate), then from the prior Episode (last flushed value).
+                        // Kernel writes ep.position_secs from every Playing audio
+                        // report (audio_report.rs apply_writeback), so ep.position_secs
+                        // is durable across force-quit. However, for episodes being
+                        // rebuilt mid-session from a changed RSS summary the kernel
+                        // snapshot's ep.position_secs may transiently lag the live
+                        // positionCache or the prior Episode row. Recover from
+                        // positionCache first (most accurate), then from the prior
+                        // Episode (last-flushed kernel value projected into self.episodes).
                         let recovered = positionCache[parsedID]
                             ?? priorEpisodesByID[parsedID]?.playbackPosition
                             ?? 0
