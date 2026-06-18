@@ -27,10 +27,43 @@ use std::sync::atomic::Ordering;
 
 use nmp_core::substrate::CapabilityRequest;
 
-use crate::capability::{VoiceCommand, VoiceReport, VOICE_CAPABILITY_NAMESPACE};
+use crate::capability::{TtsProvider, VoiceCommand, VoiceReport, VOICE_CAPABILITY_NAMESPACE};
 use crate::ffi::actions::voice_module::VoiceAction;
 use crate::ffi::projections::VoiceState;
 use crate::host_op_handler::PodcastHostOpHandler;
+
+/// Resolve the TTS provider from the store's current settings.
+/// If an ElevenLabs voice id is configured, returns `TtsProvider::ElevenLabs`;
+/// otherwise returns `TtsProvider::AvSpeech` with the supplied `voice_id`
+/// (from the action payload, may be None).
+fn resolve_tts_provider(
+    state: &crate::state::PodcastAppState,
+    avspeech_voice_id: Option<String>,
+) -> TtsProvider {
+    let (el_voice_id, el_model) = state
+        .library
+        .store
+        .lock()
+        .ok()
+        .map(|s| {
+            let vid = s.eleven_labs_voice_id().trim().to_owned();
+            let model = s.eleven_labs_tts_model().trim().to_owned();
+            let model = if model.is_empty() { None } else { Some(model) };
+            (vid, model)
+        })
+        .unwrap_or_default();
+
+    if !el_voice_id.is_empty() {
+        TtsProvider::ElevenLabs {
+            voice_id: el_voice_id,
+            model: el_model,
+        }
+    } else {
+        TtsProvider::AvSpeech {
+            voice_id: avspeech_voice_id.filter(|v| !v.is_empty()),
+        }
+    }
+}
 
 /// Dispatch a typed [`VoiceCommand`] to the iOS voice executor. Returns
 /// `Err(message)` on JSON encode failure; the capability call itself is
@@ -87,22 +120,24 @@ pub(crate) fn handle(
             }
         }
         VoiceAction::Speak { text, voice_id } => {
-            // Mint a kernel-owned request id so the executor's reports
-            // correlate even when the UI didn't supply one.
             let request_id = format!("turn-{}", handler.state.infra.rev.load(Ordering::Relaxed));
+            // Resolve provider from store: if an ElevenLabs voice is configured,
+            // use it; otherwise fall back to on-device AVSpeech.
+            let provider = resolve_tts_provider(&handler.state, voice_id);
             mutate_voice_state(handler, |v| {
                 v.is_speaking = true;
                 v.current_request_id = Some(request_id.clone());
-                if let Some(id) = voice_id.as_ref() {
+                if let TtsProvider::ElevenLabs { voice_id: ref id, .. } = provider {
+                    v.current_voice_id = Some(id.clone());
+                } else if let TtsProvider::AvSpeech { voice_id: Some(ref id) } = provider {
                     v.current_voice_id = Some(id.clone());
                 }
-                // Surface the assistant utterance under the orb.
                 v.last_response = Some(text.clone());
             });
             let cmd = VoiceCommand::Speak {
                 text,
-                voice_id,
                 request_id,
+                provider,
             };
             match dispatch_voice(handler, &cmd, correlation_id) {
                 Ok(_) => serde_json::json!({"ok": true}),

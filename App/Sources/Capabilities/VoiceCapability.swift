@@ -16,16 +16,13 @@ import os.log
 //   D6 — errors never throw across the boundary. Permission denials,
 //        recognizer unavailability, audio-session preempts all surface
 //        as `VoiceReport.Error` or `VoiceReport.Failed`.
-//   D7 — this capability *executes and reports*. Barge-in policy
-//        (cancel speech when partial transcript arrives) is *currently*
-//        co-located in `VoiceCapability+Barge.swift` because the M8.A
-//        Rust loop is still a stub; once `podcast-voice::manager` lands
-//        in a future milestone, the policy moves to Rust and this
-//        executor will only honour explicit `Stop` commands.
+//   D7 — this capability *executes and reports*. Provider routing
+//        (ElevenLabs vs. AVSpeech) and barge-in policy both live in Rust
+//        (`ffi/voice_report.rs`). Swift receives a concrete `TtsProvider`
+//        in every `Speak` command and executes exactly that backend.
 //
-// File-length budget: dispatch + command translation core. Barge-in
-// extension + wire vocabulary live in sibling files
-// (`VoiceCapability+Barge.swift`, `VoiceCapability+Wire.swift`).
+// File-length budget: dispatch + command translation core. Wire vocabulary
+// lives in the sibling file `VoiceCapability+Wire.swift`.
 
 /// `SFSpeechRecognizer` + `AVSpeechSynthesizer`-backed executor for the
 /// voice capability.
@@ -81,13 +78,6 @@ final class VoiceCapability: NSObject {
     /// Defaults to a no-op so the executor is exercisable from tests /
     /// previews; the bridge installs the real channel via `attach`.
     private var sendReport: (String) -> Void = { _ in }
-
-    /// Read-only handle to the projected app settings, installed by
-    /// `PodcastCapabilities.startICloudSync`. `speak` reads
-    /// `settings.elevenLabsVoiceID` from here to select the TTS provider.
-    /// `weak` to avoid a retain cycle (the store ultimately owns the
-    /// capability tree). `nil` in tests/previews → native AVSpeech path.
-    weak var appStore: AppStateStore?
 
     private var started: Bool = false
     private var synthesizerDelegate: SpeechSynthesizerDelegate?
@@ -150,8 +140,8 @@ final class VoiceCapability: NSObject {
             startListening()
         case .stopListening:
             tearDownRecognition(reason: .userStop)
-        case let .speak(text, voiceID, requestID):
-            speak(text: text, voiceID: voiceID, requestID: requestID)
+        case let .speak(text, requestID, provider):
+            speak(text: text, requestID: requestID, provider: provider)
         case .stop:
             stopSpeaking()
         case let .setVoice(voiceID):
@@ -223,8 +213,9 @@ final class VoiceCapability: NSObject {
                 return
             }
             emit(.transcriptPartial(text: text))
-            // Barge-in policy lives in `VoiceCapability+Barge.swift`.
-            notifyPartialForBargeIn(text: text)
+            // Barge-in policy lives in Rust (`ffi/voice_report.rs`):
+            // a partial transcript while TTS is speaking causes Rust to
+            // dispatch `VoiceCommand::Stop`. No iOS-side action needed here.
         }
         if let error {
             emit(.error(message: error.localizedDescription))
@@ -263,32 +254,14 @@ final class VoiceCapability: NSObject {
 
     // MARK: - TTS (AVSpeechSynthesizer)
 
-    private func speak(text: String, voiceID: String?, requestID: String) {
-        // ── TTS provider routing ─────────────────────────────────────────
-        // The kernel projects the user's ElevenLabs voice selection via
-        // `eleven_labs_voice_id`. When set, the user has chosen ElevenLabs
-        // TTS: synthesize through the shared Rust transport and play the
-        // returned audio bytes through the ElevenLabs sink
-        // (`VoiceCapability+ElevenLabs.swift`). When unset (or on any
-        // ElevenLabs failure) we fall back to on-device `AVSpeechSynthesizer`
-        // so a turn is never silently dropped.
-        //
-        // NOTE: the command's `voiceID` is an AVSpeech locale identifier and
-        // is intentionally ignored on the ElevenLabs path — the ElevenLabs
-        // voice id comes from the projected settings, not the `Speak` wire
-        // field (see docs/BACKLOG.md "voice-provider-selection").
+    private func speak(text: String, requestID: String, provider: TtsProvider) {
         activeSpeakRequestID = requestID
-        let elevenLabsVoiceID = appStore?.state.settings.elevenLabsVoiceID ?? ""
-        if !elevenLabsVoiceID.isEmpty {
-            let model = appStore?.state.settings.elevenLabsTTSModel ?? ""
-            speakViaElevenLabs(
-                text: text,
-                voiceID: elevenLabsVoiceID,
-                model: model,
-                requestID: requestID)
-            return
+        switch provider {
+        case let .avSpeech(voiceID):
+            speakViaAVSpeech(text: text, voiceID: voiceID, requestID: requestID)
+        case let .elevenLabs(voiceID, model):
+            speakViaElevenLabs(text: text, voiceID: voiceID, model: model ?? "", requestID: requestID)
         }
-        speakViaAVSpeech(text: text, voiceID: voiceID, requestID: requestID)
     }
 
     /// On-device `AVSpeechSynthesizer` synthesis. The default path when no
