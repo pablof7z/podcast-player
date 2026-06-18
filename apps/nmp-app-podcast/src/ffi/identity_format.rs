@@ -5,6 +5,7 @@
 
 use std::ffi::{c_char, CStr, CString};
 
+use nostr::nips::nip19::ToBech32;
 use serde::Serialize;
 
 use super::guard::ffi_guard;
@@ -53,12 +54,12 @@ pub extern "C" fn nmp_app_podcast_npub_from_hex(pubkey_hex: *const c_char) -> *m
                 })
             }
         };
-        let response = match nostr::PublicKey::parse(hex).and_then(|pk| pk.to_bech32()) {
-            Ok(npub) => NpubResponse {
+        let response = match nostr::PublicKey::parse(hex).map(|pk| pk.to_bech32()) {
+            Ok(Ok(npub)) => NpubResponse {
                 npub: Some(npub),
                 error: None,
             },
-            Err(_) => NpubResponse {
+            _ => NpubResponse {
                 npub: None,
                 error: Some("invalid_pubkey"),
             },

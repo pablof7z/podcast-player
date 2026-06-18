@@ -32,6 +32,9 @@ enum AgentChatTitleGenerator {
         return decoder
     }()
 
+    // `@MainActor`: reads main-actor `store.kernel`; the sole caller
+    // (`AgentChatSession.maybeGenerateTitle`) is on an `@MainActor` type.
+    @MainActor
     static func makePlan(from messages: [ChatMessage], store: AppStateStore) -> Plan? {
         guard let envelope = store.kernel?.agentChatTitlePromptEnvelope(
             messages: messages.map { ["role": roleName($0.role), "text": $0.text] }

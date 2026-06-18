@@ -247,7 +247,7 @@ fn handle_auto_snip_with_chapters_and_transcript_uses_refined_bounds() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), Some(chs), Some(ts));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert_eq!(stored.len(), 1);
@@ -267,7 +267,7 @@ fn handle_auto_snip_chapters_no_transcript_uses_chapter_bounds() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), Some(chs), None);
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 60.0).abs() < 1e-9, "chapter start");
@@ -282,7 +282,7 @@ fn handle_auto_snip_no_chapters_no_transcript_falls_back_to_30s() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), None, None);
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 100.0);
+    let v = h.handle_auto_snip(ep_id, 100.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 70.0).abs() < 1e-9, "fallback start");
@@ -301,7 +301,7 @@ fn handle_auto_snip_no_chapters_but_has_transcript_refines_30s_range() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), None, Some(ts));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 100.0);
+    let v = h.handle_auto_snip(ep_id, 100.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 65.0).abs() < 1e-9, "start refined to entry start");
@@ -324,7 +324,7 @@ fn handle_auto_snip_transcript_degenerate_keeps_chapter_range() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), Some(chs), Some(ts));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     // Degenerate refine → chapter bounds [60, 120) preserved.
@@ -341,7 +341,7 @@ fn handle_auto_snip_empty_transcript_entries_keeps_chapter_range() {
     let store = build_store_with_transcript(&ep_id, Some(300.0), Some(chs), Some(vec![]));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 60.0).abs() < 1e-9, "chapter start when empty entries");
@@ -370,7 +370,7 @@ fn handle_auto_snip_transcript_lookup_is_case_insensitive() {
 
     let (h, clips, _rev) = fresh_handler(store);
     // Autosnip id arrives lowercase; transcript key is UPPERCASE.
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     // Transcript-refined bounds, NOT chapter bounds [60,120):

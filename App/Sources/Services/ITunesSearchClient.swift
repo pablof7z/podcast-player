@@ -99,7 +99,7 @@ enum ITunesSearchClient {
 
         var result: Result? {
             guard let collectionID else { return nil }
-            Result(
+            return Result(
                 collectionId: collectionID,
                 collectionName: podcastTitle,
                 artistName: author,

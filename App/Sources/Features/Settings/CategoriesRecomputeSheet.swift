@@ -84,10 +84,12 @@ struct CategoriesRecomputeSheet: View {
     }
 
     private var resultsList: some View {
+        // Leading `let` bindings make this a non-@ViewBuilder body, so the
+        // trailing view is returned explicitly.
         let projection = CategoryLibraryProjection
             .load(categories: store.state.categories, store: store)
         let categories = projection.sortedCategories(from: store.state.categories)
-        List {
+        return List {
             Section {
                 ForEach(categories) { category in
                     categoryRow(category, projection: projection)

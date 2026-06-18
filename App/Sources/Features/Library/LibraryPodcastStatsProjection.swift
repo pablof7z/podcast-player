@@ -12,6 +12,8 @@ struct LibraryPodcastStatsProjection {
     let transcribedPodcastIDs: Set<UUID>
     let latestEpisodeIDs: [UUID: UUID]
 
+    // `@MainActor`: reads main-actor `store.kernel`; callers are SwiftUI views.
+    @MainActor
     static func load(podcastIDs: [UUID], store: AppStateStore) -> LibraryPodcastStatsProjection {
         guard !podcastIDs.isEmpty,
               let envelope = store.kernel?.libraryPodcastStatsEnvelope(podcastIDs: podcastIDs),
@@ -64,6 +66,7 @@ struct LibraryPodcastStatsProjection {
         transcribedPodcastIDs.contains(podcastID)
     }
 
+    @MainActor
     func latestEpisode(for podcastID: UUID, store: AppStateStore) -> Episode? {
         guard let episodeID = latestEpisodeIDs[podcastID] else { return nil }
         return store.episode(id: episodeID)

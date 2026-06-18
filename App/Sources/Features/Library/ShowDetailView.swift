@@ -367,6 +367,9 @@ struct ShowDetailView: View {
 private struct LibraryShowEpisodesProjection: Decodable {
     let episodeIds: [UUID]
 
+    // `@MainActor`: reads main-actor `store.kernel` / `store.episode(id:)`;
+    // callers are SwiftUI views.
+    @MainActor
     static func load(podcastID: UUID, store: AppStateStore) -> LibraryShowEpisodesProjection {
         guard let envelope = store.kernel?.libraryShowEpisodesEnvelope(podcastID: podcastID, limit: 10_000),
               let data = envelope.data(using: .utf8),
@@ -378,6 +381,7 @@ private struct LibraryShowEpisodesProjection: Decodable {
         return decoded
     }
 
+    @MainActor
     func episodes(in store: AppStateStore) -> [Episode] {
         episodeIds.compactMap { store.episode(id: $0) }
     }

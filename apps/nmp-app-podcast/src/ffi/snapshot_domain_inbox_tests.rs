@@ -30,6 +30,8 @@ fn make_test_handle_with_app(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
         )),
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
+        ask_state: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskState::default())),
+        ask_callback: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskCallbackState::default())),
     })
 }
 

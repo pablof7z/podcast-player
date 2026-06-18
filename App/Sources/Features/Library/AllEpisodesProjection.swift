@@ -10,6 +10,9 @@ struct AllEpisodesProjection {
     let episodeIDs: [UUID]
     let totalCount: Int
 
+    // `@MainActor`: reads main-actor `store.kernel` / `store.episode(id:)`;
+    // callers are SwiftUI views.
+    @MainActor
     static func load(
         filter: AllEpisodesFilter,
         query: String,
@@ -27,6 +30,7 @@ struct AllEpisodesProjection {
         return AllEpisodesProjection(episodeIDs: decoded.episodeIds, totalCount: decoded.totalCount)
     }
 
+    @MainActor
     func episodes(in store: AppStateStore) -> [Episode] {
         episodeIDs.compactMap { store.episode(id: $0) }
     }

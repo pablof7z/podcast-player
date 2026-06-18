@@ -50,9 +50,6 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// uses this to reconstruct `AutoDownloadPolicy.wifiOnly` from the
     /// snapshot rather than hardcoding `wifiOnly: true` for all enabled rows.
     @DefaultFalse var cellularAllowed: Bool = false
-    /// Per-podcast notification policy projected from Rust. `true` is the
-    /// default; `false` suppresses new-episode notifications for this show.
-    @DefaultTrue var notificationsEnabled: Bool = true
     /// Hex public key of the per-podcast NIP-F4 signing key, set once the
     /// podcast has been claimed via `create_owned_podcast`. Drives owned-
     /// podcast UI (the agent's `listOwnedPodcasts` filters on its presence).
@@ -70,6 +67,10 @@ struct PodcastSummary: Identifiable, Equatable, Hashable {
     /// transcription is allowed for this show. The Rust projection omits this
     /// key when `true` (D5 — `skip_serializing_if = "is_true"`).
     @DefaultTrue var transcriptionEnabled: Bool = true
+    /// Per-podcast notification policy. `true` (the default) means new-episode
+    /// notifications are allowed for this show when global notifications are
+    /// also enabled. Rust owns the policy and omits this key when `true`.
+    @DefaultTrue var notificationsEnabled: Bool = true
     @DefaultEmptyArray var episodes: [EpisodeSummary] = []
 }
 
@@ -226,11 +227,11 @@ extension PodcastSummary: Codable {
         autoDownloadMode = try c.decodeIfPresent(String.self, forKey: .autoDownloadMode) ?? ""
         autoDownloadCount = try c.decodeIfPresent(Int.self, forKey: .autoDownloadCount) ?? 0
         cellularAllowed = try c.decodeIfPresent(Bool.self, forKey: .cellularAllowed) ?? false
-        notificationsEnabled = try c.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         ownerPubkeyHex = try c.decodeIfPresent(String.self, forKey: .ownerPubkeyHex)
         nostrVisibility = try c.decodeIfPresent(String.self, forKey: .nostrVisibility) ?? "public"
         userCategories = try c.decodeIfPresent([String].self, forKey: .userCategories) ?? []
         transcriptionEnabled = try c.decodeIfPresent(Bool.self, forKey: .transcriptionEnabled) ?? true
+        notificationsEnabled = try c.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         episodes = try c.decodeIfPresent([EpisodeSummary].self, forKey: .episodes) ?? []
     }
 }

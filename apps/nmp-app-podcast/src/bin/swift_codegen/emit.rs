@@ -573,6 +573,10 @@ struct TtsEpisodeSummary: Codable, Identifiable, Equatable, Hashable {
 }
 
 /// User-saved audio clip from an episode.
+///
+/// `transcriptText`, `speaker`, `source`, and `refinementStatus` are
+/// kernel-owned autosnip metadata. Native shells render these values; they
+/// do not compute or revise clip boundaries locally.
 struct ClipSummary: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var episodeId: String
@@ -581,6 +585,10 @@ struct ClipSummary: Codable, Identifiable, Equatable, Hashable {
     var startSecs: Double
     var endSecs: Double
     var title: String? = nil
+    var transcriptText: String = ""
+    var speaker: String? = nil
+    var source: String = ""
+    var refinementStatus: String = ""
     var createdAt: Int
 }
 

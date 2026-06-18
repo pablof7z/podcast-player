@@ -180,6 +180,8 @@ fn publish_episode_dispatches_via_kernel() {
     {
         let mut s = store.lock().unwrap();
         s.subscribe(podcast, vec![episode]);
+        // publish_episode gates on nostr being enabled; enable it for this test.
+        s.set_nostr_enabled(true);
     }
 
     let handler = handler_with_store(store.clone());
@@ -240,7 +242,12 @@ fn publish_episode_rejects_unowned_podcast() {
     let podcast = Podcast::new("Unowned Podcast");
     let episode = test_episode_for_podcast(&podcast);
     let episode_id = episode.id.0.to_string();
-    store.lock().unwrap().subscribe(podcast, vec![episode]);
+    {
+        let mut s = store.lock().unwrap();
+        s.subscribe(podcast, vec![episode]);
+        // Enable nostr so the ownership check (not the nostr-disabled gate) fires.
+        s.set_nostr_enabled(true);
+    }
 
     let handler = handler_with_store(store);
     // No create_owned → no key → error.

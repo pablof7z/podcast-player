@@ -132,6 +132,9 @@ enum CarPlayShows {
     private struct ShowsProjection: Decodable {
         let shows: [ShowRow]
 
+        // `@MainActor`: nested types don't inherit outer isolation; this reads
+        // main-actor `store.kernel` and its caller is already `@MainActor`.
+        @MainActor
         static func load(limit: Int, store: AppStateStore) -> ShowsProjection {
             guard let envelope = store.kernel?.carplayShowsEnvelope(limit: limit),
                   let data = envelope.data(using: .utf8),
@@ -151,6 +154,7 @@ enum CarPlayShows {
     private struct ShowEpisodesProjection: Decodable {
         let episodeIds: [UUID]
 
+        @MainActor
         static func load(podcastID: UUID, limit: Int, store: AppStateStore) -> ShowEpisodesProjection {
             guard let envelope = store.kernel?.carplayShowEpisodesEnvelope(
                 podcastID: podcastID,
@@ -165,6 +169,7 @@ enum CarPlayShows {
             return decoded
         }
 
+        @MainActor
         func episodes(in store: AppStateStore) -> [Episode] {
             episodeIds.compactMap { store.episode(id: $0) }
         }

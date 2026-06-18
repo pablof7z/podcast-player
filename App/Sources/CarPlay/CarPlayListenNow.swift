@@ -145,6 +145,10 @@ enum CarPlayListenNow {
         let inProgressEpisodes: [Episode]
         let latestEpisodes: [Episode]
 
+        // `@MainActor`: nested types don't inherit the outer `@MainActor`
+        // isolation; this reads `store.kernel` / `store.episode(id:)`
+        // (main-actor state) and its caller is already `@MainActor`.
+        @MainActor
         static func load(limit: Int, store: AppStateStore) -> ListenNowProjection {
             guard let envelope = store.kernel?.carplayListenNowEnvelope(limit: limit),
                   let data = envelope.data(using: .utf8),

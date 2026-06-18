@@ -102,7 +102,18 @@ enum AgentTools {
             return await dispatchConversations(name: name, args: args, store: store)
 
         case Names.ask:
-            guard let askPlan = await actionPlan(AskPlan.self, op: "ask_plan", args: args) else {
+            // Serialize synchronously here so the non-Sendable `args` dict is
+            // not sent across the `await` (it is also read by other switch arms,
+            // which makes a direct send unsafe under Swift 6 region analysis).
+            var askRequest = args
+            askRequest["op"] = "ask_plan"
+            let askPlanJSON = (try? JSONSerialization.data(withJSONObject: askRequest))
+                .flatMap { String(data: $0, encoding: .utf8) }
+            guard let askPlanJSON,
+                  let askEnvelope = await actionToolJSON(askPlanJSON),
+                  let askData = askEnvelope.data(using: .utf8),
+                  let askPlan = try? JSONDecoder().decode(AskPlan.self, from: askData)
+            else {
                 return toolError("ask planning is unavailable")
             }
             if let error = askPlan.error { return toolError(error) }
@@ -183,7 +194,14 @@ enum AgentTools {
         op: String,
         args: [String: Any]
     ) async -> T? {
-        guard let envelope = await actionTool(op: op, payload: args),
+        // Serialize synchronously so the non-Sendable `args` dict is not sent
+        // across the `await` into `actionToolJSON`.
+        var request = args
+        request["op"] = op
+        guard let data = try? JSONSerialization.data(withJSONObject: request),
+              let json = String(data: data, encoding: .utf8)
+        else { return nil }
+        guard let envelope = await actionToolJSON(json),
               let data = envelope.data(using: .utf8)
         else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)

@@ -12,6 +12,7 @@ actor MockRAG: PodcastAgentRAGSearchProtocol {
     private let transcriptsResult: [TranscriptHit]
     private let similarResult: [EpisodeHit]
     private(set) var lastSearchLimit: Int = -1
+    private(set) var lastSearchRetrievalLimit: Int = -1
     private(set) var lastSimilarK: Int = -1
 
     init(
@@ -24,8 +25,14 @@ actor MockRAG: PodcastAgentRAGSearchProtocol {
         self.similarResult = similarResult
     }
 
-    func searchEpisodes(query: String, scope: PodcastID?, limit: Int) async throws -> [EpisodeHit] {
+    func searchEpisodes(
+        query: String,
+        scope: PodcastID?,
+        limit: Int,
+        retrievalLimit: Int
+    ) async throws -> [EpisodeHit] {
         lastSearchLimit = limit
+        lastSearchRetrievalLimit = retrievalLimit
         return searchResult
     }
 
@@ -43,8 +50,9 @@ actor MockSummarizer: EpisodeSummaryProviding {
     private let result: String?
     init(result: String? = nil) { self.result = result }
 
-    func summarize(episodeID: EpisodeID) async -> String? {
-        return result
+    func summarize(episodeID: EpisodeID) async -> EpisodeSummaryOutcome {
+        guard let result else { return .unavailable }
+        return .summary(result)
     }
 }
 
@@ -107,21 +115,21 @@ actor MockPlayback: PlaybackHostProtocol {
         startSeconds: Double?,
         endSeconds: Double?,
         queuePosition: QueuePosition
-    ) async -> PlayEpisodeResult? {
+    ) async -> PlayEpisodeOutcome {
         recordedPlays.append(RecordedPlay(
             episodeID: episodeID,
             startSeconds: startSeconds,
             endSeconds: endSeconds,
             queuePosition: queuePosition
         ))
-        return PlayEpisodeResult(
+        return .played(PlayEpisodeResult(
             episodeID: episodeID,
             queuePosition: queuePosition,
             startedPlaying: queuePosition == .now,
             episodeTitle: "Mock Episode",
             podcastTitle: "Mock Show",
             durationSeconds: 1800
-        )
+        ))
     }
 
     func pausePlayback() async -> Bool {

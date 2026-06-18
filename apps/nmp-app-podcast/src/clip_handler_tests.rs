@@ -353,7 +353,7 @@ fn create_clip_persists_survives_restart() {
     let rev = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let h = ClipHandler::new(clips_arc.clone(), store.clone(), rev.clone());
 
-    let out = h.handle_create(ep_id.clone(), 10.0, 40.0, Some("keep me".into()));
+    let out = h.handle_create(ep_id.clone(), 10.0, 40.0, Some("keep me".into()), None, None, None);
     assert_eq!(out["ok"], true, "create must succeed");
     let clip_id = out["clip_id"].as_str().unwrap().to_owned();
 
@@ -378,8 +378,8 @@ fn delete_clip_persists_survives_restart() {
     let rev = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let h = ClipHandler::new(clips_arc.clone(), store.clone(), rev.clone());
 
-    let out1 = h.handle_create(ep_id.clone(), 0.0, 30.0, Some("first".into()));
-    let out2 = h.handle_create(ep_id.clone(), 30.0, 60.0, Some("second".into()));
+    let out1 = h.handle_create(ep_id.clone(), 0.0, 30.0, Some("first".into()), None, None, None);
+    let out2 = h.handle_create(ep_id.clone(), 30.0, 60.0, Some("second".into()), None, None, None);
     let id1 = out1["clip_id"].as_str().unwrap().to_owned();
     let id2 = out2["clip_id"].as_str().unwrap().to_owned();
 
@@ -619,7 +619,7 @@ fn auto_snip_chapter_episode_snaps_to_chapter_boundaries() {
     let store = fresh_store_with_episode_and_chapters(&ep_id, Some(300.0), Some(chs));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 90.0);
+    let v = h.handle_auto_snip(ep_id, 90.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert_eq!(stored.len(), 1);
@@ -635,7 +635,7 @@ fn auto_snip_chapter_last_chapter_uses_duration() {
     let store = fresh_store_with_episode_and_chapters(&ep_id, Some(300.0), Some(chs));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 200.0);
+    let v = h.handle_auto_snip(ep_id, 200.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 120.0).abs() < 1e-9);
@@ -649,7 +649,7 @@ fn auto_snip_no_chapters_field_falls_back_to_30s() {
     let store = fresh_store_with_episode_and_chapters(&ep_id, Some(300.0), None);
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 100.0);
+    let v = h.handle_auto_snip(ep_id, 100.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 70.0).abs() < 1e-9);
@@ -663,7 +663,7 @@ fn auto_snip_empty_chapters_vec_falls_back_to_30s() {
     let store = fresh_store_with_episode_and_chapters(&ep_id, Some(300.0), Some(vec![]));
     let (h, clips, _rev) = fresh_handler(store);
 
-    let v = h.handle_auto_snip(ep_id, 100.0);
+    let v = h.handle_auto_snip(ep_id, 100.0, None, None);
     assert_eq!(v["ok"], true);
     let stored = clips.lock().unwrap();
     assert!((stored[0].start_secs - 70.0).abs() < 1e-9);

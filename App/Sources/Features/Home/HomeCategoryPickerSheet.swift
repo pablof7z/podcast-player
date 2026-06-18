@@ -56,7 +56,7 @@ struct HomeCategoryPickerSheet: View {
 
     private var categoriesSection: some View {
         let cardProjections = categoryCardProjections
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+        return VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             sectionLabel("Categories")
                 .padding(.top, AppTheme.Spacing.md)
             ForEach(sortedCategories) { category in
@@ -200,6 +200,7 @@ private struct CategoryCardProjection: Decodable {
     let podcastIds: [UUID]
     let unplayedTotal: Int
 
+    @MainActor
     func subscriptions(in store: AppStateStore) -> [Podcast] {
         podcastIds.compactMap { store.podcast(id: $0) }
     }

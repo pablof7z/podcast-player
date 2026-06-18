@@ -341,7 +341,7 @@ impl SocialState {
 
     /// Clone the current social snapshot for projection.
     pub fn social_snapshot(&self) -> Option<SocialSnapshot> {
-        let ApprovedBlockedSnapshot { approved, blocked } = self.approved_blocked_snapshot();
+        let ApprovedBlockedSnapshot { approved, blocked, .. } = self.approved_blocked_snapshot();
         let approved_pubkeys: Vec<String> = approved.into_iter().collect();
         let blocked_pubkeys: Vec<String> = blocked.into_iter().collect();
         match self.social_slot.lock().ok().and_then(|s| s.clone()) {

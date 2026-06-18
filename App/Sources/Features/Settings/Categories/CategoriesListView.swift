@@ -71,7 +71,7 @@ struct CategoriesListView: View {
 
     private func categoriesSection(projection: CategoryLibraryProjection) -> some View {
         let categories = sortedCategories(projection: projection)
-        Section {
+        return Section {
             ForEach(categories) { category in
                 NavigationLink {
                     CategoryDetailView(categoryID: category.id)

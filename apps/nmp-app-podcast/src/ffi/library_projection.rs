@@ -199,7 +199,7 @@ fn is_archived(store: &crate::store::PodcastStore, episode: &podcast_core::Episo
     let episode_id = episode.id.0.to_string();
     let stored_triage = store.triage_for(&episode_id).map(|(d, _, _)| d);
     episode.triage_decision.as_ref() == Some(&TriageDecision::Archived)
-        || stored_triage == Some(&TriageDecision::Archived)
+        || stored_triage.map(|d| d.as_str()) == Some("archived")
 }
 
 fn is_in_progress(episode: &podcast_core::Episode) -> bool {
@@ -743,9 +743,9 @@ pub extern "C" fn nmp_app_podcast_library_subscription_status(
                         SubscriptionStatusResponse {
                             is_already_subscribed: true,
                             podcast_id: Some(podcast.id.0.to_string()),
-                            title: Some(podcast.title),
-                            author: Some(podcast.author),
-                            feed_url: podcast.feed_url.map(|url| url.to_string()),
+                            title: Some(podcast.title.clone()),
+                            author: Some(podcast.author.clone()),
+                            feed_url: podcast.feed_url.as_ref().map(|url| url.to_string()),
                             episode_count: Some(episodes.len()),
                         }
                     } else {

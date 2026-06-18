@@ -1,5 +1,5 @@
 {
-  "originHash" : "aba2dee4e7dfd63272c4f77f049de41145a2d8c12ae604c770fbffd32631df4d",
+  "originHash" : "ad75ae2d3b8d8b80d99635f65213a3c1092464aa54a86354f850b8317b6fa240",
   "pins" : [
     {
       "identity" : "kingfisher",
@@ -7,14 +7,6 @@
       "location" : "https://github.com/onevcat/Kingfisher",
       "state" : {
         "revision" : "cf8be20d07654570554c8a8a4952bc8a5766a8b0"
-      }
-    },
-    {
-      "identity" : "litert-lm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google-ai-edge/LiteRT-LM",
-      "state" : {
-        "revision" : "bbc5181df03c6962d7786ce4ad72c8565232d2b2"
       }
     }
   ],

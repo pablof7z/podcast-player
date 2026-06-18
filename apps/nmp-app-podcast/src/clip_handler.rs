@@ -30,8 +30,8 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 use crate::clip_boundaries::{
-    fallback_auto_snip_bounds, resolve_auto_snip_bounds, resolve_manual_clip_bounds,
-    resolve_quote_bounds, usable_clip_id, AutoSnipBounds, ClipText,
+    chapter_snap, fallback_auto_snip_bounds, resolve_auto_snip_bounds, resolve_manual_clip_bounds,
+    resolve_quote_bounds, transcript_refine, usable_clip_id, ClipText,
 };
 use crate::ffi::actions::clip_module::ClipAction;
 use crate::ffi::projections::{ClipSummary, PodcastSummary};
@@ -230,19 +230,50 @@ impl ClipHandler {
             });
         };
         let pos = position_secs.max(0.0);
-        let fallback = fallback_auto_snip_bounds(pos, duration);
-        let resolved = self
-            .timed_entries(&episode_id)
-            .and_then(|entries| resolve_auto_snip_bounds(&entries, pos, duration));
-        let bounds = resolved.unwrap_or_else(|| AutoSnipBounds {
-            start_secs: fallback.0,
-            end_secs: fallback.1,
-            transcript_text: String::new(),
-            speaker: None,
-            status: "pending_transcript".to_owned(),
-        });
-        let start_secs = bounds.start_secs;
-        let end_secs = bounds.end_secs;
+
+        // Try chapter-based snapping first; fall back to transcript-refined ±30 s window.
+        //
+        // For both paths, `transcript_refine` is applied after establishing the
+        // initial range so utterance boundaries are respected:
+        //
+        //   • With chapters: `chapter_snap` → `transcript_refine(chapter_range, entries)`
+        //   • Without chapters: `fallback_auto_snip_bounds(±30s)` → `transcript_refine(fallback, entries)`
+        //
+        // If no transcript entries are available, the initial range is used as-is
+        // with a `"pending_transcript"` status so it can be refined later when the
+        // transcript arrives (see `refine_pending_for_episode`).
+        let chapters = self.episode_chapters(&episode_id);
+        let timed = self.timed_entries(&episode_id);
+        let (start_secs, end_secs, chapter_title, transcript_text, speaker, status) =
+            if chapters.as_deref().map(|c| !c.is_empty()).unwrap_or(false) {
+                let (s, e, t) = chapter_snap(pos, chapters.as_deref(), duration);
+                // Optionally refine chapter bounds to utterance boundaries.
+                if let Some(ref entries) = timed {
+                    if let Some((rs, re)) = transcript_refine(s, e, Some(entries), duration) {
+                        (rs, re, t, String::new(), None, "chapter_snap".to_owned())
+                    } else {
+                        (s, e, t, String::new(), None, "chapter_snap".to_owned())
+                    }
+                } else {
+                    (s, e, t, String::new(), None, "chapter_snap".to_owned())
+                }
+            } else {
+                let (fs, fe) = fallback_auto_snip_bounds(pos, duration);
+                if let Some(ref entries) = timed {
+                    if let Some((rs, re)) = transcript_refine(fs, fe, Some(entries), duration) {
+                        // Collect transcript text + speaker for the refined range.
+                        let meta = resolve_manual_clip_bounds(entries, rs, re, duration);
+                        let txt = meta.as_ref().map(|b| b.transcript_text.clone()).unwrap_or_default();
+                        let spk = meta.and_then(|b| b.speaker);
+                        (rs, re, None, txt, spk, "transcript_refined".to_owned())
+                    } else {
+                        (fs, fe, None, String::new(), None, "pending_transcript".to_owned())
+                    }
+                } else {
+                    (fs, fe, None, String::new(), None, "pending_transcript".to_owned())
+                }
+            };
+
         let id = usable_clip_id(client_clip_id);
         let Some((ep_title, pod_title, _)) = self.episode_meta(&episode_id) else {
             return serde_json::json!({
@@ -261,11 +292,11 @@ impl ClipHandler {
             podcast_title: pod_title,
             start_secs,
             end_secs,
-            title: None,
-            transcript_text: bounds.transcript_text,
-            speaker: bounds.speaker,
+            title: chapter_title,
+            transcript_text,
+            speaker,
             source: source.clone(),
-            refinement_status: bounds.status,
+            refinement_status: status,
             auto_snip_anchor_secs: Some(pos),
             created_at: Utc::now().timestamp(),
         };
@@ -354,12 +385,26 @@ impl ClipHandler {
         store.episode_titles_and_duration(episode_id)
     }
 
+    /// Look up chapters for an episode. Returns `None` when the episode isn't
+    /// in the store or has no chapters.
+    fn episode_chapters(&self, episode_id: &str) -> Option<Vec<podcast_core::Chapter>> {
+        let store = self.store.lock().ok()?;
+        store.episode_chapters(episode_id)
+    }
+
     fn timed_entries(
         &self,
         episode_id: &str,
     ) -> Option<Vec<podcast_transcripts::TranscriptEntry>> {
         let store = self.store.lock().ok()?;
-        store.timed_transcript_for(episode_id).map(|entries| entries.to_vec())
+        // Try exact key first, then lowercase, then uppercase to handle casing
+        // skew between the iOS shell (which may report UUID.uuidString in uppercase)
+        // and the store key (which may be canonical lowercase or vice-versa).
+        store
+            .timed_transcript_for(episode_id)
+            .or_else(|| store.timed_transcript_for(&episode_id.to_lowercase()))
+            .or_else(|| store.timed_transcript_for(&episode_id.to_uppercase()))
+            .map(|entries| entries.to_vec())
     }
 
     fn persist_clips(&self) {

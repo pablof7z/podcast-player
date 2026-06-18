@@ -93,7 +93,7 @@ pub extern "C" fn nmp_app_podcast_storage_breakdown(
                         let title = if podcast.title.is_empty() {
                             "Unknown show".to_string()
                         } else {
-                            podcast.title
+                            podcast.title.clone()
                         };
                         for episode in episodes {
                             episode_to_show.insert(
