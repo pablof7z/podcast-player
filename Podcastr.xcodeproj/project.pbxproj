@@ -655,7 +655,6 @@
 		F2E311C0D6D9B347C709AB67 /* DiscoverSearchTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519E489FD7FA0B6F484E9790 /* DiscoverSearchTextField.swift */; };
 		F3B55ECE7F9F3116A78674E5 /* VoiceNoteAgentContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E62B751C797AA6938486EB /* VoiceNoteAgentContext.swift */; };
 		F3D827857A8F71A79E9EC642 /* LocalModelDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6AC57D48A9853520632B69 /* LocalModelDownloads.swift */; };
-		F4E111B81EA568C2F171813C /* VoiceCapability+Barge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */; };
 		F510DB989FCA5ED54A9D3BED /* EpisodeAuditLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01283C24F6A52722FFE56958 /* EpisodeAuditLogView.swift */; };
 		F532B19CE889522FC09AD645 /* KingfisherConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAA2C483F52E40A2911E21B /* KingfisherConfiguration.swift */; };
 		F5CD6E8D0E84E9CBC1B04141 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64CCEB4A7701F0ACD3FEA63D /* KeychainStore.swift */; };
@@ -1152,7 +1151,6 @@
 		882AD6DEAFEF3720ECDE6748 /* NoteAuthor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteAuthor.swift; sourceTree = "<group>"; };
 		882F653C1554E57047F2CA2D /* RootView+Setup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView+Setup.swift"; sourceTree = "<group>"; };
 		88FA363167B0DDF4E95F2764 /* ElevenLabsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElevenLabsSettingsView.swift; sourceTree = "<group>"; };
-		89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VoiceCapability+Barge.swift"; sourceTree = "<group>"; };
 		8A333C192AB8AF5ACF08340F /* AppleSTT+TranscriptAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppleSTT+TranscriptAdapter.swift"; sourceTree = "<group>"; };
 		8A67DAB8DE371B15ECD8C111 /* PerfSignposter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerfSignposter.swift; sourceTree = "<group>"; };
 		8A771BE98E53F67D470AC9B7 /* UsageCostModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCostModels.swift; sourceTree = "<group>"; };
@@ -2649,7 +2647,6 @@
 				5CAB4B2C3F871CC758F84E3C /* SpotlightCapability.swift */,
 				38ED1D5BCC3BDC5333A6B05E /* SyncCapabilityBridge.swift */,
 				D9679D72BAC3D3E389E1162F /* VoiceCapability.swift */,
-				89B08026F43BE139F0D16703 /* VoiceCapability+Barge.swift */,
 				3B8D5BFBD86DDE2B721FEEB3 /* VoiceCapability+ElevenLabs.swift */,
 				52228D50085F0D3BDBF92839 /* VoiceCapability+Synthesizer.swift */,
 				6D2F903F30309A24307C4FDA /* VoiceCapability+Wire.swift */,
@@ -3040,7 +3037,6 @@
 				978B937075900681EA5EBCAF /* PodcastCapabilities.swift in Sources */,
 				68F3E3209CCC838B64C1233C /* SpotlightCapability.swift in Sources */,
 				151C9FACE986EF777D58DAB2 /* SyncCapabilityBridge.swift in Sources */,
-				F4E111B81EA568C2F171813C /* VoiceCapability+Barge.swift in Sources */,
 				2DE01CB09C3AAFFED7FD73DB /* VoiceCapability+ElevenLabs.swift in Sources */,
 				D3782D13906D7E20094FB022 /* VoiceCapability+Synthesizer.swift in Sources */,
 				599A48C437946BF59A27F421 /* VoiceCapability+Wire.swift in Sources */,
