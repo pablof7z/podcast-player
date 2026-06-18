@@ -261,7 +261,7 @@ final class P1SettingsUITests: XCTestCase {
         // reveal it as a TextField so XCTest can type into it reliably.
         let showKeyBtn = app.buttons["Show API key"]
         if showKeyBtn.waitForExistence(timeout: 4) {
-            showKeyBtn.tap(); sleep(0.3)
+            showKeyBtn.tap(); usleep(300_000)
         }
 
         // After reveal the field is a TextField with identifier "openrouter-api-key-field".
@@ -286,10 +286,10 @@ final class P1SettingsUITests: XCTestCase {
         }
 
         // --- Step 4: Type the test key ---
-        keyField.tap(); sleep(0.3)
+        keyField.tap(); usleep(300_000)
         keyField.clearText()
         keyField.typeText("test-api-key-qa")
-        sleep(0.3)
+        usleep(300_000)
         snap(app, "creds-04-typed")
 
         // Tap the "Save" navigation bar button (calls saveManualKey()).
