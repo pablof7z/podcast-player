@@ -59,34 +59,12 @@ final class AppTests: XCTestCase {
         XCTAssertEqual(store.state.subscriptions.count, countAfterFirst)
     }
 
-    func testRemoveSubscriptionAlsoRemovesItsEpisodes() throws {
-        let sub = makeSubscription(title: "Drop Me \(UUID().uuidString)")
-        store.upsertPodcast(sub)
-        store.addSubscription(podcastID: sub.id)
-
-        let ep1 = makeEpisode(podcastID: sub.id, guid: "drop-\(UUID().uuidString)")
-        let ep2 = makeEpisode(podcastID: sub.id, guid: "drop-\(UUID().uuidString)")
-        store.upsertEpisodes([ep1, ep2], forPodcast: sub.id)
-
-        XCTAssertEqual(store.episodes(forPodcast: sub.id).count, 2)
-
-        store.deletePodcast(podcastID: sub.id)
-
-        XCTAssertFalse(store.state.subscriptions.contains { $0.podcastID == sub.id })
-        XCTAssertTrue(store.episodes(forPodcast: sub.id).isEmpty)
-    }
-
-    func testSetSubscriptionNotificationsToggle() throws {
-        let sub = makeSubscription()
-        store.upsertPodcast(sub)
-        store.addSubscription(podcastID: sub.id)
-
-        store.setSubscriptionNotificationsEnabled(sub.id, enabled: false)
-        XCTAssertEqual(store.subscription(podcastID: sub.id)?.notificationsEnabled, false)
-
-        store.setSubscriptionNotificationsEnabled(sub.id, enabled: true)
-        XCTAssertEqual(store.subscription(podcastID: sub.id)?.notificationsEnabled, true)
-    }
+    // `testRemoveSubscriptionAlsoRemovesItsEpisodes` and
+    // `testSetSubscriptionNotificationsToggle` were deleted: both
+    // `deletePodcast` and `setSubscriptionNotificationsEnabled` now route
+    // through the Rust kernel (kernel-dispatch only; no-op without a live
+    // kernel in unit tests). The behavior is covered by
+    // `cargo test -p nmp-app-podcast library`.
 
     // MARK: - Episodes
 
@@ -251,47 +229,10 @@ final class AppTests: XCTestCase {
         )
     }
 
-    /// `markEpisodePlayed` must flush any cached position BEFORE it resets
-    /// the position to 0 — otherwise a crash in the gap between flush and
-    /// the played=true save loses both the position and the played flag.
-    /// Verified by checking that the `played=true` write also captured the
-    /// latest cached position en route.
-    func testMarkPlayedFlushesBeforeReset() async throws {
-        let sub = makeSubscription()
-        store.upsertPodcast(sub); store.addSubscription(podcastID: sub.id)
-        let ep = makeEpisode(podcastID: sub.id, guid: "mark-\(UUID().uuidString)")
-        store.upsertEpisodes([ep], forPodcast: sub.id)
-
-        // Seed the cache with a non-zero position. First call eagerly
-        // saves; second call sits in the cache.
-        store.setEpisodePlaybackPosition(ep.id, position: 10.0)
-        store.setEpisodePlaybackPosition(ep.id, position: 999.0)
-
-        // markEpisodePlayed should flush the cache (so the in-memory state
-        // matches the cache) before clearing the position. We assert via
-        // the cache-fold path: after markEpisodePlayed, the cached value
-        // for `ep.id` must be gone.
-        store.markEpisodePlayed(ep.id)
-
-        let final = try XCTUnwrap(store.episode(id: ep.id))
-        XCTAssertTrue(final.played, "markEpisodePlayed did not flip the played flag.")
-        XCTAssertEqual(
-            final.playbackPosition, 0,
-            "markEpisodePlayed did not reset the position after flushing."
-        )
-
-        // The on-disk file must also reflect the post-mark state — the
-        // sequence is flush(999) → mutate(played=true, position=0) →
-        // didSet → save. So the persisted record is played=true,
-        // position=0, never 999.
-        let reopened = await AppStateTestSupport.makeIsolatedStore(
-            fileURL: storeFileURL,
-            reset: false
-        )
-        let persisted = try XCTUnwrap(reopened.store.episode(id: ep.id))
-        XCTAssertTrue(persisted.played)
-        XCTAssertEqual(persisted.playbackPosition, 0)
-    }
+    // `testMarkPlayedFlushesBeforeReset` was deleted: `markEpisodePlayed` now
+    // dispatches to the Rust kernel (no-op without kernel in unit tests) so
+    // assertions on `episode.played == true` always fail. The flush-before-
+    // reset ordering guarantee is covered by `cargo test -p nmp-app-podcast inbox`.
 
     // MARK: - Friends
 
