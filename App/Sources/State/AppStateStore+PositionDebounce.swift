@@ -24,27 +24,6 @@ import Foundation
 // the kernel's own persisted position survives the relaunch, proving the
 // end-to-end single-source-of-truth contract.
 
-extension AppStateStore {
-
-    /// Folds the live kernel position into a list of episodes for display.
-    /// No-op when nothing is playing. This is a render-only overlay — no
-    /// data is written to disk. Callers that only need the playing episode's
-    /// position should read `kernel.nowPlaying.positionSecs` directly.
-    func applyingLivePosition(_ episodes: [Episode]) -> [Episode] {
-        guard let np = kernel?.nowPlaying,
-              np.isPlaying,
-              let idStr = np.episodeId,
-              let playingID = UUID(uuidString: idStr),
-              np.positionSecs > 0
-        else { return episodes }
-        guard episodes.contains(where: { $0.id == playingID }) else { return episodes }
-        return episodes.map { episode in
-            guard episode.id == playingID,
-                  np.positionSecs > episode.playbackPosition
-            else { return episode }
-            var copy = episode
-            copy.playbackPosition = np.positionSecs
-            return copy
-        }
-    }
-}
+// (No code: the live-position overlay is applied inline by `episode(id:)`.
+// The former `applyingLivePosition(_:)` batch helper was unused after the
+// position-cache removal and has been deleted to avoid dead code.)
