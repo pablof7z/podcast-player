@@ -1,29 +1,25 @@
 import Foundation
 
-// MARK: - AppStateStore + Position (render-only helpers)
+// MARK: - AppStateStore + Position (render-only)
 //
-// The Rust kernel is the sole owner of ep.position_secs persistence.
-// `audio_report.rs:apply_writeback` writes position on every Playing tick
-// and flushes to disk on pause/stop/sleep/end and on a ~10 s interval
-// during continuous playback (POSITION_FLUSH_DELTA_SECS).
+// The Rust kernel is the single source of truth for playback position.
+// `audio_report.rs::apply_writeback` updates `ep.position_secs` on each
+// `Playing` tick and flushes to disk on pause/stop/sleep/end and on a
+// ~10 s playhead delta (`POSITION_FLUSH_DELTA_SECS`).
 //
-// Swift does NOT mirror position back to disk. The old positionCache /
-// positionFlushTask / flushPendingPositions / setEpisodePlaybackPosition
-// machinery has been removed (PR #572 / issue #561 M1.6). Swift is now
-// purely render-only for position:
+// Swift never *originates* a position write. It consumes position in two
+// render-only ways:
 //
-//   • `kernel.nowPlaying.positionSecs` is the live playhead for the scrubber.
-//   • `episode.playbackPosition` (from ep.position_secs via toEpisode) is the
-//     last kernel-persisted resume point shown on the episode row.
-//   • `episode(id:)` applies the live kernel position as a floor when the
-//     episode is currently loaded — render-only, never written to disk.
+//   • `kernel.nowPlaying.positionSecs` — the live playhead for the scrubber.
+//   • `episode.playbackPosition` — the kernel-persisted resume point shown on
+//     the episode row, projected from `ep.position_secs`; `episode(id:)`
+//     applies the live kernel value as a display-only floor.
 //
-// The background flush observer, positionCache, and the old
-// synchronousPositionFlushForUITests flag have been removed (PR #572).
-// The UITestSeeder --UITestSeedRelaunch path preserves podcasts.json so
-// the kernel's own persisted position survives the relaunch, proving the
-// end-to-end single-source-of-truth contract.
-
-// (No code: the live-position overlay is applied inline by `episode(id:)`.
-// The former `applyingLivePosition(_:)` batch helper was unused after the
-// position-cache removal and has been deleted to avoid dead code.)
+// The App Group SQLite episode store still persists the kernel-sourced
+// position as a display mirror (so the row renders before the kernel
+// projection arrives). That mirror is a cache, not a second source — its
+// removal is tracked as a follow-up #561 seam, at which point this file
+// (which now holds no code) is deleted.
+//
+// `--UITestSeedRelaunch` preserves the kernel's `podcasts.json` and wipes the
+// SQLite mirror, proving resume survives a cold restart from the kernel alone.

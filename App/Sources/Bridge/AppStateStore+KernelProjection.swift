@@ -167,8 +167,9 @@ extension AppStateStore {
 
         // Forward 1 Hz position ticks from applyAudioReport to UI consumers
         // (scrubber, Live Activity, lock-screen). The kernel's apply_writeback
-        // (audio_report.rs) is the sole owner of position persistence — Swift
-        // never writes position back to disk.
+        // (audio_report.rs) is the single source of truth for position — Swift
+        // never originates a position value; it only renders the kernel's and
+        // mirrors it into the SQLite display cache (tracked for removal, #561).
         kernel.onPositionTick = { [weak self] _, pos in
             self?.onPositionTick?(pos)
         }
@@ -378,14 +379,16 @@ extension AppStateStore {
                     // the prior episode would otherwise keep its stale playbackPosition.
                     // Guard on isPlaying: nowPlaying can be non-nil with positionSecs>0
                     // from a restored-but-paused kernel state, which would incorrectly
-                    // set the position on a fresh launch. Restrict to active playback
-                    // only; paused/restored positions reach us via Persistence instead.
+                    // re-apply the live overlay on a fresh launch. Restrict the live
+                    // overlay to active playback; paused/restored positions arrive via
+                    // the kernel's ep.position_secs projection (below), not the overlay.
                     var reused = prior
                     // Kernel ep.position_secs is the authoritative persisted value.
                     // Always apply it as the base — the `prior` row may carry a stale
-                    // Swift-cached position (e.g. loaded from SQLite before UITestSeeder
-                    // wipes it, or from a session before the kernel flushed). Overriding
-                    // with the kernel value here eliminates split-brain without toEpisode.
+                    // value from the SQLite display mirror (e.g. loaded before
+                    // UITestSeeder wipes it, or from a session before the kernel
+                    // flushed). Overriding with the kernel value here keeps the kernel
+                    // as the single source even when the mirror lags.
                     //
                     // nil-coalescing to 0: the kernel only sets playbackPositionSecs when
                     // position_secs > 0.0 (snapshot_library.rs line 73). A nil value means
