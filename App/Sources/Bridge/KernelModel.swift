@@ -349,7 +349,9 @@ final class KernelModel {
     func applyAudioReport(nowPlaying newNowPlaying: PlayerState?, durableChanged: Bool) {
         let previous = nowPlaying
         nowPlaying = newNowPlaying
-        // Forward position to AppStateStore so the debounce cache stays current.
+        // Forward the live position to AppStateStore for render-only surfaces
+        // (scrubber, in-progress carousel). The kernel persists position itself
+        // (audio_report.rs::apply_writeback); this forward never writes to disk.
         // Covers Playing, BufferingProgress (which advances positionSecs with
         // isPlaying=false), and the final Paused frame (capturing the last
         // playhead before a force-quit). Guard only on positionSecs > 0 and
