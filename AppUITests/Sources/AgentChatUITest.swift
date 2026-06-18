@@ -26,7 +26,12 @@ final class AgentChatUITest: XCTestCase {
     /// `.idle`, and renders the bubble. The test asserts the canned reply text
     /// is visible in the transcript — a hard failure if the transcript is empty.
     func testAgentRepliesToAMessageOnSimulator() {
-        let app = XCUIApplication()
+        // PodcastrUITests is a detached runner (no host-app dependency, no
+        // TEST_TARGET_APPLICATION_BUNDLE_ID), so XCUIApplication() with no
+        // arguments fails with "No target application path specified". Use the
+        // same bundle-ID pattern as SmokeUITests so the runner finds the app
+        // that the Podcastr scheme already installed on the simulator.
+        let app = XCUIApplication(bundleIdentifier: "io.f7z.podcast")
         // --UITestSeed writes the seeded library before the kernel starts.
         // --UITestAgentStub activates the deterministic stub inside AgentLLMClient.
         app.launchArguments = ["--UITestSeed", "--UITestAgentStub"]
@@ -91,7 +96,7 @@ final class AgentChatUITest: XCTestCase {
             ProcessInfo.processInfo.environment["RUN_DEVICE_UI_TESTS"] == "1",
             "Set RUN_DEVICE_UI_TESTS=1 to drive the agent on a real device")
 
-        let app = XCUIApplication()
+        let app = XCUIApplication(bundleIdentifier: "io.f7z.podcast")
         app.launch()
 
         // 1) Open the Agent (sparkles toolbar button).
