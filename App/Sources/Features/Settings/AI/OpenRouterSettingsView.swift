@@ -45,6 +45,7 @@ struct OpenRouterSettingsView: View {
             // Status row
             Label(statusTitle, systemImage: statusIcon)
                 .foregroundStyle(statusColor)
+                .accessibilityIdentifier("openrouter-status-label")
 
             // BYOK button
             Button {
@@ -65,8 +66,12 @@ struct OpenRouterSettingsView: View {
             .disabled(isConnectingBYOK)
 
             // Manual key field
-            RevealableAPIKeyField("Paste OpenRouter API key", text: $manualAPIKey)
-                .onSubmit { saveManualKey() }
+            RevealableAPIKeyField(
+                "Paste OpenRouter API key",
+                text: $manualAPIKey,
+                accessibilityIdentifier: "openrouter-api-key-field"
+            )
+            .onSubmit { saveManualKey() }
 
             // Disconnect (only when key stored)
             if hasStoredOpenRouterKey {
@@ -75,6 +80,7 @@ struct OpenRouterSettingsView: View {
                 } label: {
                     Label("Disconnect", systemImage: "trash")
                 }
+                .accessibilityIdentifier("openrouter-disconnect-button")
             }
 
             // Validate stored key
