@@ -292,6 +292,12 @@ impl PodcastHostOpHandler {
                     s.set_default_playback_rate(speed as f64);
                 }
                 self.bump_domain(crate::state::Domain::Playback);
+                // Bump Domain::Settings so the next kernel snapshot carries the
+                // updated `default_playback_rate` to Swift immediately. Without
+                // this, the settings domain is only re-emitted on the next
+                // unrelated settings mutation, so `onChange(of: store.state.settings)`
+                // in RootView never fires with the new rate in the same session.
+                self.bump_domain(crate::state::Domain::Settings);
                 self.dispatch_audio_json(AudioCommand::SetSpeed { speed }, correlation_id)
             }
             PlayerAction::SetVolume { volume } => {
