@@ -72,13 +72,16 @@ final class DownloadUITests: XCTestCase {
         // A progress label "Downloading X%" appears while downloading.
         let downloadedLabel = app.staticTexts.matching(
             NSPredicate(format: "label == 'Downloaded'")).firstMatch
-        let downloadingPred = NSPredicate(format: "label CONTAINS[c] 'Downloading'")
 
         // Poll for either "Downloaded" or a downloading-in-progress label.
-        let downloadStarted = app.buttons.matching(downloadingPred).firstMatch
-            .waitForExistence(timeout: 10)
-            || app.staticTexts.matching(downloadingPred).firstMatch
-            .waitForExistence(timeout: 2)
+        // NSPredicate created inline at each use to satisfy Swift 6 region-based
+        // isolation checks (non-Sendable NSPredicate cannot be shared).
+        let progressBtn = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Downloading'")).firstMatch
+        let progressText = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Downloading'")).firstMatch
+        let downloadStarted = progressBtn.waitForExistence(timeout: 10)
+            || progressText.waitForExistence(timeout: 2)
             || downloadedLabel.waitForExistence(timeout: 2)
 
         snap(app, "dl-03-download-progress")

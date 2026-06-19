@@ -3,23 +3,16 @@ import XCTest
 /// Simulator UI coverage for `chapter-list-renders` and `chapter-tap-seeks`
 /// scenarios (#547).
 ///
-/// SEEDER LIMITATION: the UITestSeeder writes `podcasts.json` with no chapter
-/// data — the kernel's chapter store is populated separately (via
-/// `podcast.fetch_chapters` or `podcast.chapters.compile`), and neither path
-/// is triggered by the seed alone on a cold launch. Chapters are therefore
-/// not present in the seeded episode on a standard `--UITestSeed` launch.
+/// The UITestSeeder always embeds 3 publisher chapters in ep1's podcasts.json
+/// entry (Introduction 0s–60s, Main Story 60s–180s, Conclusion 180s–300s).
+/// The kernel loads them at set_data_dir time and projects them as
+/// ChapterSummary → Episode.Chapter in every snapshot tick. PlayerView shows
+/// PlayerChaptersScrollView when `navigableChapters` is non-empty; each row
+/// gets `.accessibilityIdentifier("chapter-<uuid>")` where the UUID is
+/// generated fresh at projection time, so tests match with BEGINSWITH.
 ///
-/// These tests detect whether chapters are available after the player opens
-/// and skip (XCTSkip) with a clear message if none are found. The
-/// accessibility identifiers (`chapter-<uuid>`) are already added to the
-/// production `PlayerChaptersScrollView` (see #547) so the tests will run
-/// fully once a `--UITestSeedChapters` seeder path is added or a real
-/// chapter-capable episode is present in the device library.
-///
-/// FOLLOW-UP REQUIRED: Extend UITestSeeder with a `--UITestSeedChapters` flag
-/// that writes chapter data in a format the kernel accepts (check if the kernel
-/// supports a `chapters` field in `podcasts.json` or needs a separate file).
-/// Track in docs/BACKLOG.md under #547 follow-up.
+/// NSPredicate is not Sendable under Swift 6; create a fresh instance at each
+/// call site rather than capturing a shared variable (region-isolation rule).
 final class PlayerChaptersUITests: XCTestCase {
 
     override func setUp() { super.setUp(); continueAfterFailure = true }
@@ -48,41 +41,26 @@ final class PlayerChaptersUITests: XCTestCase {
         snap(app, "chapters-01-full-player")
         dumpTree(app, "chapters-01-tree")
 
-        // Detect whether any chapter row (identifier: "chapter-<uuid>") is visible.
-        // Chapter rows only render when the kernel has populated chapter data for the
-        // playing episode. With the default seed, there are no chapters.
-        let chapterRowPred = NSPredicate(format: "identifier BEGINSWITH 'chapter-'")
-        let firstChapterRow = app.buttons.matching(chapterRowPred).firstMatch
-        let chaptersPresent = firstChapterRow.waitForExistence(timeout: 5)
-
+        // Chapter rows have accessibilityIdentifier "chapter-<uuid>". The seed
+        // embeds 3 chapters; the kernel projects all of them (include_in_toc=true).
+        // NSPredicate is not Sendable — create fresh at each call site.
+        let firstChapterRow = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'chapter-'")).firstMatch
+        XCTAssertTrue(
+            firstChapterRow.waitForExistence(timeout: 8),
+            "FAIL chapter-list-renders: no 'chapter-*' buttons found in full player. " +
+            "Check UITestSeeder wrote chapters to ep1 in podcasts.json and " +
+            "PlayerChaptersScrollView applies .accessibilityIdentifier(\"chapter-\\(chapter.id)\")."
+        )
         snap(app, "chapters-02-chapter-rail")
 
-        guard chaptersPresent else {
-            // XCTSkip rather than XCTFail: the scenario is blocked by the
-            // seeder gap (no chapter data), not by a production code bug.
-            // Once --UITestSeedChapters is implemented this skip should be
-            // removed and the assertions below should run unconditionally.
-            throw XCTSkip(
-                "chapter-list-renders (#547): no chapter rows (identifier 'chapter-*') found in the full player. " +
-                "The seeder does not currently write chapter data — the kernel populates chapters " +
-                "via fetch_chapters/compile which is not triggered by --UITestSeed. " +
-                "FOLLOW-UP: add --UITestSeedChapters to UITestSeeder.swift so these tests run deterministically."
-            )
-        }
-
-        // Chapter rows are present — assert the rail is accessible.
-        XCTAssertTrue(
-            chaptersPresent,
-            "FAIL chapter-list-renders: PlayerChaptersScrollView renders no chapter-* rows despite " +
-            "chapter data being available — check accessibilityIdentifier on chapterRow button"
-        )
-
-        // Verify at least two chapters are visible (a well-formed episode has multiple).
-        let allChapterRows = app.buttons.matching(chapterRowPred)
-        let chapterCount = allChapterRows.count
+        // Verify at least 2 chapters are visible (seed has 3: Introduction, Main Story, Conclusion).
+        let chapterCount = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'chapter-'")).count
         XCTAssertGreaterThan(
             chapterCount, 1,
-            "FAIL chapter-list-renders: only \(chapterCount) chapter row found — expected multiple for a chaptered episode"
+            "FAIL chapter-list-renders: only \(chapterCount) chapter row found — " +
+            "expected 3 (Introduction, Main Story, Conclusion) from the seeded chapters"
         )
         snap(app, "chapters-03-rows-present")
     }
@@ -104,39 +82,36 @@ final class PlayerChaptersUITests: XCTestCase {
         sleep(2)
         snap(app, "chseek-01-full-player")
 
-        let chapterRowPred = NSPredicate(format: "identifier BEGINSWITH 'chapter-'")
-        let allChapterRows = app.buttons.matching(chapterRowPred)
-        let firstChapterRow = allChapterRows.element(boundBy: 0)
-        guard firstChapterRow.waitForExistence(timeout: 5) else {
-            throw XCTSkip(
-                "chapter-tap-seeks (#547): no chapter rows found in the full player (same seeder gap as " +
-                "testChapterListRenders). FOLLOW-UP: add --UITestSeedChapters to UITestSeeder.swift."
-            )
-        }
+        // NSPredicate not Sendable — fresh instance at each call.
+        let firstRow = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'chapter-'")).firstMatch
+        XCTAssertTrue(
+            firstRow.waitForExistence(timeout: 8),
+            "chapter-seek: no chapter rows found — seeder must have written chapters to ep1"
+        )
 
-        // Capture timecodes before tapping.
+        // Capture current time labels before tapping.
         let timesBefore = currentTimeLabels(app)
         snap(app, "chseek-02-before-tap")
 
-        // Tap the SECOND chapter row (index 1). Tapping chapter 0 (at 0:00)
-        // would seek to position 0 which might not change the displayed timecode.
-        // If there's only one chapter, tap chapter 0 anyway (still verifies the
-        // accessibility action fires without crashing).
+        // Tap the SECOND chapter row ("Main Story", start 60s). Tapping chapter 0
+        // at 0:00 on a freshly-started episode may not visibly change the timecode.
+        let allChapterRows = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'chapter-'"))
         let rowToTap = allChapterRows.count > 1
             ? allChapterRows.element(boundBy: 1)
-            : firstChapterRow
+            : allChapterRows.firstMatch
         robustTap(rowToTap); sleep(2)
         snap(app, "chseek-03-after-tap")
 
         let timesAfter = currentTimeLabels(app)
 
-        // The playhead must have moved. Accept either a different timecode label
-        // OR the absence of the timecode we had before (seek to a later position
-        // can temporarily clear the label before it updates).
+        // After tapping the 60s chapter, the position should move.
         XCTAssertNotEqual(
             timesBefore, timesAfter,
-            "FAIL chapter-tap-seeks: time labels unchanged after tapping chapter row — " +
-            "navigationalSeek may not have fired or the chapter row is not hittable"
+            "FAIL chapter-tap-seeks: time labels unchanged after tapping 'Main Story' chapter row. " +
+            "navigationalSeek(to:60.0) may not have fired or the timecode update is delayed " +
+            "beyond 2s. timesBefore=\(timesBefore) timesAfter=\(timesAfter)"
         )
     }
 

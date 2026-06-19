@@ -460,20 +460,28 @@ extension AppStateStore {
     }
 
     /// Remove one Rust-owned queue slot from Up Next.
+    ///
+    /// The kernel generates slot IDs via `uuid::Uuid::new_v4().to_string()` which
+    /// produces lowercase hex strings. Swift's `UUID.uuidString` produces uppercase.
+    /// Lowercase before sending so the kernel's exact-string comparison succeeds.
     func kernelDequeueQueueItem(queueSlotID: UUID) {
         kernel?.dispatch(namespace: "podcast.player",
                          body: [
                             "op": "dequeue_slot",
-                            "queue_slot_id": queueSlotID.uuidString,
+                            "queue_slot_id": queueSlotID.uuidString.lowercased(),
                          ])
     }
 
     /// Reorder existing Rust-owned queue slots.
+    ///
+    /// The kernel generates slot IDs via `uuid::Uuid::new_v4().to_string()` which
+    /// produces lowercase hex strings. Swift's `UUID.uuidString` produces uppercase.
+    /// Lowercase before sending so `reorder_by_slot_ids` can match by exact string.
     func kernelReorderQueue(queueSlotIDs: [UUID]) {
         kernel?.dispatch(namespace: "podcast.player",
                          body: [
                             "op": "reorder_queue",
-                            "queue_slot_ids": queueSlotIDs.map(\.uuidString),
+                            "queue_slot_ids": queueSlotIDs.map { $0.uuidString.lowercased() },
                          ])
     }
 

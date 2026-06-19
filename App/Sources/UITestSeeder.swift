@@ -102,6 +102,20 @@ enum UITestSeeder {
         let episode2UUID = "A1A1FFFF-0001-0002-0001-000000000002"
         let enclosure2URL = "https://test.podcast.local/episodes/ep2.mp3"
 
+        // ep3 UUID — third episode used by the queue-reorder test. Always seeded
+        // so the kernel knows the episode; only appears in "queue" when
+        // --UITestSeedQueueReorder is present. Pub-date earlier than ep2 so the
+        // show-detail list order is ep1 (index 0), ep2 (index 1), ep3 (index 2).
+        let episode3UUID = "A1A1FFFF-0001-0002-0001-000000000003"
+        let enclosure3URL = "https://test.podcast.local/episodes/ep3.mp3"
+
+        // Queue: pre-seed ep2 and ep3 when running the queue-reorder scenario so
+        // the sheet opens with two rows and the test can invoke "Move to top" on
+        // the second row without any UI queue-building navigation.
+        let queueJSON: String = CommandLine.arguments.contains("--UITestSeedQueueReorder")
+            ? "[\"\(episode2UUID.lowercased())\", \"\(episode3UUID.lowercased())\"]"
+            : "[]"
+
         // When --UITestSeedOrphanClip is present, write clips.json directly.
         //
         // Architecture note: ClipsState (kernel substate) loads exclusively from
@@ -144,6 +158,23 @@ enum UITestSeeder {
             }
         }
 
+        // ep1 chapters — publisher-supplied, always seeded so PlayerChaptersUITests
+        // can run without a network fetch. Three fixed UUIDs for stable references
+        // in tests; the kernel projects them as ChapterSummary → Episode.Chapter
+        // (see snapshot_library.rs). The Swift bridge generates a fresh UUID per
+        // projected chapter, so the a11y id is "chapter-<random-uuid>" — tests
+        // match with BEGINSWITH 'chapter-' rather than a specific UUID.
+        let ep1Chapters = """
+        [
+          {"id":"c0010001-0001-0001-0001-000000000001","start_secs":0.0,"end_secs":60.0,
+           "title":"Introduction","include_in_toc":true,"is_ai_generated":false},
+          {"id":"c0010001-0001-0001-0001-000000000002","start_secs":60.0,"end_secs":180.0,
+           "title":"Main Story","include_in_toc":true,"is_ai_generated":false},
+          {"id":"c0010001-0001-0001-0001-000000000003","start_secs":180.0,
+           "title":"Conclusion","include_in_toc":true,"is_ai_generated":false}
+        ]
+        """
+
         let seed = """
         {
           "schema_version": 1,
@@ -176,7 +207,8 @@ enum UITestSeeder {
               "download_state": \(downloadState),
               "transcript_state": {"state": "none"},
               "triage_is_hero": false,
-              "metadata_indexed": false
+              "metadata_indexed": false,
+              "chapters": \(ep1Chapters)
             },{
               "id": "\(episode2UUID.lowercased())",
               "podcast_id": "a1a1ffff-0001-0001-0001-000000000001",
@@ -186,6 +218,23 @@ enum UITestSeeder {
               "pub_date": "2026-04-01T00:00:00Z",
               "duration_secs": 240.0,
               "enclosure_url": "\(enclosure2URL)",
+              "enclosure_mime_type": "audio/mpeg",
+              "position_secs": 0.0,
+              "played": false,
+              "is_starred": false,
+              "download_state": {"state": "not_downloaded"},
+              "transcript_state": {"state": "none"},
+              "triage_is_hero": false,
+              "metadata_indexed": false
+            },{
+              "id": "\(episode3UUID.lowercased())",
+              "podcast_id": "a1a1ffff-0001-0001-0001-000000000001",
+              "guid": "37538 at https://www.thisamericanlife.org",
+              "title": "135: Deep Space",
+              "description": "Exploring the cosmos.",
+              "pub_date": "2026-03-01T00:00:00Z",
+              "duration_secs": 210.0,
+              "enclosure_url": "\(enclosure3URL)",
               "enclosure_mime_type": "audio/mpeg",
               "position_secs": 0.0,
               "played": false,
@@ -207,7 +256,7 @@ enum UITestSeeder {
           "local_paths": [["\(episodeUUID.lowercased())", \(localPathLiteral)]],
           "file_sizes": [["\(episodeUUID.lowercased())", \(localBytes)]],
           "settings": {},
-          "queue": [],
+          "queue": \(queueJSON),
           "pending_wifi_downloads": []
         }
         """
