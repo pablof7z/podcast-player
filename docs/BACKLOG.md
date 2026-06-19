@@ -6,7 +6,9 @@ worktrees currently in flight.
 
 - **knowledge-ann-index.** `top_k_search` is O(N) linear scan over all embedded chunks (fine for < ~50k chunks). When the corpus exceeds ~50k chunks, replace with an ANN index (e.g. HNSW via `usearch` or `instant-distance`). Slot in `podcast-knowledge::search::top_k_search` call site in `knowledge_search.rs`. <!-- TODO: ANN index when corpus > ~50k chunks -->
 
-- **android-unfollow-parity (#547/#573).** Rust exposes `podcast.unfollow` (`PodcastAction::Unfollow`); iOS routes all "Unsubscribe" UI through `kernelUnfollow` (keeps history). Android has no podcast unsubscribe/remove UI yet. When one is added, wire it to `UnfollowPayload` (defined in `ActionDispatcher.kt`) dispatched on `PodcastNamespace.PODCAST` — not to `UnsubscribePayload` (full hard-delete). Reserve hard-delete only for an explicitly-labeled "Delete" affordance.
+- **android-unfollow-parity (#547/#573).** Rust exposes `podcast.unfollow` (`PodcastAction::Unfollow`); iOS routes all "Unsubscribe" UI through `kernelUnfollow` (keeps history). Android has no podcast unsubscribe/remove UI yet. When one is added, wire it to `UnfollowPayload` (defined in `ActionDispatcher.kt`) dispatched on `PodcastNamespace.PODCAST`. A permanent hard-delete affordance ("Delete") needs its own wire type (the Rust `podcast.unsubscribe` action) added at that time — there is intentionally no hard-delete payload in Android until that UI exists.
+
+- **rust-unsubscribe-action-rename (#573, pre-existing).** The Rust `podcast.unsubscribe` action (`PodcastAction::Unsubscribe`) performs a full hard-delete (removes the podcast row + episodes), which is a legacy misnomer now that `podcast.unfollow` is the keep-history path and all user-facing "Unsubscribe" maps to unfollow. Rename `podcast.unsubscribe` → `podcast.delete` across Rust (action enum + dispatch), iOS (`kernelUnsubscribe`/`deletePodcast` wiring), and Android wire types so the action name matches its hard-delete semantics. Pure rename, no behavior change; kept out of #547 to bound that PR's scope.
 
 ## Active P0 - Correctness Before More Features
 
