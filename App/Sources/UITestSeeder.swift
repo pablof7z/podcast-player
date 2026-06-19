@@ -67,30 +67,35 @@ enum UITestSeeder {
         // doesn't resurrect a stale position from a prior session.
         Persistence.shared.reset()
         try? Persistence.shared.episodeStore.replaceAll([])
-        // Prefer the locally downloaded MP3 over the network URL so AVPlayer
-        // plays from disk (reliable in the simulator) rather than streaming
-        // from the NPR CDN (which the simulator's sandboxed network may block).
-        // The file lands here when the episode is downloaded during an earlier
-        // test run; its presence is stable across runs within the same container.
         let episodeUUID = "A1A1FFFF-0001-0002-0001-000000000001"
         let enclosureURL = "https://npr.simplecastaudio.com/d3081dd9-fcaf-445a-977c-4f56c28f5a6e/episodes/e55b1946-2658-4592-9afe-1c2a3033a31c/audio/128/default.mp3"
         let sourceURL = URL(string: enclosureURL)
-        // Copy the bundled test MP3 into the same canonical Downloads directory
-        // used by DownloadCapability and EpisodeDownloadStore so playback and
-        // the Rust download projection both see the local file after restart.
         let destMP3 = seededDownloadURL(episodeID: episodeUUID, sourceURL: sourceURL)
-        try? FileManager.default.createDirectory(
-            at: destMP3.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        if let bundledMP3 = Bundle.main.url(forResource: "test-episode", withExtension: "mp3"),
-           !FileManager.default.fileExists(atPath: destMP3.path) {
-            try? FileManager.default.copyItem(at: bundledMP3, to: destMP3)
+
+        // --UITestSeedDownloaded: seed ep1 in a pre-downloaded state so
+        // testDeleteDownloadReclaims starts from a known-downloaded episode
+        // independent of testDownloadEpisode having run first.
+        // Default (no flag): ep1 starts as not_downloaded so testDownloadEpisode
+        // drives a real download. Any previously downloaded file is removed so
+        // state is always clean at seed time.
+        let localPathsJSON: String
+        let fileSizesJSON: String
+        if CommandLine.arguments.contains("--UITestSeedDownloaded") {
+            try? FileManager.default.createDirectory(
+                at: destMP3.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let bundledMP3 = Bundle.main.url(forResource: "test-episode", withExtension: "mp3")
+            if let mp3 = bundledMP3, !FileManager.default.fileExists(atPath: destMP3.path) {
+                try? FileManager.default.copyItem(at: mp3, to: destMP3)
+            }
+            let attrs = try? FileManager.default.attributesOfItem(atPath: destMP3.path)
+            let bytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+            localPathsJSON = "[[\"\(episodeUUID.lowercased())\", \(jsonStringLiteral(destMP3.path))]]"
+            fileSizesJSON = "[[\"\(episodeUUID.lowercased())\", \(bytes)]]"
+        } else {
+            try? FileManager.default.removeItem(at: destMP3)
+            localPathsJSON = "[]"
+            fileSizesJSON = "[]"
         }
-        let attrs = try? FileManager.default.attributesOfItem(atPath: destMP3.path)
-        let localBytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
-        let localPathLiteral = jsonStringLiteral(destMP3.path)
-        let downloadState = "{\"state\": \"not_downloaded\"}"
 
         // Fresh-seed: position starts at 0.
         let persistedPosition: Double = 0.0
@@ -103,18 +108,14 @@ enum UITestSeeder {
         let enclosure2URL = "https://test.podcast.local/episodes/ep2.mp3"
 
         // ep3 UUID — third episode used by the queue-reorder test. Always seeded
-        // so the kernel knows the episode; only appears in "queue" when
-        // --UITestSeedQueueReorder is present. Pub-date earlier than ep2 so the
+        // so the kernel knows the episode. Pub-date earlier than ep2 so the
         // show-detail list order is ep1 (index 0), ep2 (index 1), ep3 (index 2).
         let episode3UUID = "A1A1FFFF-0001-0002-0001-000000000003"
         let enclosure3URL = "https://test.podcast.local/episodes/ep3.mp3"
 
-        // Queue: pre-seed ep2 and ep3 when running the queue-reorder scenario so
-        // the sheet opens with two rows and the test can invoke "Move to top" on
-        // the second row without any UI queue-building navigation.
-        let queueJSON: String = CommandLine.arguments.contains("--UITestSeedQueueReorder")
-            ? "[\"\(episode2UUID.lowercased())\", \"\(episode3UUID.lowercased())\"]"
-            : "[]"
+        // Queue is always empty at seed time; the queue-reorder test builds the
+        // queue through the UI rather than depending on a pre-seeded queue state.
+        let queueJSON = "[]"
 
         // When --UITestSeedOrphanClip is present, write clips.json directly.
         //
@@ -204,7 +205,7 @@ enum UITestSeeder {
               "position_secs": \(persistedPosition),
               "played": false,
               "is_starred": false,
-              "download_state": \(downloadState),
+              "download_state": {"state": "not_downloaded"},
               "transcript_state": {"state": "none"},
               "triage_is_hero": false,
               "metadata_indexed": false,
@@ -253,8 +254,8 @@ enum UITestSeeder {
           "episode_triage": [],
           "metadata_indexed_episodes": [],
           "transcript_status_overrides": [],
-          "local_paths": [["\(episodeUUID.lowercased())", \(localPathLiteral)]],
-          "file_sizes": [["\(episodeUUID.lowercased())", \(localBytes)]],
+          "local_paths": \(localPathsJSON),
+          "file_sizes": \(fileSizesJSON),
           "settings": {},
           "queue": \(queueJSON),
           "pending_wifi_downloads": []

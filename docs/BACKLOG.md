@@ -1423,3 +1423,23 @@ _All pending decisions resolved. See Done section for resolutions._
 - **wip-reconciliation.** Done for 2026-05-26; `WIP.md` is the live source for
   active worktrees, stale PR-stack entries were removed, and it should return
   to `Active` = `_None._` after each agent-owned PR merges.
+- **simulator-nostr-publish-coverage (#547).** End-to-end Nostr publish
+  (NIP-F4 kind:10154) cannot be automated in the simulator: the test seeder
+  does not inject a signing keypair (ephemeral identity), public relay access
+  is unreliable in CI, and relay-event verification is asynchronous and
+  environment-dependent. The automated smoke (`testNostrIdentityScreenReachable`
+  in `AppUITests/Sources/NostrPublishUITests.swift`) proves the identity
+  navigation path is reachable. Full publish sign-off follows the manual
+  protocol in that file: create a keypair in Settings → Identity, subscribe a
+  podcast, publish via Show options → "Publish to Nostr", verify the event on a
+  public relay (e.g. nostrudel.ninja). Fake-passing stubs are explicitly
+  excluded by #547.
+- **simulator-auto-download-trigger-coverage (#547).** `testAutoDownloadPolicyUIPath`
+  (in `AppUITests/Sources/AutoDownloadUITests.swift`) verifies the full UI path
+  for setting the auto-download policy. Observing an actual triggered download
+  (enabling a rule and seeing a new episode download) requires a feed-refresh
+  that returns a previously-unseen episode — not feasible deterministically in
+  CI (depends on external network and a live feed returning new content). A
+  follow-up integration test would seed a fake local RSS feed response with a
+  new episode and observe the auto-download trigger; this is out of scope for
+  #547 and requires a local HTTP feed server in the test harness.

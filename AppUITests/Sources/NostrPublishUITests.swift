@@ -28,7 +28,8 @@ import XCTest
 ///   5. Confirm the event appears on at least one public relay (e.g. using
 ///      `nostrudel.ninja` or `snort.social` with the published npub).
 ///
-/// Track the automated test gap in docs/BACKLOG.md under #547 follow-up.
+/// The automated test gap is tracked in docs/BACKLOG.md as
+/// `simulator-nostr-publish-coverage (#547)`.
 final class NostrPublishUITests: XCTestCase {
 
     override func setUp() { super.setUp(); continueAfterFailure = true }

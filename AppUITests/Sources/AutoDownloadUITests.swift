@@ -11,9 +11,8 @@ import XCTest
 /// download requires a feed refresh that returns a new episode — not feasible
 /// deterministically in CI (depends on external network + the seeded feed
 /// returning something new). This test verifies the UI path up to and including
-/// setting the policy. A follow-up integration test (out of scope for #547)
-/// would seed a new episode in the feed response and observe the auto-download
-/// trigger. Track in docs/BACKLOG.md.
+/// setting the policy. The gap is tracked in docs/BACKLOG.md as
+/// `simulator-auto-download-trigger-coverage (#547)`.
 final class AutoDownloadUITests: XCTestCase {
 
     override func setUp() { super.setUp(); continueAfterFailure = true }
