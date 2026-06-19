@@ -63,6 +63,15 @@ extension AppStateStore {
         kernel?.dispatch(PodcastKernelAction.Unsubscribe(podcastId: podcastID.uuidString))
     }
 
+    /// Remove only the follow membership, keeping the podcast row and episodes
+    /// as "known but unfollowed". A subsequent re-subscribe with the same feed
+    /// URL is instant (Rust `mark_subscribed`; no network fetch needed). The
+    /// podcast stays in `store.podcasts` so the ShowDetailView can toggle
+    /// in-place without needing to navigate away and re-find the show.
+    func kernelUnfollow(podcastID: UUID) {
+        kernel?.dispatch(PodcastKernelAction.Unfollow(podcastId: podcastID.uuidString))
+    }
+
     /// Trigger a full feed refresh for every subscription.
     func kernelRefreshAll() {
         kernel?.dispatch(PodcastKernelAction.RefreshAll())

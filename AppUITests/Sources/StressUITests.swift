@@ -85,13 +85,17 @@ final class StressUITests: XCTestCase {
             )
 
             // --- Re-subscribe (Follow) ---
-            // After unsubscribing the show detail may still be visible or
-            // we may have been popped to Home. Navigate back to the show if needed.
+            // ShowDetailView.performUnfollow() keeps the show detail open (no
+            // dismiss) so Show options stays accessible. The "else" path is a
+            // defensive fallback for unexpected navigation; under the current
+            // product implementation it should never fire.
             let showOptionsAgain = app.buttons["Show options"]
             if !showOptionsAgain.waitForExistence(timeout: 5) {
-                // Popped back to Home — re-enter the show detail.
+                // Unexpected: view was dismissed. Attempt to re-navigate.
+                snap(app, "stress-\(cycle)-b2-unexpected-dismiss")
+                dumpTree(app, "stress-\(cycle)-b2-tree")
                 guard openFirstPodcastFromHome(app) else {
-                    XCTFail("stress cycle \(cycle): cannot re-open show after unsubscribe"); return
+                    XCTFail("stress cycle \(cycle): cannot re-open show after unexpected dismiss"); return
                 }
             }
 

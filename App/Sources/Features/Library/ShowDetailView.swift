@@ -114,16 +114,18 @@ struct ShowDetailView: View {
             isPresented: $showUnsubscribeConfirm
         ) {
             Button("Cancel", role: .cancel) {}
-            Button("Unsubscribe", role: .destructive) { performUnsubscribe() }
+            // Lightweight unfollow: keeps episode data in the kernel store so
+            // the view can stay open and the user can re-Follow instantly.
+            Button("Unsubscribe", role: .destructive) { performUnfollow() }
         } message: {
-            Text("This removes the show and all of its episodes from your library.")
+            Text("This removes the show from your library. Your listen history is kept so you can re-follow instantly.")
         }
         .alert(
             "Delete \(liveSubscription.title)?",
             isPresented: $showDeleteConfirm
         ) {
             Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) { performUnsubscribe() }
+            Button("Delete", role: .destructive) { performDelete() }
         } message: {
             Text("This removes the podcast and every episode of it from your library. This cannot be undone.")
         }
@@ -349,7 +351,17 @@ struct ShowDetailView: View {
         showUnsubscribeConfirm = true
     }
 
-    private func performUnsubscribe() {
+    /// Remove only the follow membership, keeping the podcast row and episodes
+    /// as "known but unfollowed". The view stays open so the user can re-Follow
+    /// instantly via Show options → Follow (no navigation needed).
+    private func performUnfollow() {
+        store.kernelUnfollow(podcastID: podcast.id)
+    }
+
+    /// Fully remove the podcast, its follow row, and all episodes from the
+    /// library. Used by the "Delete podcast" alert (only shown when the show
+    /// is already unfollowed). Dismisses the view because the row is gone.
+    private func performDelete() {
         store.deletePodcast(podcastID: podcast.id)
         dismiss()
     }
