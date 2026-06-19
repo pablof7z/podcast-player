@@ -1423,6 +1423,25 @@ _All pending decisions resolved. See Done section for resolutions._
 - **wip-reconciliation.** Done for 2026-05-26; `WIP.md` is the live source for
   active worktrees, stale PR-stack entries were removed, and it should return
   to `Active` = `_None._` after each agent-owned PR merges.
+- **kernel-speed-persistence-uitest (#547).** `testPlaybackSpeedPersists`
+  (in `AppUITests/Sources/PlaybackSettingsUITests.swift`) is currently skipped
+  because the kernel resets playback speed to 1× on every cold relaunch even
+  when `--UITestSeedRelaunch` preserves `podcasts.json`. The kernel likely
+  stores speed in a separate settings sidecar that is reset by the app
+  initialization path (not by the seeder). Fix requires either (a) the kernel
+  persisting speed in a file that survives the seeder's `--UITestSeedRelaunch`
+  pass, or (b) an explicit seeder hook to carry the speed through relaunch.
+  Once fixed, remove the `XCTSkip` in `testPlaybackSpeedPersists`.
+- **simulator-download-trigger-coverage (#547).** `testDownloadEpisode`
+  (in `AppUITests/Sources/DownloadUITests.swift`) asserts only the
+  state-transition triggered by tapping Download on ep2, which uses a stub
+  enclosure URL (`test.podcast.local`). The full end-to-end path — trigger →
+  background URLSession → download completes → "Downloaded" label — requires
+  either (a) a real CDN reachable from the simulator, or (b) a local HTTP stub
+  server that serves the bundled test-episode.mp3 at the ep2 enclosure URL so
+  downloads complete without external network. Option (b) is the correct
+  follow-up: add a `WireMock`/`Swifter` in-process stub in UITestSeeder that
+  binds to a loopback port and overrides the ep2 enclosure URL to point to it.
 - **simulator-nostr-publish-coverage (#547).** End-to-end Nostr publish
   (NIP-F4 kind:10154) cannot be automated in the simulator: the test seeder
   does not inject a signing keypair (ephemeral identity), public relay access

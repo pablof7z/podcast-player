@@ -72,30 +72,29 @@ enum UITestSeeder {
         let sourceURL = URL(string: enclosureURL)
         let destMP3 = seededDownloadURL(episodeID: episodeUUID, sourceURL: sourceURL)
 
-        // --UITestSeedDownloaded: seed ep1 in a pre-downloaded state so
-        // testDeleteDownloadReclaims starts from a known-downloaded episode
-        // independent of testDownloadEpisode having run first.
-        // Default (no flag): ep1 starts as not_downloaded so testDownloadEpisode
-        // drives a real download. Any previously downloaded file is removed so
-        // state is always clean at seed time.
-        let localPathsJSON: String
-        let fileSizesJSON: String
-        if CommandLine.arguments.contains("--UITestSeedDownloaded") {
-            try? FileManager.default.createDirectory(
-                at: destMP3.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let bundledMP3 = Bundle.main.url(forResource: "test-episode", withExtension: "mp3")
-            if let mp3 = bundledMP3, !FileManager.default.fileExists(atPath: destMP3.path) {
-                try? FileManager.default.copyItem(at: mp3, to: destMP3)
-            }
-            let attrs = try? FileManager.default.attributesOfItem(atPath: destMP3.path)
-            let bytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
-            localPathsJSON = "[[\"\(episodeUUID.lowercased())\", \(jsonStringLiteral(destMP3.path))]]"
-            fileSizesJSON = "[[\"\(episodeUUID.lowercased())\", \(bytes)]]"
-        } else {
-            try? FileManager.default.removeItem(at: destMP3)
-            localPathsJSON = "[]"
-            fileSizesJSON = "[]"
+        // Copy the bundled test MP3 to the canonical download path so AVPlayer
+        // plays from disk (reliable in the simulator) rather than streaming from
+        // the NPR CDN (which the simulator's sandboxed network may block).
+        // ep1 is always seeded as downloaded so every playback-dependent UI test
+        // (resume-across-restart, queue play, chapter seek, playback speed) has a
+        // working local file. ep2 and ep3 stay not_downloaded so testDownloadEpisode
+        // can target a genuinely not_downloaded episode without depending on ep1.
+        try? FileManager.default.createDirectory(
+            at: destMP3.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let bundledMP3 = Bundle.main.url(forResource: "test-episode", withExtension: "mp3"),
+           !FileManager.default.fileExists(atPath: destMP3.path) {
+            try? FileManager.default.copyItem(at: bundledMP3, to: destMP3)
         }
+        let attrs = try? FileManager.default.attributesOfItem(atPath: destMP3.path)
+        let localBytes = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+        let localPathsJSON = "[[\"\(episodeUUID.lowercased())\", \(jsonStringLiteral(destMP3.path))]]"
+        let fileSizesJSON = "[[\"\(episodeUUID.lowercased())\", \(localBytes)]]"
+        // Seed ep1 download_state as downloaded so the UI shows the "Downloaded"
+        // pill without requiring a real download. local_file_url + byte_count must
+        // match the actual file so the kernel's projection is self-consistent.
+        let ep1DownloadState = """
+        {"state": "downloaded", "local_file_url": \(jsonStringLiteral(destMP3.absoluteString)), "byte_count": \(localBytes)}
+        """
 
         // Fresh-seed: position starts at 0.
         let persistedPosition: Double = 0.0
@@ -205,7 +204,7 @@ enum UITestSeeder {
               "position_secs": \(persistedPosition),
               "played": false,
               "is_starred": false,
-              "download_state": {"state": "not_downloaded"},
+              "download_state": \(ep1DownloadState),
               "transcript_state": {"state": "none"},
               "triage_is_hero": false,
               "metadata_indexed": false,
