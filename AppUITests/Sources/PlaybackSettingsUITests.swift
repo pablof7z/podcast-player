@@ -91,9 +91,9 @@ final class PlaybackSettingsUITests: XCTestCase {
             )
         }
 
-        // Force-quit + cold relaunch with --UITestSeedRelaunch.
-        // The seeder writes podcasts.json but does NOT wipe the kernel's
-        // settings file, so the speed set via kernelSetSpeed should survive.
+        // Force-quit + cold relaunch with --UITestSeedRelaunch, which PRESERVES
+        // podcasts.json (where the kernel stores default_playback_rate via
+        // SetSpeed), so the chosen speed survives the cold restart.
         app.terminate(); sleep(2)
         app.launchArguments = ["--UITestSeed", "--UITestSeedRelaunch"]
         XCTAssertTrue(launchApp(app), "relaunch"); sleep(2)
