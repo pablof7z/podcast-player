@@ -129,16 +129,15 @@ final class PlaybackSettingsUITests: XCTestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap() // dismiss
 
         // Primary assertion: speed label still contains "1.5" after relaunch.
-        // ASSUMPTION: kernel settings store (not wiped by seeder) holds the rate.
-        // If this fails with "1x" or "1×", the kernel stores speed in podcasts.json
-        // which the seeder resets — document that kernel gap and update the seeder
-        // to carry speed through --UITestSeedRelaunch (see #547 follow-up).
+        // The kernel persists the chosen rate as `default_playback_rate` in
+        // podcasts.json (SetSpeed → set_default_playback_rate + bump Settings, #561);
+        // --UITestSeedRelaunch preserves podcasts.json, so the rate survives the
+        // cold restart and the settings projection renders it on the pre-play label.
         XCTAssertTrue(
             persistedLabel.contains("1.5"),
             "FAIL playback-speed-persists: after force-quit + relaunch, speed label is '\(persistedLabel)'" +
-            " (expected '1.5×'). Either the kernel reset the rate from podcasts.json seed" +
-            " (kernel gap — see assumption in PlaybackSettingsUITests.swift) or setRate" +
-            " did not dispatch to the kernel correctly."
+            " (expected '1.5×'). The kernel should have restored default_playback_rate" +
+            " from podcasts.json into the settings projection."
         )
         snap(app, "speed-persist-07-final")
     }
