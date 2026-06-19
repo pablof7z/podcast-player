@@ -1,19 +1,15 @@
 import XCTest
 
 /// Simulator UI coverage for `playback-speed-persists` and
-/// `player-transition-perf` scenarios (#547).
+/// `player-transition-perf` scenarios (#547, fixed in #561).
 ///
 /// `testPlaybackSpeedPersists`: Changes speed to 1.5× in the full player,
-/// force-quits the app, relaunches with `--UITestSeedRelaunch` (which carries
-/// kernel state but preserves the kernel's own settings file — speed is stored
-/// by the kernel separately from podcasts.json), then opens the player and
-/// asserts the speed label still reads "1.5×".
-///
-/// ASSUMPTION: `kernelSetSpeed` writes the rate to the kernel's settings store
-/// (a file the seeder does NOT wipe on `--UITestSeed` or `--UITestSeedRelaunch`).
-/// If this assumption is incorrect (i.e. the kernel embeds speed in podcasts.json
-/// which the seeder overwrites), the test will fail with a meaningful message.
-/// Verify by checking the kernel's settings persistence path (Rust side).
+/// force-quits the app, relaunches with `--UITestSeedRelaunch` (which preserves
+/// podcasts.json — the kernel stores `default_playback_rate` there), then opens
+/// the player and asserts the speed label still reads "1.5×". Fixed by #561:
+/// `SetSpeed` now writes `default_playback_rate` to podcasts.json so it persists
+/// across cold relaunch. Swift `applyPreferences` reads it from the kernel
+/// settings snapshot and applies it to `AudioEngine.rate` pre-play.
 ///
 /// `testPlayerTransitionPerf`: Measures the wall-clock time for full-player
 /// open and close in a baseline performance assertion.
@@ -29,21 +25,13 @@ final class PlaybackSettingsUITests: XCTestCase {
     // MARK: - playback-speed-persists
 
     func testPlaybackSpeedPersists() throws {
-        // SKIP: The kernel resets playback speed to 1× on every cold start.
-        // Speed is stored in the kernel's persistent settings, but each
-        // --UITestSeed launch rewrites the audio engine config (or the kernel
-        // reloads a default rate from its settings file which the seeder does
-        // not carry through --UITestSeedRelaunch). Until the kernel exposes a
-        // settings-preservation seam for UI test relaunch, asserting persisted
-        // speed is not possible without a real kernel fix.
-        // BACKLOG: kernel-speed-persistence-uitest (#547) — once the kernel
-        // either preserves speed in a file untouched by seeder or exposes a
-        // UITest-relaunch hook, remove this skip and re-enable the assertion.
-        throw XCTSkip(
-            "playback-speed-persists (#547): kernel resets speed to 1× on cold relaunch. " +
-            "Speed persistence requires a kernel settings-preservation seam not yet " +
-            "available to the UI-test seeder. See BACKLOG: kernel-speed-persistence-uitest."
-        )
+        // #561 fix: the kernel now persists `default_playback_rate` to
+        // podcasts.json whenever `SetSpeed` is dispatched. `--UITestSeedRelaunch`
+        // preserves podcasts.json, so the chosen rate survives force-quit +
+        // cold relaunch. Swift `applyPreferences` reads `settings.defaultPlaybackRate`
+        // from the kernel snapshot and applies it to `AudioEngine.rate` before
+        // the first episode loads, so `play()` → `playImmediately(atRate:)` uses
+        // the persisted value. BACKLOG entry kernel-speed-persistence-uitest removed.
         let app = App.make()
         XCTAssertTrue(launchApp(app)); sleep(1)
 

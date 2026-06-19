@@ -281,6 +281,16 @@ impl PodcastHostOpHandler {
                 if let Ok(mut a) = self.state.playback.player.lock() {
                     a.set_speed(speed);
                 }
+                // Persist the chosen rate so it survives cold relaunch.
+                // `default_playback_rate` is written to podcasts.json via
+                // `set_default_playback_rate`, which the kernel reloads at
+                // `set_data_dir` time. The Swift shell's `applyPreferences`
+                // then reads it from the `settings` snapshot and applies it to
+                // `AudioEngine.rate` before the first episode is loaded, so
+                // `play()` → `playImmediately(atRate:)` uses the persisted value.
+                if let Ok(mut s) = self.state.library.store.lock() {
+                    s.set_default_playback_rate(speed as f64);
+                }
                 self.bump_domain(crate::state::Domain::Playback);
                 self.dispatch_audio_json(AudioCommand::SetSpeed { speed }, correlation_id)
             }
