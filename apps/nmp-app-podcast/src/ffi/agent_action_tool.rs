@@ -640,7 +640,7 @@ fn unfollow_podcast_result(request: &Value) -> Value {
 fn delete_message(was_subscribed: bool, episodes_deleted: usize) -> String {
     let plural = if episodes_deleted == 1 { "" } else { "s" };
     if was_subscribed {
-        format!("Unsubscribed and deleted {episodes_deleted} episode{plural}.")
+        format!("Deleted the podcast and {episodes_deleted} episode{plural}.")
     } else {
         format!("Deleted {episodes_deleted} episode{plural} from a non-subscribed podcast.")
     }
