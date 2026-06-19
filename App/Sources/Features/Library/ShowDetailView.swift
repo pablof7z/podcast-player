@@ -105,9 +105,10 @@ struct ShowDetailView: View {
         // anchored to a menu as a popover and elides any `role: .cancel`
         // button (the popover's tap-outside-to-dismiss is treated as the
         // implicit cancel). That leaves the user staring at a single red
-        // "Unsubscribe" button with no visible escape — a real UX trap for a
-        // destructive action that wipes thousands of episodes. `.alert` is
-        // a centred modal and reliably renders both buttons regardless of
+        // "Unsubscribe" button with no visible escape — a real UX trap for any
+        // confirmation. (Unsubscribe here unfollows and keeps listen history;
+        // the separate "Delete" alert below is the data-wiping action.) `.alert`
+        // is a centred modal and reliably renders both buttons regardless of
         // anchor context.
         .alert(
             "Unsubscribe from \(liveSubscription.title)?",

@@ -74,7 +74,7 @@ final class StressUITests: XCTestCase {
             }
             unsubBtn.tap(); sleep(1)
 
-            // Confirm the destructive unsubscribe alert.
+            // Confirm the unsubscribe alert (unfollow — keeps history).
             let confirmUnsub = app.buttons["Unsubscribe"].firstMatch
             if confirmUnsub.waitForExistence(timeout: 3) { confirmUnsub.tap(); sleep(1) }
             snap(app, "stress-\(cycle)-b-after-unsub")
