@@ -16,9 +16,10 @@ import XCTest
 ///
 /// NOTE: The subscribe path (Follow) goes through the same kernel FFI as
 /// `SubscriptionService.addSubscription`, dispatching `podcast.subscribe`.
-/// The unsubscribe path dispatches `podcast.unsubscribe`. Rapid alternation
-/// probes for race conditions in the Rust queue handler and Swift snapshot
-/// application. Any crash proves the stress scenario.
+/// The unsubscribe path dispatches `podcast.unfollow` (keeps episodes/history;
+/// the show becomes "known but unfollowed"). Rapid alternation probes for race
+/// conditions in the Rust queue handler and Swift snapshot application.
+/// Any crash proves the stress scenario.
 final class StressUITests: XCTestCase {
 
     override func setUp() { super.setUp(); continueAfterFailure = true }

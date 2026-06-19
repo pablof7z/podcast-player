@@ -6,6 +6,8 @@ worktrees currently in flight.
 
 - **knowledge-ann-index.** `top_k_search` is O(N) linear scan over all embedded chunks (fine for < ~50k chunks). When the corpus exceeds ~50k chunks, replace with an ANN index (e.g. HNSW via `usearch` or `instant-distance`). Slot in `podcast-knowledge::search::top_k_search` call site in `knowledge_search.rs`. <!-- TODO: ANN index when corpus > ~50k chunks -->
 
+- **android-unfollow-parity (#547/#573).** Rust exposes `podcast.unfollow` (`PodcastAction::Unfollow`); iOS routes all "Unsubscribe" UI through `kernelUnfollow` (keeps history). Android has no podcast unsubscribe/remove UI yet. When one is added, wire it to `UnfollowPayload` (defined in `ActionDispatcher.kt`) dispatched on `PodcastNamespace.PODCAST` — not to `UnsubscribePayload` (full hard-delete). Reserve hard-delete only for an explicitly-labeled "Delete" affordance.
+
 ## Active P0 - Correctness Before More Features
 
 - ~~**p0-nipf4-wire-contract.**~~ Done in PR #89: aligned kind `10154`/`54`
