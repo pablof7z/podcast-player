@@ -54,7 +54,12 @@ jobs:
   test:
     name: Build and Test
     runs-on: self-hosted
-    timeout-minutes: 30
+    # The full PodcastrUITests suite runs serially on a single self-hosted
+    # simulator. Coverage growth (#547 added 8 P0/P1 UI test classes) pushed
+    # the run just past the previous 30-min budget. 45 min gives headroom on
+    # the serial runner; reducing the suite's fixed sleeps (#17) is the proper
+    # long-term optimization to bring wall-clock back down.
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
