@@ -132,14 +132,6 @@ extension AppStateStore {
                         _ = kernel.podcastSnapshot
                         _ = kernel.hasHydratedPodcastSnapshot
                         _ = kernel.kernelIdentity
-                        // Observing queueProjectionGeneration guarantees that
-                        // applyKernelState (and therefore onQueueFromKernel) fires
-                        // after EVERY committed kernel frame, even when
-                        // podcastSnapshot's content hash is unchanged (no-op queue
-                        // commands, rejected ops, identical-queue results). Without
-                        // this, a pendingQueueOverride set by a no-op command could
-                        // remain stuck until an unrelated snapshot mutation arrived.
-                        _ = kernel.queueProjectionGeneration
                         // NOTE: `downloadSnapshot` is intentionally NOT observed
                         // here. Download-progress ticks update it ~1 Hz/download
                         // (without a global `rev` bump — see

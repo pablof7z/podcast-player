@@ -49,21 +49,15 @@ final class PlaybackState {
             : String(format: "%d:%02d", m, s)
     }
 
-    /// Kernel-projected authoritative queue. Sole writer: `applyKernelQueue(_:)`.
-    /// Never mutated by Swift user actions — those set `pendingQueueOverride` instead.
+    /// Kernel-projected authoritative queue. Sole writer: `applyKernelQueue(_:)`,
+    /// called exclusively from `onQueueFromKernel`. User actions (remove, move,
+    /// clear, prune) only dispatch to the kernel; the fast in-process round-trip
+    /// updates this on the next snapshot tick. Read-only outside this class.
     var kernelQueue: [QueueItem] = []
 
-    /// Optimistic overlay. Non-nil from the moment a user queue action (remove,
-    /// move, clear, enqueue) is dispatched until the next kernel projection
-    /// confirms via `applyKernelQueue`. Cleared on every kernel round-trip so
-    /// the authoritative kernel state always wins.
-    var pendingQueueOverride: [QueueItem]? = nil
-
-    /// The rendered queue the UI reads. Returns the optimistic overlay when a
-    /// user action is pending, otherwise the authoritative kernel projection.
-    /// Read-only outside this class — use `applyKernelQueue(_:)` (kernel path)
-    /// or the queue operation methods (user-action path) to change it.
-    var queue: [QueueItem] { pendingQueueOverride ?? kernelQueue }
+    /// The rendered queue the UI reads. Pure read-only projection of the kernel
+    /// queue — never locally mutated by Swift user actions.
+    var queue: [QueueItem] { kernelQueue }
 
     /// Transient set of episode ids for which an enqueue was dispatched to the
     /// kernel and returned `.accepted`, but whose authoritative confirmation

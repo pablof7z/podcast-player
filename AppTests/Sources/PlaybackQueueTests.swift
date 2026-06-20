@@ -3,11 +3,16 @@ import XCTest
 
 /// Exercises the Up Next queue API on `PlaybackState`.
 ///
-/// Scope is intentionally tight: we verify the array operations
-/// (`enqueue`, `removeFromQueue`, `moveQueue`, `clearQueue`, `pruneQueue`).
-/// `playNext(resolve:)` was removed in the autosnip migration — auto-advance
-/// is now Rust-kernel-owned (exercised by `cargo test -p nmp-app-podcast audio`).
-/// Those three test cases are deleted; the rest remain.
+/// `PlaybackState.queue` is a pure read-only projection of the kernel queue.
+/// User actions (remove, move, clear, prune) dispatch to the kernel only;
+/// `applyKernelQueue(_:)` is the sole writer. Tests verify:
+///   1. Swift-side guard logic (`enqueue` skips current episode, etc.)
+///   2. `applyKernelQueue` correctly updates `queue`
+///   3. Each user action + simulated kernel response produces the expected state
+///   4. `pruneQueue`/`moveQueue(resolve:)` dispatch durable dequeue for dropped items
+///
+/// Kernel dispatch cannot be verified at the unit level (store is nil);
+/// end-to-end persistence is covered by `QueueReorderUITests` / `P1QueueUITests`.
 @MainActor
 final class PlaybackQueueTests: XCTestCase {
 
@@ -42,6 +47,9 @@ final class PlaybackQueueTests: XCTestCase {
         state.applyKernelQueue([a, b].map { .episode($0) })
 
         state.removeFromQueue(a)
+        // Simulate the kernel confirming the removal (pure read-only: queue only
+        // updates when the kernel projection arrives).
+        state.applyKernelQueue([b].map { .episode($0) })
 
         XCTAssertEqual(state.queue.map(\.episodeID), [b])
     }
@@ -54,6 +62,8 @@ final class PlaybackQueueTests: XCTestCase {
         state.applyKernelQueue([.episode(a)])
         state.removeFromQueue(a)
         state.removeFromQueue(a)  // no-op the second time
+        // Kernel confirms removal
+        state.applyKernelQueue([])
 
         XCTAssertTrue(state.queue.isEmpty)
     }
@@ -68,6 +78,8 @@ final class PlaybackQueueTests: XCTestCase {
         // Move first item to the end. SwiftUI .onMove convention: destination
         // index is in the post-removal array, so end-of-list is `count`.
         state.moveQueue(from: IndexSet(integer: 0), to: 3)
+        // Simulate kernel confirming the reorder
+        state.applyKernelQueue([b, c, a].map { .episode($0) })
 
         XCTAssertEqual(state.queue.map(\.episodeID), [b, c, a])
     }
@@ -79,6 +91,8 @@ final class PlaybackQueueTests: XCTestCase {
         state.applyKernelQueue([UUID(), UUID(), UUID()].map { .episode($0) })
 
         state.clearQueue()
+        // Simulate kernel confirming the clear
+        state.applyKernelQueue([])
 
         XCTAssertTrue(state.queue.isEmpty)
     }
@@ -94,6 +108,8 @@ final class PlaybackQueueTests: XCTestCase {
         state.moveQueue(from: IndexSet(integer: 0), to: 3) { id in
             id == stale ? nil : makeEpisode(id: id)
         }
+        // Simulate kernel confirming: stale dequeued + [a, b, c] reordered to [b, c, a]
+        state.applyKernelQueue([b, c, a].map { .episode($0) })
 
         XCTAssertEqual(state.queue.map(\.episodeID), [b, c, a])
     }
@@ -105,48 +121,41 @@ final class PlaybackQueueTests: XCTestCase {
         let pruned = state.pruneQueue { _ in nil }
 
         XCTAssertEqual(pruned, 3)
+        // Kernel confirms all removals
+        state.applyKernelQueue([])
         XCTAssertTrue(state.queue.isEmpty)
     }
 
-    // MARK: - No-op reconciliation (Bug 1)
+    // MARK: - applyKernelQueue always wins (pure read-only contract)
 
-    /// Documents the contract that `applyKernelQueue` clears `pendingQueueOverride`
-    /// even when the kernel's queue is IDENTICAL to the optimistic overlay — the
-    /// "no-op" case where the dispatch was a logical no-op (removing a non-existent
-    /// item, reordering to the same order, etc.). The Swift fix ensures the kernel
-    /// calls `applyKernelQueue` after every round-trip via `queueProjectionGeneration`,
-    /// but the reconciliation mechanism itself lives entirely in `PlaybackState` and
-    /// can be exercised at the unit-test level.
-    func testNoOpRemoveOverlayIsReconcileableByKernelResponse() {
+    /// Verifies that `applyKernelQueue` is always the authoritative writer —
+    /// a no-op user action (removing a non-existent item) leaves the queue
+    /// unchanged, and subsequent kernel updates always show through immediately.
+    func testApplyKernelQueueAlwaysUpdatesQueue() {
         let state = PlaybackState()
         let a = UUID(), b = UUID()
         state.applyKernelQueue([a, b].map { .episode($0) })
 
-        // Remove an episode that is NOT in the queue — sets overlay with same
-        // content as kernelQueue (a no-op at the kernel level).
+        // Remove a non-existent item — pure no-op, queue unchanged
         state.removeFromQueue(UUID())
         XCTAssertEqual(state.queue.map(\.episodeID), [a, b],
-                       "overlay content should match kernel (no-op removes nothing)")
+                       "queue must be unchanged (no overlay) until kernel responds")
 
-        // Kernel responds with the unchanged queue (the no-op case). This mirrors
-        // what applyKernelQueue does when KernelModel.queueProjectionGeneration fires
-        // the observation even though snapshotContentHash did not change.
+        // Kernel responds with the same queue (no-op round-trip)
         state.applyKernelQueue([a, b].map { .episode($0) })
+        XCTAssertEqual(state.queue.map(\.episodeID), [a, b])
 
-        // Overlay must be nil now — verify by issuing a new kernel update and
-        // confirming it shows through without any stale override blocking it.
+        // Subsequent kernel update shows through immediately
         state.applyKernelQueue([b].map { .episode($0) })
-        XCTAssertEqual(state.queue.map(\.episodeID), [b],
-                       "pendingQueueOverride must have been cleared by the no-op kernel response")
+        XCTAssertEqual(state.queue.map(\.episodeID), [b])
     }
 
-    // MARK: - pruneQueue dispatches kernel dequeue (Bug 2)
+    // MARK: - pruneQueue dispatches kernel dequeue (durable removal)
 
-    /// Verifies that `pruneQueue` sets an optimistic overlay for the surviving
-    /// items and that the overlay reconciles correctly when the kernel confirms
-    /// the removal. (The kernel dispatch itself cannot be verified at the unit-test
-    /// level since `store` is nil; end-to-end persistence is covered by UI tests.)
-    func testPruneQueueOverlayReconcilesByKernelResponse() {
+    /// Verifies that `pruneQueue` returns the correct drop count and that the
+    /// kernel round-trip correctly reflects the removal. (Per-slot kernel
+    /// dispatch is verified end-to-end by UI tests since `store` is nil here.)
+    func testPruneQueueDispatchesAndKernelConfirms() {
         let state = PlaybackState()
         let a = UUID(), b = UUID(), stale = UUID()
         state.applyKernelQueue([a, stale, b].map { .episode($0) })
@@ -156,16 +165,12 @@ final class PlaybackQueueTests: XCTestCase {
         }
 
         XCTAssertEqual(dropped, 1)
-        XCTAssertEqual(state.queue.map(\.episodeID), [a, b],
-                       "overlay must exclude the stale item immediately")
+        // Queue still shows full kernel state until the kernel confirms (no overlay)
+        XCTAssertEqual(state.queue.map(\.episodeID), [a, stale, b])
 
-        // Kernel confirms removal: applyKernelQueue should clear the overlay.
+        // Kernel confirms removal:
         state.applyKernelQueue([a, b].map { .episode($0) })
-
-        // Overlay cleared — a subsequent kernel update shows through.
-        state.applyKernelQueue([a].map { .episode($0) })
-        XCTAssertEqual(state.queue.map(\.episodeID), [a],
-                       "pendingQueueOverride must have been cleared after kernel confirmation")
+        XCTAssertEqual(state.queue.map(\.episodeID), [a, b])
     }
 
     // MARK: - Fixtures
