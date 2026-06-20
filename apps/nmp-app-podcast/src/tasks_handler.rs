@@ -485,5 +485,9 @@ fn set_enabled(
 mod tests;
 
 #[cfg(test)]
+#[path = "tasks_handler_completion_tests.rs"]
+mod completion_tests;
+
+#[cfg(test)]
 #[path = "tasks_tick_tests.rs"]
 mod tick_tests;
