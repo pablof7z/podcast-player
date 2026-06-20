@@ -440,47 +440,6 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativePodcastSnapshot<'l
     })
 }
 
-/// `nmpActionDispatch(actionJson)` — M13.A stub for the namespace-agnostic
-/// action dispatch surface the second-platform shell calls. Lives separate
-/// from `nativeDispatchAction` because it (a) has no handle parameter — the
-/// Kotlin shell holds the kernel reference and (b) returns a status code
-/// rather than the kernel's JSON envelope. The full kernel routing through
-/// this entry point lands in M13.B; for now we parse the JSON, log the
-/// action id so the device log shows the wire vocabulary, and return 0.
-///
-/// **D6:** never panics, never throws. Returns `-1` on any parse failure;
-/// `0` on success or empty action.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nmpActionDispatch<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    action_json: JString<'l>,
-) -> jint {
-    ffi_guard("nmpActionDispatch", || -1 as jint, || {
-        let Ok(body) = env.get_string(&action_json) else {
-            return -1;
-        };
-        let body = body.to_string_lossy().into_owned();
-        // The action envelope is `{"id":"...","payload":{...}}`. We only
-        // need the id for the M13.A stub; the kernel-side router lands in
-        // M13.B and will consume the full body via `nmp_app_dispatch_action`
-        // once the namespace mapping is wired in.
-        let parsed: serde_json::Value = match serde_json::from_str(&body) {
-            Ok(v) => v,
-            Err(_) => return -1,
-        };
-        let action_id = parsed
-            .get("id")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or("<missing>");
-        // No structured logging hook yet (M13.B); a `log::info!` would
-        // require an Android log appender plumbed through the kernel. The
-        // action id is surfaced via the `Debug` repr so a tracing layer
-        // added later picks it up without changing the stub's wire behaviour.
-        let _ = action_id;
-        0
-    })
-}
 
 /// `nativeClaimProfile(handle, pubkeyHex, consumerID)` — register a refcounted
 /// interest in a Nostr pubkey's kind:0 profile under the given consumer token.
