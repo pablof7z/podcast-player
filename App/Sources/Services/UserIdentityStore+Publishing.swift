@@ -49,7 +49,13 @@ extension UserIdentityStore {
         // Sign + publish kind:0 through the kernel (`podcast.social`). The
         // kernel signs with the active account — local nsec OR NIP-46 bunker —
         // so there is no Swift signing path here for either identity mode.
-        dispatchToKernel(
+        //
+        // A synchronous `.failure` (e.g. no active account, no kernel) is a
+        // real rejection: throw BEFORE touching local state so the caller's
+        // catch path shows the error and does NOT advance to "update sent."
+        // On `.accepted` the kernel has enqueued the op; local state then
+        // updates optimistically (fire-and-forget for the relay leg).
+        let dispatchResult = dispatchToKernel(
             namespace: "podcast.social",
             body: [
                 "op": "publish_profile",
@@ -59,6 +65,9 @@ extension UserIdentityStore {
                 "picture": picture,
             ]
         )
+        if case let .failure(message) = dispatchResult {
+            throw UserIdentityError.dispatchRejected(message)
+        }
 
         // Update local state immediately so the UI reflects the new profile
         // without waiting for a relay round-trip on next launch.
@@ -106,7 +115,12 @@ extension UserIdentityStore {
         if let episodeCoord, !episodeCoord.isEmpty {
             body["episode_coord"] = episodeCoord
         }
-        dispatchToKernel(namespace: "podcast.social", body: body)
+        // A synchronous `.failure` must surface as a thrown error so callers
+        // do not silently treat a rejected note as a success.
+        let dispatchResult = dispatchToKernel(namespace: "podcast.social", body: body)
+        if case let .failure(message) = dispatchResult {
+            throw UserIdentityError.dispatchRejected(message)
+        }
     }
 
 }
