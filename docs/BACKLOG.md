@@ -481,7 +481,7 @@ worktrees currently in flight.
   `crates/nmp-core/src/actor/commands/publish.rs` + `pending_sign.rs` +
   `nip46_bunker_signing.rs` integration test.
 - **nostr-publish-confirmation-projection.** `publishProfile` / `publishUserNote`
-  are now honest fire-and-forget (`Void` return, no fabricated `SignedNostrEvent`).
+  are now honest fire-and-forget (`Void` return, no fabricated signed-event stub).
   The UI shows "Profile update sent." rather than "Profile published." because relay
   confirmation never surfaces synchronously. To show a true "published" state, add a
   snapshot projection in the kernel that emits the signed event `id`/`sig` after NMP
