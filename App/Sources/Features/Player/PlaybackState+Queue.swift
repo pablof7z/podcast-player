@@ -130,8 +130,10 @@ extension PlaybackState {
     }
 
     /// Prune items whose episode can no longer be resolved (e.g. the user
-    /// unsubscribed mid-queue). Sets an optimistic overlay; the kernel
-    /// handles the actual dequeue and the next projection reconciles the state.
+    /// unsubscribed mid-queue). Sets an optimistic overlay immediately so the
+    /// UI updates without waiting for the kernel, and dispatches a kernel
+    /// dequeue for each dropped slot so the removal persists across restarts
+    /// and the overlay reconciles on the next projection tick.
     @discardableResult
     func pruneQueue(resolve: (UUID) -> Episode?) -> Int {
         let current = queue
@@ -139,6 +141,15 @@ extension PlaybackState {
         let dropped = current.count - pruned.count
         if dropped > 0 {
             pendingQueueOverride = pruned
+            // Dispatch kernel dequeue for every pruned slot so the removal
+            // is durable (survives restart) and the authoritative queue
+            // projection confirms + clears the overlay. Removing by slot ID
+            // (not episode ID) is safe here: each item has a stable slot
+            // UUID from the kernel; removing by episode ID would also strip
+            // any bounded segment of the same episode that IS resolvable.
+            for item in current where resolve(item.episodeID) == nil {
+                store?.kernelDequeueQueueItem(queueSlotID: item.id)
+            }
         }
         return dropped
     }

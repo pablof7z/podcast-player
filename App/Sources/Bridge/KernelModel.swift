@@ -130,6 +130,15 @@ final class KernelModel {
     /// moment the first `fromPull` frame commits; after that the
     /// steady-state `>` guard is restored for both push and pull paths.
     private(set) var hasHydratedPodcastSnapshot: Bool = false
+    /// Monotonic counter bumped on every committed kernel frame, REGARDLESS of
+    /// whether `podcastSnapshot` changed. `AppStateStore` observes this so its
+    /// `onQueueFromKernel` callback fires after every queue command round-trip —
+    /// including no-op commands (remove a non-existent item, reorder to the
+    /// same order, clear an already-empty queue) where `snapshotContentHash`
+    /// does not change and therefore `podcastSnapshot` is not reassigned.
+    /// Without this, a `pendingQueueOverride` set by a no-op command would
+    /// remain stuck until an unrelated hash-changing snapshot arrived.
+    private(set) var queueProjectionGeneration: UInt64 = 0
     /// Per-domain last-applied rev counters. Each domain frame's `rev` is
     /// compared here before merging — stale/duplicate frames are dropped
     /// without touching the composite.
@@ -469,6 +478,12 @@ final class KernelModel {
             // alongside `library` sees them advance together.
             libraryGeneration &+= 1
         }
+        // Always bump queueProjectionGeneration, even when the snapshot content
+        // hash did not change (no-op / identical-queue kernel commands). This
+        // ensures AppStateStore's withObservationTracking fires and calls
+        // onQueueFromKernel so pendingQueueOverride is always reconciled on
+        // every kernel round-trip, not just ones that produce a hash change.
+        queueProjectionGeneration &+= 1
     }
 
     func applyConfiguration() {
