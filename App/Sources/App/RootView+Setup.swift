@@ -26,8 +26,8 @@ extension RootView {
         }
 
         // Render the Up Next queue from the Rust-owned projection.
-        // `applyKernelQueue` replaces the authoritative kernel queue and clears
-        // any optimistic overlay — the projection becomes the new rendered state.
+        // `applyKernelQueue` replaces the authoritative kernel queue — the sole
+        // source, since `PlaybackState.queue` is a pure read-only projection.
         // Also clears `pendingEnqueue` for episodes the kernel has now confirmed.
         let seedQueue: ([QueueItem]) -> Void = { [playbackState] items in
             playbackState.applyKernelQueue(items)
