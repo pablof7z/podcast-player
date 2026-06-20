@@ -230,7 +230,8 @@ fn cold_load_empty_agent_tasks_overrides_seed() {
     let handle = make_handle(store.clone(), rev.clone());
     // Step 6: tasks slot is now owned by state.tasks (TasksState).
     let tasks_slot = handle.state.tasks.tasks.share();
-    *tasks_slot.lock().unwrap() = crate::tasks_handler::default_seed();
+    *tasks_slot.lock().unwrap() =
+        crate::tasks_handler::default_seed(chrono::Utc::now().timestamp());
     let ptr = Box::into_raw(handle);
     let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
 

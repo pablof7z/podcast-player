@@ -12,9 +12,11 @@ fn new_state() -> (Arc<Mutex<Vec<AgentTaskSummary>>>, Arc<AtomicU64>) {
     )
 }
 
+const TEST_NOW: i64 = 1_700_000_000_i64;
+
 #[test]
 fn default_seed_has_inbox_triage_task() {
-    let seed = default_seed();
+    let seed = default_seed(TEST_NOW);
     assert_eq!(seed.len(), 1);
     assert_eq!(seed[0].title, "Inbox Triage");
     assert_eq!(seed[0].intent_type, "inbox_triage");
@@ -29,7 +31,8 @@ fn default_seed_has_inbox_triage_task() {
     assert_eq!(seed[0].action_body, r#"{"op":"triage"}"#);
     assert!(seed.iter().all(|t| t.is_enabled));
     assert!(seed.iter().all(|t| t.status == "pending"));
-    assert!(seed[0].next_run_at.is_some());
+    // next_run_at must be daily (86400 s) from the injected timestamp.
+    assert_eq!(seed[0].next_run_at, Some(TEST_NOW + 86_400));
     // Id must be a hyphenated UUID.
     assert!(Uuid::parse_str(&seed[0].id).is_ok());
 }
@@ -350,8 +353,10 @@ fn run_now_without_dispatch_stamps_running() {
 }
 
 #[test]
-fn run_now_marks_completed_on_accept() {
-    // An accepting dispatch (kernel minted a correlation_id) → "completed".
+fn run_now_accepted_dispatch_stays_running_not_completed() {
+    // An accepting dispatch (kernel minted a correlation_id) means the action
+    // was ENQUEUED, NOT that downstream work is done.  The task must stay
+    // "running" (in-flight), never "completed".
     let (tasks, rev) = new_state();
     let task_id = create_task(&tasks, &rev);
     let dispatch = |_ns: &str, _body: &str| true;
@@ -364,9 +369,17 @@ fn run_now_marks_completed_on_accept() {
         Some(&dispatch),
     );
     assert_eq!(result["ok"], true);
-    assert_eq!(result["status"], "completed");
+    // Dispatch accepted → in-flight, NOT prematurely completed.
+    assert_ne!(
+        result["status"], "completed",
+        "dispatched-but-unfinished task must NOT be 'completed'"
+    );
+    assert_eq!(
+        result["status"], "running",
+        "accepted dispatch must leave task in 'running' (in-flight) status"
+    );
     let guard = tasks.lock().unwrap();
-    assert_eq!(guard[0].status, "completed");
+    assert_eq!(guard[0].status, "running");
     assert!(guard[0].last_run_at.is_some());
 }
 
@@ -389,10 +402,11 @@ fn run_due_runs_due_task_and_clears_once_next_run() {
     let result = handle_tasks_action(AgentTasksAction::RunDue, &tasks, &rev, Some(&dispatch));
     assert_eq!(result["ok"], true);
     assert_eq!(result["ran"], 1);
-    assert_eq!(result["accepted"], 1);
+    assert_eq!(result["accepted"], 1); // dispatch was accepted (task is in-flight)
     let guard = tasks.lock().unwrap();
     assert_eq!(guard[0].id, task_id);
-    assert_eq!(guard[0].status, "completed");
+    // Dispatch accepted → in-flight, never "completed" prematurely.
+    assert_eq!(guard[0].status, "running");
     assert!(guard[0].last_run_at.is_some());
     assert_eq!(guard[0].next_run_at, None);
 }
@@ -421,7 +435,7 @@ fn run_now_marks_failed_on_reject() {
 fn run_now_forwards_namespace_and_body_to_dispatch() {
     // The seeded (namespace, body) pair is what reaches the dispatch hook —
     // the contract `RunNow` re-dispatches.
-    let seed = default_seed();
+    let seed = default_seed(TEST_NOW);
     let tasks = Arc::new(Mutex::new(seed.clone()));
     let rev = Arc::new(AtomicU64::new(0));
     let captured: std::sync::Mutex<Option<(String, String)>> = std::sync::Mutex::new(None);
@@ -488,4 +502,107 @@ fn run_now_unknown_task_reports_error() {
         None,
     );
     assert_eq!(result["ok"], false);
+}
+
+// ── Time-injection and completion-correctness regression tests ────────────────
+
+/// `default_seed` uses the caller-supplied `now` parameter for `next_run_at`
+/// rather than calling `Utc::now()` internally.  With a fixed timestamp the
+/// result is fully deterministic — daily is exactly 86 400 s from `now`.
+#[test]
+fn default_seed_next_run_at_is_deterministic_with_injected_time() {
+    let seed = default_seed(TEST_NOW);
+    assert_eq!(
+        seed[0].next_run_at,
+        Some(TEST_NOW + 86_400),
+        "daily next_run_at must be exactly 86400 s from the injected now"
+    );
+    // A different `now` produces a different but equally deterministic result.
+    let seed2 = default_seed(TEST_NOW + 3_600);
+    assert_eq!(seed2[0].next_run_at, Some(TEST_NOW + 3_600 + 86_400));
+}
+
+/// A task whose dispatch was ACCEPTED stays "running" (in-flight), never
+/// "completed".  This is the correctness regression guard for the premature
+/// completion bug: dispatch is fire-and-forget (action enqueued only); the
+/// kernel task subsystem has no downstream completion signal, so reporting
+/// "completed" at dispatch time was always a lie.
+#[test]
+fn dispatched_but_unfinished_task_is_never_completed() {
+    let (tasks, rev) = new_state();
+    // Create a task with a known namespace/body.
+    let create = handle_tasks_action(
+        AgentTasksAction::Create {
+            title: "Regression guard".into(),
+            description: None,
+            action_namespace: "podcast.inbox".into(),
+            action_body: r#"{"op":"triage"}"#.into(),
+            schedule: "once".into(),
+        },
+        &tasks,
+        &rev,
+        None,
+    );
+    let task_id = create["task_id"].as_str().unwrap().to_owned();
+
+    // Dispatch accepts — this is the ONLY signal tasks_handler can observe.
+    let dispatch = |_ns: &str, _body: &str| true;
+    let result = handle_tasks_action(
+        AgentTasksAction::RunNow { task_id: task_id.clone() },
+        &tasks,
+        &rev,
+        Some(&dispatch),
+    );
+
+    assert_eq!(result["ok"], true, "dispatch was accepted");
+    assert_ne!(
+        result["status"].as_str().unwrap_or(""),
+        "completed",
+        "P1 regression: dispatched-but-unfinished task MUST NOT be 'completed'"
+    );
+    assert_eq!(result["status"], "running");
+
+    let guard = tasks.lock().unwrap();
+    let task = guard.iter().find(|t| t.id == task_id).unwrap();
+    assert_ne!(task.status, "completed", "task slot must not claim completion");
+    assert_eq!(task.status, "running", "task slot must be 'running' (in-flight)");
+}
+
+/// RunDue counts accepted-dispatch tasks in the `accepted` JSON field.
+/// After the completion fix, `accepted` corresponds to tasks whose status
+/// is "running" (dispatch enqueued), not a stale "completed" count.
+#[test]
+fn run_due_counts_dispatched_tasks_in_accepted_field() {
+    let (tasks, rev) = new_state();
+    // Create two due tasks.
+    for i in 0..2 {
+        handle_tasks_action(
+            AgentTasksAction::Create {
+                title: format!("T{i}"),
+                description: None,
+                action_namespace: "podcast.inbox".into(),
+                action_body: r#"{"op":"triage"}"#.into(),
+                schedule: "once".into(),
+            },
+            &tasks,
+            &rev,
+            None,
+        );
+    }
+    let dispatch_count = std::sync::atomic::AtomicU64::new(0);
+    let dispatch = |_ns: &str, _body: &str| {
+        dispatch_count.fetch_add(1, Ordering::Relaxed);
+        true // accept
+    };
+    let result = handle_tasks_action(AgentTasksAction::RunDue, &tasks, &rev, Some(&dispatch));
+    assert_eq!(result["ok"], true);
+    assert_eq!(result["ran"], 2);
+    assert_eq!(result["accepted"], 2, "both tasks dispatched → both accepted");
+    assert_eq!(result["failed"], 0);
+    // All tasks are in-flight, not prematurely completed.
+    let guard = tasks.lock().unwrap();
+    assert!(
+        guard.iter().all(|t| t.status == "running"),
+        "all dispatched tasks must be 'running', not 'completed'"
+    );
 }

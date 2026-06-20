@@ -18,7 +18,7 @@
 //! At registration time (`register.rs`) the tasks slot is seeded with either:
 //! * the persisted list from `store::agent_tasks::load_agent_tasks` (cold launch
 //!   with an existing data dir), or
-//! * `tasks_handler::default_seed()` (first launch with no sidecar file).
+//! * `tasks_handler::default_seed(now)` (first launch with no sidecar file).
 //!
 //! This seeding moves from `register.rs` into `TasksState::new` (receives the
 //! data dir path as an optional parameter).
@@ -96,7 +96,7 @@ impl TasksState {
     ///
     /// Seed precedence:
     ///  1. Persisted sidecar (`load_agent_tasks`) — present after first run.
-    ///  2. `default_seed()` — first-launch fallback so the iOS UI has rows.
+    ///  2. `default_seed(now)` — first-launch fallback so the iOS UI has rows.
     pub fn new(infra: Infra, store: Arc<Mutex<PodcastStore>>) -> Self {
         // Try to load from the persisted sidecar if a data dir is configured.
         let seed = store
@@ -104,7 +104,10 @@ impl TasksState {
             .ok()
             .and_then(|s| s.data_dir().map(Path::to_path_buf))
             .and_then(|dir| crate::store::agent_tasks::load_agent_tasks(&dir))
-            .unwrap_or_else(tasks_handler::default_seed);
+            .unwrap_or_else(|| {
+                // D9: compute wall-clock once at the entry point; pass into helper.
+                tasks_handler::default_seed(chrono::Utc::now().timestamp())
+            });
 
         Self {
             tasks: Slot::new(seed),
@@ -120,7 +123,7 @@ impl TasksState {
     pub fn for_test() -> Self {
         use crate::state::Infra;
         Self {
-            tasks: Slot::new(tasks_handler::default_seed()),
+            tasks: Slot::new(tasks_handler::default_seed(chrono::Utc::now().timestamp())),
             infra: Infra::for_test(),
             store: Arc::new(Mutex::new(PodcastStore::new())),
             ticker: Mutex::new(None),
