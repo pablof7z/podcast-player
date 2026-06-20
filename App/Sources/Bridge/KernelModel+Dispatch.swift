@@ -53,7 +53,7 @@ extension KernelModel {
     func dispatch(namespace: String, body: [String: Any]) -> DispatchResult {
         let result = kernel.dispatchAction(namespace: namespace, body: body)
         if case let .failure(message) = result {
-            kmDispatchLog.error("dispatch_action rejected: \(message, privacy: .public)")
+            kmLog.error("dispatch_action rejected: \(message, privacy: .public)")
             lastErrorToast = message
         }
         // Surface the result of the user action without waiting for the next
@@ -76,7 +76,7 @@ extension KernelModel {
     func dispatchSilent(namespace: String, body: [String: Any]) -> DispatchResult {
         let result = kernel.dispatchAction(namespace: namespace, body: body)
         if case let .failure(message) = result {
-            kmDispatchLog.error("dispatch_action (silent) rejected: \(message, privacy: .public)")
+            kmLog.error("dispatch_action (silent) rejected: \(message, privacy: .public)")
         }
         // Surface the result off-main, same as `dispatch`.
         pullPodcastSnapshotIfChanged()
@@ -84,4 +84,4 @@ extension KernelModel {
     }
 }
 
-private let kmDispatchLog = Logger(subsystem: "io.f7z.podcast", category: "KernelModel")
+private let kmLog = Logger(subsystem: "io.f7z.podcast", category: "KernelModel")
