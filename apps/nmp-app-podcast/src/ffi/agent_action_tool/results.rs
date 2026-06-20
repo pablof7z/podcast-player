@@ -482,4 +482,3 @@ pub(super) fn youtube_ingest_metadata(request: &Value) -> Value {
         },
     })
 }
-
