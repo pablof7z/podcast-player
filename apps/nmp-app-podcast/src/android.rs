@@ -16,27 +16,24 @@
 
 use std::ffi::{c_void, CStr, CString};
 use std::sync::{
-    mpsc::{Receiver, RecvTimeoutError, Sender},
+    mpsc::{Receiver, Sender},
     Mutex,
 };
-use std::time::Duration;
 
 use jni::objects::{JClass, JString};
-use jni::sys::{jint, jlong, jstring};
+use jni::sys::{jint, jlong};
 use jni::JNIEnv;
 
 use nmp_ffi::{
-    nmp_app_cancel_bunker_handshake, nmp_app_claim_profile, nmp_app_dispatch_action,
     nmp_app_free, nmp_free_string, nmp_app_is_alive, nmp_app_lifecycle_background,
-    nmp_app_lifecycle_foreground, nmp_app_new, nmp_app_nostrconnect_uri,
-    nmp_app_release_profile, nmp_app_set_update_callback, nmp_app_signin_bunker,
-    nmp_app_signin_nsec, nmp_app_start, nmp_app_stop, nmp_external_signer_init,
+    nmp_app_lifecycle_foreground, nmp_app_new, nmp_app_set_update_callback,
+    nmp_app_start, nmp_app_stop, nmp_external_signer_init,
     nmp_signer_broker_init, NmpApp,
 };
 
 use crate::ffi::{
-    nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_snapshot,
-    nmp_app_podcast_snapshot_free, nmp_app_podcast_unregister, PodcastHandle,
+    nmp_app_podcast_register, nmp_app_podcast_set_data_dir,
+    nmp_app_podcast_unregister, PodcastHandle,
 };
 use crate::ffi::guard::ffi_guard;
 
@@ -44,10 +41,14 @@ use crate::ffi::guard::ffi_guard;
 mod capability_router;
 #[path = "android/external_signer.rs"]
 mod external_signer;
+#[path = "android/identity.rs"]
+mod identity;
 #[path = "android/provider_transport.rs"]
 mod provider_transport;
 #[path = "android/reports.rs"]
 mod reports;
+#[path = "android/snapshot.rs"]
+mod snapshot;
 
 // ── Session — boxed lifetime container ──────────────────────────────────────
 
@@ -94,7 +95,7 @@ impl Session {
     /// signer analogue of `nativeNextUpdate`'s snapshot drain. Returns the next
     /// `ExternalSignerRequest` JSON, or `None` on idle / closed channel (the
     /// Kotlin reader loops back in either way; D6 — no error crosses FFI).
-    fn recv_next_signer_request(&self, timeout: Duration) -> Option<String> {
+    fn recv_next_signer_request(&self, timeout: std::time::Duration) -> Option<String> {
         let rx = self.signer_rx.lock().ok()?;
         rx.recv_timeout(timeout).ok()
     }
@@ -142,7 +143,7 @@ extern "C" fn on_update(context: *mut c_void, bytes: *const u8, len: usize) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// JNI entry points — mirror of `KernelBridge.swift`
+// JNI entry points — lifecycle (mirror of `KernelBridge.swift`)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// `nativeNew()` — construct the kernel, wire the update callback, register the
@@ -305,328 +306,6 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeLifecycleBackgroun
             nmp_app_lifecycle_background(s.app);
         }
     });
-}
-
-/// `nativeDispatchAction(handle, namespace, actionJson)` — generic
-/// namespace-keyed action dispatch. Returns the JSON envelope as a Java
-/// `String`, or `null` on any failure (D6).
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeDispatchAction<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    namespace: JString<'l>,
-    action_json: JString<'l>,
-) -> jstring {
-    let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeDispatchAction", || null, || {
-        let Some(s) = session_ref(handle) else {
-            return null;
-        };
-        let ns = match env.get_string(&namespace) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return null,
-        };
-        let body = match env.get_string(&action_json) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return null,
-        };
-        let Ok(c_ns) = CString::new(ns) else {
-            return null;
-        };
-        let Ok(c_body) = CString::new(body) else {
-            return null;
-        };
-        let envelope_ptr = nmp_app_dispatch_action(s.app, c_ns.as_ptr(), c_body.as_ptr());
-        if envelope_ptr.is_null() {
-            return null;
-        }
-        // SAFETY: `envelope_ptr` is heap-owned by the kernel. Copy out before
-        // returning, then release through the documented `nmp_free_string`
-        // path — same convention `KernelBridge.swift` follows. Using
-        // `CString::from_raw` would bypass any future bookkeeping the kernel
-        // adds to that free.
-        let owned = unsafe { CStr::from_ptr(envelope_ptr) }
-            .to_string_lossy()
-            .into_owned();
-        nmp_free_string(envelope_ptr);
-        match env.new_string(owned) {
-            Ok(js) => js.into_raw(),
-            Err(_) => null,
-        }
-    })
-}
-
-/// `nativeSigninNsec(handle, nsec)` — one-shot sign-in via local nsec.
-/// Demonstrates the single capability + dispatch the milestone calls for.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSigninNsec<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    nsec: JString<'l>,
-) {
-    ffi_guard("nativeSigninNsec", || (), || {
-        let Some(s) = session_ref(handle) else {
-            return;
-        };
-        let secret = match env.get_string(&nsec) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let Ok(c_secret) = CString::new(secret) else {
-            return;
-        };
-        // v0.2.4: make_active = 1 — Android sign-in activates the imported
-        // account.
-        nmp_app_signin_nsec(s.app, c_secret.as_ptr(), 1);
-    });
-}
-
-/// `nativeNextUpdate(handle)` — blocking drain of the snapshot channel with a
-/// 250 ms timeout. Returns `null` on timeout or closed channel. Mirrors the
-/// pull-side cadence the iOS push callback would deliver.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNextUpdate<'l>(
-    env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-) -> jstring {
-    let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeNextUpdate", || null, || {
-        let Some(s) = session_ref(handle) else {
-            return null;
-        };
-        match s.rx.recv_timeout(Duration::from_millis(250)) {
-            Ok(json) => match env.new_string(json) {
-                Ok(js) => js.into_raw(),
-                Err(_) => null,
-            },
-            Err(RecvTimeoutError::Timeout) | Err(RecvTimeoutError::Disconnected) => null,
-        }
-    })
-}
-
-/// `nativePodcastSnapshot(handle)` — pull the Podcast projection JSON. Returns
-/// `null` if no snapshot is available.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativePodcastSnapshot<'l>(
-    env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-) -> jstring {
-    let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativePodcastSnapshot", || null, || {
-        let Some(s) = session_ref(handle) else {
-            return null;
-        };
-        if s.podcast.is_null() {
-            return null;
-        }
-        let ptr = nmp_app_podcast_snapshot(s.podcast);
-        if ptr.is_null() {
-            return null;
-        }
-        // SAFETY: `ptr` is a heap-owned `CString` from
-        // `nmp_app_podcast_snapshot`.
-        let json = unsafe { CStr::from_ptr(ptr) }
-            .to_string_lossy()
-            .into_owned();
-        nmp_app_podcast_snapshot_free(ptr);
-        match env.new_string(json) {
-            Ok(js) => js.into_raw(),
-            Err(_) => null,
-        }
-    })
-}
-
-
-/// `nativeClaimProfile(handle, pubkeyHex, consumerID)` — register a refcounted
-/// interest in a Nostr pubkey's kind:0 profile under the given consumer token.
-/// The kernel fetches the profile over its relay pool and surfaces it in
-/// `projections["resolved_profiles"]` on the next push frame. D6: invalid
-/// pubkey, null/non-UTF-8 arguments, or a null handle are silent no-ops.
-///
-/// Mirrors iOS `PodcastHandle.claimProfile(pubkeyHex:consumerID:)` and the
-/// `nmp_app_claim_profile` C-ABI symbol in `NmpCore.h`.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeClaimProfile<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    pubkey_hex: JString<'l>,
-    consumer_id: JString<'l>,
-) {
-    ffi_guard("nativeClaimProfile", || (), || {
-        let Some(s) = session_ref(handle) else {
-            return;
-        };
-        let pubkey = match env.get_string(&pubkey_hex) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let consumer = match env.get_string(&consumer_id) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let Ok(c_pubkey) = CString::new(pubkey) else {
-            return;
-        };
-        let Ok(c_consumer) = CString::new(consumer) else {
-            return;
-        };
-        // `force = 0` — background / list-row claims never force a re-fetch.
-        // Matches the iOS convention in `ClaimNostrProfiles.swift` which passes
-        // `force: false` for `.onAppear`-driven claims.
-        nmp_app_claim_profile(s.app, c_pubkey.as_ptr(), c_consumer.as_ptr(), 0);
-    });
-}
-
-/// `nativeReleaseProfile(handle, pubkeyHex, consumerID)` — release a previously
-/// claimed profile interest. The kernel drops the pending request when the last
-/// consumer releases. Idempotent / safe when nothing is claimed for this pair.
-/// D6: any invalid argument is a silent no-op.
-///
-/// Mirrors iOS `PodcastHandle.releaseProfile(pubkeyHex:consumerID:)` and the
-/// `nmp_app_release_profile` C-ABI symbol in `NmpCore.h`.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeReleaseProfile<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    pubkey_hex: JString<'l>,
-    consumer_id: JString<'l>,
-) {
-    ffi_guard("nativeReleaseProfile", || (), || {
-        let Some(s) = session_ref(handle) else {
-            return;
-        };
-        let pubkey = match env.get_string(&pubkey_hex) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let consumer = match env.get_string(&consumer_id) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let Ok(c_pubkey) = CString::new(pubkey) else {
-            return;
-        };
-        let Ok(c_consumer) = CString::new(consumer) else {
-            return;
-        };
-        nmp_app_release_profile(s.app, c_pubkey.as_ptr(), c_consumer.as_ptr());
-    });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NIP-46 remote-signer JNI wrappers (bunker:// + nostrconnect://)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// `nativeSignInBunker(handle, uri, makeActive)` — enqueue
-/// `ActorCommand::SignInBunker` with the supplied `bunker://` URI.
-/// Silent no-op (D6) if the broker has not been initialised — which it always
-/// is because `nativeNew` calls `nmp_signer_broker_init`.
-///
-/// `makeActive = true` is the only meaningful value for the UX (the user chose
-/// this signer to be their active account); pass `true` from Kotlin.
-///
-/// Mirrors iOS `PodcastHandle.signInBunker(uri:)` and the
-/// `nmp_app_signin_bunker` C-ABI symbol in `NmpCore.h`.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSignInBunker<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    uri: JString<'l>,
-    make_active: jint,
-) {
-    ffi_guard("nativeSignInBunker", || (), || {
-        let Some(s) = session_ref(handle) else {
-            return;
-        };
-        let uri_str = match env.get_string(&uri) {
-            Ok(s) => s.to_string_lossy().into_owned(),
-            Err(_) => return,
-        };
-        let Ok(c_uri) = CString::new(uri_str) else {
-            return;
-        };
-        nmp_app_signin_bunker(s.app, c_uri.as_ptr(), if make_active != 0 { 1 } else { 0 });
-    });
-}
-
-/// `nativeCancelBunkerHandshake(handle)` — abort the in-flight NIP-46
-/// handshake. Idempotent / safe when no handshake is in flight (D6).
-///
-/// Mirrors iOS `PodcastHandle.cancelBunkerHandshake()` and the
-/// `nmp_app_cancel_bunker_handshake` C-ABI symbol in `NmpCore.h`.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeCancelBunkerHandshake(
-    _env: JNIEnv,
-    _class: JClass,
-    handle: jlong,
-) {
-    ffi_guard("nativeCancelBunkerHandshake", || (), || {
-        if let Some(s) = session_ref(handle) {
-            nmp_app_cancel_bunker_handshake(s.app);
-        }
-    });
-}
-
-/// `nativeNostrconnectUri(handle, relayUrl, callbackScheme)` — allocate a
-/// freshly-generated `nostrconnect://` URI from the broker, copy it to a Java
-/// `String`, and free the C buffer.
-///
-/// Returns `null` when the broker is not initialised or Rust returns a null
-/// pointer (D6).
-///
-/// `relayUrl` / `callbackScheme` are passed through verbatim — pass `null`
-/// for either to use the Rust-side default (kernel-selected relay or no
-/// callback). Mirrors iOS `PodcastHandle.nostrconnectURI(relayURL:callbackScheme:)`
-/// and `nmp_app_nostrconnect_uri` in `NmpCore.h`.
-#[no_mangle]
-pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNostrconnectUri<'l>(
-    mut env: JNIEnv<'l>,
-    _class: JClass<'l>,
-    handle: jlong,
-    relay_url: JString<'l>,
-    callback_scheme: JString<'l>,
-) -> jstring {
-    let null: jstring = std::ptr::null_mut();
-    ffi_guard("nativeNostrconnectUri", || null, || {
-        let Some(s) = session_ref(handle) else {
-            return null;
-        };
-        // Convert optional JString args — null JString (from Kotlin `null`)
-        // becomes a Rust null pointer that the FFI accepts per its contract.
-        let relay_cstring: Option<CString> = env
-            .get_string(&relay_url)
-            .ok()
-            .and_then(|js| CString::new(js.to_string_lossy().into_owned()).ok());
-        let callback_cstring: Option<CString> = env
-            .get_string(&callback_scheme)
-            .ok()
-            .and_then(|js| CString::new(js.to_string_lossy().into_owned()).ok());
-
-        let relay_ptr = relay_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null());
-        let callback_ptr = callback_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null());
-
-        let uri_ptr = nmp_app_nostrconnect_uri(s.app, relay_ptr, callback_ptr);
-        if uri_ptr.is_null() {
-            return null;
-        }
-        // SAFETY: `uri_ptr` is a heap-owned C string from `nmp_app_nostrconnect_uri`;
-        // the caller (us) MUST free via `nmp_free_string`. Copy to Java String first.
-        let owned = unsafe { CStr::from_ptr(uri_ptr) }
-            .to_string_lossy()
-            .into_owned();
-        nmp_free_string(uri_ptr);
-        match env.new_string(owned) {
-            Ok(js) => js.into_raw(),
-            Err(_) => null,
-        }
-    })
 }
 
 /// `nativeFree(handle)` — tear down the kernel and the projection handle.
