@@ -260,7 +260,9 @@ fun EditProfileScreen(
                                 initialName = name
                                 initialAbout = about
                                 initialPictureUrl = pictureUrl
-                                successMessage = "Profile published."
+                                // Kernel dispatch is fire-and-forget (enqueue envelope,
+                                // not relay confirmation), so do not claim "published".
+                                successMessage = "Profile update sent."
                                 // Brief success beat then dismiss — matches iOS 900 ms intent.
                                 kotlinx.coroutines.delay(900)
                                 onBack()
