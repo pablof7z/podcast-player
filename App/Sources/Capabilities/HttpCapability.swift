@@ -475,24 +475,6 @@ final class HttpCapability: @unchecked Sendable {
         return pairs
     }
 
-#if DEBUG
-    /// Open a Server-Sent Events stream for the given request.
-    ///
-    /// - Note: Not yet implemented. Filled in at M5.
-    // TODO(M5): SSE streaming
-    func openSseStream(_ requestJSON: String) -> String {
-        fatalError("openSseStream not yet implemented — see TODO(M5)")
-    }
-
-    /// Open a WebSocket session for the given request.
-    ///
-    /// - Note: Not yet implemented. Filled in at M8.
-    // TODO(M8): WebSocket streaming
-    func openWebSocketSession(_ requestJSON: String) -> String {
-        fatalError("openWebSocketSession not yet implemented — see TODO(M8)")
-    }
-#endif
-
     private static func encode<T: Encodable>(_ value: T) -> String? {
         guard let data = try? JSONEncoder().encode(value) else { return nil }
         return String(data: data, encoding: .utf8)

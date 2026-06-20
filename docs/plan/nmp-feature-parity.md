@@ -21,14 +21,14 @@ delete it until all exit criteria at the bottom of this file pass.
 
 The large PR stack has merged, but it does not equal feature parity. Current
 main pins NMP `0.7.2` crates to
-`45ac8c3e4fd6b4efea1fe8c9c40e18758f41a891` (nmp-v0.7.2) as ordinary git deps.
-The old local `nmp-blossom` packaging blocker (`#479`) is closed and the
-vendoring workaround it spawned is now retired: as of nmp-v0.7.2 `nmp-blossom`
-is un-parked upstream (a first-class `[workspace].members` crate of the NMP
-repo), so the `vendor/nmp-blossom` copy and its `[patch]` redirect were deleted
-and `nmp-blossom` resolves directly via git like every other NMP crate.
-`nmp-feedback` is pinned in lockstep at
-`857dedf45be721d748bf4ed55a76144ba89018b9`. Many branches created screens,
+`9df43816da11b19b73ad98d9ff53bbaeff3b700d` (nmp-v0.7.2 + ADR-0055 Rung-1 fix)
+as ordinary git deps. The old local `nmp-blossom` packaging blocker (`#479`) is
+closed and the vendoring workaround it spawned is now retired: as of nmp-v0.7.2
+`nmp-blossom` is un-parked upstream (a first-class `[workspace].members` crate
+of the NMP repo), so the `vendor/nmp-blossom` copy and its `[patch]` redirect
+were deleted and `nmp-blossom` resolves directly via git like every other NMP
+crate. `nmp-feedback` is pinned in lockstep at
+`1e2b0b5e3e023a3d76e2d05db0f91a270811e7d9`. Many branches created screens,
 projections, action namespaces, and local heuristics; several still need real
 logic, relay/provider integration, device validation, or removal of Swift-side
 policy/fallback code in `App/Sources/`. The full iOS simulator `Build and Test`
@@ -138,7 +138,7 @@ completion, not absence of all infrastructure.
 | 33 | Agent memory | Partial | Memory CRUD exists; integrate with agent prompt/tool loop, source attribution, persistence migration, and privacy controls. |
 | 34 | Agent scheduled tasks | Scaffold | Replace run-now completion stamp with actual scheduler, task execution, notifications, persistence, and failure/retry policy. |
 | 35 | Transcripts | Partial | Viewer and cache exist; wire multi-source transcript discovery/fetch/STT providers, persistence, search indexing, and failure states. |
-| 36 | AI chapter compilation | Partial | Rust has `podcast.chapters.compile`, LLM-grounded synthesis, stub fallback with provenance, store persistence, and chapter projection. Remaining ownership gap: the legacy Swift `AIChapterCompiler` is still called from Player, Episode Detail, and transcript ingest, where it resolves credentials and writes chapters/ad spans directly to Swift state. Delete that Swift compiler after those call sites dispatch the Rust action; then remove the preserved-state fallback in `AppStateStore+KernelProjection.swift`. |
+| 36 | AI chapter compilation | Partial | Rust has `podcast.chapters.compile`, LLM-grounded synthesis, stub fallback with provenance, store persistence, and chapter projection. `AIChapterCompiler.swift` has been deleted; Player, Episode Detail, and transcript ingest now all call `store.kernelCompileChapters(episodeID:)` which dispatches the Rust action. Remaining: remove the preserved-state fallback in `AppStateStore+KernelProjection.swift`. |
 | 37 | Auto ad skip | Partial | Segment model/player hook exists; add detector/source of ad segments, user controls, false-positive safeguards, and validation. |
 | 38 | RAG/vector search | Scaffold | Replace substring ranker with `podcast-knowledge` embeddings/BM25, indexing jobs, scoped search, and result provenance. |
 | 39 | AI wiki | Scaffold | Replace placeholder articles with RAG-backed synthesis, citations, refresh/invalidation, and per-podcast storage. |
