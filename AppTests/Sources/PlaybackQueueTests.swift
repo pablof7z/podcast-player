@@ -38,9 +38,8 @@ final class PlaybackQueueTests: XCTestCase {
     func testRemoveFromQueueDropsEntry() {
         let state = PlaybackState()
         let a = UUID(), b = UUID()
-        // Seed the projection directly (the kernel is the queue's writer);
-        // removeFromQueue is a pure Swift array op on the projection.
-        state.queue = [a, b].map { .episode($0) }
+        // Seed via applyKernelQueue — the only authoritative writer of the queue.
+        state.applyKernelQueue([a, b].map { .episode($0) })
 
         state.removeFromQueue(a)
 
@@ -52,7 +51,7 @@ final class PlaybackQueueTests: XCTestCase {
         let a = UUID()
 
         state.removeFromQueue(a)  // no-op on empty queue
-        state.queue = [.episode(a)]
+        state.applyKernelQueue([.episode(a)])
         state.removeFromQueue(a)
         state.removeFromQueue(a)  // no-op the second time
 
@@ -64,7 +63,7 @@ final class PlaybackQueueTests: XCTestCase {
     func testMoveQueueReordersEntries() {
         let state = PlaybackState()
         let a = UUID(), b = UUID(), c = UUID()
-        state.queue = [a, b, c].map { .episode($0) }
+        state.applyKernelQueue([a, b, c].map { .episode($0) })
 
         // Move first item to the end. SwiftUI .onMove convention: destination
         // index is in the post-removal array, so end-of-list is `count`.
@@ -77,7 +76,7 @@ final class PlaybackQueueTests: XCTestCase {
 
     func testClearQueueEmptiesEverything() {
         let state = PlaybackState()
-        state.queue = [UUID(), UUID(), UUID()].map { .episode($0) }
+        state.applyKernelQueue([UUID(), UUID(), UUID()].map { .episode($0) })
 
         state.clearQueue()
 
@@ -90,7 +89,7 @@ final class PlaybackQueueTests: XCTestCase {
         let state = PlaybackState()
         let stale = UUID()
         let a = UUID(), b = UUID(), c = UUID()
-        state.queue = [stale, a, b, c].map { .episode($0) }
+        state.applyKernelQueue([stale, a, b, c].map { .episode($0) })
 
         state.moveQueue(from: IndexSet(integer: 0), to: 3) { id in
             id == stale ? nil : makeEpisode(id: id)
@@ -101,7 +100,7 @@ final class PlaybackQueueTests: XCTestCase {
 
     func testPruneQueueDropsAllStaleEntries() {
         let state = PlaybackState()
-        state.queue = [UUID(), UUID(), UUID()].map { .episode($0) }
+        state.applyKernelQueue([UUID(), UUID(), UUID()].map { .episode($0) })
 
         let pruned = state.pruneQueue { _ in nil }
 

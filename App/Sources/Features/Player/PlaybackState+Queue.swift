@@ -1,8 +1,34 @@
 import Foundation
 
 // MARK: - Queue (Up Next)
+//
+// `PlaybackState.queue` is a READ-ONLY projection of the Rust kernel queue.
+// The kernel is the single source of truth; Swift never writes to `queue`
+// directly. Instead, all user actions here:
+//   1. Compute an optimistic result from the current `queue` (which itself
+//      may already be an optimistic value if another action is in-flight).
+//   2. Store that result in `pendingQueueOverride` so the UI updates
+//      immediately (no visible lag waiting for the kernel round-trip).
+//   3. Dispatch the corresponding kernel action.
+//
+// `applyKernelQueue(_:)` — called only by `onQueueFromKernel` —
+// writes `kernelQueue` and clears `pendingQueueOverride`, reconciling the
+// optimistic state with the authoritative kernel truth.
+//
+// This follows the `pendingEnqueue` precedent from #542/#564 and extends it
+// to cover remove / move / clear / prune operations.
 
 extension PlaybackState {
+
+    // MARK: - Kernel projection write (sole writer of kernelQueue)
+
+    /// Called exclusively by the `onQueueFromKernel` callback. Replaces the
+    /// authoritative kernel queue and clears any pending optimistic overlay so
+    /// the kernel projection becomes the new rendered state.
+    func applyKernelQueue(_ items: [QueueItem]) {
+        kernelQueue = items
+        pendingQueueOverride = nil
+    }
 
     // MARK: - Enqueueing
 
@@ -15,9 +41,9 @@ extension PlaybackState {
     /// Instant feedback is achieved via `pendingEnqueue`: on a synchronous
     /// `.accepted` result, the id is added to `pendingEnqueue` so `isQueued`
     /// returns `true` immediately. The kernel's authoritative queue projection
-    /// (delivered via `onQueueFromKernel` / `PlaybackState.queue`) is the sole
-    /// writer to `queue`; `pendingEnqueue` entries are cleared as each id is
-    /// confirmed by the projection. Swift never writes to `queue` here.
+    /// (delivered via `onQueueFromKernel` / `applyKernelQueue`) is the sole
+    /// writer to `kernelQueue`; `pendingEnqueue` entries are cleared as each
+    /// id is confirmed by the projection. Swift never writes to `queue` here.
     func enqueue(_ episodeID: UUID) {
         guard episodeID != episode?.id else { return }
         let alreadyWhole = queue.contains { $0.episodeID == episodeID && $0.startSeconds == nil }
@@ -30,9 +56,12 @@ extension PlaybackState {
 
     /// Append a `QueueItem` (possibly bounded) to the end of the queue.
     /// No deduplication — the agent intentionally queues multiple segments of
-    /// the same episode.
+    /// the same episode. Sets an optimistic overlay immediately; the kernel
+    /// projection confirms and clears it on the next snapshot tick.
     func enqueueItem(_ item: QueueItem) {
-        queue.append(item)
+        var optimistic = queue
+        optimistic.append(item)
+        pendingQueueOverride = optimistic
         if let end = item.endSeconds {
             store?.kernelEnqueueSegmentLast(
                 episodeID: item.episodeID.uuidString,
@@ -48,7 +77,9 @@ extension PlaybackState {
     /// currently-playing segment/episode finishes. No deduplication. Used by
     /// the agent's `play_episode` tool with `queue_position: "next"`.
     func insertNext(_ item: QueueItem) {
-        queue.insert(item, at: 0)
+        var optimistic = queue
+        optimistic.insert(item, at: 0)
+        pendingQueueOverride = optimistic
         if let end = item.endSeconds {
             store?.kernelEnqueueSegmentNext(
                 episodeID: item.episodeID.uuidString,
@@ -64,39 +95,52 @@ extension PlaybackState {
 
     /// Remove all queue items whose `episodeID` matches. Idempotent.
     func removeFromQueue(_ episodeID: UUID) {
-        queue.removeAll { $0.episodeID == episodeID }
+        pendingQueueOverride = queue.filter { $0.episodeID != episodeID }
         store?.kernelDequeueEpisode(episodeID: episodeID)
     }
 
     /// Remove a single queue item by its stable slot identity.
     func removeFromQueue(itemID: UUID) {
-        queue.removeAll { $0.id == itemID }
+        pendingQueueOverride = queue.filter { $0.id != itemID }
         store?.kernelDequeueQueueItem(queueSlotID: itemID)
     }
 
     // MARK: - Reordering / pruning
 
     func moveQueue(from source: IndexSet, to destination: Int) {
-        queue.move(fromOffsets: source, toOffset: destination)
-        store?.kernelReorderQueue(queueSlotIDs: queue.map(\.id))
+        var optimistic = queue
+        optimistic.move(fromOffsets: source, toOffset: destination)
+        pendingQueueOverride = optimistic
+        store?.kernelReorderQueue(queueSlotIDs: optimistic.map(\.id))
     }
 
     func moveQueue(from source: IndexSet, to destination: Int, resolve: (UUID) -> Episode?) {
-        pruneQueue(resolve: resolve)
-        queue.move(fromOffsets: source, toOffset: min(destination, queue.count))
-        store?.kernelReorderQueue(queueSlotIDs: queue.map(\.id))
+        // Prune stale items from the optimistic queue first (matching prior
+        // behaviour: the list's onMove delegate prunes before reordering so
+        // indices from the displayed list remain valid).
+        var optimistic = queue.filter { resolve($0.episodeID) != nil }
+        optimistic.move(fromOffsets: source, toOffset: min(destination, optimistic.count))
+        pendingQueueOverride = optimistic
+        store?.kernelReorderQueue(queueSlotIDs: optimistic.map(\.id))
     }
 
     func clearQueue() {
-        queue.removeAll()
+        pendingQueueOverride = []
         store?.kernelClearQueue()
     }
 
+    /// Prune items whose episode can no longer be resolved (e.g. the user
+    /// unsubscribed mid-queue). Sets an optimistic overlay; the kernel
+    /// handles the actual dequeue and the next projection reconciles the state.
     @discardableResult
     func pruneQueue(resolve: (UUID) -> Episode?) -> Int {
-        let oldCount = queue.count
-        queue.removeAll { resolve($0.episodeID) == nil }
-        return oldCount - queue.count
+        let current = queue
+        let pruned = current.filter { resolve($0.episodeID) != nil }
+        let dropped = current.count - pruned.count
+        if dropped > 0 {
+            pendingQueueOverride = pruned
+        }
+        return dropped
     }
 
     // MARK: - Convenience
