@@ -142,7 +142,7 @@ fn ticker_fences_dispatch_on_shutdown() {
         let c = Arc::clone(&count);
         move |_ns: &str, _body: &str| -> bool {
             c.fetch_add(1, Ordering::SeqCst);
-            true // accepted → run_task_by_id stamps "completed" + re-arms
+            true // accepted → run_task_by_id stamps "running" (in-flight) + re-arms
         }
     };
     // Short interval so the test runs quickly.

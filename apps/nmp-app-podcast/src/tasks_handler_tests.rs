@@ -12,9 +12,11 @@ fn new_state() -> (Arc<Mutex<Vec<AgentTaskSummary>>>, Arc<AtomicU64>) {
     )
 }
 
+const TEST_NOW: i64 = 1_700_000_000_i64;
+
 #[test]
 fn default_seed_has_inbox_triage_task() {
-    let seed = default_seed();
+    let seed = default_seed(TEST_NOW);
     assert_eq!(seed.len(), 1);
     assert_eq!(seed[0].title, "Inbox Triage");
     assert_eq!(seed[0].intent_type, "inbox_triage");
@@ -29,7 +31,8 @@ fn default_seed_has_inbox_triage_task() {
     assert_eq!(seed[0].action_body, r#"{"op":"triage"}"#);
     assert!(seed.iter().all(|t| t.is_enabled));
     assert!(seed.iter().all(|t| t.status == "pending"));
-    assert!(seed[0].next_run_at.is_some());
+    // next_run_at must be daily (86400 s) from the injected timestamp.
+    assert_eq!(seed[0].next_run_at, Some(TEST_NOW + 86_400));
     // Id must be a hyphenated UUID.
     assert!(Uuid::parse_str(&seed[0].id).is_ok());
 }
@@ -350,27 +353,6 @@ fn run_now_without_dispatch_stamps_running() {
 }
 
 #[test]
-fn run_now_marks_completed_on_accept() {
-    // An accepting dispatch (kernel minted a correlation_id) → "completed".
-    let (tasks, rev) = new_state();
-    let task_id = create_task(&tasks, &rev);
-    let dispatch = |_ns: &str, _body: &str| true;
-    let result = handle_tasks_action(
-        AgentTasksAction::RunNow {
-            task_id: task_id.clone(),
-        },
-        &tasks,
-        &rev,
-        Some(&dispatch),
-    );
-    assert_eq!(result["ok"], true);
-    assert_eq!(result["status"], "completed");
-    let guard = tasks.lock().unwrap();
-    assert_eq!(guard[0].status, "completed");
-    assert!(guard[0].last_run_at.is_some());
-}
-
-#[test]
 fn run_due_runs_due_task_and_clears_once_next_run() {
     let (tasks, rev) = new_state();
     let create = handle_tasks_action(
@@ -389,10 +371,11 @@ fn run_due_runs_due_task_and_clears_once_next_run() {
     let result = handle_tasks_action(AgentTasksAction::RunDue, &tasks, &rev, Some(&dispatch));
     assert_eq!(result["ok"], true);
     assert_eq!(result["ran"], 1);
-    assert_eq!(result["accepted"], 1);
+    assert_eq!(result["accepted"], 1); // dispatch was accepted (task is in-flight)
     let guard = tasks.lock().unwrap();
     assert_eq!(guard[0].id, task_id);
-    assert_eq!(guard[0].status, "completed");
+    // Dispatch accepted → in-flight, never "completed" prematurely.
+    assert_eq!(guard[0].status, "running");
     assert!(guard[0].last_run_at.is_some());
     assert_eq!(guard[0].next_run_at, None);
 }
@@ -421,7 +404,7 @@ fn run_now_marks_failed_on_reject() {
 fn run_now_forwards_namespace_and_body_to_dispatch() {
     // The seeded (namespace, body) pair is what reaches the dispatch hook —
     // the contract `RunNow` re-dispatches.
-    let seed = default_seed();
+    let seed = default_seed(TEST_NOW);
     let tasks = Arc::new(Mutex::new(seed.clone()));
     let rev = Arc::new(AtomicU64::new(0));
     let captured: std::sync::Mutex<Option<(String, String)>> = std::sync::Mutex::new(None);

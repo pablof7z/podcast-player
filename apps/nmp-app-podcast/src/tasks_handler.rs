@@ -25,11 +25,12 @@
 //! Status mapping (synchronous accept/reject is all `run_now` can
 //! observe — the dispatched action's *downstream* completion arrives
 //! later via the snapshot projection, which `agent_tasks` does not
-//! watch, so "completed" here means "successfully dispatched/accepted",
-//! not "downstream work finished"):
+//! currently watch):
 //!
-//! * accepted (the registry minted a `correlation_id`) → `"completed"`
+//! * accepted (the registry minted a `correlation_id`) → `"running"` (in-flight;
+//!   the action is enqueued but downstream work has NOT finished)
 //! * rejected (unknown namespace / bad body) → `"failed"`
+//! * no dispatch fn (test / no live kernel) → `"running"` (task started, pending signal)
 //!
 //! ## Namespace contract
 //!
@@ -65,7 +66,10 @@ use intent::{task_intent_metadata, task_payload_from_intent, TaskPayload};
 /// Seed value installed on first kernel boot — gives the iOS UI rows to
 /// render before the user has scheduled anything. Returned by value so
 /// `register.rs` can hand it directly to `Arc::new(Mutex::new(...))`.
-pub fn default_seed() -> Vec<AgentTaskSummary> {
+///
+/// `now` is the current Unix timestamp; callers compute it once at their
+/// entry point (D9: no `Utc::now()` inside helpers).
+pub fn default_seed(now: i64) -> Vec<AgentTaskSummary> {
     let intent = AgentTaskIntent::InboxTriage;
     let payload = task_payload_from_intent(&intent).expect("inbox triage intent must resolve");
     let metadata = task_intent_metadata(Some(&intent));
@@ -79,9 +83,7 @@ pub fn default_seed() -> Vec<AgentTaskSummary> {
         action_namespace: payload.action_namespace,
         action_body: payload.action_body,
         schedule: "daily".into(),
-        next_run_at: next_run_after("daily", Utc::now().timestamp())
-            .ok()
-            .flatten(),
+        next_run_at: next_run_after("daily", now).ok().flatten(),
         last_run_at: None,
         status: "pending".into(),
         is_enabled: true,
@@ -142,12 +144,18 @@ pub fn handle_tasks_action_with_persist(
 /// `dispatch` is the synchronous re-dispatch hook used by `RunNow`
 /// (see [`TaskDispatchFn`]); `None` skips the dispatch (unit tests with
 /// no live kernel) and leaves the task in `"running"`.
+///
+/// D9: `Utc::now()` is called once at the top of this function and
+/// threaded as `now: i64` into all helpers — no helper calls wall-clock
+/// directly (makes helpers testable with a fixed timestamp).
 pub fn handle_tasks_action(
     action: AgentTasksAction,
     tasks: &Arc<Mutex<Vec<AgentTaskSummary>>>,
     rev: &Arc<AtomicU64>,
     dispatch: Option<&TaskDispatchFn<'_>>,
 ) -> serde_json::Value {
+    // Single wall-clock read for this entire action dispatch (D9).
+    let now = Utc::now().timestamp();
     let Ok(mut guard) = tasks.lock() else {
         return serde_json::json!({"ok": false, "error": "tasks slot poisoned"});
     };
@@ -161,6 +169,7 @@ pub fn handle_tasks_action(
         } => create_task(
             &mut guard,
             rev,
+            now,
             title,
             description,
             None,
@@ -179,6 +188,7 @@ pub fn handle_tasks_action(
             Ok(payload) => create_task(
                 &mut guard,
                 rev,
+                now,
                 title,
                 description,
                 Some(intent),
@@ -197,6 +207,7 @@ pub fn handle_tasks_action(
             Ok(payload) => update_task(
                 &mut guard,
                 rev,
+                now,
                 task_id,
                 title,
                 description,
@@ -220,10 +231,9 @@ pub fn handle_tasks_action(
         AgentTasksAction::Disable { task_id } => set_enabled(&mut guard, &task_id, false, rev),
         AgentTasksAction::RunNow { task_id } => {
             drop(guard);
-            run_task_by_id(tasks, rev, &task_id, dispatch, Utc::now().timestamp())
+            run_task_by_id(tasks, rev, &task_id, dispatch, now)
         }
         AgentTasksAction::RunDue => {
-            let now = Utc::now().timestamp();
             // Skip already-in-flight tasks (`status == "running"`) — symmetric
             // with `maybe_run_due_tasks` (the kernel tick).  Combined with
             // `run_task_by_id` advancing `next_run_at` under the same lock that
@@ -240,15 +250,17 @@ pub fn handle_tasks_action(
                 .collect::<Vec<_>>();
             drop(guard);
 
+            // `accepted` counts tasks whose dispatch was accepted by the kernel
+            // (status → "running", in-flight).  A rejected dispatch (unknown
+            // namespace / bad body) counts as `failed`.  No-dispatch (test mode)
+            // also lands in `accepted` since the task was started.
             let mut accepted = 0;
             let mut failed = 0;
-            let mut running = 0;
             for task_id in &task_ids {
                 let result = run_task_by_id(tasks, rev, task_id, dispatch, now);
                 match result["status"].as_str() {
-                    Some("completed") => accepted += 1,
+                    Some("running") => accepted += 1,
                     Some("failed") => failed += 1,
-                    Some("running") => running += 1,
                     _ => {}
                 }
             }
@@ -257,7 +269,6 @@ pub fn handle_tasks_action(
                 "ran": task_ids.len(),
                 "accepted": accepted,
                 "failed": failed,
-                "running": running,
             })
         }
     }
@@ -266,13 +277,13 @@ pub fn handle_tasks_action(
 fn create_task(
     guard: &mut Vec<AgentTaskSummary>,
     rev: &Arc<AtomicU64>,
+    now: i64,
     title: String,
     description: Option<String>,
     intent: Option<AgentTaskIntent>,
     payload: TaskPayload,
     schedule: String,
 ) -> serde_json::Value {
-    let now = Utc::now().timestamp();
     let next_run_at = match next_run_after(&schedule, now) {
         Ok(next) => next,
         Err(error) => return serde_json::json!({"ok": false, "error": error}),
@@ -301,6 +312,7 @@ fn create_task(
 fn update_task(
     guard: &mut [AgentTaskSummary],
     rev: &Arc<AtomicU64>,
+    now: i64,
     task_id: String,
     title: String,
     description: Option<String>,
@@ -311,7 +323,6 @@ fn update_task(
     let Some(task) = guard.iter_mut().find(|t| t.id == task_id) else {
         return serde_json::json!({"ok": false, "error": "task not found"});
     };
-    let now = Utc::now().timestamp();
     let next_run_at = match next_run_after(&schedule, now) {
         Ok(next) => next,
         Err(error) => return serde_json::json!({"ok": false, "error": error}),
@@ -370,7 +381,12 @@ fn run_task_by_id(
     };
 
     let accepted = dispatch(&action_namespace, &action_body);
-    let status = if accepted { "completed" } else { "failed" };
+    // Dispatch is fire-and-forget: an accepted return means the action was
+    // enqueued by the kernel registry (a correlation_id was minted), NOT that
+    // the downstream work is finished.  Keep the task in "running" (in-flight)
+    // rather than prematurely marking it "completed".  "failed" is immediate
+    // and accurate (the registry rejected the action synchronously).
+    let status = if accepted { "running" } else { "failed" };
     if let Ok(mut g) = tasks.lock() {
         if let Some(t) = g.iter_mut().find(|t| t.id == task_id) {
             // `next_run_at` was already advanced under the first lock — do NOT
@@ -388,8 +404,8 @@ fn run_task_by_id(
 ///
 /// Returns the number of tasks that were ATTEMPTED — i.e. a run was started and
 /// the task's `status`/`next_run_at` were mutated, whether the dispatch was
-/// accepted (`status = "completed"`) OR rejected (`status = "failed"`). The
-/// caller bumps the snapshot whenever this is non-zero, so a rejected run's
+/// accepted (`status = "running"`, in-flight) OR rejected (`status = "failed"`).
+/// The caller bumps the snapshot whenever this is non-zero, so a rejected run's
 /// `"failed"` status pushes reactively on the same frame (not on some unrelated
 /// later bump). Tasks that did not run (not found / disabled between the filter
 /// snapshot and the call) do NOT count — they mutated nothing to push.
@@ -467,6 +483,10 @@ fn set_enabled(
 #[cfg(test)]
 #[path = "tasks_handler_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tasks_handler_completion_tests.rs"]
+mod completion_tests;
 
 #[cfg(test)]
 #[path = "tasks_tick_tests.rs"]
