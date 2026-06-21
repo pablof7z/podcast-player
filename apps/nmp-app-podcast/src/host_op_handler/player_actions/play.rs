@@ -18,7 +18,7 @@ fn format_position(secs: f64) -> String {
     }
 }
 
-pub(super) fn resolve_play_bounds(
+fn resolve_play_bounds(
     saved_position_secs: f64,
     start_secs: Option<f64>,
     end_secs: Option<f64>,

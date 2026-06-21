@@ -1,4 +1,4 @@
-use crate::capability::AudioCommand;
+use crate::capability::{AudioCommand, DownloadCommand};
 use crate::host_op_handler::PodcastHostOpHandler;
 
 impl PodcastHostOpHandler {
@@ -50,7 +50,7 @@ impl PodcastHostOpHandler {
 
     pub(super) fn handle_download_command(
         &self,
-        f: impl FnOnce(&mut crate::download::DownloadQueue) -> Option<crate::capability::DownloadCommand>,
+        f: impl FnOnce(&mut crate::download::DownloadQueue) -> Option<DownloadCommand>,
         correlation_id: &str,
     ) -> serde_json::Value {
         let command = match self.state.playback.downloads.lock() {

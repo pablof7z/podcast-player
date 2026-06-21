@@ -193,7 +193,7 @@ impl PodcastHostOpHandler {
     /// Dispatch an [`AudioCommand`] and return a uniform `{"ok":…}` JSON value.
     /// Called from `handle_player_action` (mod.rs), `handle_play`/`handle_load`
     /// (play.rs), and `handle_skip` (skip.rs).
-    pub(super) fn dispatch_audio_json(
+    fn dispatch_audio_json(
         &self,
         cmd: AudioCommand,
         correlation_id: &str,
@@ -206,7 +206,7 @@ impl PodcastHostOpHandler {
 
     /// Dispatch a [`DownloadCommand`] and return a uniform `{"ok":…}` JSON value.
     /// Called from `handle_download_command` (skip.rs).
-    pub(super) fn dispatch_download_json(
+    fn dispatch_download_json(
         &self,
         cmd: DownloadCommand,
         correlation_id: &str,

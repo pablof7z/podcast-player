@@ -133,7 +133,7 @@ impl PodcastHostOpHandler {
     /// ordering to `podcasts.json`, and bump `rev` so the next snapshot tick
     /// surfaces it. Mirrors `PlaybackState::handle_queue_action` so the
     /// `podcast.player` queue ops stay byte-identical to `podcast.queue`.
-    pub(super) fn mutate_queue(
+    fn mutate_queue(
         &self,
         f: impl FnOnce(&mut crate::queue::PlaybackQueue),
     ) -> serde_json::Value {
@@ -153,7 +153,7 @@ impl PodcastHostOpHandler {
 
     /// Flush the current canonical queue ordering to `podcasts.json` without
     /// otherwise mutating it. Used after `handle_play_next` pops the head.
-    pub(super) fn persist_queue(&self) {
+    fn persist_queue(&self) {
         let items = match self.state.playback.queue.lock() {
             Ok(q) => q.playback_items(),
             Err(_) => return,
