@@ -216,7 +216,7 @@ impl PodcastStore {
 
     /// Return the `PodcastId` for the podcast that owns `episode_id_str`, or
     /// `None` when the episode is unknown. Used for validation before dispatch.
-    pub fn podcast_id_for_episode(&self, episode_id_str: &str) -> Option<PodcastId> {
+    pub fn podcast_id_for_episode(&self, episode_id_str: &str) -> Option<podcast_core::PodcastId> {
         for (podcast_id, episodes) in &self.episodes {
             // Case-insensitive: iOS sends UPPERCASE `UUID.uuidString`; stored
             // ids render lowercase (see `episode_playback_info`).
