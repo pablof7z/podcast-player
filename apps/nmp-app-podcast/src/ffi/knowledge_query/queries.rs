@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use podcast_knowledge::KnowledgeStore;
+use podcast_knowledge::{KnowledgeStore, SearchResult};
 
 use crate::store::PodcastStore;
 
@@ -103,7 +103,7 @@ pub(super) async fn run_knowledge_query_inner(
             Some(ref qvec) => scoped_top_k_search(&ks, qvec, scope_set.as_ref(), over_k),
             None => Vec::new(), // degrade
         };
-        let mut best: HashMap<String, podcast_knowledge::SearchResult> = HashMap::new();
+        let mut best: HashMap<String, SearchResult> = HashMap::new();
         for hit in &hits {
             best.entry(hit.chunk.episode_id.clone())
                 .or_insert_with(|| hit.clone());
