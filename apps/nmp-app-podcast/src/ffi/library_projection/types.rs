@@ -2,10 +2,18 @@
 
 use serde::{Deserialize, Serialize};
 
+fn default_limit() -> usize {
+    5_000
+}
+
+fn default_all_episodes_limit() -> usize {
+    50
+}
+
 #[derive(Debug, Deserialize)]
 pub(super) struct ShowEpisodesRequest {
     pub(super) podcast_id: String,
-    #[serde(default = "super::helpers::default_limit")]
+    #[serde(default = "default_limit")]
     pub(super) limit: usize,
 }
 
@@ -61,7 +69,7 @@ pub(super) struct AllEpisodesRequest {
     pub(super) filter: String,
     #[serde(default)]
     pub(super) query: String,
-    #[serde(default = "super::helpers::default_all_episodes_limit")]
+    #[serde(default = "default_all_episodes_limit")]
     pub(super) limit: usize,
 }
 

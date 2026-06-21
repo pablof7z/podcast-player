@@ -5,14 +5,6 @@ use std::ffi::{c_char, CString};
 use podcast_core::{DownloadState, TriageDecision};
 use serde::Serialize;
 
-pub(super) fn default_limit() -> usize {
-    5_000
-}
-
-pub(super) fn default_all_episodes_limit() -> usize {
-    50
-}
-
 pub(super) fn encode<T: Serialize>(value: &T) -> *mut c_char {
     match serde_json::to_string(value) {
         Ok(json) => match CString::new(json) {
@@ -30,7 +22,7 @@ pub(super) fn is_archived(store: &crate::store::PodcastStore, episode: &podcast_
         || stored_triage.map(|d| d.as_str()) == Some("archived")
 }
 
-pub(super) fn is_in_progress(episode: &podcast_core::Episode) -> bool {
+fn is_in_progress(episode: &podcast_core::Episode) -> bool {
     if episode.played {
         return false;
     }
