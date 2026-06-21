@@ -458,14 +458,14 @@ extension AgentTools {
         return try? JSONDecoder().decode(T.self, from: data)
     }
 
-    private static func podcastActionNumericArg(_ raw: Any?) -> Double? {
+    static func podcastActionNumericArg(_ raw: Any?) -> Double? {
         if let d = raw as? Double { return d }
         if let i = raw as? Int { return Double(i) }
         if let n = raw as? NSNumber { return n.doubleValue }
         return nil
     }
 
-    private static func podcastActionIntArg(_ raw: Any?) -> Int? {
+    static func podcastActionIntArg(_ raw: Any?) -> Int? {
         if let i = raw as? Int { return i }
         if let d = raw as? Double { return Int(d) }
         if let n = raw as? NSNumber { return n.intValue }
