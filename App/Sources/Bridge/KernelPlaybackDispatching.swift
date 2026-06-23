@@ -15,6 +15,10 @@ import Foundation
 /// `store`. Inject a conforming stub into `kernelDispatch` in tests.
 @MainActor
 protocol KernelPlaybackDispatching: AnyObject {
+    /// Stage `episodeID` in the Rust player actor without starting playback.
+    /// Must be called before `kernelResume()` whenever the active episode changes.
+    func kernelLoad(episodeID: UUID)
+
     /// Resume playback of the currently-staged episode.
     func kernelResume()
 

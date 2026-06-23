@@ -8,7 +8,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 
 /**
  * Unit tests for [KernelForwardingPlayer] transport routing.

@@ -125,6 +125,11 @@ final class PlaybackState {
         let isSameEpisode = (episode?.id == newEpisode.id)
         episode = newEpisode
         if !isSameEpisode {
+            // Stage the new episode in the Rust kernel first so that the
+            // subsequent kernelResume() (from play()) operates on the correct
+            // episode. Without this, the kernel may still have the previous
+            // episode staged and resume the wrong item.
+            transport?.kernelLoad(episodeID: newEpisode.id)
             engine.load(newEpisode)
             if newEpisode.playbackPosition > 0 {
                 engine.seek(to: newEpisode.playbackPosition)

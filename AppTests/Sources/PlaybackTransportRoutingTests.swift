@@ -33,6 +33,22 @@ final class PlaybackTransportRoutingTests: XCTestCase {
 
     // MARK: - Tests
 
+    func testSetEpisodeDispatchesKernelLoadForNewEpisode() {
+        let episode = Episode(
+            id: UUID(),
+            podcastID: UUID(),
+            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
+            title: "Test Episode",
+            publishedAt: Date(),
+            addedAt: Date(),
+            duration: 3600
+        )
+        playbackState.setEpisode(episode, playAfterLoad: false)
+
+        XCTAssertEqual(stub.kernelLoadCallCount, 1)
+        XCTAssertEqual(stub.lastLoadedEpisodeID, episode.id)
+    }
+
     func testPlayDispatchesKernelResume() {
         let episode = Episode(
             id: UUID(),
@@ -111,6 +127,8 @@ final class PlaybackTransportRoutingTests: XCTestCase {
 @MainActor
 final class StubKernelTransport: KernelPlaybackDispatching {
 
+    var kernelLoadCallCount = 0
+    var lastLoadedEpisodeID: UUID?
     var kernelResumeCallCount = 0
     var kernelPauseCallCount = 0
     var kernelSeekCallCount = 0
@@ -122,6 +140,8 @@ final class StubKernelTransport: KernelPlaybackDispatching {
     var lastSetSpeedValue: Double = 0
 
     func reset() {
+        kernelLoadCallCount = 0
+        lastLoadedEpisodeID = nil
         kernelResumeCallCount = 0
         kernelPauseCallCount = 0
         kernelSeekCallCount = 0
@@ -130,6 +150,11 @@ final class StubKernelTransport: KernelPlaybackDispatching {
         kernelSetSpeedCallCount = 0
         lastSeekPosition = 0
         lastSetSpeedValue = 0
+    }
+
+    func kernelLoad(episodeID: UUID) {
+        kernelLoadCallCount += 1
+        lastLoadedEpisodeID = episodeID
     }
 
     func kernelResume() {
