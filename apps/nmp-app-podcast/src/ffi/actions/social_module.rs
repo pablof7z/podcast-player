@@ -26,7 +26,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 /// `podcast.social.publish_profile` — sign + publish a kind:0 profile.
 pub const ACTION_SOCIAL_PUBLISH_PROFILE: &str = "podcast.social.publish_profile";

@@ -23,7 +23,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 /// `podcast.knowledge.search` — issue a semantic search over the
 /// library. M6.B replaces the stub with a hybrid KNN + BM25 ranker.

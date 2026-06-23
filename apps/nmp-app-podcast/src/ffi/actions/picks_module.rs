@@ -21,7 +21,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 use crate::ffi::projections::AgentPickSummary;
 

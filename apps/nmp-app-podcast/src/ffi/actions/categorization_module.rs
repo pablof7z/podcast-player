@@ -28,7 +28,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 pub use super::categorization_keywords::CATEGORY_KEYWORDS;
 

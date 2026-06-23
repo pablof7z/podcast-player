@@ -22,7 +22,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 /// Wire enum for all `"podcast.chapters"` namespace actions.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

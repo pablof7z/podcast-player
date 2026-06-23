@@ -5,7 +5,7 @@
 //! Extracted from `discover_nostr.rs` to keep that file under the 500-line
 //! hard limit (AGENTS.md).
 
-use nmp_core::planner::{InterestLifecycle, InterestScope};
+use nmp_planner::interest::{InterestLifecycle, InterestScope};
 use nmp_core::substrate::KernelEvent;
 
 use super::*;

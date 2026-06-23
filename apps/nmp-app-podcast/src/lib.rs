@@ -67,6 +67,8 @@ pub(crate) mod knowledge_fusion;
 pub mod llm;
 pub mod state;
 pub(crate) mod memory_handler;
+pub mod action_payload;
+pub mod dispatch_bytes;
 pub(crate) mod nmp_dispatch;
 pub(crate) mod nostr_episodes;
 pub(crate) mod picks_handler;

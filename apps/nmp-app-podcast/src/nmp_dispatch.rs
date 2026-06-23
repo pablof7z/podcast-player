@@ -30,7 +30,7 @@
 
 use std::ffi::CString;
 
-use nmp_core::planner::LogicalInterest;
+use nmp_planner::interest::LogicalInterest;
 
 /// Register a per-podcast secret key in the kernel's identity roster without
 /// activating it. `secret_hex` must be a 64-char lowercase hex string (the

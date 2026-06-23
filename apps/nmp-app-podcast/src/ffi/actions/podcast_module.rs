@@ -14,7 +14,7 @@ fn default_true() -> bool {
 }
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 use crate::discover_nostr::{nostr_discovery_identity, nostr_discovery_interest};
 

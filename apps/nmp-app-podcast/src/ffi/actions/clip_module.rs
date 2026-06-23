@@ -25,7 +25,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::ActorCommand;
+use nmp_core::actor::ActorCommand;
 
 /// `podcast.clip.create` — create a user-defined clip from `[start, end]`.
 pub const ACTION_CLIP_CREATE: &str = "podcast.clip.create";
