@@ -46,9 +46,15 @@ fn encode_payload_for_namespace(namespace: &str, json: &str) -> Result<Vec<u8>, 
     match namespace {
         "nmp.publish" => encode::<nmp_core::publish::PublishAction>(namespace, json),
         "nmp.blossom.upload" => encode::<nmp_blossom::UploadAction>(namespace, json),
-        // Podcast-specific namespaces: use the generic JSON payload pass-through
+        // Podcast-specific namespaces: wrap raw JSON in the pass-through payload.
+        // PodcastJsonPayload is not serde-Deserializable (it wraps opaque JSON),
+        // so we construct it directly instead of going through the generic encode<P>.
         ns if ns.starts_with("podcast.") => {
-            encode::<crate::action_payload::PodcastJsonPayload>(namespace, json)
+            let payload = crate::action_payload::PodcastJsonPayload {
+                schema_version: crate::action_payload::PodcastJsonPayload::SCHEMA_VERSION,
+                body_json: json.to_owned(),
+            };
+            Ok(payload.encode())
         }
         other => Err(format!(
             "no typed payload encoder for action namespace '{other}' (byte doorway has no JSON fallback)"
@@ -113,7 +119,7 @@ pub fn dispatch_action_bytes_for(
 
     // SAFETY: result_ptr is heap-owned from the kernel; free it.
     unsafe {
-        nmp_ffi::nmp_free_string(result_ptr);
+        nmp_free_string(result_ptr);
     }
 
     // Parse the returned JSON to extract correlation_id or error
