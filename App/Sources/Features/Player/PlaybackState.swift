@@ -139,56 +139,39 @@ final class PlaybackState {
     func play() {
         guard let episode else { return }
         Haptics.medium()
-        engine.play()
-        store?.kernelLoad(episodeID: episode.id)
+        store?.kernelResume()
     }
 
     func pause() {
         Haptics.soft()
-        engine.pause()
+        store?.kernelPause()
     }
 
     func seek(to time: TimeInterval) {
+        store?.kernelSeek(positionSecs: time)
         engine.seek(to: time)
         Haptics.selection()
-        // When paused, Playing reports aren't flowing so Rust's saved position
-        // would be stale. PersistPosition writes directly to the store (no
-        // audio command returned) so the next play() → kernelLoad returns the
-        // correct resume point and doesn't snap the engine back.
-        if !isPlaying, let episodeID = episode?.id {
-            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: time)
-        }
     }
 
     func seekSnapping(to time: TimeInterval) { seek(to: time) }
 
     func skipBackward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipBackwardSeconds
-        let target = max(engine.currentTime - delta, 0)
-        engine.skip(back: seconds)
-        if !isPlaying, let episodeID = episode?.id {
-            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: target)
-        }
+        store?.kernelSkipBackward(secs: delta)
     }
 
     func skipForward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipForwardSeconds
-        let target = min(engine.currentTime + delta, duration)
-        engine.skip(forward: seconds)
-        if !isPlaying, let episodeID = episode?.id {
-            store?.kernelPersistPosition(episodeID: episodeID, positionSecs: target)
-        }
+        store?.kernelSkipForward(secs: delta)
     }
 
     func setRate(_ newRate: PlaybackRate) {
-        // Update the engine immediately so the UI reflects the new rate
-        // without waiting for the Rust kernel's async capability round-trip.
-        // kernelSetSpeed dispatches to Rust for persistence and AVPlayer sync;
-        // the resulting AudioCommand::SetSpeed callback calls engine.setRate
-        // again (idempotent). The direct update here ensures PlaybackState.rate
+        // Dispatch to Rust first for policy and persistence. The resulting
+        // AudioCommand::SetSpeed callback calls engine.setRate (idempotent).
+        // Direct update immediately after for UI feedback so PlaybackState.rate
         // (which reads engine.rate) is current in the same render cycle.
-        engine.setRate(newRate.rawValue)
         store?.kernelSetSpeed(newRate.rawValue)
+        engine.setRate(newRate.rawValue)
         Haptics.selection()
     }
 
