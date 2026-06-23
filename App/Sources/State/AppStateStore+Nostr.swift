@@ -3,11 +3,9 @@ import Foundation
 // MARK: - Nostr Access Control
 //
 // The kernel (Rust, `ApprovedPeerStore`) is authoritative for approved and
-// blocked pubkeys.  Swift dispatches one-way mutations via `KernelModel` and
-// keeps `nostrAllowedPubkeys` / `nostrBlockedPubkeys` on `AppState` as an
-// optimistic display mirror; the authoritative state re-arrives on the next
-// `podcast.social` domain push as `trusted` flags on each
-// `NostrConversationDTO`.
+// blocked pubkeys.  Swift dispatches one-way mutations via `KernelModel`; the
+// authoritative state is read from `podcast.social` domain push via
+// `podcastSnapshot?.social` (approvedPubkeys / blockedPubkeys).
 //
 // The old `nostrPendingApprovals` / `NostrPendingApproval` scaffolding has
 // been deleted.  Unknown senders are simply untrusted (kernel-gated) until the
