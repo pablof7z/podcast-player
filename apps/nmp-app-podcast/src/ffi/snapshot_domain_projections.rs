@@ -333,8 +333,9 @@ pub fn register_domain_projections(
             if current == prev {
                 return None;
             }
+            let global_rev = h.state.infra.rev.load(Ordering::Relaxed);
             let payload = build_voice_payload(&h)
-                .unwrap_or_else(|| voice_tombstone(current));
+                .unwrap_or_else(|| voice_tombstone(global_rev));
             last_emitted.store(current, Ordering::Relaxed);
             Some(make_typed(SCHEMA_VOICE, payload))
         });
