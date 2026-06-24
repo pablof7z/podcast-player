@@ -136,7 +136,7 @@ extern "C" fn on_update(context: *mut c_void, bytes: *const u8, len: usize) {
         // in `nativeNew`; it lives until `nativeFree` clears the callback
         // before reclaiming the box. AssertUnwindSafe is sound: null-checked
         // above; not observed again on panic path.
-        let tx = unsafe { &*(context as *const Sender<String>) };
+        let tx = unsafe { &*(context as *const CbSender<String>) };
         // Dead receiver ⇒ silent no-op (D6).
         let _ = tx.send(owned);
     });
@@ -182,7 +182,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
         // or nostrconnect:// sign-in attempt (D6 — no-op if already init'd).
         nmp_signer_broker_init(app);
         let (signer_tx, signer_rx) = crossbeam_channel::unbounded::<String>();
-        let (shutdown_tx, shutdown_rx) = crossbeam_channel::bounded::<()>(1);
+        let (shutdown_tx, shutdown_rx) = crossbeam_channel::bounded::<()>(2);
         let session = Arc::new(Session {
             app,
             podcast,
@@ -329,10 +329,11 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         // reconstructing via Arc::from_raw is the inverse.
         let s = unsafe { Arc::from_raw(handle as *const Session) };
         nmp_app_stop(s.app);
-        // Signal shutdown so any blocking `nativeNextSignerRequest` select! arm
-        // unblocks and releases its Arc clone. `try_send` is used because the
-        // channel is bounded(1) and we only need one token; a full channel means
-        // the signal is already pending, which is fine (D6).
+        // Signal shutdown so both blocking loops (`nativeNextUpdate` and
+        // `nativeNextSignerRequest`) each receive one wakeup token and release
+        // their Arc clones. The channel is bounded(2) so both sends always
+        // succeed; a full channel would mean the signal is already pending (D6).
+        let _ = s.shutdown_tx.try_send(());
         let _ = s.shutdown_tx.try_send(());
         capability_router::clear_capability_router(&s);
         if !s.podcast.is_null() {
