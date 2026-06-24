@@ -142,9 +142,10 @@ class KernelBridge {
     }
 
     /**
-     * Blocking (≤250 ms) drain of the kernel snapshot channel; `null` on idle.
-     * Mirrors the Swift push callback's cadence via a pull-side model — see
-     * `apps/nmp-app-podcast/src/android.rs` for the rationale.
+     * Blocking drain of the kernel snapshot channel. Blocks until a frame
+     * arrives or the session is shut down. Mirrors the Swift push callback's
+     * cadence via a pull-side model — see `apps/nmp-app-podcast/src/android.rs`
+     * for the rationale. Returns `null` only on session shutdown.
      */
     fun nextUpdate(): String? = if (handle != 0L) nativeNextUpdate(handle) else null
 
@@ -209,10 +210,11 @@ class KernelBridge {
     }
 
     /**
-     * Blocking (≤250 ms) drain of the outbound NIP-55 request channel; `null`
-     * on idle. The signer analogue of [nextUpdate]: a dedicated reader thread
-     * loops on this and hands each `ExternalSignerRequest` JSON to
-     * `ExternalSignerCapabilityBridge.handleJson`.
+     * Blocking drain of the outbound NIP-55 request channel. Blocks until a
+     * request arrives or the session is shut down. The signer analogue of
+     * [nextUpdate]: a dedicated reader thread loops on this and hands each
+     * `ExternalSignerRequest` JSON to `ExternalSignerCapabilityBridge.handleJson`.
+     * Returns `null` only on session shutdown.
      */
     fun nextSignerRequest(): String? = if (handle != 0L) nativeNextSignerRequest(handle) else null
 
