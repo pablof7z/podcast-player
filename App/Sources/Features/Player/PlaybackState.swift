@@ -205,20 +205,20 @@ final class PlaybackState {
 
     func skipBackward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipBackwardSeconds
-        if !isPlaying {
-            // When paused, Rust's PlayerActor.position_secs is not updated by
-            // Playing reports. Sync it from AVPlayer's current time before
-            // dispatching the skip so each consecutive tap accumulates from
-            // the correct base instead of all computing from the same stale value.
-            transport?.kernelSeek(positionSecs: engine.currentTime)
+        if !isPlaying, let ep = episode {
+            // Mirror of skipForward: use pendingPausedSeekBase so consecutive
+            // back-taps while paused accumulate from the previous tap's target
+            // rather than all anchoring to the same stale AVPlayer time.
+            let base = pendingPausedSeekBase ?? engine.currentTime
+            let target = max(0, base - delta)
+            pendingPausedSeekBase = target
+            transport?.kernelSeek(positionSecs: target)
+            // apply_writeback won't run while paused — persist explicitly so a
+            // kill-before-resume restores the correct position.
+            store?.kernelPersistPosition(episodeID: ep.id, positionSecs: target)
+            return
         }
         transport?.kernelSkipBackward(secs: delta)
-        // P2a: No Playing ticks fire while paused, so apply_writeback never
-        // saves the new position. Persist it explicitly so a kill-before-resume
-        // restores the correct position rather than the pre-skip one.
-        if !isPlaying, let ep = episode {
-            store?.kernelPersistPosition(episodeID: ep.id, positionSecs: max(0, engine.currentTime - delta))
-        }
     }
 
     func skipForward(_ seconds: TimeInterval? = nil) {
