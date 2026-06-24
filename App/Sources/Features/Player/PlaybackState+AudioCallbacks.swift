@@ -103,6 +103,10 @@ extension PlaybackState {
             case .pause:
                 self.engine.pause()
             case let .seek(positionSecs):
+                // Rust has sent an authoritative position — the pending paused
+                // skip accumulator is now stale; reset it so the next tap
+                // anchors from the echoed position.
+                self.pendingPausedSeekBase = nil
                 self.engine.seek(to: positionSecs)
             case .stop:
                 self.engine.pause()

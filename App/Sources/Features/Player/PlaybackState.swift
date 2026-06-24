@@ -76,6 +76,10 @@ final class PlaybackState {
     /// instant feedback without making Swift a second writer to `queue`.
     /// Items are removed as each id appears in the kernel's queue projection.
     var pendingEnqueue: Set<UUID> = []
+    /// Tracks the accumulated seek target across rapid paused skip-forward taps.
+    /// Reset on resume or when a position echoes back from Rust, so each tap
+    /// builds on the previous rather than re-anchoring to a stale AVPlayer time.
+    var pendingPausedSeekBase: Double?
     var seekHistory: [SeekHistoryEntry] = []
     var canJumpBack: Bool { !seekHistory.isEmpty }
 
@@ -174,6 +178,7 @@ final class PlaybackState {
 
     func play() {
         guard let episode else { return }
+        pendingPausedSeekBase = nil
         Haptics.medium()
         transport?.kernelResume()
     }
@@ -218,18 +223,22 @@ final class PlaybackState {
 
     func skipForward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipForwardSeconds
-        if !isPlaying {
-            // Same paused-accumulation fix as skipBackward: sync Rust's
-            // position_secs from AVPlayer before each skip dispatch.
-            transport?.kernelSeek(positionSecs: engine.currentTime)
+        if !isPlaying, let ep = episode {
+            // When paused, Playing ticks don't fire so Rust's position_secs
+            // stales out. Each rapid tap must accumulate from the *previous
+            // tap's target*, not from AVPlayer's position (which only updates
+            // when playing). pendingPausedSeekBase carries that running target
+            // across taps; it is cleared on resume or when Rust echoes a seek.
+            let base = pendingPausedSeekBase ?? engine.currentTime
+            let target = min(base + delta, ep.duration ?? base + delta)
+            pendingPausedSeekBase = target
+            transport?.kernelSeek(positionSecs: target)
+            // P2a: apply_writeback won't run while paused — persist explicitly
+            // so a kill-before-resume restores the correct position.
+            store?.kernelPersistPosition(episodeID: ep.id, positionSecs: target)
+            return
         }
         transport?.kernelSkipForward(secs: delta)
-        // P2a: Persist the new position while paused for the same reason as
-        // skipBackward — apply_writeback won't fire until playback resumes.
-        if !isPlaying, let ep = episode {
-            let target = min(engine.currentTime + delta, ep.durationSecs ?? engine.currentTime + delta)
-            store?.kernelPersistPosition(episodeID: ep.id, positionSecs: target)
-        }
     }
 
     func setRate(_ newRate: PlaybackRate) {
