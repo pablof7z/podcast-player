@@ -208,6 +208,6 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             unsafe {
                 drop(Box::from_raw(ctx));
             }
-        }
+        };
     });
 }
