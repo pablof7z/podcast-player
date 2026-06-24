@@ -1,35 +1,28 @@
 import SwiftUI
 
-// USAGE:
-// Internal-only renderer used by clip composer (`ClipComposerSheet`) and
-// quote share (`QuoteShareView`) to display transcript segments inside their
-// own surfaces. NOT a primary player view — transcripts are an extraction
-// substrate, not user-visible content. The player surfaces chapters via
-// `PlayerChaptersScrollView`.
-
 // MARK: - PlayerTranscriptRow
 
-/// Single transcript line as it appears inside the dark-chrome player surface.
+/// Single transcript line inside the full-screen player's Transcript tab.
 ///
-/// Visual priorities differ from `TranscriptReaderView`'s row:
-///   - Light text on a dark wallpaper (white at varying opacity, not
-///     `.primary`).
-///   - Active line gets a gentle white underlay rather than the editorial
-///     yellow tint — yellow over the player wallpaper would clash with the
-///     hero artwork.
-///   - Speaker label sits inline as a small uppercase chip above the line,
-///     so consecutive same-speaker rows stay visually packed without a
-///     full paragraph re-render.
+/// Visual priorities:
+///   - Active line gets a gentle accent-color underlay so it stands out on any
+///     player backdrop (light or dark).
+///   - Speaker label sits inline as a small uppercase chip above the line, so
+///     consecutive same-speaker rows stay visually packed.
+///   - Long-press exposes a context menu with "Ask the agent about this" and
+///     "Highlight" — both are optional so callers that don't wire them (previews,
+///     clip composer) keep compiling without stub closures.
 struct PlayerTranscriptRow: View {
 
     let segment: Segment
     let speaker: Speaker?
     let isActive: Bool
     let onTap: () -> Void
-    /// Long-press → "Ask the agent about this moment". Optional so existing
-    /// callers that don't yet wire the agent (previews, fixtures) keep
-    /// compiling without a no-op stub.
+    /// Long-press → "Ask the agent about this moment".
     var onAskAgent: (() -> Void)? = nil
+    /// Long-press → "Highlight" — copies the text to the clipboard and posts a
+    /// haptic. A future slice will wire this to a persistent highlight store.
+    var onHighlight: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -47,49 +40,57 @@ struct PlayerTranscriptRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(
-            // Active row uses the system accent at low opacity instead
-            // of hardcoded white — the whole player no longer assumes a
-            // dark chrome background, so white-on-anything broke in
-            // light mode.
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isActive ? Color.accentColor.opacity(0.12) : Color.clear)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(isActive ? Color.accentColor.opacity(0.20) : Color.clear, lineWidth: 0.5)
-                )
-        )
+        .background(activeBackground)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
-        .contextMenu {
-            if let onAskAgent {
-                Button {
-                    Haptics.selection()
-                    onAskAgent()
-                } label: {
-                    Label("Ask the agent about this", systemImage: "sparkles")
-                }
-            }
-        }
+        .contextMenu { contextMenuContent }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: Text("Ask the agent")) {
-            onAskAgent?()
+        .accessibilityAction(named: Text("Ask the agent")) { onAskAgent?() }
+        .accessibilityAction(named: Text("Highlight")) { onHighlight?() }
+    }
+
+    // MARK: - Private helpers
+
+    private var activeBackground: some View {
+        // Active row uses the system accent at low opacity — the whole player
+        // no longer assumes dark chrome, so hardcoded white broke in light mode.
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(isActive ? Color.accentColor.opacity(0.12) : Color.clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isActive ? Color.accentColor.opacity(0.20) : Color.clear, lineWidth: 0.5)
+            )
+    }
+
+    @ViewBuilder
+    private var contextMenuContent: some View {
+        if let onAskAgent {
+            Button {
+                Haptics.selection()
+                onAskAgent()
+            } label: {
+                Label("Ask the agent about this", systemImage: "sparkles")
+            }
+        }
+        if let onHighlight {
+            Button {
+                Haptics.selection()
+                onHighlight()
+            } label: {
+                Label("Highlight", systemImage: "highlighter")
+            }
         }
     }
 
-    /// Display name with a graceful fallback to the raw label so we never
-    /// show "Unknown" — the source label is at least a stable identifier.
     private var speakerName: String? {
         guard let speaker else { return nil }
         return speaker.displayName ?? speaker.label
     }
 
     private var accessibilityText: String {
-        if let speakerName {
-            return "\(speakerName), \(segment.text)"
-        }
+        if let speakerName { return "\(speakerName), \(segment.text)" }
         return segment.text
     }
 }

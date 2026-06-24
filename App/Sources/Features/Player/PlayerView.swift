@@ -24,7 +24,7 @@ struct PlayerView: View {
     @State private var showQueueSheet: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var showVoiceNoteSheet: Bool = false
-    @State private var showingShowNotes: Bool = false
+    @State private var activeTab: PlayerTab = .chapters
     @State private var episodeDetailTarget: UUID? = nil
     /// Tracks the playhead position captured at the moment the "Add Note"
     /// button was tapped — used as the anchor position for the new note.
@@ -48,7 +48,7 @@ struct PlayerView: View {
                 .padding(.bottom, AppTheme.Spacing.sm)
             carouselPageIndicator
                 .padding(.horizontal, AppTheme.Spacing.md)
-            TabView(selection: $showingShowNotes) {
+            TabView(selection: $activeTab) {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         chaptersPanel
@@ -60,13 +60,16 @@ struct PlayerView: View {
                         proxy.scrollTo(activeID, anchor: .center)
                     }
                 }
-                .tag(false)
+                .tag(PlayerTab.chapters)
+                PlayerTranscriptScrollView(state: state, useGlassCard: false)
+                    .padding(.bottom, AppTheme.Spacing.lg)
+                    .tag(PlayerTab.transcript)
                 ScrollView(.vertical, showsIndicators: false) {
                     PlayerShowNotesView(episode: liveEpisode)
                         .padding(.horizontal, AppTheme.Spacing.md)
                         .padding(.bottom, AppTheme.Spacing.lg)
                 }
-                .tag(true)
+                .tag(PlayerTab.showNotes)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
@@ -261,16 +264,17 @@ struct PlayerView: View {
         HStack(spacing: 0) {
             Spacer()
             HStack(spacing: 5) {
-                Capsule()
-                    .fill(!showingShowNotes ? Color.primary.opacity(0.7) : Color.secondary.opacity(0.25))
-                    .frame(width: !showingShowNotes ? 16 : 6, height: 5)
-                Capsule()
-                    .fill(showingShowNotes ? Color.primary.opacity(0.7) : Color.secondary.opacity(0.25))
-                    .frame(width: showingShowNotes ? 16 : 6, height: 5)
+                ForEach(PlayerTab.allCases) { tab in
+                    Capsule()
+                        .fill(activeTab == tab
+                              ? Color.primary.opacity(0.7)
+                              : Color.secondary.opacity(0.25))
+                        .frame(width: activeTab == tab ? 16 : 6, height: 5)
+                }
             }
-            .animation(AppTheme.Animation.spring, value: showingShowNotes)
+            .animation(AppTheme.Animation.spring, value: activeTab)
             Spacer()
-            if !showingShowNotes, state.episode != nil {
+            if activeTab == .chapters, state.episode != nil {
                 Button {
                     noteAnchorTime = state.currentTime
                     showAddNoteSheet = true

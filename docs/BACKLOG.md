@@ -1494,3 +1494,10 @@ _All pending decisions resolved. See Done section for resolutions._
   follow-up integration test would seed a fake local RSS feed response with a
   new episode and observe the auto-download trigger; this is out of scope for
   #547 and requires a local HTTP feed server in the test harness.
+
+- **transcript-highlight-persist.** `PlayerTranscriptRow` exposes an "Highlight"
+  long-press action that currently copies the segment text to the clipboard as a
+  stop-gap. Wire this to a persistent store: emit a `Note` with `kind: .highlight`
+  anchored to `(episodeID, positionSeconds)` via `AppStateStore.addNote`, so
+  highlights appear in the chapter rail and the episode detail view alongside
+  free-text notes. Follow-up from PR that added the Transcript player tab.

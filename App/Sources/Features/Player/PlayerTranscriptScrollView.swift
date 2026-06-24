@@ -1,12 +1,5 @@
 import SwiftUI
 
-// USAGE:
-// Internal-only renderer. No longer referenced from `PlayerView` — the player
-// always shows chapters now. Kept for the clip composer / quote share /
-// ask-agent surfaces that still operate on transcript segments inside their
-// own sheets. Transcripts are an extraction substrate, not user-visible
-// content; do not re-add this as a primary player surface.
-
 // MARK: - PlayerTranscriptScrollView
 
 /// Inline synced transcript inside the full-screen `PlayerView`.
@@ -104,7 +97,8 @@ struct PlayerTranscriptScrollView: View {
                             speaker: transcript.speaker(for: seg.speakerID),
                             isActive: seg.id == activeSegmentID,
                             onTap: { tapSegment(seg) },
-                            onAskAgent: { askAgent(about: seg) }
+                            onAskAgent: { askAgent(about: seg) },
+                            onHighlight: { highlightSegment(seg) }
                         )
                         .id(seg.id)
                     }
@@ -146,6 +140,14 @@ struct PlayerTranscriptScrollView: View {
     /// `PlayerTranscriptScrollView+AskAgent.swift` for the full flow rationale.
     private func askAgent(about segment: Segment) {
         AskAgentDispatcher.dispatch(segment: segment, episode: liveEpisode, store: store)
+    }
+
+    /// Long-press → "Highlight". Copies the segment text to the clipboard so
+    /// the user can paste it elsewhere. A future slice will persist highlights
+    /// to the note store (see `docs/BACKLOG.md` transcript-highlight-persist).
+    private func highlightSegment(_ segment: Segment) {
+        UIPasteboard.general.string = segment.text
+        Haptics.success()
     }
 
     /// Tap-to-seek that respects the user's pause intent. Tapping a line
