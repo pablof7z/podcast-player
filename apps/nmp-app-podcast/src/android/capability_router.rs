@@ -148,8 +148,13 @@ extern "C" fn android_capability_callback(
 }
 
 pub(super) fn clear_capability_router(session: &super::Session) {
-    nmp_app_set_capability_callback(session.app, std::ptr::null_mut(), None);
+    // The null-callback write and slot clear MUST happen inside the same lock
+    // that protects installs in nativeSetCapabilityRouter. Moving the NMP
+    // call before the lock creates a window where install writes Some(ctx) to
+    // the slot after the null write, then clear takes and frees ctx while NMP
+    // still has the live pointer → UAF on the next in-flight dispatch.
     if let Ok(mut slot) = session.capability_ctx.lock() {
+        nmp_app_set_capability_callback(session.app, std::ptr::null_mut(), None);
         if let Some(ctx) = slot.take() {
             // SAFETY: allocated with Box::into_raw in nativeSetCapabilityRouter.
             unsafe {
