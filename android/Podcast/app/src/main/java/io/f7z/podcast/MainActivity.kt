@@ -250,7 +250,7 @@ private fun PodcastRoot(
     LaunchedEffect(bridge, signerBridge) {
         while (true) {
             coroutineContext.ensureActive()
-            val requestJson = withContext(Dispatchers.IO) { bridge.nextSignerRequest() } ?: continue
+            val requestJson = withContext(Dispatchers.IO) { bridge.nextSignerRequest() } ?: break
             signerBridge.handleJson(requestJson)
         }
     }

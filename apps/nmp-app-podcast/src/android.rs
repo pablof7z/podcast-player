@@ -68,7 +68,13 @@ pub(crate) struct Session {
     /// channel-drain shape mirrors NMP's own `nmp-android-ffi` Chirp bridge: the
     /// capability is interactive/async (an Amber Intent round-trip) and cannot
     /// resolve synchronously inside the capability callback.
-    pub(crate) signer_requests: CbSender<String>,
+    ///
+    /// Wrapped in `Mutex<Option<...>>` so `nativeFree` can drop the sender
+    /// after `clear_capability_router` has already dropped the capability-ctx
+    /// clone — at that point no other sender exists and `signer_rx` disconnects,
+    /// unblocking any `select!` that consumed the one-shot shutdown token before
+    /// the loop had a chance to exit (shutdown race, #600).
+    pub(crate) signer_requests: Mutex<Option<CbSender<String>>>,
     pub(crate) signer_rx: CbReceiver<String>,
     /// Shutdown token for the `nativeNextUpdate` blocking loop.
     pub(crate) shutdown_tx_update: CbSender<()>,
@@ -84,10 +90,11 @@ pub(crate) struct Session {
 // - `rx`, `signer_rx`, `shutdown_rx_update`, `shutdown_rx_signer`: crossbeam channels
 //   are Sync; safe to read from multiple threads. Each JNI caller holds an Arc clone
 //   until the call returns.
-// - `tx`, `signer_requests`, `shutdown_tx_update`, `shutdown_tx_signer`: raw pointers
-//   to crossbeam Senders. The `tx` pointer is dropped only in `nativeFree` after the
-//   callback is cleared (no kernel thread references it). The others are shared safely
-//   via Arc.
+// - `tx`: raw pointer to crossbeam Sender. Dropped only in `nativeFree` after the
+//   callback is cleared (no kernel thread references it).
+// - `signer_requests`: `Mutex<Option<CbSender<String>>>` — interior mutability lets
+//   `nativeFree` drain and drop the sender; `Mutex` is Sync.
+// - `shutdown_tx_update`, `shutdown_tx_signer`: shared safely via Arc.
 // - `capability_ctx`: guarded by Mutex.
 unsafe impl Send for Session {}
 unsafe impl Sync for Session {}
@@ -195,7 +202,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             rx,
             tx,
             capability_ctx: Mutex::new(None),
-            signer_requests: signer_tx,
+            signer_requests: Mutex::new(Some(signer_tx)),
             signer_rx,
             shutdown_tx_update,
             shutdown_rx_update,
@@ -343,6 +350,10 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         let _ = s.shutdown_tx_update.try_send(());
         let _ = s.shutdown_tx_signer.try_send(());
         capability_router::clear_capability_router(&s);
+        // Drop the signer-request sender now that the capability-ctx clone has
+        // been cleared. This disconnects signer_rx, unblocking the nativeNextSignerRequest
+        // select! if it re-entered after consuming the one-shot shutdown token (#600).
+        drop(s.signer_requests.lock().ok().and_then(|mut g| g.take()));
         if !s.podcast.is_null() {
             nmp_app_podcast_unregister(s.podcast);
         }

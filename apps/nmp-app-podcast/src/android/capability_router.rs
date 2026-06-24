@@ -183,12 +183,17 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             Ok(g) => g,
             Err(_) => return,
         };
+        // ADR-0048 — clone the sender out of the Mutex<Option<...>> while
+        // guarding against a concurrent nativeFree that may have already taken
+        // and dropped it (#600). If None, the session is being torn down; bail.
+        let signer_tx = match s.signer_requests.lock().ok().and_then(|g| g.as_ref().cloned()) {
+            Some(tx) => tx,
+            None => return,
+        };
         let ctx = Box::into_raw(Box::new(AndroidCapabilityContext {
             vm,
             router: global,
-            // ADR-0048 — the trampoline pushes `external_signer` requests onto
-            // the session's signer channel; clone its sender into the context.
-            signer_requests: s.signer_requests.clone(),
+            signer_requests: signer_tx,
         }));
         nmp_app_set_capability_callback(
             s.app,
