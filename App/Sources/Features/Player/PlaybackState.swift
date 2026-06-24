@@ -132,6 +132,12 @@ final class PlaybackState {
             transport?.kernelLoad(episodeID: newEpisode.id)
             engine.load(newEpisode)
             if newEpisode.playbackPosition > 0 {
+                // TEMPORARY BYPASS: seeds the AVPlayer's initial position
+                // before playback starts. The Rust kernel does not yet own a
+                // "set initial playhead" primitive for this pre-play seam;
+                // once it does, this direct engine call should be removed and
+                // the position seeded via a kernel action instead.
+                // BACKLOG: kernel-owned episode-load initial position (#599).
                 engine.seek(to: newEpisode.playbackPosition)
             }
         } else {
@@ -139,6 +145,10 @@ final class PlaybackState {
             if engine.didReachNaturalEnd {
                 let resume = newEpisode.playbackPosition
                 let target = resume > 0 && resume < max(0, duration - 5) ? resume : 0
+                // TEMPORARY BYPASS: resets AVPlayer to the saved resume point
+                // after a natural end-of-episode. Same limitation as above —
+                // replace with a kernel action when the Rust player supports it.
+                // BACKLOG: kernel-owned episode-load initial position (#599).
                 engine.seek(to: target)
             }
         }
