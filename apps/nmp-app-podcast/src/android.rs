@@ -146,6 +146,11 @@ impl Drop for Session {
 // Arc is then used for cleanup and drops when the `nativeFree` closure exits.
 
 static SESSION_REGISTRY: OnceLock<Mutex<HashMap<u64, Arc<Session>>>> = OnceLock::new();
+// Monotonic handle counter. Starting at 1 keeps 0 as the "null" sentinel.
+// Handles are never reused, so an ABA race — where a freed handle coincides
+// with a newly allocated Session at the same heap address — cannot occur.
+static NEXT_SESSION_HANDLE: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
 
 fn session_registry() -> &'static Mutex<HashMap<u64, Arc<Session>>> {
     SESSION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
@@ -259,15 +264,16 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             shutdown_rx_signer,
             shutting_down: AtomicBool::new(false),
         });
-        // Use the allocation address as the registry key and as the opaque
-        // handle returned to Kotlin. The address is unique per allocation and
-        // stable for the lifetime of the Arc.
-        let key = Arc::as_ptr(&session) as u64;
+        // Assign a monotonic handle so handles are never reused. Using the Arc
+        // allocation address as the key would create an ABA hazard: after free,
+        // a new Session might land at the same address and a stale Kotlin
+        // caller with the old handle would erroneously route to the new session.
+        let handle = NEXT_SESSION_HANDLE.fetch_add(1, Ordering::Relaxed);
         match session_registry().lock() {
-            Ok(mut guard) => { guard.insert(key, session); }
+            Ok(mut guard) => { guard.insert(handle, session); }
             Err(_) => return 0, // poisoned — fail safe (D6)
         }
-        key as jlong
+        handle as jlong
     })
 }
 
