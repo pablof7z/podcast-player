@@ -17,6 +17,7 @@
 use std::collections::HashMap;
 use std::ffi::{c_void, CStr, CString};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, Ordering};
 use crossbeam_channel::{Receiver as CbReceiver, Sender as CbSender};
 
 use jni::objects::{JClass, JString};
@@ -83,6 +84,11 @@ pub(crate) struct Session {
     /// Shutdown token for the `nativeNextSignerRequest` blocking loop.
     pub(crate) shutdown_tx_signer: CbSender<()>,
     pub(crate) shutdown_rx_signer: CbReceiver<()>,
+    /// Set to `true` in `nativeFree` before `clear_capability_router` runs.
+    /// Checked inside the `capability_ctx` lock in `nativeSetCapabilityRouter`
+    /// so that a late install (after clear_capability_router already ran) is
+    /// rejected atomically — no leaked callback on a freed NmpApp.
+    pub(crate) shutting_down: AtomicBool,
 }
 
 // SAFETY: `Session` is accessed from multiple JNI threads via Arc clones.
@@ -251,6 +257,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             shutdown_rx_update,
             shutdown_tx_signer,
             shutdown_rx_signer,
+            shutting_down: AtomicBool::new(false),
         });
         // Use the allocation address as the registry key and as the opaque
         // handle returned to Kotlin. The address is unique per allocation and
@@ -408,6 +415,10 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         // a full channel means the signal is already pending).
         let _ = s.shutdown_tx_update.try_send(());
         let _ = s.shutdown_tx_signer.try_send(());
+        // Mark teardown before clearing the router so that a concurrent
+        // nativeSetCapabilityRouter that already cloned signer_tx will see
+        // this flag inside the capability_ctx lock and bail without installing.
+        s.shutting_down.store(true, Ordering::Release);
         capability_router::clear_capability_router(&s);
         // Drop the signer-request sender now that the capability-ctx clone has
         // been cleared. This disconnects signer_rx, unblocking the

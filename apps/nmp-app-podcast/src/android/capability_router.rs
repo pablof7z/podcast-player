@@ -1,4 +1,5 @@
 use std::ffi::{c_char, c_void, CStr, CString};
+use std::sync::atomic::Ordering;
 
 use crossbeam_channel::Sender;
 
@@ -171,8 +172,10 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
         let Some(s) = super::session_ref(handle) else {
             return;
         };
-        clear_capability_router(&*s);
+        // Null router ⇒ clear only (safe to call concurrently with nativeFree;
+        // capability_ctx lock inside clear_capability_router provides the gate).
         if router.is_null() {
+            clear_capability_router(&*s);
             return;
         }
         let vm = match env.get_java_vm() {
@@ -190,6 +193,30 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             Some(tx) => tx,
             None => return,
         };
+        // All of: teardown check, old-ctx clear, new callback install, and slot
+        // update happen inside the capability_ctx lock. This prevents a race
+        // where nativeFree's clear_capability_router already ran (slot → None)
+        // before we install, leaving the new ctx untracked on an app being freed.
+        //
+        // Invariant: nativeFree sets shutting_down BEFORE calling
+        // clear_capability_router. If we observe shutting_down=true here, either
+        // clear_capability_router already ran (slot empty — install would leak)
+        // or it is waiting for this lock (in which case it will clean up after
+        // we release). The flag check lets us short-circuit the first case.
+        let Ok(mut slot) = s.capability_ctx.lock() else {
+            return;
+        };
+        if s.shutting_down.load(Ordering::Acquire) {
+            return;
+        }
+        // Clear any previously installed callback before installing the new one.
+        if let Some(old) = slot.take() {
+            nmp_app_set_capability_callback(s.app, std::ptr::null_mut(), None);
+            // SAFETY: allocated with Box::into_raw in a previous call.
+            unsafe {
+                drop(Box::from_raw(old));
+            }
+        }
         let ctx = Box::into_raw(Box::new(AndroidCapabilityContext {
             vm,
             router: global,
@@ -200,14 +227,8 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             ctx as *mut c_void,
             Some(android_capability_callback),
         );
-        if let Ok(mut slot) = s.capability_ctx.lock() {
-            *slot = Some(ctx);
-        } else {
-            nmp_app_set_capability_callback(s.app, std::ptr::null_mut(), None);
-            // SAFETY: the callback has been cleared, so reclaim the new box.
-            unsafe {
-                drop(Box::from_raw(ctx));
-            }
-        };
+        *slot = Some(ctx);
+        // Lock released here. If nativeFree was waiting on this lock, its
+        // clear_capability_router will see the new ctx in the slot and clean it up.
     });
 }
