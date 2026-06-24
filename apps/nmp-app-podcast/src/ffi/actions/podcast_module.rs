@@ -7,11 +7,9 @@
 //! `PodcastHostOpHandler` (running on the actor thread) can call platform
 //! capabilities without the kernel naming podcast-domain nouns (D0).
 
-use serde::{Deserialize, Serialize};
+use super::podcast_module_types::{default_true, EpisodeChapterArg, EpisodeTriagePatch};
 
-fn default_true() -> bool {
-    true
-}
+use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
 use nmp_core::ActorCommand;
@@ -446,33 +444,6 @@ pub enum PodcastAction {
         podcast_id: String,
         enabled: bool,
     },
-}
-
-/// One chapter for an [`PodcastAction::AddEpisode`] op. `image_url` +
-/// `source_episode_id` carry the parity fields the Swift TTS composer built on
-/// `Episode.Chapter` (mid-play artwork swap + source-episode chip). They round
-/// the kernel store, not just the wire, so the projected chapter is identical
-/// to the pre-kernel build.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-pub struct EpisodeChapterArg {
-    pub start_secs: f64,
-    pub title: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub image_url: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub source_episode_id: Option<String>,
-}
-
-/// One row in a [`PodcastAction::SetEpisodeTriage`] batch.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct EpisodeTriagePatch {
-    pub episode_id: String,
-    /// `"inbox"` | `"archived"` | `"none"` (sentinel: clear).
-    pub decision: String,
-    #[serde(default)]
-    pub is_hero: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rationale: Option<String>,
 }
 
 /// Single action module for the whole `"podcast"` namespace.
