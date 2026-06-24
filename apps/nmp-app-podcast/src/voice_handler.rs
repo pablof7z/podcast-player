@@ -245,7 +245,9 @@ pub(crate) fn apply_report(state: &mut VoiceState, report: VoiceReport) -> bool 
 
 /// Lock-and-mutate helper. Silently no-ops on lock poison (D6) and
 /// bumps `rev` so the next snapshot tick surfaces the change.
-fn mutate_voice_state(handler: &PodcastHostOpHandler, f: impl FnOnce(&mut VoiceState)) {
+/// `pub(crate)` so that domain-projection tests in `ffi` can drive voice
+/// state mutations without going through the full FFI boundary.
+pub(crate) fn mutate_voice_state(handler: &PodcastHostOpHandler, f: impl FnOnce(&mut VoiceState)) {
     // Step 12: voice_state now lives in state.voice (VoiceSubstate).
     if let Ok(mut v) = handler.state.voice.voice_state.lock() {
         f(&mut v);

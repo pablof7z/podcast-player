@@ -400,3 +400,16 @@ mod inbox_tests;
 #[cfg(test)]
 #[path = "snapshot_domain_queue_identity_tests.rs"]
 mod queue_identity_tests;
+
+/// Identity/widget tombstone and social-domain action tests — split from
+/// `snapshot_domain_projection_tests.rs` to stay under the 500-line hard limit.
+#[cfg(test)]
+#[path = "snapshot_domain_social_tests.rs"]
+mod social_tests;
+
+/// Voice-domain projection, slice-local payload key, and user-category tests —
+/// split from `snapshot_domain_projection_tests.rs` to stay under the 500-line
+/// hard limit.
+#[cfg(test)]
+#[path = "snapshot_domain_voice_payload_tests.rs"]
+mod voice_payload_tests;
