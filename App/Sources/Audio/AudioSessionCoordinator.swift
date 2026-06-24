@@ -213,24 +213,27 @@ final class AudioSessionCoordinator {
             object: session,
             queue: .main
         ) { [weak self] note in
-            MainActor.assumeIsolated { self?.handleInterruption(note) }
+            // Extract Sendable primitives before crossing the @MainActor boundary.
+            let typeRaw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            let optRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
+            MainActor.assumeIsolated { self?.handleInterruption(typeRaw: typeRaw, optRaw: optRaw) }
         }
         routeChangeObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: session,
             queue: .main
         ) { [weak self] note in
-            MainActor.assumeIsolated { self?.handleRouteChange(note) }
+            let reasonRaw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+            MainActor.assumeIsolated { self?.handleRouteChange(reasonRaw: reasonRaw) }
         }
     }
 
     // MARK: - Interruption handling
 
-    private func handleInterruption(_ note: Notification) {
+    private func handleInterruption(typeRaw: UInt?, optRaw: UInt?) {
         guard
-            let info = note.userInfo,
-            let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-            let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+            let typeRaw,
+            let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
         else { return }
 
         switch type {
@@ -248,10 +251,8 @@ final class AudioSessionCoordinator {
             mode = .idle
 
         case .ended:
-            guard
-                let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt
-            else { return }
-            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            guard let optRaw else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optRaw)
             if options.contains(.shouldResume) {
                 logger.info("AudioSession interruption ended with shouldResume — firing callback")
                 onInterruptionEnd?()
@@ -266,11 +267,10 @@ final class AudioSessionCoordinator {
 
     // MARK: - Route change handling
 
-    private func handleRouteChange(_ note: Notification) {
+    private func handleRouteChange(reasonRaw: UInt?) {
         guard
-            let info = note.userInfo,
-            let reasonValue = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
-            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
+            let reasonRaw,
+            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonRaw)
         else { return }
 
         switch reason {
