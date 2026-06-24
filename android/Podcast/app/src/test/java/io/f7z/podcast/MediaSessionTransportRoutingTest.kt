@@ -75,7 +75,7 @@ class MediaSessionTransportRoutingTest {
     fun seekForwardWithBridgeDispatchesAbsoluteSeek() {
         val innerPlayer = mock(Player::class.java)
         `when`(innerPlayer.currentPosition).thenReturn(60_000L)
-        `when`(innerPlayer.seekForwardIncrementMs).thenReturn(15_000L)
+        `when`(innerPlayer.seekForwardIncrement).thenReturn(15_000L)
         val forwarder = KernelForwardingPlayer(innerPlayer)
         val dispatcher = FakeDispatcher()
         forwarder.bridge = dispatcher
@@ -95,7 +95,7 @@ class MediaSessionTransportRoutingTest {
     fun seekForwardAccumulatesAcrossConsecutivePausedTaps() {
         val innerPlayer = mock(Player::class.java)
         `when`(innerPlayer.currentPosition).thenReturn(60_000L)
-        `when`(innerPlayer.seekForwardIncrementMs).thenReturn(15_000L)
+        `when`(innerPlayer.seekForwardIncrement).thenReturn(15_000L)
         val forwarder = KernelForwardingPlayer(innerPlayer)
         val dispatcher = FakeDispatcher()
         forwarder.bridge = dispatcher
@@ -114,7 +114,7 @@ class MediaSessionTransportRoutingTest {
     fun seekBackWithBridgeDispatchesAbsoluteSeek() {
         val innerPlayer = mock(Player::class.java)
         `when`(innerPlayer.currentPosition).thenReturn(60_000L)
-        `when`(innerPlayer.seekBackIncrementMs).thenReturn(15_000L)
+        `when`(innerPlayer.seekBackIncrement).thenReturn(15_000L)
         val forwarder = KernelForwardingPlayer(innerPlayer)
         val dispatcher = FakeDispatcher()
         forwarder.bridge = dispatcher
@@ -133,7 +133,7 @@ class MediaSessionTransportRoutingTest {
     fun seekBackAccumulatesAcrossConsecutivePausedTaps() {
         val innerPlayer = mock(Player::class.java)
         `when`(innerPlayer.currentPosition).thenReturn(60_000L)
-        `when`(innerPlayer.seekBackIncrementMs).thenReturn(15_000L)
+        `when`(innerPlayer.seekBackIncrement).thenReturn(15_000L)
         val forwarder = KernelForwardingPlayer(innerPlayer)
         val dispatcher = FakeDispatcher()
         forwarder.bridge = dispatcher
@@ -152,7 +152,7 @@ class MediaSessionTransportRoutingTest {
     fun playWithBridgeClearsPendingPausedSeekBase() {
         val innerPlayer = mock(Player::class.java)
         `when`(innerPlayer.currentPosition).thenReturn(60_000L)
-        `when`(innerPlayer.seekForwardIncrementMs).thenReturn(15_000L)
+        `when`(innerPlayer.seekForwardIncrement).thenReturn(15_000L)
         val forwarder = KernelForwardingPlayer(innerPlayer)
         val dispatcher = FakeDispatcher()
         forwarder.bridge = dispatcher
