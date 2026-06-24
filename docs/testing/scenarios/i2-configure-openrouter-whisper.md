@@ -20,8 +20,8 @@ fallback so episodes without publisher transcripts can be transcribed.
 4. Settings → Intelligence → **Transcripts**. Enable **AI transcription fallback**.
    **Expected:** Toggle on; if the STT provider needs a key, a readiness warning is
    shown until configured. *Screenshot.*
-5. Settings → Intelligence → **Models → Speech** → select **Whisper** (OpenRouter).
-   **Expected:** Whisper selected; the Transcripts readiness warning clears. *Screenshot.*
+5. Settings → Intelligence → **Models → Speech** → tap **Provider** row → select **OpenRouter Whisper**.
+   **Expected:** Picker pushes to a selection list; choosing Whisper returns and shows it selected. The Transcripts readiness warning clears. *Screenshot.*
 
 ## Acceptance Criteria
 - The OpenRouter key saves and the status label reflects it.

@@ -42,7 +42,7 @@ struct SpeechModelsSettingsView: View {
             } label: {
                 Label("Provider", systemImage: "waveform.badge.mic")
             }
-            .pickerStyle(.menu)
+            .pickerStyle(.navigationLink)
 
             if settings.sttProvider == .elevenLabsScribe {
                 Picker(selection: $settings.elevenLabsSTTModel) {
@@ -56,7 +56,7 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.menu)
+                .pickerStyle(.navigationLink)
             }
 
             if settings.sttProvider == .openRouterWhisper {
@@ -71,7 +71,7 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.menu)
+                .pickerStyle(.navigationLink)
             }
 
             if settings.sttProvider == .assemblyAI {
@@ -86,7 +86,7 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.menu)
+                .pickerStyle(.navigationLink)
             }
 
             if let speechCatalogError {
@@ -126,7 +126,7 @@ struct SpeechModelsSettingsView: View {
             } label: {
                 Label("Text to Speech", systemImage: "speaker.wave.2.fill")
             }
-            .pickerStyle(.menu)
+            .pickerStyle(.navigationLink)
         } header: {
             Text("Narration")
         } footer: {
