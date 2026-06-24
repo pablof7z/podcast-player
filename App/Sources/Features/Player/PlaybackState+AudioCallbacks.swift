@@ -117,8 +117,9 @@ extension PlaybackState {
     }
 
     func setRate(_ newRate: Double) {
+        // Dispatch to Rust; Rust emits AudioCommand::SetSpeed which
+        // commandHandler routes to engine.setRate — engine is executor only (#599).
         transport?.kernelSetSpeed(newRate)
-        engine.setRate(newRate)
     }
 
     static func restoredEpisodeIDToStageBeforeRemotePlay(

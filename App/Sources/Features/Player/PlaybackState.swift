@@ -164,7 +164,6 @@ final class PlaybackState {
 
     func seek(to time: TimeInterval) {
         transport?.kernelSeek(positionSecs: time)
-        engine.seek(to: time)
         Haptics.selection()
     }
 
@@ -181,12 +180,11 @@ final class PlaybackState {
     }
 
     func setRate(_ newRate: PlaybackRate) {
-        // Dispatch to Rust first for policy and persistence. The resulting
-        // AudioCommand::SetSpeed callback calls engine.setRate (idempotent).
-        // Direct update immediately after for UI feedback so PlaybackState.rate
-        // (which reads engine.rate) is current in the same render cycle.
+        // Dispatch to Rust. Rust emits AudioCommand::SetSpeed, which the
+        // commandHandler in PlaybackState+AudioCallbacks.swift routes to
+        // engine.setRate — AudioEngine is the executor, not a secondary
+        // writer here (#599).
         transport?.kernelSetSpeed(newRate.rawValue)
-        engine.setRate(newRate.rawValue)
         Haptics.selection()
     }
 
