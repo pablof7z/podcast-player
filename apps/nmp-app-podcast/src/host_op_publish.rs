@@ -279,7 +279,7 @@ fn publish_episode(handler: &PodcastHostOpHandler, episode_id: String) -> serde_
     // Track Blossom upload correlation ID if present.
     if let Some(ref corr_id) = blossom_correlation_id {
         if let Ok(mut state) = handler.state.publish.publish_state.lock() {
-            let entry: &mut OwnedPublishState = state.entry(podcast_id.clone()).or_default();
+            let entry: &mut OwnedPublishState = state.entry(podcast_id_str.clone()).or_default();
             entry.blossom_pending.insert(corr_id.clone(), episode_id.clone());
         }
     }

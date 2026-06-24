@@ -143,16 +143,15 @@ pub(crate) fn publish_raw_with_signer_via_nmp(
 
 /// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }` with
 /// explicit write-relay routing via the per-podcast signer. When `relay_urls`
-/// is non-empty, uses an explicit relay target; when empty, falls back to Auto.
-/// NMP v0.7.2 does not yet support explicit relay targets in PublishRaw, so
-/// this currently delegates to [`publish_raw_with_signer_via_nmp`] and documents
-/// the gap in `pod0-nostr-publishing.md` for future hardening.
+/// is non-empty, uses `PublishTarget::Explicit { relays }` to bypass the NIP-65
+/// outbox resolver and publish directly to the given relay set. Falls back to
+/// `PublishTarget::Auto` when the relay list is empty so callers that have no
+/// configured write relays still get best-effort delivery.
 ///
 /// The named signer MUST be registered before this call; use
 /// [`register_podcast_signer_in_kernel`] immediately before dispatching.
 ///
 /// Returns `"queued"` (async) or `"signed"` (null app).
-#[allow(unused_variables)]
 pub(crate) fn publish_raw_with_signer_to_relays_via_nmp(
     app: *mut nmp_ffi::NmpApp,
     kind: u32,
@@ -161,19 +160,18 @@ pub(crate) fn publish_raw_with_signer_to_relays_via_nmp(
     signer_pubkey_hex: &str,
     relay_urls: &[String],
 ) -> &'static str {
-    // TODO: When NMP supports explicit-relay PublishTarget, uncomment this:
-    // if !relay_urls.is_empty() {
-    //     let body = serde_json::json!({
-    //         "PublishRaw": {
-    //             "kind": kind,
-    //             "tags": tags,
-    //             "content": content,
-    //             "target": { "Relay": relay_urls },
-    //             "signer_pubkey": signer_pubkey_hex,
-    //         }
-    //     });
-    //     return dispatch_nmp_publish(app, body);
-    // }
+    if !relay_urls.is_empty() {
+        let body = serde_json::json!({
+            "PublishRaw": {
+                "kind": kind,
+                "tags": tags,
+                "content": content,
+                "target": { "Explicit": { "relays": relay_urls } },
+                "signer_pubkey": signer_pubkey_hex,
+            }
+        });
+        return dispatch_nmp_publish(app, body);
+    }
     publish_raw_with_signer_via_nmp(app, kind, tags, content, signer_pubkey_hex)
 }
 

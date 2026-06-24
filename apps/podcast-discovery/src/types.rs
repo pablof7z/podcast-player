@@ -40,7 +40,7 @@ pub struct NipF4DiscoveryShow {
     pub created_at: i64,
 }
 
-impl NIP74Show {
+impl NipF4DiscoveryShow {
     /// NIP-F4 coordinate string `"10154:<pubkey>"`.
     /// Shows are identified by pubkey alone — no d-tag.
     pub fn coordinate(&self) -> String {
