@@ -17,18 +17,16 @@ final class PlaybackTransportRoutingTests: XCTestCase {
     private var playbackState: PlaybackState!
     private var stub: StubKernelTransport!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
         playbackState = PlaybackState()
         stub = StubKernelTransport()
         playbackState.kernelDispatch = stub
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         playbackState.kernelDispatch = nil
         playbackState = nil
         stub = nil
-        super.tearDown()
     }
 
     // MARK: - Tests
@@ -37,10 +35,10 @@ final class PlaybackTransportRoutingTests: XCTestCase {
         let episode = Episode(
             id: UUID(),
             podcastID: UUID(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
+            guid: "test-guid-1",
             title: "Test Episode",
-            publishedAt: Date(),
-            addedAt: Date(),
+            pubDate: Date(),
+            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
             duration: 3600
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
@@ -53,10 +51,10 @@ final class PlaybackTransportRoutingTests: XCTestCase {
         let episode = Episode(
             id: UUID(),
             podcastID: UUID(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
+            guid: "test-guid-2",
             title: "Test Episode",
-            publishedAt: Date(),
-            addedAt: Date(),
+            pubDate: Date(),
+            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
             duration: 3600
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
@@ -80,10 +78,10 @@ final class PlaybackTransportRoutingTests: XCTestCase {
         let episode = Episode(
             id: UUID(),
             podcastID: UUID(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
+            guid: "test-guid-3",
             title: "Test Episode",
-            publishedAt: Date(),
-            addedAt: Date(),
+            pubDate: Date(),
+            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
             duration: 3600
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
