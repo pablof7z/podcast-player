@@ -39,6 +39,7 @@ struct RootView: View {
     @State var agentSession: AgentChatSession?
     @State var agentUnseenMessageCount: Int = 0
     @State var showVoiceMode = false
+    @State var pendingAgentOpen = false
     @State var lastShakeTime: Date = .distantPast
     @State var spotlightSheet: SpotlightIndexer.DeepLink?
     @State var playbackState = PlaybackState()
@@ -111,6 +112,12 @@ struct RootView: View {
                 }
                 .onChange(of: showAgentChat) { _, _ in
                     agentUnseenMessageCount = agentSession?.messages.count ?? 0
+                }
+                .onChange(of: showSettings) { _, newValue in
+                    if !newValue, pendingAgentOpen {
+                        pendingAgentOpen = false
+                        showAgentChat = true
+                    }
                 }
                 .sheet(item: Binding(
                     get: { spotlightSheet.map(IdentifiedSpotlightLink.init) },
@@ -313,6 +320,14 @@ struct RootView: View {
                 playback: playbackState,
                 askCoordinator: askCoordinator
             )
+        }
+        // SwiftUI can only present one sheet at a time from the same host view.
+        // If Settings is open we must dismiss it first; `onChange(of: showSettings)`
+        // picks up pendingAgentOpen once the sheet is gone.
+        if showSettings {
+            pendingAgentOpen = true
+            showSettings = false
+            return
         }
         showAgentChat = true
     }
