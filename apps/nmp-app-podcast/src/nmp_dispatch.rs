@@ -103,8 +103,7 @@ pub(crate) fn write_relay_urls(app: *mut NmpApp) -> Vec<String> {
         .as_slice()
         .iter()
         .filter(|relay| {
-            let role = relay.role();
-            role == "write" || role == "both" || role.starts_with("both,")
+            relay.role().split(',').any(|r| matches!(r.trim(), "write" | "both"))
         })
         .map(|relay| relay.url().to_string())
         .collect()
