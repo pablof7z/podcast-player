@@ -85,6 +85,7 @@ impl VoiceSubstate {
             infra.runtime.clone(),
             infra.rev.clone(),
             infra.signal.clone(),
+            infra.domain_revs.voice.clone(),
         );
 
         Self {
