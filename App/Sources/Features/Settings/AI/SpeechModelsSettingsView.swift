@@ -56,7 +56,10 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.navigationLink)
+                // Use .inline (not .navigationLink) for conditionally-shown model pickers.
+                // A .navigationLink Picker appearing during the provider-picker's pop
+                // animation conficts with the in-flight navigation transition and crashes.
+                .pickerStyle(.inline)
             }
 
             if settings.sttProvider == .openRouterWhisper {
@@ -71,7 +74,8 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.navigationLink)
+                // Use .inline (not .navigationLink) — see comment on elevenLabsScribe block.
+                .pickerStyle(.inline)
             }
 
             if settings.sttProvider == .assemblyAI {
@@ -86,7 +90,8 @@ struct SpeechModelsSettingsView: View {
                 } label: {
                     Label("Model", systemImage: "cpu")
                 }
-                .pickerStyle(.navigationLink)
+                // Use .inline (not .navigationLink) — see comment on elevenLabsScribe block.
+                .pickerStyle(.inline)
             }
 
             if let speechCatalogError {

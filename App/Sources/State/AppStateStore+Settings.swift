@@ -200,7 +200,7 @@ extension AppStateStore {
         }
         if settings.sttProvider != prior.sttProvider {
             kernel?.dispatch(namespace: "podcast.settings",
-                             body: ["op": "set_stt_provider", "provider": settings.sttProvider])
+                             body: ["op": "set_stt_provider", "provider": settings.sttProvider.rawValue])
         }
         if settings.openRouterWhisperModel != prior.openRouterWhisperModel {
             kernel?.dispatch(namespace: "podcast.settings",
