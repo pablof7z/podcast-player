@@ -250,7 +250,9 @@ fn mutate_voice_state(handler: &PodcastHostOpHandler, f: impl FnOnce(&mut VoiceS
     if let Ok(mut v) = handler.state.voice.voice_state.lock() {
         f(&mut v);
     }
-    handler.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+    // bump() routes to Domain::Voice → advances domain_revs.voice so the
+    // podcast.voice push sidecar emits on the next frame.
+    handler.state.voice.infra.bump();
 }
 
 #[cfg(test)]

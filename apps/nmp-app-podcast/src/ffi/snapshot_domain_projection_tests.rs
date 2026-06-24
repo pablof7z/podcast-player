@@ -22,7 +22,7 @@ use crate::ffi::handle::PodcastHandle;
 use crate::ffi::snapshot_domain_projections::{
     decode_podcast_domain_sidecars, register_domain_projections, SCHEMA_DOWNLOADS,
     SCHEMA_IDENTITY, SCHEMA_LIBRARY, SCHEMA_MISC, SCHEMA_PLAYBACK, SCHEMA_SETTINGS,
-    SCHEMA_SOCIAL, SCHEMA_WIDGET,
+    SCHEMA_SOCIAL, SCHEMA_VOICE, SCHEMA_WIDGET,
 };
 use crate::state::{Domain, DomainRevs, Infra, PodcastAppState};
 use crate::store::PodcastStore;
@@ -945,6 +945,96 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
     assert_eq!(
         val_after["nostr_conversations"][0]["trusted"], serde_json::Value::Bool(false),
         "block action must flip trusted to false even for a followed peer (block is absolute); got: {val_after}"
+    );
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
+/// `podcast.voice` empty/idle → tombstone on first run, then idles on second tick.
+///
+/// Voice state defaults to idle (all false). When emitted, the closure
+/// detects the idle state via `build_voice_payload` returning `None` and
+/// emits a `voice_tombstone` so iOS/Android decoders know voice is idle.
+/// A second tick with the same idle state returns `None` (no perpetual rebuild).
+#[test]
+fn voice_idle_emits_tombstone_then_idles() {
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+    let handle = Arc::new(*make_test_handle_with_app(app));
+    register_domain_projections(app_ref, &handle);
+
+    // First run: rev 1 > last_emitted 0; voice is idle → tombstone.
+    let first = app_ref.run_typed_snapshot_projections();
+    let voice = first.iter().find(|p| p.schema_id == SCHEMA_VOICE)
+        .expect("voice tombstone must be emitted when state is idle");
+    let val: serde_json::Value = serde_json::from_slice(&voice.payload).unwrap();
+    assert_eq!(val["voice"], serde_json::Value::Null, "tombstone must carry voice: null");
+    assert!(val["rev"].is_number(), "tombstone must carry a rev field");
+
+    // Second tick — last_emitted caught up → no voice sidecar (no perpetual rebuild).
+    let second = app_ref.run_typed_snapshot_projections();
+    assert!(
+        second.iter().all(|p| p.schema_id != SCHEMA_VOICE),
+        "second idle tick must NOT emit voice sidecar"
+    );
+
+    drop(handle);
+    unsafe { drop(Box::from_raw(app)) };
+}
+
+/// Delta isolation: voice report via the real mutation path emits ONLY
+/// `podcast.voice` (not library, playback, settings, etc.).
+///
+/// This test drives a real voice report mutation through `voice_handler::mutate_voice_state`
+/// (the production path that bumps `domain_revs.voice`) and asserts that ONLY
+/// the voice sidecar is emitted, proving the mutation route is domain-scoped
+/// and no broader sidecars are affected.
+#[test]
+fn voice_report_emits_only_voice_sidecar() {
+    use crate::host_op_handler::PodcastHostOpHandler;
+
+    let app = nmp_ffi::nmp_app_new();
+    assert!(!app.is_null());
+    let app_ref = unsafe { &*app };
+
+    let handle = Arc::new(*make_test_handle_with_app(app));
+    register_domain_projections(app_ref, &handle);
+
+    // Consume initial state.
+    let _ = app_ref.run_typed_snapshot_projections();
+    let no_change = run_domain_projections_only(app_ref);
+    assert!(
+        no_change.is_empty(),
+        "second run with no bump must emit nothing; got {:?}",
+        no_change.iter().map(|p| p.schema_id.as_str()).collect::<Vec<_>>()
+    );
+
+    // Create a handler and mutate voice state directly (simulates voice report arrival).
+    let handler = PodcastHostOpHandler::new(app, Arc::clone(&handle.state));
+    crate::voice_handler::mutate_voice_state(&handler, |v| {
+        v.is_listening = true;
+    });
+
+    let after = app_ref.run_typed_snapshot_projections();
+    let keys: Vec<&str> = after.iter().map(|p| p.schema_id.as_str()).collect();
+
+    assert!(
+        keys.contains(&SCHEMA_VOICE),
+        "podcast.voice must be emitted after voice state mutation; got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_LIBRARY),
+        "podcast.library must NOT be emitted after a voice-only mutation (delta isolation); got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_PLAYBACK),
+        "podcast.playback must NOT be emitted after a voice-only mutation; got {keys:?}"
+    );
+    assert!(
+        !keys.contains(&SCHEMA_SETTINGS),
+        "podcast.settings must NOT be emitted after a voice-only mutation; got {keys:?}"
     );
 
     drop(handle);

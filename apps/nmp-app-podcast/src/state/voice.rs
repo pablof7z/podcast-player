@@ -58,9 +58,9 @@ pub struct VoiceSubstate {
     /// in-flight Tokio tasks from dereferencing the freed `NmpApp`.  See the
     /// module-level doc for the invariant description.
     pub(crate) voice_conversation: VoiceConversationManager,
-    /// Rev + signal + runtime.
-    #[allow(dead_code)]
-    infra: Infra,
+    /// Rev + signal + runtime.  Scoped to `Domain::Voice` for push-projection
+    /// deltas.  Used to bump the voice domain rev when a report arrives.
+    pub(crate) infra: Infra,
 }
 
 impl VoiceSubstate {

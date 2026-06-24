@@ -77,7 +77,8 @@ use nmp_core::TypedProjectionData;
 use super::handle::PodcastHandle;
 use super::snapshot_domain_builders::{
     build_downloads_payload, build_identity_payload, build_library_payload, build_misc_payload,
-    build_playback_payload, build_settings_payload, build_social_payload, build_widget_payload,
+    build_playback_payload, build_settings_payload, build_social_payload, build_voice_payload,
+    build_widget_payload,
 };
 
 // ── Schema IDs ────────────────────────────────────────────────────────────────
@@ -89,6 +90,7 @@ pub const SCHEMA_SETTINGS: &str = "podcast.settings";
 pub const SCHEMA_IDENTITY: &str = "podcast.identity";
 pub const SCHEMA_WIDGET: &str = "podcast.widget";
 pub const SCHEMA_SOCIAL: &str = "podcast.social";
+pub const SCHEMA_VOICE: &str = "podcast.voice";
 pub const SCHEMA_MISC: &str = "podcast.misc";
 
 // ── Tombstone builders ────────────────────────────────────────────────────────
@@ -122,6 +124,12 @@ fn widget_tombstone(rev: u64) -> serde_json::Value {
 /// signal for the iOS/Android social domain frame consumer.
 fn social_tombstone(rev: u64) -> serde_json::Value {
     serde_json::json!({ "rev": rev, "social": null })
+}
+
+/// Tombstone for `podcast.voice`: signals that voice state is now idle.
+/// The `voice` field is `null`.
+fn voice_tombstone(rev: u64) -> serde_json::Value {
+    serde_json::json!({ "rev": rev, "voice": null })
 }
 
 // ── TypedProjectionData assembly ──────────────────────────────────────────────
@@ -311,6 +319,24 @@ pub fn register_domain_projections(
                 .unwrap_or_else(|| social_tombstone(current));
             last_emitted.store(current, Ordering::Relaxed);
             Some(make_typed(SCHEMA_SOCIAL, payload))
+        });
+    }
+
+    // ── podcast.voice ─────────────────────────────────────────────────────────
+    {
+        let h = Arc::clone(handle);
+        let domain_rev = Arc::clone(&domain_revs.voice);
+        let last_emitted = Arc::new(AtomicU64::new(0));
+        app_ref.register_typed_snapshot_projection(SCHEMA_VOICE, move || {
+            let current = domain_rev.load(Ordering::Relaxed);
+            let prev = last_emitted.load(Ordering::Relaxed);
+            if current == prev {
+                return None;
+            }
+            let payload = build_voice_payload(&h)
+                .unwrap_or_else(|| voice_tombstone(current));
+            last_emitted.store(current, Ordering::Relaxed);
+            Some(make_typed(SCHEMA_VOICE, payload))
         });
     }
 
