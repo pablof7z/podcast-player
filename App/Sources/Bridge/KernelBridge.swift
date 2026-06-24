@@ -153,7 +153,11 @@ final class PodcastHandle: @unchecked Sendable {
     // ── Generic dispatch ──────────────────────────────────────────────────
 
     /// Dispatch a namespace-keyed action. Returns the synchronous dispatch
-    /// result. D6: never returns a null envelope for a non-null app.
+    /// result. D6: returns .failure for a null podcast handle.
+    ///
+    /// ADR-0064: calls `nmp_app_podcast_dispatch_action` (typed byte doorway)
+    /// instead of the nmp-ffi ≤ v0.7.2 `nmp_app_dispatch_action` JSON doorway
+    /// which was deleted in NMP v0.8.0.
     @discardableResult
     func dispatchAction(namespace: String, body: [String: Any]) -> DispatchResult {
         // Perf: dispatch is a synchronous FFI round-trip on the caller thread
@@ -165,6 +169,9 @@ final class PodcastHandle: @unchecked Sendable {
                 .dispatchAction,
                 micros: Int((DispatchTime.now().uptimeNanoseconds &- dispatchStart) / 1_000))
         }
+        guard let handle = podcastHandle else {
+            return .failure("podcast handle not initialized")
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: body),
               let jsonStr = String(data: data, encoding: .utf8)
         else {
@@ -172,7 +179,7 @@ final class PodcastHandle: @unchecked Sendable {
         }
         let envelope: String? = jsonStr.withCString { jsonPtr in
             namespace.withCString { nsPtr in
-                guard let ptr = nmp_app_dispatch_action(raw, nsPtr, jsonPtr) else {
+                guard let ptr = nmp_app_podcast_dispatch_action(handle, nsPtr, jsonPtr) else {
                     return nil
                 }
                 defer { nmp_free_string(ptr) }

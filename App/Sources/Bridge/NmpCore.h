@@ -60,14 +60,16 @@ char *nmp_app_podcast_npub_from_hex(const char *pubkey_hex);
 // plus its npub representation. Caller frees with `nmp_free_string`.
 char *nmp_app_podcast_parse_pubkey(const char *input);
 
-// ── T151 — generic dispatch ───────────────────────────────────────────────
+// ── ADR-0064 — typed dispatch ─────────────────────────────────────────────
 //
-// `nmp_app_dispatch_action` is the single namespace-keyed entry point for the
-// ActionModule family. Returns a heap-allocated JSON string
-// `{"correlation_id":"<hex>"}` on accept or `{"error":"..."}` on rejection;
-// the caller MUST release via `nmp_free_string`. D6: never NULL for a
-// non-NULL app.
-char *nmp_app_dispatch_action(void *app, const char *namespace, const char *action_json);
+// `nmp_app_podcast_dispatch_action` is the namespace-keyed entry point for the
+// Podcast ActionModule family. Replaces the nmp-ffi ≤ v0.7.2
+// `nmp_app_dispatch_action` JSON doorway (deleted in v0.8.0). Takes the
+// `PodcastHandle` (from `nmp_app_podcast_register`) rather than the raw NmpApp.
+// Returns a heap-allocated JSON string `{"correlation_id":"podcast-N"}` on
+// accept or `{"error":"..."}` on rejection; the caller MUST release via
+// `nmp_free_string`. Returns NULL only for a NULL handle (D6).
+char *nmp_app_podcast_dispatch_action(void *handle, const char *namespace, const char *action_json);
 
 // ── Capability callback ───────────────────────────────────────────────────
 //

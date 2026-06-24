@@ -46,10 +46,11 @@ fn encode_payload_for_namespace(namespace: &str, json: &str) -> Result<Vec<u8>, 
     match namespace {
         "nmp.publish" => encode::<nmp_core::publish::PublishAction>(namespace, json),
         "nmp.blossom.upload" => encode::<nmp_blossom::UploadInput>(namespace, json),
-        // Podcast-specific namespaces: wrap raw JSON in the pass-through payload.
-        // PodcastJsonPayload is not serde-Deserializable (it wraps opaque JSON),
-        // so we construct it directly instead of going through the generic encode<P>.
-        ns if ns.starts_with("podcast.") => {
+        // Podcast-specific namespaces (bare "podcast" or "podcast.*" family):
+        // wrap raw JSON in the pass-through payload. PodcastJsonPayload is not
+        // serde-Deserializable (it wraps opaque JSON), so we construct it directly
+        // instead of going through the generic encode<P>.
+        ns if ns == "podcast" || ns.starts_with("podcast.") => {
             let payload = crate::action_payload::PodcastJsonPayload {
                 schema_version: crate::action_payload::PodcastJsonPayload::SCHEMA_VERSION,
                 body_json: json.to_owned(),

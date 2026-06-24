@@ -97,6 +97,7 @@ pub use capability::{
 };
 pub use download::{DownloadItem, DownloadItemState, DownloadQueue, DEFAULT_MAX_CONCURRENT};
 pub use ffi::{
+    nmp_app_podcast_dispatch_action,
     nmp_app_podcast_agent_action_policy, nmp_app_podcast_agent_action_tool,
     nmp_app_podcast_agent_category_list,
     nmp_app_podcast_agent_chat_title_parse, nmp_app_podcast_agent_chat_title_prompt,
