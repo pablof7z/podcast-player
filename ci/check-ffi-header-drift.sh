@@ -104,10 +104,15 @@ if [[ -z "$NMP_FFI_FULL_REV" ]]; then
     echo "WARNING: Could not determine upstream nmp_ffi rev from Cargo.lock; upstream drift check skipped."
 else
     CARGO_HOME_DIR="${CARGO_HOME:-$HOME/.cargo}"
+    if [ ! -d "$CARGO_HOME_DIR/git/db" ]; then
+        echo "⚠ cargo git cache not found — run cargo fetch first; skipping upstream symbol check"
+        NMP_GIT_DB=""
+    else
     NMP_GIT_DB=$(
         find "$CARGO_HOME_DIR/git/db" -maxdepth 1 -type d \
              -name "nostr-multi-platform-*" 2>/dev/null | head -1
     )
+    fi
 
     if [[ -z "$NMP_GIT_DB" ]] || \
        ! git -C "$NMP_GIT_DB" cat-file -t "$NMP_FFI_FULL_REV" &>/dev/null; then

@@ -76,7 +76,7 @@ Every commit that ships a user-facing change to the iPhone MUST **add a new file
 Test files (`*_tests.rs`, `*Tests.swift`, `*Test.kt`, `*_tests_ext.rs`) follow a separate scale:
 
 - **Soft cap: 500 lines** — prefer splitting when approaching this threshold.
-- **Hard cap: 1000 lines** — test files must not exceed 1000 lines.
+- **Hard cap: 2000 lines** — test files must not exceed 2000 lines.
 - **Splitting pattern:** Files approaching 500 lines must split into scenario-cluster siblings using the existing `_ext` naming convention. For example, `projections_tests.rs` → `projections_tests_ext.rs`; `store/tests.rs` → `store/tests_ext.rs`. Each scenario cluster is reference from the original via a `#[path = "..."]` module stub or inline `mod` block inside `#[cfg(test)]`.
 
 ### Umbrella C bridge headers

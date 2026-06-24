@@ -7,7 +7,11 @@
 //! `PodcastHostOpHandler` (running on the actor thread) can call platform
 //! capabilities without the kernel naming podcast-domain nouns (D0).
 
-use super::podcast_module_types::{default_true, EpisodeChapterArg, EpisodeTriagePatch};
+use super::podcast_module_types::default_true;
+
+// Re-export payload types so external callers (e.g. host_op_handler::podcast_actions)
+// can reach them via `crate::ffi::actions::podcast_module::{EpisodeChapterArg, EpisodeTriagePatch}`.
+pub use super::podcast_module_types::{EpisodeChapterArg, EpisodeTriagePatch};
 
 use serde::{Deserialize, Serialize};
 
