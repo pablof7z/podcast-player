@@ -115,12 +115,19 @@ final class PlaybackState {
     /// Load `newEpisode` into the engine. When `playAfterLoad` is true
     /// (the default for user-initiated play), also calls `play()`.
     ///
+    /// `dispatchKernelLoad` controls whether a `kernelLoad` is forwarded to
+    /// Rust. Pass `false` when called from the `AudioCommand::Load` handler —
+    /// Rust already staged the episode; re-dispatching would echo a second
+    /// Load+Play sequence (regression: playback resets to loading/paused).
+    /// All user-initiated paths leave this at the default `true`.
+    ///
     /// Idempotent: when `newEpisode.id` matches the current episode, skips
     /// the reload but still refreshes metadata and seeks to a saved resume
     /// point if the engine reached its natural end.
     func setEpisode(
         _ newEpisode: Episode,
-        playAfterLoad: Bool = false
+        playAfterLoad: Bool = false,
+        dispatchKernelLoad: Bool = true
     ) {
         let isSameEpisode = (episode?.id == newEpisode.id)
         episode = newEpisode
@@ -129,7 +136,11 @@ final class PlaybackState {
             // subsequent kernelResume() (from play()) operates on the correct
             // episode. Without this, the kernel may still have the previous
             // episode staged and resume the wrong item.
-            transport?.kernelLoad(episodeID: newEpisode.id)
+            // Skip when called from the AudioCommand::Load handler — Rust
+            // already owns the episode; re-dispatching creates an echo loop.
+            if dispatchKernelLoad {
+                transport?.kernelLoad(episodeID: newEpisode.id)
+            }
             engine.load(newEpisode)
             if newEpisode.playbackPosition > 0 {
                 // TEMPORARY BYPASS: seeds the AVPlayer's initial position
@@ -174,6 +185,14 @@ final class PlaybackState {
 
     func seek(to time: TimeInterval) {
         transport?.kernelSeek(positionSecs: time)
+        // Write the seeked position durably so that if the app is killed while
+        // paused after a scrub the next resume starts at the correct position
+        // rather than snapping back to the last persisted value. When playing,
+        // onPlayingTick / apply_writeback will overwrite this momentarily, so
+        // the call is a benign no-op in that path.
+        if let ep = episode {
+            store?.kernelPersistPosition(episodeID: ep.id, positionSecs: time)
+        }
         Haptics.selection()
     }
 
@@ -181,11 +200,23 @@ final class PlaybackState {
 
     func skipBackward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipBackwardSeconds
+        if !isPlaying {
+            // When paused, Rust's PlayerActor.position_secs is not updated by
+            // Playing reports. Sync it from AVPlayer's current time before
+            // dispatching the skip so each consecutive tap accumulates from
+            // the correct base instead of all computing from the same stale value.
+            transport?.kernelSeek(positionSecs: engine.currentTime)
+        }
         transport?.kernelSkipBackward(secs: delta)
     }
 
     func skipForward(_ seconds: TimeInterval? = nil) {
         let delta = seconds ?? engine.skipForwardSeconds
+        if !isPlaying {
+            // Same paused-accumulation fix as skipBackward: sync Rust's
+            // position_secs from AVPlayer before each skip dispatch.
+            transport?.kernelSeek(positionSecs: engine.currentTime)
+        }
         transport?.kernelSkipForward(secs: delta)
     }
 

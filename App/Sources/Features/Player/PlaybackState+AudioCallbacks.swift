@@ -73,7 +73,7 @@ extension PlaybackState {
                        let url = URL(string: urlString) {
                         episode.enclosureURL = url
                     }
-                    self.setEpisode(episode, playAfterLoad: false)
+                    self.setEpisode(episode, playAfterLoad: false, dispatchKernelLoad: false)
                     if positionSecs > 0 { self.engine.seek(to: positionSecs) }
                 }
             case .play:
