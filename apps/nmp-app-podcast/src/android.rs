@@ -329,6 +329,11 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         // reconstructing via Arc::from_raw is the inverse.
         let s = unsafe { Arc::from_raw(handle as *const Session) };
         nmp_app_stop(s.app);
+        // Signal shutdown so any blocking `nativeNextSignerRequest` select! arm
+        // unblocks and releases its Arc clone. `try_send` is used because the
+        // channel is bounded(1) and we only need one token; a full channel means
+        // the signal is already pending, which is fine (D6).
+        let _ = s.shutdown_tx.try_send(());
         capability_router::clear_capability_router(&s);
         if !s.podcast.is_null() {
             nmp_app_podcast_unregister(s.podcast);
