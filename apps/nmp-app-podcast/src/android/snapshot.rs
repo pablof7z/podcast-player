@@ -51,7 +51,16 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeDispatchAction<'l>
                     Err(_) => null,
                 }
             }
-            Err(_) => null,
+            Err(e) => {
+                let json = format!(
+                    r#"{{"error":"{}"}}"#,
+                    e.to_string().replace('"', "\\\"")
+                );
+                match env.new_string(json) {
+                    Ok(js) => js.into_raw(),
+                    Err(_) => null,
+                }
+            }
         }
     })
 }

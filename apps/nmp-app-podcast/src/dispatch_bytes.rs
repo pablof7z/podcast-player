@@ -126,10 +126,10 @@ pub fn dispatch_action_bytes_for(
     // Parse the returned JSON to extract correlation_id or error
     match serde_json::from_str::<Value>(&result_json) {
         Ok(Value::Object(map)) => {
-            if let Some(Value::String(id)) = map.get("correlation_id") {
-                Ok(id.clone())
-            } else if let Some(Value::String(err)) = map.get("error") {
+            if let Some(Value::String(err)) = map.get("error") {
                 Err(err.clone())
+            } else if let Some(Value::String(id)) = map.get("correlation_id") {
+                Ok(id.clone())
             } else {
                 Ok(correlation_id)
             }
