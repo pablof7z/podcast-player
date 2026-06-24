@@ -120,9 +120,16 @@ enum NostrNpub {
            trimmed.starts(with: "nevent1") {
             return true
         }
-        // NIP-05 address: user@domain.com (but not http:// or https://)
-        if trimmed.contains("@") && !trimmed.starts(with: "http://") &&
-           !trimmed.starts(with: "https://") && trimmed.contains(".") {
+        // Raw 64-character hex pubkey (issue #605)
+        let hexRegex = try? NSRegularExpression(pattern: "^[0-9a-fA-F]{64}$")
+        if hexRegex?.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil {
+            return true
+        }
+        // NIP-05 address: must be exactly localpart@domain with no path/query/scheme
+        // characters. A URL containing @ (e.g. feeds.example.com/users/alice@example.com/rss)
+        // must NOT be classified as NIP-05 — it will be handled by SubscriptionService. (issue #605)
+        let nip05Regex = try? NSRegularExpression(pattern: "^[^@/\\?#:]+@[^@/\\?#:]+\\.[^@/\\?#:]+$")
+        if nip05Regex?.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil {
             return true
         }
         return false
