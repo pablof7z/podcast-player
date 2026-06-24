@@ -14,8 +14,9 @@
 //! undefined in the cdylib; calling through Rust paths makes rustc pull the
 //! bodies into the codegen unit — same pattern as NMP's `nmp-android-ffi`.
 
+use std::collections::HashMap;
 use std::ffi::{c_void, CStr, CString};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use crossbeam_channel::{Receiver as CbReceiver, Sender as CbSender};
 
 use jni::objects::{JClass, JString};
@@ -99,18 +100,36 @@ pub(crate) struct Session {
 unsafe impl Send for Session {}
 unsafe impl Sync for Session {}
 
+// ── Session registry — eliminates raw-Arc UAF race ──────────────────────────
+//
+// Previously `nativeNew` returned `Arc::into_raw` and `session_ref` called
+// `Arc::increment_strong_count` on that raw pointer. That is UB if a
+// concurrent `nativeFree` has already dropped the last strong count: a Kotlin
+// thread can read the non-zero handle, be preempted, `nativeFree` runs to
+// completion (count → 0, memory freed), and the Kotlin thread resumes calling
+// `session_ref` on a dangling pointer.
+//
+// Fix: the canonical Arc lives in a global registry keyed by allocation
+// address. `session_ref` clones from the registry under the mutex (safe — the
+// Arc is alive while the entry exists). `nativeFree` removes the entry under
+// the same mutex, so no further clone is possible after removal. The removed
+// Arc is then used for cleanup and drops when the `nativeFree` closure exits.
+
+static SESSION_REGISTRY: OnceLock<Mutex<HashMap<u64, Arc<Session>>>> = OnceLock::new();
+
+fn session_registry() -> &'static Mutex<HashMap<u64, Arc<Session>>> {
+    SESSION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 #[must_use]
 pub(super) fn session_ref(handle: jlong) -> Option<Arc<Session>> {
     if handle == 0 {
         return None;
     }
-    // SAFETY: handle is a live Arc<Session> raw pointer produced by nativeNew.
-    // increment_strong_count + from_raw clones the Arc without consuming the
-    // original (whose raw pointer stays stored in the handle).
-    unsafe {
-        Arc::increment_strong_count(handle as *const Session);
-        Some(Arc::from_raw(handle as *const Session))
-    }
+    // Clone from the registry under the mutex. If `nativeFree` has already
+    // removed this entry, `get` returns `None` — silent no-op (D6). No raw
+    // pointer arithmetic; no increment_strong_count on potentially-freed memory.
+    session_registry().lock().ok()?.get(&(handle as u64)).cloned()
 }
 
 // ── Update callback — copies JSON before the kernel reclaims its buffer. ─────
@@ -209,7 +228,15 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             shutdown_tx_signer,
             shutdown_rx_signer,
         });
-        Arc::into_raw(session) as jlong
+        // Use the allocation address as the registry key and as the opaque
+        // handle returned to Kotlin. The address is unique per allocation and
+        // stable for the lifetime of the Arc.
+        let key = Arc::as_ptr(&session) as u64;
+        match session_registry().lock() {
+            Ok(mut guard) => { guard.insert(key, session); }
+            Err(_) => return 0, // poisoned — fail safe (D6)
+        }
+        key as jlong
     })
 }
 
@@ -340,9 +367,14 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         return;
     }
     ffi_guard("nativeFree", || (), || {
-        // SAFETY: `handle` was produced by `nativeNew` as Arc::into_raw`;
-        // reconstructing via Arc::from_raw is the inverse.
-        let s = unsafe { Arc::from_raw(handle as *const Session) };
+        // Remove the Arc from the registry under the mutex. After this point
+        // `session_ref` will return None for this handle, closing the UAF
+        // window. The Arc we take out keeps the Session alive for cleanup.
+        let s = match session_registry().lock() {
+            Ok(mut guard) => guard.remove(&(handle as u64)),
+            Err(_) => None,
+        };
+        let Some(s) = s else { return; };
         nmp_app_stop(s.app);
         // Signal shutdown: each blocking loop gets its own dedicated channel so
         // neither can steal the other's token. Both sends always succeed (D6 —
