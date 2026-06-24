@@ -1,5 +1,6 @@
 use std::ffi::{c_char, c_void, CStr, CString};
-use std::sync::mpsc::Sender;
+
+use crossbeam_channel::Sender;
 
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jlong;
@@ -170,7 +171,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
         let Some(s) = super::session_ref(handle) else {
             return;
         };
-        clear_capability_router(s);
+        clear_capability_router(&*s);
         if router.is_null() {
             return;
         }

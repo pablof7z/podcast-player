@@ -70,19 +70,24 @@ pub(crate) struct Session {
     /// resolve synchronously inside the capability callback.
     pub(crate) signer_requests: CbSender<String>,
     pub(crate) signer_rx: CbReceiver<String>,
-    pub(crate) shutdown_tx: CbSender<()>,
-    pub(crate) shutdown_rx: CbReceiver<()>,
+    /// Shutdown token for the `nativeNextUpdate` blocking loop.
+    pub(crate) shutdown_tx_update: CbSender<()>,
+    pub(crate) shutdown_rx_update: CbReceiver<()>,
+    /// Shutdown token for the `nativeNextSignerRequest` blocking loop.
+    pub(crate) shutdown_tx_signer: CbSender<()>,
+    pub(crate) shutdown_rx_signer: CbReceiver<()>,
 }
 
 // SAFETY: `Session` is accessed from multiple JNI threads via Arc clones.
 // - `app`: borrowed pointer, safe from any thread (all NMP calls are thread-safe).
 // - `podcast`: borrowed pointer, safe from any thread (all NMP calls are thread-safe).
-// - `rx`, `signer_rx`, `shutdown_rx`: crossbeam channels are Sync; safe to read from
-//   multiple threads. Each JNI caller holds an Arc clone until the call returns.
-// - `tx`, `signer_requests`, `shutdown_tx`: raw pointers to crossbeam Senders.
-//   The `tx` pointer is dropped only in `nativeFree` after the callback is cleared
-//   (no kernel thread references it). `signer_requests` and `shutdown_tx` are
-//   shared safely via Arc.
+// - `rx`, `signer_rx`, `shutdown_rx_update`, `shutdown_rx_signer`: crossbeam channels
+//   are Sync; safe to read from multiple threads. Each JNI caller holds an Arc clone
+//   until the call returns.
+// - `tx`, `signer_requests`, `shutdown_tx_update`, `shutdown_tx_signer`: raw pointers
+//   to crossbeam Senders. The `tx` pointer is dropped only in `nativeFree` after the
+//   callback is cleared (no kernel thread references it). The others are shared safely
+//   via Arc.
 // - `capability_ctx`: guarded by Mutex.
 unsafe impl Send for Session {}
 unsafe impl Sync for Session {}
@@ -182,7 +187,8 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
         // or nostrconnect:// sign-in attempt (D6 — no-op if already init'd).
         nmp_signer_broker_init(app);
         let (signer_tx, signer_rx) = crossbeam_channel::unbounded::<String>();
-        let (shutdown_tx, shutdown_rx) = crossbeam_channel::bounded::<()>(2);
+        let (shutdown_tx_update, shutdown_rx_update) = crossbeam_channel::bounded::<()>(1);
+        let (shutdown_tx_signer, shutdown_rx_signer) = crossbeam_channel::bounded::<()>(1);
         let session = Arc::new(Session {
             app,
             podcast,
@@ -191,8 +197,10 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             capability_ctx: Mutex::new(None),
             signer_requests: signer_tx,
             signer_rx,
-            shutdown_tx,
-            shutdown_rx,
+            shutdown_tx_update,
+            shutdown_rx_update,
+            shutdown_tx_signer,
+            shutdown_rx_signer,
         });
         Arc::into_raw(session) as jlong
     })
@@ -329,12 +337,11 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         // reconstructing via Arc::from_raw is the inverse.
         let s = unsafe { Arc::from_raw(handle as *const Session) };
         nmp_app_stop(s.app);
-        // Signal shutdown so both blocking loops (`nativeNextUpdate` and
-        // `nativeNextSignerRequest`) each receive one wakeup token and release
-        // their Arc clones. The channel is bounded(2) so both sends always
-        // succeed; a full channel would mean the signal is already pending (D6).
-        let _ = s.shutdown_tx.try_send(());
-        let _ = s.shutdown_tx.try_send(());
+        // Signal shutdown: each blocking loop gets its own dedicated channel so
+        // neither can steal the other's token. Both sends always succeed (D6 —
+        // a full channel means the signal is already pending).
+        let _ = s.shutdown_tx_update.try_send(());
+        let _ = s.shutdown_tx_signer.try_send(());
         capability_router::clear_capability_router(&s);
         if !s.podcast.is_null() {
             nmp_app_podcast_unregister(s.podcast);

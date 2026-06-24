@@ -88,7 +88,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNextUpdate<'l>(
                 },
                 Err(_) => null,  // channel closed: nativeFree dropped the sender
             },
-            recv(s.shutdown_rx) -> _ => null,  // explicit shutdown
+            recv(s.shutdown_rx_update) -> _ => null,  // explicit shutdown
         }
     })
 }
