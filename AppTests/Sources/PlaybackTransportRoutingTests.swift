@@ -38,8 +38,8 @@ final class PlaybackTransportRoutingTests: XCTestCase {
             guid: "test-guid-1",
             title: "Test Episode",
             pubDate: Date(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
-            duration: 3600
+            duration: 3600,
+            enclosureURL: URL(fileURLWithPath: "/test.mp3")
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
 
@@ -54,8 +54,8 @@ final class PlaybackTransportRoutingTests: XCTestCase {
             guid: "test-guid-2",
             title: "Test Episode",
             pubDate: Date(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
-            duration: 3600
+            duration: 3600,
+            enclosureURL: URL(fileURLWithPath: "/test.mp3")
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
 
@@ -81,8 +81,8 @@ final class PlaybackTransportRoutingTests: XCTestCase {
             guid: "test-guid-3",
             title: "Test Episode",
             pubDate: Date(),
-            enclosureURL: URL(fileURLWithPath: "/test.mp3"),
-            duration: 3600
+            duration: 3600,
+            enclosureURL: URL(fileURLWithPath: "/test.mp3")
         )
         playbackState.setEpisode(episode, playAfterLoad: false)
         playbackState.seek(to: 100)

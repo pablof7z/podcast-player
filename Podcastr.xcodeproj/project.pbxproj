@@ -513,7 +513,6 @@
 		B389C5108FE832C3F0F5FB34 /* AgentNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30CFCB7607AB17F8205471 /* AgentNotesView.swift */; };
 		B3911A6DDB986C6528C2C4F1 /* RSSParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252381473A916661CCBA523E /* RSSParserTests.swift */; };
 		B393A6C44BAFB3C3AD1E6CDA /* FeedbackStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716427A88DC40761944F1873 /* FeedbackStatusBadge.swift */; };
-		B3970DA45FCC4CB32765FCCD /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = C42CCFD0573B346559E36AA9 /* LiteRTLM */; };
 		B3D650CB33926951017490CF /* ElevenLabsVoiceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD80384C741138D608DAECE /* ElevenLabsVoiceRow.swift */; };
 		B3E189C5BA5D59D07FF8FC37 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBEC4F0E2BBCFFB096BEFD /* AppDelegate.swift */; };
 		B3E9AC528F88D6001C8A835C /* AgentEmptyStateProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EA4D4E0DF2E24D09B86D82 /* AgentEmptyStateProjection.swift */; };
@@ -1513,7 +1512,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D296A3A113B7CA431F3F4B45 /* Kingfisher in Frameworks */,
-				B3970DA45FCC4CB32765FCCD /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2841,7 +2839,6 @@
 			name = Podcastr;
 			packageProductDependencies = (
 				AC95E5BC4A660944ADC3109C /* Kingfisher */,
-				C42CCFD0573B346559E36AA9 /* LiteRTLM */,
 			);
 			productName = Podcastr;
 			productReference = 85AB8152D55E6C47E39E9A01 /* Podcastr.app */;
@@ -2892,7 +2889,6 @@
 			);
 			mainGroup = 26AC729818BDCD33D4152DB0;
 			packageReferences = (
-				CDCFBAF4A865E5D6C8271482 /* XCRemoteSwiftPackageReference "LiteRT-LM" */,
 				FD91E0E152391009482BC6AE /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			productRefGroup = EE8ECCB93F31FD087A3D5446 /* Products */;
@@ -4156,14 +4152,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CDCFBAF4A865E5D6C8271482 /* XCRemoteSwiftPackageReference "LiteRT-LM" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/google-ai-edge/LiteRT-LM";
-			requirement = {
-				kind = revision;
-				revision = bbc5181df03c6962d7786ce4ad72c8565232d2b2;
-			};
-		};
 		FD91E0E152391009482BC6AE /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/onevcat/Kingfisher";
@@ -4178,10 +4166,6 @@
 		AC95E5BC4A660944ADC3109C /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Kingfisher;
-		};
-		C42CCFD0573B346559E36AA9 /* LiteRTLM */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = LiteRTLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
