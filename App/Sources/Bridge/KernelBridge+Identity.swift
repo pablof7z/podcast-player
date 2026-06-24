@@ -73,19 +73,16 @@ extension PodcastHandle {
     /// Allocate a freshly generated `nostrconnect://` URI from the broker,
     /// copy it to a Swift `String`, and free the C buffer. Returns `nil`
     /// when the broker is not initialised or Rust returned a null pointer.
-    /// `relayURL` / `callbackScheme` are passed through verbatim — `nil`
-    /// for either means "use the Rust-side default" (kernel-selected relay
-    /// or no callback respectively).
+    /// The relay is kernel-selected from the configured write relays. The
+    /// optional callback scheme is passed through so signer apps can deep-link
+    /// back after approval.
     func nostrconnectURI(relayURL: String?, callbackScheme: String?) -> String? {
-        let relayCStr = relayURL?.withCString(strdup)
         let callbackCStr = callbackScheme?.withCString(strdup)
         defer {
-            if let relayCStr { free(relayCStr) }
             if let callbackCStr { free(callbackCStr) }
         }
         guard let ptr = nmp_app_nostrconnect_uri(
             raw,
-            relayCStr.map { UnsafePointer($0) },
             callbackCStr.map { UnsafePointer($0) })
         else { return nil }
         defer { nmp_free_string(ptr) }

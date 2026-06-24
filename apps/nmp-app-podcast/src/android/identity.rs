@@ -186,16 +186,15 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeCancelBunkerHandsh
 /// Returns `null` when the broker is not initialised or Rust returns a null
 /// pointer (D6).
 ///
-/// `relayUrl` / `callbackScheme` are passed through verbatim — pass `null`
-/// for either to use the Rust-side default (kernel-selected relay or no
-/// callback). Mirrors iOS `PodcastHandle.nostrconnectURI(relayURL:callbackScheme:)`
-/// and `nmp_app_nostrconnect_uri` in `NmpCore.h`.
+/// `relayUrl` is retained only for Kotlin/Swift API compatibility; NMP v0.8
+/// always selects the relay from the kernel relay config. `callbackScheme` is
+/// optional platform callback information.
 #[no_mangle]
 pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNostrconnectUri<'l>(
     mut env: JNIEnv<'l>,
     _class: JClass<'l>,
     handle: jlong,
-    relay_url: JString<'l>,
+    _relay_url: JString<'l>,
     callback_scheme: JString<'l>,
 ) -> jstring {
     let null: jstring = std::ptr::null_mut();
@@ -203,21 +202,16 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNostrconnectUri<'l
         let Some(s) = session_ref(handle) else {
             return null;
         };
-        // Convert optional JString args — null JString (from Kotlin `null`)
+        // Convert optional JString arg — null JString (from Kotlin `null`)
         // becomes a Rust null pointer that the FFI accepts per its contract.
-        let relay_cstring: Option<CString> = env
-            .get_string(&relay_url)
-            .ok()
-            .and_then(|js| CString::new(js.to_string_lossy().into_owned()).ok());
         let callback_cstring: Option<CString> = env
             .get_string(&callback_scheme)
             .ok()
             .and_then(|js| CString::new(js.to_string_lossy().into_owned()).ok());
 
-        let relay_ptr = relay_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null());
         let callback_ptr = callback_cstring.as_ref().map(|c| c.as_ptr()).unwrap_or(std::ptr::null());
 
-        let uri_ptr = nmp_app_nostrconnect_uri(s.app, relay_ptr, callback_ptr);
+        let uri_ptr = nmp_app_nostrconnect_uri(s.app, callback_ptr);
         if uri_ptr.is_null() {
             return null;
         }

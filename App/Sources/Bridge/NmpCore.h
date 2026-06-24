@@ -89,18 +89,15 @@ void nmp_app_set_capability_callback(void *app, void *context, NmpCapabilityCall
 // `libnmp_app_podcast.a` is the Podcast Rust aggregate archive (D0: protocol
 // glue outside nmp-core).
 //
-// Flow:
-// 1. Call `nmp_app_podcast_register(app)` once after `nmp_app_new()`. Returns
-//    an opaque handle (or NULL on failure).
-// 2. On each render tick call `nmp_app_podcast_snapshot(handle)` to get a
-//    nul-terminated JSON string. The caller owns the pointer until it calls
-//    `nmp_app_podcast_snapshot_free(ptr)`.
-// 3. On teardown call `nmp_app_podcast_unregister(handle)` BEFORE
-//    `nmp_app_free(app)`.
+// Primary hydration path: typed domain sidecars arrive in the binary FlatBuffers
+// push frame and are decoded via `nmp_app_podcast_decode_update_frame` into
+// `v.projections[schema_id]`. Use `nmp_app_podcast_snapshot` only for cold-start
+// seeding, debug dumps, or headless compatibility — not on render ticks.
 //
 // Fire-and-forget: every entry point degrades silently on null pointers,
 // poisoned mutexes, or serialization failure (D6).
 void *nmp_app_podcast_register(void *app);
+// COMPAT-ONLY: Use typed domain sidecars for steady-state state updates.
 char *nmp_app_podcast_snapshot(void *handle);
 uint64_t nmp_app_podcast_snapshot_rev(void *handle);
 void nmp_app_podcast_snapshot_free(char *ptr);
@@ -299,8 +296,8 @@ char *nmp_app_podcast_agent_generated_podcast_descriptor(void *handle);
 //
 // `nmp_app_nostrconnect_uri` returns a freshly minted client-initiated
 // `nostrconnect://` URI string. The caller MUST free the returned pointer via
-// `nmp_free_string`. `relay_url` may be NULL — Rust selects the first
-// write-capable relay from the kernel relay-edit projection in that case.
+// `nmp_free_string`. Rust selects the first write-capable relay from the
+// kernel relay-edit projection.
 // `callback_scheme` may be NULL — when non-null Rust appends a percent-encoded
 // `&callback=<scheme>` query parameter so the signer app can deep-link back.
 // Pass NULL when the host scheme is not registered with the OS.
@@ -334,7 +331,7 @@ char *nmp_app_sign_event_for_return(void *app,
                                     const char *unsigned_json);
 void nmp_signer_broker_init(void *app);
 void nmp_app_cancel_bunker_handshake(void *app);
-char *nmp_app_nostrconnect_uri(void *app, const char *relay_url, const char *callback_scheme);
+char *nmp_app_nostrconnect_uri(void *app, const char *callback_scheme);
 
 // `nmp_app_remove_account` enqueues `ActorCommand::RemoveAccount` for the
 // supplied identity id (hex pubkey). The actor drops the row + invalidates
