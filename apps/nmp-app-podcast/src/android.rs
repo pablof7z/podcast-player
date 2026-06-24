@@ -246,7 +246,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeStart(
 ) {
     ffi_guard("nativeStart", || (), || {
         if let Some(s) = session_ref(handle) {
-            nmp_app_start(s.app, 0, visible_limit as u32, emit_hz as u32);
+            nmp_app_start(s.app, visible_limit as u32, emit_hz as u32);
         }
     });
 }

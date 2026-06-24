@@ -125,11 +125,11 @@ final class PodcastHandle: @unchecked Sendable {
         // didFinishLaunchingWithOptions, after PodcastHandle.init()) has
         // already written the fresh seed before the kernel opens the store.
         Self.configurePodcastDataDir(for: podcastHandle)
-        nmp_app_start(raw, 0, visibleLimit, emitHz)
+        nmp_app_start(raw, visibleLimit, emitHz)
     }
 
     func configure(visibleLimit: UInt32, emitHz: UInt32) {
-        nmp_app_configure(raw, 0, visibleLimit, emitHz)
+        nmp_app_configure(raw, visibleLimit, emitHz)
     }
 
     func stop() {
