@@ -345,11 +345,15 @@ impl PodcastHostOpHandler {
                 "error": "nsec1 private keys must not be routed to open_search"
             });
         }
-        // npub1/nprofile1/nevent1 — the iOS shell extracts the pubkey hex via
-        // `NostrNpub.pubkeyHex(from:)` and dispatches `subscribe_nostr` directly.
-        // The kernel acknowledges; the actual subscription is handled by that path.
+        // npub1/nprofile1/nevent1 — open_search does not call subscribe_nostr itself;
+        // callers must dispatch subscribe_nostr directly with the extracted pubkey hex.
+        // Return pending so callers know no subscription was initiated here.
         if looks_like_nostr_identifier(&input) {
-            return serde_json::json!({"ok": true, "status": "nostr_identifier"});
+            return serde_json::json!({
+                "ok": false,
+                "status": "pending",
+                "message": "open_search does not subscribe — dispatch subscribe_nostr with the extracted pubkey hex instead"
+            });
         }
         // NIP-05 (user@domain.com) — NIP-05 resolution is pending NMP #597.
         // Shell should surface a user-friendly message directing to npub instead.
