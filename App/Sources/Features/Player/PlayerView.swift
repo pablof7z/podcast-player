@@ -46,8 +46,9 @@ struct PlayerView: View {
                 .padding(.horizontal, AppTheme.Spacing.md)
                 .padding(.top, AppTheme.Spacing.sm)
                 .padding(.bottom, AppTheme.Spacing.sm)
-            carouselPageIndicator
+            tabSelector
                 .padding(.horizontal, AppTheme.Spacing.md)
+                .padding(.bottom, AppTheme.Spacing.sm)
             TabView(selection: $activeTab) {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
@@ -258,22 +259,21 @@ struct PlayerView: View {
         return date
     }
 
-    // MARK: - Carousel page indicator
+    // MARK: - Tab selector
 
-    private var carouselPageIndicator: some View {
+    private var tabSelector: some View {
         HStack(spacing: 0) {
-            Spacer()
-            HStack(spacing: 5) {
+            Color.clear.frame(width: 28, height: 28)
+            Picker("Player section", selection: $activeTab) {
                 ForEach(PlayerTab.allCases) { tab in
-                    Capsule()
-                        .fill(activeTab == tab
-                              ? Color.primary.opacity(0.7)
-                              : Color.secondary.opacity(0.25))
-                        .frame(width: activeTab == tab ? 16 : 6, height: 5)
+                    Text(tab.accessibilityLabel)
+                        .tag(tab)
                 }
             }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
             .animation(AppTheme.Animation.spring, value: activeTab)
-            Spacer()
+            .accessibilityIdentifier("player-tab-selector")
             if activeTab == .chapters, state.episode != nil {
                 Button {
                     noteAnchorTime = state.currentTime

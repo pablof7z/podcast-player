@@ -41,6 +41,14 @@ final class PlayerChaptersUITests: XCTestCase {
         snap(app, "chapters-01-full-player")
         dumpTree(app, "chapters-01-tree")
 
+        let tabSelector = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier == 'player-tab-selector'")
+        ).firstMatch
+        XCTAssertTrue(
+            tabSelector.waitForExistence(timeout: 4),
+            "FAIL player-tab-selector: full player should expose direct Chapters, Transcript, and Show Notes tabs"
+        )
+
         // Chapter rows have accessibilityIdentifier "chapter-<uuid>". The seed
         // embeds 3 chapters; the kernel projects all of them (include_in_toc=true).
         // NSPredicate is not Sendable — create fresh at each call site.
