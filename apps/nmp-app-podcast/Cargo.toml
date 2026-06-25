@@ -72,6 +72,11 @@ nmp-feedback = { workspace = true }
 # Already transitive via nmp-defaults; listed explicitly so social_handler.rs
 # can import FollowListProjection and ActiveFollowSet (D11 — single door).
 nmp-nip02 = { workspace = true }
+# Planner types (InterestId / InterestLifecycle / InterestScope / LogicalInterest
+# + stable_hash64) moved out of nmp-core into the standalone nmp-planner crate in
+# v0.8.0. The discover / comments / agent-note / episode handlers build
+# LogicalInterest values directly, so this is a normal (non-dev) dependency.
+nmp-planner = { workspace = true }
 # Canonical NMP composition root. One call wires the default action modules
 # (NIP-02 / NIP-17 / NIP-57 / NIP-65), the kind:10050 ingest parser, the
 # production routing substrate, and the DM-inbox + zap-receipts runtime

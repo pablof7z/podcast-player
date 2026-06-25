@@ -59,7 +59,7 @@ fn main() -> ExitCode {
     // 5. Start the kernel actor. Visible-limit and emit-hz are test defaults.
     //    _events_per_second is ignored by the kernel (see nmp_app_start in
     //    nmp-ffi/src/lib.rs).
-    nmp_app_start(app, 0, 500, 10);
+    nmp_app_start(app, 500, 10);
 
     // 6. Run all scenarios.
     let results = scenarios::run_all(app, handle);

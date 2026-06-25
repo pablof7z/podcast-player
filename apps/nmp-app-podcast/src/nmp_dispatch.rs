@@ -35,8 +35,11 @@
 
 use std::ffi::CString;
 
-use nmp_core::planner::LogicalInterest;
+use nmp_core::dispatch_envelope::{encode_dispatch_envelope, DISPATCH_ENVELOPE_SCHEMA_VERSION};
+use nmp_core::publish::{PublishAction, PublishTarget};
+use nmp_core::substrate::ActionPayload;
 use nmp_ffi::NmpApp;
+use nmp_planner::LogicalInterest;
 
 /// Register a per-podcast secret key in the kernel's identity roster without
 /// activating it. `secret_hex` must be a 64-char lowercase hex string (the
@@ -128,16 +131,14 @@ pub(crate) fn publish_raw_with_signer_via_nmp(
     if app.is_null() {
         return "signed";
     }
-    let body = serde_json::json!({
-        "PublishRaw": {
-            "kind": kind,
-            "tags": tags,
-            "content": content,
-            "target": "Auto",
-            "signer_pubkey": signer_pubkey_hex,
-        }
-    });
-    dispatch_nmp_publish(app, body)
+    let action = PublishAction::PublishRaw {
+        kind,
+        tags: tags.to_vec(),
+        content: content.to_string(),
+        target: PublishTarget::Auto,
+        signer_pubkey: Some(signer_pubkey_hex.to_string()),
+    };
+    dispatch_nmp_publish(app, action)
 }
 
 /// Dispatch unsigned event parameters to `nmp.publish { PublishRaw }` with
@@ -160,16 +161,14 @@ pub(crate) fn publish_raw_with_signer_to_relays_via_nmp(
     relay_urls: &[String],
 ) -> &'static str {
     if !relay_urls.is_empty() {
-        let body = serde_json::json!({
-            "PublishRaw": {
-                "kind": kind,
-                "tags": tags,
-                "content": content,
-                "target": { "Explicit": { "relays": relay_urls } },
-                "signer_pubkey": signer_pubkey_hex,
-            }
-        });
-        return dispatch_nmp_publish(app, body);
+        let action = PublishAction::PublishRaw {
+            kind,
+            tags: tags.to_vec(),
+            content: content.to_string(),
+            target: PublishTarget::Explicit { relays: relay_urls.to_vec() },
+            signer_pubkey: Some(signer_pubkey_hex.to_string()),
+        };
+        return dispatch_nmp_publish(app, action);
     }
     publish_raw_with_signer_via_nmp(app, kind, tags, content, signer_pubkey_hex)
 }
@@ -197,26 +196,13 @@ pub(crate) fn blossom_upload_via_nmp(
     if app.is_null() {
         return None;
     }
-    let body = serde_json::json!({
-        "file_path": file_path,
-        "servers": servers,
-        "signer_pubkey": signer_pubkey_hex,
-    });
-    let Ok(ns_c) = CString::new("nmp.blossom.upload") else {
-        return None;
+    let input = nmp_blossom::UploadInput {
+        file_path: file_path.to_string(),
+        content_type: None,
+        servers: servers.to_vec(),
+        signer_pubkey: Some(signer_pubkey_hex.to_string()),
     };
-    let Ok(body_c) = CString::new(body.to_string()) else {
-        return None;
-    };
-    let raw = nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr());
-    if raw.is_null() {
-        return None;
-    }
-    // SAFETY: raw is a heap-owned NUL-terminated C string from nmp_app_dispatch_action.
-    let response = unsafe { std::ffi::CStr::from_ptr(raw) }
-        .to_string_lossy()
-        .into_owned();
-    nmp_ffi::nmp_free_string(raw);
+    let response = dispatch_typed_envelope(app, "nmp.blossom.upload", &input.encode())?;
 
     // Parse the correlation_id from the accept envelope.
     let parsed: serde_json::Value = serde_json::from_str(&response).ok()?;
@@ -247,15 +233,14 @@ pub(crate) fn publish_raw_via_nmp(
     if app.is_null() {
         return "signed";
     }
-    let body = serde_json::json!({
-        "PublishRaw": {
-            "kind": kind,
-            "tags": tags,
-            "content": content,
-            "target": "Auto",
-        }
-    });
-    dispatch_nmp_publish(app, body)
+    let action = PublishAction::PublishRaw {
+        kind,
+        tags: tags.to_vec(),
+        content: content.to_string(),
+        target: PublishTarget::Auto,
+        signer_pubkey: None,
+    };
+    dispatch_nmp_publish(app, action)
 }
 
 /// Dispatch a kind:0 profile metadata update to `nmp.publish { PublishProfile }`.
@@ -271,8 +256,8 @@ pub(crate) fn publish_profile_via_nmp(
     if app.is_null() {
         return "signed";
     }
-    let body = serde_json::json!({ "PublishProfile": { "fields": fields } });
-    dispatch_nmp_publish(app, body)
+    let action = PublishAction::PublishProfile { fields };
+    dispatch_nmp_publish(app, action)
 }
 
 /// Self-enqueue a `podcast.publish` action back onto the actor queue.
@@ -293,21 +278,17 @@ pub(crate) fn self_dispatch_publish(app: *mut nmp_ffi::NmpApp, body: serde_json:
     if app.is_null() {
         return false;
     }
-    let (Ok(ns_c), Ok(body_c)) = (CString::new("podcast.publish"), CString::new(body.to_string()))
-    else {
+    // `podcast.publish` is an APP-OWNED namespace whose `Action` the kernel does
+    // not model — it rides the OPAQUE byte route (#1756): the kernel passes the
+    // serde-JSON bytes through undecoded and the module's own `serde_json` deser
+    // reconstructs the action.
+    let Ok(payload) = serde_json::to_vec(&body) else {
         return false;
     };
-    let raw = nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr());
-    if raw.is_null() {
-        return false;
+    match dispatch_opaque_envelope(app, "podcast.publish", &payload) {
+        Some(response) => response.contains("\"correlation_id\""),
+        None => false,
     }
-    // SAFETY: `raw` is a heap-owned NUL-terminated C string minted by
-    // `nmp_app_dispatch_action`; read the accept marker, then free it.
-    let accepted = unsafe { std::ffi::CStr::from_ptr(raw) }
-        .to_string_lossy()
-        .contains("\"correlation_id\"");
-    nmp_ffi::nmp_free_string(raw);
-    accepted
 }
 
 /// Push a [`LogicalInterest`] into NMP's relay pool. The kernel opens the
@@ -320,16 +301,80 @@ pub(crate) fn push_interest_via_nmp(app: *mut nmp_ffi::NmpApp, interest: Logical
     unsafe { &*app }.push_interest(interest);
 }
 
-fn dispatch_nmp_publish(app: *mut nmp_ffi::NmpApp, body: serde_json::Value) -> &'static str {
-    let Ok(ns_c) = CString::new("nmp.publish") else {
-        return "signed";
-    };
-    let Ok(body_c) = CString::new(body.to_string()) else {
-        return "signed";
-    };
-    let raw = nmp_ffi::nmp_app_dispatch_action(app, ns_c.as_ptr(), body_c.as_ptr());
-    if !raw.is_null() {
-        nmp_ffi::nmp_free_string(raw);
+fn dispatch_nmp_publish(app: *mut nmp_ffi::NmpApp, action: PublishAction) -> &'static str {
+    match dispatch_typed_envelope(app, "nmp.publish", &action.encode()) {
+        Some(_) => "queued",
+        None => "signed",
     }
-    "queued"
+}
+
+/// Mint a fresh, process-unique envelope correlation id.
+///
+/// On the byte lane the operation identity is the HOST-SUPPLIED envelope
+/// `correlation_id`, echoed back end-to-end (ADR-0064 §4). A random UUIDv4
+/// (already a workspace dep) is the simplest collision-free choice.
+fn mint_correlation_id() -> String {
+    uuid::Uuid::new_v4().to_string()
+}
+
+/// Build a `DispatchEnvelope` carrying a TYPED FlatBuffers `payload` for
+/// `namespace` and dispatch it through the byte doorway. Returns the response
+/// JSON string (`{"correlation_id":…}` / `{"error":…}`), or `None` on a null
+/// app or a `payload` longer than the envelope encoder can frame.
+///
+/// `payload` is the output of an [`ActionPayload::encode`] (e.g.
+/// `PublishAction::encode` / `UploadInput::encode`) — the kernel decodes it
+/// through the namespace's typed `decode_payload`.
+fn dispatch_typed_envelope(
+    app: *mut nmp_ffi::NmpApp,
+    namespace: &str,
+    payload: &[u8],
+) -> Option<String> {
+    dispatch_envelope(app, namespace, payload)
+}
+
+/// Build a `DispatchEnvelope` carrying an OPAQUE app-owned `payload` (serde-JSON
+/// bytes) for an app-owned `podcast.*` `namespace` and dispatch it through the
+/// byte doorway. Identical framing to [`dispatch_typed_envelope`] — the only
+/// difference is the kernel route: an opaque-opted module (`accepts_opaque_payload`)
+/// passes the bytes through undecoded and runs its own `serde_json` deser.
+fn dispatch_opaque_envelope(
+    app: *mut nmp_ffi::NmpApp,
+    namespace: &str,
+    payload: &[u8],
+) -> Option<String> {
+    dispatch_envelope(app, namespace, payload)
+}
+
+/// Shared envelope build + byte-doorway dispatch. Mints a correlation id, frames
+/// the `DispatchEnvelope` (`encode_dispatch_envelope`), drives the bytes through
+/// `nmp_app_dispatch_action_bytes`, and returns the response JSON string. The
+/// envelope framing is identical for the typed and opaque routes; only the
+/// kernel-side decode differs (by namespace registration).
+fn dispatch_envelope(
+    app: *mut nmp_ffi::NmpApp,
+    namespace: &str,
+    payload: &[u8],
+) -> Option<String> {
+    if app.is_null() {
+        return None;
+    }
+    let correlation_id = mint_correlation_id();
+    let envelope = encode_dispatch_envelope(
+        &correlation_id,
+        namespace,
+        DISPATCH_ENVELOPE_SCHEMA_VERSION,
+        payload,
+    );
+    let raw = nmp_ffi::nmp_app_dispatch_action_bytes(app, envelope.as_ptr(), envelope.len());
+    if raw.is_null() {
+        return None;
+    }
+    // SAFETY: `raw` is a heap-owned NUL-terminated C string minted by
+    // `nmp_app_dispatch_action_bytes`; read it, copy out, then free.
+    let response = unsafe { std::ffi::CStr::from_ptr(raw) }
+        .to_string_lossy()
+        .into_owned();
+    nmp_ffi::nmp_free_string(raw);
+    Some(response)
 }
