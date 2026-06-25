@@ -34,22 +34,64 @@ jobs:
       - name: Reject whitespace errors in changed lines
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.base_ref }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            if [[ -z "$PR_BASE_SHA" ]]; then
-              echo "::error::Missing pull_request base SHA for diff check"
+            if [[ -z "$PR_BASE_REF" ]]; then
+              echo "::error::Missing pull_request base ref for diff check"
               exit 1
             fi
-            git diff --check "$PR_BASE_SHA"...HEAD
+            git fetch --no-tags --depth=1 origin "$PR_BASE_REF"
+            base="$(git merge-base "origin/$PR_BASE_REF" HEAD)"
+            git diff --check "$base"...HEAD
           elif [[ -z "$PUSH_BEFORE_SHA" || "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
             git diff-tree --check --no-commit-id --root -r HEAD
           else
             git diff --check "$PUSH_BEFORE_SHA"..HEAD
           fi
+
+  ffi-header-drift:
+    name: FFI header drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and git DB
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-ffi-drift-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-ffi-drift-
+
+      - name: Fetch upstream nmp_ffi source into cargo git DB
+        run: cargo fetch --manifest-path apps/nmp-app-podcast/Cargo.toml
+
+      - name: Verify NmpCore.h matches Rust FFI implementations
+        run: bash ci/check-ffi-header-drift.sh
+
+  file-size-check:
+    name: File size enforcement gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Enforce source file size limits (500 lines) and test file limits (1000 lines)
+        run: bash ci/check-file-sizes.sh
 
   test:
     name: Build and Test
