@@ -9,9 +9,9 @@ import SwiftUI
 ///     player backdrop (light or dark).
 ///   - Speaker label sits inline as a small uppercase chip above the line, so
 ///     consecutive same-speaker rows stay visually packed.
-///   - Long-press exposes a context menu with "Ask the agent about this" and
-///     "Highlight" — both are optional so callers that don't wire them (previews,
-///     clip composer) keep compiling without stub closures.
+///   - Long-press exposes optional actions for asking the agent, creating a
+///     clip, and highlighting the line without forcing preview callers to wire
+///     stub closures.
 struct PlayerTranscriptRow: View {
 
     let segment: Segment
@@ -20,6 +20,9 @@ struct PlayerTranscriptRow: View {
     let onTap: () -> Void
     /// Long-press → "Ask the agent about this moment".
     var onAskAgent: (() -> Void)? = nil
+    /// Long-press → "Create Clip" — opens `ClipComposerSheet` pre-populated
+    /// with this segment's time boundaries. Optional; defaults to nil.
+    var onCreateClip: (() -> Void)? = nil
     /// Long-press → "Highlight" — copies the text to the clipboard and posts a
     /// haptic. A future slice will wire this to a persistent highlight store.
     var onHighlight: (() -> Void)? = nil
@@ -48,6 +51,7 @@ struct PlayerTranscriptRow: View {
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text("Ask the agent")) { onAskAgent?() }
+        .accessibilityAction(named: Text("Create Clip")) { onCreateClip?() }
         .accessibilityAction(named: Text("Highlight")) { onHighlight?() }
     }
 
@@ -72,6 +76,14 @@ struct PlayerTranscriptRow: View {
                 onAskAgent()
             } label: {
                 Label("Ask the agent about this", systemImage: "sparkles")
+            }
+        }
+        if let onCreateClip {
+            Button {
+                Haptics.selection()
+                onCreateClip()
+            } label: {
+                Label("Create Clip", systemImage: "film.stack")
             }
         }
         if let onHighlight {
