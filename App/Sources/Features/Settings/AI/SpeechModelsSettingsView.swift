@@ -58,7 +58,7 @@ struct SpeechModelsSettingsView: View {
                 }
                 // Use .inline (not .navigationLink) for conditionally-shown model pickers.
                 // A .navigationLink Picker appearing during the provider-picker's pop
-                // animation conficts with the in-flight navigation transition and crashes.
+                // animation conflicts with the in-flight navigation transition and crashes.
                 .pickerStyle(.inline)
             }
 
