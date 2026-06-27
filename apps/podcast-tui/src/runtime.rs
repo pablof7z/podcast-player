@@ -11,7 +11,8 @@ use nmp_app_podcast::{
     nmp_app_podcast_unregister, nmp_signer_broker_init, PodcastHandle, AUDIO_CAPABILITY_NAMESPACE,
 };
 use nmp_ffi::{
-    nmp_app_free, nmp_app_new, nmp_app_set_capability_callback,
+    nmp_app_consume_all_builtin_projections, nmp_app_free, nmp_app_new,
+    nmp_app_set_capability_callback,
     nmp_app_start, nmp_free_string, NmpApp,
 };
 use podcast_feeds::http::{
@@ -79,6 +80,9 @@ impl AppRuntime {
         let (mut bridge, rx) = bridge::NmpUpdateBridge::channel();
         bridge::NmpUpdateBridge::register(app, &mut bridge);
 
+        // ADR-0053 / NMP v0.8: TUI currently consumes the full built-in
+        // projection set, with podcast sidecars registered app-locally.
+        nmp_app_consume_all_builtin_projections(app);
         nmp_app_start(app, 200, 10);
 
         Ok((

@@ -30,6 +30,10 @@ char *nmp_app_podcast_decode_update_frame(const uint8_t *bytes, size_t len);
 // called before `nmp_app_start`; a NULL or empty `path` clears it.
 void nmp_app_set_storage_path(void *app, const char *path);
 
+// ADR-0053 / NMP v0.8: declare that this host intentionally consumes every
+// built-in projection before `nmp_app_start`. Podcast sidecars remain app-local.
+void nmp_app_consume_all_builtin_projections(void *app);
+
 void nmp_app_start(void *app, unsigned int visible_limit, unsigned int emit_hz);
 void nmp_app_configure(void *app, unsigned int visible_limit, unsigned int emit_hz);
 void nmp_app_stop(void *app);

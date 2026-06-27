@@ -71,6 +71,10 @@ final class PodcastHandle: @unchecked Sendable {
         // dropped without this call (D6).
         nmp_signer_broker_init(raw)
         Self.configureStoragePath(for: raw)
+        // ADR-0053 / NMP v0.8: make the full built-in projection consumption
+        // intent explicit before `nmp_app_start`; podcast domain sidecars are
+        // registered separately through `nmp_app_podcast_register`.
+        nmp_app_consume_all_builtin_projections(raw)
         registerPodcastProjection()
     }
 

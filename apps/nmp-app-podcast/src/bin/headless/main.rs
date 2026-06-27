@@ -21,7 +21,7 @@ use std::process::ExitCode;
 use nmp_app_podcast::{
     nmp_app_podcast_register, nmp_app_podcast_set_data_dir, nmp_app_podcast_unregister,
 };
-use nmp_ffi::nmp_app_start;
+use nmp_ffi::{nmp_app_consume_all_builtin_projections, nmp_app_start};
 
 fn main() -> ExitCode {
     // 1. Boot NmpApp.
@@ -56,7 +56,9 @@ fn main() -> ExitCode {
     ).expect("path NUL-free");
     nmp_app_podcast_set_data_dir(handle, path_cstr.as_ptr());
 
-    // 5. Start the kernel actor. Visible-limit and emit-hz are test defaults.
+    // 5. Declare the explicit all-builtins projection intent, then start the
+    //    kernel actor. Visible-limit and emit-hz are test defaults.
+    nmp_app_consume_all_builtin_projections(app);
     nmp_app_start(app, 500, 10);
 
     // 6. Run all scenarios.
