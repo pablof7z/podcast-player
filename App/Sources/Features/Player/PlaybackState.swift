@@ -80,6 +80,11 @@ final class PlaybackState {
     /// Reset on resume or when a position echoes back from Rust, so each tap
     /// builds on the previous rather than re-anchoring to a stale AVPlayer time.
     var pendingPausedSeekBase: Double?
+    /// Episode whose Rust `AudioCommand::Load` callback has reached AudioEngine.
+    /// Kernel snapshots are pulled asynchronously after dispatch, so the command
+    /// handler uses this immediate local marker to avoid restaging an episode
+    /// that Rust already loaded but has not yet projected.
+    var rustLoadedEpisodeID: UUID?
     var seekHistory: [SeekHistoryEntry] = []
     var canJumpBack: Bool { !seekHistory.isEmpty }
 
@@ -141,7 +146,12 @@ final class PlaybackState {
             // user-dispatch path (below) already set episode = newEpisode before
             // calling kernelLoad, so a same-episode guard would silently skip
             // engine.load and AVPlayer would never receive the resolved URL.
-            engine.load(newEpisode)
+            rustLoadedEpisodeID = newEpisode.id
+            if isSameEpisode, engine.episode?.id == newEpisode.id {
+                engine.refreshMetadata(for: newEpisode)
+            } else {
+                engine.load(newEpisode)
+            }
             if newEpisode.playbackPosition > 0 {
                 // TEMPORARY BYPASS: seeds the AVPlayer's initial position
                 // before playback starts. The Rust kernel does not yet own a
@@ -152,11 +162,17 @@ final class PlaybackState {
                 engine.seek(to: newEpisode.playbackPosition)
             }
         } else if !isSameEpisode {
-            // User-initiated load of a new episode — dispatch to Rust.
-            // engine.load is deferred to the AudioCommand::Load callback
-            // (the !dispatchKernelLoad branch above) so Rust's resolved
-            // streaming URL reaches AVPlayer, not the store placeholder.
+            // User-initiated load of a new episode — dispatch to Rust first so
+            // policy and persistence stage in the kernel, then prime the iOS
+            // executor locally. The Rust Load echo may still arrive later; the
+            // callback path above refreshes same-episode metadata without
+            // replacing the active AVPlayer item.
+            rustLoadedEpisodeID = nil
             transport?.kernelLoad(episodeID: newEpisode.id)
+            engine.load(newEpisode)
+            if newEpisode.playbackPosition > 0 {
+                engine.seek(to: newEpisode.playbackPosition)
+            }
         } else {
             // Same episode, user-initiated — refresh metadata only.
             engine.refreshMetadata(for: newEpisode)
@@ -183,7 +199,18 @@ final class PlaybackState {
         guard let episode else { return }
         pendingPausedSeekBase = nil
         Haptics.medium()
-        transport?.kernelResume()
+        if shouldStartEpisodeThroughKernelPlay(episodeID: episode.id) {
+            transport?.kernelPlay(episodeID: episode.id, startSeconds: nil, endSeconds: nil)
+        } else {
+            transport?.kernelResume()
+        }
+        if engine.episode?.id != episode.id {
+            engine.load(episode)
+            if episode.playbackPosition > 0 {
+                engine.seek(to: episode.playbackPosition)
+            }
+        }
+        engine.play()
     }
 
     func pause() {
@@ -257,6 +284,15 @@ final class PlaybackState {
         // writer here (#599).
         transport?.kernelSetSpeed(newRate.rawValue)
         Haptics.selection()
+    }
+
+    private func shouldStartEpisodeThroughKernelPlay(episodeID: UUID) -> Bool {
+        guard store != nil else { return false }
+        guard rustLoadedEpisodeID == episodeID else { return true }
+        let staged = store?.kernel?.podcastSnapshot?.nowPlaying?.episodeId?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let staged, !staged.isEmpty else { return true }
+        return UUID(uuidString: staged) != episodeID
     }
 
     var skipForwardSeconds: Int { Int(engine.skipForwardSeconds) }

@@ -19,6 +19,10 @@ protocol KernelPlaybackDispatching: AnyObject {
     /// Must be called before `kernelResume()` whenever the active episode changes.
     func kernelLoad(episodeID: UUID)
 
+    /// Load and start `episodeID` through Rust-owned playback policy.
+    @discardableResult
+    func kernelPlay(episodeID: UUID, startSeconds: Double?, endSeconds: Double?) -> DispatchResult?
+
     /// Resume playback of the currently-staged episode.
     func kernelResume()
 

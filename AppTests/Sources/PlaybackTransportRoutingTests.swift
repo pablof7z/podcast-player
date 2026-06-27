@@ -127,6 +127,8 @@ final class StubKernelTransport: KernelPlaybackDispatching {
 
     var kernelLoadCallCount = 0
     var lastLoadedEpisodeID: UUID?
+    var kernelPlayCallCount = 0
+    var lastPlayedEpisodeID: UUID?
     var kernelResumeCallCount = 0
     var kernelPauseCallCount = 0
     var kernelSeekCallCount = 0
@@ -140,6 +142,8 @@ final class StubKernelTransport: KernelPlaybackDispatching {
     func reset() {
         kernelLoadCallCount = 0
         lastLoadedEpisodeID = nil
+        kernelPlayCallCount = 0
+        lastPlayedEpisodeID = nil
         kernelResumeCallCount = 0
         kernelPauseCallCount = 0
         kernelSeekCallCount = 0
@@ -153,6 +157,12 @@ final class StubKernelTransport: KernelPlaybackDispatching {
     func kernelLoad(episodeID: UUID) {
         kernelLoadCallCount += 1
         lastLoadedEpisodeID = episodeID
+    }
+
+    func kernelPlay(episodeID: UUID, startSeconds: Double?, endSeconds: Double?) -> DispatchResult? {
+        kernelPlayCallCount += 1
+        lastPlayedEpisodeID = episodeID
+        return nil
     }
 
     func kernelResume() {

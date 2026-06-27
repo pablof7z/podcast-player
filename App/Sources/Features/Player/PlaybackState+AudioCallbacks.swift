@@ -95,7 +95,8 @@ extension PlaybackState {
                 let stagedEpisodeID = self.store?.kernel?.podcastSnapshot?.nowPlaying?.episodeId
                 if let episodeID = Self.restoredEpisodeIDToStageBeforeRemotePlay(
                     kernelNowPlayingEpisodeID: stagedEpisodeID,
-                    restoredEpisodeID: self.episode?.id
+                    restoredEpisodeID: self.episode?.id,
+                    locallyLoadedEpisodeID: self.rustLoadedEpisodeID
                 ) {
                     self.store?.kernelLoad(episodeID: episodeID)
                 }
@@ -128,10 +129,12 @@ extension PlaybackState {
 
     static func restoredEpisodeIDToStageBeforeRemotePlay(
         kernelNowPlayingEpisodeID: String?,
-        restoredEpisodeID: UUID?
+        restoredEpisodeID: UUID?,
+        locallyLoadedEpisodeID: UUID? = nil
     ) -> UUID? {
         let stagedEpisodeID = kernelNowPlayingEpisodeID?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard stagedEpisodeID?.isEmpty ?? true else { return nil }
+        guard restoredEpisodeID != locallyLoadedEpisodeID else { return nil }
         return restoredEpisodeID
     }
 }
