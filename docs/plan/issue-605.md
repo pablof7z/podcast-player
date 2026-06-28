@@ -4,7 +4,7 @@
 
 **Priority:** High
 
-**Status:** Partially implemented after #597. The NMP intent ABI is available, iOS Add Show uses it for Nostr profile/address input, and the Nostr discovery tab now renders relay-targeted NIP-50 search results. Async NIP-05 completion and remaining platform surfaces are still pending.
+**Status:** Partially implemented after #597. The NMP intent ABI is available, iOS Add Show uses it for Nostr profile/address and NIP-05 inputs, and the Nostr discovery tab now renders relay-targeted NIP-50 search results. Remaining work is limited to future platform surfaces and the legacy `podcast.open_search` compatibility path.
 
 ## Goal
 
@@ -22,7 +22,8 @@ Route Nostr-facing text-entry/discovery surfaces through NMP's framework-level i
   - `nsec` is rejected from the Rust classification result without echoing the key.
   - `npub`/`nprofile` profile refs subscribe through `subscribe_nostr`.
   - Nostr address refs subscribe by author pubkey.
-  - NIP-05 inputs dispatch NMP resolution and show a pending notice.
+  - NIP-05 inputs dispatch NMP resolution, await the kernel's `resolved_profiles`
+    projection, and subscribe to the resolved author on success.
   - event refs remain recognized but not subscribable from Add Show.
 - Removed the Swift prefix detectors `looksLikeNsecKey` and `looksLikeNostrInput`.
 - Updated the legacy `podcast.open_search` comments to make clear it is compatibility-only unless reworked around the NMP ABI.
@@ -36,15 +37,16 @@ Route Nostr-facing text-entry/discovery surfaces through NMP's framework-level i
 - Updated the iOS Nostr discovery tab to dispatch query searches through
   `nmp_app_intent_dispatch`, decode NMP NIP-50 search-session projections, and
   render relay search hits separately from NIP-F4 discovery rows.
+- Updated Add Show > From URL so NIP-05 addresses complete the subscribe flow
+  after the NMP async profile projection lands, with a bounded 5-second timeout.
 
 ## Remaining Work
 
-1. **Async NIP-05 completion.** Add a projected result/await path so Add Show can turn NIP-05 resolution into a completed Nostr subscription instead of a pending notice.
-2. **NIP-05 friend add.** Add Friend currently rejects NIP-05 with guidance to
+1. **NIP-05 friend add.** Add Friend currently rejects NIP-05 with guidance to
    paste an npub/nprofile. Once the shared async result projection exists,
    decide whether friend add waits for the same resolved pubkey path.
-3. **Android.** No Nostr subscribe text-entry surface exists today. When one is added, use the NMP intent ABI instead of local prefix checks.
-4. **Legacy Rust action.** Either remove the `podcast.open_search` compatibility action or rebuild it around NMP's public Rust-side APIs if those are exported for app crates.
+2. **Android.** No Nostr subscribe text-entry surface exists today. When one is added, use the NMP intent ABI instead of local prefix checks.
+3. **Legacy Rust action.** Either remove the `podcast.open_search` compatibility action or rebuild it around NMP's public Rust-side APIs if those are exported for app crates.
 
 ## Validation Targets
 

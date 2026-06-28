@@ -258,14 +258,7 @@ struct AddByURLForm: View {
                 return true
             }
         case .nip05(let identifier):
-            _ = store.dispatchNostrDiscoveryIntent(
-                input: originalInput,
-                sessionID: "add-show-\(UUID().uuidString)"
-            )
-            isWorking = false
-            error = SubscriptionService.AddError.transport(
-                "Looking up \(identifier). If it does not appear, try an npub or nprofile.")
-            Haptics.warning()
+            await subscribeToNip05Identifier(identifier, originalInput: originalInput)
             return true
         case .relayURL, .textQuery:
             return false
@@ -276,6 +269,35 @@ struct AddByURLForm: View {
             Haptics.warning()
             return true
         }
+    }
+
+    private func subscribeToNip05Identifier(
+        _ identifier: String,
+        originalInput: String
+    ) async {
+        let existingProfiles = store.resolvedNostrProfilePubkeys()
+        let outcome = store.dispatchNostrDiscoveryIntent(
+            input: originalInput,
+            sessionID: "add-show-\(UUID().uuidString)"
+        )
+        guard case .dispatched(.nip05(identifier: _)) = outcome else {
+            isWorking = false
+            error = SubscriptionService.AddError.transport(
+                "That NIP-05 address could not be resolved from Add Show.")
+            Haptics.warning()
+            return
+        }
+        guard let pubkey = await store.awaitResolvedNostrProfilePubkey(
+            excluding: existingProfiles,
+            timeout: .seconds(5)
+        ) else {
+            isWorking = false
+            error = SubscriptionService.AddError.transport(
+                "Could not resolve \(identifier). Try an npub or nprofile.")
+            Haptics.warning()
+            return
+        }
+        await subscribeToNostrAuthor(pubkey)
     }
 
     private func subscribeToNostrAuthor(_ pubkey: String) async {

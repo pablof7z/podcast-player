@@ -7,11 +7,12 @@ worktrees currently in flight.
 - **open-search-nostr-result-await (#605).** NMP #597 has landed and iOS
   `AddByURLForm` now uses the framework `nmp_app_intent_classify` /
   `nmp_nip21_decode_uri` path for Nostr profile/address inputs, with
-  `nmp_app_intent_dispatch` used to start NIP-05 resolution. Remaining work:
-  observe the async NIP-05 result projection with a timeout (≈5 s), wire
-  any future Android text-entry subscribe surface through the same NMP intent
-  ABI, and either retire or fully reimplement the legacy `podcast.open_search`
-  compatibility scaffold. `AddFriendSheet.swift` and TUI
+  `nmp_app_intent_dispatch` used to start NIP-05 resolution and Add Show
+  awaiting the async `resolved_profiles` projection with a bounded timeout
+  before subscribing. Remaining work: decide whether Add Friend should use the
+  same NIP-05 await path, wire any future Android text-entry subscribe surface
+  through the same NMP intent ABI, and either retire or fully reimplement the
+  legacy `podcast.open_search` compatibility scaffold. `AddFriendSheet.swift` and TUI
   `handle_subscribe_input` now use the NMP intent ABI for Nostr refs while
   preserving their existing fallback paths. `NostrDiscoverForm.swift` now
   dispatches query searches through the NMP open-search path and renders
