@@ -335,13 +335,6 @@ pub enum PodcastAction {
     /// skipped on the first activation — so episodes still download without a
     /// manual pull-to-refresh.
     AutoDownloadEvaluate,
-    /// Compatibility payload for older podcast-domain Nostr text entry.
-    /// Native shells should prefer NMP's framework-level input-intent ABI
-    /// (`nmp_app_intent_classify` / `nmp_app_intent_dispatch`) so classification
-    /// and NIP-50 search routing stay shared across apps.
-    OpenSearch {
-        input: String,
-    },
     /// Record (or clear) a batch of AI Inbox triage decisions (M4 / D7).
     ///
     /// iOS owns the triage *computation* (the LLM pass in `InboxTriageService`)

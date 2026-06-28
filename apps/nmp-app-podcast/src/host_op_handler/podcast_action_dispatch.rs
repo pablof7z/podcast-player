@@ -265,11 +265,6 @@ impl PodcastHostOpHandler {
                 podcast_id,
                 enabled,
             } => self.handle_set_podcast_transcription_enabled(podcast_id, enabled),
-            PodcastAction::OpenSearch { input } => {
-                // Compatibility path for older podcast-domain callers. Native
-                // text-entry surfaces should use NMP's intent ABI directly.
-                self.handle_open_search(input)
-            }
         }
     }
 }

@@ -4,7 +4,7 @@
 
 **Priority:** High
 
-**Status:** Partially implemented after #597. The NMP intent ABI is available, iOS Add Show and Add Friend use it for Nostr profile/address and NIP-05 inputs, and the Nostr discovery tab now renders relay-targeted NIP-50 search results. Remaining work is limited to future platform surfaces and the legacy `podcast.open_search` compatibility path.
+**Status:** Implemented for current shipped surfaces after #597. The NMP intent ABI is available, iOS Add Show and Add Friend use it for Nostr profile/address and NIP-05 inputs, and the Nostr discovery tab now renders relay-targeted NIP-50 search results. Android has no Nostr subscribe text-entry surface today; any future one should use the same NMP intent ABI.
 
 ## Goal
 
@@ -26,7 +26,7 @@ Route Nostr-facing text-entry/discovery surfaces through NMP's framework-level i
     projection, and subscribe to the resolved author on success.
   - event refs remain recognized but not subscribable from Add Show.
 - Removed the Swift prefix detectors `looksLikeNsecKey` and `looksLikeNostrInput`.
-- Updated the legacy `podcast.open_search` comments to make clear it is compatibility-only unless reworked around the NMP ABI.
+- Retired the legacy `podcast.open_search` compatibility action so native text-entry surfaces have one NMP-owned Nostr routing path.
 - Updated Add Friend to classify/decode npub, nprofile, and nostr profile links
   through the NMP intent ABI before approving a peer; raw 64-hex pubkeys remain
   a compatibility fallback.
@@ -45,7 +45,6 @@ Route Nostr-facing text-entry/discovery surfaces through NMP's framework-level i
 ## Remaining Work
 
 1. **Android.** No Nostr subscribe text-entry surface exists today. When one is added, use the NMP intent ABI instead of local prefix checks.
-2. **Legacy Rust action.** Either remove the `podcast.open_search` compatibility action or rebuild it around NMP's public Rust-side APIs if those are exported for app crates.
 
 ## Validation Targets
 

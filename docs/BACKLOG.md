@@ -10,10 +10,11 @@ worktrees currently in flight.
   `nmp_app_intent_dispatch` used to start NIP-05 resolution and Add Show
   awaiting the async `resolved_profiles` projection with a bounded timeout
   before subscribing. Add Friend now uses the same NMP dispatch/projection path
-  before adding a resolved NIP-05 pubkey as a friend. Remaining work: wire any
-  future Android text-entry subscribe surface through the same NMP intent ABI,
-  and either retire or fully reimplement the legacy `podcast.open_search`
-  compatibility scaffold. `AddFriendSheet.swift` and TUI
+  before adding a resolved NIP-05 pubkey as a friend. The legacy
+  `podcast.open_search` compatibility scaffold has been retired so native
+  text-entry surfaces use the NMP intent ABI directly. Remaining work: wire any
+  future Android text-entry subscribe surface through the same NMP intent ABI.
+  `AddFriendSheet.swift` and TUI
   `handle_subscribe_input` use the NMP intent ABI for Nostr refs while
   preserving their existing fallback paths. `NostrDiscoverForm.swift` now
   dispatches query searches through the NMP open-search path and renders
