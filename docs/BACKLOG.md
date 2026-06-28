@@ -506,17 +506,12 @@ worktrees currently in flight.
   `EditProfileView` to observe the projection field (keyed by pubkey + kind:0) before
   flipping to a "Published" banner. Deferred because NMP does not currently project
   post-publish event identity back to the host app.
-- **social-profile-name-about-completion (#601).** Rust `IdentityStore` and
-  `AccountSummary` now carry `name`/`about` fields and `handle_publish_profile`
-  applies them on publish. Remaining cross-platform wiring:
-  - **Swift** — decode `name`/`about` from `AccountSummary` JSON in
-    `AppStateStore+KernelProjection.swift`; surface them in `UserIdentityStore`
-    and `EditProfileView`; remove the `kind0CachePrefix` UserDefaults profile
-    cache from `UserIdentityStore+ProfileFetch.swift` once projection carries
-    the canonical values.
-  - **Android** — decode `name`/`about` from `AccountSummary` in
-    `IdentityActions.kt`; remove the SharedPreferences profile-field mirrors
-    once the kernel projection is the authoritative source.
+- ~~**social-profile-name-about-completion (#601).**~~ Done in this PR:
+  Swift and Android decode `name`/`about` from the kernel-projected
+  `AccountSummary`, profile edit screens hydrate from `active_account`, and the
+  iOS UserDefaults plus Android SharedPreferences profile-field mirrors were
+  removed. Rust `IdentityStore` remains the single local source for accepted
+  kind:0 profile fields.
 - **social-notes-friends-kernel-wiring (#601).** Foundation Rust stores
   (`store/notes.rs`, `store/friends.rs`) are in place. Remaining:
   - Add `AddNote/UpdateNote/DeleteNote/AddFriend/RemoveFriend/UpdateFriendName`

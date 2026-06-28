@@ -57,6 +57,35 @@ class SnapshotCodecTest {
     }
 
     @Test
+    fun `active account decodes profile name and about`() {
+        val snapshot = SnapshotCodec.decode(
+            """
+            {
+              "running": true,
+              "rev": 4,
+              "schema_version": 1,
+              "active_account": {
+                "npub": "npub1alice",
+                "pubkey_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "fingerprint": "sha256:abc",
+                "display_name": "Alice Example",
+                "mode": "local",
+                "picture_url": "https://example.test/avatar.png",
+                "name": "alice",
+                "about": "Builds shows"
+              }
+            }
+            """.trimIndent()
+        )
+
+        assertNotNull(snapshot)
+        val account = snapshot!!.activeAccount
+        assertNotNull(account)
+        assertEquals("alice", account!!.name)
+        assertEquals("Builds shows", account.about)
+    }
+
+    @Test
     fun `feedback threads decode from snapshot projection`() {
         val raw = """
             {

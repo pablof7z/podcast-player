@@ -511,6 +511,7 @@ final class KernelBridgeWireTests: XCTestCase {
         // The merging helper must carry the profiles onto an existing identity.
         let existing = KernelIdentityProjection(
             activeAccount: "abc123", activeNpub: "npub1existing",
+            activeDisplayName: nil, activeName: nil, activeAbout: nil, activePictureUrl: nil,
             accounts: [], bunkerHandshake: nil, resolvedProfiles: [:])
         let merged = existing.merging(resolvedProfiles: frames.resolvedProfiles)
         XCTAssertEqual(merged.activeAccount, "abc123",

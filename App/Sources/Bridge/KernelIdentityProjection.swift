@@ -39,6 +39,9 @@ struct KernelAccountSummary: Decodable, Equatable {
     let isActive: Bool
     /// kind:0 profile picture URL, when one is cached.
     let pictureUrl: String?
+    /// kind:0 username/slug and about text, when cached by the kernel.
+    let name: String?
+    let about: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -49,6 +52,8 @@ struct KernelAccountSummary: Decodable, Equatable {
         case signerIsRemote = "signer_is_remote"
         case isActive = "is_active"
         case pictureUrl = "picture_url"
+        case name
+        case about
     }
 }
 
@@ -117,6 +122,13 @@ struct KernelIdentityProjection: Equatable {
     /// Bech32 npub of the active account (`npub1…`) for display surfaces.
     /// Sourced from `PodcastUpdate.active_account.npub`.
     let activeNpub: String?
+    /// Active account kind:0 display name fields, sourced from
+    /// `PodcastUpdate.active_account`. These are the canonical local profile
+    /// values after the kernel accepts a publish_profile action.
+    let activeDisplayName: String?
+    let activeName: String?
+    let activeAbout: String?
+    let activePictureUrl: String?
     /// All known identity rows, possibly empty.
     let accounts: [KernelAccountSummary]
     /// Bunker handshake progress, or `nil` when no handshake is in flight.
@@ -130,6 +142,10 @@ struct KernelIdentityProjection: Equatable {
     static let empty = KernelIdentityProjection(
         activeAccount: nil,
         activeNpub: nil,
+        activeDisplayName: nil,
+        activeName: nil,
+        activeAbout: nil,
+        activePictureUrl: nil,
         accounts: [],
         bunkerHandshake: nil,
         resolvedProfiles: [:])
@@ -165,6 +181,10 @@ extension KernelIdentityProjection {
         KernelIdentityProjection(
             activeAccount: update.activeAccount?.pubkeyHex,
             activeNpub: update.activeAccount?.npub,
+            activeDisplayName: update.activeAccount?.displayName,
+            activeName: update.activeAccount?.name,
+            activeAbout: update.activeAccount?.about,
+            activePictureUrl: update.activeAccount?.pictureUrl,
             accounts: [],
             bunkerHandshake: nil,
             resolvedProfiles: [:])
@@ -196,6 +216,10 @@ extension KernelIdentityProjection {
             return KernelIdentityProjection(
                 activeAccount: identityFrame.activeAccount?.pubkeyHex,
                 activeNpub: identityFrame.activeAccount?.npub,
+                activeDisplayName: identityFrame.activeAccount?.displayName,
+                activeName: identityFrame.activeAccount?.name,
+                activeAbout: identityFrame.activeAccount?.about,
+                activePictureUrl: identityFrame.activeAccount?.pictureUrl,
                 accounts: [],
                 bunkerHandshake: nil,
                 resolvedProfiles: frames.resolvedProfiles)
@@ -217,6 +241,10 @@ extension KernelIdentityProjection {
         return KernelIdentityProjection(
             activeAccount: activeAccount,
             activeNpub: activeNpub,
+            activeDisplayName: activeDisplayName,
+            activeName: activeName,
+            activeAbout: activeAbout,
+            activePictureUrl: activePictureUrl,
             accounts: accounts,
             bunkerHandshake: bunkerHandshake,
             resolvedProfiles: merged)

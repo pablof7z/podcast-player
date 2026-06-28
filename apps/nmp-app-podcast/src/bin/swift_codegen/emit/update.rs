@@ -167,6 +167,8 @@ struct AccountSummary: Codable {
     var displayName: String? = nil
     var mode: String
     var pictureUrl: String? = nil
+    var name: String? = nil
+    var about: String? = nil
 }
 
 // MARK: - Custom Decodable implementations

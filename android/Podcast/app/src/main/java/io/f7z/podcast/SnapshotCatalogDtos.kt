@@ -16,6 +16,8 @@ data class AccountSummary(
     @SerialName("display_name") val displayName: String? = null,
     val mode: String = "local_key",
     @SerialName("picture_url") val pictureUrl: String? = null,
+    val name: String? = null,
+    val about: String? = null,
 )
 
 /**
