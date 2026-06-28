@@ -257,7 +257,11 @@ final class UserIdentityStore {
         handshake: KernelBunkerHandshake?,
         activeNpub: String?,
         pubkeyHex: String?,
-        isRemoteSigner: Bool
+        isRemoteSigner: Bool,
+        displayName: String? = nil,
+        name: String? = nil,
+        about: String? = nil,
+        pictureUrl: String? = nil
     ) {
         // 1. Handshake progression (failure surfaces an error; success is
         //    folded into the steady-state reconcile below via activeAccount).
@@ -281,6 +285,12 @@ final class UserIdentityStore {
             newMode = isRemoteSigner ? .remoteSigner : .localKey
         }
         if newMode != mode { mode = newMode }
+
+        applyKernelProfile(
+            displayName: displayName,
+            name: name,
+            about: about,
+            pictureUrl: pictureUrl)
 
         // Connection state: a live account means connected; reflect it without
         // churning if already in the right terminal state.
@@ -309,8 +319,30 @@ final class UserIdentityStore {
 
         // 4. Profile side-effects only when the active pubkey actually changes.
         guard oldPubkeyHex != pubkeyHex, let pubkey = pubkeyHex else { return }
-        loadCachedProfile(for: pubkey)
-        Task { await self.fetchAndCacheProfile(pubkeyHex: pubkey) }
+        Task { await self.claimProfile(pubkeyHex: pubkey) }
+    }
+
+    private func applyKernelProfile(
+        displayName: String?,
+        name: String?,
+        about: String?,
+        pictureUrl: String?
+    ) {
+        let nextDisplayName = nonBlank(displayName)
+        let nextName = nonBlank(name)
+        let nextAbout = nonBlank(about)
+        let nextPicture = nonBlank(pictureUrl)
+        if profileDisplayName != nextDisplayName { profileDisplayName = nextDisplayName }
+        if profileName != nextName { profileName = nextName }
+        if profileAbout != nextAbout { profileAbout = nextAbout }
+        if profilePicture != nextPicture { profilePicture = nextPicture }
+    }
+
+    private func nonBlank(_ value: String?) -> String? {
+        value.flatMap {
+            let trimmed = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
     }
 
     // MARK: - Internal helpers

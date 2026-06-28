@@ -491,7 +491,11 @@ extension AppStateStore {
                 handshake: identity.bunkerHandshake,
                 activeNpub: identity.activeNpub,
                 pubkeyHex: identity.activeAccount,
-                isRemoteSigner: identity.isRemoteSigner)
+                isRemoteSigner: identity.isRemoteSigner,
+                displayName: identity.activeDisplayName,
+                name: identity.activeName,
+                about: identity.activeAbout,
+                pictureUrl: identity.activePictureUrl)
         }
 
         // After the batch flushes: the widget path reads only `snapshot.widget`
@@ -544,7 +548,11 @@ extension AppStateStore {
                 handshake: identity.bunkerHandshake,
                 activeNpub: identity.activeNpub,
                 pubkeyHex: identity.activeAccount,
-                isRemoteSigner: identity.isRemoteSigner)
+                isRemoteSigner: identity.isRemoteSigner,
+                displayName: identity.activeDisplayName,
+                name: identity.activeName,
+                about: identity.activeAbout,
+                pictureUrl: identity.activePictureUrl)
         }
         onQueueFromKernel?(Self.queueItems(from: snapshot))
         onNowPlayingSnapshot?(snapshot)

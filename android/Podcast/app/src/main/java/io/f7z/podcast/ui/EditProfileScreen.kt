@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.f7z.podcast.DispatchResult
@@ -44,11 +43,8 @@ import kotlinx.coroutines.withContext
  *
  * Fields: display name / username (name) / about / picture URL.
  * Prefill strategy (mirrors iOS `EditProfileView.hydrateFromIdentity`):
- *  - `display_name` + `picture_url` — from [PodcastSnapshot.activeAccount]
- *    ([AccountSummary]) which is already projected by the kernel.
- *  - `name` (slug) + `about` — NOT in the snapshot projection; loaded from
- *    [IdentityActions.loadCachedProfile] (Android SharedPreferences, keyed by
- *    pubkeyHex). Mirrors iOS UserDefaults `kind0CachePrefix` prefill.
+ * all kind:0 fields come from [PodcastSnapshot.activeAccount] ([AccountSummary]),
+ * which is projected by the kernel after accepted profile publishes.
  *
  * Save dispatches `podcast.social` `publish_profile` via
  * [IdentityActions.publishProfile], which calls
@@ -73,7 +69,6 @@ fun EditProfileScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val account = snapshot?.activeAccount
     val pubkeyHex = account?.pubkeyHex.orEmpty()
@@ -94,17 +89,13 @@ fun EditProfileScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
-    // Hydrate once from snapshot + local cache — mirrors hydrateFromIdentity().
+    // Hydrate once from the kernel-projected active account.
     LaunchedEffect(pubkeyHex) {
         if (pubkeyHex.isEmpty()) return@LaunchedEffect
-        val cached = withContext(Dispatchers.IO) {
-            IdentityActions.loadCachedProfile(context, pubkeyHex)
-        }
-        // Projected fields come from snapshot; non-projected from local cache.
         displayName = account?.displayName.orEmpty()
         pictureUrl = account?.pictureUrl.orEmpty()
-        name = cached.name
-        about = cached.about
+        name = account?.name.orEmpty()
+        about = account?.about.orEmpty()
         // Record initial state for dirty detection.
         initialDisplayName = displayName
         initialPictureUrl = pictureUrl
@@ -236,13 +227,9 @@ fun EditProfileScreen(
                         successMessage = null
                         // The kernel returns {"correlation_id":"..."} on accept or
                         // {"error":"..."} on reject — parsed by DispatchResult.parseEnvelope.
-                        // IdentityActions.publishProfile caches non-projected fields ONLY on
-                        // Accepted, so a rejected dispatch leaves local state untouched.
                         val dispatchResult = withContext(Dispatchers.IO) {
                             IdentityActions.publishProfile(
                                 bridge = bridge,
-                                context = context,
-                                pubkeyHex = pubkeyHex,
                                 name = name,
                                 displayName = displayName,
                                 about = about,

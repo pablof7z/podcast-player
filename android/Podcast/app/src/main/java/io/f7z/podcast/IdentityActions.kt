@@ -1,9 +1,6 @@
 package io.f7z.podcast
 
-import android.content.Context
-import android.content.SharedPreferences
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.Json
@@ -35,15 +32,6 @@ object IdentityActions {
      * Mirrors `UserIdentityStore+Publishing.swift` dispatch seam.
      */
     const val SOCIAL_NAMESPACE = "podcast.social"
-
-    /**
-     * SharedPreferences file for caching non-projected profile fields (name/about)
-     * between edits. Mirrors iOS `UserDefaults` `kind0CachePrefix` pattern.
-     * NOT encrypted — these are public Nostr profile fields (no secrets).
-     */
-    private const val PROFILE_CACHE_PREFS = "io.f7z.podcast.profile_cache"
-    private const val KEY_NAME = "name"
-    private const val KEY_ABOUT = "about"
 
     private val json = Json
 
@@ -78,11 +66,8 @@ object IdentityActions {
      * signing in Android code. Mirrors the iOS `dispatchToKernel("podcast.social",
      * body:["op":"publish_profile",…])` call exactly.
      *
-     * After dispatching, the non-projected fields (name, about) are cached in
-     * [SharedPreferences] keyed by [pubkeyHex] so [loadCachedProfile] can prefill
-     * the form on next open (mirrors iOS `UserDefaults` `kind0CachePrefix` pattern).
-     * `display_name` and `picture_url` are already projected via [AccountSummary]
-     * and need no local cache.
+     * After dispatching, the kernel self-applies the accepted profile fields to
+     * [AccountSummary]. Android keeps no SharedPreferences mirror.
      *
      * Returns the kernel JSON envelope or null on FFI failure.
      */
@@ -90,15 +75,11 @@ object IdentityActions {
      * Returns [DispatchResult.Accepted] when the kernel enqueued the action, or
      * [DispatchResult.Failure] on synchronous rejection or FFI failure.
      *
-     * The local profile cache is written ONLY on [DispatchResult.Accepted] — a
-     * rejected dispatch must not mutate local state (mirrors Swift:
-     * `UserIdentityStore+Publishing.swift` throws on rejection, leaving cache
-     * untouched).
+     * A rejected dispatch must not mutate local state; callers keep their form
+     * draft open and wait for the next kernel projection after acceptance.
      */
     fun publishProfile(
         bridge: KernelBridge,
-        context: Context,
-        pubkeyHex: String,
         name: String,
         displayName: String,
         about: String,
@@ -106,13 +87,7 @@ object IdentityActions {
     ): DispatchResult {
         val payload = buildPublishProfilePayload(name, displayName, about, pictureUrl)
         val raw = bridge.dispatchAction(SOCIAL_NAMESPACE, payload)
-        val result = DispatchResult.parseEnvelope(raw)
-        // Cache non-projected fields ONLY on accepted dispatch — mirror Swift:
-        // no local-state mutation on rejection.
-        if (result is DispatchResult.Accepted) {
-            cacheProfile(context, pubkeyHex, name, about)
-        }
-        return result
+        return DispatchResult.parseEnvelope(raw)
     }
 
     /**
@@ -148,33 +123,6 @@ object IdentityActions {
         }
         return json.encodeToString(JsonObject.serializer(), JsonObject(fields))
     }
-
-    /**
-     * Locally cached profile for fields not exposed by [AccountSummary].
-     * `displayName` and `pictureUrl` come from the snapshot; `name` and `about`
-     * are persisted here to prefill the edit form.
-     */
-    data class CachedProfile(val name: String, val about: String)
-
-    /** Load the last-saved [name] and [about] for [pubkeyHex] from local cache. */
-    fun loadCachedProfile(context: Context, pubkeyHex: String): CachedProfile {
-        val prefs = profilePrefs(context)
-        return CachedProfile(
-            name = prefs.getString("${pubkeyHex}_$KEY_NAME", "") ?: "",
-            about = prefs.getString("${pubkeyHex}_$KEY_ABOUT", "") ?: "",
-        )
-    }
-
-    /** Persist non-projected profile fields for [pubkeyHex]. */
-    private fun cacheProfile(context: Context, pubkeyHex: String, name: String, about: String) {
-        profilePrefs(context).edit()
-            .putString("${pubkeyHex}_$KEY_NAME", name.trim())
-            .putString("${pubkeyHex}_$KEY_ABOUT", about.trim())
-            .apply()
-    }
-
-    private fun profilePrefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(PROFILE_CACHE_PREFS, Context.MODE_PRIVATE)
 
     /** Build the `ImportNsec` payload with the nsec safely JSON-escaped. */
     fun importNsecPayload(nsec: String): String =

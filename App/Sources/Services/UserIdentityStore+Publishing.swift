@@ -80,17 +80,6 @@ extension UserIdentityStore {
         profileAbout       = trimmedAbout.isEmpty       ? nil : trimmedAbout
         profilePicture     = trimmedPicture.isEmpty     ? nil : trimmedPicture
 
-        if let pubkey = publicKeyHex {
-            let cachePayload: [String: String] = [
-                "display_name": trimmedDisplayName,
-                "name":         trimmedName,
-                "about":        trimmedAbout,
-                "picture":      trimmedPicture,
-            ]
-            if let cacheData = try? JSONSerialization.data(withJSONObject: cachePayload) {
-                UserDefaults.standard.set(cacheData, forKey: Self.kind0CachePrefix + pubkey)
-            }
-        }
     }
 
     /// Dispatch a user-authored kind:1 text note to the Rust kernel for

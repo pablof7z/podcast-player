@@ -98,6 +98,25 @@ final class UserIdentityBootstrapTests: XCTestCase {
         XCTAssertEqual(keygenCallCount, 0, "Must not generate a new key when an account already exists.")
     }
 
+    func testIdentityTickAppliesKernelProfileFields() {
+        let pubkey = String(repeating: "a", count: 64)
+
+        identity.applyKernelIdentity(
+            handshake: nil,
+            activeNpub: "npub1test",
+            pubkeyHex: pubkey,
+            isRemoteSigner: false,
+            displayName: "  Alice Example  ",
+            name: " alice ",
+            about: "  Builds shows  ",
+            pictureUrl: " https://example.test/avatar.png ")
+
+        XCTAssertEqual(identity.profileDisplayName, "Alice Example")
+        XCTAssertEqual(identity.profileName, "alice")
+        XCTAssertEqual(identity.profileAbout, "Builds shows")
+        XCTAssertEqual(identity.profilePicture, "https://example.test/avatar.png")
+    }
+
     /// After the auto-keygen fires, a subsequent tick with a real pubkey must
     /// flip `hasIdentity` to true (simulates the kernel round-trip completing).
     func testAutoKeygenFollowedByKernelResponseSetsHasIdentity() {
