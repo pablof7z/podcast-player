@@ -4,18 +4,21 @@ This is the tactical queue for active work, follow-ups, and pending decisions.
 Do not duplicate these items in `WIP.md`; `WIP.md` only records branches and
 worktrees currently in flight.
 
-- **open-search-nostr-result-await (#605).** The `podcast.open_search`
-  action scaffold exists, but current `main` is not wired end-to-end:
-  `AddByURLForm` subscribes `npub`/hex directly via `kernelSubscribeNostr`,
-  rejects NIP-05/nevent with a placeholder error, and `NostrDiscoverForm`
-  only filters already-fetched results. Once NMP #597 lands: route Nostr-facing
-  text input through `open_search`, observe `nostrResults` snapshot changes
-  with a timeout (≈5 s), then fall through to RSS only on
-  `"nostr_not_recognised"`. Extend to `NostrDiscoverForm.swift`,
-  `AddFriendSheet.swift`, TUI `handle_subscribe_input`, and Android
-  text-entry surfaces in the same pass. Owner: whoever picks up #597 integration.
+- **open-search-nostr-result-await (#605).** NMP #597 has landed and iOS
+  `AddByURLForm` now uses the framework `nmp_app_intent_classify` /
+  `nmp_nip21_decode_uri` path for Nostr profile/address inputs, with
+  `nmp_app_intent_dispatch` used to start NIP-05 resolution. Remaining work:
+  observe the async NIP-05/search result projection with a timeout (≈5 s), wire
+  `AddFriendSheet.swift`, TUI `handle_subscribe_input`, and any future Android
+  text-entry subscribe surface through the same NMP intent ABI, and either
+  retire or fully reimplement the legacy `podcast.open_search` compatibility
+  scaffold. Owner: whoever continues #605.
 
-- **nostr-tab-open-search-wire (#605).** Wire the Nostr tab (`NostrDiscoverForm.swift`) to dispatch `open_search` and resolve NIP-05 addresses and nevent IDs entered by the user, so that `AddShowSheet` can route those inputs there end-to-end. Currently `NostrDiscoverForm` only filters already-fetched results; the fire-and-forget `kernelNostrOpenSearch` path in `AddShowSheet` was removed (#612) because it directed users to this unwired surface. When this is implemented: re-add the routing branch in `AddShowSheet` (or let `AddShowSheet` drive `open_search` directly and await results), and remove the "not yet supported" placeholder message.
+- **nostr-tab-open-search-wire (#605).** Wire the Nostr tab
+  (`NostrDiscoverForm.swift`) to dispatch NMP intent/open_search for query
+  submissions and render relay-targeted NIP-50 results. Today the tab still
+  only filters already-fetched NIP-F4 discovery results; Add Show handles
+  direct profile/address refs itself and shows a pending notice for NIP-05.
 
 - **knowledge-ann-index.** `top_k_search` is O(N) linear scan over all embedded chunks (fine for < ~50k chunks). When the corpus exceeds ~50k chunks, replace with an ANN index (e.g. HNSW via `usearch` or `instant-distance`). Slot in `podcast-knowledge::search::top_k_search` call site in `knowledge_search.rs`. <!-- TODO: ANN index when corpus > ~50k chunks -->
 

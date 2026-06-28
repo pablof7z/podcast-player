@@ -75,8 +75,8 @@ data class SetAutoSkipAdsPayload(
  * Route a free-form text input through the kernel's Nostr open-search
  * classifier. Verified against `PodcastAction::OpenSearch { input: String }`.
  *
- * Do NOT dispatch nsec1 private keys — callers must reject those before
- * invoking this payload (mirrors iOS `NostrNpub.looksLikeNsecKey` guard).
+ * Prefer the NMP input-intent classifier before invoking this payload. Do NOT
+ * dispatch nsec1 private keys.
  *
  * Namespace: [PodcastNamespace.PODCAST] ("podcast").
  */

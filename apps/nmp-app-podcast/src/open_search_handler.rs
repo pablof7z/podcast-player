@@ -1,21 +1,9 @@
-//! Open search handler — routes Nostr-facing text input through NMP's
-//! input-intent classifier and dispatch framework.
+//! Legacy podcast-domain open-search guards.
 //!
-//! Issue #605: Move all Nostr protocol detection from native shells into
-//! the kernel via NMP's framework-level APIs. Eliminates ad-hoc bech32
-//! parsing (npub, nprofile, nevent) and NIP-05 resolution in Swift/Kotlin.
-//!
-//! **Blocked on NMP #597:** The new NMP rev (1e1445973, 382 commits ahead of
-//! v0.7.2) exposes `open_search` action, `InputIntent` enum variants, NIP-50
-//! relay targeting, and kind:10007 preference types. This module is a
-//! structural placeholder — implementation awaits those NMP APIs.
-//!
-//! **Current state (Phase 0-1):** Raw Nostr identifier and NIP-05 detection
-//! with placeholder handlers. iOS AddByURLForm and NostrDiscoverForm check
-//! `NostrNpub.looksLikeNostrInput()` to route candidates to `kernelNostrOpenSearch()`,
-//! which dispatches `PodcastAction::OpenSearch` to the kernel.
-
-use serde_json::json;
+//! The NMP v0.8 input-intent ABI (`nmp_app_intent_classify` /
+//! `nmp_app_intent_dispatch`) is the canonical route for native text-entry
+//! surfaces. This module remains only for the older `podcast.open_search`
+//! action, which may still be called by compatibility payload builders.
 
 /// Detect if input looks like a Nostr private key (nsec1 prefix).
 /// These must never be routed to open_search — callers should reject them
