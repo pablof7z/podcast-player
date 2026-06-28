@@ -50,6 +50,33 @@ final class NostrIntentWireTests: XCTestCase {
         XCTAssertEqual(text, .dispatched(.textQuery(requestJSON: "{}")))
     }
 
+    func testResolvedProfileSelectionReturnsDeterministicNewPubkey() {
+        let profiles = [
+            "ff": ResolvedProfile(displayName: "Later", pictureUrl: nil),
+            "aa": ResolvedProfile(displayName: nil, pictureUrl: nil),
+            "bb": ResolvedProfile(displayName: "Existing", pictureUrl: nil)
+        ]
+
+        let selected = NostrResolvedProfileSelection.firstNewPubkey(
+            in: profiles,
+            excluding: ["bb"])
+
+        XCTAssertEqual(selected, "aa")
+    }
+
+    func testResolvedProfileSelectionReturnsNilWhenOnlyExistingRowsRemain() {
+        let profiles = [
+            "aa": ResolvedProfile(displayName: nil, pictureUrl: nil),
+            "bb": ResolvedProfile(displayName: "Existing", pictureUrl: nil)
+        ]
+
+        let selected = NostrResolvedProfileSelection.firstNewPubkey(
+            in: profiles,
+            excluding: ["aa", "bb"])
+
+        XCTAssertNil(selected)
+    }
+
     func testNostrSearchProjectionDecodesSessionHits() throws {
         let data = Data("""
         {"t":"snapshot","v":{"projections":{"nmp.nip50.search.ios-1":{"hits":[{"id":"e1","author":"a1","kind":0,"created_at":1700000001,"content":"{\\"display_name\\":\\"Alice\\",\\"about\\":\\"Builder\\"}","tags":[],"relay_provenance":["wss://relay.example/"],"source":{"Relay":"wss://relay.example/"}}]}}}}
