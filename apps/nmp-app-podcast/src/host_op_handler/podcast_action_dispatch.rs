@@ -266,9 +266,8 @@ impl PodcastHostOpHandler {
                 enabled,
             } => self.handle_set_podcast_transcription_enabled(podcast_id, enabled),
             PodcastAction::OpenSearch { input } => {
-                // Issue #605: Route Nostr-facing text input through NMP input-intent classifier.
-                // For now, this delegates to the placeholder handler; once NMP #597 lands,
-                // the full classifier integrates here.
+                // Compatibility path for older podcast-domain callers. Native
+                // text-entry surfaces should use NMP's intent ABI directly.
                 self.handle_open_search(input)
             }
         }

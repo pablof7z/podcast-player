@@ -64,6 +64,13 @@ char *nmp_app_podcast_npub_from_hex(const char *pubkey_hex);
 // plus its npub representation. Caller frees with `nmp_free_string`.
 char *nmp_app_podcast_parse_pubkey(const char *input);
 
+// NMP input-intent resolver. Classification is side-effect-free; dispatch acts
+// on the top candidate (DirectRef, NIP-05, TextQuery) through the NMP seams.
+// Returned strings are heap-owned by Rust and freed with `nmp_free_string`.
+char *nmp_nip21_decode_uri(const char *input);
+char *nmp_app_intent_classify(void *app, const char *request_json);
+char *nmp_app_intent_dispatch(void *app, const char *request_json, const char *session_id);
+
 // ── ADR-0064 — typed dispatch ─────────────────────────────────────────────
 //
 // `nmp_app_podcast_dispatch_action` is the namespace-keyed entry point for the
