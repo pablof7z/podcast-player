@@ -29,6 +29,13 @@ lmdb-backend = ["nmp-core/lmdb-backend"]
 # graph relay subscriptions use them). Gated deps here are only the test-only
 # build utilities; the relay client is a production dependency.
 headless = ["dep:tempfile", "nmp-core/test-support", "nmp-native-runtime/test-support"]
+# Build the `uniffi-bindgen` binary to regenerate the `PodcastApp` Swift/
+# Kotlin bindings (wave 1 of the UniFFI-facade migration,
+# podcast-player#681 follow-on). NOT in `default` — keeps cold builds out of
+# the CI watchdog budget. Mirrors NMP's own `nmp-uniffi` crate's `bindgen`
+# feature (uniffi 0.29 puts `uniffi_bindgen_main` behind the `cli` feature).
+# Usage: see `ci/check-uniffi-bindings-drift.sh`.
+bindgen = ["uniffi/cli"]
 
 [[bin]]
 name = "headless"
@@ -39,6 +46,11 @@ required-features = ["headless"]
 name = "swift-codegen"
 path = "src/bin/swift_codegen/main.rs"
 # No required-features: the codegen binary uses only std, no crate deps.
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi_bindgen.rs"
+required-features = ["bindgen"]
 
 [dependencies]
 async-trait = "0.1"

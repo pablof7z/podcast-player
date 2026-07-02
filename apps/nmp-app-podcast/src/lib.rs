@@ -30,6 +30,12 @@
 //!   (sleep-timer expiry, end-of-episode policy, retry behaviour) lives in
 //!   per-projection actors under [`player`] et al.
 
+// Wave 1 of the UniFFI-facade migration (podcast-player#681 follow-on):
+// `ffi::uniffi_facade::PodcastApp` is this crate's one UniFFI object. A
+// native app links exactly one UniFFI cdylib, so this is the crate's single
+// `setup_scaffolding!()` call site (nmp-uniffi-support's own doc comment).
+uniffi::setup_scaffolding!();
+
 pub mod action_payload;
 pub(crate) mod ad_skip_handler;
 pub mod agent_handler;

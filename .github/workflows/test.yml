@@ -81,6 +81,31 @@ jobs:
       - name: Verify NmpCore.h matches Rust FFI implementations
         run: bash ci/check-ffi-header-drift.sh
 
+  uniffi-bindings-drift:
+    name: UniFFI bindings drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and git DB
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-uniffi-drift-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-uniffi-drift-
+
+      - name: Verify PodcastApp UniFFI bindings match a fresh uniffi-bindgen run
+        run: bash ci/check-uniffi-bindings-drift.sh
+
   file-size-check:
     name: File size enforcement gate
     runs-on: ubuntu-latest

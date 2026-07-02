@@ -127,6 +127,7 @@ mod transcript_plan;
 mod transcript_report;
 mod transcript_tool_result;
 mod threading_projection;
+pub mod uniffi_facade;
 mod voice_report;
 
 pub use actions::{
@@ -291,5 +292,10 @@ pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use transcript_tool_result::nmp_app_podcast_transcript_tool_result;
 pub use threading_projection::{
     nmp_app_podcast_threading_active_topics, nmp_app_podcast_threading_projection,
+};
+pub use uniffi_facade::{
+    PodcastApp, PodcastCapabilitySink, PodcastDispatchOutcome, PodcastEventShape,
+    PodcastProfileShape, PodcastRefLiveness, PodcastRefNamespace, PodcastRefShape,
+    PodcastUpdateSink,
 };
 pub use voice_report::nmp_app_podcast_voice_report;
