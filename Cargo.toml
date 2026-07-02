@@ -7,34 +7,39 @@ members = [
     "apps/podcast-feeds",
     "apps/podcast-knowledge",
     "apps/podcast-transcripts",
-    "apps/podcast-tui",
 ]
+# podcast-tui still links the deleted nmp-ffi / nmp-defaults C-ABI surface. Its
+# rewire onto the UniFFI facade is Epic A's A8 slice (podcast-player#688).
+# Excluded from the workspace until then so the A0/A1 pin bump resolves cleanly;
+# re-add it to `members` in A8.
+exclude = ["apps/podcast-tui"]
 resolver = "2"
 
-# NMP pin discipline: all NMP crates (workspace deps + nmp-feedback's internal
-# pins) reference the SAME nostr-multi-platform rev so the whole graph compiles
-# exactly one copy of each NMP crate (one `NmpApp` type). When bumping NMP:
-#   1. Bump all 6 nmp-* rev entries below to the new rev.
-#   2. Bump nmp-feedback to a rev that also pins the new NMP rev.
+# NMP pin discipline: every NMP crate references the SAME nostr-multi-platform
+# rev so the whole graph compiles exactly one copy of each NMP crate (one
+# `NmpApp` type). When bumping NMP, bump every `nmp-*` rev entry below together.
 #
-# Current rev 1e1445973 = nmp-v0.8.0 (382 commits ahead of 9df43816)
-# — deleted nmp_app_dispatch_action JSON path; migrated to typed
-# nmp_app_dispatch_action_bytes FlatBuffers path. ActionModule-level
-# decode_payload opt-in required for podcast.* namespaces. See issue #597.
+# Baseline rev 0c06740a5 = current NMP master HEAD (2026-07-02), pinned as a
+# PROVISIONAL baseline because the v1 release train (nostr-multi-platform#2690)
+# has not cut a release tag yet — re-pin to the tagged rev once it lands
+# (nostr-multi-platform#2721 migration note). This baseline is PAST the nmp-ffi
+# deletion (nostr-multi-platform a790c1bf, "Delete nmp-ffi C-ABI crate"):
+# `nmp-ffi`, `nmp-signer-broker`, and `nmp-defaults` no longer exist; the native
+# surface is `nmp-native-runtime` + `nmp-uniffi` + `nmp-substrate` (ADR-0069).
+#
+# `nmp-feedback` is intentionally DROPPED here (was a git dep + a stale local
+# `third-party/nmp-feedback` compat fork). No nmp-feedback rev pins past the
+# nmp-ffi deletion; carrying it would force a second nmp-core copy and require
+# the deleted nmp-ffi crate. Re-integration is deferred until nmp-feedback is
+# migrated onto the UniFFI surface (pablof7z/nmp-feedback#3), per that issue's
+# own resolution. No local shim is carried forward (D4).
 [workspace.dependencies]
-nmp-defaults = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-core = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-ffi = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-signer-broker = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-blossom = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-nip02 = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-nip50 = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-planner = { version = "0.8.0", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1e1445973" }
-nmp-feedback = { git = "https://github.com/pablof7z/nmp-feedback.git", rev = "1e2b0b5e3e023a3d76e2d05db0f91a270811e7d9" }
-
-# Phase 7 compatibility patch: redirect nmp-feedback to a local fork that pins
-# nmp v0.8.0 (1e1445973) and uses nmp_app_dispatch_action_bytes instead of the
-# deleted nmp_app_dispatch_action JSON doorway. Remove once an upstream
-# nmp-feedback commit pins 1e1445973.
-[patch."https://github.com/pablof7z/nmp-feedback.git"]
-nmp-feedback = { path = "third-party/nmp-feedback" }
+nmp-core = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-native-runtime = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-substrate = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-uniffi-support = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-blossom = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-nip02 = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-nip50 = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-planner = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-signer-iface = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::state::{Infra, PodcastAppState};
 
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 use nmp_nip02::ActiveFollowSet;
 
 use super::actions::agent_module::AgentActionModule;
@@ -61,32 +61,38 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AssertUnwindSafe is sound: all pointer null checks happen before this
     // closure is constructed; captured raw ptrs are never observed on panic path.
     let app_mut = unsafe { &mut *app };
-    nmp_defaults::register_defaults(app_mut);
+    // ADR-0069: `nmp_defaults::register_defaults` is deleted. Install the NMP
+    // substrate (routing, blocked-relay lookup, publish resolver, coverage/
+    // NIP-77 interceptors, NIP-11). The full per-crate protocol composition
+    // (nmp_nip02/17/25/50/51/… register calls) is A2 (podcast-player#682); A1
+    // installs the substrate so the crate compiles against master.
+    let _substrate = nmp_substrate::install(app_mut, nmp_substrate::SubstrateConfig::default());
 
     // Wire the BUD-02 Blossom upload action (`nmp.blossom.upload`).
     // D13/D0: Rust owns the full Build → Sign → Transport pipeline.
     // Swift dispatches with a correlation-id and reads the BlobDescriptor
     // from action_results[correlation_id].result on the next push frame.
-    nmp_blossom::register_actions(app_mut);
+    nmp_blossom::register(app_mut, nmp_blossom::Config::default())
+        .expect("nmp-blossom registration must not collide");
 
-    app_mut.register_action(IdentityActionModule);
-    app_mut.register_action(PodcastActionModule);
-    app_mut.register_action(PlayerActionModule);
-    app_mut.register_action(QueueActionModule);
-    app_mut.register_action(ChaptersActionModule);
-    app_mut.register_action(AgentPicksModule);
-    app_mut.register_action(AgentTasksModule);
-    app_mut.register_action(KnowledgeActionModule);
-    app_mut.register_action(MemoryActionModule);
-    app_mut.register_action(ClipActionModule);
-    app_mut.register_action(InboxActionModule);
-    app_mut.register_action(NipF4PublishModule);
-    app_mut.register_action(VoiceActionModule);
-    app_mut.register_action(AgentActionModule);
-    app_mut.register_action(CategorizationModule);
-    app_mut.register_action(SettingsActionModule);
-    app_mut.register_action(SiriActionModule);
-    app_mut.register_action(SocialActionModule);
+    app_mut.register_action(IdentityActionModule).expect("action module registration must not collide");
+    app_mut.register_action(PodcastActionModule).expect("action module registration must not collide");
+    app_mut.register_action(PlayerActionModule).expect("action module registration must not collide");
+    app_mut.register_action(QueueActionModule).expect("action module registration must not collide");
+    app_mut.register_action(ChaptersActionModule).expect("action module registration must not collide");
+    app_mut.register_action(AgentPicksModule).expect("action module registration must not collide");
+    app_mut.register_action(AgentTasksModule).expect("action module registration must not collide");
+    app_mut.register_action(KnowledgeActionModule).expect("action module registration must not collide");
+    app_mut.register_action(MemoryActionModule).expect("action module registration must not collide");
+    app_mut.register_action(ClipActionModule).expect("action module registration must not collide");
+    app_mut.register_action(InboxActionModule).expect("action module registration must not collide");
+    app_mut.register_action(NipF4PublishModule).expect("action module registration must not collide");
+    app_mut.register_action(VoiceActionModule).expect("action module registration must not collide");
+    app_mut.register_action(AgentActionModule).expect("action module registration must not collide");
+    app_mut.register_action(CategorizationModule).expect("action module registration must not collide");
+    app_mut.register_action(SettingsActionModule).expect("action module registration must not collide");
+    app_mut.register_action(SiriActionModule).expect("action module registration must not collide");
+    app_mut.register_action(SocialActionModule).expect("action module registration must not collide");
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -127,19 +133,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let rev = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1));
     let snapshot_signal = SnapshotUpdateSignal::new(rev.clone(), app_ref.actor_sender());
 
-    // Step 16: feedback runtime constructed here (needs the snapshot-bump hook
-    // that captures the live signal) and injected into PodcastAppState.  The
-    // observer and relay-seed calls below use app_state.feedback.
-    let feedback_events_cache: nmp_feedback::FeedbackEventCache = Arc::new(Mutex::new(Vec::new()));
-    let feedback_config =
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE);
-    let feedback_runtime =
-        nmp_feedback::FeedbackRuntime::new(feedback_config, feedback_events_cache, rev.clone())
-            .with_snapshot_bump(Arc::new({
-                let snapshot_signal = snapshot_signal.clone();
-                move || snapshot_signal.bump()
-            }));
+    // Feedback runtime DROPPED (nmp-feedback#3 / podcast-player#597): the
+    // dependency has no rev past the nmp-ffi deletion. Re-integration (its
+    // construction, relay seed, and observer) is deferred to a follow-up slice.
 
     // Steps 0-N+1 — composed state root.
     // `Infra` bundles rev + signal + runtime.  `PodcastAppState::new`
@@ -176,7 +172,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app_state_infra.clone(),
         store.clone(),
         identity.clone(),
-        feedback_runtime,
     );
     // Step 12: Replace the default null-app VoiceSubstate with one that holds
     // the live `app` pointer so `VoiceConversationManager` can dispatch
@@ -297,11 +292,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             "both,indexer".to_string(),
         ),
         ("wss://purplepag.es".to_string(), "indexer".to_string()),
-        // In-app feedback source relay. Seeded read-only so NMP opens the
-        // connection used by the relay-pinned feedback subscription; publish
-        // targets the same relay explicitly through `nmp-feedback`.
-        // Step 16: feedback is now in app_state.feedback.
-        app_state.feedback.config().relay_seed(),
+        // The in-app feedback source relay seed was dropped with nmp-feedback
+        // (nmp-feedback#3); re-added when feedback re-integration lands.
     ]);
 
     // Steps 8-10: comments_cache, viewed_comments_episode_id, nostr_results,
@@ -429,12 +421,8 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         ),
     ));
 
-    // In-app feedback observer. The reusable module owns event filtering,
-    // bounded caching, and snapshot rev bumps. Unlike agent-notes, it does NOT
-    // self-filter — the Feedback UI shows the user's own threads.
-    // Step 16: feedback is now in app_state.feedback.
-    let _feedback_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(app_state.feedback.observer()));
+    // In-app feedback observer DROPPED with nmp-feedback (nmp-feedback#3);
+    // re-added when feedback re-integration lands.
 
     // Step N+1: PodcastHandle is now the minimal 2-field shell:
     //   app  — raw *mut NmpApp for capability dispatch

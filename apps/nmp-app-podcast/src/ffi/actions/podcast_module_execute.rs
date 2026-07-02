@@ -50,7 +50,8 @@ pub struct EpisodeTriagePatch {
 pub struct PodcastActionModule;
 
 impl ActionModule for PodcastActionModule {
-    const NAMESPACE: &'static str = "podcast";
+    const NAMESPACE: nmp_core::substrate::DeclaredActionNamespace =
+        nmp_core::substrate::DeclaredActionNamespace::app_owned("podcast");
 
     type Action = PodcastAction;
 
@@ -60,6 +61,7 @@ impl ActionModule for PodcastActionModule {
 
     fn execute(
         &self,
+        _ctx: &nmp_core::substrate::ActionContext,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),
@@ -88,7 +90,7 @@ impl ActionModule for PodcastActionModule {
             return Ok(());
         }
 
-        crate::ffi::actions::dispatch_host_op(Self::NAMESPACE, &action, correlation_id, send)
+        crate::ffi::actions::dispatch_host_op(Self::NAMESPACE.as_str(), &action, correlation_id, send)
     }
 
     fn decode_payload(

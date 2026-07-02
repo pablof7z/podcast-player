@@ -37,7 +37,7 @@ use crate::ffi::projections::CommentSummary;
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::{identity::IdentityStore, PodcastStore};
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 
 // ── subscribe helpers ────────────────────────────────────────────────────────
 

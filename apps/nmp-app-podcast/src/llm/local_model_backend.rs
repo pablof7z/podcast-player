@@ -9,8 +9,6 @@ use async_trait::async_trait;
 use std::ffi::{c_void, CStr, CString};
 use std::sync::{Mutex, OnceLock};
 
-use nmp_ffi;
-
 use super::backend::{LlmBackend, LlmError, LlmRequest};
 
 /// FFI callback function type: takes context pointer and JSON prompt (C string),
@@ -103,15 +101,18 @@ impl LlmBackend for LocalModelBackend {
             Ok(s) => s.to_owned(),
             Err(_) => {
                 // Free the pointer before returning error.
-                unsafe { nmp_ffi::nmp_free_string(response_ptr) };
+                unsafe { drop(CString::from_raw(response_ptr)) };
                 return Err(LlmError::Unavailable(
                     "Local model response not valid UTF-8".into(),
                 ));
             }
         };
 
-        // Free the returned C string via the Rust helper.
-        unsafe { nmp_ffi::nmp_free_string(response_ptr) };
+        // Reclaim the Rust-allocated C string the local-LLM callback returned.
+        // The deleted nmp-ffi `nmp_free_string` helper did this; the provider-
+        // transport lane (A6, podcast-player#686 / nostr-multi-platform#2726)
+        // owns the final shape of this callback ABI.
+        unsafe { drop(CString::from_raw(response_ptr)) };
 
         // Parse the response JSON: {"text":..} or {"error":..}
         match serde_json::from_str::<serde_json::Value>(&response_cstr) {

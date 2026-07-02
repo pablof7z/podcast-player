@@ -35,7 +35,7 @@
 
 use std::ffi::CString;
 
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 use nmp_planner::interest::LogicalInterest;
 
 /// Register a per-podcast secret key in the kernel's identity roster without
@@ -47,17 +47,17 @@ use nmp_planner::interest::LogicalInterest;
 /// BEFORE the matching `publish_raw_with_signer_via_nmp` / `blossom_upload_via_nmp`
 /// — the FIFO actor queue guarantees the signer is present when the sign-time
 /// lookup fires. No-op on a null app (unit tests / pre-login).
-pub(crate) fn register_podcast_signer_in_kernel(app: *mut nmp_ffi::NmpApp, secret_hex: &str) {
+pub(crate) fn register_podcast_signer_in_kernel(app: *mut nmp_native_runtime::NmpApp, secret_hex: &str) {
     if app.is_null() {
         return;
     }
-    // `nmp_app_signin_nsec` accepts either a bech32 `nsec1…` OR a raw 64-char
-    // hex string — `parse_secret` in nmp-core tries both forms. We pass the
-    // hex directly so no bech32 encoding is needed here.
-    let Ok(secret_c) = CString::new(secret_hex) else {
-        return;
-    };
-    nmp_ffi::nmp_app_signin_nsec(app, secret_c.as_ptr(), 0);
+    // `add_signer` accepts either a bech32 `nsec1…` OR a raw 64-char hex string
+    // — `parse_secret` in nmp-core tries both forms. We pass the hex directly.
+    // SAFETY: `app` is null-checked above; caller guarantees it is a live handle.
+    unsafe { &*app }.add_signer(
+        nmp_core::SignerSource::LocalNsec(zeroize::Zeroizing::new(secret_hex.to_string())),
+        false,
+    );
 }
 
 /// Register the app-owned local identity as NMP's ACTIVE signer.
@@ -66,25 +66,28 @@ pub(crate) fn register_podcast_signer_in_kernel(app: *mut nmp_ffi::NmpApp, secre
 /// `active_account` projection. NMP publish commands sign through NMP-core's
 /// active signer roster, so every successful app identity import/generate/load
 /// must also register that same secret here with `make_active=1`.
-pub(crate) fn activate_local_signer_in_kernel(app: *mut nmp_ffi::NmpApp, secret_hex: &str) {
+pub(crate) fn activate_local_signer_in_kernel(app: *mut nmp_native_runtime::NmpApp, secret_hex: &str) {
     if app.is_null() {
         return;
     }
-    let Ok(secret_c) = CString::new(secret_hex) else {
-        return;
-    };
-    nmp_ffi::nmp_app_signin_nsec(app, secret_c.as_ptr(), 1);
+    // SAFETY: `app` is null-checked above; caller guarantees it is a live handle.
+    unsafe { &*app }.add_signer(
+        nmp_core::SignerSource::LocalNsec(zeroize::Zeroizing::new(secret_hex.to_string())),
+        true,
+    );
 }
 
 /// Remove an app-owned local account from NMP-core's signer roster.
-pub(crate) fn remove_account_from_kernel(app: *mut nmp_ffi::NmpApp, pubkey_hex: &str) {
+pub(crate) fn remove_account_from_kernel(app: *mut nmp_native_runtime::NmpApp, pubkey_hex: &str) {
     if app.is_null() {
         return;
     }
-    let Ok(pubkey_c) = CString::new(pubkey_hex) else {
-        return;
-    };
-    nmp_ffi::nmp_app_remove_account(app, pubkey_c.as_ptr());
+    // A5 (podcast-player#685): the deleted `nmp_app_remove_account` keyed on the
+    // pubkey hex; the native-runtime handle keys on the identity id. Podcast's
+    // local-key identity id is the pubkey hex, so they coincide today — the
+    // signer rewire slice revisits this if the identity-id scheme diverges.
+    // SAFETY: `app` is null-checked above; caller guarantees it is a live handle.
+    unsafe { &*app }.remove_account(pubkey_hex.to_string());
 }
 
 /// Extract the app's configured relays filtered to write-capable roles.
@@ -119,7 +122,7 @@ pub(crate) fn write_relay_urls(app: *mut NmpApp) -> Vec<String> {
 ///
 /// Returns `"queued"` (async) or `"signed"` (null app).
 pub(crate) fn publish_raw_with_signer_via_nmp(
-    app: *mut nmp_ffi::NmpApp,
+    app: *mut nmp_native_runtime::NmpApp,
     kind: u32,
     tags: &[Vec<String>],
     content: &str,
@@ -152,7 +155,7 @@ pub(crate) fn publish_raw_with_signer_via_nmp(
 ///
 /// Returns `"queued"` (async) or `"signed"` (null app).
 pub(crate) fn publish_raw_with_signer_to_relays_via_nmp(
-    app: *mut nmp_ffi::NmpApp,
+    app: *mut nmp_native_runtime::NmpApp,
     kind: u32,
     tags: &[Vec<String>],
     content: &str,
@@ -189,7 +192,7 @@ pub(crate) fn publish_raw_with_signer_to_relays_via_nmp(
 /// descriptor from the `action_results` snapshot slot, or `None` when `app`
 /// is null (unit tests / pre-login) or the dispatch was rejected.
 pub(crate) fn blossom_upload_via_nmp(
-    app: *mut nmp_ffi::NmpApp,
+    app: *mut nmp_native_runtime::NmpApp,
     file_path: &str,
     servers: &[String],
     signer_pubkey_hex: &str,
@@ -219,7 +222,7 @@ pub(crate) fn blossom_upload_via_nmp(
 /// For per-podcast keys use [`publish_raw_with_signer_via_nmp`] instead.
 /// Returns `"queued"` or `"signed"` (null app).
 pub(crate) fn publish_raw_via_nmp(
-    app: *mut nmp_ffi::NmpApp,
+    app: *mut nmp_native_runtime::NmpApp,
     kind: u32,
     tags: &[Vec<String>],
     content: &str,
@@ -245,7 +248,7 @@ pub(crate) fn publish_raw_via_nmp(
 /// NIP-65 outbox. No secret bytes in app code; the host never builds the event.
 /// Returns `"queued"` or `"signed"` (null app).
 pub(crate) fn publish_profile_via_nmp(
-    app: *mut nmp_ffi::NmpApp,
+    app: *mut nmp_native_runtime::NmpApp,
     fields: serde_json::Map<String, serde_json::Value>,
 ) -> &'static str {
     if app.is_null() {
@@ -269,7 +272,7 @@ pub(crate) fn publish_profile_via_nmp(
 ///
 /// Returns `true` when the action was accepted (a `correlation_id` was
 /// minted), `false` on a null app (tests / pre-login) or a rejected action.
-pub(crate) fn self_dispatch_publish(app: *mut nmp_ffi::NmpApp, body: serde_json::Value) -> bool {
+pub(crate) fn self_dispatch_publish(app: *mut nmp_native_runtime::NmpApp, body: serde_json::Value) -> bool {
     if app.is_null() {
         return false;
     }
@@ -279,7 +282,7 @@ pub(crate) fn self_dispatch_publish(app: *mut nmp_ffi::NmpApp, body: serde_json:
 
 /// Push a [`LogicalInterest`] into NMP's relay pool. The kernel opens the
 /// subscription through its own connections — no iOS WebSocket ever opened.
-pub(crate) fn push_interest_via_nmp(app: *mut nmp_ffi::NmpApp, interest: LogicalInterest) {
+pub(crate) fn push_interest_via_nmp(app: *mut nmp_native_runtime::NmpApp, interest: LogicalInterest) {
     if app.is_null() {
         return;
     }
@@ -287,7 +290,7 @@ pub(crate) fn push_interest_via_nmp(app: *mut nmp_ffi::NmpApp, interest: Logical
     unsafe { &*app }.push_interest(interest);
 }
 
-fn dispatch_nmp_publish(app: *mut nmp_ffi::NmpApp, body: serde_json::Value) -> &'static str {
+fn dispatch_nmp_publish(app: *mut nmp_native_runtime::NmpApp, body: serde_json::Value) -> &'static str {
     let _ = crate::dispatch_bytes::dispatch_action_bytes_for(app, "nmp.publish", &body.to_string());
     "queued"
 }

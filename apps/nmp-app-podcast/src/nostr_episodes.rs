@@ -42,7 +42,7 @@ use podcast_core::types::podcast::PodcastId;
 use crate::nmp_dispatch::push_interest_via_nmp;
 use crate::snapshot_signal::SnapshotUpdateSignal;
 use crate::store::PodcastStore;
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 
 /// Guards one-time lazy registration of the [`NostrEpisodesObserver`].
 ///

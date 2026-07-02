@@ -1,8 +1,8 @@
 //! `nmp-app-podcast` — Podcast per-app glue.
 //!
-//! Composes `nmp-core` (the kernel substrate + event observer slot) with
-//! `nmp-defaults` (the canonical NMP composition root) to surface podcast
-//! state over a static-lib FFI for the iOS shell.
+//! Composes `nmp-core` (the kernel substrate + event observer slot) with the
+//! `nmp-substrate` protocol installers (ADR-0069, replacing the deleted
+//! `nmp-defaults` composition root) to surface podcast state for the iOS shell.
 //!
 //! ## Wiring
 //!
@@ -10,11 +10,14 @@
 //! `nmp-core`, the NIP-46 signer broker, and the Podcast projection in one
 //! Rust archive gives the process exactly one copy of `nmp-core` static state.
 //!
-//! The shell calls `nmp_signer_broker_init` (from `nmp-ffi`) once after `nmp_app_new`, then
-//! calls [`ffi::nmp_app_podcast_register`]. The registration:
+//! The shell constructs the `nmp-native-runtime` `NmpApp` handle over UniFFI,
+//! then calls [`ffi::nmp_app_podcast_register`]. The registration:
 //!
-//! 1. Wires the canonical NMP defaults via `nmp_defaults::register_defaults`.
+//! 1. Installs the NMP substrate + protocol modules (`nmp_substrate::install`).
 //! 2. Returns an opaque handle for later snapshots / unregister.
+//!
+//! Full UniFFI lifecycle + facade wiring lands in Epic A's A6 slice
+//! (podcast-player#686); A1 gets this crate compiling against master.
 //!
 //! On each render tick the shell calls [`ffi::nmp_app_podcast_snapshot`],
 //! decodes the JSON, and renders the current podcast state.
@@ -153,10 +156,12 @@ pub use ffi::{
     nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
     nmp_app_podcast_voice_report, PodcastHandle,
 };
-pub use nmp_ffi::{
-    nmp_app_cancel_bunker_handshake, nmp_app_nostrconnect_uri, nmp_free_string,
-    nmp_signer_broker_init,
-};
+// The NIP-46 bunker / nostrconnect / signer-broker-init entry points and the
+// C-string free helper were re-exported from the deleted `nmp-ffi` C-ABI crate
+// for the Swift shell to link. On the UniFFI surface these are methods on the
+// `nmp-native-runtime` `NmpApp` handle (`init_signer_broker`, `nostrconnect_uri`,
+// `cancel_bunker_handshake`); UniFFI owns string memory (no manual free). The
+// shell rewires onto them in Epic A's A6/A7 slices (podcast-player#686 / #687).
 pub use player::{PlayerActor, PlayerState};
 pub use queue::PlaybackQueue;
 

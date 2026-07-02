@@ -3,7 +3,7 @@ name = "nmp-app-podcast"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Per-app Podcast glue. Owns the kernel composition root, wires nmp-defaults defaults, and surfaces the projected state over a static-lib FFI for the iOS shell."
+description = "Per-app Podcast glue. Owns the kernel composition root over the UniFFI nmp-native-runtime surface, and projects state for the iOS shell."
 
 [lib]
 name = "nmp_app_podcast"
@@ -28,7 +28,7 @@ lmdb-backend = ["nmp-core/lmdb-backend"]
 # tokio-tungstenite and futures-util are now non-optional (production social
 # graph relay subscriptions use them). Gated deps here are only the test-only
 # build utilities; the relay client is a production dependency.
-headless = ["dep:tempfile", "nmp-core/test-support", "nmp-ffi/test-support"]
+headless = ["dep:tempfile", "nmp-core/test-support", "nmp-native-runtime/test-support"]
 
 [[bin]]
 name = "headless"
@@ -56,29 +56,26 @@ tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 futures-util = { version = "0.3" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 nmp-core = { workspace = true }
-# `nmp-ffi` owns the `NmpApp` C-ABI handle. Podcast's
-# `nmp_app_podcast_register` takes `*mut NmpApp`; the per-app crate names
-# the handle + FFI symbols (`nmp_app_dispatch_action`, etc.) through this
-# dep.
-# `external-signer` (ADR-0048) adds the NIP-55 Amber driver: the
-# `nmp_app_signin_nip55` / `nmp_app_deliver_external_signer_response` /
-# `nmp_external_signer_init` C-ABI symbols the Android JNI shim calls. Rides the
-# existing capability socket (no new FFI primitive); kept distinct from
-# `signer-broker` so the NIP-46 relay-broker graph is not pulled in twice.
-nmp-ffi = { workspace = true, features = ["signer-broker", "external-signer"] }
-nmp-signer-broker = { workspace = true }
-nmp-feedback = { workspace = true }
+# UniFFI native surface (replaces the deleted `nmp-ffi` C-ABI crate, ADR-0069).
+# `nmp-native-runtime` owns the `NmpApp` handle (a plain Rust struct, no longer a
+# `*mut NmpApp` C type) + lifecycle + `dispatch_action_bytes_typed`.
+# `signer-broker` glues NIP-46 bunker/nostrconnect (replaces `nmp-signer-broker`);
+# `external-signer` (ADR-0048) adds the NIP-55 Amber driver.
+nmp-native-runtime = { workspace = true, features = ["signer-broker", "external-signer"] }
+# Shared Rust-side UniFFI mechanics (update sink, capability callback, dispatch)
+# the facade delegates to — used by the app's FFI seam (A6 builds the full facade).
+nmp-uniffi-support = { workspace = true }
+# Protocol-installer substrate (`nmp_substrate::install`) — replaces the deleted
+# `nmp_defaults::register_defaults` composition root (ADR-0069). Full per-crate
+# `register_*` composition lands in A2 (podcast-player#682).
+nmp-substrate = { workspace = true }
+# NIP-55 external-signer permission vocabulary (`Nip55Permission`).
+nmp-signer-iface = { workspace = true }
 # NIP-02 reactive follow-list projection + ActiveFollowSet trust-gate predicate.
-# Already transitive via nmp-defaults; listed explicitly so social_handler.rs
-# can import FollowListProjection and ActiveFollowSet (D11 — single door).
+# Listed explicitly so social_handler.rs can import FollowListProjection and
+# ActiveFollowSet (D11 — single door).
 nmp-nip02 = { workspace = true }
 nmp-nip50 = { workspace = true }
-# Canonical NMP composition root. One call wires the default action modules
-# (NIP-02 / NIP-17 / NIP-57 / NIP-65), the kind:10050 ingest parser, the
-# production routing substrate, and the DM-inbox + zap-receipts runtime
-# controllers. Podcast's `nmp_app_podcast_register` calls `register_defaults`
-# once at app init instead of duplicating the boilerplate.
-nmp-defaults = { workspace = true }
 # Subscription planner (direct dep for InterestId/LogicalInterest/etc.).
 # nmp-core no longer re-exports the planner facade (#1608); external callers
 # depend on nmp-planner directly.
@@ -141,7 +138,7 @@ base64 = "0.22"
 # Test-support gates expose `nmp_app_new` / `nmp_app_free` so FFI smoke tests
 # can spin up a real `NmpApp` rather than mocking the slot.
 nmp-core = { workspace = true, features = ["test-support"] }
-nmp-ffi = { workspace = true, features = ["test-support"] }
+nmp-native-runtime = { workspace = true, features = ["test-support"] }
 # Temporary directory support for PodcastKeyStore and identity store round-trip tests.
 tempfile = "3"
 

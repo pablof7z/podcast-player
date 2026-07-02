@@ -187,7 +187,8 @@ pub enum SettingsAction {
 pub struct SettingsActionModule;
 
 impl ActionModule for SettingsActionModule {
-    const NAMESPACE: &'static str = "podcast.settings";
+    const NAMESPACE: nmp_core::substrate::DeclaredActionNamespace =
+        nmp_core::substrate::DeclaredActionNamespace::app_owned("podcast.settings");
 
     type Action = SettingsAction;
 
@@ -197,6 +198,7 @@ impl ActionModule for SettingsActionModule {
 
     fn execute(
         &self,
+        _ctx: &nmp_core::substrate::ActionContext,
         action: Self::Action,
         correlation_id: &str,
         send: &dyn Fn(ActorCommand),
@@ -233,7 +235,7 @@ impl ActionModule for SettingsActionModule {
             _ => {}
         }
 
-        crate::ffi::actions::dispatch_host_op(Self::NAMESPACE, &action, correlation_id, send)
+        crate::ffi::actions::dispatch_host_op(Self::NAMESPACE.as_str(), &action, correlation_id, send)
     }
 
     fn decode_payload(

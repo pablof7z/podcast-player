@@ -161,7 +161,7 @@ fn make_typed(schema_id: &str, payload: serde_json::Value) -> TypedProjectionDat
 ///  3. If changed AND payload non-empty → emit full payload, advance last_emitted.
 ///  4. If changed AND payload empty/None → emit tombstone, advance last_emitted.
 pub fn register_domain_projections(
-    app_ref: &nmp_ffi::NmpApp,
+    app_ref: &nmp_native_runtime::NmpApp,
     handle: &Arc<PodcastHandle>,
 ) {
     let domain_revs = Arc::clone(&handle.state.infra.domain_revs);

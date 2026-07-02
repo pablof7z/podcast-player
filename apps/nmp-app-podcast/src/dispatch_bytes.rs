@@ -16,7 +16,7 @@ use serde_json::Value;
 
 use nmp_core::dispatch_envelope::{encode_dispatch_envelope, DISPATCH_ENVELOPE_SCHEMA_VERSION};
 use nmp_core::substrate::ActionPayload;
-use nmp_ffi::{nmp_app_dispatch_action_bytes, nmp_free_string, NmpApp};
+use nmp_native_runtime::{dispatch_action_bytes_typed, NmpApp};
 
 /// Process-local correlation-id source.
 ///
@@ -104,36 +104,14 @@ pub fn dispatch_action_bytes_for(
         &payload,
     );
 
-    // SAFETY: envelope is valid bytes produced by encode_dispatch_envelope,
-    // app is non-null, correlation_id is a valid C string.
-    let result_ptr = unsafe { nmp_app_dispatch_action_bytes(app, envelope.as_ptr(), envelope.len()) };
+    // SAFETY: `app` is null-checked above; the caller guarantees it is a live
+    // `nmp-native-runtime` handle. The typed byte doorway is fail-closed: a
+    // malformed envelope / unknown namespace / rejection surfaces as
+    // `DispatchOutcome::error`, never a crash.
+    let outcome = dispatch_action_bytes_typed(unsafe { &*app }, &envelope);
 
-    if result_ptr.is_null() {
-        return Err("kernel rejected the action".to_string());
+    if let Some(err) = outcome.error {
+        return Err(err);
     }
-
-    // SAFETY: result_ptr is from the kernel's malloc; we take ownership via CString.
-    let result_json = unsafe {
-        let c_str = std::ffi::CStr::from_ptr(result_ptr as *const std::os::raw::c_char);
-        c_str.to_string_lossy().to_string()
-    };
-
-    // SAFETY: result_ptr is heap-owned from the kernel; free it.
-    unsafe {
-        nmp_free_string(result_ptr);
-    }
-
-    // Parse the returned JSON to extract correlation_id or error
-    match serde_json::from_str::<Value>(&result_json) {
-        Ok(Value::Object(map)) => {
-            if let Some(Value::String(err)) = map.get("error") {
-                Err(err.clone())
-            } else if let Some(Value::String(id)) = map.get("correlation_id") {
-                Ok(id.clone())
-            } else {
-                Ok(correlation_id)
-            }
-        }
-        _ => Ok(correlation_id),
-    }
+    Ok(outcome.correlation_id.unwrap_or(correlation_id))
 }

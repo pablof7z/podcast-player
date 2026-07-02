@@ -56,7 +56,7 @@ use crate::store::approved_peer_store::ApprovedPeerStore;
 use crate::store::identity::IdentityStore;
 use crate::store::outbound_turn_cache::OutboundTurnCache;
 use crate::store::PodcastStore;
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 use nmp_nip02::ActiveFollowSet;
 use tokio::runtime::Runtime;
 

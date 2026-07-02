@@ -223,23 +223,12 @@ impl PodcastHostOpHandler {
                     )
                 }
             }
-            // Step 16: feedback is now in state.feedback.
-            PodcastAction::FetchFeedback => self.state.feedback.fetch(self.app).as_json(),
-            PodcastAction::PublishFeedback {
-                category,
-                content,
-                parent_event_id,
-                reply_to_pubkey,
-            } => self
-                .state.feedback
-                .publish(
-                    self.app,
-                    &category,
-                    &content,
-                    parent_event_id.as_deref(),
-                    reply_to_pubkey.as_deref(),
-                )
-                .as_json(),
+            // Feedback dropped with nmp-feedback (nmp-feedback#3 / podcast-player#597);
+            // both actions fail-closed until the re-integration slice restores them.
+            PodcastAction::FetchFeedback | PodcastAction::PublishFeedback { .. } => {
+                r#"{"error":"feedback temporarily unavailable (nmp-feedback re-integration pending)"}"#
+                    .to_string()
+            }
             PodcastAction::SubscribeNostr {
                 author_pubkey_hex,
                 show_title,
