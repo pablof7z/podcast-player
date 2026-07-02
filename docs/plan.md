@@ -14,6 +14,7 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 | TUI live agent validation with Ollama Cloud. | Active | `docs/plan/tui-agent-live-validation.md` |
 | Shared LLM provider transport and typed task intents. | Active | `docs/plan/shared-llm-task-architecture.md` |
 | Optimistic subscribe + async HTTP capability (instant subscribe, off-thread feed hydration). | Landed | `docs/plan/optimistic-subscribe-async-http.md` |
+| Epic A — migrate onto NMP master (UniFFI facade + ADR-0069). | P0 | `docs/plan/issue-597.md` |
 
 ## Planning Files
 
@@ -27,12 +28,13 @@ Detailed implementation plans live under `docs/plan/` and are linked from this f
 - `docs/plan/tui-agent-live-validation.md` - live tmux scenario inventory and validation log for agentic TUI workflows.
 - `docs/plan/shared-llm-task-architecture.md` - provider transport, model routing, and typed task-intent ownership contract across platforms.
 - `docs/plan/issue-605.md` - Nostr input routing and NMP open-search migration plan.
+- `docs/plan/issue-597.md` - Epic A: NMP master / UniFFI facade migration target-state and pointers (tactical tracking is in GitHub Issues #597, #680-#688).
 
 ## Active State
 
 | Area | Status |
 |---|---|
-| NMP dependency pin | `0.7.2` crates are pinned to rev `9df43816da11b19b73ad98d9ff53bbaeff3b700d` (nmp-v0.7.2 + ADR-0055 Rung-1 publish_ver oracle fix, PR #510) in `Cargo.toml` as ordinary git deps. `nmp-blossom` is un-parked upstream — a first-class `[workspace].members` crate of the NMP repo — so the prior `vendor/nmp-blossom` workaround (and its `[patch]` redirect) was deleted and `nmp-blossom` resolves directly via git. `cargo tree` shows exactly one `nmp-core` v0.7.2. |
+| NMP dependency pin | Pinned to NMP `origin/master` tip rev `ae650cf0864f6e335ad02286919e17b1ca62f3e2` (nmp-v0.8.4) in `Cargo.toml` as ordinary git deps — provisional until pablof7z/nostr-multi-platform#2690 cuts the v1 release-train tag (see `docs/plan/issue-597.md`, Epic A #597). `nmp-ffi`/`nmp-signer-broker`/`nmp-defaults` are deleted upstream and intentionally absent from the pin set as of A0 (#680); `apps/nmp-app-podcast` and `apps/podcast-tui` do not compile until A1 (#681) rewires them onto `nmp-native-runtime`/`nmp-uniffi`/`nmp-substrate`. `nmp-feedback` is also dropped pending pablof7z/nmp-feedback#3. `cargo metadata` shows exactly one copy of each `nmp-*` crate. |
 | Feature parity | Not achieved — many merged PRs are scaffolds or heuristics, not full original-app behavior. |
 | Legacy app deletion | Blocked — `App/Sources/` remains the reference implementation until all parity exits pass. |
 | Parked iOS shell | Deleted — there is no `ios/` tree on current `main`; remaining parity debt lives in `App/Sources/` Swift policy/fallback code and the cross-platform surfaces listed in `docs/BACKLOG.md`. |
