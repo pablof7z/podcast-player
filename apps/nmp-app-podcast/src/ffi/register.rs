@@ -331,8 +331,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // dead-duplicate handler Arc from PodcastHostOpHandler.nostr_results).
     // Step N+1: observers use infra clones from app_state rather than separate locals.
     //
-    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
-    // fidelity. `from_kinds` declares a Global, kind:10154-only shape (no
+    // Observed-projection shape (mirrors this observer's prior interest scope): `from_kinds` declares a Global, kind:10154-only shape (no
     // author filter — discovery is a browse across all published shows),
     // mirroring the `nostr_discovery_interest()` sweep this observer already
     // consumes historical shows from.
@@ -355,8 +354,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // Step 8: observer shares cache from state.comments.cache (removes the
     // dead-duplicate handler Arc from PodcastHostOpHandler.comments_cache).
     //
-    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
-    // fidelity. `from_kinds` declares a Global, kind:1111-only shape (comments
+    // Observed-projection shape (mirrors this observer's prior interest scope): `from_kinds` declares a Global, kind:1111-only shape (comments
     // are anchored by episode `#i` tag, not by account) — the observer itself
     // already narrows to the anchor it cares about per inbound event.
     let _comments_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
@@ -400,8 +398,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // Clone as the concrete type, then let the fn-arg position coerce
     // Arc<ActiveFollowSet> → Arc<dyn ObservedProjectionSink> (unsizing).
     //
-    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
-    // fidelity. `from_kinds` declares an ActiveAccount-scoped, kind:3-only
+    // Observed-projection shape (mirrors this observer's prior interest scope): `from_kinds` declares an ActiveAccount-scoped, kind:3-only
     // shape — `ActiveFollowSet::on_kernel_event` itself gates on
     // `event.author == active account`, so an unrelated kind:3 is a cheap
     // no-op rather than a filter miss.
@@ -429,8 +426,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // (replaces the deleted `ContactsLookup` observer-local cache — see
     // `active_follow_set` construction above for the same replacement).
     //
-    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
-    // fidelity. `from_kinds` declares the same ActiveAccount-scoped kind:3
+    // Observed-projection shape (mirrors this observer's prior interest scope): `from_kinds` declares the same ActiveAccount-scoped kind:3
     // shape as `active_follow_set` above.
     let _follow_list_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
         std::sync::Arc::new(
@@ -459,8 +455,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // observer calls `agent_note_responder::try_respond_to_trusted_note`, which
     // spawns an async LLM-reply + publish task off the actor thread (D8).
     //
-    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
-    // fidelity. `from_kinds` declares a Global, kind:1-only shape — matching
+    // Observed-projection shape (mirrors this observer's prior interest scope): `from_kinds` declares a Global, kind:1-only shape — matching
     // `agent_notes_interest`'s own `InterestScope::Global` (the `#p`-tag
     // filter on the active pubkey is baked into the `LogicalInterest` that
     // `handle_fetch_agent_notes` pushes, not into the account-switch scope).

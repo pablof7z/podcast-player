@@ -124,7 +124,12 @@ pub(super) fn run_domain_projections_only(app_ref: &nmp_native_runtime::NmpApp) 
     app_ref
         .run_typed_snapshot_projections()
         .into_iter()
-        .filter(|p| p.schema_id != "claimed_event_embeds")
+        // Exclude the `nmp-native-runtime` built-in ref/embed sidecar. It is
+        // runtime infrastructure (the derived `refs.event.envelopes` projection,
+        // #1283/ADR-0072), not a podcast domain projection — the same intent as
+        // the pre-master-bump filter, which excluded its old `claimed_event_embeds`
+        // schema id before it was renamed on NMP master.
+        .filter(|p| p.schema_id != "refs.event.envelopes")
         .collect()
 }
 
@@ -375,12 +380,13 @@ fn domain_projections_emit_valid_json_with_rev_field() {
     // With the tombstone contract, downloads/identity/widget always emit on first
     // run (tombstone if empty, full payload if populated). settings, playback,
     // library, and misc must also be present.
-    // Filter claimed_event_embeds: it's an nmp-ffi sidecar (ac7e307e) that emits
+    // Filter refs.event.envelopes: it's the nmp-native-runtime built-in embed
+    // sidecar (#1283/ADR-0072, formerly `claimed_event_embeds`) that emits
     // FlatBuffer bytes (not JSON), so including it in the JSON-validity loop below
     // would fail. Domain-projection tests only care about podcast.* sidecars.
     let by_key: std::collections::HashMap<String, &TypedProjectionData> = projections
         .iter()
-        .filter(|p| p.schema_id != "claimed_event_embeds")
+        .filter(|p| p.schema_id != "refs.event.envelopes")
         .map(|p| (p.schema_id.clone(), p))
         .collect();
 

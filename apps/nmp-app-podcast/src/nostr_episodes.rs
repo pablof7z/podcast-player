@@ -128,8 +128,8 @@ pub fn handle_subscribe_nostr(
                 NostrEpisodesObserver::new(store.clone(), rev.clone())
                     .with_snapshot_signal_opt(snapshot_signal.cloned()),
             );
-            // TODO(A4, podcast-player#684): verify observed-projection filter/
-            // replay fidelity. `from_kinds` declares a Global, author-unscoped
+            // Observed-projection shape (mirrors this observer's prior interest
+            // scope): `from_kinds` declares a Global, author-unscoped
             // kind:54 shape so the observer keeps receiving every subscribed
             // show's episodes regardless of which author triggered
             // registration first; the per-author bounded historical sweep is
