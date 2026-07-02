@@ -79,8 +79,17 @@ nmp-ownership = { workspace = true }
 # NIP-02 reactive follow-list projection + ActiveFollowSet trust-gate predicate.
 # Listed explicitly so social_handler.rs can import FollowListProjection and
 # ActiveFollowSet (D11 — single door).
+# Protocol composition (ADR-0069, replacing the deleted nmp_defaults::register_defaults).
+# Faithfully restores the protocol set register_defaults wired for podcast:
+# NIP-02 follow, NIP-25 reactions, NIP-17 DMs+DM-relay cache, NIP-57 zaps,
+# NIP-51 bookmarks/mute. WoT trust bootstrap. Registered in ffi/register.rs.
 nmp-nip02 = { workspace = true }
+nmp-nip17 = { workspace = true }
+nmp-nip25 = { workspace = true }
 nmp-nip50 = { workspace = true }
+nmp-nip51 = { workspace = true }
+nmp-nip57 = { workspace = true }
+nmp-wot = { workspace = true }
 # Subscription planner (direct dep for InterestId/LogicalInterest/etc.).
 # nmp-core no longer re-exports the planner facade (#1608); external callers
 # depend on nmp-planner directly.

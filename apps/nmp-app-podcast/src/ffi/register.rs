@@ -62,12 +62,34 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AssertUnwindSafe is sound: all pointer null checks happen before this
     // closure is constructed; captured raw ptrs are never observed on panic path.
     let app_mut = unsafe { &mut *app };
-    // ADR-0069: the old `register_defaults` composition root is deleted. Install the NMP
-    // substrate (routing, blocked-relay lookup, publish resolver, coverage/
-    // NIP-77 interceptors, NIP-11). The full per-crate protocol composition
-    // (nmp_nip02/17/25/50/51/… register calls) is A2 (podcast-player#682); A1
-    // installs the substrate so the crate compiles against master.
+    // ADR-0069: the old `register_defaults` composition root is deleted. Compose
+    // the same protocol surface it provided as explicit installers: the NMP
+    // substrate (routing, blocked-relay lookup, publish resolver, coverage/NIP-77
+    // interceptors, NIP-11) + the per-crate protocol registers below.
     let _substrate = nmp_substrate::install(app_mut, nmp_substrate::SubstrateConfig::default());
+
+    // Protocol modules — faithful restore of the set register_defaults wired for
+    // podcast: NIP-02 follow/unfollow + FollowListProjection, NIP-25 react/unreact,
+    // NIP-17 DM send/relay-list + DmRelayCache/DmInboxRelayLookup, NIP-57 zap,
+    // NIP-51 bookmarks/mute, WoT trust bootstrap. The Swift shell dispatches these
+    // `nmp.*` namespaces, so they must be registered or those dispatches fail closed.
+    nmp_nip02::register(app_mut, nmp_nip02::Config::default())
+        .expect("nmp-nip02 registration must not collide");
+    nmp_nip25::register(app_mut, nmp_nip25::Config::default())
+        .expect("nmp-nip25 registration must not collide");
+    nmp_nip17::register(app_mut, nmp_nip17::Config::default())
+        .expect("nmp-nip17 registration must not collide");
+    nmp_nip57::register(app_mut, nmp_nip57::Config::default())
+        .expect("nmp-nip57 registration must not collide");
+    nmp_nip51::register(
+        app_mut,
+        nmp_nip51::Config {
+            search_fallback_relays: nmp_nip50::SearchFallbackRelays::default(),
+        },
+    )
+    .expect("nmp-nip51 registration must not collide");
+    nmp_wot::register(app_mut, nmp_wot::Config::default())
+        .expect("nmp-wot registration must not collide");
 
     // Wire the BUD-02 Blossom upload action (`nmp.blossom.upload`).
     // D13/D0: Rust owns the full Build → Sign → Transport pipeline.
