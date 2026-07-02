@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use nmp_core::substrate::KernelEvent;
-use nmp_core::KernelEventObserver;
+use nmp_core::ObservedProjectionSink;
 
 use crate::ffi::handle::PodcastHandle;
 use crate::ffi::snapshot_domain_projections::{
@@ -25,7 +25,7 @@ use super::tests::{
 /// `podcast.identity` changed→empty (no active account) emits tombstone, then idles.
 #[test]
 fn identity_empty_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -52,7 +52,7 @@ fn identity_empty_emits_tombstone_then_idles() {
 /// `podcast.widget` changed→empty (no playback, no episodes) emits tombstone, then idles.
 #[test]
 fn widget_empty_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -94,7 +94,7 @@ fn identity_surfaces_kernel_active_account_without_rev_bump() {
         "d6070609432b666c51677f606a0961e5f40730fe44b1c3bbd7ce29d5fa25b0a6";
     const AMBER_NPUB: &str = "npub16crsvz2r9dnxc5t80asx5ztpuh6qwv87gjcu8w7hec5at739kznqzxadlu";
 
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -157,7 +157,7 @@ fn identity_surfaces_kernel_active_account_without_rev_bump() {
 /// (no perpetual rebuild).
 #[test]
 fn social_empty_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -215,7 +215,7 @@ fn social_empty_emits_tombstone_then_idles() {
 /// the social domain rev and nothing else.
 #[test]
 fn social_inbound_note_excludes_library_and_playback_sidecars() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
 
@@ -276,7 +276,7 @@ fn social_inbound_note_excludes_library_and_playback_sidecars() {
 /// the social domain rev on every mutation, not just the first).
 #[test]
 fn social_inbound_note_reemits_on_each_new_note_real_path() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
 
@@ -345,7 +345,7 @@ fn approve_peer_action_reemits_social_with_trusted_flipped_real_path() {
 
     let peer = "5555555555555555555555555555555555555555555555555555555555555555";
 
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
 
@@ -414,7 +414,7 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
     let me = "ee11223344556677889900aabbccddeeff00112233445566778899aabbccddee";
     let peer = "6666666666666666666666666666666666666666666666666666666666666666";
 
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
 
@@ -427,7 +427,10 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
         crate::store::approved_peer_store::ApprovedPeerStore::new(),
     ));
     let active_slot = Arc::new(Mutex::new(Some(me.to_string())));
-    let follow_set = nmp_nip02::ActiveFollowSet::new(Arc::clone(&active_slot));
+    let follow_set = nmp_nip02::ActiveFollowSet::new(
+        Arc::clone(&active_slot),
+        nmp_nip02::LatestKind3FollowSet::new(app_ref.event_store_handle()),
+    );
     follow_set.on_kernel_event(&KernelEvent {
         id: "0000000000000000000000000000000000000000000000000000000000000003".to_string(),
         author: me.to_string(),

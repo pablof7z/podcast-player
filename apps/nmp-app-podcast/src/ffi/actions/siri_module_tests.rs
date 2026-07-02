@@ -55,7 +55,7 @@ fn resume_is_unit_variant() {
 fn execute_emits_dispatch_host_op() {
     let action = SiriAction::Resume;
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    SiriActionModule.execute(action, "corr-siri", &|cmd| {
+    SiriActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-siri", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

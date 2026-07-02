@@ -20,7 +20,14 @@ use nmp_app_podcast::{
     nmp_app_podcast_audio_report, nmp_app_podcast_register, nmp_app_podcast_snapshot,
     nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
 };
-use nmp_ffi::{nmp_free_string, nmp_app_new};
+use nmp_native_runtime::NmpApp;
+
+/// Allocate a new `NmpApp` on the heap and return an owning raw pointer
+/// (mirrors `bin/headless/harness.rs::app_new`). Leaked deliberately by every
+/// caller in this perf harness — see the trailing `let _ = (app, handle);`.
+fn app_new() -> *mut NmpApp {
+    Box::into_raw(Box::new(nmp_native_runtime::new_app()))
+}
 
 const DESCRIPTION: &str = "In this episode we sit down with our guest to unpack the \
 week's biggest stories, dig into the research behind the headlines, and answer \
@@ -28,7 +35,7 @@ listener questions from the mailbag. We cover the new findings, what they mean f
 you, and where the experts disagree. Plus: a lightning round, a few tangents, and \
 our picks of the week. Full show notes and transcript on our website.";
 
-fn dispatch(app: *mut nmp_ffi::NmpApp, payload: serde_json::Value) -> serde_json::Value {
+fn dispatch(app: *mut NmpApp, payload: serde_json::Value) -> serde_json::Value {
     // ADR-0064: route through the typed byte doorway.
     let body = payload.to_string();
     match dispatch_action_bytes_for(app, "podcast", &body) {
@@ -82,7 +89,7 @@ fn uuid(n: usize, salt: u8) -> String {
     format!("{:08x}-{:04x}-4{:03x}-8{:03x}-{:012x}", n, salt as u32, n & 0xfff, n & 0xfff, n)
 }
 
-fn seed(app: *mut nmp_ffi::NmpApp, shows: usize, eps_per_show: usize) {
+fn seed(app: *mut NmpApp, shows: usize, eps_per_show: usize) {
     for s in 0..shows {
         let pid = uuid(s, 0xAA);
         dispatch(app, serde_json::json!({
@@ -111,15 +118,14 @@ fn seed(app: *mut nmp_ffi::NmpApp, shows: usize, eps_per_show: usize) {
 #[test]
 #[ignore = "heavy populated-library measurement; run with --ignored --nocapture"]
 fn measure_populated_library_rebuild_and_rev_discipline() {
-    let app = nmp_app_new();
-    assert!(!app.is_null());
+    let app = app_new();
     let handle = nmp_app_podcast_register(app);
     assert!(!handle.is_null());
 
     let shows = 20usize;
     for &per in &[50usize, 180] {
         // Fresh app per scale so payloads don't accumulate across iterations.
-        let app = nmp_app_new();
+        let app = app_new();
         let handle = nmp_app_podcast_register(app);
         let total = shows * per;
         let t0 = Instant::now();
@@ -173,7 +179,10 @@ fn measure_populated_library_rebuild_and_rev_discipline() {
             serde_json::json!({"type":"playing","url":"https://traffic.example.com/x.mp3",
                 "position_secs": 12.0, "duration_secs": 3600.0}).to_string()).unwrap();
         let r = nmp_app_podcast_audio_report(handle, play.as_ptr());
-        if !r.is_null() { nmp_free_string(r); }
+        // SAFETY: `r` is a heap-owned NUL-terminated C string produced via
+        // `CString::into_raw` inside `nmp_app_podcast_audio_report`; reclaim
+        // and drop it — there is no separate free-string doorway anymore.
+        if !r.is_null() { unsafe { drop(CString::from_raw(r)) }; }
         let rev_after_play = nmp_app_podcast_snapshot_rev(handle);
 
         // A durable report (Paused) MUST bump rev.
@@ -181,7 +190,10 @@ fn measure_populated_library_rebuild_and_rev_discipline() {
             serde_json::json!({"type":"paused","url":"https://traffic.example.com/x.mp3",
                 "position_secs": 12.0}).to_string()).unwrap();
         let r = nmp_app_podcast_audio_report(handle, pause.as_ptr());
-        if !r.is_null() { nmp_free_string(r); }
+        // SAFETY: `r` is a heap-owned NUL-terminated C string produced via
+        // `CString::into_raw` inside `nmp_app_podcast_audio_report`; reclaim
+        // and drop it — there is no separate free-string doorway anymore.
+        if !r.is_null() { unsafe { drop(CString::from_raw(r)) }; }
         let rev_after_pause = nmp_app_podcast_snapshot_rev(handle);
 
         println!("  rev before={} after_Playing={} after_Paused={}",

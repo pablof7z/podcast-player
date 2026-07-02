@@ -9,13 +9,17 @@
 //! Doctrine: D5/D8 — pure transport, no business logic or cached state;
 //! D6 — every entry point degrades silently on null / poison / serde failure.
 //!
-//! Calls into the kernel go through Rust paths (`nmp_ffi::nmp_app_*`), not
-//! `extern "C"` declarations. Symbols declared only via `extern "C"` stay
-//! undefined in the cdylib; calling through Rust paths makes rustc pull the
-//! bodies into the codegen unit — same pattern as NMP's `nmp-android-ffi`.
+//! Calls into the kernel go through the `nmp_native_runtime::NmpApp` typed
+//! method surface (and `nmp_uniffi_support` for the callback seams), not
+//! `extern "C"` declarations — the ADR-0069 UniFFI native runtime replaces
+//! the deleted `nmp-ffi` C-ABI crate. `nmp_app_podcast_decode_update_frame`
+//! is still reached via a raw `extern "C"` declaration because it is an
+//! in-crate `#[no_mangle]` symbol not re-exported at the Rust item level
+//! (`ffi::snapshot` is `pub(crate)`), matching the same pattern the headless
+//! binary's `sign_tap.rs` uses.
 
 use std::collections::HashMap;
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::CString;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::sync::atomic::{AtomicBool, Ordering};
 use crossbeam_channel::{Receiver as CbReceiver, Sender as CbSender};
@@ -24,13 +28,7 @@ use jni::objects::{JClass, JString};
 use jni::sys::{jint, jlong};
 use jni::JNIEnv;
 
-use nmp_ffi::{
-    nmp_app_consume_all_builtin_projections, nmp_app_free, nmp_free_string,
-    nmp_app_is_alive, nmp_app_lifecycle_background, nmp_app_lifecycle_foreground,
-    nmp_app_new, nmp_app_set_update_callback,
-    nmp_app_start, nmp_app_stop, nmp_external_signer_init,
-    nmp_signer_broker_init, NmpApp,
-};
+use nmp_native_runtime::NmpApp;
 
 use crate::ffi::{
     nmp_app_podcast_register, nmp_app_podcast_set_data_dir,
@@ -61,8 +59,14 @@ pub(crate) struct Session {
     pub(crate) app: *mut NmpApp,
     podcast: *mut PodcastHandle,
     pub(crate) rx: CbReceiver<String>,
-    pub(crate) tx: *mut CbSender<String>,
-    capability_ctx: Mutex<Option<*mut capability_router::AndroidCapabilityContext>>,
+    /// Whether a capability router is currently installed. `nmp_uniffi_support`
+    /// owns the actual `AndroidCapabilityContext` sink's lifetime internally
+    /// (as an `Arc`) once installed via `set_capability_callback`, so this
+    /// Mutex now only provides the atomicity `nativeSetCapabilityRouter` /
+    /// `clear_capability_router` need against a concurrent `nativeFree`
+    /// (see the invariant comment on `nativeFree` below) — it no longer
+    /// tracks a raw pointer to free.
+    capability_ctx: Mutex<bool>,
     /// ADR-0048 — outbound NIP-55 `ExternalSignerRequest` JSON queue. The
     /// capability trampoline (`android_capability_callback`, on a Rust thread)
     /// pushes the inner request payload here when it sees the `external_signer`
@@ -98,8 +102,6 @@ pub(crate) struct Session {
 // - `rx`, `signer_rx`, `shutdown_rx_update`, `shutdown_rx_signer`: crossbeam channels
 //   are Sync; safe to read from multiple threads. Each JNI caller holds an Arc clone
 //   until the call returns.
-// - `tx`: raw pointer to crossbeam Sender. Dropped only in `Session::drop` after the
-//   callback is cleared (no kernel thread references it at that point).
 // - `signer_requests`: `Mutex<Option<CbSender<String>>>` — interior mutability lets
 //   `nativeFree` drain and drop the sender; `Mutex` is Sync.
 // - `shutdown_tx_update`, `shutdown_tx_signer`: shared safely via Arc.
@@ -112,21 +114,24 @@ impl Drop for Session {
         // Native teardown deferred to here so that in-flight JNI callers that
         // hold an Arc<Session> clone (cloned via `session_ref` before
         // `nativeFree` removed the registry entry) have returned before we
-        // release native handles. `nativeFree` eagerly calls `nmp_app_stop`
+        // release native handles. `nativeFree` eagerly calls `stop_runtime`
         // (signal only) and signals shutdown channels; this destructor performs
         // the actual memory release.
         //
         // Order matters: clear the update callback first so the kernel thread
-        // cannot call back into `tx` after we drop the Box below.
-        nmp_app_set_update_callback(self.app, std::ptr::null_mut(), None);
+        // cannot call back into the update sink after we free `app` below.
+        // SAFETY: `self.app` is a live `Box::into_raw` pointer for the entire
+        // lifetime of this Session; nothing else frees it before this point.
+        let app_ref = unsafe { &*self.app };
+        app_ref.set_update_listener(None);
         if !self.podcast.is_null() {
             nmp_app_podcast_unregister(self.podcast);
         }
-        nmp_app_free(self.app);
-        // SAFETY: callback has been cleared above; the kernel thread can no
-        // longer reach this Sender. Drop it to disconnect the update channel.
+        // SAFETY: `self.app` was allocated via `Box::into_raw` in `nativeNew`
+        // and is freed exactly once here, after the update listener has been
+        // cleared and the podcast handle unregistered.
         unsafe {
-            drop(Box::from_raw(self.tx));
+            drop(Box::from_raw(self.app));
         }
     }
 }
@@ -170,42 +175,37 @@ pub(super) fn session_ref(handle: jlong) -> Option<Arc<Session>> {
 
 // ── Update callback — copies JSON before the kernel reclaims its buffer. ─────
 
-/// `nmp_app_set_update_callback` fires on the kernel's listener thread. NMP's
-/// update transport is binary FlatBuffers (NMP `UpdateCallback` is
-/// `extern "C" fn(*mut c_void, *const u8, usize)`), so the frame arrives as a
-/// borrowed `(bytes, len)` buffer — **not** a NUL-terminated C string. We
-/// decode it to the JSON envelope via `nmp_app_podcast_decode_update_frame`
-/// (the same in-crate symbol the iOS `KernelBridge.swift` callback uses), copy
-/// the JSON into an owned `String`, free the kernel pointer, then send it down
-/// the channel. A Kotlin thread drains the channel via `nativeNextUpdate` —
-/// pull-side cadence sidesteps JNI thread-attach/global-ref complexity.
-extern "C" fn on_update(context: *mut c_void, bytes: *const u8, len: usize) {
-    if context.is_null() || bytes.is_null() || len == 0 {
+/// Installed via `nmp_uniffi_support::set_update_sink` in `nativeNew`. NMP's
+/// update transport is binary FlatBuffers, so the frame arrives as an owned
+/// `Vec<u8>` (the sink API copies it out of the kernel's buffer before
+/// invoking this closure — no raw `(ptr, len)` borrow to manage). We decode
+/// it to the JSON envelope via `nmp_app_podcast_decode_update_frame` (the
+/// same in-crate symbol the iOS `KernelBridge.swift` callback uses), copy the
+/// JSON into an owned `String`, and send it down the channel. A Kotlin thread
+/// drains the channel via `nativeNextUpdate` — pull-side cadence sidesteps
+/// JNI thread-attach/global-ref complexity.
+fn on_update(sink: &CbSender<String>, frame: Vec<u8>) {
+    if frame.is_empty() {
         return;
     }
     ffi_guard("on_update", || (), || {
-        // SAFETY: `bytes` is valid for `len` bytes for the duration of this
-        // call (NMP borrows the frame to the callback).
-        // `decode_update_frame` returns a heap-owned C string (or null on a
-        // non-decodable frame) that we must release through
-        // `nmp_free_string`.
+        // SAFETY: `frame` is a valid Rust `Vec<u8>`, trivially valid for its
+        // own length.
         let json_ptr = unsafe {
-            crate::ffi::snapshot::nmp_app_podcast_decode_update_frame(bytes, len)
+            crate::ffi::snapshot::nmp_app_podcast_decode_update_frame(frame.as_ptr(), frame.len())
         };
         if json_ptr.is_null() {
             return;
         }
-        let owned = unsafe { CStr::from_ptr(json_ptr) }
+        // SAFETY: `json_ptr` is a heap-owned NUL-terminated C string produced
+        // via `CString::into_raw` inside `nmp_app_podcast_decode_update_frame`,
+        // and we now own it exactly once. Reclaiming it as a `CString` frees
+        // it on drop — there is no separate free-string doorway anymore.
+        let owned = unsafe { CString::from_raw(json_ptr) }
             .to_string_lossy()
             .into_owned();
-        nmp_free_string(json_ptr);
-        // SAFETY: `context` is the `Box<Sender<String>>` pointer registered
-        // in `nativeNew`; it lives until `nativeFree` clears the callback
-        // before reclaiming the box. AssertUnwindSafe is sound: null-checked
-        // above; not observed again on panic path.
-        let tx = unsafe { &*(context as *const CbSender<String>) };
         // Dead receiver ⇒ silent no-op (D6).
-        let _ = tx.send(owned);
+        let _ = sink.send(owned);
     });
 }
 
@@ -223,16 +223,15 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
     _class: JClass,
 ) -> jlong {
     ffi_guard("nativeNew", || 0 as jlong, || {
-        let app = nmp_app_new();
-        if app.is_null() {
-            return 0;
-        }
+        // SAFETY: `Box::into_raw` always yields a non-null pointer — no
+        // null check needed (unlike the deleted `nmp_app_new` C-ABI, which
+        // could theoretically fail on OOM).
+        let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
         let (tx, rx) = crossbeam_channel::unbounded::<String>();
-        let tx = Box::into_raw(Box::new(tx));
-        // `nmp_app_set_update_callback` is `pub extern "C" fn` (safe Rust at
-        // the call site). `app` is valid (just allocated), `tx` is a fresh
-        // box, and `on_update` matches the kernel's `UpdateCallback` C ABI.
-        nmp_app_set_update_callback(app, tx as *mut c_void, Some(on_update));
+        // `nmp_uniffi_support::set_update_sink` owns the sink's lifetime
+        // internally (as an `Arc`) once installed; `Session::drop` clears it
+        // via `set_update_listener(None)` rather than freeing a raw pointer.
+        nmp_uniffi_support::set_update_sink(unsafe { &*app }, Some(Box::new(tx)), on_update);
         let podcast = nmp_app_podcast_register(app);
         // ADR-0048 — install the NIP-55 external-signer driver so the kernel can
         // dispatch `external_signer` capability requests (built when the host
@@ -241,13 +240,13 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
         // through the channel below once `nativeSetCapabilityRouter` registers
         // the trampoline. Safe to call before the callback exists — no request
         // is built until sign-in.
-        nmp_external_signer_init(app);
+        unsafe { &*app }.init_external_signer();
         // NIP-46 signer broker — registers the bunker hook + relay listener so
         // `nativeSignInBunker` / `nativeNostrconnectUri` are live. Idempotent;
-        // mirrors the iOS `PodcastHandle.init` call to `nmp_signer_broker_init`.
-        // MUST be called once after `nmp_app_new()` and before any bunker://
+        // mirrors the iOS `PodcastHandle.init` call to `init_signer_broker`.
+        // MUST be called once after allocating `app` and before any bunker://
         // or nostrconnect:// sign-in attempt (D6 — no-op if already init'd).
-        nmp_signer_broker_init(app);
+        let _ = unsafe { &*app }.init_signer_broker();
         let (signer_tx, signer_rx) = crossbeam_channel::unbounded::<String>();
         let (shutdown_tx_update, shutdown_rx_update) = crossbeam_channel::bounded::<()>(1);
         let (shutdown_tx_signer, shutdown_rx_signer) = crossbeam_channel::bounded::<()>(1);
@@ -255,8 +254,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeNew(
             app,
             podcast,
             rx,
-            tx,
-            capability_ctx: Mutex::new(None),
+            capability_ctx: Mutex::new(false),
             signer_requests: Mutex::new(Some(signer_tx)),
             signer_rx,
             shutdown_tx_update,
@@ -333,8 +331,9 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeStart(
             // declare the explicit all-builtins projection intent before
             // actor start. App-local podcast sidecars are registered via
             // `nmp_app_podcast_register`.
-            nmp_app_consume_all_builtin_projections(s.app);
-            nmp_app_start(s.app, visible_limit as u32, emit_hz as u32);
+            let app_ref = unsafe { &*s.app };
+            app_ref.consume_all_builtin_projections();
+            app_ref.start_runtime(visible_limit as usize, emit_hz as u32);
         }
     });
 }
@@ -348,7 +347,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeStop(
 ) {
     ffi_guard("nativeStop", || (), || {
         if let Some(s) = session_ref(handle) {
-            nmp_app_stop(s.app);
+            unsafe { &*s.app }.stop_runtime();
         }
     });
 }
@@ -362,7 +361,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeIsAlive(
 ) -> jint {
     ffi_guard("nativeIsAlive", || 0 as jint, || {
         match session_ref(handle) {
-            Some(s) => nmp_app_is_alive(s.app) as jint,
+            Some(s) => unsafe { &*s.app }.is_alive() as jint,
             None => 0,
         }
     })
@@ -378,7 +377,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeLifecycleForegroun
 ) {
     ffi_guard("nativeLifecycleForeground", || (), || {
         if let Some(s) = session_ref(handle) {
-            nmp_app_lifecycle_foreground(s.app);
+            unsafe { &*s.app }.lifecycle_foreground();
         }
     });
 }
@@ -391,13 +390,13 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeLifecycleBackgroun
 ) {
     ffi_guard("nativeLifecycleBackground", || (), || {
         if let Some(s) = session_ref(handle) {
-            nmp_app_lifecycle_background(s.app);
+            unsafe { &*s.app }.lifecycle_background();
         }
     });
 }
 
 /// `nativeFree(handle)` — initiate kernel shutdown and release the registry
-/// entry. Exactly-once. Native handle teardown (`nmp_app_free`, etc.) is
+/// entry. Exactly-once. Native handle teardown (`Box::from_raw`, etc.) is
 /// deferred to `Session::drop` so that any in-flight JNI callers holding an
 /// `Arc<Session>` clone (grabbed before the registry entry was removed) can
 /// return before native memory is released — eliminating the UAF race.
@@ -421,7 +420,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         };
         let Some(s) = s else { return; };
         // Signal the actor to stop (non-destructive — does not free any handle).
-        nmp_app_stop(s.app);
+        unsafe { &*s.app }.stop_runtime();
         // Signal shutdown: each blocking loop gets its own dedicated channel so
         // neither can steal the other's token. Both sends always succeed (D6 —
         // a full channel means the signal is already pending).
@@ -439,7 +438,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeFree(
         drop(s.signer_requests.lock().ok().and_then(|mut g| g.take()));
         // Drop our Arc. When all in-flight session_ref Arc clones also drop
         // (i.e. every concurrent JNI call returns), Session::drop runs and
-        // releases native handles: nmp_app_set_update_callback(null),
-        // nmp_app_podcast_unregister, nmp_app_free, and the Sender Box.
+        // releases native handles: set_update_listener(None),
+        // nmp_app_podcast_unregister, and Box::from_raw(app).
     });
 }

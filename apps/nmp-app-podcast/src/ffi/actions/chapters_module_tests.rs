@@ -41,7 +41,7 @@ fn execute_emits_dispatch_host_op_with_payload() {
         episode_id: "ep-2".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    ChaptersActionModule.execute(action, "corr-1", &|cmd| {
+    ChaptersActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

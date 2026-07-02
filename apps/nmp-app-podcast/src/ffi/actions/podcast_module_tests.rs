@@ -356,7 +356,7 @@ fn execute_emits_dispatch_host_op() {
         feed_url: "https://feeds.example.com/podcast.rss".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    PodcastActionModule.execute(action, "corr-1", &|cmd| {
+    PodcastActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

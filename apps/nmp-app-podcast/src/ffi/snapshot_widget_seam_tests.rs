@@ -47,15 +47,6 @@ struct SharedKernel {
     rev: Arc<AtomicU64>,
 }
 
-fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
-    nmp_feedback::FeedbackRuntime::new(
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-        Arc::new(Mutex::new(Vec::new())),
-        rev,
-    )
-}
-
 /// Build a `PodcastHostOpHandler` that shares the caller's `state` (which
 /// owns `player_actor` in `state.playback.player`) so writes are visible to a
 /// handle built from the same `Arc<PodcastAppState>`.
@@ -123,13 +114,10 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     // Step 14: both seams share ONE Arc<PodcastAppState> so handler writes
     // to state.playback.player are visible to the handle's snapshot reader.
-    // Step 16: feedback injected into PodcastAppState.
-    let feedback = feedback_runtime(rev.clone());
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity,
-        feedback,
     ));
     let shared = SharedKernel {
         store: store.clone(),
@@ -141,8 +129,7 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
     // A real (unstarted) NmpApp so the snapshot's configured-relays projection
     // has a live pointer to read; we never start the actor thread — the play
     // host-op and the audio report are driven synchronously below.
-    let app = nmp_ffi::nmp_app_new();
-    assert!(!app.is_null(), "nmp_app_new returned null");
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
 
     let handler = handler_sharing(&shared, app);
     let handle = handle_sharing(&shared, app);
@@ -195,9 +182,8 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
     .unwrap();
     let handle_ptr = Box::into_raw(handle);
     let ret = nmp_app_podcast_audio_report(handle_ptr, report_json.as_ptr());
-    // The Playing response is a `CString::into_raw` pointer; reclaim it the
-    // same way (not via `nmp_free_string`, which is for nmp_ffi malloc
-    // strings).
+    // The Playing response is a `CString::into_raw` pointer; reclaim it
+    // directly — there is no shared free-string doorway anymore.
     if !ret.is_null() {
         let _ = unsafe { CString::from_raw(ret) };
     }
@@ -245,8 +231,8 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
     // Drop our shared references before freeing the app, then reclaim it.
     drop(handler);
     drop(handle);
-    // SAFETY: `app` came from `nmp_app_new` and is freed exactly once here.
-    // It was never started, so there is no actor thread to join.
+    // SAFETY: `app` came from `Box::into_raw` above and is freed exactly once
+    // here. It was never started, so there is no actor thread to join.
     unsafe {
         drop(Box::from_raw(app));
     }

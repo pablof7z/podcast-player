@@ -49,11 +49,13 @@ fn frame_with_live_signed_events() -> Vec<u8> {
     let (tx, rx) = spawn_actor();
 
     // Start the actor (sets running=true so periodic frames emit).
-    tx.send(ActorCommand::Start {
-        visible_limit: 80,
-        emit_hz: 4,
-        initial_relays: vec![],
-    })
+    tx.send(ActorCommand::Lifecycle(
+        nmp_core::actor::LifecycleCommand::Start {
+            visible_limit: 80,
+            emit_hz: 4,
+            initial_relays: vec![],
+        },
+    ))
     .expect("actor reachable");
 
     // Issue a SignEventForReturn with an empty pubkey (active account
@@ -66,11 +68,13 @@ fn frame_with_live_signed_events() -> Vec<u8> {
         "created_at": 1_700_000_000u64,
     })
     .to_string();
-    tx.send(ActorCommand::SignEventForReturn {
-        account_pubkey: String::new(), // empty → active account
-        unsigned_json: unsigned,
-        correlation_id: "test-corr-id".to_string(),
-    })
+    tx.send(ActorCommand::Sign(
+        nmp_core::actor::SignCommand::EventForReturn {
+            account_pubkey: String::new(), // empty → active account
+            unsigned_json: unsigned,
+            correlation_id: "test-corr-id".to_string(),
+        },
+    ))
     .expect("actor reachable");
 
     // Barrier: ensure the SignEventForReturn command is processed before we

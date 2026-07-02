@@ -1,7 +1,7 @@
 //! ADR-0064 typed dispatch seam — the podcast-app bytes doorway.
 //!
 //! The JSON doorway `nmp_app_dispatch_action(app, namespace, json)` was deleted.
-//! Every write now travels the typed [`nmp_ffi::nmp_app_dispatch_action_bytes`]
+//! Every write now travels the typed [`nmp_native_runtime::dispatch_action_bytes_typed`]
 //! doorway: a host-minted `correlation_id` + the module's NAMESPACE + a typed
 //! [`ActionPayload`](nmp_core::substrate::ActionPayload) payload, wrapped in a
 //! [`DispatchEnvelope`](nmp_core::dispatch_envelope).
@@ -12,7 +12,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::de::DeserializeOwned;
-use serde_json::Value;
 
 use nmp_core::dispatch_envelope::{encode_dispatch_envelope, DISPATCH_ENVELOPE_SCHEMA_VERSION};
 use nmp_core::substrate::ActionPayload;

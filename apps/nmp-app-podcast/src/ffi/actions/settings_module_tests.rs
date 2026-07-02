@@ -132,7 +132,7 @@ fn provider_credential_metadata_round_trips() {
 fn execute_emits_dispatch_host_op() {
     let action = SettingsAction::SetAutoSkipAds { enabled: false };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    SettingsActionModule.execute(action, "corr-1", &|cmd| {
+    SettingsActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");
@@ -197,14 +197,15 @@ fn execute_add_relay_emits_add_relay_then_dispatch_host_op() {
         role: "write".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    SettingsActionModule.execute(action, "corr-2", &|cmd| {
+    SettingsActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-2", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 2);
     // 1) Slot mutation, processed first (FIFO).
-    let ActorCommand::AddRelay { url, role } = &commands[0] else {
+    let ActorCommand::Relay(nmp_core::actor::RelayCommand::AddRelay { url, role }) = &commands[0]
+    else {
         panic!("expected AddRelay first, got {:?}", commands[0]);
     };
     assert_eq!(url, "wss://relay.example");
@@ -230,13 +231,14 @@ fn execute_set_relay_role_emits_add_relay_then_dispatch_host_op() {
         role: "read".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    SettingsActionModule.execute(action, "corr-3", &|cmd| {
+    SettingsActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-3", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 2);
-    let ActorCommand::AddRelay { url, role } = &commands[0] else {
+    let ActorCommand::Relay(nmp_core::actor::RelayCommand::AddRelay { url, role }) = &commands[0]
+    else {
         panic!("expected AddRelay first, got {:?}", commands[0]);
     };
     assert_eq!(url, "wss://relay.example");
@@ -255,13 +257,14 @@ fn execute_remove_relay_emits_remove_relay_then_dispatch_host_op() {
         url: "wss://relay.example".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    SettingsActionModule.execute(action, "corr-4", &|cmd| {
+    SettingsActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-4", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");
     let commands = commands.into_inner().unwrap();
     assert_eq!(commands.len(), 2);
-    let ActorCommand::RemoveRelay { url } = &commands[0] else {
+    let ActorCommand::Relay(nmp_core::actor::RelayCommand::RemoveRelay { url }) = &commands[0]
+    else {
         panic!("expected RemoveRelay first, got {:?}", commands[0]);
     };
     assert_eq!(url, "wss://relay.example");

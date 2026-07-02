@@ -63,7 +63,7 @@ fn categorize_episode_action_round_trips() {
 fn execute_emits_dispatch_host_op() {
     let action = CategorizationAction::Run;
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    CategorizationModule.execute(action, "corr-1", &|cmd| {
+    CategorizationModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

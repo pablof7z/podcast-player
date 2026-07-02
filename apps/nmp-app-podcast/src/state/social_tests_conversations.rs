@@ -11,7 +11,7 @@ use crate::agent_note_handler::CachedAgentNote;
 use crate::ffi::projections::SocialSnapshot;
 use crate::store::outbound_turn_cache::OutboundTurn;
 use nmp_core::substrate::KernelEvent;
-use nmp_core::KernelEventObserver;
+use nmp_core::ObservedProjectionSink;
 use nmp_nip02::ActiveFollowSet;
 use std::sync::{Arc, Mutex};
 
@@ -227,7 +227,10 @@ fn existing_note_becomes_trusted_after_following_author() {
     // Active account.
     let me = "bb11223344556677889900aabbccddeeff00112233445566778899aabbccddee";
     let active_slot = Arc::new(Mutex::new(Some(me.to_string())));
-    let follow_set = ActiveFollowSet::new(Arc::clone(&active_slot));
+    let follow_set = ActiveFollowSet::new(
+        Arc::clone(&active_slot),
+        nmp_nip02::LatestKind3FollowSet::new(nmp_core::slots::new_event_store_slot()),
+    );
 
     let state = SocialState::for_test().with_follow_set(Arc::clone(&follow_set));
 

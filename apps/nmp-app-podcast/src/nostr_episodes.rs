@@ -1,5 +1,5 @@
 //! `podcast.nostr_episodes` — NIP-F4 (`kind:54`) feedless episode fetch via
-//! NMP's relay pool, the canonical `EnsureInterest` + `KernelEventObserver`
+//! NMP's relay pool, the canonical `EnsureInterest` + `ObservedProjectionSink`
 //! pattern (mirrors `discover_nostr.rs` for `kind:10154`).
 //!
 //! ## Design
@@ -33,8 +33,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use nmp_planner::interest::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_planner::stable_hash::stable_hash64;
-use nmp_core::substrate::{KernelEvent, ViewDependencies};
-use nmp_core::KernelEventObserver;
+use nmp_core::substrate::{KernelEvent, ObservedProjection, ObservedProjectionRegistrar, ViewDependencies};
+use nmp_core::ObservedProjectionSink;
 
 use podcast_discovery::{episode_to_episode, parse_kind_54, KIND_NIP_F4_EPISODE};
 use podcast_core::types::podcast::PodcastId;
@@ -121,14 +121,27 @@ pub fn handle_subscribe_nostr(
     OBSERVER_REGISTERED.get_or_init(|| {
         if !app.is_null() {
             // SAFETY: `app` is valid for the lifetime of the process —
-            // `nmp_app_podcast_register` holds it alive. `register_event_observer`
+            // `nmp_app_podcast_register` holds it alive. `open_observed_projection`
             // takes `&self`; no exclusive alias exists at this call site.
             let app_ref = unsafe { &*app };
             let observer = Arc::new(
                 NostrEpisodesObserver::new(store.clone(), rev.clone())
                     .with_snapshot_signal_opt(snapshot_signal.cloned()),
             );
-            let _id = app_ref.register_event_observer(observer);
+            // TODO(A4, podcast-player#684): verify observed-projection filter/
+            // replay fidelity. `from_kinds` declares a Global, author-unscoped
+            // kind:54 shape so the observer keeps receiving every subscribed
+            // show's episodes regardless of which author triggered
+            // registration first; the per-author bounded historical sweep is
+            // still driven separately by `subscribe_nostr_episodes` below
+            // (`ensure_interest` / `InterestLifecycle::OneShot`).
+            let _id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+                observer,
+                "podcast.nostr_episodes.observer",
+                1, // Global — episodes arrive for any subscribed show's author.
+                [KIND_NIP_F4_EPISODE],
+                256,
+            ));
             // The returned id is intentionally dropped: the observer is
             // permanent (alive for the app's lifetime). `nmp_app_free` joins
             // the actor before dropping the observer slot.
@@ -165,7 +178,7 @@ pub fn handle_subscribe_nostr(
     serde_json::json!({"ok": true, "status": "subscribed", "author_pubkey_hex": author_pubkey_hex})
 }
 
-/// In-process [`KernelEventObserver`] that turns inbound `kind:54` events
+/// In-process [`ObservedProjectionSink`] that turns inbound `kind:54` events
 /// into episode rows on the shared `PodcastStore`, under the feedless show
 /// row keyed by `author_pubkey`.
 ///
@@ -203,7 +216,7 @@ impl NostrEpisodesObserver {
     }
 }
 
-impl KernelEventObserver for NostrEpisodesObserver {
+impl ObservedProjectionSink for NostrEpisodesObserver {
     fn on_kernel_event(&self, event: &KernelEvent) {
         if event.kind != KIND_NIP_F4_EPISODE {
             return;

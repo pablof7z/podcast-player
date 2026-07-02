@@ -71,6 +71,11 @@ nmp-uniffi-support = { workspace = true }
 nmp-substrate = { workspace = true }
 # NIP-55 external-signer permission vocabulary (`Nip55Permission`).
 nmp-signer-iface = { workspace = true }
+# Surface-token hardening: `register_typed_snapshot_projection` now requires an
+# `Into<ProjectionRegistrationKey>` key rather than a bare `&str`; app-owned
+# `podcast.*` schema ids build a `DynamicProjectionKey` (see
+# ffi/snapshot_domain_projections.rs::podcast_projection_key).
+nmp-ownership = { workspace = true }
 # NIP-02 reactive follow-list projection + ActiveFollowSet trust-gate predicate.
 # Listed explicitly so social_handler.rs can import FollowListProjection and
 # ActiveFollowSet (D11 — single door).

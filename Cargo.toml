@@ -36,6 +36,7 @@ resolver = "2"
 [workspace.dependencies]
 nmp-core = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
 nmp-native-runtime = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
+nmp-ownership = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
 nmp-substrate = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
 nmp-uniffi-support = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }
 nmp-blossom = { git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "0c06740a5a1a7aa72cfce3403e646190d947f3d8" }

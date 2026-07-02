@@ -27,7 +27,6 @@ use crate::store::identity::IdentityStore;
 use crate::store::PodcastStore;
 use podcast_core::types::episode::Episode;
 use podcast_core::Podcast;
-use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 use url::Url;
 use chrono::Utc;
@@ -39,28 +38,16 @@ use chrono::Utc;
 /// the handler is fully wired even though only the publish path is
 /// exercised here.
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
-    let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
-    // Step 16: feedback injected; feed_fetch + feedback removed from handler::new.
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
-        feedback_runtime(rev.clone()),
     ));
     // Steps 8-N+1: all substates in PodcastAppState; new takes only (app, state).
     PodcastHostOpHandler::new(
         std::ptr::null_mut(),
         state,
-    )
-}
-
-fn feedback_runtime(rev: Arc<AtomicU64>) -> nmp_feedback::FeedbackRuntime {
-    nmp_feedback::FeedbackRuntime::new(
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-        Arc::new(Mutex::new(Vec::new())),
-        rev,
     )
 }
 

@@ -165,7 +165,7 @@ fn execute_emits_dispatch_host_op() {
         task_id: "task-1".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    AgentTasksModule.execute(action, "corr-1", &|cmd| {
+    AgentTasksModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

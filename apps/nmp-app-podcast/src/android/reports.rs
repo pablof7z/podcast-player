@@ -1,9 +1,8 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 
 use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jstring};
 use jni::JNIEnv;
-use nmp_ffi::nmp_free_string;
 
 use crate::ffi::{
     nmp_app_podcast_audio_report, nmp_app_podcast_download_report, nmp_app_podcast_http_report,
@@ -111,8 +110,11 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeHttpReport<'l>(
             return;
         };
         let ret = nmp_app_podcast_http_report(s.podcast, c_body.as_ptr());
+        // SAFETY: `ret` is a heap-owned NUL-terminated C string produced via
+        // `CString::into_raw` inside `nmp_app_podcast_http_report`; reclaim
+        // and drop it — there is no separate free-string doorway anymore.
         if !ret.is_null() {
-            nmp_free_string(ret);
+            unsafe { drop(CString::from_raw(ret)) };
         }
     });
 }
@@ -121,10 +123,13 @@ fn response_string(env: &mut JNIEnv<'_>, ptr: *mut std::ffi::c_char) -> jstring 
     if ptr.is_null() {
         return std::ptr::null_mut();
     }
-    let owned = unsafe { CStr::from_ptr(ptr) }
+    // SAFETY: `ptr` is a heap-owned NUL-terminated C string produced via
+    // `CString::into_raw` inside the podcast crate's own `nmp_app_podcast_*`
+    // FFI functions; reclaim and drop it — there is no separate free-string
+    // doorway anymore.
+    let owned = unsafe { CString::from_raw(ptr) }
         .to_string_lossy()
         .into_owned();
-    nmp_free_string(ptr);
     match env.new_string(owned) {
         Ok(js) => js.into_raw(),
         Err(_) => std::ptr::null_mut(),

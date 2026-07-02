@@ -1,4 +1,3 @@
-use std::ffi::{c_char, c_void, CStr, CString};
 use std::sync::atomic::Ordering;
 
 use crossbeam_channel::Sender;
@@ -7,7 +6,6 @@ use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 use jni::sys::jlong;
 use jni::JNIEnv;
 use jni::JavaVM;
-use nmp_ffi::nmp_app_set_capability_callback;
 
 use crate::ffi::guard::ffi_guard;
 
@@ -29,28 +27,25 @@ pub(super) struct AndroidCapabilityContext {
     signer_requests: Sender<String>,
 }
 
-fn capability_error_envelope(message: &str) -> *mut c_char {
-    let json = format!(
-        "{{\"namespace\":\"\",\"correlation_id\":\"\",\"result_json\":\"{{\\\"status\\\":\\\"error\\\",\\\"message\\\":\\\"{message}\\\"}}\"}}"
-    );
-    CString::new(json)
-        .unwrap_or_else(|_| CString::new("{}").expect("static JSON has no NUL"))
-        .into_raw()
+fn capability_error_envelope(message: &str) -> String {
+    serde_json::json!({
+        "namespace": "",
+        "correlation_id": "",
+        "result_json": serde_json::json!({"status": "error", "message": message}).to_string(),
+    })
+    .to_string()
 }
 
 /// Build the `{"namespace","correlation_id","result_json"}` ack envelope a
 /// dispatched (channel-routed) `external_signer` request returns synchronously.
 /// The real signer result arrives later through `nativeDeliverSignerResponse`.
-fn capability_dispatched_envelope(correlation_id: &str) -> *mut c_char {
-    let json = serde_json::json!({
+fn capability_dispatched_envelope(correlation_id: &str) -> String {
+    serde_json::json!({
         "namespace": EXTERNAL_SIGNER_NAMESPACE,
         "correlation_id": correlation_id,
         "result_json": r#"{"status":"dispatched"}"#,
     })
-    .to_string();
-    CString::new(json)
-        .unwrap_or_else(|_| CString::new("{}").expect("static JSON has no NUL"))
-        .into_raw()
+    .to_string()
 }
 
 /// If `request` carries the `external_signer` namespace, push its inner
@@ -64,7 +59,7 @@ fn capability_dispatched_envelope(correlation_id: &str) -> *mut c_char {
 fn maybe_dispatch_external_signer(
     ctx: &AndroidCapabilityContext,
     request: &str,
-) -> Option<*mut c_char> {
+) -> Option<String> {
     let parsed: serde_json::Value = serde_json::from_str(request).ok()?;
     let namespace = parsed.get("namespace").and_then(|v| v.as_str())?;
     if namespace != EXTERNAL_SIGNER_NAMESPACE {
@@ -83,26 +78,17 @@ fn maybe_dispatch_external_signer(
     }
 }
 
-extern "C" fn android_capability_callback(
-    context: *mut c_void,
-    request_json: *const c_char,
-) -> *mut c_char {
-    if context.is_null() || request_json.is_null() {
-        return capability_error_envelope("null-args");
-    }
+/// Capability-request handler installed via `nmp_uniffi_support::set_capability_callback`.
+/// Receives the `CapabilityRequest` JSON as an owned `String` and returns the
+/// `CapabilityEnvelope` JSON as an owned `String` — `nmp_uniffi_support` wraps
+/// this closure in its own `catch_unwind` (falling back to a `sink-panicked`
+/// error envelope), so `ffi_guard` here is defense-in-depth matching the rest
+/// of this crate's FFI entry points, not the only panic backstop.
+fn android_capability_handler(ctx: &AndroidCapabilityContext, request_json: String) -> String {
     ffi_guard(
         "android_capability_callback",
         || capability_error_envelope("panic"),
         || {
-            // SAFETY: registered by nativeSetCapabilityRouter; cleared before
-            // drop. AssertUnwindSafe is sound — ptr is null-checked above and
-            // not observed again on the panic path.
-            let ctx = unsafe { &*(context as *const AndroidCapabilityContext) };
-            let request = match unsafe { CStr::from_ptr(request_json) }.to_str() {
-                Ok(s) => s,
-                Err(_) => return capability_error_envelope("bad-utf8"),
-            };
-
             // ADR-0048 — the `external_signer` namespace is async (an Amber
             // Intent round-trip cannot resolve inside this synchronous
             // callback). Split it onto the signer-request channel and ack
@@ -110,7 +96,7 @@ extern "C" fn android_capability_callback(
             // `nativeDeliverSignerResponse`. Every other namespace falls
             // through to the synchronous Kotlin router below (D7 — the host
             // never decides; this routing is a mechanical wire consequence).
-            if let Some(envelope) = maybe_dispatch_external_signer(ctx, request) {
+            if let Some(envelope) = maybe_dispatch_external_signer(ctx, &request_json) {
                 return envelope;
             }
 
@@ -118,7 +104,7 @@ extern "C" fn android_capability_callback(
                 Ok(env) => env,
                 Err(_) => return capability_error_envelope("attach-failed"),
             };
-            let j_request = match env.new_string(request) {
+            let j_request = match env.new_string(&request_json) {
                 Ok(s) => s,
                 Err(_) => return capability_error_envelope("string-failed"),
             };
@@ -136,30 +122,32 @@ extern "C" fn android_capability_callback(
                 Ok(obj) if !obj.is_null() => obj,
                 _ => return capability_error_envelope("router-returned-null"),
             };
-            let response = match env.get_string(&JString::from(obj)) {
+            match env.get_string(&JString::from(obj)) {
                 Ok(s) => s.to_string_lossy().into_owned(),
-                Err(_) => return capability_error_envelope("response-utf8-failed"),
-            };
-            CString::new(response)
-                .unwrap_or_else(|_| CString::new("{}").expect("static JSON has no NUL"))
-                .into_raw()
+                Err(_) => capability_error_envelope("response-utf8-failed"),
+            }
         },
     )
 }
 
 pub(super) fn clear_capability_router(session: &super::Session) {
-    // The null-callback write and slot clear MUST happen inside the same lock
-    // that protects installs in nativeSetCapabilityRouter. Moving the NMP
-    // call before the lock creates a window where install writes Some(ctx) to
-    // the slot after the null write, then clear takes and frees ctx while NMP
-    // still has the live pointer → UAF on the next in-flight dispatch.
-    if let Ok(mut slot) = session.capability_ctx.lock() {
-        nmp_app_set_capability_callback(session.app, std::ptr::null_mut(), None);
-        if let Some(ctx) = slot.take() {
-            // SAFETY: allocated with Box::into_raw in nativeSetCapabilityRouter.
-            unsafe {
-                drop(Box::from_raw(ctx));
-            }
+    // The null-callback write and the `installed` flag clear MUST happen
+    // inside the same lock that protects installs in
+    // `nativeSetCapabilityRouter`. Moving the NMP call before the lock
+    // creates a window where install writes a new sink to the slot after the
+    // null write, silently reverting the fresh install.
+    if let Ok(mut installed) = session.capability_ctx.lock() {
+        if *installed {
+            // SAFETY: `session.app` is a live pointer for the lifetime of the
+            // Session (freed only in `Session::drop`, which runs after this
+            // call returns — see the `nativeFree` ordering invariant).
+            let sink: Option<Box<AndroidCapabilityContext>> = None;
+            nmp_uniffi_support::set_capability_callback(
+                unsafe { &*session.app },
+                sink,
+                android_capability_handler,
+            );
+            *installed = false;
         }
     }
 }
@@ -180,7 +168,7 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
         // Null router ⇒ clear only (safe to call concurrently with nativeFree;
         // capability_ctx lock inside clear_capability_router provides the gate).
         if router.is_null() {
-            clear_capability_router(&*s);
+            clear_capability_router(&s);
             return;
         }
         let vm = match env.get_java_vm() {
@@ -198,42 +186,39 @@ pub extern "system" fn Java_io_f7z_podcast_KernelBridge_nativeSetCapabilityRoute
             Some(tx) => tx,
             None => return,
         };
-        // All of: teardown check, old-ctx clear, new callback install, and slot
-        // update happen inside the capability_ctx lock. This prevents a race
-        // where nativeFree's clear_capability_router already ran (slot → None)
-        // before we install, leaving the new ctx untracked on an app being freed.
+        // All of: teardown check and the new callback install happen inside
+        // the capability_ctx lock. This prevents a race where nativeFree's
+        // clear_capability_router already ran (installed=false) before we
+        // install, leaving the new sink untracked on an app being freed.
         //
         // Invariant: nativeFree sets shutting_down BEFORE calling
         // clear_capability_router. If we observe shutting_down=true here, either
-        // clear_capability_router already ran (slot empty — install would leak)
-        // or it is waiting for this lock (in which case it will clean up after
-        // we release). The flag check lets us short-circuit the first case.
-        let Ok(mut slot) = s.capability_ctx.lock() else {
+        // clear_capability_router already ran (installed=false — install would
+        // leak the sink past teardown) or it is waiting for this lock (in which
+        // case it will clean up after we release). The flag check lets us
+        // short-circuit the first case.
+        let Ok(mut installed) = s.capability_ctx.lock() else {
             return;
         };
         if s.shutting_down.load(Ordering::Acquire) {
             return;
         }
-        // Clear any previously installed callback before installing the new one.
-        if let Some(old) = slot.take() {
-            nmp_app_set_capability_callback(s.app, std::ptr::null_mut(), None);
-            // SAFETY: allocated with Box::into_raw in a previous call.
-            unsafe {
-                drop(Box::from_raw(old));
-            }
-        }
-        let ctx = Box::into_raw(Box::new(AndroidCapabilityContext {
+        let ctx = AndroidCapabilityContext {
             vm,
             router: global,
             signer_requests: signer_tx,
-        }));
-        nmp_app_set_capability_callback(
-            s.app,
-            ctx as *mut c_void,
-            Some(android_capability_callback),
+        };
+        // `nmp_uniffi_support::set_capability_callback` replaces (and drops)
+        // any previously installed sink internally — no manual old-ctx clear
+        // needed before installing the new one.
+        // SAFETY: `s.app` is a live pointer for the lifetime of the Session.
+        nmp_uniffi_support::set_capability_callback(
+            unsafe { &*s.app },
+            Some(Box::new(ctx)),
+            android_capability_handler,
         );
-        *slot = Some(ctx);
+        *installed = true;
         // Lock released here. If nativeFree was waiting on this lock, its
-        // clear_capability_router will see the new ctx in the slot and clean it up.
+        // clear_capability_router will see `installed = true` and clean up.
     });
 }

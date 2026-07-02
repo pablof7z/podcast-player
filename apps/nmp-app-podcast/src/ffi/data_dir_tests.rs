@@ -13,19 +13,12 @@ fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<Podc
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     // Step N+1: rev is now owned by Infra; use for_test_with_rev so test
     // assertions on `rev.load(...)` observe bumps routed through state.infra.
-    let feedback = nmp_feedback::FeedbackRuntime::new(
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-        Arc::new(Mutex::new(Vec::new())),
-        rev.clone(),
-    );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test_with_rev(rev.clone()),
         store.clone(),
         identity.clone(),
-        feedback,
     ));
-    // Steps 15-N+1: all fields in state (library, infra, feedback, feed_fetch).
+    // Steps 15-N+1: all fields in state (library, infra, feed_fetch).
     Box::new(PodcastHandle {
         app: std::ptr::null_mut(),
         state,

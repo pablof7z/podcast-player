@@ -46,7 +46,7 @@ use nostr::nips::nip19::ToBech32;
 use nmp_planner::interest::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_planner::stable_hash::stable_hash64;
 use nmp_core::substrate::{KernelEvent, ViewDependencies};
-use nmp_core::KernelEventObserver;
+use nmp_core::ObservedProjectionSink;
 
 use crate::nmp_dispatch::{publish_raw_via_nmp, push_interest_via_nmp};
 use crate::snapshot_signal::SnapshotUpdateSignal;
@@ -352,7 +352,7 @@ impl AgentNotesObserver {
     }
 }
 
-impl KernelEventObserver for AgentNotesObserver {
+impl ObservedProjectionSink for AgentNotesObserver {
     fn on_kernel_event(&self, event: &KernelEvent) {
         if event.kind != 1 {
             return;

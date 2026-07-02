@@ -226,8 +226,9 @@ impl PodcastHostOpHandler {
             // Feedback dropped with nmp-feedback (nmp-feedback#3 / podcast-player#597);
             // both actions fail-closed until the re-integration slice restores them.
             PodcastAction::FetchFeedback | PodcastAction::PublishFeedback { .. } => {
-                r#"{"error":"feedback temporarily unavailable (nmp-feedback re-integration pending)"}"#
-                    .to_string()
+                serde_json::json!({
+                    "error": "feedback temporarily unavailable (nmp-feedback re-integration pending)"
+                })
             }
             PodcastAction::SubscribeNostr {
                 author_pubkey_hex,

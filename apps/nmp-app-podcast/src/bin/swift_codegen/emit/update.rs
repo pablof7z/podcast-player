@@ -94,7 +94,7 @@ struct FeedbackEventDTO: Codable, Equatable {
 }
 
 /// Snapshot-decode mirror of the kernel's resolved feedback thread (#354).
-/// Mirrors `nmp_feedback::projection::FeedbackThreadDto` (snake_case fields
+/// Mirrors the kernel's feedback-thread projection DTO (snake_case fields
 /// survive the decoder's `.convertFromSnakeCase`). The kernel owns the Nostr
 /// reduction; the shell maps this to its view `FeedbackThread`.
 struct FeedbackThreadDTO: Codable, Equatable {
@@ -110,7 +110,7 @@ struct FeedbackThreadDTO: Codable, Equatable {
 }
 
 /// Snapshot-decode mirror of a resolved feedback reply (#354).
-/// Mirrors `nmp_feedback::projection::FeedbackReplyDto`.
+/// Mirrors the kernel's feedback-reply projection DTO.
 struct FeedbackReplyDTO: Codable, Equatable {
     var eventId: String = ""
     var authorPubkey: String = ""

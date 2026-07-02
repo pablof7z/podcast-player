@@ -32,11 +32,18 @@
 //!   `action_results` snapshot slot.
 //! * [`push_interest_via_nmp`] — push a [`LogicalInterest`] into NMP's relay
 //!   pool so the kernel opens the subscription without any iOS WebSocket.
+//!   Wraps `NmpApp::ensure_interest`, which (post observer-seam re-arch)
+//!   requires a `SubIdentity` alongside the `LogicalInterest`. The identity is
+//!   derived deterministically from the interest's own `InterestId` (mirrors
+//!   `discover_nostr::nostr_discovery_identity`): the same logical interest
+//!   always maps to the same owner/key pair, so repeat calls (e.g. a second
+//!   `handle_fetch_comments` for the same anchor) de-dupe onto one live
+//!   registry entry instead of leaking a fresh owner per call.
 
-use std::ffi::CString;
 
+use nmp_core::subs::{SubIdentity, SubKey, SubOwnerKey, SubScope};
 use nmp_native_runtime::NmpApp;
-use nmp_planner::interest::LogicalInterest;
+use nmp_planner::interest::{InterestScope, LogicalInterest};
 
 /// Register a per-podcast secret key in the kernel's identity roster without
 /// activating it. `secret_hex` must be a 64-char lowercase hex string (the
@@ -280,14 +287,37 @@ pub(crate) fn self_dispatch_publish(app: *mut nmp_native_runtime::NmpApp, body: 
         .is_ok()
 }
 
+/// Derive a deterministic [`SubIdentity`] for a [`LogicalInterest`] pushed via
+/// [`push_interest_via_nmp`]. Both `owner` and `key` fold in the interest's
+/// own [`nmp_planner::interest::InterestId`] — the same content-addressed id
+/// `nmp_dispatch` callers already build deterministically (`comments_interest`,
+/// `agent_notes_interest`, `episode_interest`) — so re-pushing the same
+/// logical interest de-dupes onto one live registry entry rather than
+/// registering a fresh owner every call. `scope` mirrors the shared
+/// `InterestScope -> SubScope` bridge used throughout `nmp-core`
+/// (`ActiveAccount` and `Global` both share the global slot space; the
+/// concrete account is resolved at compile time).
+fn logical_interest_identity(interest: &LogicalInterest) -> SubIdentity {
+    let scope = match &interest.scope {
+        InterestScope::Account(pubkey) => SubScope::Account(pubkey.clone()),
+        InterestScope::ActiveAccount | InterestScope::Global => SubScope::Global,
+    };
+    SubIdentity::new(
+        SubOwnerKey::new(interest.id.clone()),
+        SubKey::new(interest.id.clone()),
+        scope,
+    )
+}
+
 /// Push a [`LogicalInterest`] into NMP's relay pool. The kernel opens the
 /// subscription through its own connections — no iOS WebSocket ever opened.
 pub(crate) fn push_interest_via_nmp(app: *mut nmp_native_runtime::NmpApp, interest: LogicalInterest) {
     if app.is_null() {
         return;
     }
+    let identity = logical_interest_identity(&interest);
     // SAFETY: app is non-null.
-    unsafe { &*app }.push_interest(interest);
+    unsafe { &*app }.ensure_interest(identity, interest);
 }
 
 fn dispatch_nmp_publish(app: *mut nmp_native_runtime::NmpApp, body: serde_json::Value) -> &'static str {

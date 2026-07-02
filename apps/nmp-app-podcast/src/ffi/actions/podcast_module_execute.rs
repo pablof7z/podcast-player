@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use nmp_core::actor::ActorCommand;
+use nmp_core::actor::{ActorCommand, InterestsCommand};
 use nmp_core::substrate::ActionModule;
 
 use crate::discover_nostr::{nostr_discovery_identity, nostr_discovery_interest};
@@ -80,12 +80,14 @@ impl ActionModule for PodcastActionModule {
         {
             let identity = nostr_discovery_identity(consumer_id);
             if *release {
-                send(ActorCommand::DropInterestOwner(identity));
+                send(ActorCommand::Interests(InterestsCommand::DropInterestOwner(
+                    identity,
+                )));
             } else {
-                send(ActorCommand::EnsureInterest {
+                send(ActorCommand::Interests(InterestsCommand::EnsureInterest {
                     identity,
                     interest: nostr_discovery_interest(),
-                });
+                }));
             }
             return Ok(());
         }

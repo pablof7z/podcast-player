@@ -60,7 +60,7 @@ fn make_test_handle_with_app(app: *mut nmp_native_runtime::NmpApp) -> Box<Podcas
 /// the two queue rows serialize identically.
 #[test]
 fn queue_row_byte_identical_to_full_snapshot_for_content_rich_episode() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let handle = Arc::new(*make_test_handle_with_app(app));
 

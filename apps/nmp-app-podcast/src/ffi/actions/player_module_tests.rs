@@ -153,7 +153,7 @@ fn execute_emits_dispatch_host_op() {
         end_secs: None,
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    PlayerActionModule.execute(action, "corr-1", &|cmd| {
+    PlayerActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

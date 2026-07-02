@@ -308,7 +308,7 @@ fn decode_malformed_sidecar_payload_is_silently_skipped() {
 /// the library sidecar is absent from the frame.
 #[test]
 fn playback_tick_excludes_library_sidecar() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null(), "nmp_app_new must succeed");
     let app_ref = unsafe { &*app };
 
@@ -362,7 +362,7 @@ fn playback_tick_excludes_library_sidecar() {
 /// a `rev` field and the domain-specific data keys.
 #[test]
 fn domain_projections_emit_valid_json_with_rev_field() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null(), "nmp_app_new must succeed");
     let app_ref = unsafe { &*app };
 
@@ -426,7 +426,7 @@ fn domain_projections_emit_valid_json_with_rev_field() {
 /// in `make_test_handle_with_app`), then idles on a second tick.
 #[test]
 fn library_empty_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -454,7 +454,7 @@ fn library_empty_emits_tombstone_then_idles() {
 /// `podcast.downloads` changed→empty emits tombstone, second empty tick is silent.
 #[test]
 fn downloads_empty_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));

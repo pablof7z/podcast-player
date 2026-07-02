@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
-use nmp_core::actor::ActorCommand;
+use nmp_core::actor::{ActorCommand, RelayCommand};
 
 /// Wire enum for all `"podcast.settings"` namespace actions.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -224,13 +224,13 @@ impl ActionModule for SettingsActionModule {
         match action {
             SettingsAction::AddRelay { ref url, ref role }
             | SettingsAction::SetRelayRole { ref url, ref role } => {
-                send(ActorCommand::AddRelay {
+                send(ActorCommand::Relay(RelayCommand::AddRelay {
                     url: url.clone(),
                     role: role.clone(),
-                });
+                }));
             }
             SettingsAction::RemoveRelay { ref url } => {
-                send(ActorCommand::RemoveRelay { url: url.clone() });
+                send(ActorCommand::Relay(RelayCommand::RemoveRelay { url: url.clone() }));
             }
             _ => {}
         }

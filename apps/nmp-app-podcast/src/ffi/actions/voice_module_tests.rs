@@ -80,7 +80,7 @@ fn stop_and_set_voice_round_trip() {
 fn execute_emits_dispatch_host_op() {
     let action = VoiceAction::Activate;
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    VoiceActionModule.execute(action, "corr-1", &|cmd| {
+    VoiceActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

@@ -92,7 +92,7 @@ fn execute_emits_dispatch_host_op() {
         source: None,
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    MemoryActionModule.execute(action, "corr-7", &|cmd| {
+    MemoryActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-7", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

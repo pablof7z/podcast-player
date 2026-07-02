@@ -5,8 +5,9 @@ use std::sync::{Arc, Mutex};
 
 use crate::state::{Infra, PodcastAppState};
 
+use nmp_core::substrate::{ObservedProjection, ObservedProjectionRegistrar};
 use nmp_native_runtime::NmpApp;
-use nmp_nip02::ActiveFollowSet;
+use nmp_nip02::{ActiveFollowSet, LatestKind3FollowSet};
 
 use super::actions::agent_module::AgentActionModule;
 use super::actions::categorization_module::CategorizationModule;
@@ -61,7 +62,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AssertUnwindSafe is sound: all pointer null checks happen before this
     // closure is constructed; captured raw ptrs are never observed on panic path.
     let app_mut = unsafe { &mut *app };
-    // ADR-0069: `nmp_defaults::register_defaults` is deleted. Install the NMP
+    // ADR-0069: the old `register_defaults` composition root is deleted. Install the NMP
     // substrate (routing, blocked-relay lookup, publish resolver, coverage/
     // NIP-77 interceptors, NIP-11). The full per-crate protocol composition
     // (nmp_nip02/17/25/50/51/… register calls) is A2 (podcast-player#682); A1
@@ -204,10 +205,18 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     //
     // Constructed BEFORE sealing `app_state` so the SAME Arc can be injected
     // into SocialState (the projection recomputes `trusted` live against it)
-    // AND registered as a KernelEventObserver below. Because the trust verdict
-    // is recomputed at projection time, observer-registration order no longer
-    // matters for correctness.
-    let active_follow_set = ActiveFollowSet::new(app_ref.active_account_handle());
+    // AND registered as an ObservedProjectionSink below. Because the trust
+    // verdict is recomputed at projection time, observer-registration order no
+    // longer matters for correctness.
+    //
+    // `ActiveFollowSet::new` now also takes a `LatestKind3FollowSet` — the
+    // store-backed latest-kind:3 reader (the same canonical event-store source
+    // `FollowListProjection` reads below), replacing the deleted
+    // `ContactsLookup` observer-local cache.
+    let active_follow_set = ActiveFollowSet::new(
+        app_ref.active_account_handle(),
+        LatestKind3FollowSet::new(app_ref.event_store_handle()),
+    );
 
     // NOTE: outbound_turn_cache is constructed and seeded from disk below,
     // AFTER data_dir is bound. We keep a placeholder empty Arc here so the
@@ -308,44 +317,68 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // Step N+1: handler now takes only (app, state) — all infra is in state.infra.
     app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(app, app_state.clone())));
 
-    // NIP-F4 discovery observer (canonical EnsureInterest + KernelEventObserver
+    // NIP-F4 discovery observer (canonical EnsureInterest + ObservedProjectionSink
     // pattern). The `podcast.discover_nostr` action emits
-    // `ActorCommand::EnsureInterest` for `kind:10154`; NMP core opens the
-    // subscription through its own relay pool (no iOS WebSocket — D7) and every
-    // inbound show event fires this observer, which writes the projected show
-    // onto the same `nostr_results` slot the snapshot reads. Registered before
-    // the slot Arcs are moved into the handle. The returned id is dropped: the
-    // observer lives for the app's lifetime (mirrors the snapshot projection),
-    // and `nmp_app_free` joins the actor before dropping the slot.
+    // `ActorCommand::Interests(InterestsCommand::EnsureInterest)` for `kind:10154`;
+    // NMP core opens the subscription through its own relay pool (no iOS
+    // WebSocket — D7) and every inbound show event fires this observer, which
+    // writes the projected show onto the same `nostr_results` slot the
+    // snapshot reads. Registered before the slot Arcs are moved into the
+    // handle. The returned id is dropped: the observer lives for the app's
+    // lifetime (mirrors the snapshot projection), and `nmp_app_free` joins the
+    // actor before dropping the slot.
     // Step 9: observer shares from state.discovery.nostr_results (removes the
     // dead-duplicate handler Arc from PodcastHostOpHandler.nostr_results).
     // Step N+1: observers use infra clones from app_state rather than separate locals.
-    let _discovery_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::discover_nostr::NostrDiscoveryObserver::new(
-            app_state.discovery.nostr_results.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone()),
+    //
+    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
+    // fidelity. `from_kinds` declares a Global, kind:10154-only shape (no
+    // author filter — discovery is a browse across all published shows),
+    // mirroring the `nostr_discovery_interest()` sweep this observer already
+    // consumes historical shows from.
+    let _discovery_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+        std::sync::Arc::new(
+            crate::discover_nostr::NostrDiscoveryObserver::new(
+                app_state.discovery.nostr_results.share(),
+                app_state.infra.rev.clone(),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
+        ),
+        "podcast.discover_nostr.observer",
+        1, // Global — discovery is not tied to the active account.
+        [crate::discover_nostr::KIND_NIP_F4_SHOW],
+        crate::discover_nostr::NOSTR_DISCOVERY_LIMIT as usize,
     ));
 
     // kind:1111 comments observer — receives events from push_interest_via_nmp
     // subscriptions opened by handle_fetch_comments. No iOS WebSocket.
     // Step 8: observer shares cache from state.comments.cache (removes the
     // dead-duplicate handler Arc from PodcastHostOpHandler.comments_cache).
-    let _comments_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::comments_handler::CommentsObserver::new(
-            store.clone(),
-            app_state.comments.cache.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone()),
+    //
+    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
+    // fidelity. `from_kinds` declares a Global, kind:1111-only shape (comments
+    // are anchored by episode `#i` tag, not by account) — the observer itself
+    // already narrows to the anchor it cares about per inbound event.
+    let _comments_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+        std::sync::Arc::new(
+            crate::comments_handler::CommentsObserver::new(
+                store.clone(),
+                app_state.comments.cache.share(),
+                app_state.infra.rev.clone(),
+            )
+            .with_snapshot_signal(snapshot_signal.clone()),
+        ),
+        "podcast.comments.observer",
+        1, // Global — comment anchors are not account-scoped.
+        [1111u32],
+        256,
     ));
 
     // ── Reactive social-graph observers ──────────────────────────────────────
     //
     // `active_follow_set` was constructed above (before sealing `app_state`)
-    // and injected into SocialState. Here it is registered as a
-    // KernelEventObserver so kind:3 events keep it current, and an
+    // and injected into SocialState. Here it is registered as an
+    // ObservedProjectionSink so kind:3 events keep it current, and an
     // identity-change hook resets all per-account social state on switch.
     //
     // Account-change hook: `register_identity_change_observer` fires on the
@@ -365,9 +398,20 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         });
     }
     // Clone as the concrete type, then let the fn-arg position coerce
-    // Arc<ActiveFollowSet> → Arc<dyn KernelEventObserver> (unsizing).
-    let _follow_set_observer_id =
-        app_ref.register_event_observer(active_follow_set.clone());
+    // Arc<ActiveFollowSet> → Arc<dyn ObservedProjectionSink> (unsizing).
+    //
+    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
+    // fidelity. `from_kinds` declares an ActiveAccount-scoped, kind:3-only
+    // shape — `ActiveFollowSet::on_kernel_event` itself gates on
+    // `event.author == active account`, so an unrelated kind:3 is a cheap
+    // no-op rather than a filter miss.
+    let _follow_set_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+        active_follow_set.clone(),
+        "podcast.social.active_follow_set",
+        0, // ActiveAccount — re-routes to the new account's kind:3 on switch.
+        [3u32],
+        16,
+    ));
 
     // FollowListObserver: materialises a SocialSnapshot from the inner
     // FollowListProjection on every kind:3 push frame and writes it to
@@ -379,15 +423,30 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // kind:3 mutation bumps `domain_revs.social` (driving the podcast.social
     // sidecar re-emit) AND the global rev/signal.  Mirrors the same wiring
     // applied to AgentNotesObserver below.
-    let _follow_list_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::social_handler::FollowListObserver::new(
-            app_ref.active_account_handle(),
-            app_ref.contacts_lookup(),
-            app_state.social.social_slot.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone())
-        .with_social_infra(app_state.social.infra.clone()),
+    //
+    // `FollowListProjection` (the observer's inner read-model) is now a thin
+    // read-model over the canonical event store via `LatestKind3FollowSet`
+    // (replaces the deleted `ContactsLookup` observer-local cache — see
+    // `active_follow_set` construction above for the same replacement).
+    //
+    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
+    // fidelity. `from_kinds` declares the same ActiveAccount-scoped kind:3
+    // shape as `active_follow_set` above.
+    let _follow_list_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+        std::sync::Arc::new(
+            crate::social_handler::FollowListObserver::new(
+                app_ref.active_account_handle(),
+                LatestKind3FollowSet::new(app_ref.event_store_handle()),
+                app_state.social.social_slot.share(),
+                app_state.infra.rev.clone(),
+            )
+            .with_snapshot_signal(snapshot_signal.clone())
+            .with_social_infra(app_state.social.infra.clone()),
+        ),
+        "podcast.social.follow_list_observer",
+        0, // ActiveAccount — mirrors the active-account kind:3 shape above.
+        [3u32],
+        16,
     ));
 
     // kind:1 agent-notes observer — receives events from push_interest_via_nmp
@@ -399,26 +458,38 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // `with_responder` wires the auto-responder: when a trusted note lands, the
     // observer calls `agent_note_responder::try_respond_to_trusted_note`, which
     // spawns an async LLM-reply + publish task off the actor thread (D8).
-    let _agent_notes_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::agent_note_handler::AgentNotesObserver::new(
-            identity.clone(),
-            app_state.social.agent_notes.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone())
-        // `Domain::Social`-scoped infra: inbound-note bumps advance
-        // `domain_revs.social`, driving the `podcast.social` sidecar re-emit.
-        .with_social_infra(app_state.social.infra.clone())
-        .with_responder(
-            app,
-            Arc::clone(&active_follow_set),
-            Arc::clone(&approved_peer_store),
-            store.clone(),
-            Arc::clone(&responder_cache),
-            Arc::clone(&outbound_turn_cache),
-            app_state.social.outbound_turns.share(),
-            app_state.infra.runtime.clone(),
+    //
+    // TODO(A4, podcast-player#684): verify observed-projection filter/replay
+    // fidelity. `from_kinds` declares a Global, kind:1-only shape — matching
+    // `agent_notes_interest`'s own `InterestScope::Global` (the `#p`-tag
+    // filter on the active pubkey is baked into the `LogicalInterest` that
+    // `handle_fetch_agent_notes` pushes, not into the account-switch scope).
+    let _agent_notes_observer_id = app_ref.open_observed_projection(ObservedProjection::from_kinds(
+        std::sync::Arc::new(
+            crate::agent_note_handler::AgentNotesObserver::new(
+                identity.clone(),
+                app_state.social.agent_notes.share(),
+                app_state.infra.rev.clone(),
+            )
+            .with_snapshot_signal(snapshot_signal.clone())
+            // `Domain::Social`-scoped infra: inbound-note bumps advance
+            // `domain_revs.social`, driving the `podcast.social` sidecar re-emit.
+            .with_social_infra(app_state.social.infra.clone())
+            .with_responder(
+                app,
+                Arc::clone(&active_follow_set),
+                Arc::clone(&approved_peer_store),
+                store.clone(),
+                Arc::clone(&responder_cache),
+                Arc::clone(&outbound_turn_cache),
+                app_state.social.outbound_turns.share(),
+                app_state.infra.runtime.clone(),
+            ),
         ),
+        "podcast.social.agent_notes_observer",
+        1, // Global — the `#p`-tag filter is baked into the pushed interest.
+        [1u32],
+        64,
     ));
 
     // In-app feedback observer DROPPED with nmp-feedback (nmp-feedback#3);

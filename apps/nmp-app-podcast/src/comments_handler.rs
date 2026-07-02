@@ -30,7 +30,7 @@ use nostr::nips::nip19::ToBech32;
 use nmp_planner::interest::{InterestId, InterestLifecycle, InterestScope, LogicalInterest};
 use nmp_planner::stable_hash::stable_hash64;
 use nmp_core::substrate::{KernelEvent, ViewDependencies};
-use nmp_core::KernelEventObserver;
+use nmp_core::ObservedProjectionSink;
 
 use crate::comments_anchor::episode_nip73_anchor;
 use crate::ffi::projections::CommentSummary;
@@ -188,7 +188,7 @@ impl CommentsObserver {
     }
 }
 
-impl KernelEventObserver for CommentsObserver {
+impl ObservedProjectionSink for CommentsObserver {
     fn on_kernel_event(&self, event: &KernelEvent) {
         if event.kind != 1111 {
             return;

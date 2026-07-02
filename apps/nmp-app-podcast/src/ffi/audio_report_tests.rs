@@ -416,17 +416,10 @@ fn make_handle_for_advance(store: Arc<Mutex<crate::store::PodcastStore>>) -> Box
     use std::sync::atomic::AtomicU64;
     let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(crate::store::identity::IdentityStore::new()));
-    let feedback = nmp_feedback::FeedbackRuntime::new(
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-        Arc::new(Mutex::new(Vec::new())),
-        rev.clone(),
-    );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test_with_rev(rev.clone()),
         store.clone(),
         identity.clone(),
-        feedback,
     ));
     Box::new(crate::ffi::handle::PodcastHandle {
         app: std::ptr::null_mut(),

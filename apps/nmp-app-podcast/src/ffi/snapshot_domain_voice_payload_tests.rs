@@ -25,7 +25,7 @@ use super::tests::{make_test_handle_with_app, run_domain_projections_only};
 /// A second tick with the same idle state returns `None` (no perpetual rebuild).
 #[test]
 fn voice_idle_emits_tombstone_then_idles() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -61,7 +61,7 @@ fn voice_idle_emits_tombstone_then_idles() {
 fn voice_report_emits_only_voice_sidecar() {
     use crate::host_op_handler::PodcastHostOpHandler;
 
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
 
@@ -118,7 +118,7 @@ fn voice_report_emits_only_voice_sidecar() {
 /// all ~30 PodcastUpdate fields, not just the three playback fields.
 #[test]
 fn playback_payload_contains_only_playback_keys() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -163,7 +163,7 @@ fn playback_payload_contains_only_playback_keys() {
 /// `settings`, `configured_relays`, and `rev` — NOT library/playback fields.
 #[test]
 fn settings_payload_contains_only_settings_keys() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let app_ref = unsafe { &*app };
     let handle = Arc::new(*make_test_handle_with_app(app));
@@ -271,7 +271,7 @@ fn user_categories_appear_in_library_snapshot() {
     use podcast_core::Podcast;
 
     // Real (unstarted) NmpApp so build_library_snapshot's clean_html path is safe.
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     let handle = make_test_handle_with_app(app);
 
     // Subscribe a podcast and assign user-curated category labels to it.

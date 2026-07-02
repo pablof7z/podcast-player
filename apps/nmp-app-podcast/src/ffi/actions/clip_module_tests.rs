@@ -115,7 +115,7 @@ fn execute_emits_dispatch_host_op() {
         clip_id: "clip-7".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    ClipActionModule.execute(action, "corr-1", &|cmd| {
+    ClipActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

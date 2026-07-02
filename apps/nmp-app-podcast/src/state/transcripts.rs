@@ -91,7 +91,7 @@ impl TranscriptsState {
     /// instead of constructing the Arcs inline.
     ///
     /// The `fetch` closure is injected by the call site (production wraps
-    /// `nmp_ffi::nmp_app_http_request`; tests inject a deterministic stub).
+    /// the protocol-crate HTTP client; tests inject a deterministic stub).
     pub fn handle_fetch(
         &self,
         episode_id: String,

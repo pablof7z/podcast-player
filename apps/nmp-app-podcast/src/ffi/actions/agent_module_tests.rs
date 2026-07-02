@@ -53,7 +53,7 @@ fn execute_emits_dispatch_host_op() {
         message: "hi".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    AgentActionModule.execute(action, "corr-1", &|cmd| {
+    AgentActionModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

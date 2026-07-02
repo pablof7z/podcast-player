@@ -27,7 +27,6 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 
 use chrono::{TimeZone, Utc};
@@ -96,20 +95,11 @@ fn make_golden_handle(app: *mut nmp_native_runtime::NmpApp) -> Box<PodcastHandle
         Arc::new(Mutex::new(s))
     };
 
-    let rev = Arc::new(AtomicU64::new(1));
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
-    // Step 16: feedback injected into PodcastAppState; feed_fetch constructed inside.
-    let feedback = nmp_feedback::FeedbackRuntime::new(
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE),
-        Arc::new(Mutex::new(Vec::new())),
-        rev.clone(),
-    );
     let state = Arc::new(crate::state::PodcastAppState::new_with_identity(
         crate::state::Infra::for_test(),
         store.clone(),
         identity.clone(),
-        feedback,
     ));
     // Clear agent_tasks: default_seed() uses Uuid::new_v4() + Utc::now(), making
     // the fixture non-deterministic.  The golden test exercises the projection
@@ -139,16 +129,15 @@ fn make_golden_handle(app: *mut nmp_native_runtime::NmpApp) -> Box<PodcastHandle
 fn snapshot_bytes_match_golden_fixture() {
     // A real (unstarted) NmpApp so the configured-relays projection doesn't
     // deref a null pointer.  Never started — no background thread touches it.
-    let app = nmp_ffi::nmp_app_new();
-    assert!(!app.is_null(), "nmp_app_new returned null");
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
 
     let handle = make_golden_handle(app);
     let update = build_podcast_update(&handle);
     let actual_json = serde_json::to_string(&update).expect("serialize PodcastUpdate");
 
     // Free the app AFTER the snapshot is built and handle is dropped.
-    // SAFETY: `app` came from `nmp_app_new` and is freed exactly once here.
-    // It was never started, so there is no actor thread to join.
+    // SAFETY: `app` came from `Box::into_raw` above and is freed exactly once
+    // here. It was never started, so there is no actor thread to join.
     drop(handle);
     unsafe { drop(Box::from_raw(app)) };
 

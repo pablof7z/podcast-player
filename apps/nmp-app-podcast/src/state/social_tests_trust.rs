@@ -10,7 +10,7 @@ use super::*;
 use crate::agent_note_handler::CachedAgentNote;
 use crate::store::approved_peer_store::ApprovedPeerStore;
 use nmp_core::substrate::KernelEvent;
-use nmp_core::KernelEventObserver;
+use nmp_core::ObservedProjectionSink;
 use nmp_nip02::ActiveFollowSet;
 use std::sync::{Arc, Mutex};
 
@@ -28,7 +28,10 @@ fn cached_note(id: &str, author_hex: &str) -> CachedAgentNote {
 fn make_follow_set_with_member(me: &str, member_hex: &str) -> Arc<ActiveFollowSet> {
     // ActiveFollowSet::new already returns Arc<ActiveFollowSet>.
     let active_slot = Arc::new(Mutex::new(Some(me.to_string())));
-    let follow_set = ActiveFollowSet::new(Arc::clone(&active_slot));
+    let follow_set = ActiveFollowSet::new(
+        Arc::clone(&active_slot),
+        nmp_nip02::LatestKind3FollowSet::new(nmp_core::slots::new_event_store_slot()),
+    );
     let kind3 = KernelEvent {
         id: nmp_core::substrate::EventId::from(
             "0000000000000000000000000000000000000000000000000000000000000002".to_string(),

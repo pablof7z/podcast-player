@@ -1,12 +1,10 @@
 //! Android JNI wrappers for shared provider transport FFI.
 
-use std::ffi::{c_char, CStr, CString};
+use std::ffi::{c_char, CString};
 
 use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jstring};
 use jni::JNIEnv;
-
-use nmp_ffi::nmp_free_string;
 
 use super::session_ref;
 use crate::ffi::guard::ffi_guard;
@@ -58,10 +56,13 @@ fn call_podcast_json_ffi<'l>(
         if result_ptr.is_null() {
             return null;
         }
-        let owned = unsafe { CStr::from_ptr(result_ptr) }
+        // SAFETY: `result_ptr` is a heap-owned NUL-terminated C string
+        // produced via `CString::into_raw` inside the podcast crate's own
+        // `nmp_app_podcast_*` FFI functions; reclaim and drop it — there is
+        // no separate free-string doorway anymore.
+        let owned = unsafe { CString::from_raw(result_ptr) }
             .to_string_lossy()
             .into_owned();
-        nmp_free_string(result_ptr);
         java_string(env, owned)
     })
 }
@@ -84,10 +85,13 @@ fn call_podcast_global_json_ffi<'l>(
         if result_ptr.is_null() {
             return null;
         }
-        let owned = unsafe { CStr::from_ptr(result_ptr) }
+        // SAFETY: `result_ptr` is a heap-owned NUL-terminated C string
+        // produced via `CString::into_raw` inside the podcast crate's own
+        // `nmp_app_podcast_*` FFI functions; reclaim and drop it — there is
+        // no separate free-string doorway anymore.
+        let owned = unsafe { CString::from_raw(result_ptr) }
             .to_string_lossy()
             .into_owned();
-        nmp_free_string(result_ptr);
         java_string(env, owned)
     })
 }
@@ -109,10 +113,13 @@ fn call_podcast_catalog_ffi<'l>(
         if result_ptr.is_null() {
             return null;
         }
-        let owned = unsafe { CStr::from_ptr(result_ptr) }
+        // SAFETY: `result_ptr` is a heap-owned NUL-terminated C string
+        // produced via `CString::into_raw` inside the podcast crate's own
+        // `nmp_app_podcast_*` FFI functions; reclaim and drop it — there is
+        // no separate free-string doorway anymore.
+        let owned = unsafe { CString::from_raw(result_ptr) }
             .to_string_lossy()
             .into_owned();
-        nmp_free_string(result_ptr);
         java_string(env, owned)
     })
 }

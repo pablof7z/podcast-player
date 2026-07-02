@@ -144,7 +144,7 @@ fn execute_emits_dispatch_host_op() {
         podcast_id: "pod-1".into(),
     };
     let commands = std::sync::Mutex::new(Vec::<ActorCommand>::new());
-    NipF4PublishModule.execute(action, "corr-1", &|cmd| {
+    NipF4PublishModule.execute(&nmp_core::substrate::ActionContext::default(), action, "corr-1", &|cmd| {
         commands.lock().unwrap().push(cmd);
     })
     .expect("execute ok");

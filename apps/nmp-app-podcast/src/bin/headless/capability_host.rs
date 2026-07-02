@@ -20,8 +20,7 @@
 //! callback via `Runtime::block_on`. The runtime is initialised once in
 //! `install` and lives for the process lifetime (the `OnceLock` never drops).
 
-use std::ffi::{c_char, c_void, CStr, CString};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::ffi::CString;
 use std::sync::OnceLock;
 
 use nmp_app_podcast::capability::{
@@ -61,10 +60,13 @@ pub fn install(app: *mut NmpApp) {
             .expect("relay runtime")
     });
 
-    nmp_app_set_capability_callback(
-        app,
-        std::ptr::null_mut(), // context unused — runtime/handle are in statics
-        Some(capability_handler),
+    // SAFETY: `app` is non-null (checked at construction in
+    // `harness::app_new`) and live for the remainder of the process — the
+    // headless binary never frees it before `install` runs.
+    nmp_uniffi_support::set_capability_callback(
+        unsafe { &*app },
+        Some(Box::new(())),
+        |_sink: &(), request_json: String| handle_request(&request_json),
     );
 }
 
@@ -78,44 +80,11 @@ pub fn set_handle(handle: *mut PodcastHandle) {
     PODCAST_HANDLE_ADDR.get_or_init(|| handle as usize);
 }
 
-use nmp_ffi::nmp_app_set_capability_callback;
-
-/// C-ABI capability handler. Receives `CapabilityRequest` JSON, routes by
-/// namespace, and returns a `CapabilityEnvelope` JSON pointer.
-///
-/// D6: never returns null; every failure is data in the envelope.
-extern "C" fn capability_handler(_ctx: *mut c_void, request_json: *const c_char) -> *mut c_char {
-    // Local guard mirrors ffi/guard.rs for this binary entry point (pub(crate)
-    // ffi_guard is not reachable from [[bin]] crates). The fallback CString is
-    // constructed ONLY on the panic path — building it eagerly would leak its
-    // heap allocation on every successful call (the success branch returns
-    // `body`'s pointer and the unused raw-pointer fallback drops as a no-op).
-    match catch_unwind(AssertUnwindSafe(|| {
-        let request_str = if request_json.is_null() {
-            ""
-        } else {
-            // SAFETY: kernel guarantees a valid NUL-terminated C string.
-            match unsafe { CStr::from_ptr(request_json) }.to_str() {
-                Ok(s) => s,
-                Err(_) => "",
-            }
-        };
-        let result_json = handle_request(request_str);
-        CString::new(result_json)
-            .unwrap_or_else(|_| CString::new("{}").unwrap())
-            .into_raw()
-    })) {
-        Ok(ptr) => ptr,
-        Err(_) => {
-            eprintln!("[headless] capability_handler caught panic; returning error envelope");
-            CString::new(r#"{"error":"panic"}"#)
-                .expect("static string")
-                .into_raw()
-        }
-    }
-}
-
 /// Route the request JSON to the right handler. Returns the envelope JSON.
+///
+/// D6: never panics out to the caller — `nmp_uniffi_support::set_capability_callback`
+/// wraps this closure in its own `catch_unwind` and falls back to an error
+/// envelope on a sink panic.
 fn handle_request(request_str: &str) -> String {
     let req: CapabilityRequest = match serde_json::from_str(request_str) {
         Ok(r) => r,

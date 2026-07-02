@@ -146,6 +146,19 @@ fn make_typed(schema_id: &str, payload: serde_json::Value) -> TypedProjectionDat
     }
 }
 
+/// Wrap a `podcast.*` schema id as the app-owned registration key
+/// `register_typed_snapshot_projection` now requires (`nmp_ownership`
+/// surface-token hardening — a bare `&str` no longer satisfies
+/// `Into<ProjectionRegistrationKey>`). The `SCHEMA_*` constants above are all
+/// static `podcast.*` literals, so `app_owned` can never fail here — an
+/// `expect` matches the `.expect("... must not collide")` idiom already used
+/// for action-module registration in `ffi/register.rs`.
+fn podcast_projection_key(schema_id: &'static str) -> nmp_ownership::ProjectionRegistrationKey {
+    nmp_ownership::DynamicProjectionKey::app_owned(schema_id)
+        .expect("podcast.* schema id must be a valid app-owned projection key")
+        .into()
+}
+
 // ── Registration helpers ──────────────────────────────────────────────────────
 
 /// Register all per-domain typed snapshot projections.
@@ -171,7 +184,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.library);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_LIBRARY, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_LIBRARY), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -189,7 +202,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.playback);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_PLAYBACK, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_PLAYBACK), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -206,7 +219,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.downloads);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_DOWNLOADS, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_DOWNLOADS), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -224,7 +237,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.settings);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_SETTINGS, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_SETTINGS), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -257,7 +270,7 @@ pub fn register_domain_projections(
         let domain_rev = Arc::clone(&domain_revs.identity);
         let last_emitted = Arc::new(AtomicU64::new(0));
         let last_active_hex: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
-        app_ref.register_typed_snapshot_projection(SCHEMA_IDENTITY, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_IDENTITY), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             let kernel_hex = super::snapshot_identity::kernel_active_account_hex(&h);
@@ -291,7 +304,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.widget);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_WIDGET, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_WIDGET), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -309,7 +322,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.social);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_SOCIAL, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_SOCIAL), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -327,7 +340,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.voice);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_VOICE, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_VOICE), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
@@ -346,7 +359,7 @@ pub fn register_domain_projections(
         let h = Arc::clone(handle);
         let domain_rev = Arc::clone(&domain_revs.misc);
         let last_emitted = Arc::new(AtomicU64::new(0));
-        app_ref.register_typed_snapshot_projection(SCHEMA_MISC, move || {
+        app_ref.register_typed_snapshot_projection(podcast_projection_key(SCHEMA_MISC), move || {
             let current = domain_rev.load(Ordering::Relaxed);
             let prev = last_emitted.load(Ordering::Relaxed);
             if current == prev {
