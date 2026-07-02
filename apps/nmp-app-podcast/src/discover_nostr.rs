@@ -1,5 +1,5 @@
 //! `podcast.discover_nostr` — NIP-F4 (`kind:10154`) podcast discovery via
-//! NMP's relay pool, the canonical `EnsureInterest` + `KernelEventObserver`
+//! NMP's relay pool, the canonical `EnsureInterest` + `ObservedProjectionSink`
 //! pattern.
 //!
 //! ## Why this replaced the old capability-dispatch path
@@ -17,7 +17,7 @@
 //!    is specified — NMP routes automatically. `is_indexer_discovery = true`
 //!    routes the sweep through the indexer because `kind:10154` is sparse.
 //! 2. A [`NostrDiscoveryObserver`] registered at init fires for every inbound
-//!    `kind:10154` event ([`KernelEventObserver::on_kernel_event`]).
+//!    `kind:10154` event ([`ObservedProjectionSink::on_kernel_event`]).
 //! 3. The observer parses the event into a [`NostrShowSummary`] and writes it
 //!    into the shared `nostr_results` slot, bumping `rev`.
 //! 4. The existing snapshot projection reads `nostr_results` unchanged.
@@ -166,7 +166,7 @@ fn upsert_show(
     true
 }
 
-/// In-process [`KernelEventObserver`] that turns inbound `kind:10154` events
+/// In-process [`ObservedProjectionSink`] that turns inbound `kind:10154` events
 /// into [`NostrShowSummary`] rows on the shared discovery slot.
 ///
 /// Registered once at init (see `ffi::register`) against the same

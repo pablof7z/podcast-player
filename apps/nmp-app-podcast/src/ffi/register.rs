@@ -331,23 +331,22 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // Step N+1: handler now takes only (app, state) — all infra is in state.infra.
     app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(app, app_state.clone())));
 
-    // pablof7z/podcast-player#690 owns the reactive observer redesign.
-    // The deleted blanket `NmpApp::register_event_observer` must become
-    // declarative `ObservedProjection` registrations; until then
-    // discovery/comments/social/agent-notes subscriptions can still open, but
-    // nothing pushes resulting events into their snapshot slots.
-    //
-    // Identity-change handling (clearing per-account social state on
-    // sign-in/switch/logout) is independent of the observer registration
-    // above and still wired below.
-    {
-        let afs = Arc::clone(&active_follow_set);
-        let state_for_switch = app_state.clone();
-        app_ref.register_identity_change_observer(move |_| {
-            afs.notify_account_changed();
-            state_for_switch.social.clear_for_account_switch();
-        });
-    }
+    // Reactive observers (pablof7z/podcast-player#690): re-wire discovery,
+    // comments, active-follow-set, follow-list, and agent-notes onto the
+    // declarative `open_observed_projection` seam, plus the account-switch
+    // identity hook. See `register_observers` for the per-observer shapes.
+    super::register_observers::register_reactive_observers(super::register_observers::ObserverWiring {
+        app,
+        app_ref,
+        app_state: &app_state,
+        snapshot_signal: &snapshot_signal,
+        store: &store,
+        identity: &identity,
+        active_follow_set: &active_follow_set,
+        approved_peer_store: &approved_peer_store,
+        responder_cache: &responder_cache,
+        outbound_turn_cache: &outbound_turn_cache,
+    });
 
     // Step N+1: PodcastHandle is now the minimal 2-field shell:
     //   app  — raw *mut NmpApp for capability dispatch

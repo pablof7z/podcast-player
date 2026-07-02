@@ -9,14 +9,16 @@
 //! The new design is observer-only:
 //!
 //! * [`FollowListObserver`] wraps the upstream [`nmp_nip02::FollowListProjection`]
-//!   (a `KernelEventObserver` for kind:3).  It updates the shared
-//!   `social_slot` (`Option<SocialSnapshot>`) on every kind:3 push frame and
-//!   bumps the snapshot signal so the iOS shell gets an immediate push.
+//!   (a thin read-model over the canonical event store) and is itself
+//!   registered as an [`ObservedProjectionSink`] for kind:3.  On every kind:3
+//!   push frame it re-reads the projection, updates the shared `social_slot`
+//!   (`Option<SocialSnapshot>`), and bumps the snapshot signal so the iOS
+//!   shell gets an immediate push.
 //!
-//! * The `account_profile_interest` standing subscription that the kernel
-//!   already opens for kind:0 + kind:3 + kind:10002 delivers kind:3 events
-//!   to every registered `KernelEventObserver` without any extra subscription
-//!   request.  No `EnsureInterest` call, no manual relay URL, no polling.
+//! * The observed-projection seam (`ObservedProjection::from_kinds` for
+//!   kind:3, opened via `NmpApp::open_observed_projection`) replays cached
+//!   kind:3 events and delivers future ones to every registered sink for that
+//!   shape — no `EnsureInterest` call, no manual relay URL, no polling.
 //!
 //! * [`handle_fetch_contacts`] is kept as a refresh TRIGGER: Swift can call
 //!   `podcast.FetchContacts` to bump the snapshot rev and signal the iOS
@@ -63,10 +65,10 @@ use crate::state::Infra;
 /// Wraps [`FollowListProjection`] and materialises a [`SocialSnapshot`] on
 /// every kind:3 push frame, writing it to the shared `social_slot`.
 ///
-/// Registered as a `KernelEventObserver` via `register.rs`.  The kernel's
-/// standing `account_profile_interest` subscription delivers kind:3 events
-/// without any extra subscription request — no polling, no hardcoded relay
-/// URLs.
+/// Registered as an [`ObservedProjectionSink`] via `register.rs`, declared for
+/// kind:3. The observed-projection seam replays cached kind:3 events and
+/// delivers future ones without any extra subscription request — no polling,
+/// no hardcoded relay URLs.
 pub struct FollowListObserver {
     projection: FollowListProjection,
     social_slot: Arc<Mutex<Option<SocialSnapshot>>>,
