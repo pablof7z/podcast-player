@@ -98,6 +98,7 @@ mod provider_embeddings;
 mod provider_key_validation;
 mod provider_model_catalog;
 mod register;
+mod register_composition;
 pub(crate) mod relay_persist;
 mod rerank;
 pub(crate) mod snapshot;
