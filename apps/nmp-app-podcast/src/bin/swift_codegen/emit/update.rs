@@ -13,7 +13,7 @@ pub(super) fn emit_podcast_update() -> String {
 import Foundation
 
 /// Top-level snapshot emitted by the Rust podcast kernel on every podcast
-	/// projection tick (pushed via typed domain sidecars; the full podcast snapshot is cold-start / compat only).
+/// projection tick (pushed via typed domain sidecars; the full podcast snapshot is cold-start / compat only).
 struct PodcastUpdate {
     var running: Bool = false
     var rev: Int = 0

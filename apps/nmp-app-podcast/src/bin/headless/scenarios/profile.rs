@@ -67,7 +67,7 @@
 //! exact contract so a regression in the routing chain is caught before it
 //! reaches the device.
 
-use nmp_app_podcast::ffi::PodcastApp;
+use nmp_app_podcast::ffi::{PodcastApp, PodcastUpdate};
 use serde_json::json;
 
 use crate::fixtures;
@@ -78,6 +78,14 @@ use crate::scenarios::ScenarioResult::{self, Fail, Pass};
 const TEST_DISPLAY_NAME: &str = "Headless Test User";
 /// Known picture URL used for the publish_profile dispatch.
 const TEST_PICTURE_URL: &str = "https://example.com/avatar.jpg";
+
+fn has_published_display_name(update: &PodcastUpdate) -> bool {
+    update
+        .active_account
+        .as_ref()
+        .and_then(|a| a.display_name.as_deref())
+        == Some(TEST_DISPLAY_NAME)
+}
 
 pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Identity setup ────────────────────────────────────────────────────────
@@ -187,39 +195,47 @@ pub fn run(app: &PodcastApp) -> ScenarioResult {
     // `AccountSummary.display_name` would remain `None` forever and this
     // `wait_for` would time out and return `Fail`. The assertion proves the
     // fix works and CI-gates it.
-    match wait_for(app, 2_000, |u| {
-        u.active_account
-            .as_ref()
-            .and_then(|a| a.display_name.as_deref())
-            == Some(TEST_DISPLAY_NAME)
-    }) {
-        Ok(update) => {
-            let account = update.active_account.unwrap();
-            // Also verify pubkey integrity so we catch accidental identity replacement.
-            if account.pubkey_hex != pre_account.pubkey_hex {
-                return Fail(format!(
-                    "pubkey_hex changed after publish_profile: before={} after={}",
-                    pre_account.pubkey_hex, account.pubkey_hex
-                ));
-            }
-            if account.npub != fixtures::HEADLESS_TEST_NPUB {
-                return Fail(format!(
-                    "npub corrupted by publish_profile: {}",
-                    account.npub
-                ));
-            }
+    let update = match snapshot(app).filter(has_published_display_name) {
+        Some(update) => update,
+        None => match wait_for(app, 2_000, has_published_display_name) {
+            Ok(update) => update,
+            Err(timeout_msg) => match snapshot(app) {
+                Some(update) if has_published_display_name(&update) => update,
+                current => {
+                    let current_display_name = current
+                        .and_then(|u| u.active_account)
+                        .and_then(|a| a.display_name);
+                    return Fail(format!(
+                        "AccountSummary.display_name never reflected published value \
+                         (expected {:?}, got {:?}): {}",
+                        TEST_DISPLAY_NAME, current_display_name, timeout_msg
+                    ));
+                }
+            },
+        },
+    };
+
+    let account = match update.active_account {
+        Some(account) => account,
+        None => {
+            return Fail(
+                "active_account missing after publish_profile display_name appeared".into(),
+            );
         }
-        Err(timeout_msg) => {
-            // On timeout, read the current snapshot for a diagnostic.
-            let current_display_name = snapshot(app)
-                .and_then(|u| u.active_account)
-                .and_then(|a| a.display_name);
-            return Fail(format!(
-                "AccountSummary.display_name never reflected published value \
-                 (expected {:?}, got {:?}): {}",
-                TEST_DISPLAY_NAME, current_display_name, timeout_msg
-            ));
-        }
+    };
+
+    // Also verify pubkey integrity so we catch accidental identity replacement.
+    if account.pubkey_hex != pre_account.pubkey_hex {
+        return Fail(format!(
+            "pubkey_hex changed after publish_profile: before={} after={}",
+            pre_account.pubkey_hex, account.pubkey_hex
+        ));
+    }
+    if account.npub != fixtures::HEADLESS_TEST_NPUB {
+        return Fail(format!(
+            "npub corrupted by publish_profile: {}",
+            account.npub
+        ));
     }
 
     Pass
