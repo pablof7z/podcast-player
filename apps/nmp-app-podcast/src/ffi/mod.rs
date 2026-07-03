@@ -51,7 +51,6 @@ mod byok_auth;
 mod carplay_projection;
 mod chat_complete;
 mod data_dir;
-pub(crate) mod dispatch_action;
 mod download_report;
 mod elevenlabs_scribe;
 mod elevenlabs_tts;

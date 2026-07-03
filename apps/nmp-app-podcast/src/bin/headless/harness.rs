@@ -11,9 +11,10 @@ pub fn dispatch(
     namespace: &str,
     payload: serde_json::Value,
 ) -> serde_json::Value {
-    app.dispatch_podcast_action(namespace.to_owned(), payload.to_string())
-        .and_then(|json| serde_json::from_str(&json).ok())
-        .unwrap_or_else(|| serde_json::json!({"error": "dispatch returned no envelope"}))
+    match app.dispatch_action_json_for_rust(namespace, &payload.to_string()) {
+        Ok(correlation_id) => serde_json::json!({ "correlation_id": correlation_id }),
+        Err(error) => serde_json::json!({ "error": error }),
+    }
 }
 
 /// Read the current podcast snapshot through the app-owned facade.

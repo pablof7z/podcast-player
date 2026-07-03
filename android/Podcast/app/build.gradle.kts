@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.google.flatbuffers:flatbuffers-java:25.2.10")
     implementation("net.java.dev.jna:jna:5.14.0@aar")
 
     // ─── Jetpack Security — EncryptedSharedPreferences for the Nostr nsec ──

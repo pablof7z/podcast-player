@@ -177,10 +177,10 @@ final class PodcastHandle: @unchecked Sendable {
     /// Dispatch a namespace-keyed action. Returns the synchronous dispatch
     /// result. D6: returns .failure for a null podcast handle.
     ///
-    /// ADR-0064: routes through `PodcastApp.dispatchPodcastAction`, whose Rust
-    /// body encodes the action into typed bytes before entering
-    /// `nmp-native-runtime`. This keeps Swift off the deleted nmp-ffi JSON
-    /// doorway while the shell still owns JSON-shaped action builders.
+    /// ADR-0064: routes through `PodcastApp.dispatchAction(envelope:)` with
+    /// generated NMP action-builder bytes. Swift still serializes some
+    /// app-owned JSON action bodies, but it no longer calls the UniFFI
+    /// namespace/action JSON compatibility method.
     @discardableResult
     func dispatchAction(namespace: String, body: [String: Any]) -> DispatchResult {
         // Perf: dispatch is a synchronous FFI round-trip on the caller thread
@@ -197,11 +197,25 @@ final class PodcastHandle: @unchecked Sendable {
         else {
             return .failure("failed to serialize action body")
         }
-        let envelope = podcastApp.dispatchPodcastAction(namespace: namespace, actionJson: jsonStr)
-        guard let envelope else {
-            return .failure("dispatch returned a null envelope")
+        let correlationId = Self.mintDispatchCorrelationId()
+        let envelope: [UInt8]?
+        if namespace == "nmp.blossom.upload" {
+            envelope = KernelDispatchEnvelope.blossomUpload(body: body, correlationId: correlationId)
+        } else {
+            envelope = KernelDispatchEnvelope.podcast(
+                namespace: namespace,
+                json: jsonStr,
+                correlationId: correlationId
+            )
         }
-        return DispatchResult.parse(envelope: envelope)
+        guard let envelope else {
+            return .failure("no generated action builder for namespace \(namespace)")
+        }
+        return DispatchResult.from(outcome: podcastApp.dispatchAction(envelope: Data(envelope)))
+    }
+
+    private static func mintDispatchCorrelationId() -> String {
+        "podcast-swift-\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: ""))"
     }
 
     fileprivate static func decode(payload: String) -> KernelUpdateResult? {

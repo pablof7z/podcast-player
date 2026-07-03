@@ -1,0 +1,463 @@
+{
+  "actions": [
+    {
+      "action_namespace": "podcast",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.root",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastJson",
+        "doc": "Dispatch a root podcast action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "PodcastActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.agent",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.agent",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastAgentJson",
+        "doc": "Dispatch a podcast.agent action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "AgentActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.categorize",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.categorize",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastCategorizeJson",
+        "doc": "Dispatch a podcast.categorize action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "CategorizationModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.chapters",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.chapters",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastChaptersJson",
+        "doc": "Dispatch a podcast.chapters action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "ChaptersActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.clip",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.clip",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastClipJson",
+        "doc": "Dispatch a podcast.clip action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "ClipActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.identity",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.identity",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastIdentityJson",
+        "doc": "Dispatch a podcast.identity action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "IdentityActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.inbox",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.inbox",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastInboxJson",
+        "doc": "Dispatch a podcast.inbox action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "InboxActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.knowledge",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.knowledge",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastKnowledgeJson",
+        "doc": "Dispatch a podcast.knowledge action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "KnowledgeActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.memory",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.memory",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastMemoryJson",
+        "doc": "Dispatch a podcast.memory action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "MemoryActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.picks",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.picks",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastPicksJson",
+        "doc": "Dispatch a podcast.picks action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "AgentPicksModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.player",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.player",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastPlayerJson",
+        "doc": "Dispatch a podcast.player action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "PlayerActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.publish",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.publish",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastPublishJson",
+        "doc": "Dispatch a podcast.publish action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "NipF4PublishModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.queue",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.queue",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastQueueJson",
+        "doc": "Dispatch a podcast.queue action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "QueueActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.settings",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.settings",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastSettingsJson",
+        "doc": "Dispatch a podcast.settings action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "SettingsActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.siri",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.siri",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastSiriJson",
+        "doc": "Dispatch a podcast.siri action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "SiriActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.social",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.social",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastSocialJson",
+        "doc": "Dispatch a podcast.social action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "SocialActionModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.tasks",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.tasks",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastTasksJson",
+        "doc": "Dispatch a podcast.tasks action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "AgentTasksModule"
+      }
+    },
+    {
+      "action_namespace": "podcast.voice",
+      "event_kind": 0,
+      "dispatch": "app_local",
+      "schema": {
+        "schema_path": "schema/podcast_json_action.fbs",
+        "root_type": "PodcastJsonPayload",
+        "file_identifier": "PJSN",
+        "schema_id": "podcast.json_passthrough.voice",
+        "schema_version": 1
+      },
+      "builder": {
+        "method": "podcastVoiceJson",
+        "doc": "Dispatch a podcast.voice action body through the app-local typed byte doorway.",
+        "fields": [
+          { "name": "json", "kind": "string" }
+        ]
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "action_payload",
+        "payload_type": "PodcastJsonPayload",
+        "action_module": "VoiceActionModule"
+      }
+    }
+  ],
+  "outputs": {
+    "swift": "../../App/Sources/Bridge/Generated/PodcastActionBuilders.generated.swift",
+    "kotlin": "../../android/Podcast/app/src/main/java/io/f7z/podcast/nmp/PodcastActionBuilders.kt",
+    "ts": "../../web/src/podcastActionBuilders.generated.ts"
+  },
+  "drift_checks": [
+    "cargo run -p nmp-codegen -- gen action-builders --registry apps/nmp-app-podcast/action-builders.json --platform swift --check",
+    "cargo run -p nmp-codegen -- gen action-builders --registry apps/nmp-app-podcast/action-builders.json --platform kotlin --check"
+  ]
+}

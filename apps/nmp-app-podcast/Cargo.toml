@@ -61,6 +61,7 @@ tempfile = { version = "3", optional = true }
 tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 futures-util = { version = "0.3" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+flatbuffers = "25.2"
 nmp-core = { workspace = true }
 # A1 (#681): `nmp-native-runtime` owns the `NmpApp` handle + lifecycle
 # (successor to the deleted `nmp-ffi`). This crate builds its OWN UniFFI

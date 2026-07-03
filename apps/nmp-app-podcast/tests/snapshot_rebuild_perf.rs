@@ -25,9 +25,10 @@ our picks of the week. Full show notes and transcript on our website.";
 fn dispatch(app: &PodcastApp, payload: serde_json::Value) -> serde_json::Value {
     // ADR-0064: route through the typed byte doorway.
     let body = payload.to_string();
-    app.dispatch_podcast_action("podcast".to_string(), body)
-        .and_then(|envelope| serde_json::from_str(&envelope).ok())
-        .unwrap_or(serde_json::Value::Null)
+    match app.dispatch_action_json_for_rust("podcast", &body) {
+        Ok(correlation_id) => serde_json::json!({ "correlation_id": correlation_id }),
+        Err(error) => serde_json::json!({ "error": error }),
+    }
 }
 
 /// Count episodes in the current snapshot by decoding the projected payload.

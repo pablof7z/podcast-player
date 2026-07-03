@@ -45,4 +45,17 @@ enum DispatchResult: Equatable {
         return .failure(
             "dispatch envelope missing both correlation_id and error (bytes=\(envelope.utf8.count))")
     }
+
+    static func from(outcome: PodcastDispatchOutcome) -> DispatchResult {
+        if let message = outcome.error, !message.isEmpty {
+            return .failure(message)
+        }
+        if let correlationId = outcome.correlationId, !correlationId.isEmpty {
+            return .accepted(correlationId: correlationId)
+        }
+        if let code = outcome.code, !code.isEmpty {
+            return .failure("dispatch returned no correlation id (code=\(code))")
+        }
+        return .failure("dispatch returned no correlation id")
+    }
 }

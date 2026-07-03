@@ -630,8 +630,6 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
 
     func dispatchInputIntent(requestJson: String, sessionId: String?)  -> String
 
-    func dispatchPodcastAction(namespace: String, actionJson: String)  -> String?
-
     func downloadReport(requestJson: String)  -> String?
 
     func elevenlabsScribeTranscribe(requestJson: String)  -> String?
@@ -1258,15 +1256,6 @@ open func dispatchInputIntent(requestJson: String, sessionId: String?) -> String
     uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_input_intent(self.uniffiClonePointer(),
         FfiConverterString.lower(requestJson),
         FfiConverterOptionString.lower(sessionId),$0
-    )
-})
-}
-
-open func dispatchPodcastAction(namespace: String, actionJson: String) -> String?  {
-    return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_podcast_action(self.uniffiClonePointer(),
-        FfiConverterString.lower(namespace),
-        FfiConverterString.lower(actionJson),$0
     )
 })
 }
@@ -3220,9 +3209,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_input_intent() != 24629) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action() != 5545) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report() != 36126) {

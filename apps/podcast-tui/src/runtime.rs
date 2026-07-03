@@ -60,8 +60,8 @@ impl AppRuntime {
 
     pub fn dispatch_action(&self, namespace: &str, action_json: &str) -> Result<String> {
         self.app
-            .dispatch_podcast_action(namespace.to_owned(), action_json.to_owned())
-            .ok_or_else(|| "action dispatch returned no envelope".to_string())
+            .dispatch_action_json_for_rust(namespace, action_json)
+            .map(|correlation_id| format!(r#"{{"correlation_id":"{correlation_id}"}}"#))
     }
 
     pub fn dispatch_action_value(&self, namespace: &str, action: &Value) -> Result<String> {

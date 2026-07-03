@@ -13,7 +13,7 @@ import org.junit.Test
  * Kernel wire contract (`ActionRegistry::start`):
  *   Accepted : `{"correlation_id":"<32-hex>"}`
  *   Rejected : `{"error":"<human-readable reason>"}`
- *   FFI fail : null return from `PodcastApp.dispatchPodcastAction`
+ *   FFI fail : null return from `KernelBridge.dispatchAction`
  *
  * Regression guard for the two Android bugs fixed in this PR:
  *   Bug 1 — EditProfileScreen used `contains("\"ok\":false")`, which never

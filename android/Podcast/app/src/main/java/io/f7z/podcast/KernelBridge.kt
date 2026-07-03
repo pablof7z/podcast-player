@@ -3,10 +3,14 @@ package io.f7z.podcast
 import io.f7z.podcast.capabilities.AndroidCapabilityRouter
 import io.f7z.podcast.capabilities.CapabilityRequest
 import io.f7z.podcast.capabilities.CapabilityWire
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import uniffi.nmp_app_podcast.PodcastApp as UniFfiPodcastApp
 import uniffi.nmp_app_podcast.PodcastCapabilitySink
+import uniffi.nmp_app_podcast.PodcastDispatchOutcome
 import uniffi.nmp_app_podcast.PodcastProfileShape
 import uniffi.nmp_app_podcast.PodcastRefLiveness
 import uniffi.nmp_app_podcast.PodcastRefNamespace
@@ -73,7 +77,11 @@ class KernelBridge : KernelDispatcher {
     }
 
     override fun dispatchAction(namespace: String, payloadJson: String): String? {
-        return if (isOpen()) app.dispatchPodcastAction(namespace, payloadJson) else null
+        if (!isOpen()) return null
+        val correlationId = mintDispatchCorrelationId()
+        val envelope = KernelDispatchEnvelope.podcast(namespace, payloadJson, correlationId)
+            ?: return dispatchErrorEnvelope("no generated action builder for namespace $namespace")
+        return app.dispatchAction(envelope).toEnvelopeJson()
     }
 
     fun registerCapabilityRouter(router: AndroidCapabilityRouter) {
@@ -279,6 +287,23 @@ class KernelBridge : KernelDispatcher {
     private fun putSignerRequest(item: SignerQueueItem) {
         runCatching { signerQueue.put(item) }
             .onFailure { Thread.currentThread().interrupt() }
+    }
+
+    private fun mintDispatchCorrelationId(): String =
+        "podcast-android-${UUID.randomUUID().toString().lowercase().replace("-", "")}"
+
+    private fun dispatchErrorEnvelope(message: String): String =
+        JsonObject(mapOf("error" to JsonPrimitive(message))).toString()
+
+    private fun PodcastDispatchOutcome.toEnvelopeJson(): String {
+        val acceptedCorrelationId = correlationId?.takeIf { it.isNotEmpty() }
+        if (acceptedCorrelationId != null && error.isNullOrEmpty()) {
+            return JsonObject(mapOf("correlation_id" to JsonPrimitive(acceptedCorrelationId))).toString()
+        }
+        val message = error?.takeIf { it.isNotEmpty() }
+            ?: code?.takeIf { it.isNotEmpty() }
+            ?: "Dispatch failed."
+        return dispatchErrorEnvelope(message)
     }
 
     private sealed interface UpdateQueueItem {

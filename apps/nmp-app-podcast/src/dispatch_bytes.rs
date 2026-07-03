@@ -11,7 +11,8 @@
 //! wrapped in a [`DispatchEnvelope`](nmp_core::dispatch_envelope).
 //!
 //! This module encodes both NMP-owned namespaces (`nmp.publish`, `nmp.blossom.upload`)
-//! and podcast-specific namespaces via `PodcastJsonPayload` pass-through.
+//! and podcast-specific namespaces via the app-local `PodcastJsonPayload`
+//! FlatBuffers table.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -42,7 +43,8 @@ pub fn mint_correlation_id() -> String {
 ///
 /// `namespace` is the module's HOST namespace (e.g. `nmp.publish`, `podcast.player`).
 /// For NMP-owned namespaces, this uses their typed `ActionPayload` impls.
-/// For podcast namespaces, this uses the `PodcastJsonPayload` pass-through.
+/// For podcast namespaces, this wraps the JSON body in the generated
+/// `PodcastJsonPayload` FlatBuffers table.
 /// Returns a fail-closed error string for an unknown namespace or a body that
 /// does not deserialize into the namespace's typed action.
 fn encode_payload_for_namespace(namespace: &str, json: &str) -> Result<Vec<u8>, String> {
@@ -50,9 +52,9 @@ fn encode_payload_for_namespace(namespace: &str, json: &str) -> Result<Vec<u8>, 
         "nmp.publish" => encode::<nmp_core::publish::PublishAction>(namespace, json),
         "nmp.blossom.upload" => encode::<nmp_blossom::UploadInput>(namespace, json),
         // Podcast-specific namespaces (bare "podcast" or "podcast.*" family):
-        // wrap raw JSON in the pass-through payload. PodcastJsonPayload is not
-        // serde-Deserializable (it wraps opaque JSON), so we construct it directly
-        // instead of going through the generic encode<P>.
+        // wrap the app-owned JSON body in the generated FlatBuffers payload.
+        // PodcastJsonPayload is not serde-Deserializable (it wraps opaque JSON),
+        // so construct it directly instead of going through encode<P>.
         ns if ns == "podcast" || ns.starts_with("podcast.") => {
             let payload = crate::action_payload::PodcastJsonPayload {
                 schema_version: crate::action_payload::PodcastJsonPayload::SCHEMA_VERSION,

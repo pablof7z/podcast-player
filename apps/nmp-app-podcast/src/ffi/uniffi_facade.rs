@@ -14,7 +14,6 @@ use nmp_native_runtime::NmpApp;
 use zeroize::Zeroizing;
 
 use super::audio_report::audio_report_response_json;
-use super::dispatch_action::dispatch_action_json;
 use super::elevenlabs_voice_catalog::elevenlabs_voice_catalog_json;
 use super::handle::PodcastHandle;
 use super::http_report::apply_http_report_json;
@@ -264,16 +263,6 @@ impl PodcastApp {
         decode_update_frame_json(&frame)
     }
 
-    pub fn dispatch_podcast_action(
-        &self,
-        namespace: String,
-        action_json: String,
-    ) -> Option<String> {
-        self.podcast
-            .get()
-            .map(|handle| dispatch_action_json(handle, &namespace, &action_json))
-    }
-
     pub fn set_local_llm_sink(&self, sink: Option<Box<dyn PodcastLocalLlmSink>>) {
         let sink = sink.map(|sink| Arc::new(LocalLlmSinkAdapter { sink }) as Arc<dyn LocalLlmSink>);
         set_registration(sink);
@@ -394,6 +383,19 @@ impl PodcastApp {
 }
 
 impl PodcastApp {
+    pub fn dispatch_action_json_for_rust(
+        &self,
+        namespace: &str,
+        action_json: &str,
+    ) -> Result<String, String> {
+        self.podcast
+            .get()
+            .ok_or_else(|| "runtime app is not available".to_string())
+            .and_then(|handle| {
+                crate::dispatch_bytes::dispatch_action_bytes_for(handle.app, namespace, action_json)
+            })
+    }
+
     pub(crate) fn podcast_handle_for_uniffi(&self) -> Option<&PodcastHandle> {
         self.podcast.get().map(Arc::as_ref)
     }

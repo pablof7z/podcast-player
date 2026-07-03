@@ -32,6 +32,13 @@ var swiftPackages: [Package] = [
         url: "https://github.com/onevcat/Kingfisher",
         requirement: .revision("cf8be20d07654570554c8a8a4952bc8a5766a8b0")
     ),
+    // FlatBuffers Swift runtime. Used by NMP generated action builders for the
+    // UniFFI `dispatchAction(envelope:)` byte doorway. Pinned to the same
+    // v25.12.19 release family as the Rust `flatbuffers` crate in Cargo.lock.
+    .remote(
+        url: "https://github.com/google/flatbuffers",
+        requirement: .revision("7e163021e59cca4f8e1e35a7c828b5c6b7915953")
+    ),
 ]
 
 if enableLiteRTLMPackage {
@@ -49,6 +56,7 @@ if enableLiteRTLMPackage {
 
 var appDependencies: [TargetDependency] = [
     .package(product: "Kingfisher"),
+    .package(product: "FlatBuffers"),
 ]
 
 if enableLiteRTLMPackage {

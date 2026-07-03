@@ -1080,8 +1080,6 @@ internal open class UniffiVTableCallbackInterfacePodcastUpdateSink(
 
 
 
-
-
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is
 // rather `InterfaceTooLargeException`, caused by too many methods
@@ -1202,8 +1200,6 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_action(
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_capability_json(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_input_intent(
-): Short
-fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report(
 ): Short
@@ -1543,8 +1539,6 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_action(`ptr`: Pointer,`
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_capability_json(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_input_intent(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,`sessionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
-): RustBuffer.ByValue
-fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_podcast_action(`ptr`: Pointer,`namespace`: RustBuffer.ByValue,`actionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_download_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
@@ -2021,9 +2015,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_input_intent() != 24629.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action() != 5545.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report() != 36126.toShort()) {
@@ -2828,8 +2819,6 @@ public interface PodcastAppInterface {
     fun `dispatchCapabilityJson`(`requestJson`: kotlin.String): kotlin.String
 
     fun `dispatchInputIntent`(`requestJson`: kotlin.String, `sessionId`: kotlin.String?): kotlin.String
-
-    fun `dispatchPodcastAction`(`namespace`: kotlin.String, `actionJson`: kotlin.String): kotlin.String?
 
     fun `downloadReport`(`requestJson`: kotlin.String): kotlin.String?
 
@@ -3679,18 +3668,6 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_input_intent(
         it, FfiConverterString.lower(`requestJson`),FfiConverterOptionalString.lower(`sessionId`),_status)
-}
-    }
-    )
-    }
-
-
-    override fun `dispatchPodcastAction`(`namespace`: kotlin.String, `actionJson`: kotlin.String): kotlin.String? {
-            return FfiConverterOptionalString.lift(
-    callWithPointer {
-    uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_podcast_action(
-        it, FfiConverterString.lower(`namespace`),FfiConverterString.lower(`actionJson`),_status)
 }
     }
     )
