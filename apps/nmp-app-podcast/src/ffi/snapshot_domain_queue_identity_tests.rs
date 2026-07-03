@@ -21,7 +21,7 @@ use crate::store::PodcastStore;
 /// Minimal handle with a real (unstarted) `NmpApp` so `build_configured_relays`
 /// does not deref a null pointer. The caller frees `app` after dropping the
 /// handle.
-fn make_test_handle_with_app(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
+fn make_test_handle_with_app(app: *mut nmp_native_runtime::NmpApp) -> Box<PodcastHandle> {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let state = Arc::new(PodcastAppState::new(Infra::for_test(), store.clone()));
     state.tasks.tasks.lock().unwrap().clear();
@@ -41,7 +41,9 @@ fn make_test_handle_with_app(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
         snapshot_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
         ask_state: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskState::default())),
-        ask_callback: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskCallbackState::default())),
+        ask_callback: Arc::new(Mutex::new(
+            crate::ffi::agent_ask::AgentAskCallbackState::default(),
+        )),
     })
 }
 
@@ -60,7 +62,7 @@ fn make_test_handle_with_app(app: *mut nmp_ffi::NmpApp) -> Box<PodcastHandle> {
 /// the two queue rows serialize identically.
 #[test]
 fn queue_row_byte_identical_to_full_snapshot_for_content_rich_episode() {
-    let app = nmp_ffi::nmp_app_new();
+    let app = Box::into_raw(Box::new(nmp_native_runtime::new_app()));
     assert!(!app.is_null());
     let handle = Arc::new(*make_test_handle_with_app(app));
 

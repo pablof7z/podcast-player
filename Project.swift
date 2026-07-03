@@ -174,6 +174,17 @@ let project = Project(
                     "PROVISIONING_PROFILE_SPECIFIER": "$(CI_APP_PROFILE_SPECIFIER)",
                     // Rust FFI bridge
                     "SWIFT_OBJC_BRIDGING_HEADER": "App/Sources/Bridge/NmpCore.h",
+                    // Wave 1 of the UniFFI-facade migration (podcast-player#681
+                    // follow-on): `PodcastApp`'s generated Swift binding
+                    // (`App/Sources/Bridge/Generated/PodcastApp.uniffi.swift`)
+                    // imports its FFI symbols as the separate Clang module
+                    // `nmp_app_podcastFFI`, NOT through `NmpCore.h` — merging it
+                    // into the bridging header would make every
+                    // `uniffi_nmp_app_podcast_fn_*` symbol match
+                    // `ci/check-ffi-header-drift.sh`'s `nmp_*` pattern and falsely
+                    // flag as undeclared drift. Clang auto-discovers the
+                    // `module.modulemap` file in this search path directory.
+                    "HEADER_SEARCH_PATHS": "$(inherited) $(SRCROOT)/App/Sources/Bridge/Generated/PodcastAppFFI",
                     "OTHER_LDFLAGS": "$(inherited) -lnmp_app_podcast",
                     "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
                     "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": "$(inherited) $(SRCROOT)/target/aarch64-apple-ios/debug $(SRCROOT)/target/aarch64-apple-ios/release $(HOME)/.cargo/target-shared/aarch64-apple-ios/debug $(HOME)/.cargo/target-shared/aarch64-apple-ios/release",

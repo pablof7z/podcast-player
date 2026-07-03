@@ -3,7 +3,7 @@ name = "nmp-app-podcast"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Per-app Podcast glue. Owns the kernel composition root, wires nmp-defaults defaults, and surfaces the projected state over a static-lib FFI for the iOS shell."
+description = "Per-app Podcast glue. Owns the kernel composition root and surfaces the projected state over a static-lib FFI for the iOS shell."
 
 [lib]
 name = "nmp_app_podcast"
@@ -28,7 +28,14 @@ lmdb-backend = ["nmp-core/lmdb-backend"]
 # tokio-tungstenite and futures-util are now non-optional (production social
 # graph relay subscriptions use them). Gated deps here are only the test-only
 # build utilities; the relay client is a production dependency.
-headless = ["dep:tempfile", "nmp-core/test-support", "nmp-ffi/test-support"]
+headless = ["dep:tempfile", "nmp-core/test-support", "nmp-native-runtime/test-support"]
+# Build the `uniffi-bindgen` binary to regenerate the `PodcastApp` Swift/
+# Kotlin bindings (wave 1 of the UniFFI-facade migration,
+# podcast-player#681 follow-on). NOT in `default` — keeps cold builds out of
+# the CI watchdog budget. Mirrors NMP's own `nmp-uniffi` crate's `bindgen`
+# feature (uniffi 0.29 puts `uniffi_bindgen_main` behind the `cli` feature).
+# Usage: see `ci/check-uniffi-bindings-drift.sh`.
+bindgen = ["uniffi/cli"]
 
 [[bin]]
 name = "headless"
@@ -39,6 +46,11 @@ required-features = ["headless"]
 name = "swift-codegen"
 path = "src/bin/swift_codegen/main.rs"
 # No required-features: the codegen binary uses only std, no crate deps.
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi_bindgen.rs"
+required-features = ["bindgen"]
 
 [dependencies]
 async-trait = "0.1"
@@ -56,29 +68,40 @@ tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 futures-util = { version = "0.3" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 nmp-core = { workspace = true }
-# `nmp-ffi` owns the `NmpApp` C-ABI handle. Podcast's
-# `nmp_app_podcast_register` takes `*mut NmpApp`; the per-app crate names
-# the handle + FFI symbols (`nmp_app_dispatch_action`, etc.) through this
-# dep.
-# `external-signer` (ADR-0048) adds the NIP-55 Amber driver: the
-# `nmp_app_signin_nip55` / `nmp_app_deliver_external_signer_response` /
-# `nmp_external_signer_init` C-ABI symbols the Android JNI shim calls. Rides the
-# existing capability socket (no new FFI primitive); kept distinct from
-# `signer-broker` so the NIP-46 relay-broker graph is not pulled in twice.
-nmp-ffi = { workspace = true, features = ["signer-broker", "external-signer"] }
-nmp-signer-broker = { workspace = true }
-nmp-feedback = { workspace = true }
+# A1 (#681): `nmp-native-runtime` owns the `NmpApp` handle + lifecycle
+# (successor to the deleted `nmp-ffi`). This crate builds its OWN UniFFI
+# facade object directly on top (mirrors apps/nmp-gallery/crates/nmp-app-gallery
+# and 29er's crates/nmp-app-29er in the NMP repo) rather than depending on the
+# generic `nmp-uniffi` base-object crate.
+nmp-native-runtime = { workspace = true, features = ["external-signer", "signer-broker"] }
+nmp-uniffi-support = { workspace = true }
+nmp-nostr-id = { workspace = true }
+uniffi = { workspace = true }
+# ADR-0069 composition root: reusable substrate floor (routing, mailbox/
+# profile/contact caches, parsers, publish resolver, coverage gate, NIP-77
+# sync). Replaces the deleted `nmp-defaults::register_defaults` preset —
+# apps now install `nmp_substrate::install(...)` plus explicit per-crate
+# `register_*` calls (see ffi/register.rs).
+nmp-substrate = { workspace = true }
+nmp-ownership = { workspace = true }
+# pablof7z/nmp-feedback#3 tracks restoring feedback-thread integration
+# after `nmp-feedback` is rebuilt on the current NMP facade shape.
+# — see the workspace Cargo.toml pin-discipline comment.
 # NIP-02 reactive follow-list projection + ActiveFollowSet trust-gate predicate.
-# Already transitive via nmp-defaults; listed explicitly so social_handler.rs
-# can import FollowListProjection and ActiveFollowSet (D11 — single door).
+# Listed explicitly so social_handler.rs can import FollowListProjection and
+# ActiveFollowSet (D11 — single door).
 nmp-nip02 = { workspace = true }
 nmp-nip50 = { workspace = true }
-# Canonical NMP composition root. One call wires the default action modules
-# (NIP-02 / NIP-17 / NIP-57 / NIP-65), the kind:10050 ingest parser, the
-# production routing substrate, and the DM-inbox + zap-receipts runtime
-# controllers. Podcast's `nmp_app_podcast_register` calls `register_defaults`
-# once at app init instead of duplicating the boilerplate.
-nmp-defaults = { workspace = true }
+# Explicit protocol installers formerly bundled by the deleted
+# `nmp-defaults::register_defaults` preset (repost/quote-repost, react/
+# unreact, DM send + relay-list publish, outbox relay-list publish routing,
+# bookmarks). See ffi/register.rs for the explicit call sites.
+nmp-nip18 = { workspace = true }
+nmp-nip25 = { workspace = true }
+nmp-nip17 = { workspace = true }
+nmp-nip51 = { workspace = true }
+nmp-router = { workspace = true }
+nmp-wot = { workspace = true }
 # Subscription planner (direct dep for InterestId/LogicalInterest/etc.).
 # nmp-core no longer re-exports the planner facade (#1608); external callers
 # depend on nmp-planner directly.
@@ -141,7 +164,7 @@ base64 = "0.22"
 # Test-support gates expose `nmp_app_new` / `nmp_app_free` so FFI smoke tests
 # can spin up a real `NmpApp` rather than mocking the slot.
 nmp-core = { workspace = true, features = ["test-support"] }
-nmp-ffi = { workspace = true, features = ["test-support"] }
+nmp-native-runtime = { workspace = true, features = ["test-support"] }
 # Temporary directory support for PodcastKeyStore and identity store round-trip tests.
 tempfile = "3"
 

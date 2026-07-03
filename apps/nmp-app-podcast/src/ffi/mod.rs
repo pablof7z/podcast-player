@@ -2,9 +2,9 @@
 //!
 //! `extern "C"` symbols Swift links against:
 //!
-//! - [`nmp_app_podcast_register`] — wire `nmp-defaults` defaults into
-//!   the supplied `NmpApp` and return an opaque handle for subsequent
-//!   snapshot / unregister calls.
+//! - [`nmp_app_podcast_register`] — install the explicit NMP substrate and
+//!   protocol modules into the supplied `NmpApp`, then return an opaque handle
+//!   for subsequent snapshot / unregister calls.
 //! - [`nmp_app_podcast_snapshot`] — serialize the current app state into a
 //!   freshly-allocated nul-terminated JSON C string. Swift owns the pointer
 //!   until it calls `nmp_app_podcast_snapshot_free`.
@@ -98,8 +98,10 @@ mod provider_embeddings;
 mod provider_key_validation;
 mod provider_model_catalog;
 mod register;
+mod register_observers;
 pub(crate) mod relay_persist;
 mod rerank;
+mod runtime_facade;
 pub(crate) mod snapshot;
 mod snapshot_categories;
 mod snapshot_domain_builders;
@@ -126,6 +128,7 @@ mod transcript_plan;
 mod transcript_report;
 mod transcript_tool_result;
 mod threading_projection;
+pub mod uniffi_facade;
 mod voice_report;
 
 pub use actions::{
@@ -267,6 +270,16 @@ pub use provider_key_validation::{
 pub use provider_model_catalog::nmp_app_podcast_provider_model_catalog;
 pub use register::nmp_app_podcast_register;
 pub use rerank::nmp_app_podcast_rerank;
+pub use runtime_facade::{
+    nmp_app_cancel_bunker_handshake, nmp_app_configure, nmp_app_consume_all_builtin_projections,
+    nmp_app_create_new_account, nmp_app_free, nmp_app_intent_classify, nmp_app_intent_dispatch,
+    nmp_app_is_alive, nmp_app_lifecycle_background, nmp_app_lifecycle_foreground, nmp_app_new,
+    nmp_app_nostrconnect_uri, nmp_app_release_ref, nmp_app_remove_account, nmp_app_reset,
+    nmp_app_resolve_ref, nmp_app_set_capability_callback, nmp_app_set_storage_path,
+    nmp_app_set_update_callback, nmp_app_sign_event_for_return, nmp_app_signin_bunker,
+    nmp_app_signin_nsec, nmp_app_start, nmp_app_stop, nmp_free_string, nmp_nip21_decode_uri,
+    nmp_signer_broker_init,
+};
 pub use snapshot::{
     nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
     nmp_app_podcast_unregister, AppRelayRow, PodcastUpdate,
@@ -280,5 +293,10 @@ pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use transcript_tool_result::nmp_app_podcast_transcript_tool_result;
 pub use threading_projection::{
     nmp_app_podcast_threading_active_topics, nmp_app_podcast_threading_projection,
+};
+pub use uniffi_facade::{
+    PodcastApp, PodcastCapabilitySink, PodcastDispatchOutcome, PodcastEventShape,
+    PodcastProfileShape, PodcastRefLiveness, PodcastRefNamespace, PodcastRefShape,
+    PodcastUpdateSink,
 };
 pub use voice_report::nmp_app_podcast_voice_report;

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::state::{Infra, PodcastAppState};
 
-use nmp_ffi::NmpApp;
+use nmp_native_runtime::NmpApp;
 use nmp_nip02::ActiveFollowSet;
 
 use super::actions::agent_module::AgentActionModule;
@@ -61,32 +61,67 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AssertUnwindSafe is sound: all pointer null checks happen before this
     // closure is constructed; captured raw ptrs are never observed on panic path.
     let app_mut = unsafe { &mut *app };
-    nmp_defaults::register_defaults(app_mut);
+    // ADR-0069 explicit composition (A1, pablof7z/podcast-player#681):
+    // `nmp-defaults::register_defaults` is deleted upstream. This installs
+    // the reusable substrate floor plus the same protocol action modules
+    // register_defaults used to bundle (NIP-02 follow, NIP-18 repost/quote-
+    // repost, NIP-25 react/unreact, NIP-17 DM send + relay-list + DM-inbox
+    // runtime, NIP-65 publish-relay-list action + routing substrate, NIP-51
+    // bookmarks, WOT bootstrap) — see the NMP repo's
+    // `crates/nmp-cli/templates/lib.rs.tmpl` for the canonical shape this
+    // mirrors.
+    let _substrate_handles =
+        nmp_substrate::install(app_mut, nmp_substrate::SubstrateConfig::default());
+    let _nip02 = nmp_nip02::register(app_mut, nmp_nip02::Config::default())
+        .expect("nmp-nip02 registration must not collide");
+    let _nip18 = nmp_nip18::register(app_mut, nmp_nip18::Config::default())
+        .expect("nmp-nip18 registration must not collide");
+    let _nip25 = nmp_nip25::register(app_mut, nmp_nip25::Config::default())
+        .expect("nmp-nip25 registration must not collide");
+    let _nip51 = nmp_nip51::register(
+        app_mut,
+        nmp_nip51::Config {
+            search_fallback_relays: nmp_nip50::SearchFallbackRelays::default(),
+        },
+    )
+    .expect("nmp-nip51 registration must not collide");
+    let _nip17 = nmp_nip17::register(app_mut, nmp_nip17::Config::default())
+        .expect("nmp-nip17 registration must not collide");
+    let _wot = nmp_wot::register(app_mut, nmp_wot::Config::default())
+        .expect("nmp-wot registration must not collide");
 
     // Wire the BUD-02 Blossom upload action (`nmp.blossom.upload`).
     // D13/D0: Rust owns the full Build → Sign → Transport pipeline.
     // Swift dispatches with a correlation-id and reads the BlobDescriptor
     // from action_results[correlation_id].result on the next push frame.
-    nmp_blossom::register_actions(app_mut);
+    let _blossom = nmp_blossom::register(app_mut, nmp_blossom::Config::default())
+        .expect("nmp-blossom registration must not collide");
 
-    app_mut.register_action(IdentityActionModule);
-    app_mut.register_action(PodcastActionModule);
-    app_mut.register_action(PlayerActionModule);
-    app_mut.register_action(QueueActionModule);
-    app_mut.register_action(ChaptersActionModule);
-    app_mut.register_action(AgentPicksModule);
-    app_mut.register_action(AgentTasksModule);
-    app_mut.register_action(KnowledgeActionModule);
-    app_mut.register_action(MemoryActionModule);
-    app_mut.register_action(ClipActionModule);
-    app_mut.register_action(InboxActionModule);
-    app_mut.register_action(NipF4PublishModule);
-    app_mut.register_action(VoiceActionModule);
-    app_mut.register_action(AgentActionModule);
-    app_mut.register_action(CategorizationModule);
-    app_mut.register_action(SettingsActionModule);
-    app_mut.register_action(SiriActionModule);
-    app_mut.register_action(SocialActionModule);
+    // `register_action` now returns `Result<(), RegistrationError>` (an
+    // app-over-app namespace collision, ADR-0049) instead of `()`. Every
+    // namespace below is distinct and app-owned, so a collision here would
+    // indicate a real bug; `expect` surfaces that loudly in dev AND release
+    // builds rather than silently swallowing it (matches the trait doc's
+    // guidance — `register_default_action` is the yielding variant for
+    // deliberate overrides, not this one).
+    app_mut.register_action(IdentityActionModule).expect("podcast.identity namespace collision");
+    app_mut.register_action(PodcastActionModule).expect("podcast namespace collision");
+    app_mut.register_action(PlayerActionModule).expect("podcast.player namespace collision");
+    app_mut.register_action(QueueActionModule).expect("podcast.queue namespace collision");
+    app_mut.register_action(ChaptersActionModule).expect("podcast.chapters namespace collision");
+    app_mut.register_action(AgentPicksModule).expect("podcast.picks namespace collision");
+    app_mut.register_action(AgentTasksModule).expect("podcast.tasks namespace collision");
+    app_mut.register_action(KnowledgeActionModule).expect("podcast.knowledge namespace collision");
+    app_mut.register_action(MemoryActionModule).expect("podcast.memory namespace collision");
+    app_mut.register_action(ClipActionModule).expect("podcast.clip namespace collision");
+    app_mut.register_action(InboxActionModule).expect("podcast.inbox namespace collision");
+    app_mut.register_action(NipF4PublishModule).expect("podcast.publish namespace collision");
+    app_mut.register_action(VoiceActionModule).expect("podcast.voice namespace collision");
+    app_mut.register_action(AgentActionModule).expect("podcast.agent namespace collision");
+    app_mut.register_action(CategorizationModule).expect("podcast.categorize namespace collision");
+    app_mut.register_action(SettingsActionModule).expect("podcast.settings namespace collision");
+    app_mut.register_action(SiriActionModule).expect("podcast.siri namespace collision");
+    app_mut.register_action(SocialActionModule).expect("podcast.social namespace collision");
 
     // Shared state between the handle (snapshot reader) and the handler (writer).
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -127,19 +162,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     let rev = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1));
     let snapshot_signal = SnapshotUpdateSignal::new(rev.clone(), app_ref.actor_sender());
 
-    // Step 16: feedback runtime constructed here (needs the snapshot-bump hook
-    // that captures the live signal) and injected into PodcastAppState.  The
-    // observer and relay-seed calls below use app_state.feedback.
-    let feedback_events_cache: nmp_feedback::FeedbackEventCache = Arc::new(Mutex::new(Vec::new()));
-    let feedback_config =
-        nmp_feedback::FeedbackConfig::new(crate::PODCAST_FEEDBACK_PROJECT_COORDINATE)
-            .with_interest_namespace(crate::PODCAST_FEEDBACK_INTEREST_NAMESPACE);
-    let feedback_runtime =
-        nmp_feedback::FeedbackRuntime::new(feedback_config, feedback_events_cache, rev.clone())
-            .with_snapshot_bump(Arc::new({
-                let snapshot_signal = snapshot_signal.clone();
-                move || snapshot_signal.bump()
-            }));
+    // Feedback runtime is tracked by pablof7z/nmp-feedback#3. It used to be
+    // constructed here with the live snapshot-bump hook and injected into
+    // PodcastAppState; A0/A1 removed it until the replacement runtime exists.
 
     // Steps 0-N+1 — composed state root.
     // `Infra` bundles rev + signal + runtime.  `PodcastAppState::new`
@@ -176,7 +201,6 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         app_state_infra.clone(),
         store.clone(),
         identity.clone(),
-        feedback_runtime,
     );
     // Step 12: Replace the default null-app VoiceSubstate with one that holds
     // the live `app` pointer so `VoiceConversationManager` can dispatch
@@ -212,7 +236,10 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // AND registered as a KernelEventObserver below. Because the trust verdict
     // is recomputed at projection time, observer-registration order no longer
     // matters for correctness.
-    let active_follow_set = ActiveFollowSet::new(app_ref.active_account_handle());
+    let active_follow_set = ActiveFollowSet::new(
+        app_ref.active_account_handle(),
+        nmp_nip02::LatestKind3FollowSet::new(app_ref.event_store_handle()),
+    );
 
     // NOTE: outbound_turn_cache is constructed and seeded from disk below,
     // AFTER data_dir is bound. We keep a placeholder empty Arc here so the
@@ -297,11 +324,9 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
             "both,indexer".to_string(),
         ),
         ("wss://purplepag.es".to_string(), "indexer".to_string()),
-        // In-app feedback source relay. Seeded read-only so NMP opens the
-        // connection used by the relay-pinned feedback subscription; publish
-        // targets the same relay explicitly through `nmp-feedback`.
-        // Step 16: feedback is now in app_state.feedback.
-        app_state.feedback.config().relay_seed(),
+        // pablof7z/nmp-feedback#3 owns the future feedback relay seed. This
+        // list no longer opens the relay-pinned feedback subscription because
+        // the feedback runtime was removed in A0/A1.
     ]);
 
     // Steps 8-10: comments_cache, viewed_comments_episode_id, nostr_results,
@@ -316,125 +341,22 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // Step N+1: handler now takes only (app, state) — all infra is in state.infra.
     app_ref.set_host_op_handler(Arc::new(PodcastHostOpHandler::new(app, app_state.clone())));
 
-    // NIP-F4 discovery observer (canonical EnsureInterest + KernelEventObserver
-    // pattern). The `podcast.discover_nostr` action emits
-    // `ActorCommand::EnsureInterest` for `kind:10154`; NMP core opens the
-    // subscription through its own relay pool (no iOS WebSocket — D7) and every
-    // inbound show event fires this observer, which writes the projected show
-    // onto the same `nostr_results` slot the snapshot reads. Registered before
-    // the slot Arcs are moved into the handle. The returned id is dropped: the
-    // observer lives for the app's lifetime (mirrors the snapshot projection),
-    // and `nmp_app_free` joins the actor before dropping the slot.
-    // Step 9: observer shares from state.discovery.nostr_results (removes the
-    // dead-duplicate handler Arc from PodcastHostOpHandler.nostr_results).
-    // Step N+1: observers use infra clones from app_state rather than separate locals.
-    let _discovery_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::discover_nostr::NostrDiscoveryObserver::new(
-            app_state.discovery.nostr_results.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone()),
-    ));
-
-    // kind:1111 comments observer — receives events from push_interest_via_nmp
-    // subscriptions opened by handle_fetch_comments. No iOS WebSocket.
-    // Step 8: observer shares cache from state.comments.cache (removes the
-    // dead-duplicate handler Arc from PodcastHostOpHandler.comments_cache).
-    let _comments_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::comments_handler::CommentsObserver::new(
-            store.clone(),
-            app_state.comments.cache.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone()),
-    ));
-
-    // ── Reactive social-graph observers ──────────────────────────────────────
-    //
-    // `active_follow_set` was constructed above (before sealing `app_state`)
-    // and injected into SocialState. Here it is registered as a
-    // KernelEventObserver so kind:3 events keep it current, and an
-    // identity-change hook resets all per-account social state on switch.
-    //
-    // Account-change hook: `register_identity_change_observer` fires on the
-    // update-listener thread whenever the active pubkey changes (sign-in /
-    // switch / logout). It:
-    //   1. `notify_account_changed` — clears the stale follow set and re-seeds
-    //      the new account's own pubkey (self-inclusion).
-    //   2. `clear_for_account_switch` — empties `social_slot` + `agent_notes`
-    //      so A's following list and A's notes don't bleed into B's session
-    //      (cross-account leak fix).
-    {
-        let afs = Arc::clone(&active_follow_set);
-        let state_for_switch = app_state.clone();
-        app_ref.register_identity_change_observer(move |_| {
-            afs.notify_account_changed();
-            state_for_switch.social.clear_for_account_switch();
-        });
-    }
-    // Clone as the concrete type, then let the fn-arg position coerce
-    // Arc<ActiveFollowSet> → Arc<dyn KernelEventObserver> (unsizing).
-    let _follow_set_observer_id =
-        app_ref.register_event_observer(active_follow_set.clone());
-
-    // FollowListObserver: materialises a SocialSnapshot from the inner
-    // FollowListProjection on every kind:3 push frame and writes it to
-    // state.social.social_slot.  Uses the kernel's standing
-    // account_profile_interest subscription (kind:0 + kind:3 + kind:10002) —
-    // no extra relay subscription needed.
-    //
-    // `with_social_infra` wires the Domain::Social-scoped Infra so every
-    // kind:3 mutation bumps `domain_revs.social` (driving the podcast.social
-    // sidecar re-emit) AND the global rev/signal.  Mirrors the same wiring
-    // applied to AgentNotesObserver below.
-    let _follow_list_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::social_handler::FollowListObserver::new(
-            app_ref.active_account_handle(),
-            app_ref.contacts_lookup(),
-            app_state.social.social_slot.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone())
-        .with_social_infra(app_state.social.infra.clone()),
-    ));
-
-    // kind:1 agent-notes observer — receives events from push_interest_via_nmp
-    // subscriptions opened by handle_fetch_agent_notes. No iOS WebSocket.
-    // It caches raw notes (author hex retained, NO trust stamp); the trust
-    // verdict is recomputed live at projection time in SocialState against the
-    // shared ActiveFollowSet (so follow/unfollow flips existing notes).
-    //
-    // `with_responder` wires the auto-responder: when a trusted note lands, the
-    // observer calls `agent_note_responder::try_respond_to_trusted_note`, which
-    // spawns an async LLM-reply + publish task off the actor thread (D8).
-    let _agent_notes_observer_id = app_ref.register_event_observer(std::sync::Arc::new(
-        crate::agent_note_handler::AgentNotesObserver::new(
-            identity.clone(),
-            app_state.social.agent_notes.share(),
-            app_state.infra.rev.clone(),
-        )
-        .with_snapshot_signal(snapshot_signal.clone())
-        // `Domain::Social`-scoped infra: inbound-note bumps advance
-        // `domain_revs.social`, driving the `podcast.social` sidecar re-emit.
-        .with_social_infra(app_state.social.infra.clone())
-        .with_responder(
-            app,
-            Arc::clone(&active_follow_set),
-            Arc::clone(&approved_peer_store),
-            store.clone(),
-            Arc::clone(&responder_cache),
-            Arc::clone(&outbound_turn_cache),
-            app_state.social.outbound_turns.share(),
-            app_state.infra.runtime.clone(),
-        ),
-    ));
-
-    // In-app feedback observer. The reusable module owns event filtering,
-    // bounded caching, and snapshot rev bumps. Unlike agent-notes, it does NOT
-    // self-filter — the Feedback UI shows the user's own threads.
-    // Step 16: feedback is now in app_state.feedback.
-    let _feedback_observer_id =
-        app_ref.register_event_observer(std::sync::Arc::new(app_state.feedback.observer()));
+    // Reactive observers (pablof7z/podcast-player#690): re-wire discovery,
+    // comments, active-follow-set, follow-list, and agent-notes onto the
+    // declarative `open_observed_projection` seam, plus the account-switch
+    // identity hook. See `register_observers` for the per-observer shapes.
+    super::register_observers::register_reactive_observers(super::register_observers::ObserverWiring {
+        app,
+        app_ref,
+        app_state: &app_state,
+        snapshot_signal: &snapshot_signal,
+        store: &store,
+        identity: &identity,
+        active_follow_set: &active_follow_set,
+        approved_peer_store: &approved_peer_store,
+        responder_cache: &responder_cache,
+        outbound_turn_cache: &outbound_turn_cache,
+    });
 
     // Step N+1: PodcastHandle is now the minimal 2-field shell:
     //   app  — raw *mut NmpApp for capability dispatch

@@ -12,6 +12,16 @@ let KERNEL_SCHEMA_VERSION = 1
 
 /// Thin C-FFI wrapper around the `nmp_app_podcast` static library.
 final class PodcastHandle: @unchecked Sendable {
+    /// Wave 1 of the UniFFI-facade migration (podcast-player#681 follow-on):
+    /// `podcastApp` is now the sole owner of the single `NmpApp` instance —
+    /// `raw` is derived from `podcastApp.nativeHandle()` rather than
+    /// `nmp_app_new()`. `podcastApp` MUST outlive every use of `raw`, which is
+    /// why it is a stored property here rather than a local in `init`. Only
+    /// construction/teardown route through `podcastApp` in this wave; every
+    /// other still-C-ABI call in this file keeps operating on `raw` exactly as
+    /// before — each is migrated to a `podcastApp.*` call individually in a
+    /// later, separately-verified wave.
+    let podcastApp: PodcastApp
     let raw: UnsafeMutableRawPointer
     private var updateSink: KernelUpdateSink?
     /// Opaque handle returned by `nmp_app_podcast_register`.
@@ -64,7 +74,12 @@ final class PodcastHandle: @unchecked Sendable {
     let actionResultsRegistry = ActionResultsRegistry()
 
     init() {
-        raw = nmp_app_new()
+        let podcastApp = PodcastApp()
+        self.podcastApp = podcastApp
+        guard let handle = UnsafeMutableRawPointer(bitPattern: UInt(podcastApp.nativeHandle())) else {
+            fatalError("PodcastApp.nativeHandle() returned a null pointer")
+        }
+        raw = handle
         // Register the NIP-46 bunker hook BEFORE any sign-in attempt routes
         // through `nmp_app_signin_bunker`. The broker captures the actor
         // sender immediately; subsequent `bunker://` URIs are silently
@@ -96,7 +111,12 @@ final class PodcastHandle: @unchecked Sendable {
     deinit {
         unregisterPodcastProjectionIfNeeded()
         nmp_app_set_update_callback(raw, nil, nil)
-        nmp_app_free(raw)
+        // Explicit, deterministic teardown (mirrors the old `nmp_app_free(raw)`
+        // ordering: stop callbacks, then tear down). `NmpApp::shutdown` sends
+        // `Shutdown` and joins the actor thread before returning; `podcastApp`
+        // itself is released by ARC immediately after, dropping the `NmpApp`
+        // value `raw` pointed into.
+        podcastApp.shutdown()
     }
 
     /// Wire the Rust update callback. `handler` runs on every snapshot frame;
