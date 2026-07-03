@@ -95,7 +95,7 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
             throw BYOKConnectError.invalidAuthorizationURL
         }
         let responseJSON = {
-            guard let ptr = podcastAppGlobalString(endpoint: .byokAuthorization, request: intentString) else {
+            guard let ptr = podcastAppGlobalString(endpoint: .byokAuthorizationEndpoint, request: intentString) else {
                 return #"{"error":{"kind":"invalid_authorization_url","message":"null response from Rust"}}"#
             }
             return ptr

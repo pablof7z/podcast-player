@@ -317,7 +317,7 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             throw DirectoryError.parseError("Could not encode subscribe_podcast request.")
         }
         return try {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 throw DirectoryError.unavailable("subscribe_podcast policy")
             }
             let envelope = result
@@ -432,7 +432,7 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             throw DirectoryError.parseError("Could not encode delete_podcast request.")
         }
         return try {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 throw DirectoryError.unavailable("delete_podcast policy")
             }
             let envelope = result

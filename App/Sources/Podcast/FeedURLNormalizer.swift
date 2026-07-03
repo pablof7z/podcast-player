@@ -9,7 +9,7 @@ enum FeedURLNormalizer {
     }
 
     static func normalizedFeedURL(from input: String) -> URL? {
-        guard let envelope = podcastAppGlobalString(endpoint: .normalizeFeedUrl, request: input),
+        guard let envelope = podcastAppGlobalString(endpoint: .normalizeFeedUrlEndpoint, request: input),
               let data = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(Response.self, from: data),
               response.error == nil,

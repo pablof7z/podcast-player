@@ -106,7 +106,7 @@ final class AgentRunLogger: ObservableObject {
               let json = String(data: data, encoding: .utf8)
         else { return nil }
         return {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return nil
             }
             let response = result

@@ -109,7 +109,7 @@ struct LiveEpisodeSummaryAdapter: EpisodeSummaryProviding {
               let json = String(data: data, encoding: .utf8)
         else { return .unavailable }
         return {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return .unavailable
             }
             let envelope = result

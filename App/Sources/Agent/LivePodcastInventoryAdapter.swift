@@ -163,7 +163,7 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
               let json = String(data: data, encoding: .utf8)
         else { return [] }
         return {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return []
             }
             let envelope = result

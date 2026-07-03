@@ -161,7 +161,7 @@ extension AppStateStore {
               let json = String(data: data, encoding: .utf8)
         else { return nil }
         return {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return nil
             }
             return result.data(using: .utf8)
