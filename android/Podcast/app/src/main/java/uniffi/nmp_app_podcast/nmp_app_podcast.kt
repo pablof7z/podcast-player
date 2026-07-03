@@ -1080,6 +1080,8 @@ internal open class UniffiVTableCallbackInterfacePodcastUpdateSink(
 
 
 
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is
 // rather `InterfaceTooLargeException`, caused by too many methods
@@ -1190,6 +1192,8 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_consume_all_builtin_projec
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_create_new_account(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_nip21_uri(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_typed_projection_frame(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_update_frame(
 ): Short
@@ -1529,6 +1533,8 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_consume_all_builtin_projections(
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_create_new_account(`ptr`: Pointer,`profileJson`: RustBuffer.ByValue,`relaysJson`: RustBuffer.ByValue,`mls`: Byte,`makeActive`: Byte,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_nip21_uri(`ptr`: Pointer,`input`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_typed_projection_frame(`ptr`: Pointer,`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_update_frame(`ptr`: Pointer,`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
@@ -2000,6 +2006,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_nip21_uri() != 30743.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_typed_projection_frame() != 21660.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_update_frame() != 33239.toShort()) {
@@ -2810,6 +2819,8 @@ public interface PodcastAppInterface {
 
     fun `decodeNip21Uri`(`input`: kotlin.String): kotlin.String
 
+    fun `decodeTypedProjectionFrame`(`frame`: kotlin.ByteArray): PodcastTypedProjectionFrame?
+
     fun `decodeUpdateFrame`(`frame`: kotlin.ByteArray): kotlin.String?
 
     fun `deliverExternalSignerResponse`(`responseJson`: kotlin.String)
@@ -3609,6 +3620,18 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_decode_nip21_uri(
         it, FfiConverterString.lower(`input`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `decodeTypedProjectionFrame`(`frame`: kotlin.ByteArray): PodcastTypedProjectionFrame? {
+            return FfiConverterOptionalTypePodcastTypedProjectionFrame.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_decode_typed_projection_frame(
+        it, FfiConverterByteArray.lower(`frame`),_status)
 }
     }
     )
@@ -4779,6 +4802,94 @@ public object FfiConverterTypePodcastDispatchOutcome: FfiConverterRustBuffer<Pod
 
 
 
+data class PodcastTypedProjectionEnvelope (
+    var `key`: kotlin.String,
+    var `schemaId`: kotlin.String,
+    var `schemaVersion`: kotlin.UInt,
+    var `fileIdentifier`: kotlin.String,
+    var `payload`: kotlin.ByteArray,
+    var `projectionRev`: kotlin.ULong,
+    var `state`: PodcastProjectionPresence
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer<PodcastTypedProjectionEnvelope> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionEnvelope {
+        return PodcastTypedProjectionEnvelope(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterTypePodcastProjectionPresence.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionEnvelope) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterString.allocationSize(value.`schemaId`) +
+            FfiConverterUInt.allocationSize(value.`schemaVersion`) +
+            FfiConverterString.allocationSize(value.`fileIdentifier`) +
+            FfiConverterByteArray.allocationSize(value.`payload`) +
+            FfiConverterULong.allocationSize(value.`projectionRev`) +
+            FfiConverterTypePodcastProjectionPresence.allocationSize(value.`state`)
+    )
+
+    override fun write(value: PodcastTypedProjectionEnvelope, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterString.write(value.`schemaId`, buf)
+            FfiConverterUInt.write(value.`schemaVersion`, buf)
+            FfiConverterString.write(value.`fileIdentifier`, buf)
+            FfiConverterByteArray.write(value.`payload`, buf)
+            FfiConverterULong.write(value.`projectionRev`, buf)
+            FfiConverterTypePodcastProjectionPresence.write(value.`state`, buf)
+    }
+}
+
+
+
+data class PodcastTypedProjectionFrame (
+    var `sessionId`: kotlin.ULong,
+    var `snapshotEpoch`: kotlin.ULong,
+    var `envelopes`: List<PodcastTypedProjectionEnvelope>
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastTypedProjectionFrame: FfiConverterRustBuffer<PodcastTypedProjectionFrame> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionFrame {
+        return PodcastTypedProjectionFrame(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionFrame) = (
+            FfiConverterULong.allocationSize(value.`sessionId`) +
+            FfiConverterULong.allocationSize(value.`snapshotEpoch`) +
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.allocationSize(value.`envelopes`)
+    )
+
+    override fun write(value: PodcastTypedProjectionFrame, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`sessionId`, buf)
+            FfiConverterULong.write(value.`snapshotEpoch`, buf)
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.write(value.`envelopes`, buf)
+    }
+}
+
+
+
 
 enum class PodcastEventShape {
 
@@ -4831,6 +4942,36 @@ public object FfiConverterTypePodcastProfileShape: FfiConverterRustBuffer<Podcas
     override fun allocationSize(value: PodcastProfileShape) = 4UL
 
     override fun write(value: PodcastProfileShape, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class PodcastProjectionPresence {
+
+    CHANGED,
+    CLEARED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastProjectionPresence: FfiConverterRustBuffer<PodcastProjectionPresence> {
+    override fun read(buf: ByteBuffer) = try {
+        PodcastProjectionPresence.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PodcastProjectionPresence) = 4UL
+
+    override fun write(value: PodcastProjectionPresence, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -5217,6 +5358,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypePodcastTypedProjectionFrame: FfiConverterRustBuffer<PodcastTypedProjectionFrame?> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionFrame? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypePodcastTypedProjectionFrame.read(buf)
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionFrame?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypePodcastTypedProjectionFrame.allocationSize(value)
+        }
+    }
+
+    override fun write(value: PodcastTypedProjectionFrame?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypePodcastTypedProjectionFrame.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypePodcastAgentAskSink: FfiConverterRustBuffer<PodcastAgentAskSink?> {
     override fun read(buf: ByteBuffer): PodcastAgentAskSink? {
         if (buf.get().toInt() == 0) {
@@ -5335,6 +5508,34 @@ public object FfiConverterOptionalTypePodcastUpdateSink: FfiConverterRustBuffer<
         } else {
             buf.put(1)
             FfiConverterTypePodcastUpdateSink.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer<List<PodcastTypedProjectionEnvelope>> {
+    override fun read(buf: ByteBuffer): List<PodcastTypedProjectionEnvelope> {
+        val len = buf.getInt()
+        return List<PodcastTypedProjectionEnvelope>(len) {
+            FfiConverterTypePodcastTypedProjectionEnvelope.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PodcastTypedProjectionEnvelope>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePodcastTypedProjectionEnvelope.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PodcastTypedProjectionEnvelope>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePodcastTypedProjectionEnvelope.write(it, buf)
         }
     }
 } fun `agentActionPolicy`(`requestJson`: kotlin.String): kotlin.String? {

@@ -620,6 +620,8 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
 
     func decodeNip21Uri(input: String)  -> String
 
+    func decodeTypedProjectionFrame(frame: Data)  -> PodcastTypedProjectionFrame?
+
     func decodeUpdateFrame(frame: Data)  -> String?
 
     func deliverExternalSignerResponse(responseJson: String)
@@ -1216,6 +1218,14 @@ open func decodeNip21Uri(input: String) -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_decode_nip21_uri(self.uniffiClonePointer(),
         FfiConverterString.lower(input),$0
+    )
+})
+}
+
+open func decodeTypedProjectionFrame(frame: Data) -> PodcastTypedProjectionFrame?  {
+    return try!  FfiConverterOptionTypePodcastTypedProjectionFrame.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_decode_typed_projection_frame(self.uniffiClonePointer(),
+        FfiConverterData.lower(frame),$0
     )
 })
 }
@@ -2062,6 +2072,194 @@ public func FfiConverterTypePodcastDispatchOutcome_lower(_ value: PodcastDispatc
     return FfiConverterTypePodcastDispatchOutcome.lower(value)
 }
 
+
+public struct PodcastTypedProjectionEnvelope {
+    public var key: String
+    public var schemaId: String
+    public var schemaVersion: UInt32
+    public var fileIdentifier: String
+    public var payload: Data
+    public var projectionRev: UInt64
+    public var state: PodcastProjectionPresence
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(key: String, schemaId: String, schemaVersion: UInt32, fileIdentifier: String, payload: Data, projectionRev: UInt64, state: PodcastProjectionPresence) {
+        self.key = key
+        self.schemaId = schemaId
+        self.schemaVersion = schemaVersion
+        self.fileIdentifier = fileIdentifier
+        self.payload = payload
+        self.projectionRev = projectionRev
+        self.state = state
+    }
+}
+
+#if compiler(>=6)
+extension PodcastTypedProjectionEnvelope: Sendable {}
+#endif
+
+
+extension PodcastTypedProjectionEnvelope: Equatable, Hashable {
+    public static func ==(lhs: PodcastTypedProjectionEnvelope, rhs: PodcastTypedProjectionEnvelope) -> Bool {
+        if lhs.key != rhs.key {
+            return false
+        }
+        if lhs.schemaId != rhs.schemaId {
+            return false
+        }
+        if lhs.schemaVersion != rhs.schemaVersion {
+            return false
+        }
+        if lhs.fileIdentifier != rhs.fileIdentifier {
+            return false
+        }
+        if lhs.payload != rhs.payload {
+            return false
+        }
+        if lhs.projectionRev != rhs.projectionRev {
+            return false
+        }
+        if lhs.state != rhs.state {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(schemaId)
+        hasher.combine(schemaVersion)
+        hasher.combine(fileIdentifier)
+        hasher.combine(payload)
+        hasher.combine(projectionRev)
+        hasher.combine(state)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PodcastTypedProjectionEnvelope {
+        return
+            try PodcastTypedProjectionEnvelope(
+                key: FfiConverterString.read(from: &buf),
+                schemaId: FfiConverterString.read(from: &buf),
+                schemaVersion: FfiConverterUInt32.read(from: &buf),
+                fileIdentifier: FfiConverterString.read(from: &buf),
+                payload: FfiConverterData.read(from: &buf),
+                projectionRev: FfiConverterUInt64.read(from: &buf),
+                state: FfiConverterTypePodcastProjectionPresence.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PodcastTypedProjectionEnvelope, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterString.write(value.schemaId, into: &buf)
+        FfiConverterUInt32.write(value.schemaVersion, into: &buf)
+        FfiConverterString.write(value.fileIdentifier, into: &buf)
+        FfiConverterData.write(value.payload, into: &buf)
+        FfiConverterUInt64.write(value.projectionRev, into: &buf)
+        FfiConverterTypePodcastProjectionPresence.write(value.state, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastTypedProjectionEnvelope_lift(_ buf: RustBuffer) throws -> PodcastTypedProjectionEnvelope {
+    return try FfiConverterTypePodcastTypedProjectionEnvelope.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastTypedProjectionEnvelope_lower(_ value: PodcastTypedProjectionEnvelope) -> RustBuffer {
+    return FfiConverterTypePodcastTypedProjectionEnvelope.lower(value)
+}
+
+
+public struct PodcastTypedProjectionFrame {
+    public var sessionId: UInt64
+    public var snapshotEpoch: UInt64
+    public var envelopes: [PodcastTypedProjectionEnvelope]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sessionId: UInt64, snapshotEpoch: UInt64, envelopes: [PodcastTypedProjectionEnvelope]) {
+        self.sessionId = sessionId
+        self.snapshotEpoch = snapshotEpoch
+        self.envelopes = envelopes
+    }
+}
+
+#if compiler(>=6)
+extension PodcastTypedProjectionFrame: Sendable {}
+#endif
+
+
+extension PodcastTypedProjectionFrame: Equatable, Hashable {
+    public static func ==(lhs: PodcastTypedProjectionFrame, rhs: PodcastTypedProjectionFrame) -> Bool {
+        if lhs.sessionId != rhs.sessionId {
+            return false
+        }
+        if lhs.snapshotEpoch != rhs.snapshotEpoch {
+            return false
+        }
+        if lhs.envelopes != rhs.envelopes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sessionId)
+        hasher.combine(snapshotEpoch)
+        hasher.combine(envelopes)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePodcastTypedProjectionFrame: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PodcastTypedProjectionFrame {
+        return
+            try PodcastTypedProjectionFrame(
+                sessionId: FfiConverterUInt64.read(from: &buf),
+                snapshotEpoch: FfiConverterUInt64.read(from: &buf),
+                envelopes: FfiConverterSequenceTypePodcastTypedProjectionEnvelope.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: PodcastTypedProjectionFrame, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.sessionId, into: &buf)
+        FfiConverterUInt64.write(value.snapshotEpoch, into: &buf)
+        FfiConverterSequenceTypePodcastTypedProjectionEnvelope.write(value.envelopes, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastTypedProjectionFrame_lift(_ buf: RustBuffer) throws -> PodcastTypedProjectionFrame {
+    return try FfiConverterTypePodcastTypedProjectionFrame.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastTypedProjectionFrame_lower(_ value: PodcastTypedProjectionFrame) -> RustBuffer {
+    return FfiConverterTypePodcastTypedProjectionFrame.lower(value)
+}
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
@@ -2196,6 +2394,76 @@ public func FfiConverterTypePodcastProfileShape_lower(_ value: PodcastProfileSha
 
 
 extension PodcastProfileShape: Equatable, Hashable {}
+
+
+
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum PodcastProjectionPresence {
+
+    case changed
+    case cleared
+}
+
+
+#if compiler(>=6)
+extension PodcastProjectionPresence: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypePodcastProjectionPresence: FfiConverterRustBuffer {
+    typealias SwiftType = PodcastProjectionPresence
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PodcastProjectionPresence {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        case 1: return .changed
+
+        case 2: return .cleared
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: PodcastProjectionPresence, into buf: inout [UInt8]) {
+        switch value {
+
+
+        case .changed:
+            writeInt(&buf, Int32(1))
+
+
+        case .cleared:
+            writeInt(&buf, Int32(2))
+
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastProjectionPresence_lift(_ buf: RustBuffer) throws -> PodcastProjectionPresence {
+    return try FfiConverterTypePodcastProjectionPresence.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePodcastProjectionPresence_lower(_ value: PodcastProjectionPresence) -> RustBuffer {
+    return FfiConverterTypePodcastProjectionPresence.lower(value)
+}
+
+
+extension PodcastProjectionPresence: Equatable, Hashable {}
 
 
 
@@ -2909,6 +3177,30 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypePodcastTypedProjectionFrame: FfiConverterRustBuffer {
+    typealias SwiftType = PodcastTypedProjectionFrame?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypePodcastTypedProjectionFrame.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypePodcastTypedProjectionFrame.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionCallbackInterfacePodcastAgentAskSink: FfiConverterRustBuffer {
     typealias SwiftType = PodcastAgentAskSink?
 
@@ -2999,6 +3291,31 @@ fileprivate struct FfiConverterOptionCallbackInterfacePodcastUpdateSink: FfiConv
         case 1: return try FfiConverterCallbackInterfacePodcastUpdateSink.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer {
+    typealias SwiftType = [PodcastTypedProjectionEnvelope]
+
+    public static func write(_ value: [PodcastTypedProjectionEnvelope], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePodcastTypedProjectionEnvelope.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PodcastTypedProjectionEnvelope] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PodcastTypedProjectionEnvelope]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypePodcastTypedProjectionEnvelope.read(from: &buf))
+        }
+        return seq
     }
 }
 public func agentActionPolicy(requestJson: String) -> String?  {
@@ -3194,6 +3511,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_nip21_uri() != 30743) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_typed_projection_frame() != 21660) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_update_frame() != 33239) {

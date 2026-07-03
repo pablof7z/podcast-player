@@ -7,11 +7,9 @@ import kotlinx.serialization.json.JsonElement
 /**
  * Per-domain push-frame envelope data classes.
  *
- * The kernel (NMP v0.5.0) emits typed sidecars via
- * `nmp_app_podcast_decode_update_frame`, which injects them into
- * `v.projections["podcast.<domain>"]` in the bridge JSON. The slim top-level
- * `v` carries only `rev`/`running`/`schema_version` and MUST NOT be decoded
- * as a full PodcastSnapshot — that caused the empty-library clobber bug.
+ * The kernel emits app-owned `podcast.*` typed projections. NMP owns the
+ * envelope/cache/rev contract; Podcast Player owns the PJPR payload body,
+ * which decodes into these app-domain frames.
  *
  * CONTRACT:
  *  - Each frame carries a `rev` field (monotonically increasing per-domain).

@@ -79,6 +79,7 @@ pub(crate) mod nostr_episodes;
 pub(crate) mod picks_handler;
 pub(crate) mod picks_llm;
 pub mod player;
+pub mod projection_payload;
 pub mod queue;
 pub(crate) mod snapshot_signal;
 pub(crate) mod social_handler;
@@ -135,12 +136,12 @@ pub use ffi::{
     nmp_app_podcast_local_search, nmp_app_podcast_normalize_feed_url,
     nmp_app_podcast_npub_from_hex, nmp_app_podcast_openrouter_whisper_transcribe,
     nmp_app_podcast_parse_pubkey, nmp_app_podcast_perplexity_search,
-    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_rerank,
-    nmp_app_podcast_set_data_dir, nmp_app_podcast_speech_model_catalog,
-    nmp_app_podcast_storage_breakdown, nmp_app_podcast_threading_active_topics,
-    nmp_app_podcast_threading_projection, nmp_app_podcast_transcript_auto_ingest_candidates,
-    nmp_app_podcast_transcript_ingest_plan, nmp_app_podcast_validate_elevenlabs_key,
-    nmp_app_podcast_validate_openrouter_key, nmp_app_podcast_voice_report, PodcastHandle,
+    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_rerank, nmp_app_podcast_set_data_dir,
+    nmp_app_podcast_speech_model_catalog, nmp_app_podcast_storage_breakdown,
+    nmp_app_podcast_threading_active_topics, nmp_app_podcast_threading_projection,
+    nmp_app_podcast_transcript_auto_ingest_candidates, nmp_app_podcast_transcript_ingest_plan,
+    nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
+    nmp_app_podcast_voice_report, PodcastHandle,
 };
 pub use player::{PlayerActor, PlayerState};
 pub use queue::PlaybackQueue;

@@ -16,8 +16,9 @@ resolver = "2"
 # each NMP crate (one `NmpApp` type, no duplicate-version fan-out). When
 # bumping NMP, bump every nmp-* rev entry below together.
 #
-# Current rev a543943146aac1d98f657911ed682b9d974a1da4 = NMP origin/master tip
-# as of 2026-07-03 (nmp-v0.8.4). No v1 release-train tag exists yet
+# Current rev a543943146aac1d98f657911ed682b9d974a1da4 was the coherent NMP
+# origin/master snapshot adopted for this migration on 2026-07-03 (nmp-v0.8.4).
+# Upstream master may advance ahead of this pin. No v1 release-train tag exists yet
 # (pablof7z/nostr-multi-platform#2690 is open); this is a provisional master
 # pin, re-pin to the v-next release tag once #2690 cuts it. See Epic A
 # (pablof7z/podcast-player#597) / A0 (#680).

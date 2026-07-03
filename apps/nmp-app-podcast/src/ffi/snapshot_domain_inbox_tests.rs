@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use chrono::{TimeZone, Utc};
 use podcast_core::{Episode, Podcast};
 
+use super::tests::decode_projection_json;
 use super::{register_domain_projections, SCHEMA_LIBRARY};
 use crate::ffi::handle::PodcastHandle;
 use crate::state::{Infra, PodcastAppState};
@@ -70,7 +71,7 @@ fn library_domain_projects_inbox_last_triaged_at() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_LIBRARY)
         .expect("library sidecar must be emitted on initial run");
-    let val: serde_json::Value = serde_json::from_slice(&lib.payload).unwrap();
+    let val = decode_projection_json(lib);
     assert_eq!(
         val["inbox_last_triaged_at"],
         serde_json::json!(1_717_200_123)

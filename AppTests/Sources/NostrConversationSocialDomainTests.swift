@@ -74,7 +74,7 @@ final class NostrConversationSocialDomainTests: XCTestCase {
             DomainSchema.social: socialProjection(rev: 9)
         ])
         let frames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: data),
+            DomainFrameFixtures.decode(from: data),
             "frame with podcast.social sidecar must yield a non-nil PodcastDomainFrames")
         let soc = try XCTUnwrap(frames.social, "social domain must be non-nil")
         XCTAssertEqual(soc.rev, 9)
@@ -130,7 +130,7 @@ final class NostrConversationSocialDomainTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.social: socialProjection(rev: 9)
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let dto = try XCTUnwrap(frames.social?.nostrConversations?.first)
 
         let record = KernelModel.nostrConversationFromDTO(dto)
@@ -163,7 +163,7 @@ final class NostrConversationSocialDomainTests: XCTestCase {
                 "social": NSNull()
             ] as [String: Any]
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let soc = try XCTUnwrap(frames.social)
         XCTAssertEqual(soc.rev, 4)
         XCTAssertNil(soc.nostrConversations, "absent nostr_conversations must decode as nil, not error")

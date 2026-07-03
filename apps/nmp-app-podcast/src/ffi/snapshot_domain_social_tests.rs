@@ -17,8 +17,8 @@ use crate::state::{Infra, PodcastAppState};
 use crate::store::PodcastStore;
 
 use super::tests::{
-    inbound_note, make_handle_and_state_with_approved, make_social_observer,
-    make_test_handle_with_app, run_domain_projections_only,
+    decode_projection_json, inbound_note, make_handle_and_state_with_approved,
+    make_social_observer, make_test_handle_with_app, run_domain_projections_only,
 };
 // ── Tombstone contract (identity, widget) ─────────────────────────────────────
 
@@ -41,7 +41,7 @@ fn identity_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_IDENTITY)
         .expect("identity tombstone must be emitted when no account is active");
-    let val: serde_json::Value = serde_json::from_slice(&ident.payload).unwrap();
+    let val = decode_projection_json(ident);
     assert_eq!(
         val["active_account"],
         serde_json::Value::Null,
@@ -77,7 +77,7 @@ fn widget_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_WIDGET)
         .expect("widget tombstone must be emitted when widget is None");
-    let val: serde_json::Value = serde_json::from_slice(&wgt.payload).unwrap();
+    let val = decode_projection_json(wgt);
     assert_eq!(
         val["widget"],
         serde_json::Value::Null,
@@ -140,7 +140,7 @@ fn identity_surfaces_kernel_active_account_without_rev_bump() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_IDENTITY)
         .expect("identity sidecar must surface the kernel active account without a rev bump");
-    let val: serde_json::Value = serde_json::from_slice(&ident.payload).unwrap();
+    let val = decode_projection_json(ident);
     assert_eq!(
         val["active_account"]["pubkey_hex"], AMBER_PUBKEY_HEX,
         "must carry the kernel-active Amber pubkey"
@@ -192,7 +192,7 @@ fn social_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("social tombstone must be emitted when state is empty");
-    let val: serde_json::Value = serde_json::from_slice(&soc.payload).unwrap();
+    let val = decode_projection_json(soc);
     assert_eq!(
         val["social"],
         serde_json::Value::Null,
@@ -221,7 +221,7 @@ fn social_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("social sidecar must RE-EMIT after a real inbound note (production bumped domain_revs.social)");
-    let val2: serde_json::Value = serde_json::from_slice(&soc2.payload).unwrap();
+    let val2 = decode_projection_json(soc2);
     // No longer a tombstone — the note populated nostr_conversations.
     assert!(
         val2["nostr_conversations"]
@@ -353,7 +353,7 @@ fn social_inbound_note_reemits_on_each_new_note_real_path() {
         .expect(
             "SECOND inbound note must ALSO re-emit podcast.social (the BLOCKER regression guard)",
         );
-    let val: serde_json::Value = serde_json::from_slice(&soc.payload).unwrap();
+    let val = decode_projection_json(soc);
     let convo_count = val["nostr_conversations"]
         .as_array()
         .map(|a| a.len())
@@ -400,7 +400,7 @@ fn approve_peer_action_reemits_social_with_trusted_flipped_real_path() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("inbound note must emit podcast.social");
-    let val_before: serde_json::Value = serde_json::from_slice(&soc_before.payload).unwrap();
+    let val_before = decode_projection_json(soc_before);
     let convos_before = val_before["nostr_conversations"]
         .as_array()
         .cloned()
@@ -441,7 +441,7 @@ fn approve_peer_action_reemits_social_with_trusted_flipped_real_path() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("ApprovePeer action MUST re-emit podcast.social (proves the action arm bumps domain_revs.social)");
-    let val_after: serde_json::Value = serde_json::from_slice(&soc_after.payload).unwrap();
+    let val_after = decode_projection_json(soc_after);
     let convos_after = val_after["nostr_conversations"]
         .as_array()
         .cloned()
@@ -530,7 +530,7 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("inbound note must emit podcast.social");
-    let val_before: serde_json::Value = serde_json::from_slice(&soc_before.payload).unwrap();
+    let val_before = decode_projection_json(soc_before);
     assert_eq!(
         val_before["nostr_conversations"][0]["trusted"],
         serde_json::Value::Bool(true),
@@ -559,7 +559,7 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_SOCIAL)
         .expect("BlockPeer action MUST re-emit podcast.social");
-    let val_after: serde_json::Value = serde_json::from_slice(&soc_after.payload).unwrap();
+    let val_after = decode_projection_json(soc_after);
     assert_eq!(
         val_after["nostr_conversations"][0]["trusted"], serde_json::Value::Bool(false),
         "block action must flip trusted to false even for a followed peer (block is absolute); got: {val_after}"

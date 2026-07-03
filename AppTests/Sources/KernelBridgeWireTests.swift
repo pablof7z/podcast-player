@@ -230,7 +230,7 @@ final class KernelBridgeWireTests: XCTestCase {
             DomainSchema.playback: playbackProjection(rev: 1)
         ])
         let frames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: data),
+            DomainFrameFixtures.decode(from: data),
             "frame with podcast.playback sidecar must yield a non-nil PodcastDomainFrames")
         let play = try XCTUnwrap(frames.playback, "playback domain must be non-nil")
         XCTAssertEqual(play.rev, 1)
@@ -246,7 +246,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.library: libraryProjection(rev: 2, podcastTitle: "My Show")
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let lib = try XCTUnwrap(frames.library)
         XCTAssertEqual(lib.rev, 2)
         XCTAssertEqual(lib.library?.first?.title, "My Show")
@@ -264,7 +264,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.identity: identityProjection(rev: 3, npub: "npub1abc")
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let ident = try XCTUnwrap(frames.identity)
         XCTAssertEqual(ident.rev, 3)
         // pubkey_hex → pubkeyHex
@@ -279,7 +279,7 @@ final class KernelBridgeWireTests: XCTestCase {
             DomainSchema.library:  libraryProjection(rev: 5),
             DomainSchema.settings: settingsProjection(rev: 1)
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         XCTAssertNotNil(frames.playback, "playback domain must be present")
         XCTAssertNotNil(frames.library,  "library domain must be present")
         XCTAssertNotNil(frames.settings, "settings domain must be present")
@@ -295,7 +295,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let libData = makeEnvelope(projections: [
             DomainSchema.library: libraryProjection(rev: 1)
         ])
-        let libFrames = try XCTUnwrap(PodcastDomainFrames.decode(from: libData))
+        let libFrames = try XCTUnwrap(DomainFrameFixtures.decode(from: libData))
         var composite = PodcastUpdate()
         var tracker = KernelModel.DomainRevTracker()
 
@@ -312,7 +312,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let playData = makeEnvelope(projections: [
             DomainSchema.playback: playbackProjection(rev: 2)
         ])
-        let playFrames = try XCTUnwrap(PodcastDomainFrames.decode(from: playData))
+        let playFrames = try XCTUnwrap(DomainFrameFixtures.decode(from: playData))
         // Playback is present; library is absent (nil) → must NOT touch composite.library.
         XCTAssertNil(playFrames.library,
                      "library domain must be absent from a playback-only frame")
@@ -338,7 +338,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.identity: tombstoneProjection
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let ident = try XCTUnwrap(frames.identity,
                                   "identity domain must decode even with null active_account")
         XCTAssertEqual(ident.rev, 99)
@@ -356,7 +356,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let highRevData = makeEnvelope(projections: [
             DomainSchema.playback: playbackProjection(rev: 5, nowPlayingId: "ep-current")
         ])
-        let highFrames = try XCTUnwrap(PodcastDomainFrames.decode(from: highRevData))
+        let highFrames = try XCTUnwrap(DomainFrameFixtures.decode(from: highRevData))
         if let play = highFrames.playback, play.rev > tracker.playback {
             tracker.playback = play.rev
             composite.nowPlaying = play.nowPlaying
@@ -367,7 +367,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let staleData = makeEnvelope(projections: [
             DomainSchema.playback: playbackProjection(rev: 3, nowPlayingId: "ep-stale")
         ])
-        let staleFrames = try XCTUnwrap(PodcastDomainFrames.decode(from: staleData))
+        let staleFrames = try XCTUnwrap(DomainFrameFixtures.decode(from: staleData))
         // Drop-guard: 3 <= 5, must NOT merge.
         var mergedStale = false
         if let play = staleFrames.playback, play.rev > tracker.playback {
@@ -384,7 +384,7 @@ final class KernelBridgeWireTests: XCTestCase {
     func testAbsentDomainFrameYieldsNil() {
         let data = makeEnvelope(projections: [:])
         XCTAssertNil(
-            PodcastDomainFrames.decode(from: data),
+            DomainFrameFixtures.decode(from: data),
             "frame with no podcast.* projections must yield nil (D6 degrade)")
     }
 
@@ -434,7 +434,7 @@ final class KernelBridgeWireTests: XCTestCase {
         ])
 
         let frames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: data),
+            DomainFrameFixtures.decode(from: data),
             "frame with resolved_profiles + playback sidecar must yield a non-nil PodcastDomainFrames")
 
         // resolved_profiles map must be non-empty.
@@ -473,7 +473,7 @@ final class KernelBridgeWireTests: XCTestCase {
             DomainSchema.identity: identityProjection(rev: 1, npub: "npub1test")
         ])
 
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         let identity = KernelIdentityProjection.from(domainFrames: frames)
 
         XCTAssertFalse(identity.resolvedProfiles.isEmpty,
@@ -496,7 +496,7 @@ final class KernelBridgeWireTests: XCTestCase {
             DomainSchema.playback: playbackProjection(rev: 5, nowPlayingId: nil)
         ])
 
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         // Identity domain absent — this is the "resolved_profiles arrives on a
         // non-identity tick" case that the KernelModel.apply merge path handles.
         XCTAssertNil(frames.identity, "identity domain must be absent from this frame")
@@ -527,7 +527,7 @@ final class KernelBridgeWireTests: XCTestCase {
         let data = makeEnvelope(projections: [
             DomainSchema.playback: playbackProjection(rev: 2)
         ])
-        let frames = try XCTUnwrap(PodcastDomainFrames.decode(from: data))
+        let frames = try XCTUnwrap(DomainFrameFixtures.decode(from: data))
         XCTAssertTrue(frames.resolvedProfiles.isEmpty,
                       "absent resolved_profiles key must yield an empty map (D6 degrade)")
     }

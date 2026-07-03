@@ -1,0 +1,9 @@
+namespace podcastr.projection;
+
+table PodcastProjectionJsonFrame {
+  schema_version:uint;
+  json:string (required);
+}
+
+root_type PodcastProjectionJsonFrame;
+file_identifier "PJPR";

@@ -243,7 +243,7 @@ class DomainFrameWireTest {
     @Test
     fun `library domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.library" to libraryFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("library frame must decode", frames)
         val lib = frames!!.library
@@ -291,7 +291,7 @@ class DomainFrameWireTest {
     @Test
     fun `playback domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.playback" to playbackFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("playback frame must decode", frames)
         val play = frames!!.playback
@@ -323,7 +323,7 @@ class DomainFrameWireTest {
     @Test
     fun `downloads domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.downloads" to downloadsFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("downloads frame must decode", frames)
         val dl = frames!!.downloads
@@ -346,7 +346,7 @@ class DomainFrameWireTest {
     @Test
     fun `settings domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.settings" to settingsFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("settings frame must decode", frames)
         val sett = frames!!.settings
@@ -372,7 +372,7 @@ class DomainFrameWireTest {
     @Test
     fun `identity domain decodes snake_case active_account fields correctly`() {
         val raw = envelope("podcast.identity" to identityFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("identity frame must decode", frames)
         val ident = frames!!.identity
@@ -392,7 +392,7 @@ class DomainFrameWireTest {
     @Test
     fun `widget domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.widget" to widgetFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("widget frame must decode", frames)
         val wid = frames!!.widget
@@ -412,7 +412,7 @@ class DomainFrameWireTest {
     @Test
     fun `misc domain decodes snake_case fields correctly`() {
         val raw = envelope("podcast.misc" to miscFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("misc frame must decode", frames)
         val misc = frames!!.misc
@@ -442,7 +442,7 @@ class DomainFrameWireTest {
     fun `voice domain decodes snake_case fields correctly`() {
         // Voice was moved from podcast.misc to its own podcast.voice sidecar in PR #613.
         val raw = envelope("podcast.voice" to voiceFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("voice frame must decode", frames)
         val voiceFrame = frames!!.voice
@@ -460,7 +460,7 @@ class DomainFrameWireTest {
     fun `playback-only frame does not clobber library slice in mergeFrames`() {
         // Seed: merge a library frame to populate the composite.
         val libEnvelope = envelope("podcast.library" to libraryFixture)
-        val libFrames = SnapshotCodec.decodeDomainFrames(libEnvelope)
+        val libFrames = DomainFrameFixtures.decodeDomainFrames(libEnvelope)
         assertNotNull("library frame must decode", libFrames)
 
         val composite = PodcastSnapshot()
@@ -473,7 +473,7 @@ class DomainFrameWireTest {
 
         // Now merge a playback-only frame — library domain is absent.
         val playEnvelope = envelope("podcast.playback" to playbackFixture)
-        val playFrames = SnapshotCodec.decodeDomainFrames(playEnvelope)
+        val playFrames = DomainFrameFixtures.decodeDomainFrames(playEnvelope)
         assertNotNull("playback frame must decode", playFrames)
         assertNull("library domain must be absent in playback-only frame",
                    playFrames!!.library)
@@ -499,7 +499,7 @@ class DomainFrameWireTest {
     @Test
     fun `library tombstone clears library slice in mergeFrames`() {
         // Seed composite with a library frame.
-        val libFrames = SnapshotCodec.decodeDomainFrames(
+        val libFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.library" to libraryFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(libFrames, PodcastSnapshot(), tracker)
@@ -507,7 +507,7 @@ class DomainFrameWireTest {
 
         // Apply tombstone: rev=99, library=null.
         val tombstone = """{"rev":99,"library":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.library" to tombstone))
         assertNotNull("library tombstone frame must decode", tombFrames)
         assertNotNull("library domain must be non-null in tombstone frame",
@@ -527,7 +527,7 @@ class DomainFrameWireTest {
     @Test
     fun `downloads tombstone clears downloads slice in mergeFrames`() {
         // Seed with a downloads frame.
-        val dlFrames = SnapshotCodec.decodeDomainFrames(
+        val dlFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.downloads" to downloadsFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(dlFrames, PodcastSnapshot(), tracker)
@@ -535,7 +535,7 @@ class DomainFrameWireTest {
 
         // Tombstone: rev=99, downloads=null.
         val tombstone = """{"rev":99,"downloads":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.downloads" to tombstone))
         assertNotNull("downloads tombstone frame must decode", tombFrames)
         assertNull("tombstone frame downloads payload must be null",
@@ -551,7 +551,7 @@ class DomainFrameWireTest {
     @Test
     fun `identity tombstone clears activeAccount in mergeFrames`() {
         // Seed with an identity frame.
-        val identFrames = SnapshotCodec.decodeDomainFrames(
+        val identFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.identity" to identityFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(identFrames, PodcastSnapshot(), tracker)
@@ -560,7 +560,7 @@ class DomainFrameWireTest {
 
         // Tombstone: rev=99, active_account=null.
         val tombstone = """{"rev":99,"active_account":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.identity" to tombstone))
         assertNotNull("identity tombstone frame must decode", tombFrames)
         assertNotNull("identity domain must be non-null in tombstone",
@@ -578,7 +578,7 @@ class DomainFrameWireTest {
     @Test
     fun `widget tombstone clears widget slice in mergeFrames`() {
         // Seed with a widget frame.
-        val widFrames = SnapshotCodec.decodeDomainFrames(
+        val widFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.widget" to widgetFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(widFrames, PodcastSnapshot(), tracker)
@@ -586,7 +586,7 @@ class DomainFrameWireTest {
 
         // Tombstone: rev=99, widget=null.
         val tombstone = """{"rev":99,"widget":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.widget" to tombstone))
         assertNotNull("widget tombstone frame must decode", tombFrames)
         assertNull("widget must decode as null in tombstone",
@@ -620,7 +620,7 @@ class DomainFrameWireTest {
               "queue": []
             }
         """.trimIndent()
-        val highFrames = SnapshotCodec.decodeDomainFrames(
+        val highFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.playback" to highRevPlayback))!!
         val (afterHigh, highAccepted) = SnapshotCodec.mergeFrames(
             highFrames, PodcastSnapshot(), tracker)
@@ -644,7 +644,7 @@ class DomainFrameWireTest {
               "queue": []
             }
         """.trimIndent()
-        val staleFrames = SnapshotCodec.decodeDomainFrames(
+        val staleFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.playback" to stalePlayback))!!
         val (afterStale, staleAccepted) = SnapshotCodec.mergeFrames(
             staleFrames, afterHigh, tracker)
@@ -663,14 +663,14 @@ class DomainFrameWireTest {
         val tracker = DomainRevTracker()
 
         // Accept rev=10 identity frame.
-        val identFrames = SnapshotCodec.decodeDomainFrames(
+        val identFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.identity" to identityFixture))!!   // rev=6
         val (seeded, _) = SnapshotCodec.mergeFrames(identFrames, PodcastSnapshot(), tracker)
         assertEquals("npub1testuser", seeded.activeAccount?.npub)
         assertEquals(6L, tracker.identity)
 
         // Same rev=6 again — equal rev must be dropped (not strictly-greater).
-        val dupFrames = SnapshotCodec.decodeDomainFrames(
+        val dupFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.identity" to identityFixture))!!
         val (afterDup, dupAccepted) = SnapshotCodec.mergeFrames(dupFrames, seeded, tracker)
         assertFalse("equal-rev frame must be dropped by the drop-guard", dupAccepted)
@@ -687,7 +687,7 @@ class DomainFrameWireTest {
         val noOpFrame = """{"t":"snapshot","v":{"rev":1,"running":true,"projections":{"some.other.domain":{"rev":1}}}}"""
         assertNull(
             "frame with no podcast.* domains must return null (D6 degrade)",
-            SnapshotCodec.decodeDomainFrames(noOpFrame)
+            DomainFrameFixtures.decodeDomainFrames(noOpFrame)
         )
     }
 
@@ -696,7 +696,7 @@ class DomainFrameWireTest {
         val emptyProjections = """{"t":"snapshot","v":{"rev":1,"running":true,"projections":{}}}"""
         assertNull(
             "frame with empty projections must return null",
-            SnapshotCodec.decodeDomainFrames(emptyProjections)
+            DomainFrameFixtures.decodeDomainFrames(emptyProjections)
         )
     }
 
@@ -705,16 +705,16 @@ class DomainFrameWireTest {
         val panicFrame = """{"t":"panic","message":"actor died"}"""
         assertNull(
             "non-snapshot frame tag must return null",
-            SnapshotCodec.decodeDomainFrames(panicFrame)
+            DomainFrameFixtures.decodeDomainFrames(panicFrame)
         )
     }
 
     @Test
     fun `null and malformed input returns null from decodeDomainFrames`() {
-        assertNull(SnapshotCodec.decodeDomainFrames(null))
-        assertNull(SnapshotCodec.decodeDomainFrames(""))
-        assertNull(SnapshotCodec.decodeDomainFrames("not json"))
-        assertNull(SnapshotCodec.decodeDomainFrames("""{"t":"snapshot"}"""))
+        assertNull(DomainFrameFixtures.decodeDomainFrames(null))
+        assertNull(DomainFrameFixtures.decodeDomainFrames(""))
+        assertNull(DomainFrameFixtures.decodeDomainFrames("not json"))
+        assertNull(DomainFrameFixtures.decodeDomainFrames("""{"t":"snapshot"}"""))
     }
 
     // ── 6. Multi-domain frame decodes all present domains ─────────────────────
@@ -726,7 +726,7 @@ class DomainFrameWireTest {
             "podcast.playback" to playbackFixture,
             "podcast.settings" to settingsFixture,
         )
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("multi-domain frame must decode", frames)
         assertNotNull("library domain must be present", frames!!.library)
         assertNotNull("playback domain must be present", frames.playback)
@@ -776,7 +776,7 @@ class DomainFrameWireTest {
     @Test
     fun `social domain decodes snake_case nostr_conversations correctly`() {
         val raw = envelope("podcast.social" to socialFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("social frame must decode", frames)
         val soc = frames!!.social
@@ -821,14 +821,14 @@ class DomainFrameWireTest {
     @Test
     fun `social-only frame does not clobber other domains in mergeFrames`() {
         // Seed composite with a library frame.
-        val libFrames = SnapshotCodec.decodeDomainFrames(
+        val libFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.library" to libraryFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(libFrames, PodcastSnapshot(), tracker)
         assertEquals(1, seeded.library.size)
 
         // Apply social-only frame — library domain must survive untouched.
-        val socFrames = SnapshotCodec.decodeDomainFrames(
+        val socFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.social" to socialFixture))!!
         assertNotNull("social domain must be present", socFrames.social)
         assertNull("library domain must be absent in social-only frame", socFrames.library)
@@ -854,7 +854,7 @@ class DomainFrameWireTest {
     fun `social mergeFrames populates nostrConversations on PodcastSnapshot`() {
         // Feed a podcast.social frame with one conversation.
         val raw = envelope("podcast.social" to socialFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("social frame must decode", frames)
 
         val tracker = DomainRevTracker()
@@ -893,7 +893,7 @@ class DomainFrameWireTest {
     @Test
     fun `social tombstone clears nostrConversations in mergeFrames`() {
         // Seed composite with a social frame.
-        val socFrames = SnapshotCodec.decodeDomainFrames(
+        val socFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.social" to socialFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(socFrames, PodcastSnapshot(), tracker)
@@ -902,7 +902,7 @@ class DomainFrameWireTest {
 
         // Tombstone: rev=99, nostr_conversations=null.
         val tombstone = """{"rev":99,"nostr_conversations":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.social" to tombstone))
         assertNotNull("social tombstone frame must decode", tombFrames)
         assertNotNull("social domain must be non-null in tombstone frame",
@@ -969,7 +969,7 @@ class DomainFrameWireTest {
         // resolved_profiles lives under projections["resolved_profiles"] in the
         // NMP-level envelope alongside podcast.* domains.
         val raw = envelope("resolved_profiles" to resolvedProfilesFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         // Even without a podcast.* key the bridge should accept the frame when
         // resolved_profiles is non-empty (decodeDomainFrames returns non-null).
@@ -995,7 +995,7 @@ class DomainFrameWireTest {
         // Kernel may omit display_name or picture_url for a profile with no metadata.
         val partial = """{"aabbccdd002":{}}"""
         val raw = envelope("resolved_profiles" to partial)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("frames must not be null", frames)
 
         val profile = frames!!.resolvedProfiles["aabbccdd002"]
@@ -1008,7 +1008,7 @@ class DomainFrameWireTest {
     fun `mergeFrames additively merges resolved_profiles (new entries win, old entries survive)`() {
         // Seed: frame with Alice only.
         val aliceOnly = """{"aabbccdd001":{"display_name":"Alice Nostr","picture_url":"https://example.com/alice.jpg"}}"""
-        val frames1 = SnapshotCodec.decodeDomainFrames(envelope("resolved_profiles" to aliceOnly))
+        val frames1 = DomainFrameFixtures.decodeDomainFrames(envelope("resolved_profiles" to aliceOnly))
         assertNotNull("first frame must decode", frames1)
 
         val tracker = DomainRevTracker()
@@ -1019,7 +1019,7 @@ class DomainFrameWireTest {
 
         // Second frame: Bob added, Alice absent (additive — Alice must survive).
         val bobOnly = """{"11223344001":{"display_name":"Bob Relay","picture_url":"https://example.com/bob.png"}}"""
-        val frames2 = SnapshotCodec.decodeDomainFrames(envelope("resolved_profiles" to bobOnly))
+        val frames2 = DomainFrameFixtures.decodeDomainFrames(envelope("resolved_profiles" to bobOnly))
         assertNotNull("second frame must decode", frames2)
         val (snap2, accepted2) = SnapshotCodec.mergeFrames(frames2!!, snap1, tracker)
         assertTrue("second frame must be accepted", accepted2)
@@ -1036,7 +1036,7 @@ class DomainFrameWireTest {
     fun `mergeFrames resolved_profiles update overwrites existing entry for same pubkey`() {
         // Seed: Alice with old display name.
         val aliceV1 = """{"aabbccdd001":{"display_name":"Alice Old","picture_url":"https://example.com/old.jpg"}}"""
-        val frames1 = SnapshotCodec.decodeDomainFrames(envelope("resolved_profiles" to aliceV1))
+        val frames1 = DomainFrameFixtures.decodeDomainFrames(envelope("resolved_profiles" to aliceV1))
         assertNotNull("first frame must decode", frames1)
         val tracker = DomainRevTracker()
         val (snap1, _) = SnapshotCodec.mergeFrames(frames1!!, PodcastSnapshot(), tracker)
@@ -1044,7 +1044,7 @@ class DomainFrameWireTest {
 
         // Second frame: same pubkey with updated display name.
         val aliceV2 = """{"aabbccdd001":{"display_name":"Alice Updated","picture_url":"https://example.com/new.jpg"}}"""
-        val frames2 = SnapshotCodec.decodeDomainFrames(envelope("resolved_profiles" to aliceV2))
+        val frames2 = DomainFrameFixtures.decodeDomainFrames(envelope("resolved_profiles" to aliceV2))
         assertNotNull("second frame must decode", frames2)
         val (snap2, accepted2) = SnapshotCodec.mergeFrames(frames2!!, snap1, tracker)
         assertTrue("update frame must be accepted", accepted2)
@@ -1063,7 +1063,7 @@ class DomainFrameWireTest {
             "podcast.social" to socialFixture,
             "resolved_profiles" to resolvedProfilesFixture,
         )
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("combined frame must decode", frames)
         assertNotNull("social domain must decode", frames!!.social)
         assertEquals("2 resolved profiles must decode alongside social domain",
@@ -1075,7 +1075,7 @@ class DomainFrameWireTest {
     fun `resolved_profiles absent from envelope yields empty map (no NPE)`() {
         // A library-only frame has no resolved_profiles key — map must be empty, not null.
         val raw = envelope("podcast.library" to libraryFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("library frame must decode", frames)
         assertTrue("resolvedProfiles must be empty when absent from envelope",
             frames!!.resolvedProfiles.isEmpty())
@@ -1129,7 +1129,7 @@ class DomainFrameWireTest {
     @Test
     fun `social domain decodes ContactSummaryDto snake_case fields correctly`() {
         val raw = envelope("podcast.social" to socialWithFollowingFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
 
         assertNotNull("social frame must decode", frames)
         val soc = frames!!.social
@@ -1185,7 +1185,7 @@ class DomainFrameWireTest {
               }
             }
         """.trimIndent()
-        val frames = SnapshotCodec.decodeDomainFrames(envelope("podcast.social" to oldFrame))
+        val frames = DomainFrameFixtures.decodeDomainFrames(envelope("podcast.social" to oldFrame))
         assertNotNull("old frame must decode (forward compat)", frames)
         val contact = frames!!.social?.social?.following?.firstOrNull()
         assertNotNull("contact must be present", contact)
@@ -1197,7 +1197,7 @@ class DomainFrameWireTest {
     @Test
     fun `mergeFrames wires social_following into PodcastSnapshot_following`() {
         val raw = envelope("podcast.social" to socialWithFollowingFixture)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("social frame must decode", frames)
 
         val tracker = DomainRevTracker()
@@ -1225,7 +1225,7 @@ class DomainFrameWireTest {
     @Test
     fun `social tombstone clears both following and nostrConversations atomically`() {
         // Seed: populate both following and conversations via the full social fixture.
-        val seedFrames = SnapshotCodec.decodeDomainFrames(
+        val seedFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.social" to socialWithFollowingFixture))!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(seedFrames, PodcastSnapshot(), tracker)
@@ -1234,7 +1234,7 @@ class DomainFrameWireTest {
 
         // Tombstone: social=null, nostr_conversations=null, rev=99 > rev=10.
         val tombstone = """{"rev":99,"social":null,"nostr_conversations":null}"""
-        val tombFrames = SnapshotCodec.decodeDomainFrames(
+        val tombFrames = DomainFrameFixtures.decodeDomainFrames(
             envelope("podcast.social" to tombstone))
         assertNotNull("social tombstone frame must decode", tombFrames)
         val socDomain = tombFrames!!.social

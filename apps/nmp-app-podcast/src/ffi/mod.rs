@@ -131,6 +131,7 @@ mod uniffi_facade_library_methods;
 mod uniffi_facade_provider_methods;
 #[cfg(test)]
 mod uniffi_facade_tests;
+mod uniffi_typed_projection_frame;
 mod voice_report;
 
 pub use actions::{
@@ -283,5 +284,8 @@ pub use uniffi_facade::{
     PodcastAgentAskSink, PodcastApp, PodcastCapabilitySink, PodcastDispatchOutcome,
     PodcastEventShape, PodcastLocalLlmSink, PodcastProfileShape, PodcastRefLiveness,
     PodcastRefNamespace, PodcastRefShape, PodcastUpdateSink,
+};
+pub use uniffi_typed_projection_frame::{
+    PodcastProjectionPresence, PodcastTypedProjectionEnvelope, PodcastTypedProjectionFrame,
 };
 pub use voice_report::nmp_app_podcast_voice_report;

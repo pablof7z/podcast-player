@@ -276,35 +276,26 @@ final class KernelModel {
     /// (`apply(result:)`).
     ///
     /// The full-library `JSONDecoder` pass (`kernel.podcastSnapshot()`) is the
-    /// expensive step — ~35 ms on the simulator (≈100 ms on device) at 3.6k
-    /// episodes — and it ALWAYS runs off the MainActor now, on
-    /// `snapshotDecodeQueue`. Previously it ran inline on the MainActor for every
-    /// user dispatch (mark-played, star, subscribe, …), so each action ate that
-    /// decode as a main-thread stall — the "sluggish" the user reported. Moving
-    /// it off-main is safe because no caller reads `library`/`podcastSnapshot`/
-    /// `episodes` synchronously after `dispatch()` returns: every dispatch site is
-    /// fire-and-forget over `@Observable`, so a one-runloop-later commit is
-    /// invisible. This brings the pull path in line with the push path, whose
-    /// decode already runs off the MainActor (on the kernel C-callback thread).
+    /// expensive step and always runs off the MainActor on `snapshotDecodeQueue`.
+    /// Dispatch sites are fire-and-forget over `@Observable`, so a one-runloop-
+    /// later commit is invisible.
     ///
     /// Ordering: rapid pulls may enqueue several decodes; the rev-monotonic
     /// guards in `applyPodcastUpdate` (`update.rev > lastProcessedRev`) and
     /// `commitPodcastProjection` (`frameRev == lastProcessedRev`) make the newest
-    /// frame win and drop any stale one. The decode is dispatched off-main even
-    /// for the `start` / `resetAndRestart` one-shots (a one-runloop-later first
-    /// frame is imperceptible and keeps a 3.6k-episode decode off the launch
-    /// MainActor); the O(N×M) hashing then also runs off-main inside
-    /// `applyPodcastUpdate`.
-    ///
-    /// `synchronous` is retained for source compatibility; decode is always
-    /// off-main.
+    /// frame win and drop any stale one. `synchronous` is retained for source
+    /// compatibility; decode is always off-main.
     // internal (not private) so extension files can trigger snapshot pulls.
-    func pullPodcastSnapshotIfChanged(synchronous: Bool = false) {
+    func pullPodcastSnapshotIfChanged(
+        synchronous: Bool = false,
+        allowEqualRev: Bool = false
+    ) {
         let currentRev = kernel.podcastSnapshotRev()
         guard Self.shouldPullPodcastSnapshot(
             currentRev: currentRev,
             lastProcessedRev: lastProcessedRev,
-            hasHydratedPodcastSnapshot: hasHydratedPodcastSnapshot
+            hasHydratedPodcastSnapshot: hasHydratedPodcastSnapshot,
+            allowEqualRev: allowEqualRev
         ) else { return }
         let handle = kernel
         snapshotDecodeQueue.async { [weak self] in
@@ -313,7 +304,10 @@ final class KernelModel {
                 MainActor.assumeIsolated {
                     // Pull path always replaces the composite so push merges
                     // start from the current full state (fromPull: true).
-                    self?.applyPodcastUpdate(update, fromPull: true)
+                    self?.applyPodcastUpdate(
+                        update,
+                        fromPull: true,
+                        allowEqualRev: allowEqualRev)
                 }
             }
         }
@@ -327,22 +321,19 @@ final class KernelModel {
     /// are dropped cheaply. For the push path `update` is the already-merged
     /// `compositeUpdate`; for the pull path it is the full library snapshot.
     ///
-    /// This method runs the cheap, must-be-main work inline (the `@Observable`
-    /// `snapshot`/`nowPlaying`/`downloadSnapshot` assignments + Spotlight / Live
-    /// Activity / Now-Playing reconcile) and then offloads the O(N×M) content/
-    /// library hashing to a detached task, committing `podcastSnapshot`/`library`
-    /// back on the MainActor.
+    /// This method runs the cheap, must-be-main assignments inline, then
+    /// offloads the O(N×M) content/library hashing to a detached task.
     ///
     /// `fromPull`: when true, also replace `compositeUpdate` with the full
     /// snapshot so the push path's incremental merges start from a current base.
-    private func applyPodcastUpdate(_ update: PodcastUpdate, fromPull: Bool = false) {
-        // Cold-start re-seed allowance: before the first full hydration a partial
-        // push frame may have already advanced `lastProcessedRev` to the same rev
-        // the startup pull carries. Allow `>=` on the cold-start pull so the full
-        // library snapshot still seeds the composite even if a partial push frame
-        // raced it. After `hasHydratedPodcastSnapshot` flips true the normal `>` guard is
-        // restored for all subsequent push and pull frames.
-        let revPasses = fromPull && !hasHydratedPodcastSnapshot
+    private func applyPodcastUpdate(
+        _ update: PodcastUpdate,
+        fromPull: Bool = false,
+        allowEqualRev: Bool = false
+    ) {
+        // Allow `>=` only when a full pull must seed or repair state after a
+        // same-rev typed push. Ordinary steady-state pulls keep strict `>`.
+        let revPasses = fromPull && (!hasHydratedPodcastSnapshot || allowEqualRev)
             ? update.rev >= Int(lastProcessedRev)
             : update.rev > Int(lastProcessedRev)
         guard revPasses else { return }
@@ -431,8 +422,7 @@ final class KernelModel {
                 .mainApply,
                 micros: Int((DispatchTime.now().uptimeNanoseconds &- applyStart) / 1_000))
         }
-        // Store-open-failure fires on every frame (before rev-gating) so the
-        // mandatory store alert fires on the first frame (V-67).
+        // Store-open-failure fires before rev-gating so the mandatory alert shows.
         storeOpenFailure = result.storeOpenFailure
         if !result.nostrSearchSessions.isEmpty {
             for (session, snapshot) in result.nostrSearchSessions {
@@ -449,13 +439,8 @@ final class KernelModel {
                 kernelIdentity = result.identity
             }
         } else if !result.domainFrames.resolvedProfiles.isEmpty {
-            // `resolved_profiles` is a TOP-LEVEL projections key (not a
-            // `podcast.*` domain sidecar) that can arrive on any tick —
-            // including ticks where the identity domain sidecar is absent
-            // (result.identity == .empty). Merge the new profiles additively
-            // into the cached kernelIdentity so the consumer (AppStateStore
-            // → mergeResolvedProfiles) receives them on the next observation
-            // tick without clobbering the active-account fields.
+            // `resolved_profiles` is top-level, not an identity sidecar. Merge it
+            // additively so active-account fields are not clobbered.
             let merged = kernelIdentity.merging(
                 resolvedProfiles: result.domainFrames.resolvedProfiles)
             if merged != kernelIdentity {

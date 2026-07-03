@@ -13,7 +13,9 @@ use crate::ffi::snapshot_domain_projections::{
     register_domain_projections, SCHEMA_PLAYBACK, SCHEMA_SETTINGS, SCHEMA_VOICE,
 };
 
-use super::tests::{make_test_handle_with_app, run_domain_projections_only};
+use super::tests::{
+    decode_projection_json, make_test_handle_with_app, run_domain_projections_only,
+};
 
 // ── Voice domain tombstone + delta isolation ──────────────────────────────────
 
@@ -37,7 +39,7 @@ fn voice_idle_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_VOICE)
         .expect("voice tombstone must be emitted when state is idle");
-    let val: serde_json::Value = serde_json::from_slice(&voice.payload).unwrap();
+    let val = decode_projection_json(voice);
     assert_eq!(
         val["voice"],
         serde_json::Value::Null,
@@ -140,8 +142,7 @@ fn playback_payload_contains_only_playback_keys() {
         .find(|p| p.schema_id == SCHEMA_PLAYBACK)
         .expect("podcast.playback must be emitted on initial run");
 
-    let val: serde_json::Value =
-        serde_json::from_slice(&playback.payload).expect("playback payload must be valid JSON");
+    let val = decode_projection_json(playback);
     let obj = val
         .as_object()
         .expect("playback payload must be a JSON object");
@@ -202,8 +203,7 @@ fn settings_payload_contains_only_settings_keys() {
         .find(|p| p.schema_id == SCHEMA_SETTINGS)
         .expect("podcast.settings must be emitted on initial run");
 
-    let val: serde_json::Value =
-        serde_json::from_slice(&settings.payload).expect("settings payload must be valid JSON");
+    let val = decode_projection_json(settings);
     let obj = val
         .as_object()
         .expect("settings payload must be a JSON object");

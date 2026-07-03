@@ -24,6 +24,10 @@ use super::runtime_facade::{
 };
 use super::snapshot::{build_snapshot_payload, decode_update_frame_json, PodcastUpdate};
 use super::speech_model_catalog::speech_model_catalog_json;
+use super::uniffi_typed_projection_frame::{
+    decode_typed_projection_frame as decode_typed_projection_frame_inner,
+    PodcastTypedProjectionFrame,
+};
 use crate::llm::local_model_backend::{set_registration, LocalLlmSink};
 
 #[uniffi::export(callback_interface)]
@@ -261,6 +265,13 @@ impl PodcastApp {
 
     pub fn decode_update_frame(&self, frame: Vec<u8>) -> Option<String> {
         decode_update_frame_json(&frame)
+    }
+
+    pub fn decode_typed_projection_frame(
+        &self,
+        frame: Vec<u8>,
+    ) -> Option<PodcastTypedProjectionFrame> {
+        decode_typed_projection_frame_inner(&frame)
     }
 
     pub fn set_local_llm_sink(&self, sink: Option<Box<dyn PodcastLocalLlmSink>>) {

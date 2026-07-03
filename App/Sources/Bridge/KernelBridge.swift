@@ -22,6 +22,7 @@ final class PodcastHandle: @unchecked Sendable {
     private var updateSink: KernelUpdateSink?
     /// Borrowed opaque handle owned by `PodcastApp`.
     var podcastHandle: UnsafeMutableRawPointer?
+    private let projectionCache = ProjectionMergeCache()
     /// Retained generated UniFFI capability sink.
     var syncBridge: SyncCapabilityBridge?
     /// Retained generated UniFFI agent-ask timeout sink.
@@ -128,6 +129,9 @@ final class PodcastHandle: @unchecked Sendable {
             actionResults: actionResultsRegistry,
             decodeFrame: { [weak self] frame in
                 self?.podcastApp.decodeUpdateFrame(frame: frame)
+            },
+            decodeDomainFrames: { [weak self] frame in
+                self?.decodeDomainFrames(frame: frame)
             })
         updateSink = sink
         podcastApp.setUpdateSink(sink: sink)
@@ -218,7 +222,20 @@ final class PodcastHandle: @unchecked Sendable {
         "podcast-swift-\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: ""))"
     }
 
-    fileprivate static func decode(payload: String) -> KernelUpdateResult? {
+    private func decodeDomainFrames(frame: Data) -> PodcastDomainFrames? {
+        guard let typedFrame = podcastApp.decodeTypedProjectionFrame(frame: frame) else {
+            return nil
+        }
+        let envelopes = typedFrame.envelopes.map(TypedProjectionEnvelope.init)
+        let result = projectionCache.merge(
+            envelopes: envelopes,
+            sessionId: typedFrame.sessionId,
+            snapshotEpoch: typedFrame.snapshotEpoch
+        )
+        return PodcastDomainFrames.decode(from: result.mergedEnvelopes)
+    }
+
+    fileprivate static func decode(payload: String, domainFrames typedDomainFrames: PodcastDomainFrames) -> KernelUpdateResult? {
         let start = ContinuousClock.now
         let data = Data(payload.utf8)
         let decoder = KernelDecoding.makeDecoder()
@@ -228,12 +245,8 @@ final class PodcastHandle: @unchecked Sendable {
                 kbLog.error("unknown envelope tag=\(envelope.t) bytes=\(data.count)")
                 return nil
             }
-            // NMP v0.5.0 per-domain push path: extract whichever
-            // `podcast.*` domain sidecars are present in this frame.
-            // `PodcastApp.decodeUpdateFrame` injects typed sidecars
-            // under `v.projections[schema_id]`; absent domains carry no sidecar
-            // (delta suppression) and MUST NOT overwrite prior state.
-            let domainFrames = PodcastDomainFrames.decode(from: data) ?? PodcastDomainFrames()
+            var domainFrames = typedDomainFrames
+            domainFrames.resolvedProfiles = PodcastDomainFrames.decodeResolvedProfiles(from: data)
             let nostrSearchSessions = NostrSearchProjection.decodeSessions(from: data)
             guard domainFrames.hasAnyDomain || !nostrSearchSessions.isEmpty else {
                 kbLog.error(
@@ -281,19 +294,22 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
     let signedEvents: SignedEventsRegistry
     let actionResults: ActionResultsRegistry
     let decodeFrame: (Data) -> String?
+    let decodeDomainFrames: (Data) -> PodcastDomainFrames?
 
     init(
         handler: @escaping (KernelUpdateResult) -> Void,
         onPanic: @escaping () -> Void,
         signedEvents: SignedEventsRegistry,
         actionResults: ActionResultsRegistry,
-        decodeFrame: @escaping (Data) -> String?
+        decodeFrame: @escaping (Data) -> String?,
+        decodeDomainFrames: @escaping (Data) -> PodcastDomainFrames?
     ) {
         self.handler = handler
         self.onPanic = onPanic
         self.signedEvents = signedEvents
         self.actionResults = actionResults
         self.decodeFrame = decodeFrame
+        self.decodeDomainFrames = decodeDomainFrames
     }
 
     func onUpdate(frame: Data) {
@@ -308,7 +324,8 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
             onPanic()
             return
         }
-        guard let result = PodcastHandle.decode(payload: payload) else { return }
+        let domainFrames = decodeDomainFrames(frame) ?? PodcastDomainFrames()
+        guard let result = PodcastHandle.decode(payload: payload, domainFrames: domainFrames) else { return }
         PerfMetrics.shared.record(
             .pushFrameDecode,
             micros: Int((DispatchTime.now().uptimeNanoseconds &- frameStart) / 1_000),

@@ -18,11 +18,11 @@ import org.junit.Test
  * work.
  *
  * NOTE: As of NMP v0.5.0 (PR #404) the push-frame path uses per-domain typed
- * sidecars decoded via [SnapshotCodec.decodeDomainFrames] + [SnapshotCodec.mergeFrames].
+ * sidecars decoded via [DomainFrameFixtures.decodeDomainFrames] + [SnapshotCodec.mergeFrames].
  * The old `decodeEnvelope` (single full-snapshot decode from the push envelope)
  * no longer exists — the full-snapshot decode contract is now covered by
  * [DomainFrameWireTest]. The tests below focus on the bare pull path and
- * edge-case envelope handling via [SnapshotCodec.decodeDomainFrames].
+ * edge-case envelope handling via [DomainFrameFixtures.decodeDomainFrames].
  */
 class SnapshotCodecTest {
 
@@ -33,16 +33,16 @@ class SnapshotCodecTest {
         // mis-decode it as state.
         val panic = """{"t":"panic","message":"actor died"}"""
 
-        assertNull(SnapshotCodec.decodeDomainFrames(panic))
+        assertNull(DomainFrameFixtures.decodeDomainFrames(panic))
     }
 
     @Test
     fun `malformed or empty input yields null`() {
-        assertNull(SnapshotCodec.decodeDomainFrames(null))
-        assertNull(SnapshotCodec.decodeDomainFrames(""))
-        assertNull(SnapshotCodec.decodeDomainFrames("not json"))
+        assertNull(DomainFrameFixtures.decodeDomainFrames(null))
+        assertNull(DomainFrameFixtures.decodeDomainFrames(""))
+        assertNull(DomainFrameFixtures.decodeDomainFrames("not json"))
         // A snapshot tag with no `v` payload is incomplete — dropped, not crashed.
-        assertNull(SnapshotCodec.decodeDomainFrames("""{"t":"snapshot"}"""))
+        assertNull(DomainFrameFixtures.decodeDomainFrames("""{"t":"snapshot"}"""))
     }
 
     @Test
@@ -267,7 +267,7 @@ class SnapshotCodecTest {
         )
 
         val revs = frames
-            .mapNotNull { SnapshotCodec.decodeDomainFrames(it) }
+            .mapNotNull { DomainFrameFixtures.decodeDomainFrames(it) }
             .mapNotNull { it.playback?.rev }
 
         // Each emit produces a distinct PodcastDomainFrames with monotonically
@@ -302,7 +302,7 @@ class SnapshotCodecTest {
             }
         """.trimIndent()
 
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull(frames)
         val tracker = DomainRevTracker()
         val (snapshot, accepted) = SnapshotCodec.mergeFrames(frames!!, PodcastSnapshot(), tracker)

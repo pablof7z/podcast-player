@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package io.f7z.podcast
 
 import io.f7z.podcast.capabilities.AndroidCapabilityRouter
@@ -8,9 +10,12 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import org.nmp.android.ProjectionMergeCache
+import org.nmp.android.TypedProjectionEnvelope
 import uniffi.nmp_app_podcast.PodcastApp as UniFfiPodcastApp
 import uniffi.nmp_app_podcast.PodcastCapabilitySink
 import uniffi.nmp_app_podcast.PodcastDispatchOutcome
+import uniffi.nmp_app_podcast.PodcastProjectionPresence
 import uniffi.nmp_app_podcast.PodcastProfileShape
 import uniffi.nmp_app_podcast.PodcastRefLiveness
 import uniffi.nmp_app_podcast.PodcastRefNamespace
@@ -29,6 +34,7 @@ class KernelBridge : KernelDispatcher {
     private val closed = AtomicBoolean(false)
     private val updateQueue = LinkedBlockingQueue<UpdateQueueItem>(MAX_QUEUED_UPDATES)
     private val signerQueue = LinkedBlockingQueue<SignerQueueItem>(MAX_QUEUED_SIGNER_REQUESTS)
+    private val projectionCache = ProjectionMergeCache()
 
     @Volatile
     private var capabilityRouter: AndroidCapabilityRouter? = null
@@ -36,8 +42,10 @@ class KernelBridge : KernelDispatcher {
     private val updateSink = object : PodcastUpdateSink {
         override fun onUpdate(frame: ByteArray) {
             if (closed.get()) return
-            app.decodeUpdateFrame(frame)?.let { decoded ->
-                putUpdate(UpdateQueueItem.Frame(decoded))
+            val decoded = app.decodeUpdateFrame(frame)
+            val domainFrames = decodeTypedDomainFrames(frame)
+            if (decoded != null || domainFrames != null) {
+                putUpdate(UpdateQueueItem.Frame(KernelUpdateFrame(decoded, domainFrames)))
             }
         }
     }
@@ -115,9 +123,9 @@ class KernelBridge : KernelDispatcher {
         if (isOpen()) app.signinNsec(nsec, makeActive = true)
     }
 
-    fun nextUpdate(): String? =
+    fun nextUpdate(): KernelUpdateFrame? =
         when (val item = updateQueue.take()) {
-            is UpdateQueueItem.Frame -> item.json
+            is UpdateQueueItem.Frame -> item.update
             UpdateQueueItem.Shutdown -> null
         }
 
@@ -279,6 +287,30 @@ class KernelBridge : KernelDispatcher {
 
     private fun isOpen(): Boolean = !closed.get()
 
+    private fun decodeTypedDomainFrames(frame: ByteArray): PodcastDomainFrames? {
+        val typedFrame = app.decodeTypedProjectionFrame(frame) ?: return null
+        val envelopes = typedFrame.envelopes.map { envelope ->
+            TypedProjectionEnvelope(
+                key = envelope.key,
+                schemaId = envelope.schemaId,
+                schemaVersion = envelope.schemaVersion,
+                fileIdentifier = envelope.fileIdentifier,
+                payload = envelope.payload,
+                projectionRev = envelope.projectionRev,
+                state = when (envelope.state) {
+                    PodcastProjectionPresence.CHANGED -> 0u.toUByte()
+                    PodcastProjectionPresence.CLEARED -> 1u.toUByte()
+                },
+            )
+        }
+        val result = projectionCache.merge(
+            envelopes = envelopes,
+            sessionId = typedFrame.sessionId,
+            snapshotEpoch = typedFrame.snapshotEpoch,
+        )
+        return TypedProjectionDomainCodec.decodeDomainFrames(result.mergedEnvelopes)
+    }
+
     private fun putUpdate(item: UpdateQueueItem) {
         runCatching { updateQueue.put(item) }
             .onFailure { Thread.currentThread().interrupt() }
@@ -307,7 +339,7 @@ class KernelBridge : KernelDispatcher {
     }
 
     private sealed interface UpdateQueueItem {
-        data class Frame(val json: String) : UpdateQueueItem
+        data class Frame(val update: KernelUpdateFrame) : UpdateQueueItem
         object Shutdown : UpdateQueueItem
     }
 
@@ -327,3 +359,8 @@ class KernelBridge : KernelDispatcher {
         }
     }
 }
+
+data class KernelUpdateFrame(
+    val json: String?,
+    val domainFrames: PodcastDomainFrames?,
+)

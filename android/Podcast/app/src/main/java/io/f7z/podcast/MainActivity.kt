@@ -209,15 +209,17 @@ private fun PodcastRoot(
         // returns the moment a new frame arrives — reactive, not timed. A `null`
         // return means the bridge is shutting down.
         //
-        // NMP v0.5.0 per-domain push path: the slim `v` envelope carries only
-        // `rev`/`running`/`schema_version`. The real domain payloads arrive as
-        // typed sidecars under `v.projections["podcast.*"]`. We decode whichever
-        // domains are present and MERGE them into the held snapshot via copy(),
-        // leaving absent-domain slices untouched (no more whole-snapshot clobber).
+        // Steady-state domain payloads arrive through NMP typed projection
+        // envelopes. Generic JSON remains only for non-domain rows such as
+        // resolved_profiles.
         while (true) {
             coroutineContext.ensureActive()
-            val raw = withContext(Dispatchers.IO) { bridge.nextUpdate() } ?: break
-            val frames = SnapshotCodec.decodeDomainFrames(raw) ?: continue
+            val update = withContext(Dispatchers.IO) { bridge.nextUpdate() } ?: break
+            val resolvedProfiles = SnapshotCodec.decodeResolvedProfiles(update.json)
+            val frames = update.domainFrames
+                ?.copy(resolvedProfiles = update.domainFrames.resolvedProfiles + resolvedProfiles)
+                ?: PodcastDomainFrames(resolvedProfiles = resolvedProfiles).takeIf { it.hasAnyDomain }
+                ?: continue
             val current = snapshot ?: PodcastSnapshot()
             val (merged, anyAccepted) = SnapshotCodec.mergeFrames(frames, current, domainRevTracker)
             if (anyAccepted) {

@@ -57,11 +57,11 @@ extension KernelModel {
             lastErrorToast = message
         }
         // Surface the result of the user action without waiting for the next
-        // push frame. The full-library decode runs off the MainActor (see
-        // `pullPodcastSnapshotIfChanged`) so this dispatch returns immediately;
-        // the projection commits a runloop later — no caller depends on a
-        // same-runloop read of `library`/`podcastSnapshot`/`episodes`.
-        pullPodcastSnapshotIfChanged()
+        // push frame. A typed push can win the race and advance the same rev
+        // first; still pull the full snapshot for dispatch-rate actions so
+        // row-local library changes (for example download deletion) cannot be
+        // stranded behind a partial domain frame.
+        pullPodcastSnapshotIfChanged(allowEqualRev: true)
         return result
     }
 
@@ -79,7 +79,7 @@ extension KernelModel {
             kmLog.error("dispatch_action (silent) rejected: \(message, privacy: .public)")
         }
         // Surface the result off-main, same as `dispatch`.
-        pullPodcastSnapshotIfChanged()
+        pullPodcastSnapshotIfChanged(allowEqualRev: true)
         return result
     }
 }
