@@ -2,6 +2,12 @@ import Foundation
 
 // MARK: - Podcast UniFFI endpoint helpers
 
+private let callNormalizeFeedUrl: (String) -> String? = normalizeFeedUrl(requestJson:)
+private let callNpubFromHex: (String) -> String? = npubFromHex(requestJson:)
+private let callParsePubkey: (String) -> String? = parsePubkey(requestJson:)
+private let callAgentActionPolicy: (String) -> String? = agentActionPolicy(requestJson:)
+private let callByokAuthorization: (String) -> String? = byokAuthorization(requestJson:)
+
 enum PodcastAppEndpoint {
     case threadingProjection
     case agentEmptyState
@@ -381,11 +387,11 @@ enum PodcastAppGlobalEndpoint {
 
     func call(requestJson: String) -> String? {
         switch self {
-        case .normalizeFeedUrl: return normalizeFeedUrl(requestJson: requestJson)
-        case .npubFromHex: return npubFromHex(requestJson: requestJson)
-        case .parsePubkey: return parsePubkey(requestJson: requestJson)
-        case .agentActionPolicy: return agentActionPolicy(requestJson: requestJson)
-        case .byokAuthorization: return byokAuthorization(requestJson: requestJson)
+        case .normalizeFeedUrl: return callNormalizeFeedUrl(requestJson)
+        case .npubFromHex: return callNpubFromHex(requestJson)
+        case .parsePubkey: return callParsePubkey(requestJson)
+        case .agentActionPolicy: return callAgentActionPolicy(requestJson)
+        case .byokAuthorization: return callByokAuthorization(requestJson)
         }
     }
 }

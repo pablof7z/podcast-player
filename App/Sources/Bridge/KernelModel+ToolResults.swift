@@ -325,14 +325,10 @@ extension KernelModel {
         guard let json = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
-        let response = {
-            guard let result = podcastAppString(handle, endpoint: .memoryRememberText, request: jsonStr) else {
-                return nil
-            }
-            let response = result
-            guard let data = response.data(using: .utf8) else { return nil }
-            return try? KernelDecoding.makeDecoder().decode(RememberTextMemoryResponse.self, from: data)
-        }()
+        guard let result = podcastAppString(handle, endpoint: .memoryRememberText, request: jsonStr),
+              let data = result.data(using: .utf8)
+        else { return nil }
+        let response = try? KernelDecoding.makeDecoder().decode(RememberTextMemoryResponse.self, from: data)
         pullPodcastSnapshotIfChanged()
         return response
     }
