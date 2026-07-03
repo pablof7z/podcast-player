@@ -129,9 +129,8 @@ fn err_envelope(reason: &str) -> CString {
 /// Takes the full OpenAI message array (system + history + latest user turn)
 /// as a JSON string. Returns a heap-allocated `{"text":"…"}` or
 /// `{"error":"…"}` JSON string. Caller MUST free via `nmp_free_string`.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_chat_complete(
+pub fn nmp_app_podcast_chat_complete(
     handle: *mut PodcastHandle,
     messages_json: *const c_char,
 ) -> *mut c_char {

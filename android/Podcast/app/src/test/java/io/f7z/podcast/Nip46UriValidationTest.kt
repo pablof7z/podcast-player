@@ -19,10 +19,8 @@ import org.junit.Test
  *     `"local_key"` and `"nip55"`, so the old gate could NEVER become true. The
  *     correct signal is "an external (remote-signer) active account appeared".
  *
- * Wire contract verified against `NmpCore.h`:
- * ```c
- * void nmp_app_signin_bunker(void *app, const char *uri, uint8_t make_active);
- * ```
+ * Wire contract is now the generated UniFFI `PodcastApp.signinBunker(...)`
+ * method; the legacy `NmpCore.h` app bridge is intentionally absent.
  */
 class Nip46UriValidationTest {
 

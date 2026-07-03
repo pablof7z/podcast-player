@@ -733,7 +733,8 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
     func playbackToolResult(requestJson: String)  -> String?
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */
@@ -1657,7 +1658,8 @@ open func playbackToolResult(requestJson: String) -> String?  {
 }
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */
@@ -3373,7 +3375,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_playback_tool_result() != 62142) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 9309) {
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 8495) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot() != 121) {

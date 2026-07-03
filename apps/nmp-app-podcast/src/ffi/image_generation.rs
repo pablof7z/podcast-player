@@ -31,9 +31,8 @@ fn err_envelope(reason: &str) -> CString {
     CString::new(json).unwrap_or_else(|_| CString::new(r#"{"error":"encoding"}"#).unwrap())
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_generate_image(
+pub fn nmp_app_podcast_generate_image(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

@@ -74,11 +74,10 @@ struct LocalModelCatalogService: Sendable {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"Kernel handle unavailable"}"#
             }
-            guard let ptr = podcastAppCString(handle, endpoint: .localModelCatalog) else {
+            guard let ptr = podcastAppString(handle, endpoint: .localModelCatalog) else {
                 return #"{"error":"null response from Rust"}"#
             }
-            defer { freePodcastCString(ptr) }
-            return String(cString: ptr)
+            return ptr
         }.value
 
         guard let data = responseJSON.data(using: .utf8) else {

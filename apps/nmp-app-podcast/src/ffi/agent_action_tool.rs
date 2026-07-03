@@ -52,9 +52,8 @@ use results::{
 /// Sentinel UUID used to represent the "Unknown" podcast bucket.
 pub(super) const UNKNOWN_PODCAST_ID: &str = "00000000-EEEE-EEEE-EEEE-000000000000";
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_action_tool(
+pub fn nmp_app_podcast_agent_action_tool(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -78,9 +77,8 @@ pub extern "C" fn nmp_app_podcast_agent_action_tool(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_action_policy(request_json: *const c_char) -> *mut c_char {
+pub fn nmp_app_podcast_agent_action_policy(request_json: *const c_char) -> *mut c_char {
     if request_json.is_null() {
         return std::ptr::null_mut();
     }

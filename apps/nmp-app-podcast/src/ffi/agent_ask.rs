@@ -231,9 +231,8 @@ fn parse_request<T: for<'de> Deserialize<'de>>(request_json: *const c_char) -> O
     serde_json::from_str(request_str).ok()
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_ask_enqueue(
+pub fn nmp_app_podcast_agent_ask_enqueue(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -267,9 +266,8 @@ pub extern "C" fn nmp_app_podcast_agent_ask_enqueue(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_ask_settle(
+pub fn nmp_app_podcast_agent_ask_settle(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

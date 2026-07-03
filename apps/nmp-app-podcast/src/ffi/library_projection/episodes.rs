@@ -11,9 +11,8 @@ use super::types::{
 use crate::ffi::guard::ffi_guard;
 use crate::ffi::handle::PodcastHandle;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_show_episodes(
+pub fn nmp_app_podcast_library_show_episodes(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -63,9 +62,8 @@ pub extern "C" fn nmp_app_podcast_library_show_episodes(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_all_episodes(
+pub fn nmp_app_podcast_library_all_episodes(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -115,9 +113,8 @@ pub extern "C" fn nmp_app_podcast_library_all_episodes(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_starred_episodes(
+pub fn nmp_app_podcast_library_starred_episodes(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -151,9 +148,8 @@ pub extern "C" fn nmp_app_podcast_library_starred_episodes(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_episode_lookup(
+pub fn nmp_app_podcast_library_episode_lookup(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -194,9 +190,8 @@ pub extern "C" fn nmp_app_podcast_library_episode_lookup(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_episode_for_audio_url(
+pub fn nmp_app_podcast_library_episode_for_audio_url(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

@@ -11,9 +11,8 @@ use url::Url;
 
 use super::guard::ffi_guard;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_normalize_feed_url(input: *const c_char) -> *mut c_char {
+pub fn nmp_app_podcast_normalize_feed_url(input: *const c_char) -> *mut c_char {
     if input.is_null() {
         return std::ptr::null_mut();
     }

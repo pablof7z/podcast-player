@@ -79,9 +79,8 @@ const POSITION_FLUSH_DELTA_SECS: f64 = 10.0;
 ///
 /// Returns a malloc-compatible string the caller MUST free via `nmp_free_string`,
 /// or `NULL` when no follow-up is needed (or on any error).
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_audio_report(
+pub fn nmp_app_podcast_audio_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

@@ -109,9 +109,8 @@ fn stt(provider: impl Into<String>) -> TranscriptPlanResponse {
 }
 
 /// Plan transcript ingestion for one episode.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_transcript_ingest_plan(
+pub fn nmp_app_podcast_transcript_ingest_plan(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -159,9 +158,8 @@ pub extern "C" fn nmp_app_podcast_transcript_ingest_plan(
 /// Swift supplies only native capability facts (which episode ids currently
 /// have local audio files). Rust owns candidate eligibility, publisher/STT
 /// policy, newest-first ordering, optional new-episode scoping, and max count.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_transcript_auto_ingest_candidates(
+pub fn nmp_app_podcast_transcript_auto_ingest_candidates(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

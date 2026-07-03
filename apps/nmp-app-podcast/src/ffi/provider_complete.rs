@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::provider_transport::{self, CompletionIntent};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_provider_complete(
+pub fn nmp_app_podcast_provider_complete(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

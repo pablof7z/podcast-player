@@ -139,21 +139,18 @@ pub(crate) fn run_turn(
 /// ## Teardown fence (UAF fix)
 ///
 /// The spawned turn dereferences `app` on a Tokio worker thread, and
-/// `NmpApp::Drop` (nmp-ffi rev ec15ede) joins only the actor and
+/// `NmpApp::Drop` joins only the actor and
 /// update-listener threads — it does NOT await this crate's runtime, and
 /// `Runtime::drop` does not wait for detached `spawn`/`spawn_blocking`
 /// tasks. Routing the dispatch back through the actor thread (the BACKLOG's
-/// original suggestion) is not reachable: nmp-ffi exposes no accessor to
-/// clone the capability-callback slot and no seam to post a closure onto the
-/// actor thread, and we must not fork the pinned dep. Instead the manager
+/// original suggestion) is no longer the canonical path. Instead the manager
 /// retains the outer task [`JoinHandle`]s in `inflight` and exposes
-/// [`Self::shutdown`], which aborts and joins them. The FFI teardown calls
-/// `shutdown` from [`crate::ffi::nmp_app_podcast_unregister`] —
-/// contractually invoked *before* `nmp_app_free` — so every in-flight `app`
-/// dereference is fenced before the allocation is freed. (`shutdown` cannot
-/// live in a `Drop` impl: the snapshot-projection closure holds a second
-/// strong `Arc<PodcastHandle>`, so the manager actually drops *during*
-/// `nmp_app_free`, after the actor join, which is too late.)
+/// [`Self::shutdown`], which aborts and joins them. The generated UniFFI
+/// `PodcastApp` calls that fence from `shutdown` / `Drop` before releasing the
+/// runtime, so every in-flight `app` dereference is fenced before the
+/// allocation is freed. (`shutdown` cannot live only in this manager's `Drop`
+/// impl: projection closures hold strong `Arc<PodcastHandle>` clones, so drop
+/// order is too late for an explicit teardown fence.)
 pub(crate) struct VoiceConversationManager {
     app: *mut NmpApp,
     history: ConversationHistory,
@@ -172,7 +169,7 @@ pub(crate) struct VoiceConversationManager {
     /// new turn so the vector does not grow unbounded across a session.
     inflight: Arc<Mutex<Vec<JoinHandle<()>>>>,
     /// Set by [`Self::shutdown`]. A late `on_transcript_final` (which the
-    /// caller contract already forbids after `unregister`) becomes a no-op
+    /// caller contract already forbids after facade shutdown) becomes a no-op
     /// rather than spawning a task that would dereference a freeing `app`.
     shutting_down: Arc<AtomicBool>,
 }
@@ -182,10 +179,10 @@ pub(crate) struct VoiceConversationManager {
 // synchronously on the actor / FFI thread, fenced by the actor
 // join), this manager dereferences `app` from inside a `runtime.spawn` task
 // on a Tokio worker thread. That deref is fenced instead by
-// [`VoiceConversationManager::shutdown`], called from
-// `nmp_app_podcast_unregister` (contractually before `nmp_app_free`): it
-// aborts every in-flight outer task and joins it, so by the time the app is
-// freed no task is between the `shutting_down` check and the `&*app` read.
+// [`VoiceConversationManager::shutdown`], called from `PodcastApp.shutdown()` /
+// `Drop` before runtime teardown: it aborts every in-flight outer task and joins
+// it, so by the time the app is freed no task is between the `shutting_down`
+// check and the `&*app` read.
 // Aborting the outer future at its `.await` point drops the inner
 // `spawn_blocking` handle without waiting on the LLM round-trip, so teardown
 // stays prompt; the detached blocking thread only ever touches `Arc`-shared
@@ -226,12 +223,12 @@ impl VoiceConversationManager {
     /// task already past the abort point completes its short dispatch and the
     /// join waits the few microseconds for it. Either way, when `shutdown`
     /// returns no spawned task will dereference `app` — so it is sound for
-    /// `nmp_app_podcast_unregister` to call this immediately before
-    /// `nmp_app_free`.
+    /// `PodcastApp.shutdown()` / `Drop` to call this immediately before
+    /// runtime teardown.
     ///
     /// Joins run via [`Runtime::block_on`]; `shutdown` therefore must be
-    /// called from a thread that is NOT inside this runtime (the FFI/Swift
-    /// thread that runs `unregister` qualifies).
+    /// called from a thread that is NOT inside this runtime (the UniFFI/Swift
+    /// caller thread qualifies).
     pub(crate) fn shutdown(&self) {
         self.shutting_down.store(true, Ordering::SeqCst);
         let handles: Vec<JoinHandle<()>> = match self.inflight.lock() {
@@ -341,8 +338,8 @@ impl VoiceConversationManager {
                 if !shutting_down.load(Ordering::SeqCst) {
                     let app = app_addr as *mut NmpApp;
                     // SAFETY: see the type-level SAFETY note — the `shutdown`
-                    // fence (called from `nmp_app_podcast_unregister`, before
-                    // `nmp_app_free`) guarantees `app` is still live here.
+                    // fence (called from `PodcastApp.shutdown()` / `Drop`
+                    // before runtime teardown) guarantees `app` is still live here.
                     let _ = unsafe { &*app }.dispatch_capability(&req);
                 }
             }

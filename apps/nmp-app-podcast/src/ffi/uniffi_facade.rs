@@ -149,9 +149,9 @@ impl PodcastApp {
         });
         let app_mut = Arc::get_mut(&mut app).expect("PodcastApp has no shared refs during init");
         let raw = std::ptr::addr_of_mut!(app_mut.inner);
-        let handle = super::register::nmp_app_podcast_register(raw);
+        let handle = super::register::register_podcast_app(raw);
         if !handle.is_null() {
-            // SAFETY: `nmp_app_podcast_register` returns `Arc::into_raw`.
+            // SAFETY: `register_podcast_app` returns `Arc::into_raw`.
             // Reclaim that strong ref into the owning UniFFI object; projection
             // closures hold their own Arc clones.
             let podcast = unsafe { Arc::from_raw(handle as *const PodcastHandle) };
@@ -160,7 +160,8 @@ impl PodcastApp {
         app
     }
 
-    /// Transitional escape hatch for the still-C-ABI app-domain tail.
+    /// Transitional handle token for UniFFI methods whose Rust bodies still
+    /// delegate through handle-scoped JSON helpers.
     /// This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
     /// Swift must not free it.
     pub fn podcast_handle(&self) -> u64 {

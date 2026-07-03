@@ -160,13 +160,12 @@ extension AppStateStore {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr -> Data? in
-            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result).data(using: .utf8)
-        }
+            return result.data(using: .utf8)
+        }()
     }
 
     private func agentActivityObjects(_ entries: [AgentActivityEntry]) -> [[String: Any]] {

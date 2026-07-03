@@ -89,9 +89,8 @@ struct VoiceConfigureResultRequest {
     previous_voice_id: Option<String>,
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_tts_tool_plan(
+pub fn nmp_app_podcast_agent_tts_tool_plan(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -115,9 +114,8 @@ pub extern "C" fn nmp_app_podcast_agent_tts_tool_plan(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_tts_tool_result(
+pub fn nmp_app_podcast_agent_tts_tool_result(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -141,9 +139,8 @@ pub extern "C" fn nmp_app_podcast_agent_tts_tool_result(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_voice_configure_plan(
+pub fn nmp_app_podcast_agent_voice_configure_plan(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -167,9 +164,8 @@ pub extern "C" fn nmp_app_podcast_agent_voice_configure_plan(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_voice_configure_result(
+pub fn nmp_app_podcast_agent_voice_configure_result(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

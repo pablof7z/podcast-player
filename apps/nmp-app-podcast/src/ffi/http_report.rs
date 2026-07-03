@@ -38,9 +38,8 @@ use super::handle::PodcastHandle;
 
 /// Deliver a JSON-encoded [`HttpReport`] to the kernel's feed-fetch
 /// coordinator. Always returns `NULL` (no follow-up); nothing to free.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_http_report(
+pub fn nmp_app_podcast_http_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

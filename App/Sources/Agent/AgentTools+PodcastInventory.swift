@@ -287,13 +287,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = podcastAppCString(handle, endpoint: .agentCategoryList, request: ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentCategoryList, request: json) else {
                     return nil
                 }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 
@@ -344,13 +343,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = podcastAppCString(handle, endpoint: .agentInventoryList, request: ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentInventoryList, request: json) else {
                     return nil
                 }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 
@@ -447,22 +445,21 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                let result: UnsafeMutablePointer<CChar>?
+            return {
+                let result: String?
                 switch op {
                 case "plan":
-                    result = podcastAppCString(handle, endpoint: .agentEpisodeListPlan, request: ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListPlan, request: json)
                 case "results":
-                    result = podcastAppCString(handle, endpoint: .agentEpisodeListResults, request: ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListResults, request: json)
                 case "error":
-                    result = podcastAppCString(handle, endpoint: .agentEpisodeListError, request: ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListError, request: json)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 

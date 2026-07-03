@@ -44,9 +44,8 @@ impl EpisodeMutationToolResultResponse {
     }
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_episode_mutation_tool_result(
+pub fn nmp_app_podcast_episode_mutation_tool_result(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

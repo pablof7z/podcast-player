@@ -186,18 +186,11 @@ fn signed_events_sidecar_is_injected_with_expected_json_shape() {
 }
 
 /// Golden: a frame without a typed sidecar results in no `projections` key
-/// in the `nmp_app_podcast_decode_update_frame` JSON output — the existing
-/// steady-state behavior is preserved.
+/// in the decoded JSON output — the existing steady-state behavior is preserved.
 #[test]
 fn frame_without_signed_events_has_no_projections_key_in_output() {
     let frame = frame_with_typed(&[]);
-    let json = unsafe {
-        let ptr = super::nmp_app_podcast_decode_update_frame(frame.as_ptr(), frame.len());
-        assert!(!ptr.is_null(), "frame must decode successfully");
-        let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
-        let _ = std::ffi::CString::from_raw(ptr);
-        s
-    };
+    let json = super::decode_update_frame_json(&frame).expect("frame must decode successfully");
     let v: serde_json::Value = serde_json::from_str(&json).expect("output must be valid JSON");
     assert_eq!(v["t"], "snapshot");
     assert!(
@@ -252,18 +245,12 @@ fn convert_from_snake_case_matches_swift_reference_cases() {
 
 /// Integration: a frame WITH a live `signed_events` sidecar results in
 /// `v.projections["signed_events"]` being present in the
-/// `nmp_app_podcast_decode_update_frame` output JSON — the iOS
+/// decoded update-frame JSON — the iOS
 /// `SignedEventsRegistry.ingest` path reads exactly this location.
 #[test]
 fn frame_with_signed_events_populates_projections_in_output() {
     let frame = frame_with_live_signed_events();
-    let json = unsafe {
-        let ptr = super::nmp_app_podcast_decode_update_frame(frame.as_ptr(), frame.len());
-        assert!(!ptr.is_null(), "frame must decode successfully");
-        let s = std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned();
-        let _ = std::ffi::CString::from_raw(ptr);
-        s
-    };
+    let json = super::decode_update_frame_json(&frame).expect("frame must decode successfully");
     let v: serde_json::Value = serde_json::from_str(&json).expect("output must be valid JSON");
     assert_eq!(v["t"], "snapshot");
 

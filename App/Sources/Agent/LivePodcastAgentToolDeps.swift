@@ -108,12 +108,11 @@ struct LiveEpisodeSummaryAdapter: EpisodeSummaryProviding {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return .unavailable }
-        return json.withCString { ptr -> EpisodeSummaryOutcome in
-            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
                 return .unavailable
             }
-            defer { freePodcastCString(result) }
-            let envelope = String(cString: result)
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustSummaryPolicy.self, from: data)
             else { return .unavailable }
@@ -125,7 +124,7 @@ struct LiveEpisodeSummaryAdapter: EpisodeSummaryProviding {
             default:
                 return .unavailable
             }
-        }
+        }()
     }
 }
 

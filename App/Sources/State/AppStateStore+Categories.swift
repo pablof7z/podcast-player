@@ -173,13 +173,12 @@ extension AppStateStore {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        let envelope = json.withCString { ptr -> String? in
-            guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
+        let envelope = {
+            guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
         guard let envelope,
               let responseData = envelope.data(using: .utf8)
         else { return nil }

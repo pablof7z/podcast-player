@@ -99,13 +99,12 @@ actor OpenRouterWhisperClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
-            return requestJSON.withCString { cRequest in
-                guard let ptr = podcastAppCString(handle, endpoint: .openrouterWhisperTranscribe, request: cRequest) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .openrouterWhisperTranscribe, request: requestJSON) else {
                     return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         guard let responseData = responseJSON.data(using: .utf8) else {

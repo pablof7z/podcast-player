@@ -95,9 +95,8 @@ fn resolve_active_account(
 /// — the V-82 single-source-of-truth slot the actor writes on every sign-in.
 ///
 /// SAFETY: `handle.app` is a non-null `*mut NmpApp` for the lifetime of the
-/// `PodcastHandle` (constructed in `nmp_app_podcast_register`, freed only in
-/// `nmp_app_podcast_unregister` after the kernel actor has joined — see the
-/// `PodcastHandle` `Send`/`Sync` safety contract). The slot is an
+/// `PodcastHandle` (constructed by `register_podcast_app` and owned by
+/// `PodcastApp` — see the `PodcastHandle` `Send`/`Sync` safety contract). The slot is an
 /// `Arc<Mutex<Option<String>>>`; we clone the inner `String` out under the lock
 /// and never retain the guard.
 fn read_kernel_active_account(handle: &PodcastHandle) -> Option<String> {

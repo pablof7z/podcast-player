@@ -103,13 +103,12 @@ struct ProviderCompletionClient: Sendable {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"Kernel handle unavailable"}"#
             }
-            return intentString.withCString { intentPtr in
-                guard let ptr = podcastAppCString(handle, endpoint: .providerComplete, request: intentPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .providerComplete, request: intentString) else {
                     return #"{"error":"null response from Rust"}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         guard let responseData = responseJSON.data(using: .utf8) else {

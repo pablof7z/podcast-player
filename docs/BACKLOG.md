@@ -1292,12 +1292,11 @@ _All pending decisions resolved. See Done section for resolutions._
   exposes no accessor to clone the capability-callback slot and no seam to
   post a closure onto the actor thread, and the dep must not be forked.
   Instead `VoiceConversationManager` now retains the outer turn `JoinHandle`s
-  and exposes `shutdown()` (abort + `block_on(join)`); `nmp_app_podcast_unregister`
-  calls it — contractually before `nmp_app_free` — so every in-flight `app`
-  dereference is fenced before the allocation frees. A `Drop` impl could not
-  serve as the fence: the snapshot-projection closure holds a second strong
-  `Arc<PodcastHandle>`, so the manager drops during `nmp_app_free` (after the
-  actor join), too late. A `shutting_down` flag makes any late
+  and exposes `shutdown()` (abort + `block_on(join)`); `PodcastApp.shutdown()` /
+  `Drop` calls it before runtime teardown, so every in-flight `app` dereference
+  is fenced before the allocation frees. A `Drop` impl on the manager alone
+  could not serve as the fence because projection closures hold strong
+  `Arc<PodcastHandle>` clones. A `shutting_down` flag makes any late
   `on_transcript_final` a no-op.
 - **pod0-rename.** Done via PR #52; visible app name is Pod0 while stable
   identifiers remain unchanged.

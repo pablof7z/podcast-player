@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::elevenlabs_voice_catalog::{self, ElevenLabsVoiceCatalogError};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_elevenlabs_voice_catalog(
+pub fn nmp_app_podcast_elevenlabs_voice_catalog(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {

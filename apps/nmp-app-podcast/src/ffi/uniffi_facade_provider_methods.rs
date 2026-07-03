@@ -28,12 +28,8 @@ impl PodcastApp {
     }
 
     pub fn knowledge_query(&self, request_json: String) -> Option<String> {
-        self.podcast_handle_for_uniffi().and_then(|handle| {
-            call_legacy_handle_json(
-                handle,
-                &request_json,
-                super::nmp_app_podcast_knowledge_query,
-            )
+        self.podcast_handle_for_uniffi().map(|handle| {
+            super::knowledge_query::knowledge_query_json(Some(handle), Some(&request_json))
         })
     }
 
@@ -58,12 +54,8 @@ impl PodcastApp {
     }
 
     pub fn knowledge_chunk(&self, request_json: String) -> Option<String> {
-        self.podcast_handle_for_uniffi().and_then(|handle| {
-            call_legacy_handle_json(
-                handle,
-                &request_json,
-                super::nmp_app_podcast_knowledge_chunk,
-            )
+        self.podcast_handle_for_uniffi().map(|handle| {
+            super::knowledge_query::knowledge_chunk_json(Some(handle), Some(&request_json))
         })
     }
 

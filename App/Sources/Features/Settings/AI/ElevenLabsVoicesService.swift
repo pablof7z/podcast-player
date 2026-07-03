@@ -68,11 +68,10 @@ struct ElevenLabsVoicesService: Sendable {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
-            guard let ptr = podcastAppCString(handle, endpoint: .elevenlabsVoiceCatalog) else {
+            guard let ptr = podcastAppString(handle, endpoint: .elevenlabsVoiceCatalog) else {
                 return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
             }
-            defer { freePodcastCString(ptr) }
-            return String(cString: ptr)
+            return ptr
         }.value
 
         guard let data = responseJSON.data(using: .utf8) else {

@@ -4,7 +4,7 @@
 //! is correct *given a populated `PlayerState`*. This file pins the layer
 //! above it: that driving the **real** entry points the iOS shell uses —
 //! the `podcast.player` `play` host-op (which stages the actor) followed by an
-//! `AudioReport::Playing` through the real `nmp_app_podcast_audio_report` FFI —
+//! `AudioReport::Playing` through the Rust audio-report helper —
 //! leaves BOTH `PodcastUpdate.now_playing` AND `PodcastUpdate.widget` populated
 //! and mutually consistent.
 //!
@@ -18,13 +18,12 @@
 //! is in what the shell dispatches, not the kernel derivation.
 
 use std::collections::HashMap;
-use std::ffi::CString;
 use std::sync::{Arc, Mutex};
 
 use podcast_core::{Episode, Podcast};
 use url::Url;
 
-use crate::ffi::audio_report::nmp_app_podcast_audio_report;
+use crate::ffi::audio_report::audio_report_response_json;
 use crate::ffi::handle::PodcastHandle;
 use crate::ffi::snapshot::build_podcast_update;
 use crate::host_op_handler::PodcastHostOpHandler;
@@ -33,7 +32,7 @@ use crate::store::PodcastStore;
 use nmp_core::substrate::HostOpHandler;
 // DownloadQueue and PlaybackQueue removed in Step 14 — now in PlaybackState.
 
-/// Shared kernel state — the exact Arcs `nmp_app_podcast_register` clones into
+/// Shared kernel state — the exact Arcs `register_podcast_app` clones into
 /// both the host-op handler (writer) and the handle (snapshot reader).
 ///
 /// Step 14: `player_actor` removed — it now lives inside
@@ -112,7 +111,7 @@ fn seed_one_episode(store: &Arc<Mutex<PodcastStore>>, show: &str, ep_title: &str
 /// Drive the real iOS-shell entry points in order:
 ///   1. `podcast.player` `play` host-op → `handle_play` → `stage_load` (sets
 ///      the actor's `episode_id`).
-///   2. `AudioReport::Playing` through `nmp_app_podcast_audio_report` (sets
+///   2. `AudioReport::Playing` through the audio-report helper (sets
 ///      `is_playing = true`, position, duration on the SAME actor).
 /// Then build the snapshot via the real `build_podcast_update` and assert BOTH
 /// `now_playing` and `widget` are populated and consistent.
@@ -183,20 +182,9 @@ fn play_then_playing_report_populates_now_playing_and_widget() {
         "widget must carry the resolved episode title, not a null now_playing_episode_title"
     );
 
-    // --- Step 2: real `AudioReport::Playing` through the FFI report path ------
-    let report_json = CString::new(
-        r#"{"type":"playing","url":"https://example.com/audio.mp3","position_secs":30.0,"duration_secs":1800.0}"#,
-    )
-    .unwrap();
-    let handle_ptr = Box::into_raw(handle);
-    let ret = nmp_app_podcast_audio_report(handle_ptr, report_json.as_ptr());
-    // The Playing response is a `CString::into_raw` pointer; reclaim it the
-    // same way.
-    if !ret.is_null() {
-        let _ = unsafe { CString::from_raw(ret) };
-    }
-    // SAFETY: we boxed it ourselves above.
-    let handle = unsafe { Box::from_raw(handle_ptr) };
+    // --- Step 2: real `AudioReport::Playing` through the Rust report path ----
+    let report_json = r#"{"type":"playing","url":"https://example.com/audio.mp3","position_secs":30.0,"duration_secs":1800.0}"#;
+    let _ = audio_report_response_json(&handle, report_json);
 
     // --- Assert: snapshot now_playing AND widget are both live + consistent ---
     let update = build_podcast_update(&handle);

@@ -7,11 +7,8 @@
 
 pub use super::snapshot_update::{AppRelayRow, PodcastUpdate};
 
-use std::ffi::{c_char, CString};
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
-use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use super::projections::{AgentSnapshot, PodcastSummary};
 use super::snapshot_categories::build_category_aggregate;
@@ -54,7 +51,9 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
 
     // Single store lock → library + memory_facts + settings.
     let (library, memory_facts, settings) = handle
-        .state.library.store
+        .state
+        .library
+        .store
         .lock()
         .ok()
         .map(|s| {
@@ -113,18 +112,33 @@ pub fn build_podcast_update(handle: &PodcastHandle) -> PodcastUpdate {
     let owned_podcasts = collect_owned_podcasts(handle);
     // Step 14: downloads now read from state.playback.downloads.
     let downloads = handle
-        .state.playback.downloads
+        .state
+        .playback
+        .downloads
         .lock()
         .ok()
         .and_then(|q| build_downloads_snapshot(&q));
 
     // Step 8: comments now read from CommentsState.
     // Project viewed-episode comments, falling back to now-playing.
-    let comments = handle.state.comments.project(
-        now_playing.as_ref().and_then(|np| np.episode_id.as_deref()),
-    );
-    let notes = handle.state.notes.notes_snapshot().into_iter().map(Into::into).collect();
-    let friends = handle.state.friends.friends_snapshot().into_iter().map(Into::into).collect();
+    let comments = handle
+        .state
+        .comments
+        .project(now_playing.as_ref().and_then(|np| np.episode_id.as_deref()));
+    let notes = handle
+        .state
+        .notes
+        .notes_snapshot()
+        .into_iter()
+        .map(Into::into)
+        .collect();
+    let friends = handle
+        .state
+        .friends
+        .friends_snapshot()
+        .into_iter()
+        .map(Into::into)
+        .collect();
 
     let active_account = super::snapshot_identity::build_active_account(handle);
 
@@ -236,145 +250,6 @@ impl PodcastHandle {
     pub fn update(&self) -> PodcastUpdate {
         build_podcast_update(self)
     }
-}
-
-/// Serialize the current app state into a JSON C string.
-///
-/// **Cold-start / compat / debug only.** Normal app state updates arrive via
-/// typed domain sidecars in the binary FlatBuffers push frame
-/// (`nmp_app_podcast_decode_update_frame`). Do NOT call this on render ticks.
-///
-/// Returns null on any failure (null handle, `CString` nul-byte conflict).
-/// The returned pointer is owned by the caller; pass it to
-/// [`nmp_app_podcast_snapshot_free`] when done. Payload shape is
-/// defined by [`PodcastUpdate`].
-#[no_mangle]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_snapshot(handle: *mut PodcastHandle) -> *mut c_char {
-    if handle.is_null() {
-        return std::ptr::null_mut();
-    }
-    ffi_guard("nmp_app_podcast_snapshot", std::ptr::null_mut, || {
-        // SAFETY: caller guarantees `handle` is a valid pointer returned by
-        // `nmp_app_podcast_register` and not yet freed.
-        let handle = unsafe { &*handle };
-
-        let payload = build_snapshot_payload(handle);
-        let Ok(cstr) = CString::new(payload) else {
-            return std::ptr::null_mut();
-        };
-        cstr.into_raw()
-    })
-}
-
-/// Cheap rev probe: reads the atomic counter without serializing the payload.
-/// Returns `0` on null handle. Use before `nmp_app_podcast_snapshot` to skip
-/// the full JSON round-trip when nothing has changed.
-#[no_mangle]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_snapshot_rev(handle: *mut PodcastHandle) -> u64 {
-    if handle.is_null() {
-        return 0;
-    }
-    ffi_guard("nmp_app_podcast_snapshot_rev", || 0u64, || {
-        let handle = unsafe { &*handle };
-        handle.state.infra.rev.load(std::sync::atomic::Ordering::Relaxed)
-    })
-}
-
-/// Free a snapshot string previously returned by [`nmp_app_podcast_snapshot`].
-/// Null pointer is a silent no-op.
-#[no_mangle]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_snapshot_free(ptr: *mut c_char) {
-    if ptr.is_null() {
-        return;
-    }
-    ffi_guard(
-        "nmp_app_podcast_snapshot_free",
-        || (),
-        || {
-            // SAFETY: caller guarantees `ptr` came from `CString::into_raw` in
-            // `nmp_app_podcast_snapshot` and has not been freed.
-            unsafe {
-                let _ = CString::from_raw(ptr);
-            }
-        },
-    );
-}
-
-/// Drop the handle and free associated resources.
-/// Idempotent: null pointer is a silent no-op. The handle MUST NOT be used
-/// after this call.
-#[no_mangle]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_unregister(handle: *mut PodcastHandle) {
-    if handle.is_null() {
-        return;
-    }
-    ffi_guard(
-        "nmp_app_podcast_unregister",
-        || (),
-        || {
-            // SAFETY: caller guarantees `handle` came from `nmp_app_podcast_register`
-            // (which now returns `Arc::into_raw`) and has not already been freed. This
-            // reclaims the shell's strong ref; the snapshot-projection closure holds a
-            // second ref that is released when the app's projection registry is dropped.
-            let reclaimed = unsafe { Arc::from_raw(handle as *const PodcastHandle) };
-            reclaimed.shutdown_sidecars();
-            let _ = reclaimed.app;
-        },
-    );
-}
-
-/// Decode a binary FlatBuffers update frame into the JSON envelope consumed by
-/// the iOS shell's C-string callback:
-/// snapshot -> `{"t":"snapshot","v":...}`, panic -> `{"t":"panic","message":...}`.
-/// Returns a heap `CString` (free with `nmp_free_string`) or null when the
-/// frame is invalid.
-///
-/// **nmp-v0.3.0 migration note (PR-B #991/#979):** The generic `payload:Value`
-/// JSON tree — which previously carried `projections["podcast.snapshot"]` and
-/// `projections["signed_events"]` — is no longer present in the wire frame.
-/// `UpdateEnvelope::Snapshot` now carries a typed [`SnapshotEnvelope`] (Tier-3
-/// fields only: `rev`, `running`, metrics, relay statuses, error toasts).
-///
-/// As a result the `v` returned here no longer contains a `projections["podcast.snapshot"]`
-/// entry. The iOS shell's `decodePodcastUpdate` guard falls through to the pull
-/// path (`nmp_app_podcast_snapshot_rev` + `nmp_app_podcast_snapshot`), which is
-/// driven by `pullPodcastSnapshotIfChanged` on every accepted push notification.
-///
-/// **signed_events bridge:** The `signed_events` Tier-2 typed FlatBuffer sidecar
-/// (key `"signed_events"`, schema `nmp.signedEvents`) is decoded here and
-/// injected under `v.projections["signed_events"]` so the iOS
-/// `SignedEventsRegistry.ingest` path continues to work unchanged. Decode
-/// failure degrades silently (D6 — key absent, never a crash).
-///
-/// # Safety
-/// `bytes` must point to `len` readable bytes, or be null.
-#[no_mangle]
-pub unsafe extern "C" fn nmp_app_podcast_decode_update_frame(
-    bytes: *const u8,
-    len: usize,
-) -> *mut c_char {
-    if bytes.is_null() || len == 0 {
-        return std::ptr::null_mut();
-    }
-    ffi_guard(
-        "nmp_app_podcast_decode_update_frame",
-        std::ptr::null_mut,
-        || {
-            // SAFETY: caller guarantees `bytes` is valid for `len` bytes.
-            let slice = unsafe { std::slice::from_raw_parts(bytes, len) };
-            let Some(json) = decode_update_frame_json(slice) else {
-                return std::ptr::null_mut();
-            };
-            match CString::new(json) {
-                Ok(c) => c.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        },
-    ) // ffi_guard
 }
 
 pub(crate) fn decode_update_frame_json(slice: &[u8]) -> Option<String> {

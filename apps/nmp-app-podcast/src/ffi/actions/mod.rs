@@ -1,7 +1,7 @@
 //! Podcast-specific action-registration helpers invoked from
-//! [`super::register::nmp_app_podcast_register`].
+//! [`super::register::register_podcast_app`].
 //!
-//! `nmp_app_podcast_register` installs the reusable NMP substrate and explicit
+//! `register_podcast_app` installs the reusable NMP substrate and explicit
 //! protocol modules. This file is the hook point for **Podcast-specific**
 //! registrations that the template intentionally does not ship — NIP-74 podcast
 //! feed actions, episode playback intents, chapter navigation, etc.

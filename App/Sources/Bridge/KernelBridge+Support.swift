@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 // MARK: - Podcast UniFFI endpoint helpers
@@ -391,45 +390,20 @@ enum PodcastAppGlobalEndpoint {
     }
 }
 
-func freePodcastCString(_ ptr: UnsafeMutablePointer<CChar>?) {
-    guard let ptr else { return }
-    free(ptr)
-}
-
-private func ownedCString(_ value: String?) -> UnsafeMutablePointer<CChar>? {
-    guard let value else { return nil }
-    return value.withCString { strdup($0) }
-}
-
-private func string(from ptr: UnsafePointer<CChar>?) -> String? {
-    guard let ptr else { return nil }
-    return String(cString: ptr)
-}
-
-func podcastAppCString(
+func podcastAppString(
     _ handle: UnsafeMutableRawPointer?,
     endpoint: PodcastAppEndpoint,
-    request: UnsafePointer<CChar>? = nil
-) -> UnsafeMutablePointer<CChar>? {
+    request: String? = nil
+) -> String? {
     guard let app = PodcastHandle.app(for: handle) else { return nil }
-    return ownedCString(endpoint.call(on: app, requestJson: string(from: request)))
+    return endpoint.call(on: app, requestJson: request)
 }
 
-func podcastAppCString(
-    _ handle: UnsafeMutableRawPointer?,
-    endpoint: PodcastAppEndpoint,
-    request: String
-) -> UnsafeMutablePointer<CChar>? {
-    guard let app = PodcastHandle.app(for: handle) else { return nil }
-    return ownedCString(endpoint.call(on: app, requestJson: request))
-}
-
-func podcastAppGlobalCString(
+func podcastAppGlobalString(
     endpoint: PodcastAppGlobalEndpoint,
-    request: UnsafePointer<CChar>?
-) -> UnsafeMutablePointer<CChar>? {
-    guard let requestJson = string(from: request) else { return nil }
-    return ownedCString(endpoint.call(requestJson: requestJson))
+    request: String
+) -> String? {
+    endpoint.call(requestJson: request)
 }
 
 // ─── Swift-side timing wrapper ────────────────────────────────────────────

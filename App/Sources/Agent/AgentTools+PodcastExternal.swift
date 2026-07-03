@@ -234,20 +234,19 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                let result: UnsafeMutablePointer<CChar>?
+            return {
+                let result: String?
                 switch op {
                 case "plan":
-                    result = podcastAppCString(handle, endpoint: .agentDirectorySearchPlan, request: ptr)
+                    result = podcastAppString(handle, endpoint: .agentDirectorySearchPlan, request: json)
                 case "results":
-                    result = podcastAppCString(handle, endpoint: .agentDirectorySearchResults, request: ptr)
+                    result = podcastAppString(handle, endpoint: .agentDirectorySearchResults, request: json)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 

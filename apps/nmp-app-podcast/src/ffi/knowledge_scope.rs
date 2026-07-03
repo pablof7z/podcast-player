@@ -35,9 +35,8 @@ fn encode<T: Serialize>(value: &T) -> *mut c_char {
     }
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_knowledge_resolve_scope(
+pub fn nmp_app_podcast_knowledge_resolve_scope(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

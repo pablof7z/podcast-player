@@ -14,9 +14,8 @@ use super::types::{
 use crate::ffi::guard::ffi_guard;
 use crate::ffi::handle::PodcastHandle;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_all_podcasts(
+pub fn nmp_app_podcast_library_all_podcasts(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -62,9 +61,8 @@ pub extern "C" fn nmp_app_podcast_library_all_podcasts(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_followed_podcasts(
+pub fn nmp_app_podcast_library_followed_podcasts(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -100,9 +98,8 @@ pub extern "C" fn nmp_app_podcast_library_followed_podcasts(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_owned_podcasts(
+pub fn nmp_app_podcast_library_owned_podcasts(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -137,9 +134,8 @@ pub extern "C" fn nmp_app_podcast_library_owned_podcasts(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_categories(
+pub fn nmp_app_podcast_library_categories(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -223,9 +219,8 @@ pub extern "C" fn nmp_app_podcast_library_categories(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_download_rows(
+pub fn nmp_app_podcast_library_download_rows(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -277,9 +272,8 @@ pub extern "C" fn nmp_app_podcast_library_download_rows(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_subscription_status(
+pub fn nmp_app_podcast_library_subscription_status(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -361,9 +355,8 @@ pub extern "C" fn nmp_app_podcast_library_subscription_status(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_summary(handle: *mut PodcastHandle) -> *mut c_char {
+pub fn nmp_app_podcast_library_summary(handle: *mut PodcastHandle) -> *mut c_char {
     if handle.is_null() {
         return std::ptr::null_mut();
     }
@@ -403,9 +396,8 @@ pub extern "C" fn nmp_app_podcast_library_summary(handle: *mut PodcastHandle) ->
     })
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_library_podcast_stats(
+pub fn nmp_app_podcast_library_podcast_stats(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

@@ -99,13 +99,12 @@ enum KernelKnowledgeClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeQuery, request: reqPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .knowledgeQuery, request: requestJSON) else {
                     return #"{"error":"null response from knowledgeQuery"}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         return try parseResponse(responseJSON)
@@ -131,13 +130,12 @@ enum KernelKnowledgeClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeSimilarEpisode, request: reqPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .knowledgeSimilarEpisode, request: requestJSON) else {
                     return #"{"error":"null response from knowledgeSimilarEpisode"}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         return try parseResponse(responseJSON)
@@ -165,13 +163,12 @@ enum KernelKnowledgeClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeHomeRelated, request: reqPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .knowledgeHomeRelated, request: requestJSON) else {
                     return #"{"error":"null response from knowledgeHomeRelated"}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         return try parseHomeRelatedResponse(responseJSON)
@@ -199,13 +196,12 @@ enum KernelKnowledgeClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeResolveScope, request: reqPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .knowledgeResolveScope, request: requestJSON) else {
                     return #"{"error":"null response from knowledgeResolveScope"}"#
                 }
-                defer { freePodcastCString(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         let resolved = try parseScopeResolution(responseJSON)

@@ -47,12 +47,7 @@ fn make_chunk(episode_id: &str, idx: u32, text: &str, start: f64, end: f64) -> K
     })
 }
 
-fn make_embedded_chunk(
-    episode_id: &str,
-    idx: u32,
-    text: &str,
-    hot_dim: usize,
-) -> KnowledgeChunk {
+fn make_embedded_chunk(episode_id: &str, idx: u32, text: &str, hot_dim: usize) -> KnowledgeChunk {
     let dim = podcast_knowledge::EXPECTED_EMBEDDING_DIM;
     let mut emb = vec![0.0f32; dim];
     emb[hot_dim % dim] = 1.0;
@@ -84,8 +79,18 @@ fn test_runtime() -> tokio::runtime::Runtime {
 fn scoped_top_k_search_ranks_embedded_corpus() {
     let dim = podcast_knowledge::EXPECTED_EMBEDDING_DIM;
     let mut ks = KnowledgeStore::new();
-    ks.upsert(make_embedded_chunk("ep-A", 0, "rust programming ownership", 0));
-    ks.upsert(make_embedded_chunk("ep-B", 0, "python scripting loops", 512));
+    ks.upsert(make_embedded_chunk(
+        "ep-A",
+        0,
+        "rust programming ownership",
+        0,
+    ));
+    ks.upsert(make_embedded_chunk(
+        "ep-B",
+        0,
+        "python scripting loops",
+        512,
+    ));
 
     let mut qvec = vec![0.0f32; dim];
     qvec[0] = 1.0; // matches ep-A (cosine = 1.0), not ep-B (cosine = 0.0)
@@ -174,8 +179,14 @@ fn knowledge_query_returns_ranked_rows_for_seeded_corpus() {
     assert!(!first.podcast_id.is_empty(), "podcast_id must be populated");
     assert_eq!(first.episode_title, "quantum computing deep dive");
     assert_eq!(first.podcast_title, "Science Podcast");
-    assert!(!first.text.is_empty(), "text must come from the chunk store");
-    assert!(first.relevance_score > 0.0, "relevance_score must be positive");
+    assert!(
+        !first.text.is_empty(),
+        "text must come from the chunk store"
+    );
+    assert!(
+        first.relevance_score > 0.0,
+        "relevance_score must be positive"
+    );
     // Chunk metadata must match the seeded chunk.
     assert_eq!(first.chunk_index, 0);
     assert_eq!(first.end_secs, 30.0);
@@ -212,7 +223,10 @@ fn knowledge_query_scope_podcast_id_filters_correctly() {
     };
     let rows = rt.block_on(run_knowledge_query_inner(req, store_arc, index_arc));
 
-    assert!(!rows.is_empty(), "must return at least one row for podcast A");
+    assert!(
+        !rows.is_empty(),
+        "must return at least one row for podcast A"
+    );
     for row in &rows {
         assert_eq!(
             row.podcast_id, podcast_a_id,
@@ -286,7 +300,13 @@ fn knowledge_query_degrade_to_bm25_when_no_embeddings() {
 
     // Chunks have NULL embedding — top_k_search skips them.
     let mut ks = KnowledgeStore::new();
-    ks.upsert(make_chunk(&ep_id, 0, "ancient rome fall western empire", 0.0, 60.0));
+    ks.upsert(make_chunk(
+        &ep_id,
+        0,
+        "ancient rome fall western empire",
+        0.0,
+        60.0,
+    ));
     let index_arc = Arc::new(Mutex::new(ks));
 
     let rt = test_runtime();
@@ -298,8 +318,14 @@ fn knowledge_query_degrade_to_bm25_when_no_embeddings() {
     let rows = rt.block_on(run_knowledge_query_inner(req, store_arc, index_arc));
 
     assert!(!rows.is_empty(), "BM25 degrade must still return rows");
-    assert_eq!(rows[0].episode_id, ep_id, "BM25 must rank the matching episode");
-    assert!(rows[0].relevance_score > 0.0, "relevance_score must be positive");
+    assert_eq!(
+        rows[0].episode_id, ep_id,
+        "BM25 must rank the matching episode"
+    );
+    assert!(
+        rows[0].relevance_score > 0.0,
+        "relevance_score must be positive"
+    );
 }
 
 /// N1 regression: a BM25-only result must enrich with the chunk that ACTUALLY
@@ -321,8 +347,20 @@ fn knowledge_query_bm25_only_enriches_with_matched_chunk_not_chunk_zero() {
 
     // Three NULL-embedding chunks; only chunk 2 mentions "sourdough".
     let mut ks = KnowledgeStore::new();
-    ks.upsert(make_chunk(&ep_id, 0, "intro pasta tomatoes basil olive oil", 0.0, 30.0));
-    ks.upsert(make_chunk(&ep_id, 1, "main course roast chicken potatoes", 30.0, 60.0));
+    ks.upsert(make_chunk(
+        &ep_id,
+        0,
+        "intro pasta tomatoes basil olive oil",
+        0.0,
+        30.0,
+    ));
+    ks.upsert(make_chunk(
+        &ep_id,
+        1,
+        "main course roast chicken potatoes",
+        30.0,
+        60.0,
+    ));
     ks.upsert(make_chunk(
         &ep_id,
         2,
@@ -449,20 +487,35 @@ fn rich_dto_serializes_snake_case_keys() {
     // snake_case keys must be present.
     assert!(json.get("episode_id").is_some(), "must have 'episode_id'");
     assert!(json.get("podcast_id").is_some(), "must have 'podcast_id'");
-    assert!(json.get("episode_title").is_some(), "must have 'episode_title'");
-    assert!(json.get("podcast_title").is_some(), "must have 'podcast_title'");
+    assert!(
+        json.get("episode_title").is_some(),
+        "must have 'episode_title'"
+    );
+    assert!(
+        json.get("podcast_title").is_some(),
+        "must have 'podcast_title'"
+    );
     assert!(json.get("chunk_index").is_some(), "must have 'chunk_index'");
     assert!(json.get("start_secs").is_some(), "must have 'start_secs'");
     assert!(json.get("end_secs").is_some(), "must have 'end_secs'");
-    assert!(json.get("relevance_score").is_some(), "must have 'relevance_score'");
+    assert!(
+        json.get("relevance_score").is_some(),
+        "must have 'relevance_score'"
+    );
 
     // camelCase variants must NOT appear.
     assert!(json.get("episodeId").is_none(), "must NOT have 'episodeId'");
     assert!(json.get("podcastId").is_none(), "must NOT have 'podcastId'");
-    assert!(json.get("chunkIndex").is_none(), "must NOT have 'chunkIndex'");
+    assert!(
+        json.get("chunkIndex").is_none(),
+        "must NOT have 'chunkIndex'"
+    );
     assert!(json.get("startSecs").is_none(), "must NOT have 'startSecs'");
     assert!(json.get("endSecs").is_none(), "must NOT have 'endSecs'");
-    assert!(json.get("relevanceScore").is_none(), "must NOT have 'relevanceScore'");
+    assert!(
+        json.get("relevanceScore").is_none(),
+        "must NOT have 'relevanceScore'"
+    );
 
     // Spot-check values.
     assert_eq!(json["episode_id"], "ep-1");
@@ -474,50 +527,40 @@ fn rich_dto_serializes_snake_case_keys() {
 //
 // Exercise the `extern "C"` wrappers themselves (null-pointer + free path),
 // proving the guard returns a valid error-JSON pointer rather than NULL or UB.
-// A full happy-path FFI test needs a live `PodcastHandle` (constructed only via
-// `nmp_app_podcast_register` against an `NmpApp`); the inner logic is covered by
+// A full happy-path facade test needs a live `PodcastHandle` (constructed only
+// via `register_podcast_app` against an `NmpApp`); the inner logic is covered by
 // the `run_knowledge_query_inner` tests above, so these smoke tests focus on the
-// FFI boundary contract (null safety + freeable CString).
+// JSON boundary contract (null safety without a C ABI dependency).
 
-use std::ffi::{CStr, CString};
-
-/// Decode the FFI return pointer to a JSON value, then free it via the same
-/// `CString::from_raw` that mirrors `into_raw` (Swift uses `nmp_free_string`).
-unsafe fn decode_and_free(ptr: *mut std::os::raw::c_char) -> serde_json::Value {
-    assert!(!ptr.is_null(), "FFI must never return a null pointer (D6)");
-    let s = CStr::from_ptr(ptr).to_str().expect("valid UTF-8");
-    let v: serde_json::Value = serde_json::from_str(s).expect("valid JSON envelope");
-    // Reclaim ownership and drop — frees the allocation `into_raw` leaked.
-    let _ = CString::from_raw(ptr);
-    v
+/// `knowledge_query_json` with a missing handle must return valid error JSON.
+#[test]
+fn knowledge_query_null_handle_returns_error_json() {
+    let json = super::knowledge_query_json(None, Some(r#"{"query":"test"}"#));
+    let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON envelope");
+    assert!(
+        v.get("error").is_some(),
+        "null handle must yield {{\"error\":…}}"
+    );
 }
 
-/// `nmp_app_podcast_knowledge_query` with a null handle must return a valid
-/// error-JSON pointer (not null, not UB).
+/// `knowledge_query_json` with a missing request must return valid error JSON.
 #[test]
-fn ffi_knowledge_query_null_handle_returns_error_json() {
-    let req = CString::new(r#"{"query":"test"}"#).unwrap();
-    let ptr = super::nmp_app_podcast_knowledge_query(std::ptr::null_mut(), req.as_ptr());
-    let v = unsafe { decode_and_free(ptr) };
-    assert!(v.get("error").is_some(), "null handle must yield {{\"error\":…}}");
+fn knowledge_query_null_request_returns_error_json() {
+    let json = super::knowledge_query_json(None, None);
+    let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON envelope");
+    assert!(
+        v.get("error").is_some(),
+        "null request must yield error JSON"
+    );
 }
 
-/// `nmp_app_podcast_knowledge_query` with a null request pointer must return a
-/// valid error-JSON pointer.
+/// `knowledge_chunk_json` with a missing handle must return valid error JSON.
 #[test]
-fn ffi_knowledge_query_null_request_returns_error_json() {
-    let ptr =
-        super::nmp_app_podcast_knowledge_query(std::ptr::null_mut(), std::ptr::null());
-    let v = unsafe { decode_and_free(ptr) };
-    assert!(v.get("error").is_some(), "null request must yield error JSON");
-}
-
-/// `nmp_app_podcast_knowledge_chunk` with a null handle must return a valid
-/// error-JSON pointer.
-#[test]
-fn ffi_knowledge_chunk_null_handle_returns_error_json() {
-    let req = CString::new(r#"{"episode_id":"ep-1","chunk_index":0}"#).unwrap();
-    let ptr = super::nmp_app_podcast_knowledge_chunk(std::ptr::null_mut(), req.as_ptr());
-    let v = unsafe { decode_and_free(ptr) };
-    assert!(v.get("error").is_some(), "null handle must yield error JSON");
+fn knowledge_chunk_null_handle_returns_error_json() {
+    let json = super::knowledge_chunk_json(None, Some(r#"{"episode_id":"ep-1","chunk_index":0}"#));
+    let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON envelope");
+    assert!(
+        v.get("error").is_some(),
+        "null handle must yield error JSON"
+    );
 }

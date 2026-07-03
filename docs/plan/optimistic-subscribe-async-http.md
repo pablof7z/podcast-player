@@ -70,12 +70,10 @@ an `HttpRequest` and build an `HttpResult`).
 
 ### 3. Kernel: report FFI (`apps/nmp-app-podcast/src/ffi/http_report.rs`)
 
-`nmp_app_podcast_http_report(handle, report_json) -> *mut c_char` mirroring
-`download_report.rs` (degrade-silently / D6, never panic across FFI, return NULL — no
-follow-up). It decodes `HttpReport`, removes the matching `PendingFeedFetch` from the
-registry, calls `apply_feed_fetch_result`, and returns NULL. Registered in
-`ffi/register.rs` and declared in `App/Sources/Bridge/NmpCore.h`
-(+ `ios/Podcast/Podcast/Bridge/NmpCore.h`).
+The generated UniFFI `PodcastApp.httpReport(...)` method mirrors
+`download_report.rs` semantics (degrade-silently / D6, never panic across the
+facade, no follow-up). It decodes `HttpReport`, removes the matching
+`PendingFeedFetch` from the registry, and calls `apply_feed_fetch_result`.
 
 ### 4. Kernel: `handle_subscribe` becomes optimistic
 

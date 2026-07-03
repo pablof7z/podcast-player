@@ -18,9 +18,8 @@ const TRANSCRIPT_DEFAULT_LIMIT: usize = 8;
 const SIMILAR_DEFAULT_K: usize = 5;
 const SIMILAR_MAX_K: usize = 20;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_search_tool(
+pub fn nmp_app_podcast_agent_search_tool(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

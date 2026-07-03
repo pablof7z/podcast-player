@@ -81,7 +81,7 @@ final class KernelModel {
 
     // ── Podcast projection (polled separately from NMP kernel snapshot) ───
 
-    /// Latest podcast library decoded from `nmp_app_podcast_snapshot`.
+    /// Latest podcast library decoded from the Rust podcast snapshot.
     private(set) var library: [PodcastSummary] = []
     /// Monotonic generation bumped each time `library` is reassigned (i.e. on
     /// every `libraryMetaHash` change — see `commitPodcastProjection`). The

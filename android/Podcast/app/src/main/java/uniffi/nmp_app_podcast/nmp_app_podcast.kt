@@ -2176,7 +2176,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_playback_tool_result() != 62142.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 9309.toShort()) {
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 8495.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot() != 121.toShort()) {
@@ -2932,7 +2932,8 @@ public interface PodcastAppInterface {
     fun `playbackToolResult`(`requestJson`: kotlin.String): kotlin.String?
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */
@@ -4296,7 +4297,8 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */override fun `podcastHandle`(): kotlin.ULong {

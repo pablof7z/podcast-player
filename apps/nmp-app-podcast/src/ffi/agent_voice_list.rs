@@ -51,9 +51,8 @@ fn encode_json(value: Value) -> *mut c_char {
     }
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_voice_list(
+pub fn nmp_app_podcast_agent_voice_list(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

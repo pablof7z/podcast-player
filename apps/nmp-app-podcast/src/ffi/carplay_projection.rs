@@ -93,9 +93,8 @@ fn is_archived(store: &crate::store::PodcastStore, episode: &podcast_core::Episo
         || stored_triage.map(|d| d.as_str()) == Some("archived")
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_carplay_listen_now(
+pub fn nmp_app_podcast_carplay_listen_now(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -174,9 +173,8 @@ pub extern "C" fn nmp_app_podcast_carplay_listen_now(
     })
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_carplay_shows(
+pub fn nmp_app_podcast_carplay_shows(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -228,9 +226,8 @@ pub extern "C" fn nmp_app_podcast_carplay_shows(
     })
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_carplay_show_episodes(
+pub fn nmp_app_podcast_carplay_show_episodes(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -280,9 +277,8 @@ pub extern "C" fn nmp_app_podcast_carplay_show_episodes(
     })
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_carplay_downloads(
+pub fn nmp_app_podcast_carplay_downloads(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

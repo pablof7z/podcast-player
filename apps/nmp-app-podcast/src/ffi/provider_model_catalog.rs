@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::model_catalog;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_provider_model_catalog(
+pub fn nmp_app_podcast_provider_model_catalog(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {

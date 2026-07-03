@@ -16,11 +16,10 @@ struct ProviderModelCatalogService: Sendable {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"Kernel handle unavailable"}"#
             }
-            guard let ptr = podcastAppCString(handle, endpoint: .providerModelCatalog) else {
+            guard let ptr = podcastAppString(handle, endpoint: .providerModelCatalog) else {
                 return #"{"error":"null response from Rust"}"#
             }
-            defer { freePodcastCString(ptr) }
-            return String(cString: ptr)
+            return ptr
         }.value
 
         guard let responseData = responseJSON.data(using: .utf8) else {

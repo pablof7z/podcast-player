@@ -62,11 +62,11 @@ const TICK_INTERVAL: Duration = Duration::from_secs(60);
 /// ## Shutdown fence — CRITICAL (UAF prevention)
 ///
 /// [`Self::start_ticker`] spawns a Tokio task that dereferences `*mut NmpApp`
-/// (the `nmp_app_dispatch_action` call).  Mirroring [`crate::state::voice`],
+/// for typed action dispatch.  Mirroring [`crate::state::voice`],
 /// the spawned task's [`JoinHandle`] is retained in `ticker` and
-/// [`Self::shutdown`] aborts + joins it.  `nmp_app_podcast_unregister` MUST call
-/// `shutdown()` BEFORE `nmp_app_free`, so no spawned task can dereference `app`
-/// after the allocation is freed.  The task captures only a
+/// [`Self::shutdown`] aborts + joins it.  `PodcastApp.shutdown()` / `Drop` MUST
+/// call `shutdown()` before runtime teardown, so no spawned task can dereference
+/// `app` after the allocation is freed.  The task captures only a
 /// [`crate::state::BumpHandle`] (NOT a full `Infra`), so it holds **no** strong
 /// ref to the runtime it runs on — without that, the runtime would never drop
 /// and the fence could never run.
@@ -153,10 +153,10 @@ impl TasksState {
     ///
     /// ## Shutdown fence (UAF prevention) — see the type-level docs
     ///
-    /// The spawned task dereferences `app` (`nmp_app_dispatch_action`) on a
+    /// The spawned task dereferences `app` for typed action dispatch on a
     /// Tokio worker thread.  Its [`JoinHandle`] is retained in `self.ticker` and
-    /// [`Self::shutdown`] aborts + joins it; `nmp_app_podcast_unregister`
-    /// calls `shutdown()` BEFORE `nmp_app_free`.  The task captures only a
+    /// [`Self::shutdown`] aborts + joins it; `PodcastApp.shutdown()` / `Drop`
+    /// calls `shutdown()` before runtime teardown.  The task captures only a
     /// [`crate::state::BumpHandle`] — NOT a full `Infra` — so it holds **no**
     /// strong ref to the runtime it runs on (a full `Infra` capture would pin
     /// `Arc<Runtime>` alive, so the runtime would never drop, the task would
@@ -259,12 +259,12 @@ impl TasksState {
     /// sleep runs its bounded, await-free `maybe_run_due_tasks` to completion
     /// and the join waits the few microseconds for it.  Either way, when
     /// `shutdown` returns no spawned task will dereference `app` — so it is
-    /// sound for `nmp_app_podcast_unregister` to call this immediately before
-    /// `nmp_app_free`.
+    /// sound for `PodcastApp.shutdown()` / `Drop` to call this immediately
+    /// before runtime teardown.
     ///
     /// The join runs via [`tokio::runtime::Runtime::block_on`], so `shutdown`
     /// MUST be called from a thread that is NOT inside this runtime (the
-    /// FFI/Swift thread running `unregister` qualifies) — identical to
+    /// UniFFI/Swift caller thread qualifies) — identical to
     /// [`crate::state::voice::VoiceSubstate::shutdown`].
     pub fn shutdown(&self) {
         self.shutting_down.store(true, Ordering::SeqCst);
@@ -326,13 +326,13 @@ impl TasksState {
 
 // SAFETY: `TasksState` stores no raw `*mut NmpApp` in any field — the
 // `start_ticker` method captures the pointer as a `usize` inside the spawned
-// task (materialised only for the synchronous `nmp_app_dispatch_action` call,
+// task (materialised only for the synchronous typed action dispatch call,
 // never across an `.await`).  All struct fields are already `Send + Sync`
 // (`Slot`/`Arc`/`Mutex`/`Infra`).  The off-thread `app` dereference is fenced
-// by [`Self::shutdown`] (abort + join), called from `nmp_app_podcast_unregister`
-// BEFORE `nmp_app_free` — the same fence the voice manager uses.  The spawned
-// task captures only a `BumpHandle` (no `Arc<Runtime>`), so the runtime can
-// actually drop and the fence can run.
+// by [`Self::shutdown`] (abort + join), called from `PodcastApp.shutdown()` /
+// `Drop` before runtime teardown — the same fence the voice manager uses. The
+// spawned task captures only a `BumpHandle` (no `Arc<Runtime>`), so the runtime
+// can actually drop and the fence can run.
 unsafe impl Send for TasksState {}
 unsafe impl Sync for TasksState {}
 

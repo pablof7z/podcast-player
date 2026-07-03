@@ -19,7 +19,7 @@ use uuid::Uuid;
 /// only dispatches a capability through `app` when there is a follow-up audio
 /// command; the enqueue-on-play rule under test mutates the in-process
 /// `download_queue` and never reads `app`. Mirrors the constructor defaults in
-/// `ffi::register::nmp_app_podcast_register`.
+/// `ffi::register::register_podcast_app`.
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {
     let identity = Arc::new(Mutex::new(IdentityStore::new()));
     // Step 16: feedback injected; feed_fetch + feedback removed from handler::new.

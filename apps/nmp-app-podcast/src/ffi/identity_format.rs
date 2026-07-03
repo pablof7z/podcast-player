@@ -38,9 +38,8 @@ fn encode<T: Serialize>(value: &T) -> *mut c_char {
     }
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_npub_from_hex(pubkey_hex: *const c_char) -> *mut c_char {
+pub fn nmp_app_podcast_npub_from_hex(pubkey_hex: *const c_char) -> *mut c_char {
     if pubkey_hex.is_null() {
         return std::ptr::null_mut();
     }
@@ -68,9 +67,8 @@ pub extern "C" fn nmp_app_podcast_npub_from_hex(pubkey_hex: *const c_char) -> *m
     })
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_parse_pubkey(input: *const c_char) -> *mut c_char {
+pub fn nmp_app_podcast_parse_pubkey(input: *const c_char) -> *mut c_char {
     if input.is_null() {
         return std::ptr::null_mut();
     }

@@ -105,17 +105,16 @@ final class AgentRunLogger: ObservableObject {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr -> [AgentRun]? in
-            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            let response = String(cString: result)
+            let response = result
             guard let data = response.data(using: .utf8),
                   let decoded = try? Self.decoder.decode(AgentRunsResponse.self, from: data)
             else { return nil }
             return decoded.runs
-        }
+        }()
     }
 
     private func agentRunObjects(_ runs: [AgentRun]) -> [[String: Any]] {

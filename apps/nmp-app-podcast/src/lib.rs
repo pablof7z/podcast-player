@@ -1,8 +1,7 @@
 //! `nmp-app-podcast` — Podcast per-app glue.
 //!
 //! Composes the NMP native runtime with Podcast-owned projection and action
-//! modules, then surfaces podcast state over app-owned UniFFI plus the
-//! remaining app-domain C ABI for native shells.
+//! modules, then surfaces podcast state over the app-owned UniFFI facade.
 //!
 //! ## Wiring
 //!
@@ -11,11 +10,11 @@
 //! Rust archive gives the process exactly one copy of `nmp-core` static state.
 //!
 //! Native shells create [`ffi::uniffi_facade::PodcastApp`], then call the
-//! app-domain registration path while the remaining C ABI exists. The
-//! registration:
+//! explicit generated UniFFI methods on that object. Its registration path:
 //!
 //! 1. Installs the reusable NMP substrate and explicit protocol modules.
-//! 2. Returns an opaque handle for later snapshots / unregister.
+//! 2. Stores an opaque handle owned by `PodcastApp` for later snapshots and
+//!    capability reports.
 //!
 //! On each render tick the shell consumes the pushed snapshot frame, decodes
 //! the JSON, and renders the current podcast state.
@@ -116,33 +115,31 @@ pub use ffi::{
     nmp_app_podcast_byok_authorization, nmp_app_podcast_byok_exchange,
     nmp_app_podcast_carplay_downloads, nmp_app_podcast_carplay_listen_now,
     nmp_app_podcast_carplay_show_episodes, nmp_app_podcast_carplay_shows,
-    nmp_app_podcast_dispatch_action, nmp_app_podcast_download_report,
-    nmp_app_podcast_elevenlabs_scribe_transcribe, nmp_app_podcast_elevenlabs_tts_synthesize,
-    nmp_app_podcast_elevenlabs_voice_catalog, nmp_app_podcast_episode_events,
-    nmp_app_podcast_generate_image, nmp_app_podcast_home_category_cards,
-    nmp_app_podcast_home_continue_listening, nmp_app_podcast_home_subscription_list,
-    nmp_app_podcast_home_triage_rollup, nmp_app_podcast_http_report,
-    nmp_app_podcast_itunes_directory_search, nmp_app_podcast_itunes_lookup_feed_url,
-    nmp_app_podcast_itunes_top_podcasts, nmp_app_podcast_knowledge_home_related,
-    nmp_app_podcast_knowledge_resolve_scope, nmp_app_podcast_library_all_episodes,
-    nmp_app_podcast_library_all_podcasts, nmp_app_podcast_library_categories,
-    nmp_app_podcast_library_categorization_parse, nmp_app_podcast_library_categorization_prompt,
-    nmp_app_podcast_library_category_change, nmp_app_podcast_library_download_rows,
-    nmp_app_podcast_library_episode_for_audio_url, nmp_app_podcast_library_episode_lookup,
-    nmp_app_podcast_library_followed_podcasts, nmp_app_podcast_library_owned_podcasts,
-    nmp_app_podcast_library_podcast_for_owner_pubkey, nmp_app_podcast_library_podcast_stats,
-    nmp_app_podcast_library_show_episodes, nmp_app_podcast_library_starred_episodes,
-    nmp_app_podcast_library_subscription_status, nmp_app_podcast_library_summary,
-    nmp_app_podcast_local_model_catalog, nmp_app_podcast_local_search,
-    nmp_app_podcast_normalize_feed_url, nmp_app_podcast_npub_from_hex,
-    nmp_app_podcast_openrouter_whisper_transcribe, nmp_app_podcast_parse_pubkey,
-    nmp_app_podcast_perplexity_search, nmp_app_podcast_provider_model_catalog,
-    nmp_app_podcast_register, nmp_app_podcast_rerank, nmp_app_podcast_set_data_dir,
-    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
-    nmp_app_podcast_speech_model_catalog, nmp_app_podcast_storage_breakdown,
-    nmp_app_podcast_threading_active_topics, nmp_app_podcast_threading_projection,
-    nmp_app_podcast_transcript_auto_ingest_candidates, nmp_app_podcast_transcript_ingest_plan,
-    nmp_app_podcast_unregister, nmp_app_podcast_validate_elevenlabs_key,
+    nmp_app_podcast_download_report, nmp_app_podcast_elevenlabs_scribe_transcribe,
+    nmp_app_podcast_elevenlabs_tts_synthesize, nmp_app_podcast_elevenlabs_voice_catalog,
+    nmp_app_podcast_episode_events, nmp_app_podcast_generate_image,
+    nmp_app_podcast_home_category_cards, nmp_app_podcast_home_continue_listening,
+    nmp_app_podcast_home_subscription_list, nmp_app_podcast_home_triage_rollup,
+    nmp_app_podcast_http_report, nmp_app_podcast_itunes_directory_search,
+    nmp_app_podcast_itunes_lookup_feed_url, nmp_app_podcast_itunes_top_podcasts,
+    nmp_app_podcast_knowledge_home_related, nmp_app_podcast_knowledge_resolve_scope,
+    nmp_app_podcast_library_all_episodes, nmp_app_podcast_library_all_podcasts,
+    nmp_app_podcast_library_categories, nmp_app_podcast_library_categorization_parse,
+    nmp_app_podcast_library_categorization_prompt, nmp_app_podcast_library_category_change,
+    nmp_app_podcast_library_download_rows, nmp_app_podcast_library_episode_for_audio_url,
+    nmp_app_podcast_library_episode_lookup, nmp_app_podcast_library_followed_podcasts,
+    nmp_app_podcast_library_owned_podcasts, nmp_app_podcast_library_podcast_for_owner_pubkey,
+    nmp_app_podcast_library_podcast_stats, nmp_app_podcast_library_show_episodes,
+    nmp_app_podcast_library_starred_episodes, nmp_app_podcast_library_subscription_status,
+    nmp_app_podcast_library_summary, nmp_app_podcast_local_model_catalog,
+    nmp_app_podcast_local_search, nmp_app_podcast_normalize_feed_url,
+    nmp_app_podcast_npub_from_hex, nmp_app_podcast_openrouter_whisper_transcribe,
+    nmp_app_podcast_parse_pubkey, nmp_app_podcast_perplexity_search,
+    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_rerank,
+    nmp_app_podcast_set_data_dir, nmp_app_podcast_speech_model_catalog,
+    nmp_app_podcast_storage_breakdown, nmp_app_podcast_threading_active_topics,
+    nmp_app_podcast_threading_projection, nmp_app_podcast_transcript_auto_ingest_candidates,
+    nmp_app_podcast_transcript_ingest_plan, nmp_app_podcast_validate_elevenlabs_key,
     nmp_app_podcast_validate_openrouter_key, nmp_app_podcast_voice_report, PodcastHandle,
 };
 pub use player::{PlayerActor, PlayerState};

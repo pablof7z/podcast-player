@@ -1,17 +1,12 @@
 //! Podcast per-app FFI surface.
 //!
-//! App-domain `extern "C"` symbols still linked by native shells:
+//! App-domain helpers surfaced through the generated UniFFI facade:
 //!
-//! - [`nmp_app_podcast_register`] — install the explicit NMP substrate and
+//! - [`register_podcast_app`] — install the explicit NMP substrate and
 //!   protocol modules into the supplied `NmpApp`, then return an opaque handle
-//!   for subsequent snapshot / unregister calls.
-//! - [`nmp_app_podcast_snapshot`] — serialize the current app state into a
-//!   freshly-allocated nul-terminated JSON C string. Swift owns the pointer
-//!   until it calls `nmp_app_podcast_snapshot_free`.
-//! - [`nmp_app_podcast_snapshot_free`] — companion deallocator for the
-//!   snapshot string.
-//! - [`nmp_app_podcast_unregister`] — drop the handle and free associated
-//!   resources. Idempotent.
+//!   owned by `PodcastApp`.
+//! - [`snapshot::build_snapshot_payload`] / [`snapshot::build_podcast_update`] —
+//!   build the podcast projection for UniFFI, TUI, and headless consumers.
 //!
 //! ## Doctrine
 //!
@@ -26,7 +21,9 @@
 //! ## Module layout
 //!
 //! Split across sub-modules to keep each file under the 500-LOC hard ceiling.
-//! Every remaining app-domain `pub extern "C"` symbol is re-exported below.
+//! The old app-domain C ABI is intentionally not exported. Some Rust helpers
+//! still use legacy JSON-shaped bodies internally while explicit UniFFI methods
+//! replace them one endpoint group at a time.
 
 pub mod actions;
 mod agent_action_tool;
@@ -54,7 +51,7 @@ mod byok_auth;
 mod carplay_projection;
 mod chat_complete;
 mod data_dir;
-pub mod dispatch_action;
+pub(crate) mod dispatch_action;
 mod download_report;
 mod elevenlabs_scribe;
 mod elevenlabs_tts;
@@ -206,7 +203,6 @@ pub use carplay_projection::{
 };
 pub use chat_complete::nmp_app_podcast_chat_complete;
 pub use data_dir::nmp_app_podcast_set_data_dir;
-pub use dispatch_action::nmp_app_podcast_dispatch_action;
 pub use download_report::nmp_app_podcast_download_report;
 pub use elevenlabs_scribe::nmp_app_podcast_elevenlabs_scribe_transcribe;
 pub use elevenlabs_tts::nmp_app_podcast_elevenlabs_tts_synthesize;
@@ -269,15 +265,11 @@ pub use provider_key_validation::{
     nmp_app_podcast_validate_elevenlabs_key, nmp_app_podcast_validate_openrouter_key,
 };
 pub use provider_model_catalog::nmp_app_podcast_provider_model_catalog;
-pub use register::nmp_app_podcast_register;
 pub use rerank::nmp_app_podcast_rerank;
 pub use runtime_facade::{
     classify_input_intent_json, decode_nip21_uri_json, dispatch_input_intent_json, nmp_free_string,
 };
-pub use snapshot::{
-    nmp_app_podcast_snapshot, nmp_app_podcast_snapshot_free, nmp_app_podcast_snapshot_rev,
-    nmp_app_podcast_unregister, AppRelayRow, PodcastUpdate,
-};
+pub use snapshot::{AppRelayRow, PodcastUpdate};
 pub use speech_model_catalog::nmp_app_podcast_speech_model_catalog;
 pub use storage_projection::nmp_app_podcast_storage_breakdown;
 pub use threading_projection::{

@@ -122,9 +122,9 @@ Direct shared-provider transport now uses generated UniFFI bridge calls:
 - `nmp_app_podcast_generate_image(handle, request_json) -> char*`
 - `nmp_app_podcast_rerank(handle, request_json) -> char*`
 
-`KernelBridge` exposes handle-scoped `chatComplete`, `providerComplete`,
-`providerEmbed`, `providerModelCatalog`, `generateImage`, and `rerank` methods
-that return Rust's JSON envelope through `PodcastApp.podcastBridgeCall`.
+`PodcastApp` exposes handle-scoped generated UniFFI methods for chat,
+provider completion, embeddings, model catalogs, image generation, and rerank;
+those methods return Rust's JSON envelope directly.
 Android model-role settings now load the shared Rust catalog, filter rows by
 role output modality, and dispatch the catalog's `selection_model_id` through
 `podcast.settings` so OpenRouter/Ollama routing is preserved. Android also

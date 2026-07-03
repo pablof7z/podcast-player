@@ -162,12 +162,11 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return [] }
-        return json.withCString { ptr -> [PodcastCategorySummary] in
-            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
                 return []
             }
-            defer { freePodcastCString(result) }
-            let envelope = String(cString: result)
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? Self.categorySummariesDecoder.decode(
                     RustCategorySummariesResponse.self,
@@ -176,7 +175,7 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
                   decoded.error == nil
             else { return [] }
             return decoded.categories.map(\.summary)
-        }
+        }()
     }
 
     private func categoryProjectionRow(

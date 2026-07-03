@@ -91,9 +91,8 @@ struct DownloadReportResponse {
 ///
 /// Returns a malloc-compatible string the caller MUST free via
 /// `nmp_free_string`, or `NULL` on any error (D6 degrade-silently).
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_download_report(
+pub fn nmp_app_podcast_download_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

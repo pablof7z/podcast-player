@@ -48,9 +48,8 @@ fn default_storefront() -> String {
     "us".to_owned()
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_itunes_directory_search(
+pub fn nmp_app_podcast_itunes_directory_search(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {
@@ -89,9 +88,8 @@ pub extern "C" fn nmp_app_podcast_itunes_directory_search(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_itunes_lookup_feed_url(
+pub fn nmp_app_podcast_itunes_lookup_feed_url(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {
@@ -124,9 +122,8 @@ pub extern "C" fn nmp_app_podcast_itunes_lookup_feed_url(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_itunes_top_podcasts(
+pub fn nmp_app_podcast_itunes_top_podcasts(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

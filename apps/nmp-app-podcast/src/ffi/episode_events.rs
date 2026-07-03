@@ -69,9 +69,8 @@ struct RecordEventDetail {
 /// off-snapshot per-episode files, exactly like the kernel-emitted ones. D6:
 /// null pointers, bad UTF-8, malformed JSON, and lock poison all degrade to a
 /// silent no-op.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_record_episode_event(
+pub fn nmp_app_podcast_record_episode_event(
     handle: *mut PodcastHandle,
     event_json: *const c_char,
 ) -> *mut c_char {
@@ -117,9 +116,8 @@ pub extern "C" fn nmp_app_podcast_record_episode_event(
 ///
 /// Returns a malloc-compatible string the caller MUST free via
 /// `nmp_free_string`, or `NULL` on any error (D6 degrade-silently).
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_episode_events(
+pub fn nmp_app_podcast_episode_events(
     handle: *mut PodcastHandle,
     episode_id: *const c_char,
 ) -> *mut c_char {

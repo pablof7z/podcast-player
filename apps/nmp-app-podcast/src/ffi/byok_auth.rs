@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::byok_auth::{self, ByokAuthError, ByokAuthorizationIntent, ByokExchangeIntent};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_byok_authorization(intent_json: *const c_char) -> *mut c_char {
+pub fn nmp_app_podcast_byok_authorization(intent_json: *const c_char) -> *mut c_char {
     if intent_json.is_null() {
         return err_envelope("null argument", "invalid_request").into_raw();
     }
@@ -29,9 +28,8 @@ pub extern "C" fn nmp_app_podcast_byok_authorization(intent_json: *const c_char)
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_byok_exchange(
+pub fn nmp_app_podcast_byok_exchange(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

@@ -97,9 +97,8 @@ struct TranscriptReport {
 /// The transcript text is stored in the Rust `PodcastStore` so AI features
 /// can access it without going through Swift's TranscriptStore.
 /// Always returns NULL.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_transcript_report(
+pub fn nmp_app_podcast_transcript_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

@@ -225,13 +225,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = podcastAppCString(handle, endpoint: .agentOwnedPodcastTool, request: ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentOwnedPodcastTool, request: json) else {
                     return nil
                 }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 }

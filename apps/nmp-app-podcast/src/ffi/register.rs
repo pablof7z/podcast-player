@@ -38,19 +38,20 @@ use crate::store::PodcastStore;
 // player_actor, queue, download_queue removed in Step 14 —
 // now seeded inside PodcastAppState::new (PlaybackState).
 
-/// Register Podcast projections and action namespaces against `app`. Returns a
-/// non-null `*mut PodcastHandle` on success; `null` on any failure (null
-/// pointer arguments, slot lock poisoning).
+/// Register Podcast projections and action namespaces against `app`.
 ///
-/// `app` MUST outlive the returned handle. Call
-/// [`nmp_app_podcast_unregister`] before dropping the owning `PodcastApp`.
-#[no_mangle]
+/// Returns a non-null `*mut PodcastHandle` on success; `null` on any failure
+/// (null pointer arguments, slot lock poisoning). The pointer is reclaimed by
+/// the owning generated UniFFI [`PodcastApp`](super::uniffi_facade::PodcastApp).
+///
+/// `app` MUST outlive the returned handle. The owning `PodcastApp` calls
+/// `shutdown` / `Drop` before releasing its runtime.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHandle {
+pub fn register_podcast_app(app: *mut NmpApp) -> *mut PodcastHandle {
     if app.is_null() {
         return std::ptr::null_mut();
     }
-    ffi_guard("nmp_app_podcast_register", std::ptr::null_mut, || {
+    ffi_guard("register_podcast_app", std::ptr::null_mut, || {
         // Wire the canonical NMP composition — NIP-02 / NIP-17 / NIP-57 / NIP-65
         // action modules, the kind:10050 ingest parser, the production routing
         // substrate, and the DM-inbox + zap-receipts runtime controllers.
@@ -322,7 +323,7 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
         // default — the app owns its relay list. The Rust composition root
         // (`NmpAppBuilder::start`) seeds `DEFAULT_APP_RELAYS` for builder-based
         // apps, but the podcast app is constructed by the native shell through the
-        // app-owned `PodcastApp` facade plus `nmp_app_podcast_register`, so it never
+        // app-owned `PodcastApp` facade plus `register_podcast_app`, so it never
         // runs through the builder. Without an explicit seed here a fresh
         // install would start with ZERO configured relays and Nostr discovery /
         // publish would silently no-op. `set_initial_relays_for_start` is the
@@ -437,10 +438,11 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
 
         // Ownership: one strong ref is returned to the shell as the opaque handle
         // pointer; the projection closure above holds a second strong ref for the
-        // app's lifetime. `nmp_app_podcast_unregister` reclaims the shell's ref via
-        // `Arc::from_raw`. `PodcastApp.shutdown()` joins the actor thread before
-        // dropping, so no projector call is in flight after teardown. The handle is only ever
-        // borrowed shared across the FFI (no `&mut`), so `Arc` aliasing is sound.
+        // app's lifetime. `PodcastApp::new` immediately reclaims the owning ref
+        // via `Arc::from_raw`. `PodcastApp.shutdown()` joins the actor thread
+        // before dropping, so no projector call is in flight after teardown. The
+        // handle is only ever borrowed shared across the facade (no `&mut`), so
+        // `Arc` aliasing is sound.
         Arc::into_raw(handle) as *mut PodcastHandle
     }) // ffi_guard
 }

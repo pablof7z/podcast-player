@@ -128,13 +128,12 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        let envelope = json.withCString { ptr -> String? in
-            guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
+        let envelope = {
+            guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
         guard let envelope,
               let responseData = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(TranscriptResultStatusResponse.self, from: responseData),
@@ -165,15 +164,14 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr -> YouTubeIngestMetadataPlan? in
-                guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
                     return nil
                 }
-                defer { freePodcastCString(result) }
-                let envelope = String(cString: result)
+                let envelope = result
                 guard let data = envelope.data(using: .utf8) else { return nil }
                 return try? JSONDecoder().decode(YouTubeIngestMetadataPlan.self, from: data)
-            }
+            }()
         }.value
     }
 }

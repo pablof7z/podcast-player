@@ -1,13 +1,13 @@
-//! Shared adapters while explicit UniFFI methods still call the old Rust C-ABI internals.
+//! Shared adapters while explicit UniFFI methods still call JSON-shaped Rust helpers.
 
 use std::ffi::{c_char, CStr, CString};
 
 use super::handle::PodcastHandle;
 
 pub(super) type LegacyHandleJsonFn =
-    extern "C" fn(*mut PodcastHandle, *const c_char) -> *mut c_char;
-pub(super) type LegacyHandleFn = extern "C" fn(*mut PodcastHandle) -> *mut c_char;
-pub(super) type LegacyGlobalJsonFn = extern "C" fn(*const c_char) -> *mut c_char;
+    fn(*mut PodcastHandle, *const c_char) -> *mut c_char;
+pub(super) type LegacyHandleFn = fn(*mut PodcastHandle) -> *mut c_char;
+pub(super) type LegacyGlobalJsonFn = fn(*const c_char) -> *mut c_char;
 
 pub(super) fn call_legacy_handle_json(
     handle: &PodcastHandle,

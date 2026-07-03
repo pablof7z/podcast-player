@@ -8,31 +8,28 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentInventory, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentInventory, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentEmptyStateEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = podcastAppCString(handle, endpoint: .agentEmptyState) else {
+        guard let result = podcastAppString(handle, endpoint: .agentEmptyState) else {
             return nil
         }
-        defer { freePodcastCString(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryCategorizationPromptEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = podcastAppCString(handle, endpoint: .libraryCategorizationPrompt) else {
+        guard let result = podcastAppString(handle, endpoint: .libraryCategorizationPrompt) else {
             return nil
         }
-        defer { freePodcastCString(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryCategorizationParseEnvelope(rawContent: String) -> String? {
@@ -43,13 +40,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .libraryCategorizationParse, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryCategorizationParse, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentChatTitlePromptEnvelope(messages: [[String: String]]) -> String? {
@@ -60,13 +56,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentChatTitlePrompt, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentChatTitlePrompt, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentChatTitleParseEnvelope(rawContent: String) -> String? {
@@ -77,13 +72,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentChatTitleParse, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentChatTitleParse, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentNostrPeerPromptEnvelope(
@@ -102,13 +96,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentNostrPeerPrompt, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentNostrPeerPrompt, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentSystemPromptEnvelope(request: [String: Any]) -> String? {
@@ -116,13 +109,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentSystemPrompt, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentSystemPrompt, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentConversationHistoryEnvelope(request: [String: Any]) -> String? {
@@ -130,13 +122,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentConversationHistory, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentConversationHistory, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryCategoryChangeEnvelope(request: [String: Any]) -> String? {
@@ -144,13 +135,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .libraryCategoryChange, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryCategoryChange, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func storageBreakdownEnvelope(files: [[String: Any]]) -> String? {
@@ -161,13 +151,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .storageBreakdown, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .storageBreakdown, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func homeCategoryCardsEnvelope(categories: [[String: Any]]) -> String? {
@@ -178,13 +167,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .homeCategoryCards, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .homeCategoryCards, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentTTSEpisodePlanEnvelope(request: [String: Any]) -> String? {
@@ -192,30 +180,27 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentTtsEpisodePlan, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentTtsEpisodePlan, request: jsonStr) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func agentTTSDefaultVoiceEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = podcastAppCString(handle, endpoint: .agentTtsDefaultVoice) else {
+        guard let result = podcastAppString(handle, endpoint: .agentTtsDefaultVoice) else {
             return nil
         }
-        defer { freePodcastCString(result) }
-        return String(cString: result)
+        return result
     }
 
     func agentGeneratedPodcastDescriptorEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = podcastAppCString(handle, endpoint: .agentGeneratedPodcastDescriptor) else {
+        guard let result = podcastAppString(handle, endpoint: .agentGeneratedPodcastDescriptor) else {
             return nil
         }
-        defer { freePodcastCString(result) }
-        return String(cString: result)
+        return result
     }
 }

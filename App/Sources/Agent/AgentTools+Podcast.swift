@@ -501,13 +501,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = podcastAppCString(handle, endpoint: .agentSearchTool, request: ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentSearchTool, request: json) else {
                     return nil
                 }
-                defer { freePodcastCString(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 }

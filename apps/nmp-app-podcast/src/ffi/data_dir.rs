@@ -1,8 +1,8 @@
 //! `nmp_app_podcast_set_data_dir` — bind the podcast library store to a
 //! persistence directory and reload any saved state.
 //!
-//! Native shells call this exactly once, between `nmp_app_podcast_register`
-//! and `PodcastApp.start`, with their app support directory (typically
+//! Native shells call this exactly once through the generated `PodcastApp`,
+//! before `PodcastApp.start`, with their app support directory (typically
 //! `<app-container>/Library/Application Support/PodcastLibrary/`).
 //!
 //! After a successful load the function bumps the shared `rev` counter so the
@@ -24,16 +24,29 @@ use crate::nmp_dispatch::activate_local_signer_in_kernel;
 /// directory if missing). A NULL `path` or `handle`, or a non-UTF-8 path, is
 /// a silent no-op (D6).
 ///
-/// Caller contract: invoke once, after `nmp_app_podcast_register`, before
+/// Caller contract: invoke once after `PodcastApp` construction, before
 /// `PodcastApp.start`. Calling multiple times rebinds the store to the new path
 /// and reloads from it.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path: *const c_char) {
-    if handle.is_null() {
-        return;
-    }
+pub fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path: *const c_char) {
     let Some(path_str) = c_string_opt(path) else {
+        return;
+    };
+    let handle = if handle.is_null() {
+        None
+    } else {
+        // SAFETY: caller guarantees `handle` is the live pointer owned by
+        // `PodcastApp` and not yet freed.
+        Some(unsafe { &*handle })
+    };
+    set_data_dir(handle, Some(&path_str));
+}
+
+pub(crate) fn set_data_dir(handle: Option<&PodcastHandle>, path_str: Option<&str>) {
+    let Some(handle) = handle else {
+        return;
+    };
+    let Some(path_str) = path_str else {
         return;
     };
     if path_str.is_empty() {
@@ -43,11 +56,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
         "nmp_app_podcast_set_data_dir",
         || (),
         || {
-            // SAFETY: caller guarantees `handle` is a valid pointer returned by
-            // `nmp_app_podcast_register` and not yet freed.
-            let handle = unsafe { &*handle };
-
-            let path_buf = PathBuf::from(path_str.clone());
+            let path_buf = PathBuf::from(path_str);
 
             // Step 15: store/identity sourced from state.library.
             let (loaded, loaded_queue) = match handle.state.library.store.lock() {
@@ -75,7 +84,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
             let (identity_loaded, loaded_identity_secret) =
                 if let Ok(mut id) = handle.state.library.identity.lock() {
                     let was_empty = id.secret_hex.is_none();
-                    id.set_data_dir(&PathBuf::from(&path_str));
+                    id.set_data_dir(&PathBuf::from(path_str));
                     // Only bump rev if we just loaded a key that wasn't present before.
                     let loaded = was_empty && id.secret_hex.is_some();
                     (loaded, id.secret_hex.clone())
@@ -91,7 +100,7 @@ pub extern "C" fn nmp_app_podcast_set_data_dir(handle: *mut PodcastHandle, path:
             // app restart and re-derives the same `owner_pubkey_hex` in the snapshot.
             // Step 13: podcast_keys now in state.publish (PublishState).
             let keys_loaded = if let Ok(mut keys) = handle.state.publish.podcast_keys.lock() {
-                keys.set_data_dir(PathBuf::from(&path_str))
+                keys.set_data_dir(PathBuf::from(path_str))
             } else {
                 0
             };

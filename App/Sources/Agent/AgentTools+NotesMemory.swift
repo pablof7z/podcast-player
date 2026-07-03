@@ -133,12 +133,11 @@ extension AgentTools {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr in
-            guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
                 return nil
             }
-            defer { freePodcastCString(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 }
