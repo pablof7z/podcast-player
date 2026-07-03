@@ -21,7 +21,7 @@
 //! C. **HEADLINE — the kernel signs with the per-podcast key** (correct `pubkey`
 //!    + valid Schnorr `sig`), for BOTH kind:10154 and kind:54. After the publish
 //!    dispatch registers the per-podcast signer (same seam), we drive a kernel
-//!    sign-and-return (`nmp_app_sign_event_for_return`) naming that pubkey and
+//!    sign-and-return (`PodcastApp::sign_event_for_return`) naming that pubkey and
 //!    read the signed event from the `signed_events` push projection, asserting
 //!    `pubkey == podcast_pubkey_hex` (NOT the active account), 128-hex `sig`,
 //!    64-hex `id`, and the requested `kind`. Sign-and-return resolves the named

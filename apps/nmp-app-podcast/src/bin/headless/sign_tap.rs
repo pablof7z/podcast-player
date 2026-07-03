@@ -20,7 +20,7 @@
 //!
 //! The one in-process, network-free seam that exposes a signed event's
 //! `pubkey` + `sig` is the D13 **sign-and-return** path
-//! (`nmp_app_sign_event_for_return`): it signs an unsigned draft with a NAMED
+//! (`PodcastApp::sign_event_for_return`): it signs an unsigned draft with a NAMED
 //! (possibly non-active) account and parks the signed JSON in the
 //! `signed_events` push-frame projection, keyed by a correlation id — it NEVER
 //! publishes, so no relay is required.
@@ -39,9 +39,8 @@
 //! ## Mechanism
 //!
 //! `signed_events` is a Tier-2 typed FlatBuffer sidecar drained into the push
-//! frame on emit (not a re-runnable registered projection, so
-//! `nmp_app_read_projection_json` cannot see it). We install an update callback
-//! that captures each frame's bytes, decode them with
+//! frame on emit. It is not a re-runnable registered projection, so the harness
+//! installs an update callback that captures each frame's bytes, decodes them with
 //! `PodcastApp::decode_update_frame`, and read
 //! `v.projections.signed_events[correlation_id]`.
 //!

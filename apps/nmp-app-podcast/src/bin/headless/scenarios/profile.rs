@@ -19,7 +19,7 @@
 //!
 //! ## Dispatch acceptance vs. handler result
 //!
-//! `nmp_app_dispatch_action` (the underlying FFI) validates the action, mints a
+//! `PodcastApp::dispatch_action_json_for_rust` validates the action, mints a
 //! `correlation_id`, and enqueues an `ActorCommand::DispatchHostOp`. It returns
 //! `{"correlation_id":"..."}` immediately on acceptance, or `{"error":"..."}` on
 //! synchronous rejection (unknown namespace, serde decode failure, etc.). The

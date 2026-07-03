@@ -4,9 +4,10 @@
 //! `owned_podcasts` in the snapshot with a valid 64-character hex pubkey for a
 //! subscribed podcast.
 //!
-//! Note: `nmp_app_dispatch_action` returns `{"correlation_id":"..."}` (accepted
-//! + enqueued), never the handler result. The actual result appears in the
-//! snapshot via `owned_podcasts`. We poll the snapshot until that entry appears.
+//! Note: `PodcastApp::dispatch_action_json_for_rust` returns
+//! `{"correlation_id":"..."}` (accepted + enqueued), never the handler result.
+//! The actual result appears in the snapshot via `owned_podcasts`. We wait for
+//! the snapshot until that entry appears.
 //!
 //! The full round-trip durability proof (restart + reload of
 //! `podcast-keys.json`) is covered by the unit test `keys_persist_and_reload`
