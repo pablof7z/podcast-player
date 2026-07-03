@@ -4,10 +4,8 @@ use std::ffi::{c_char, CStr, CString};
 
 use super::handle::PodcastHandle;
 
-pub(super) type LegacyHandleJsonFn =
-    fn(*mut PodcastHandle, *const c_char) -> *mut c_char;
+pub(super) type LegacyHandleJsonFn = fn(*mut PodcastHandle, *const c_char) -> *mut c_char;
 pub(super) type LegacyHandleFn = fn(*mut PodcastHandle) -> *mut c_char;
-pub(super) type LegacyGlobalJsonFn = fn(*const c_char) -> *mut c_char;
 
 pub(super) fn call_legacy_handle_json(
     handle: &PodcastHandle,
@@ -23,14 +21,6 @@ pub(super) fn call_legacy_handle_json(
 
 pub(super) fn call_legacy_handle(handle: &PodcastHandle, func: LegacyHandleFn) -> Option<String> {
     take_legacy_c_string(func(handle as *const PodcastHandle as *mut PodcastHandle))
-}
-
-pub(super) fn call_legacy_global_json(
-    request_json: &str,
-    func: LegacyGlobalJsonFn,
-) -> Option<String> {
-    let request = CString::new(request_json).ok()?;
-    take_legacy_c_string(func(request.as_ptr()))
 }
 
 fn take_legacy_c_string(ptr: *mut c_char) -> Option<String> {

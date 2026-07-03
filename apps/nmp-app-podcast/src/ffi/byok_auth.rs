@@ -28,6 +28,27 @@ pub fn nmp_app_podcast_byok_authorization(intent_json: *const c_char) -> *mut c_
     )
 }
 
+pub(crate) fn byok_authorization_json(intent_json: &str) -> Option<String> {
+    let intent = match serde_json::from_str::<ByokAuthorizationIntent>(intent_json) {
+        Ok(intent) => intent,
+        Err(error) => {
+            return Some(
+                err_envelope(&format!("JSON parse: {error}"), "invalid_request")
+                    .to_string_lossy()
+                    .into_owned(),
+            )
+        }
+    };
+    match byok_auth::make_authorization(intent) {
+        Ok(result) => Some(
+            json_envelope(&serde_json::json!({"result": result}))
+                .to_string_lossy()
+                .into_owned(),
+        ),
+        Err(error) => Some(byok_error_envelope(&error).to_string_lossy().into_owned()),
+    }
+}
+
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn nmp_app_podcast_byok_exchange(
     handle: *mut PodcastHandle,

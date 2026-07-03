@@ -24,12 +24,20 @@ pub fn nmp_app_podcast_normalize_feed_url(input: *const c_char) -> *mut c_char {
                 Ok(s) => s,
                 Err(_) => return encode(json!({"error": "invalid_utf8"})),
             };
-            encode(match normalize_feed_url(raw) {
-                Some(url) => json!({"url": url}),
-                None => json!({"error": "invalid_url"}),
-            })
+            encode(normalize_feed_url_response(raw))
         },
     )
+}
+
+pub(crate) fn normalize_feed_url_response_json(input: &str) -> Option<String> {
+    Some(normalize_feed_url_response(input).to_string())
+}
+
+fn normalize_feed_url_response(input: &str) -> serde_json::Value {
+    match normalize_feed_url(input) {
+        Some(url) => json!({"url": url}),
+        None => json!({"error": "invalid_url"}),
+    }
 }
 
 fn normalize_feed_url(input: &str) -> Option<String> {

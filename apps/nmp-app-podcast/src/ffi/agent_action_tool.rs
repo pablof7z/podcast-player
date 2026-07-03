@@ -99,6 +99,14 @@ pub fn nmp_app_podcast_agent_action_policy(request_json: *const c_char) -> *mut 
     )
 }
 
+pub(crate) fn agent_action_policy_json(request_json: &str) -> Option<String> {
+    let request: Value = match serde_json::from_str(request_json) {
+        Ok(request) => request,
+        Err(_) => return Some(json!({"error": "Invalid action policy request"}).to_string()),
+    };
+    Some(dispatch(&request).to_string())
+}
+
 pub(super) fn dispatch(request: &Value) -> Value {
     match string_arg(request, "op").as_str() {
         "success_envelope" => success_envelope(request),
@@ -107,8 +115,12 @@ pub(super) fn dispatch(request: &Value) -> Value {
         "sleep_plan" => sleep_plan(request),
         "seek_plan" => seek_plan(request),
         "play_plan" => play_plan(request),
-        "episode_id_plan" => required_arg_plan(request, "episode_id", "Missing or empty 'episode_id'"),
-        "podcast_id_plan" => required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'"),
+        "episode_id_plan" => {
+            required_arg_plan(request, "episode_id", "Missing or empty 'episode_id'")
+        }
+        "podcast_id_plan" => {
+            required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'")
+        }
         "clip_plan" => clip_plan(request),
         "download_transcribe_plan" => download_transcribe_plan(request),
         "pause_result" => json!({"success": true, "state": "paused"}),
@@ -119,7 +131,9 @@ pub(super) fn dispatch(request: &Value) -> Value {
         }),
         "sleep_result" => sleep_result(request),
         "now_playing_result" => now_playing_result(request),
-        "seek_result" => json!({"success": true, "position_seconds": number_arg(request, "position_seconds")}),
+        "seek_result" => {
+            json!({"success": true, "position_seconds": number_arg(request, "position_seconds")})
+        }
         "skip_result" => skip_result(request),
         "episode_mutation_result" => episode_mutation_result(request),
         "transcript_status_report" => transcript_status_report(request),
@@ -134,10 +148,14 @@ pub(super) fn dispatch(request: &Value) -> Value {
         "subscribe_plan" => required_arg_plan(request, "feed_url", "Missing or empty 'feed_url'"),
         "subscribe_snapshot" => subscribe_snapshot(request),
         "subscribe_result" => subscribe_result(request),
-        "delete_podcast_plan" => required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'"),
+        "delete_podcast_plan" => {
+            required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'")
+        }
         "delete_podcast_snapshot" => delete_podcast_snapshot(request),
         "delete_podcast_result" => delete_podcast_result(request),
-        "unfollow_podcast_plan" => required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'"),
+        "unfollow_podcast_plan" => {
+            required_arg_plan(request, "podcast_id", "Missing or empty 'podcast_id'")
+        }
         "unfollow_podcast_result" => unfollow_podcast_result(request),
         "peer_end_plan" => peer_end_plan(request),
         "peer_end_result" => peer_end_result(request),
@@ -257,7 +275,12 @@ pub(super) fn usize_arg(args: &Value, key: &str) -> usize {
     args.get(key).and_then(Value::as_u64).unwrap_or_default() as usize
 }
 
-pub(super) fn bounded_usize_arg(args: &Value, key: &str, default_value: usize, max_value: usize) -> usize {
+pub(super) fn bounded_usize_arg(
+    args: &Value,
+    key: &str,
+    default_value: usize,
+    max_value: usize,
+) -> usize {
     match args.get(key).and_then(Value::as_u64).map(|v| v as usize) {
         Some(0) | None => default_value,
         Some(value) => value.min(max_value),
@@ -269,7 +292,9 @@ pub(super) fn bool_arg(args: &Value, key: &str) -> bool {
 }
 
 pub(super) fn bool_arg_default(args: &Value, key: &str, default_value: bool) -> bool {
-    args.get(key).and_then(Value::as_bool).unwrap_or(default_value)
+    args.get(key)
+        .and_then(Value::as_bool)
+        .unwrap_or(default_value)
 }
 
 pub(super) fn insert_optional(out: &mut Value, key: &str, value: Option<String>) {
