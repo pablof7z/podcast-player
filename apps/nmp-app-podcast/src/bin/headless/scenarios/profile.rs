@@ -51,7 +51,7 @@
 //!   field) must NOT produce a `correlation_id` — it must be rejected at serde
 //!   decode with an `error` field. This makes the success path meaningful.
 //! * **Self-apply reflection**: after dispatch, `AccountSummary.display_name`
-//!   must equal the published value within 2 s — proves the self-apply→bump-rev
+//!   must equal the published value within 10 s — proves the self-apply→bump-rev
 //!   chain fires and the push frame re-emits. Without the self-apply this
 //!   assertion would FAIL (the old behavior left `display_name` as `None` forever).
 //!
@@ -78,6 +78,8 @@ use crate::scenarios::ScenarioResult::{self, Fail, Pass};
 const TEST_DISPLAY_NAME: &str = "Headless Test User";
 /// Known picture URL used for the publish_profile dispatch.
 const TEST_PICTURE_URL: &str = "https://example.com/avatar.jpg";
+/// CI can have a cold actor queue after the preceding network-gated scenarios.
+const REFLECT_TIMEOUT_MS: u64 = 10_000;
 
 fn has_published_display_name(update: &PodcastUpdate) -> bool {
     update
@@ -187,7 +189,7 @@ pub fn run(app: &PodcastApp) -> ScenarioResult {
     // After the dispatch is accepted, `handle_publish_profile` mirrors
     // `display_name` and `picture` into the local `IdentityStore` (optimistic
     // self-apply), then `social_actions.rs` bumps `Domain::Identity` so the
-    // push frame re-emits with fresh `AccountSummary` values. We wait up to 2 s
+    // push frame re-emits with fresh `AccountSummary` values. We wait up to 10 s
     // for the snapshot rev to advance and the predicate to hold.
     //
     // Mutation-sanity note: WITHOUT the self-apply (the old behavior) the
@@ -197,7 +199,7 @@ pub fn run(app: &PodcastApp) -> ScenarioResult {
     // fix works and CI-gates it.
     let update = match snapshot(app).filter(has_published_display_name) {
         Some(update) => update,
-        None => match wait_for(app, 2_000, has_published_display_name) {
+        None => match wait_for(app, REFLECT_TIMEOUT_MS, has_published_display_name) {
             Ok(update) => update,
             Err(timeout_msg) => match snapshot(app) {
                 Some(update) if has_published_display_name(&update) => update,
