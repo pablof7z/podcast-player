@@ -52,9 +52,9 @@ deliberately sequenced *after* Epic A — see the note on #561.
   fork previously at `third-party/nmp-feedback`) rather than carry a shim
   forward. Feedback-thread integration returns as a follow-up slice once the
   upstream issue is resolved.
-- **Provider-transport lane** (pablof7z/nostr-multi-platform#2726): A6/A8's
-  ~20 LLM/STT/TTS BYOK RPCs are held on this framework decision. Do not
-  front-run it with a bespoke shim.
+- **Provider-transport lane** (pablof7z/nostr-multi-platform#2726): the
+  framework decision is closed; the app-owned UniFFI facade is the migration
+  direction for A6/A8's ~20 LLM/STT/TTS BYOK RPCs.
 
 ## Validation
 

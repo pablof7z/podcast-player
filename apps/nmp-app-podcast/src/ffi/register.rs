@@ -72,20 +72,30 @@ pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHand
     // mirrors.
     let _substrate_handles =
         nmp_substrate::install(app_mut, nmp_substrate::SubstrateConfig::default());
-    nmp_nip02::register_follow_actions(app_mut);
-    nmp_core::substrate::ProtocolDescriptor::register_actions(&nmp_nip18::Nip18Descriptor, app_mut);
-    nmp_core::substrate::ProtocolDescriptor::register_actions(&nmp_nip25::Nip25Descriptor, app_mut);
-    nmp_nip17::register_actions(app_mut);
-    nmp_nip17::register_runtime(app_mut);
-    nmp_router::register_actions(app_mut);
-    let _bookmark_runtime = nmp_nip51::register_bookmark_runtime(app_mut);
-    let _wot_runtime = nmp_wot::register_runtime(app_mut);
+    let _nip02 = nmp_nip02::register(app_mut, nmp_nip02::Config::default())
+        .expect("nmp-nip02 registration must not collide");
+    let _nip18 = nmp_nip18::register(app_mut, nmp_nip18::Config::default())
+        .expect("nmp-nip18 registration must not collide");
+    let _nip25 = nmp_nip25::register(app_mut, nmp_nip25::Config::default())
+        .expect("nmp-nip25 registration must not collide");
+    let _nip51 = nmp_nip51::register(
+        app_mut,
+        nmp_nip51::Config {
+            search_fallback_relays: nmp_nip50::SearchFallbackRelays::default(),
+        },
+    )
+    .expect("nmp-nip51 registration must not collide");
+    let _nip17 = nmp_nip17::register(app_mut, nmp_nip17::Config::default())
+        .expect("nmp-nip17 registration must not collide");
+    let _wot = nmp_wot::register(app_mut, nmp_wot::Config::default())
+        .expect("nmp-wot registration must not collide");
 
     // Wire the BUD-02 Blossom upload action (`nmp.blossom.upload`).
     // D13/D0: Rust owns the full Build → Sign → Transport pipeline.
     // Swift dispatches with a correlation-id and reads the BlobDescriptor
     // from action_results[correlation_id].result on the next push frame.
-    nmp_blossom::register_actions(app_mut);
+    let _blossom = nmp_blossom::register(app_mut, nmp_blossom::Config::default())
+        .expect("nmp-blossom registration must not collide");
 
     // `register_action` now returns `Result<(), RegistrationError>` (an
     // app-over-app namespace collision, ADR-0049) instead of `()`. Every
