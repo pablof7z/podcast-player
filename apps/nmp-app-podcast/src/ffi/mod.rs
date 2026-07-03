@@ -21,8 +21,8 @@
 //! ## Module layout
 //!
 //! Split across sub-modules to keep each file under the 500-LOC hard ceiling.
-//! The old app-domain C ABI is intentionally not exported. Some Rust helpers
-//! still use legacy JSON-shaped bodies internally while explicit UniFFI methods
+//! The old app-facing C bridge is intentionally not exported. Some Rust
+//! helpers still use JSON-shaped bodies internally while explicit UniFFI methods
 //! replace them one endpoint group at a time.
 
 pub mod actions;
@@ -267,7 +267,7 @@ pub use provider_key_validation::{
 pub use provider_model_catalog::nmp_app_podcast_provider_model_catalog;
 pub use rerank::nmp_app_podcast_rerank;
 pub use runtime_facade::{
-    classify_input_intent_json, decode_nip21_uri_json, dispatch_input_intent_json, nmp_free_string,
+    classify_input_intent_json, decode_nip21_uri_json, dispatch_input_intent_json,
 };
 pub use snapshot::{AppRelayRow, PodcastUpdate};
 pub use speech_model_catalog::nmp_app_podcast_speech_model_catalog;

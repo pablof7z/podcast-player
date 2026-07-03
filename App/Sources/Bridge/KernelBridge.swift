@@ -15,8 +15,9 @@ final class PodcastHandle: @unchecked Sendable {
     private nonisolated(unsafe) static var current: PodcastHandle?
 
     /// `PodcastApp` owns the single `NmpApp` and the app-domain
-    /// `PodcastHandle`. `podcastHandle` below is a temporary borrowed pointer
-    /// for app-domain C ABI calls that have not moved onto generated UniFFI yet.
+    /// `PodcastHandle`. `podcastHandle` below is a temporary borrowed token
+    /// used only to map older Swift extension methods back to this generated
+    /// UniFFI `PodcastApp` instance.
     let podcastApp: PodcastApp
     private var updateSink: KernelUpdateSink?
     /// Borrowed opaque handle owned by `PodcastApp`.
@@ -176,9 +177,10 @@ final class PodcastHandle: @unchecked Sendable {
     /// Dispatch a namespace-keyed action. Returns the synchronous dispatch
     /// result. D6: returns .failure for a null podcast handle.
     ///
-    /// ADR-0064: calls `PodcastApp.dispatchPodcastAction` (typed byte doorway)
-    /// instead of the nmp-ffi ≤ v0.7.2 `nmp_app_dispatch_action` JSON doorway
-    /// which was deleted in NMP v0.8.0.
+    /// ADR-0064: routes through `PodcastApp.dispatchPodcastAction`, whose Rust
+    /// body encodes the action into typed bytes before entering
+    /// `nmp-native-runtime`. This keeps Swift off the deleted nmp-ffi JSON
+    /// doorway while the shell still owns JSON-shaped action builders.
     @discardableResult
     func dispatchAction(namespace: String, body: [String: Any]) -> DispatchResult {
         // Perf: dispatch is a synchronous FFI round-trip on the caller thread

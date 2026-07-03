@@ -14,8 +14,8 @@
 //! * **`episode_id`**: a nul-terminated hyphenated UUID string.
 //! * **Return value**: a heap-allocated nul-terminated JSON **array** of
 //!   `EpisodeEvent` objects (possibly empty `[]`), decoded on the Swift side
-//!   straight into `[EpisodeAuditEvent]`. The caller MUST free the pointer via
-//!   `nmp_free_string`. Never returns NULL for a valid `handle` +
+//!   straight into `[EpisodeAuditEvent]`. The internal facade adapter reclaims
+//!   the returned raw string. Never returns NULL for a valid `handle` +
 //!   `episode_id` (D6) — an unknown episode yields `[]`.
 //!
 //! ## D6 — degrade silently
@@ -114,8 +114,8 @@ pub fn nmp_app_podcast_record_episode_event(
 
 /// Fetch the JSON-encoded pipeline event log for one episode.
 ///
-/// Returns a malloc-compatible string the caller MUST free via
-/// `nmp_free_string`, or `NULL` on any error (D6 degrade-silently).
+/// Returns a raw string reclaimed by the internal facade adapter, or `NULL` on
+/// any error (D6 degrade-silently).
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn nmp_app_podcast_episode_events(
     handle: *mut PodcastHandle,
