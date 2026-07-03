@@ -5,15 +5,14 @@
 //! scaffold fallback reply — that would indicate the LLM path is broken while
 //! Ollama is available.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use super::ScenarioResult::{self, Fail, Pass, Skip};
 use crate::harness::{dispatch, probe_tcp, wait_for};
 use crate::scenarios::llm_setup;
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // Gate on Ollama availability. Without it the LLM path cannot be exercised.
     if !probe_tcp("localhost", 11434) {
         return Skip("ollama offline".into());
@@ -36,7 +35,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // Wait up to 60 s for the agent to finish: busy=false, 2 messages, not generating.
-    match wait_for(handle, 60_000, |u| {
+    match wait_for(app, 60_000, |u| {
         u.agent.as_ref().is_some_and(|a| {
             !a.is_busy
                 && a.messages.len() >= 2

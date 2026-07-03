@@ -81,10 +81,10 @@ enum AgentLLMClient {
                 return #"{"error":"null kernel handle"}"#
             }
             return messagesJSON.withCString { msgPtr in
-                guard let ptr = nmp_app_podcast_chat_complete(handle, msgPtr) else {
+                guard let ptr = podcastAppCString(handle, endpoint: .chatComplete, request: msgPtr) else {
                     return #"{"error":"null response from Rust"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value

@@ -117,14 +117,14 @@ extension AgentTools {
                 let result: UnsafeMutablePointer<CChar>?
                 switch op {
                 case "plan":
-                    result = nmp_app_podcast_agent_youtube_search_plan(handle, ptr)
+                    result = podcastAppCString(handle, endpoint: .agentYoutubeSearchPlan, request: ptr)
                 case "results":
-                    result = nmp_app_podcast_agent_youtube_search_results(handle, ptr)
+                    result = podcastAppCString(handle, endpoint: .agentYoutubeSearchResults, request: ptr)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value

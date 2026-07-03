@@ -67,8 +67,7 @@
 //! exact contract so a regression in the routing chain is caught before it
 //! reaches the device.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::fixtures;
@@ -80,12 +79,12 @@ const TEST_DISPLAY_NAME: &str = "Headless Test User";
 /// Known picture URL used for the publish_profile dispatch.
 const TEST_PICTURE_URL: &str = "https://example.com/avatar.jpg";
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Identity setup ────────────────────────────────────────────────────────
     //
     // Import the test nsec if no identity is loaded yet. If a prior scenario
     // already loaded the same key, take the fast path.
-    let already_has_identity = snapshot(handle)
+    let already_has_identity = snapshot(app)
         .as_ref()
         .and_then(|u| u.active_account.as_ref())
         .is_some();
@@ -100,14 +99,14 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             return Fail(format!("ImportNsec dispatch rejected: {err}"));
         }
 
-        match wait_for(handle, 5_000, |u| u.active_account.is_some()) {
+        match wait_for(app, 5_000, |u| u.active_account.is_some()) {
             Ok(_) => {}
             Err(e) => return Fail(format!("active_account never appeared: {e}")),
         }
     }
 
     // Snapshot the account state before publishing.
-    let pre_account = match snapshot(handle).and_then(|u| u.active_account) {
+    let pre_account = match snapshot(app).and_then(|u| u.active_account) {
         Some(a) => a,
         None => return Fail("active_account missing after identity import".into()),
     };
@@ -188,7 +187,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // `AccountSummary.display_name` would remain `None` forever and this
     // `wait_for` would time out and return `Fail`. The assertion proves the
     // fix works and CI-gates it.
-    match wait_for(handle, 2_000, |u| {
+    match wait_for(app, 2_000, |u| {
         u.active_account
             .as_ref()
             .and_then(|a| a.display_name.as_deref())
@@ -212,7 +211,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         }
         Err(timeout_msg) => {
             // On timeout, read the current snapshot for a diagnostic.
-            let current_display_name = snapshot(handle)
+            let current_display_name = snapshot(app)
                 .and_then(|u| u.active_account)
                 .and_then(|a| a.display_name);
             return Fail(format!(

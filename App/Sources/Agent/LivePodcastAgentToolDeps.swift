@@ -109,10 +109,10 @@ struct LiveEpisodeSummaryAdapter: EpisodeSummaryProviding {
               let json = String(data: data, encoding: .utf8)
         else { return .unavailable }
         return json.withCString { ptr -> EpisodeSummaryOutcome in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
                 return .unavailable
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustSummaryPolicy.self, from: data)

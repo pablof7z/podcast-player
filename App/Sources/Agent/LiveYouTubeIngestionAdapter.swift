@@ -129,10 +129,10 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
               let json = String(data: data, encoding: .utf8)
         else { return nil }
         let envelope = json.withCString { ptr -> String? in
-            guard let result = nmp_app_podcast_agent_action_tool(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
         guard let envelope,
@@ -166,10 +166,10 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
                 return nil
             }
             return json.withCString { ptr -> YouTubeIngestMetadataPlan? in
-                guard let result = nmp_app_podcast_agent_action_tool(handle, ptr) else {
+                guard let result = podcastAppCString(handle, endpoint: .agentActionTool, request: ptr) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 let envelope = String(cString: result)
                 guard let data = envelope.data(using: .utf8) else { return nil }
                 return try? JSONDecoder().decode(YouTubeIngestMetadataPlan.self, from: data)

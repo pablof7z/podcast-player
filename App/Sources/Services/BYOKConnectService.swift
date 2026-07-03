@@ -95,10 +95,10 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
             throw BYOKConnectError.invalidAuthorizationURL
         }
         let responseJSON = intentString.withCString { intentPtr in
-            guard let ptr = nmp_app_podcast_byok_authorization(intentPtr) else {
+            guard let ptr = podcastAppGlobalCString(endpoint: .byokAuthorization, request: intentPtr) else {
                 return #"{"error":{"kind":"invalid_authorization_url","message":"null response from Rust"}}"#
             }
-            defer { nmp_free_string(ptr) }
+            defer { freePodcastCString(ptr) }
             return String(cString: ptr)
         }
         let envelope = try decodeEnvelope(
@@ -164,10 +164,10 @@ final class BYOKConnectService: NSObject, ASWebAuthenticationPresentationContext
                 return #"{"error":{"kind":"token_exchange_failed","message":"Kernel handle unavailable"}}"#
             }
             return intentString.withCString { intentPtr in
-                guard let ptr = nmp_app_podcast_byok_exchange(handle, intentPtr) else {
+                guard let ptr = podcastAppCString(handle, endpoint: .byokExchange, request: intentPtr) else {
                     return #"{"error":{"kind":"token_exchange_failed","message":"null response from Rust"}}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value

@@ -12,6 +12,8 @@ let KERNEL_SCHEMA_VERSION = 1
 
 /// Thin bridge around the generated `PodcastApp` UniFFI object.
 final class PodcastHandle: @unchecked Sendable {
+    private nonisolated(unsafe) static var current: PodcastHandle?
+
     /// `PodcastApp` owns the single `NmpApp` and the app-domain
     /// `PodcastHandle`. `podcastHandle` below is a temporary borrowed pointer
     /// for app-domain C ABI calls that have not moved onto generated UniFFI yet.
@@ -71,7 +73,7 @@ final class PodcastHandle: @unchecked Sendable {
     init() {
         let podcastApp = PodcastApp()
         self.podcastApp = podcastApp
-        PodcastBridgeCompat.install(self)
+        Self.current = self
         podcastApp.signerBrokerInit()
         Self.configureStoragePath(for: podcastApp)
         // ADR-0053 / NMP v0.8: make the full built-in projection consumption
@@ -102,7 +104,14 @@ final class PodcastHandle: @unchecked Sendable {
         podcastApp.setCapabilityCallback(sink: nil)
         podcastApp.setAgentAskSink(sink: nil)
         podcastApp.shutdown()
-        PodcastBridgeCompat.uninstall(self)
+        if Self.current === self {
+            Self.current = nil
+        }
+    }
+
+    static func app(for handle: UnsafeMutableRawPointer?) -> PodcastApp? {
+        guard let current, let handle, handle == current.podcastHandle else { return nil }
+        return current.podcastApp
     }
 
     /// Wire the Rust update callback. `handler` runs on every snapshot frame;

@@ -40,8 +40,7 @@
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::fixtures;
@@ -66,7 +65,7 @@ fn probe_tcp(host: &str, port: u16) -> bool {
         .any(|addr| TcpStream::connect_timeout(&addr, Duration::from_secs(3)).is_ok())
 }
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // Network availability check.
     if !probe_tcp(RELAY_HOST, RELAY_PORT) {
         return Skip(format!("{RELAY_HOST}:{RELAY_PORT} unreachable"));
@@ -110,7 +109,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // nsec (the kernel deduplicates identical dispatches within its TTL window,
     // so a re-dispatch of the same action may be silently dropped, making
     // wait_for time out waiting for a rev change that never comes).
-    let has_identity = snapshot(handle)
+    let has_identity = snapshot(app)
         .as_ref()
         .and_then(|u| u.active_account.as_ref())
         .is_some();
@@ -124,7 +123,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         if let Some(err) = res.get("error").and_then(|v| v.as_str()) {
             return Fail(format!("ImportNsec rejected: {err}"));
         }
-        match wait_for(handle, 5_000, |u| u.active_account.is_some()) {
+        match wait_for(app, 5_000, |u| u.active_account.is_some()) {
             Err(e) => return Fail(format!("identity not set: {e}")),
             Ok(_) => {}
         }
@@ -137,7 +136,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // account_profile_interest subscription and populates social.following
     // automatically.  If the social snapshot arrives without a manual
     // FetchContacts dispatch, the reactive model is confirmed.
-    let reactive_result = wait_for(handle, 20_000, |u| {
+    let reactive_result = wait_for(app, 20_000, |u| {
         u.social.as_ref().is_some_and(|s| s.following_count >= 2)
     });
 
@@ -152,7 +151,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
                  falling back to explicit FetchContacts"
             );
             dispatch(app, "podcast", json!({"op": "fetch_contacts"}));
-            match wait_for(handle, 15_000, |u| {
+            match wait_for(app, 15_000, |u| {
                 u.social.as_ref().is_some_and(|s| s.following_count >= 2)
             }) {
                 Ok(u) => u.social.unwrap(),
@@ -168,24 +167,14 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Validate that the expected pubkeys appear as npubs in the following list.
     let fiatjaf_npub = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
     let jb55_npub = "npub1xtscya34g58tk0z605fvr788k263gsu6cy9x0mhnm87echrgufzsevkk5s";
-    let has_fiatjaf = social
-        .following
-        .iter()
-        .any(|c| c.npub == fiatjaf_npub);
-    let has_jb55 = social
-        .following
-        .iter()
-        .any(|c| c.npub == jb55_npub);
+    let has_fiatjaf = social.following.iter().any(|c| c.npub == fiatjaf_npub);
+    let has_jb55 = social.following.iter().any(|c| c.npub == jb55_npub);
 
     if !has_fiatjaf || !has_jb55 {
         return Fail(format!(
             "expected both fiatjaf ({fiatjaf_npub}) and jb55 ({jb55_npub}) in following list; \
              got {:?}",
-            social
-                .following
-                .iter()
-                .map(|c| &c.npub)
-                .collect::<Vec<_>>()
+            social.following.iter().map(|c| &c.npub).collect::<Vec<_>>()
         ));
     }
 
@@ -200,7 +189,11 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             "FetchContacts after population must be accepted, got error '{err}'"
         ));
     }
-    if refresh_resp.get("correlation_id").and_then(|v| v.as_str()).is_none() {
+    if refresh_resp
+        .get("correlation_id")
+        .and_then(|v| v.as_str())
+        .is_none()
+    {
         return Fail(format!(
             "FetchContacts after population must return a dispatch correlation_id, got {refresh_resp}"
         ));
@@ -220,7 +213,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     dispatch(app, "podcast", json!({"op": "fetch_agent_notes"}));
     // Give the subscription a moment to settle; then read whatever arrived.
     std::thread::sleep(Duration::from_millis(500));
-    if let Some(u) = snapshot(handle) {
+    if let Some(u) = snapshot(app) {
         for conv in &u.nostr_conversations {
             // Verify the field exists (not missing / serde gap).
             // The value can be true or false — both are valid here.

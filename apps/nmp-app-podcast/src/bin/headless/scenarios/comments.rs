@@ -16,8 +16,7 @@
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::fixtures;
@@ -40,7 +39,7 @@ fn probe_tcp(host: &str, port: u16) -> bool {
         .any(|addr| TcpStream::connect_timeout(&addr, Duration::from_secs(3)).is_ok())
 }
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // 1. Network gate — skip when relay is unreachable.
     if !probe_tcp(RELAY_HOST, RELAY_PORT) {
         return Skip(format!("{RELAY_HOST}:{RELAY_PORT} unreachable"));
@@ -74,7 +73,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         return Fail(format!("subscribe dispatch rejected: {err}"));
     }
 
-    let update = match wait_for(handle, 10_000, |u| {
+    let update = match wait_for(app, 10_000, |u| {
         !u.library.is_empty() && !u.library[0].episodes.is_empty()
     }) {
         Ok(u) => u,
@@ -104,7 +103,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
     // Wait for the actor to process PostComment (rev bumps on success).
     // Timeout is generous (15 s) because the relay round-trip adds latency.
-    let post_ok = wait_for(handle, 15_000, |_| {
+    let post_ok = wait_for(app, 15_000, |_| {
         // Any rev bump after dispatch counts — PostComment writes to cache.
         true
     });
@@ -127,7 +126,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Wait for actor to process FetchComments. It marks this episode as the
     // viewed comment target and bumps the snapshot so the optimistic comment
     // already cached by PostComment becomes visible in `comments`.
-    let fetch_ok = wait_for(handle, 15_000, |u| !u.comments.is_empty());
+    let fetch_ok = wait_for(app, 15_000, |u| !u.comments.is_empty());
     if let Err(e) = fetch_ok {
         return Fail(format!("FetchComments actor timed out: {e}"));
     }

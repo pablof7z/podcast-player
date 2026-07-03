@@ -7,11 +7,8 @@
 //!
 //! The `nmp.http.async.capability` path mirrors the iOS `HttpCapability`:
 //! the kernel fires a fire-and-forget [`HttpCommand`], the host spawns a
-//! std thread to run the transport (using reqwest blocking), then calls
-//! [`nmp_app_podcast_http_report`] to deliver the [`HttpReport`] back to the
-//! kernel's [`FeedFetchCoordinator`]. The handle pointer is stored in a
-//! `OnceLock<usize>` (as a raw address, which is `Send`) and set after
-//! registration.
+//! std thread to run the transport (using reqwest blocking), then reports via
+//! the app-owned [`PodcastApp`] facade.
 //!
 //! ## Tokio runtime lifetime
 //!
@@ -20,16 +17,13 @@
 //! callback via `Runtime::block_on`. The runtime is initialised once in
 //! `install` and lives for the process lifetime (the `OnceLock` never drops).
 
-use std::ffi::CString;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use nmp_app_podcast::capability::{
     NostrRelayRequest, NostrRelayResult, NOSTR_RELAY_CAPABILITY_NAMESPACE,
 };
-use nmp_app_podcast::ffi::PodcastHandle;
-use nmp_app_podcast::nmp_app_podcast_http_report;
+use nmp_app_podcast::ffi::{PodcastApp, PodcastCapabilitySink};
 use nmp_core::substrate::{CapabilityEnvelope, CapabilityRequest};
-use nmp_native_runtime::NmpApp;
 use podcast_feeds::http::{
     HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult, HTTP_ASYNC_CAPABILITY_NAMESPACE,
     HTTP_CAPABILITY_NAMESPACE,
@@ -42,15 +36,11 @@ use super::relay_client;
 /// Initialised once in `install`; lives for the process lifetime.
 static RELAY_RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
 
-/// The `PodcastHandle` pointer stored as a `usize` so it is `Send + Sync`.
-/// Set by [`set_handle`] after `nmp_app_podcast_register` returns. The
-/// capability callback only fires during scenario runs (after `nmp_app_start`),
-/// so the handle is always set by then.
-static PODCAST_HANDLE_ADDR: OnceLock<usize> = OnceLock::new();
+static PODCAST_APP: OnceLock<Arc<PodcastApp>> = OnceLock::new();
 
 /// Install the headless capability callback on `app`. Must be called before
 /// `nmp_app_start`. Also initialises the Tokio relay runtime.
-pub fn install(app: *mut NmpApp) {
+pub fn install(app: Arc<PodcastApp>) {
     // Ensure the Tokio runtime is ready before the first capability call.
     RELAY_RUNTIME.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()
@@ -60,26 +50,16 @@ pub fn install(app: *mut NmpApp) {
             .expect("relay runtime")
     });
 
-    if app.is_null() {
-        return;
-    }
-    // SAFETY: the headless harness owns `app` for the binary lifetime and clears
-    // it only after scenarios finish. The support crate stores an owned callback
-    // closure in the app's native capability slot.
-    let app_ref = unsafe { &*app };
-    nmp_uniffi_support::set_capability_callback(app_ref, Some(Box::new(())), |_, request| {
-        handle_request(&request)
-    });
+    let _ = PODCAST_APP.set(Arc::clone(&app));
+    app.set_capability_callback(Some(Box::new(HeadlessCapabilitySink)));
 }
 
-/// Register the `PodcastHandle` for the async HTTP report-back path.
-///
-/// Called after `nmp_app_podcast_register` returns the handle. The handle
-/// pointer is stored as a `usize` so it is `Send + Sync`-compatible in the
-/// `OnceLock`. The capability callback retrieves it when it needs to call
-/// `nmp_app_podcast_http_report`.
-pub fn set_handle(handle: *mut PodcastHandle) {
-    PODCAST_HANDLE_ADDR.get_or_init(|| handle as usize);
+struct HeadlessCapabilitySink;
+
+impl PodcastCapabilitySink for HeadlessCapabilitySink {
+    fn on_capability_request(&self, request_json: String) -> String {
+        handle_request(&request_json)
+    }
 }
 
 /// Route the request JSON to the right handler. Returns the envelope JSON.
@@ -94,7 +74,7 @@ fn handle_request(request_str: &str) -> String {
         HTTP_ASYNC_CAPABILITY_NAMESPACE => {
             handle_http_async(&req.payload_json);
             // Fire-and-forget: return an immediate ack (empty ok envelope).
-            // The actual result arrives via nmp_app_podcast_http_report.
+            // The actual result arrives through the app-owned Rust facade.
             serde_json::json!({"ok": true}).to_string()
         }
         NOSTR_RELAY_CAPABILITY_NAMESPACE => handle_nostr_relay(&req.payload_json),
@@ -126,8 +106,8 @@ fn handle_request(request_str: &str) -> String {
 /// Handle the async HTTP capability path.
 ///
 /// Decodes the [`HttpCommand`] from `payload_json`, spawns a std thread to
-/// execute the HTTP request with reqwest blocking, then calls
-/// [`nmp_app_podcast_http_report`] to deliver the result to the kernel's
+/// execute the HTTP request with reqwest blocking, then reports through
+/// [`PodcastApp::http_report_for_rust`] to deliver the result to the kernel's
 /// [`FeedFetchCoordinator`]. Returns immediately (fire-and-forget).
 fn handle_http_async(payload_json: &str) {
     let cmd: HttpCommand = match serde_json::from_str(payload_json) {
@@ -138,12 +118,11 @@ fn handle_http_async(payload_json: &str) {
         }
     };
 
-    // Retrieve the handle address stored after nmp_app_podcast_register.
-    let handle_addr = match PODCAST_HANDLE_ADDR.get() {
-        Some(&addr) => addr,
+    let app = match PODCAST_APP.get() {
+        Some(app) => Arc::clone(app),
         None => {
             eprintln!(
-                "[headless] http_async: handle not set; dropping {}",
+                "[headless] http_async: app not set; dropping {}",
                 cmd.request_id
             );
             return;
@@ -169,21 +148,7 @@ fn handle_http_async(payload_json: &str) {
                 return;
             }
         };
-        let c_json = match CString::new(report_json) {
-            Ok(s) => s,
-            Err(_) => {
-                eprintln!("[headless] http_async: report JSON contains NUL byte");
-                return;
-            }
-        };
-
-        // SAFETY: handle_addr was obtained from a valid *mut PodcastHandle
-        // returned by nmp_app_podcast_register. The kernel keeps the handle
-        // alive for the entire binary lifetime (unregister happens after all
-        // scenarios complete). This pointer is valid for the duration of this
-        // call, which completes before the binary tears down.
-        let handle_ptr = handle_addr as *mut PodcastHandle;
-        let _ = nmp_app_podcast_http_report(handle_ptr, c_json.as_ptr());
+        app.http_report_for_rust(&report_json);
     });
 }
 

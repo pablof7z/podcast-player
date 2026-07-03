@@ -344,7 +344,6 @@
 		7BE5E313A4AA1FA170BA66EA /* NoteListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 474DC54CBC0270EDA0DCB9A9 /* NoteListRow.swift */; };
 		7C1EE05E1112CE0AD10972CC /* PodcastSearchRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D6BF11128A63D6F51CAC06A /* PodcastSearchRows.swift */; };
 		7C36F67FEE0ECEE7743F903C /* AppStateStore+KernelActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F4F753BEAB5732648F6274 /* AppStateStore+KernelActions.swift */; };
-		7C673C3877CF0B16DA0DE45B /* PodcastBridgeCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224732027D201CC30C143021 /* PodcastBridgeCompat.swift */; };
 		7CB77C41881C73DE001BF5DC /* OpenRouterKeyValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 383F2A339D48BC3930A8A40A /* OpenRouterKeyValidationService.swift */; };
 		7CDDEA1B0CF0C097CE8426A9 /* AssemblyAITranscriptAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A0372B21E2E32DB6EE86B9 /* AssemblyAITranscriptAdapter.swift */; };
 		7DA408724A896554CC91597D /* OpenRouterWhisperClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EEA2D34DD43F590EA8A751 /* OpenRouterWhisperClient.swift */; };
@@ -524,6 +523,7 @@
 		B389C5108FE832C3F0F5FB34 /* AgentNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30CFCB7607AB17F8205471 /* AgentNotesView.swift */; };
 		B3911A6DDB986C6528C2C4F1 /* RSSParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252381473A916661CCBA523E /* RSSParserTests.swift */; };
 		B393A6C44BAFB3C3AD1E6CDA /* FeedbackStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716427A88DC40761944F1873 /* FeedbackStatusBadge.swift */; };
+		B3970DA45FCC4CB32765FCCD /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = C42CCFD0573B346559E36AA9 /* LiteRTLM */; };
 		B3D650CB33926951017490CF /* ElevenLabsVoiceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD80384C741138D608DAECE /* ElevenLabsVoiceRow.swift */; };
 		B3E189C5BA5D59D07FF8FC37 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBEC4F0E2BBCFFB096BEFD /* AppDelegate.swift */; };
 		B3E9AC528F88D6001C8A835C /* AgentEmptyStateProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EA4D4E0DF2E24D09B86D82 /* AgentEmptyStateProjection.swift */; };
@@ -902,7 +902,6 @@
 		20996B8ADD4DE6BBC93F7BBB /* DownloadCapability+Envelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DownloadCapability+Envelope.swift"; sourceTree = "<group>"; };
 		20EE8CBB7C27AA6298275FC9 /* RelayDiagnosticsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayDiagnosticsModels.swift; sourceTree = "<group>"; };
 		20F36C5F6F4D6449A43BD3DD /* ScreenshotAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotAnnotationView.swift; sourceTree = "<group>"; };
-		224732027D201CC30C143021 /* PodcastBridgeCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastBridgeCompat.swift; sourceTree = "<group>"; };
 		22787FFE38E3B5C43B04D34C /* iCloudSyncCapability+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "iCloudSyncCapability+Snapshot.swift"; sourceTree = "<group>"; };
 		229944585A479C4A0ADFBB9D /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
 		2299771095C075BD82AF670E /* TranscriptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptStore.swift; sourceTree = "<group>"; };
@@ -1540,6 +1539,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D296A3A113B7CA431F3F4B45 /* Kingfisher in Frameworks */,
+				B3970DA45FCC4CB32765FCCD /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2421,7 +2421,6 @@
 				FF0EF419AE4ED35DF7141238 /* NostrIntentWire.swift */,
 				8A67DAB8DE371B15ECD8C111 /* PerfSignposter.swift */,
 				61611885D6AA0AE6DE31BA6B /* PodcastActivityAttributes.swift */,
-				224732027D201CC30C143021 /* PodcastBridgeCompat.swift */,
 				1B0B6808F82C02F35824ED53 /* SettingsSnapshot+ProviderKeys.swift */,
 			);
 			path = Bridge;
@@ -2881,6 +2880,7 @@
 			name = Podcastr;
 			packageProductDependencies = (
 				AC95E5BC4A660944ADC3109C /* Kingfisher */,
+				C42CCFD0573B346559E36AA9 /* LiteRTLM */,
 			);
 			productName = Podcastr;
 			productReference = 85AB8152D55E6C47E39E9A01 /* Podcastr.app */;
@@ -2931,6 +2931,7 @@
 			);
 			mainGroup = 26AC729818BDCD33D4152DB0;
 			packageReferences = (
+				CDCFBAF4A865E5D6C8271482 /* XCRemoteSwiftPackageReference "LiteRT-LM" */,
 				FD91E0E152391009482BC6AE /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			productRefGroup = EE8ECCB93F31FD087A3D5446 /* Products */;
@@ -3150,7 +3151,6 @@
 				85E5AC52B9E887337CDD4244 /* NostrIntentWire.swift in Sources */,
 				00A1EEE68C8AD61AFC553D33 /* PerfSignposter.swift in Sources */,
 				7AE16082CAF1996E7CC3B9DB /* PodcastActivityAttributes.swift in Sources */,
-				7C673C3877CF0B16DA0DE45B /* PodcastBridgeCompat.swift in Sources */,
 				75872377A2326357DAF77DFC /* SettingsSnapshot+ProviderKeys.swift in Sources */,
 				B70ADEF100836FD74CFCBA14 /* AudioCapability+NowPlaying.swift in Sources */,
 				6110A205D44ADA4D5DF8992F /* AudioCapability+Observers.swift in Sources */,
@@ -3808,7 +3808,6 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OBJC_BRIDGING_HEADER = App/Sources/Bridge/NmpCore.h;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -3884,7 +3883,6 @@
 					DEBUG,
 				);
 				SWIFT_COMPILATION_MODE = singlefile;
-				SWIFT_OBJC_BRIDGING_HEADER = App/Sources/Bridge/NmpCore.h;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -4218,6 +4216,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CDCFBAF4A865E5D6C8271482 /* XCRemoteSwiftPackageReference "LiteRT-LM" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google-ai-edge/LiteRT-LM";
+			requirement = {
+				kind = revision;
+				revision = bbc5181df03c6962d7786ce4ad72c8565232d2b2;
+			};
+		};
 		FD91E0E152391009482BC6AE /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/onevcat/Kingfisher";
@@ -4232,6 +4238,10 @@
 		AC95E5BC4A660944ADC3109C /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Kingfisher;
+		};
+		C42CCFD0573B346559E36AA9 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LiteRTLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

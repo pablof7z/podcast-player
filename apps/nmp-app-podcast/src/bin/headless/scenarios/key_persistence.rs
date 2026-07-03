@@ -11,17 +11,16 @@
 //! The full round-trip durability proof (restart + reload of
 //! `podcast-keys.json`) is covered by the unit test `keys_persist_and_reload`
 //! in `store/podcast_keys_tests.rs` — doing it here would require two separate
-//! NmpApp instances sharing a tempdir, which the current headless harness does
+//! PodcastApp instances sharing a tempdir, which the current headless harness does
 //! not support.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 use crate::harness::{dispatch, wait_for};
 use crate::mock_feed;
 use crate::scenarios::ScenarioResult;
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // 1. Subscribe to a local mock RSS feed so we have a real podcast_id.
     let port = mock_feed::start();
     let feed_url = format!("http://127.0.0.1:{port}/feed.xml");
@@ -36,7 +35,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // 2. Wait for the library to populate so we can read the podcast_id.
-    let update = match wait_for(handle, 10_000, |u| !u.library.is_empty()) {
+    let update = match wait_for(app, 10_000, |u| !u.library.is_empty()) {
         Ok(u) => u,
         Err(msg) => return ScenarioResult::Fail(format!("timeout waiting for library: {msg}")),
     };
@@ -57,7 +56,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     // 4. Poll the snapshot until owned_podcasts contains our podcast_id.
     let target_id = podcast_id.clone();
-    let update = match wait_for(handle, 10_000, |u| {
+    let update = match wait_for(app, 10_000, |u| {
         u.owned_podcasts.iter().any(|o| o.podcast_id == target_id)
     }) {
         Ok(u) => u,

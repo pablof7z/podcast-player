@@ -57,10 +57,10 @@ public actor PerplexityClient: PerplexityClientProtocol {
                 return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
             return requestJSON.withCString { requestPtr in
-                guard let ptr = nmp_app_podcast_perplexity_search(handle, requestPtr) else {
+                guard let ptr = podcastAppCString(handle, endpoint: .perplexitySearch, request: requestPtr) else {
                     return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value

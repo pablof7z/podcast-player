@@ -32,8 +32,7 @@
 
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 use crate::harness::{dispatch, snapshot, wait_for};
 use crate::relay_client;
@@ -65,7 +64,7 @@ fn relay_serves_kind_10154() -> bool {
         .any(|ev| ev.get("kind").and_then(serde_json::Value::as_u64) == Some(10154))
 }
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     if !relay_serves_kind_10154() {
         return Skip(format!(
             "{RELAY_URL} unreachable or currently serves no kind:10154 shows — nothing to discover"
@@ -93,11 +92,11 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // If wait_for times out, do a direct snapshot read: the action may have
     // completed before wait_for sampled last_rev (actor can be that fast when
     // relay returns EOSE quickly and HTTP fallback has low latency).
-    let update = match wait_for(handle, 40_000, |u| !u.nostr_results.is_empty()) {
+    let update = match wait_for(app, 40_000, |u| !u.nostr_results.is_empty()) {
         Ok(u) => u,
         Err(_) => {
             // Race-safe fallback: read the current snapshot directly.
-            match snapshot(handle) {
+            match snapshot(app) {
                 Some(snap) if !snap.nostr_results.is_empty() => snap,
                 _ => {
                     return Fail(

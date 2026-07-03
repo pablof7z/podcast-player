@@ -250,10 +250,10 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_search_tool(handle, ptr) else {
-                    return #"{"error":"null response from nmp_app_podcast_agent_search_tool"}"#
+                guard let result = podcastAppCString(handle, endpoint: .agentSearchTool, request: ptr) else {
+                    return #"{"error":"null response from agentSearchTool"}"#
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value
@@ -293,10 +293,10 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_search_tool(handle, ptr) else {
-                    return #"{"error":"null response from nmp_app_podcast_agent_search_tool"}"#
+                guard let result = podcastAppCString(handle, endpoint: .agentSearchTool, request: ptr) else {
+                    return #"{"error":"null response from agentSearchTool"}"#
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value

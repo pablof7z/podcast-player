@@ -163,10 +163,10 @@ final class LivePodcastInventoryAdapter: PodcastInventoryProtocol, PodcastCatego
               let json = String(data: data, encoding: .utf8)
         else { return [] }
         return json.withCString { ptr -> [PodcastCategorySummary] in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
                 return []
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? Self.categorySummariesDecoder.decode(

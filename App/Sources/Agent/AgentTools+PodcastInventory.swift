@@ -288,10 +288,10 @@ extension AgentTools {
                 return nil
             }
             return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_category_list(handle, ptr) else {
+                guard let result = podcastAppCString(handle, endpoint: .agentCategoryList, request: ptr) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value
@@ -345,10 +345,10 @@ extension AgentTools {
                 return nil
             }
             return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_inventory_list(handle, ptr) else {
+                guard let result = podcastAppCString(handle, endpoint: .agentInventoryList, request: ptr) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value
@@ -451,16 +451,16 @@ extension AgentTools {
                 let result: UnsafeMutablePointer<CChar>?
                 switch op {
                 case "plan":
-                    result = nmp_app_podcast_agent_episode_list_plan(handle, ptr)
+                    result = podcastAppCString(handle, endpoint: .agentEpisodeListPlan, request: ptr)
                 case "results":
-                    result = nmp_app_podcast_agent_episode_list_results(handle, ptr)
+                    result = podcastAppCString(handle, endpoint: .agentEpisodeListResults, request: ptr)
                 case "error":
-                    result = nmp_app_podcast_agent_episode_list_error(handle, ptr)
+                    result = podcastAppCString(handle, endpoint: .agentEpisodeListError, request: ptr)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value

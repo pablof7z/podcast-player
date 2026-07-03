@@ -1,15 +1,14 @@
 //! Scenario: import an nsec and confirm `active_account` surfaces in the
 //! snapshot within 5 seconds.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use super::ScenarioResult::{self, Fail, Pass};
 use crate::fixtures;
 use crate::harness::{dispatch, wait_for};
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // Import the hardcoded test nsec. This should immediately set
     // `active_account` on the snapshot and bump `rev`.
     let res = dispatch(
@@ -24,7 +23,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // Wait for `active_account` to appear in the snapshot.
-    match wait_for(handle, 5_000, |u| u.active_account.is_some()) {
+    match wait_for(app, 5_000, |u| u.active_account.is_some()) {
         Ok(u) => {
             let acc = u.active_account.unwrap();
             if !acc.npub.starts_with("npub1") {

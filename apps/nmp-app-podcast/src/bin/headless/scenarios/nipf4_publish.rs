@@ -49,8 +49,7 @@
 //! is the publish-ran observable (D) and the sign-and-return seam carries the
 //! signed bytes (C).
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::fixtures;
@@ -59,14 +58,14 @@ use crate::mock_feed;
 use crate::scenarios::ScenarioResult;
 use crate::sign_tap::assert_kernel_signs_with;
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Step 1: Establish a known active identity ─────────────────────────────
     //
     // Required for assertion B: we need a baseline active_account.pubkey_hex to
     // compare against after every publish dispatch. The identity scenario runs
     // before this one in run_all, so the import may have already been done;
     // we take the fast path in that case.
-    let active_before = match snapshot(handle).and_then(|u| u.active_account) {
+    let active_before = match snapshot(app).and_then(|u| u.active_account) {
         Some(acc) => acc,
         None => {
             let res = dispatch(
@@ -77,7 +76,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             if let Some(err) = res.get("error").and_then(|v| v.as_str()) {
                 return ScenarioResult::Fail(format!("ImportNsec rejected: {err}"));
             }
-            match wait_for(handle, 8_000, |u| u.active_account.is_some()) {
+            match wait_for(app, 8_000, |u| u.active_account.is_some()) {
                 Ok(u) => match u.active_account {
                     Some(acc) => acc,
                     None => {
@@ -107,7 +106,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     //
     // Capture existing podcast IDs so we can identify the entry this scenario
     // creates. Previous scenarios may have left podcasts in the shared store.
-    let existing_ids: std::collections::HashSet<String> = snapshot(handle)
+    let existing_ids: std::collections::HashSet<String> = snapshot(app)
         .map(|u| u.library.iter().map(|p| p.id.clone()).collect())
         .unwrap_or_default();
 
@@ -123,14 +122,12 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         return ScenarioResult::Fail(format!("subscribe rejected: {err}"));
     }
 
-    let update = match wait_for(handle, 10_000, |u| {
+    let update = match wait_for(app, 10_000, |u| {
         u.library.iter().any(|p| !existing_ids.contains(&p.id))
     }) {
         Ok(u) => u,
         Err(msg) => {
-            return ScenarioResult::Fail(format!(
-                "timeout waiting for new library entry: {msg}"
-            ))
+            return ScenarioResult::Fail(format!("timeout waiting for new library entry: {msg}"))
         }
     };
 
@@ -156,17 +153,15 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         json!({"op": "create_owned_podcast", "podcast_id": podcast_id}),
     );
     if create_res.get("error").is_some() {
-        return ScenarioResult::Fail(format!(
-            "create_owned_podcast rejected: {create_res}"
-        ));
+        return ScenarioResult::Fail(format!("create_owned_podcast rejected: {create_res}"));
     }
 
     // Wait until owned_podcasts contains our podcast with a populated pubkey.
     let target_id = podcast_id.clone();
-    let update = match wait_for(handle, 10_000, |u| {
-        u.owned_podcasts.iter().any(|o| {
-            o.podcast_id == target_id && !o.podcast_pubkey_hex.is_empty()
-        })
+    let update = match wait_for(app, 10_000, |u| {
+        u.owned_podcasts
+            .iter()
+            .any(|o| o.podcast_id == target_id && !o.podcast_pubkey_hex.is_empty())
     }) {
         Ok(u) => u,
         Err(msg) => {
@@ -183,9 +178,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     {
         Some(o) => o.clone(),
         None => {
-            return ScenarioResult::Fail(
-                "owned_podcasts entry disappeared after wait_for".into(),
-            )
+            return ScenarioResult::Fail("owned_podcasts entry disappeared after wait_for".into())
         }
     };
 
@@ -206,13 +199,12 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // ── Assertion B (pre-publish baseline): active account unchanged so far ───
-    if let Some(acc) = snapshot(handle).and_then(|u| u.active_account) {
+    if let Some(acc) = snapshot(app).and_then(|u| u.active_account) {
         if acc.pubkey_hex != active_before.pubkey_hex {
             return ScenarioResult::Fail(format!(
                 "active_account changed BEFORE publish (after create_owned): \
                  expected {} got {}",
-                active_before.pubkey_hex,
-                acc.pubkey_hex
+                active_before.pubkey_hex, acc.pubkey_hex
             ));
         }
     }
@@ -232,9 +224,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         json!({"op": "publish_show", "podcast_id": podcast_id}),
     );
     if show_dispatch.get("error").is_some() {
-        return ScenarioResult::Fail(format!(
-            "publish_show dispatch rejected: {show_dispatch}"
-        ));
+        return ScenarioResult::Fail(format!("publish_show dispatch rejected: {show_dispatch}"));
     }
     // Acceptance means the action was queued on the kernel's actor — the signing
     // path will run on the actor's next tick.
@@ -252,7 +242,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // NOT prove signing (the stamp precedes the sign dispatch) — assertion C
     // below proves the signer. This proves the handler ran end-to-end.
     let target_id2 = podcast_id.clone();
-    let update_after_show = match wait_for(handle, 10_000, |u| {
+    let update_after_show = match wait_for(app, 10_000, |u| {
         u.owned_podcasts
             .iter()
             .find(|o| o.podcast_id == target_id2)
@@ -301,8 +291,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             "REGRESSION (make_active=false): active_account changed after publish_show. \
              Before: {} After: {}. \
              nmp_app_signin_nsec must be called with make_active=0.",
-            active_before.pubkey_hex,
-            active_after_show.pubkey_hex
+            active_before.pubkey_hex, active_after_show.pubkey_hex
         ));
     }
 
@@ -357,20 +346,17 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         if let Err(msg) =
             assert_kernel_signs_with(app, &podcast_pubkey, &active_before.pubkey_hex, 54)
         {
-            return ScenarioResult::Fail(format!(
-                "episode (kind:54) signing proof failed: {msg}"
-            ));
+            return ScenarioResult::Fail(format!("episode (kind:54) signing proof failed: {msg}"));
         }
 
         // Assertion D part 2: publish_episode did not switch the active account.
-        match snapshot(handle).and_then(|u| u.active_account) {
+        match snapshot(app).and_then(|u| u.active_account) {
             Some(acc) if acc.pubkey_hex == active_before.pubkey_hex => {}
             Some(acc) => {
                 return ScenarioResult::Fail(format!(
                     "REGRESSION (make_active=false): active_account changed after \
                      publish_episode. Before: {} After: {}.",
-                    active_before.pubkey_hex,
-                    acc.pubkey_hex
+                    active_before.pubkey_hex, acc.pubkey_hex
                 ))
             }
             None => {
@@ -407,7 +393,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Wait briefly for the second publish_show to complete (last_published_at
     // may stay the same within the same second; we just need the actor to finish).
     let target_id3 = podcast_id.clone();
-    let _ = wait_for(handle, 5_000, |u| {
+    let _ = wait_for(app, 5_000, |u| {
         u.owned_podcasts
             .iter()
             .find(|o| o.podcast_id == target_id3)
@@ -430,14 +416,13 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // Final active-account check after idempotent re-register.
-    match snapshot(handle).and_then(|u| u.active_account) {
+    match snapshot(app).and_then(|u| u.active_account) {
         Some(acc) if acc.pubkey_hex == active_before.pubkey_hex => {}
         Some(acc) => {
             return ScenarioResult::Fail(format!(
                 "REGRESSION (make_active=false): active_account changed after idempotent \
                  re-register. Before: {} After: {}.",
-                active_before.pubkey_hex,
-                acc.pubkey_hex
+                active_before.pubkey_hex, acc.pubkey_hex
             ))
         }
         None => {

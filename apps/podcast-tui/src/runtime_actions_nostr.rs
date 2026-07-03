@@ -2,7 +2,6 @@ use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::runtime::{AppRuntime, Result};
-use nmp_app_podcast::ffi::{classify_input_intent_json, dispatch_input_intent_json};
 
 static SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -56,8 +55,7 @@ impl AppRuntime {
 
     fn classify_nostr_subscribe_intent(&self, input: &str) -> Result<Option<NostrSubscribeIntent>> {
         let request = intent_request_json(input);
-        let app = unsafe { &*self.app_ptr() };
-        let raw = classify_input_intent_json(app, &request);
+        let raw = self.classify_input_intent(request);
         let value: Value = serde_json::from_str(&raw)
             .map_err(|e| format!("intent classification returned invalid JSON: {e}"))?;
         parse_nostr_subscribe_intent(&value)
@@ -66,8 +64,7 @@ impl AppRuntime {
     fn dispatch_nostr_intent(&self, input: &str) -> Result<String> {
         let request = intent_request_json(input);
         let session_id = format!("tui-subscribe-{}", session_suffix());
-        let app = unsafe { &*self.app_ptr() };
-        Ok(dispatch_input_intent_json(app, &request, Some(&session_id)))
+        Ok(self.dispatch_input_intent(request, Some(session_id)))
     }
 }
 

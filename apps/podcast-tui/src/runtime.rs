@@ -1,16 +1,8 @@
-use std::ffi::{c_char, CStr, CString};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use nmp_app_podcast::ffi::PodcastUpdate;
-use nmp_app_podcast::{
-    nmp_app_podcast_audio_report, nmp_app_podcast_elevenlabs_voice_catalog,
-    nmp_app_podcast_http_report, nmp_app_podcast_local_model_catalog,
-    nmp_app_podcast_provider_model_catalog, nmp_app_podcast_register, nmp_app_podcast_set_data_dir,
-    nmp_app_podcast_speech_model_catalog, nmp_app_podcast_unregister, PodcastHandle,
-    AUDIO_CAPABILITY_NAMESPACE,
-};
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::{PodcastApp, PodcastCapabilitySink, PodcastUpdate};
+use nmp_app_podcast::AUDIO_CAPABILITY_NAMESPACE;
 use podcast_feeds::http::{
     HttpCommand, HttpMethod, HttpReport, HttpRequest, HttpResult, HTTP_ASYNC_CAPABILITY_NAMESPACE,
     HTTP_CAPABILITY_NAMESPACE,
@@ -25,68 +17,41 @@ use crate::provider_voice_catalog::{decode_elevenlabs_voice_catalog, ProviderCat
 use crate::speech_model_catalog::{decode_speech_model_catalog, SpeechModelCatalog};
 
 static AUDIO_HOST: OnceLock<Arc<Mutex<AudioHost>>> = OnceLock::new();
-
-/// `PodcastHandle` pointer (stored as `usize` so it is `Send`) for the async
-/// HTTP capability executor. The capability callback is a free `extern "C"`
-/// function registered with a null `ctx`, so the off-thread report path cannot
-/// reach the handle through `AppRuntime`; mirroring [`AUDIO_HOST`], we stash the
-/// pointer here when the handle is registered. The handle outlives the process
-/// (it is only freed in `AppRuntime::drop` at shutdown), so casting it back on
-/// the worker thread is sound.
-static PODCAST_HANDLE: OnceLock<usize> = OnceLock::new();
+static PODCAST_APP: OnceLock<Arc<PodcastApp>> = OnceLock::new();
 
 pub struct AppRuntime {
-    app: Box<NmpApp>,
-    podcast: *mut PodcastHandle,
+    app: Arc<PodcastApp>,
     update_bridge: Option<Box<bridge::NmpUpdateBridge>>,
 }
 
 pub type Result<T> = std::result::Result<T, String>;
 
 impl AppRuntime {
-    pub(crate) fn app_ptr(&self) -> *mut NmpApp {
-        (&*self.app as *const NmpApp).cast_mut()
-    }
-
     #[must_use]
     pub fn new(data_dir: &Option<String>) -> Result<(Self, Receiver<NmpEvent>)> {
-        let mut app = Box::new(nmp_native_runtime::new_app());
-        let app_ptr: *mut NmpApp = app.as_mut();
+        let app = PodcastApp::new();
 
         let audio_host = Arc::new(Mutex::new(AudioHost::new()));
         let _ = AUDIO_HOST.set(audio_host);
+        let _ = PODCAST_APP.set(Arc::clone(&app));
 
-        nmp_uniffi_support::set_capability_callback(&app, Some(Box::new(())), |_, request| {
-            dispatch_capability_request(&request)
-        });
-
-        let podcast = nmp_app_podcast_register(app_ptr);
-        if podcast.is_null() {
-            return Err("nmp_app_podcast_register returned null".to_string());
-        }
-        // Publish the handle for the async HTTP capability executor. Set before
-        // `nmp_app_start`, so it is always present by the time any capability
-        // request can be dispatched.
-        let _ = PODCAST_HANDLE.set(podcast as usize);
+        app.set_capability_callback(Some(Box::new(TuiCapabilitySink)));
 
         if let Some(dir) = data_dir {
-            let dir_cstr =
-                CString::new(dir.as_str()).map_err(|_| "data_dir contains NUL".to_string())?;
-            nmp_app_podcast_set_data_dir(podcast, dir_cstr.as_ptr());
+            app.set_podcast_data_dir(dir.clone());
         }
 
         let (mut bridge, rx) = bridge::NmpUpdateBridge::channel();
-        bridge::NmpUpdateBridge::register(app_ptr, &mut bridge);
+        bridge::NmpUpdateBridge::register(&app, &mut bridge);
 
         // ADR-0053 / NMP v0.8: TUI currently consumes the full built-in
         // projection set, with podcast sidecars registered app-locally.
         app.consume_all_builtin_projections();
-        app.start_runtime(200, 10);
+        app.start(200, 10);
 
         Ok((
             Self {
                 app,
-                podcast,
                 update_bridge: Some(bridge),
             },
             rx,
@@ -94,12 +59,9 @@ impl AppRuntime {
     }
 
     pub fn dispatch_action(&self, namespace: &str, action_json: &str) -> Result<String> {
-        // ADR-0064: route through the typed byte doorway.
-        nmp_app_podcast::dispatch_bytes::dispatch_action_bytes_for(
-            self.app_ptr(),
-            namespace,
-            action_json,
-        )
+        self.app
+            .dispatch_podcast_action(namespace.to_owned(), action_json.to_owned())
+            .ok_or_else(|| "action dispatch returned no envelope".to_string())
     }
 
     pub fn dispatch_action_value(&self, namespace: &str, action: &Value) -> Result<String> {
@@ -107,7 +69,7 @@ impl AppRuntime {
     }
 
     /// Sample mpv's playback position and forward any pending [`AudioReport`]s
-    /// to the kernel via `nmp_app_podcast_audio_report`.
+    /// to the kernel via the app-owned Rust facade.
     ///
     /// D4/D7: called every 250 ms (≤4 Hz, D8 ceiling). Enqueues a
     /// `Playing` report on each successful position sample; `Paused` /
@@ -125,74 +87,44 @@ impl AppRuntime {
             h.drain_reports()
         };
 
-        let handle_addr = match PODCAST_HANDLE.get() {
-            Some(&addr) => addr,
-            None => return,
-        };
-        let handle = handle_addr as *mut PodcastHandle;
-
         for report in reports {
             let report_json = match serde_json::to_string(&report) {
                 Ok(j) => j,
                 Err(_) => continue,
             };
-            let Ok(c_json) = CString::new(report_json) else {
-                continue;
-            };
-            // SAFETY: handle outlives the process (freed only in AppRuntime::drop).
-            // nmp_app_podcast_audio_report degrades silently on any error (D6).
-            let ret = nmp_app_podcast_audio_report(handle, c_json.as_ptr());
-            if !ret.is_null() {
-                free_owned_c_string(ret);
-            }
+            let _ = self.app.audio_report_for_rust(&report_json);
         }
     }
 
     pub(crate) fn provider_model_catalog(&self) -> Result<Vec<ProviderCatalogModel>> {
-        if self.podcast.is_null() {
-            return Err("podcast handle unavailable".to_owned());
-        }
-        let ptr = nmp_app_podcast_provider_model_catalog(self.podcast);
-        if ptr.is_null() {
-            return Err("provider catalog returned null".to_owned());
-        }
-        let text = take_owned_c_string(ptr, "provider catalog")?;
+        let text = self
+            .app
+            .provider_model_catalog_for_rust()
+            .ok_or_else(|| "provider catalog returned no response".to_owned())?;
         decode_provider_catalog(&text)
     }
 
     pub(crate) fn elevenlabs_voice_catalog(&self) -> Result<Vec<ProviderCatalogVoice>> {
-        if self.podcast.is_null() {
-            return Err("podcast handle unavailable".to_owned());
-        }
-        let ptr = nmp_app_podcast_elevenlabs_voice_catalog(self.podcast);
-        if ptr.is_null() {
-            return Err("voice catalog returned null".to_owned());
-        }
-        let text = take_owned_c_string(ptr, "voice catalog")?;
+        let text = self
+            .app
+            .elevenlabs_voice_catalog_for_rust()
+            .ok_or_else(|| "voice catalog returned no response".to_owned())?;
         decode_elevenlabs_voice_catalog(&text)
     }
 
     pub(crate) fn speech_model_catalog(&self) -> Result<SpeechModelCatalog> {
-        if self.podcast.is_null() {
-            return Err("podcast handle unavailable".to_owned());
-        }
-        let ptr = nmp_app_podcast_speech_model_catalog(self.podcast);
-        if ptr.is_null() {
-            return Err("speech catalog returned null".to_owned());
-        }
-        let text = take_owned_c_string(ptr, "speech catalog")?;
+        let text = self
+            .app
+            .speech_model_catalog_for_rust()
+            .ok_or_else(|| "speech catalog returned no response".to_owned())?;
         decode_speech_model_catalog(&text)
     }
 
     pub(crate) fn local_model_catalog(&self) -> Result<LocalModelCatalog> {
-        if self.podcast.is_null() {
-            return Err("podcast handle unavailable".to_owned());
-        }
-        let ptr = nmp_app_podcast_local_model_catalog(self.podcast);
-        if ptr.is_null() {
-            return Err("local model catalog returned null".to_owned());
-        }
-        let text = take_owned_c_string(ptr, "local model catalog")?;
+        let text = self
+            .app
+            .local_model_catalog_for_rust()
+            .ok_or_else(|| "local model catalog returned no response".to_owned())?;
         decode_local_model_catalog(&text)
     }
 
@@ -201,10 +133,27 @@ impl AppRuntime {
     /// This is the Rust-native path — no JSON round-trip. Called on the
     /// main UI thread when the kernel update callback fires.
     pub fn podcast_update(&self) -> Option<PodcastUpdate> {
-        if self.podcast.is_null() {
-            return None;
-        }
-        Some(unsafe { (*self.podcast).update() })
+        self.app.podcast_update_for_rust()
+    }
+
+    pub(crate) fn classify_input_intent(&self, request_json: String) -> String {
+        self.app.classify_input_intent(request_json)
+    }
+
+    pub(crate) fn dispatch_input_intent(
+        &self,
+        request_json: String,
+        session_id: Option<String>,
+    ) -> String {
+        self.app.dispatch_input_intent(request_json, session_id)
+    }
+}
+
+struct TuiCapabilitySink;
+
+impl PodcastCapabilitySink for TuiCapabilitySink {
+    fn on_capability_request(&self, request_json: String) -> String {
+        dispatch_capability_request(&request_json)
     }
 }
 
@@ -254,7 +203,7 @@ fn handle_http(payload_json: &str) -> String {
 ///
 /// Decodes the [`HttpCommand`], runs the transport off the actor thread (so the
 /// kernel actor is never blocked on the RSS download), and reports the result
-/// back through `nmp_app_podcast_http_report`. Returns an immediate `accepted`
+/// back through the app-owned Rust facade. Returns an immediate `accepted`
 /// ack as the inner `result_json` — `dispatch_capability_request` wraps it in
 /// the [`CapabilityEnvelope`], so this must *not* build an envelope itself.
 fn handle_http_async(payload_json: &str) -> String {
@@ -267,13 +216,10 @@ fn handle_http_async(payload_json: &str) -> String {
         }
     };
 
-    // The capability callback registers a null `ctx`, so the handle is reached
-    // via the published `PODCAST_HANDLE` (stored as `usize` for `Send`).
-    let handle_addr = match PODCAST_HANDLE.get() {
-        Some(addr) => *addr,
+    let app = match PODCAST_APP.get() {
+        Some(app) => Arc::clone(app),
         None => {
-            return serde_json::json!({"ok": false, "error": "podcast handle unavailable"})
-                .to_string()
+            return serde_json::json!({"ok": false, "error": "podcast app unavailable"}).to_string()
         }
     };
 
@@ -287,18 +233,7 @@ fn handle_http_async(payload_json: &str) -> String {
             Ok(json) => json,
             Err(_) => return,
         };
-        let Ok(report_cstr) = CString::new(report_json) else {
-            return;
-        };
-        // SAFETY: the handle outlives the process — it is only freed in
-        // `AppRuntime::drop` at shutdown, after the capability callback is torn
-        // down. `apply_report` touches only the shared store / signal Arcs.
-        let handle = handle_addr as *mut PodcastHandle;
-        let ret = nmp_app_podcast_http_report(handle, report_cstr.as_ptr());
-        // The report FFI always returns NULL (no follow-up), but free defensively.
-        if !ret.is_null() {
-            free_owned_c_string(ret);
-        }
+        app.http_report_for_rust(&report_json);
     });
 
     serde_json::json!({"status": "accepted"}).to_string()
@@ -369,23 +304,6 @@ fn error_envelope(namespace: &str, correlation_id: &str, msg: &str) -> String {
     serde_json::to_string(&envelope).unwrap_or_else(|_| "{}".to_string())
 }
 
-fn take_owned_c_string(ptr: *mut c_char, function_name: &str) -> Result<String> {
-    if ptr.is_null() {
-        return Err(format!("{function_name} returned null"));
-    }
-    let text = unsafe { CStr::from_ptr(ptr) }
-        .to_string_lossy()
-        .into_owned();
-    free_owned_c_string(ptr);
-    Ok(text)
-}
-
-fn free_owned_c_string(ptr: *mut c_char) {
-    if !ptr.is_null() {
-        let _ = unsafe { CString::from_raw(ptr) };
-    }
-}
-
 #[cfg(test)]
 fn parse_dispatch_envelope(value: &Value) -> Result<String> {
     if let Some(error) = value.get("error").and_then(Value::as_str) {
@@ -450,12 +368,9 @@ fn action_error_message(value: &Value) -> String {
 
 impl Drop for AppRuntime {
     fn drop(&mut self) {
-        bridge::unregister(self.app_ptr());
+        bridge::unregister(&self.app);
         self.update_bridge.take();
-        if !self.podcast.is_null() {
-            nmp_app_podcast_unregister(self.podcast);
-            self.podcast = std::ptr::null_mut();
-        }
+        self.app.shutdown();
     }
 }
 

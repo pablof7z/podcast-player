@@ -89,134 +89,138 @@ pub extern "C" fn nmp_app_podcast_audio_report(
         return std::ptr::null_mut();
     }
     ffi_guard("nmp_app_podcast_audio_report", std::ptr::null_mut, || {
-        let report_str = match unsafe { CStr::from_ptr(report_json) }.to_str() {
+        let report_json = match unsafe { CStr::from_ptr(report_json) }.to_str() {
             Ok(s) => s,
             Err(_) => return std::ptr::null_mut(),
         };
-
-        let handle_ref = unsafe { &*handle };
-
-        // Decode once so we can both (a) project into the actor and
-        // (b) decide whether the report carries a position to mirror into
-        // the store. Dispatching a second time would re-pay the JSON cost
-        // and risk the actor and the store seeing different decodes.
-        let report: AudioReport = match serde_json::from_str(report_str) {
-            Ok(r) => r,
-            Err(_) => return std::ptr::null_mut(),
+        let response_json = match audio_report_response_json(unsafe { &*handle }, report_json) {
+            Some(response_json) => response_json,
+            None => return std::ptr::null_mut(),
         };
+        match CString::new(response_json) {
+            Ok(c) => c.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        }
+    })
+}
 
-        // `Playing` (≤4 Hz position) and `BufferingProgress` ticks carry only
-        // live player state — the fresh `now_playing` rides the response inline,
-        // so they must NOT bump the global `rev`. Bumping it on every tick
-        // invalidated the snapshot cache and forced a full-library rebuild +
-        // main-thread JSON decode of the whole library ~1 Hz throughout playback
-        // (the residual CPU peg after the download path was split the same way).
-        // Every other report is structural (play/pause/stop, track end,
-        // sleep-timer) and bumps `rev` so the full library projection re-runs.
-        let durable_changed = !matches!(
-            &report,
-            AudioReport::Playing { .. } | AudioReport::BufferingProgress { .. }
+pub(crate) fn audio_report_response_json(
+    handle: &PodcastHandle,
+    report_json: &str,
+) -> Option<String> {
+    // Decode once so we can both (a) project into the actor and
+    // (b) decide whether the report carries a position to mirror into
+    // the store. Dispatching a second time would re-pay the JSON cost
+    // and risk the actor and the store seeing different decodes.
+    let report: AudioReport = match serde_json::from_str(report_json) {
+        Ok(r) => r,
+        Err(_) => return None,
+    };
+
+    // `Playing` (≤4 Hz position) and `BufferingProgress` ticks carry only
+    // live player state — the fresh `now_playing` rides the response inline,
+    // so they must NOT bump the global `rev`. Bumping it on every tick
+    // invalidated the snapshot cache and forced a full-library rebuild +
+    // main-thread JSON decode of the whole library ~1 Hz throughout playback
+    // (the residual CPU peg after the download path was split the same way).
+    // Every other report is structural (play/pause/stop, track end,
+    // sleep-timer) and bumps `rev` so the full library projection re-runs.
+    let durable_changed = !matches!(
+        &report,
+        AudioReport::Playing { .. } | AudioReport::BufferingProgress { .. }
+    );
+
+    // -- 1. Project the report into the actor; capture fresh now_playing. --
+    // Step 14: player_actor sourced from state.playback.player via .share().
+    // Lock topology UNCHANGED — same Arc<Mutex<PlayerActor>>, sourced differently.
+    let (
+        mut follow_up_json,
+        mut now_playing,
+        episode_id_for_writeback,
+        suppress_auto_advance,
+        segment_end_reached,
+    ) = {
+        let mut actor = match handle.state.playback.player.lock() {
+            Ok(a) => a,
+            Err(_) => return None,
+        };
+        let follow_up = actor.handle_audio_report(report.clone(), SystemTime::now());
+        let segment_end_reached = actor.take_segment_end_reached();
+        let suppress_auto_advance = matches!(
+            (&report, &follow_up),
+            (AudioReport::ItemEnd { .. }, Some(AudioCommand::Pause))
         );
-
-        // -- 1. Project the report into the actor; capture fresh now_playing. --
-        // Step 14: player_actor sourced from state.playback.player via .share().
-        // Lock topology UNCHANGED — same Arc<Mutex<PlayerActor>>, sourced differently.
-        let (
-            mut follow_up_json,
-            mut now_playing,
-            episode_id_for_writeback,
+        let follow_up_json = follow_up
+            .as_ref()
+            .and_then(|cmd| serde_json::to_string(cmd).ok());
+        let state = actor.state();
+        // The episode id stays in actor state across `Playing` / `Paused`
+        // ticks (it's only cleared on `Stopped`); read it here so the
+        // writeback step doesn't need to crack the report again.
+        let episode_id = state.episode_id.clone();
+        // Mirror the full snapshot's `now_playing` projection: present only
+        // when an episode is loaded (`build_podcast_update`).
+        let now_playing = if state.episode_id.is_some() {
+            Some(state.clone())
+        } else {
+            None
+        };
+        // Release before rev bump and store lock.
+        drop(actor);
+        // A durable audio report (mark-played-at-end, sleep-timer stop)
+        // changes the episode's played/position state — both live in the
+        // `podcast.library` payload — so route the delta there.
+        handle.bump_snapshot_rev_domain_if(
+            crate::state::Domain::Library,
+            durable_changed || segment_end_reached,
+        );
+        (
+            follow_up_json,
+            now_playing,
+            episode_id,
             suppress_auto_advance,
             segment_end_reached,
-        ) = {
-            let mut actor = match handle_ref.state.playback.player.lock() {
-                Ok(a) => a,
-                Err(_) => return std::ptr::null_mut(),
-            };
-            let follow_up = actor.handle_audio_report(report.clone(), SystemTime::now());
-            let segment_end_reached = actor.take_segment_end_reached();
-            let suppress_auto_advance = matches!(
-                (&report, &follow_up),
-                (AudioReport::ItemEnd { .. }, Some(AudioCommand::Pause))
-            );
-            let follow_up_json = follow_up
-                .as_ref()
-                .and_then(|cmd| serde_json::to_string(cmd).ok());
+        )
+    };
+    let durable_changed = durable_changed || segment_end_reached;
+
+    // -- 2. Mirror the playhead into the store. ----------------------------
+    let is_item_end = matches!(&report, AudioReport::ItemEnd { .. });
+    if let Some(ref episode_id) = episode_id_for_writeback {
+        if let Ok(mut store) = handle.state.library.store.lock() {
+            apply_writeback(&mut store, &report, episode_id);
+        }
+    }
+
+    // -- 3. M1.3: Auto-advance on natural end. -----------------------------
+    // When `ItemEnd` fires and `auto_play_next` is armed, pop the next
+    // queued episode and dispatch Load + Play directly — the actor does
+    // not do this internally because it has no access to the store (URLs)
+    // or the capability dispatcher. (`ItemEnd` is durable, so `rev` already
+    // bumped above; `maybe_auto_advance` bumps again after staging the load.)
+    let should_auto_advance = (is_item_end && !suppress_auto_advance) || segment_end_reached;
+    if should_auto_advance && maybe_auto_advance(handle) && segment_end_reached {
+        // Segment-boundary `Playing` reports initially produce Stop so the
+        // native executor can halt when there is no next item. If Rust did
+        // advance the queue, suppress that Stop response or it can race and
+        // stop the newly loaded item after Load+Play dispatch.
+        follow_up_json = None;
+        if let Ok(actor) = handle.state.playback.player.lock() {
             let state = actor.state();
-            // The episode id stays in actor state across `Playing` / `Paused`
-            // ticks (it's only cleared on `Stopped`); read it here so the
-            // writeback step doesn't need to crack the report again.
-            let episode_id = state.episode_id.clone();
-            // Mirror the full snapshot's `now_playing` projection: present only
-            // when an episode is loaded (`build_podcast_update`).
-            let now_playing = if state.episode_id.is_some() {
+            now_playing = if state.episode_id.is_some() {
                 Some(state.clone())
             } else {
                 None
             };
-            // Release before rev bump and store lock.
-            drop(actor);
-            // A durable audio report (mark-played-at-end, sleep-timer stop)
-            // changes the episode's played/position state — both live in the
-            // `podcast.library` payload — so route the delta there.
-            handle_ref.bump_snapshot_rev_domain_if(
-                crate::state::Domain::Library,
-                durable_changed || segment_end_reached,
-            );
-            (
-                follow_up_json,
-                now_playing,
-                episode_id,
-                suppress_auto_advance,
-                segment_end_reached,
-            )
-        };
-        let durable_changed = durable_changed || segment_end_reached;
-
-        // -- 2. Mirror the playhead into the store. ----------------------------
-        let is_item_end = matches!(&report, AudioReport::ItemEnd { .. });
-        if let Some(ref episode_id) = episode_id_for_writeback {
-            if let Ok(mut store) = handle_ref.state.library.store.lock() {
-                apply_writeback(&mut store, &report, episode_id);
-            }
         }
+    }
 
-        // -- 3. M1.3: Auto-advance on natural end. -----------------------------
-        // When `ItemEnd` fires and `auto_play_next` is armed, pop the next
-        // queued episode and dispatch Load + Play directly — the actor does
-        // not do this internally because it has no access to the store (URLs)
-        // or the capability dispatcher. (`ItemEnd` is durable, so `rev` already
-        // bumped above; `maybe_auto_advance` bumps again after staging the load.)
-        let should_auto_advance =
-            (is_item_end && !suppress_auto_advance) || segment_end_reached;
-        if should_auto_advance && maybe_auto_advance(handle_ref) && segment_end_reached {
-            // Segment-boundary `Playing` reports initially produce Stop so the
-            // native executor can halt when there is no next item. If Rust did
-            // advance the queue, suppress that Stop response or it can race and
-            // stop the newly loaded item after Load+Play dispatch.
-            follow_up_json = None;
-            if let Ok(actor) = handle_ref.state.playback.player.lock() {
-                let state = actor.state();
-                now_playing = if state.episode_id.is_some() {
-                    Some(state.clone())
-                } else {
-                    None
-                };
-            }
-        }
-
-        let response = AudioReportResponse {
-            follow_up: follow_up_json,
-            now_playing,
-            durable_changed,
-        };
-        match serde_json::to_string(&response) {
-            Ok(json) => match CString::new(json) {
-                Ok(c) => c.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            },
-            Err(_) => std::ptr::null_mut(),
-        }
-    })
+    let response = AudioReportResponse {
+        follow_up: follow_up_json,
+        now_playing,
+        durable_changed,
+    };
+    serde_json::to_string(&response).ok()
 }
 
 /// Mirror the playhead from `report` into `Episode.position_secs` for

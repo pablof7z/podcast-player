@@ -132,10 +132,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> TranscriptIngestPlan? in
-            guard let result = nmp_app_podcast_transcript_ingest_plan(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .transcriptIngestPlan, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(TranscriptIngestPlan.self, from: data)
@@ -168,10 +168,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return [] }
         return jsonStr.withCString { ptr -> [UUID] in
-            guard let result = nmp_app_podcast_transcript_auto_ingest_candidates(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .transcriptAutoIngestCandidates, request: ptr) else {
                 return []
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8),
                   let decoded = try? KernelDecoding.makeDecoder().decode(TranscriptAutoIngestCandidates.self, from: data),
@@ -190,10 +190,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> TranscriptToolResult? in
-            guard let result = nmp_app_podcast_transcript_tool_result(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .transcriptToolResult, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(TranscriptToolResult.self, from: data)
@@ -214,10 +214,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> EpisodeMutationToolResult? in
-            guard let result = nmp_app_podcast_episode_mutation_tool_result(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .episodeMutationToolResult, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(EpisodeMutationToolResult.self, from: data)
@@ -239,10 +239,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> PlaybackToolResult? in
-            guard let result = nmp_app_podcast_playback_tool_result(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .playbackToolResult, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(PlaybackToolResult.self, from: data)
@@ -251,10 +251,10 @@ extension KernelModel {
 
     func nowPlayingToolResult() -> NowPlayingToolResult? {
         guard let handle = kernel.podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_now_playing_tool_result(handle) else {
+        guard let result = podcastAppCString(handle, endpoint: .nowPlayingToolResult) else {
             return nil
         }
-        defer { nmp_free_string(result) }
+        defer { freePodcastCString(result) }
         let response = String(cString: result)
         guard let data = response.data(using: .utf8) else { return nil }
         return try? KernelDecoding.makeDecoder().decode(NowPlayingToolResult.self, from: data)
@@ -270,10 +270,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> ExternalPlayPlan? in
-            guard let result = nmp_app_podcast_external_play_plan(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .externalPlayPlan, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(ExternalPlayPlan.self, from: data)
@@ -292,10 +292,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> AgentAskResponse? in
-            guard let result = nmp_app_podcast_agent_ask_enqueue(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentAskEnqueue, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(AgentAskResponse.self, from: data)
@@ -315,10 +315,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr -> AgentAskResponse? in
-            guard let result = nmp_app_podcast_agent_ask_settle(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentAskSettle, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(AgentAskResponse.self, from: data)
@@ -335,10 +335,10 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return nil }
         let response = jsonStr.withCString { ptr -> RememberTextMemoryResponse? in
-            guard let result = nmp_app_podcast_memory_remember_text(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .memoryRememberText, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let response = String(cString: result)
             guard let data = response.data(using: .utf8) else { return nil }
             return try? KernelDecoding.makeDecoder().decode(RememberTextMemoryResponse.self, from: data)
@@ -386,8 +386,8 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return }
         jsonStr.withCString { ptr in
-            let result = nmp_app_podcast_transcript_report(handle, ptr)
-            if let result { nmp_free_string(result) }
+            let result = podcastAppCString(handle, endpoint: .transcriptReport, request: ptr)
+            if let result { freePodcastCString(result) }
         }
     }
 
@@ -415,8 +415,8 @@ extension KernelModel {
               let jsonStr = String(data: json, encoding: .utf8)
         else { return }
         jsonStr.withCString { ptr in
-            let result = nmp_app_podcast_record_episode_event(handle, ptr)
-            if let result { nmp_free_string(result) }
+            let result = podcastAppCString(handle, endpoint: .recordEpisodeEvent, request: ptr)
+            if let result { freePodcastCString(result) }
         }
     }
 
@@ -429,8 +429,8 @@ extension KernelModel {
     func fetchEpisodeEvents(episodeID: UUID) -> [EpisodeAuditEvent] {
         guard let handle = kernel.podcastHandle else { return [] }
         return episodeID.uuidString.withCString { ptr -> [EpisodeAuditEvent] in
-            guard let result = nmp_app_podcast_episode_events(handle, ptr) else { return [] }
-            defer { nmp_free_string(result) }
+            guard let result = podcastAppCString(handle, endpoint: .episodeEvents, request: ptr) else { return [] }
+            defer { freePodcastCString(result) }
             guard let data = String(cString: result).data(using: .utf8) else { return [] }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601

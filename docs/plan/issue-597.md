@@ -5,8 +5,11 @@ pablof7z/nostr-multi-platform#2690 cuts it).
 
 **Priority:** P0 — blocks every other NMP-coupled change in this repo.
 
-**Status:** In progress. Tactical tracking, scope, and acceptance criteria for
-every slice live in GitHub Issues, not here — this file only orients readers
+**Status:** In progress. A6/A7/A8 have moved the native app-facing surface to
+explicit generated UniFFI methods across iOS, Android, TUI, and headless; the
+old Rust C-ABI endpoint modules remain only as an internal implementation tail
+behind the app-owned facade. Tactical tracking, scope, and acceptance criteria
+for every slice live in GitHub Issues, not here — this file only orients readers
 who land on `docs/plan.md` and need the target-state summary and pointers.
 Canonical source: pablof7z/podcast-player#597 (epic) and its child issues
 #680–#688.

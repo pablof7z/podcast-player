@@ -317,10 +317,10 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             throw DirectoryError.parseError("Could not encode subscribe_podcast request.")
         }
         return try json.withCString { ptr -> RustPodcastSubscribeSnapshot in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
                 throw DirectoryError.unavailable("subscribe_podcast policy")
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustPodcastSubscribeSnapshot.self, from: data)
@@ -433,10 +433,10 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
             throw DirectoryError.parseError("Could not encode delete_podcast request.")
         }
         return try json.withCString { ptr -> PodcastDeleteResult in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
                 throw DirectoryError.unavailable("delete_podcast policy")
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustPodcastDeleteSnapshot.self, from: data)

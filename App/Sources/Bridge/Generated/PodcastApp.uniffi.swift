@@ -527,7 +527,81 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
  */
 public protocol PodcastAppProtocol: AnyObject, Sendable {
 
+    func agentActionTool(requestJson: String)  -> String?
+
+    func agentAskEnqueue(requestJson: String)  -> String?
+
+    func agentAskSettle(requestJson: String)  -> String?
+
+    func agentCategoryList(requestJson: String)  -> String?
+
+    func agentChatTitleParse(requestJson: String)  -> String?
+
+    func agentChatTitlePrompt(requestJson: String)  -> String?
+
+    func agentConversationHistory(requestJson: String)  -> String?
+
+    func agentDirectorySearchPlan(requestJson: String)  -> String?
+
+    func agentDirectorySearchResults(requestJson: String)  -> String?
+
+    func agentEmptyState()  -> String?
+
+    func agentEpisodeListError(requestJson: String)  -> String?
+
+    func agentEpisodeListPlan(requestJson: String)  -> String?
+
+    func agentEpisodeListResults(requestJson: String)  -> String?
+
+    func agentGeneratedPodcastDescriptor()  -> String?
+
+    func agentInventory(requestJson: String)  -> String?
+
+    func agentInventoryList(requestJson: String)  -> String?
+
+    func agentNostrPeerPrompt(requestJson: String)  -> String?
+
+    func agentOwnedPodcastTool(requestJson: String)  -> String?
+
+    func agentSearchTool(requestJson: String)  -> String?
+
+    func agentSystemPrompt(requestJson: String)  -> String?
+
+    func agentTtsDefaultVoice()  -> String?
+
+    func agentTtsEpisodePlan(requestJson: String)  -> String?
+
+    func agentTtsToolPlan(requestJson: String)  -> String?
+
+    func agentTtsToolResult(requestJson: String)  -> String?
+
+    func agentVoiceConfigurePlan(requestJson: String)  -> String?
+
+    func agentVoiceConfigureResult(requestJson: String)  -> String?
+
+    func agentVoiceList(requestJson: String)  -> String?
+
+    func agentYoutubeSearchPlan(requestJson: String)  -> String?
+
+    func agentYoutubeSearchResults(requestJson: String)  -> String?
+
+    func assemblyaiTranscribe(requestJson: String)  -> String?
+
+    func audioReport(requestJson: String)  -> String?
+
+    func byokExchange(requestJson: String)  -> String?
+
     func cancelBunkerHandshake()
+
+    func carplayDownloads(requestJson: String)  -> String?
+
+    func carplayListenNow(requestJson: String)  -> String?
+
+    func carplayShowEpisodes(requestJson: String)  -> String?
+
+    func carplayShows(requestJson: String)  -> String?
+
+    func chatComplete(requestJson: String)  -> String?
 
     func classifyInputIntent(requestJson: String)  -> String
 
@@ -558,15 +632,105 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
 
     func dispatchPodcastAction(namespace: String, actionJson: String)  -> String?
 
+    func downloadReport(requestJson: String)  -> String?
+
+    func elevenlabsScribeTranscribe(requestJson: String)  -> String?
+
+    func elevenlabsTtsSynthesize(requestJson: String)  -> String?
+
+    func elevenlabsVoiceCatalog()  -> String?
+
+    func episodeEvents(requestJson: String)  -> String?
+
+    func episodeMutationToolResult(requestJson: String)  -> String?
+
+    func externalPlayPlan(requestJson: String)  -> String?
+
+    func generateImage(requestJson: String)  -> String?
+
+    func homeCategoryCards(requestJson: String)  -> String?
+
+    func homeContinueListening(requestJson: String)  -> String?
+
+    func homeSubscriptionList(requestJson: String)  -> String?
+
+    func homeTriageRollup(requestJson: String)  -> String?
+
+    func httpReport(requestJson: String)  -> String?
+
     func isAlive()  -> Bool
+
+    func itunesDirectorySearch(requestJson: String)  -> String?
+
+    func itunesLookupFeedUrl(requestJson: String)  -> String?
+
+    func itunesTopPodcasts(requestJson: String)  -> String?
+
+    func knowledgeChunk(requestJson: String)  -> String?
+
+    func knowledgeHomeRelated(requestJson: String)  -> String?
+
+    func knowledgeQuery(requestJson: String)  -> String?
+
+    func knowledgeResolveScope(requestJson: String)  -> String?
+
+    func knowledgeSimilarEpisode(requestJson: String)  -> String?
+
+    func libraryAllEpisodes(requestJson: String)  -> String?
+
+    func libraryAllPodcasts(requestJson: String)  -> String?
+
+    func libraryCategories(requestJson: String)  -> String?
+
+    func libraryCategorizationParse(requestJson: String)  -> String?
+
+    func libraryCategorizationPrompt()  -> String?
+
+    func libraryCategoryChange(requestJson: String)  -> String?
+
+    func libraryDownloadRows()  -> String?
+
+    func libraryEpisodeForAudioUrl(requestJson: String)  -> String?
+
+    func libraryEpisodeLookup(requestJson: String)  -> String?
+
+    func libraryFollowedPodcasts()  -> String?
+
+    func libraryOwnedPodcasts()  -> String?
+
+    func libraryPodcastForOwnerPubkey(requestJson: String)  -> String?
+
+    func libraryPodcastStats(requestJson: String)  -> String?
+
+    func libraryShowEpisodes(requestJson: String)  -> String?
+
+    func libraryStarredEpisodes()  -> String?
+
+    func librarySubscriptionStatus(requestJson: String)  -> String?
+
+    func librarySummary()  -> String?
 
     func lifecycleBackground()
 
     func lifecycleForeground()
 
+    func localModelCatalog()  -> String?
+
+    func localSearch(requestJson: String)  -> String?
+
+    func memoryRememberText(requestJson: String)  -> String?
+
+    func networkReport(requestJson: String)  -> String?
+
     func nostrconnectUri(callbackScheme: String?)  -> String?
 
-    func podcastBridgeCall(endpoint: String, requestJson: String?)  -> String?
+    func nowPlayingToolResult()  -> String?
+
+    func openrouterWhisperTranscribe(requestJson: String)  -> String?
+
+    func perplexitySearch(requestJson: String)  -> String?
+
+    func playbackToolResult(requestJson: String)  -> String?
 
     /**
      * Transitional escape hatch for the still-C-ABI app-domain tail.
@@ -579,9 +743,19 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
 
     func podcastSnapshotRev()  -> UInt64
 
+    func providerComplete(requestJson: String)  -> String?
+
+    func providerEmbed(requestJson: String)  -> String?
+
+    func providerModelCatalog()  -> String?
+
+    func recordEpisodeEvent(requestJson: String)  -> String?
+
     func releaseRef(namespace: PodcastRefNamespace, key: String, consumerId: String)
 
     func removeAccount(identityId: String)
+
+    func rerank(requestJson: String)  -> String?
 
     func reset()
 
@@ -590,6 +764,8 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
     func setAgentAskSink(sink: PodcastAgentAskSink?)
 
     func setCapabilityCallback(sink: PodcastCapabilitySink?)
+
+    func setLocalLlmSink(sink: PodcastLocalLlmSink?)
 
     func setPodcastDataDir(path: String)
 
@@ -609,9 +785,31 @@ public protocol PodcastAppProtocol: AnyObject, Sendable {
 
     func signinNsec(secret: String, makeActive: Bool)
 
+    func speechModelCatalog()  -> String?
+
     func start(visibleLimit: UInt32, emitHz: UInt32)
 
     func stop()
+
+    func storageBreakdown(requestJson: String)  -> String?
+
+    func threadingActiveTopics(requestJson: String)  -> String?
+
+    func threadingProjection()  -> String?
+
+    func transcriptAutoIngestCandidates(requestJson: String)  -> String?
+
+    func transcriptIngestPlan(requestJson: String)  -> String?
+
+    func transcriptReport(requestJson: String)  -> String?
+
+    func transcriptToolResult(requestJson: String)  -> String?
+
+    func validateElevenlabsKey()  -> String?
+
+    func validateOpenrouterKey()  -> String?
+
+    func voiceReport(requestJson: String)  -> String?
 
 }
 /**
@@ -677,10 +875,303 @@ public convenience init() {
 
 
 
+open func agentActionTool(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_action_tool(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentAskEnqueue(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_enqueue(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentAskSettle(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_settle(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentCategoryList(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_category_list(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentChatTitleParse(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_parse(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentChatTitlePrompt(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_prompt(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentConversationHistory(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_conversation_history(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentDirectorySearchPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentDirectorySearchResults(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_results(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentEmptyState() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_empty_state(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func agentEpisodeListError(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_error(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentEpisodeListPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentEpisodeListResults(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_results(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentGeneratedPodcastDescriptor() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_generated_podcast_descriptor(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func agentInventory(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentInventoryList(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory_list(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentNostrPeerPrompt(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_nostr_peer_prompt(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentOwnedPodcastTool(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_owned_podcast_tool(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentSearchTool(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_search_tool(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentSystemPrompt(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_system_prompt(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentTtsDefaultVoice() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_default_voice(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func agentTtsEpisodePlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_episode_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentTtsToolPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentTtsToolResult(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_result(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentVoiceConfigurePlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentVoiceConfigureResult(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_result(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentVoiceList(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_list(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentYoutubeSearchPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func agentYoutubeSearchResults(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_results(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func assemblyaiTranscribe(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_assemblyai_transcribe(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func audioReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_audio_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func byokExchange(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_byok_exchange(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
 open func cancelBunkerHandshake()  {try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_cancel_bunker_handshake(self.uniffiClonePointer(),$0
     )
 }
+}
+
+open func carplayDownloads(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_downloads(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func carplayListenNow(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_listen_now(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func carplayShowEpisodes(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_show_episodes(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func carplayShows(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_shows(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func chatComplete(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_chat_complete(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
 }
 
 open func classifyInputIntent(requestJson: String) -> String  {
@@ -779,9 +1270,306 @@ open func dispatchPodcastAction(namespace: String, actionJson: String) -> String
 })
 }
 
+open func downloadReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_download_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func elevenlabsScribeTranscribe(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_scribe_transcribe(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func elevenlabsTtsSynthesize(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_tts_synthesize(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func elevenlabsVoiceCatalog() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_voice_catalog(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func episodeEvents(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_episode_events(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func episodeMutationToolResult(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_episode_mutation_tool_result(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func externalPlayPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_external_play_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func generateImage(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_generate_image(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func homeCategoryCards(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_home_category_cards(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func homeContinueListening(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_home_continue_listening(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func homeSubscriptionList(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_home_subscription_list(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func homeTriageRollup(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_home_triage_rollup(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func httpReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_http_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
 open func isAlive() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_is_alive(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func itunesDirectorySearch(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_directory_search(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func itunesLookupFeedUrl(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_lookup_feed_url(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func itunesTopPodcasts(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_top_podcasts(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func knowledgeChunk(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_chunk(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func knowledgeHomeRelated(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_home_related(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func knowledgeQuery(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_query(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func knowledgeResolveScope(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_resolve_scope(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func knowledgeSimilarEpisode(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_similar_episode(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryAllEpisodes(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_episodes(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryAllPodcasts(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_podcasts(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryCategories(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_categories(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryCategorizationParse(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_parse(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryCategorizationPrompt() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_prompt(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func libraryCategoryChange(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_category_change(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryDownloadRows() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_download_rows(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func libraryEpisodeForAudioUrl(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_for_audio_url(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryEpisodeLookup(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_lookup(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryFollowedPodcasts() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_followed_podcasts(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func libraryOwnedPodcasts() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_owned_podcasts(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func libraryPodcastForOwnerPubkey(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_for_owner_pubkey(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryPodcastStats(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_stats(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryShowEpisodes(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_show_episodes(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func libraryStarredEpisodes() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_starred_episodes(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func librarySubscriptionStatus(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_subscription_status(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func librarySummary() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_library_summary(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -798,6 +1586,37 @@ open func lifecycleForeground()  {try! rustCall() {
 }
 }
 
+open func localModelCatalog() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_local_model_catalog(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func localSearch(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_local_search(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func memoryRememberText(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_memory_remember_text(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func networkReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_network_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
 open func nostrconnectUri(callbackScheme: String?) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_nostrconnect_uri(self.uniffiClonePointer(),
@@ -806,11 +1625,33 @@ open func nostrconnectUri(callbackScheme: String?) -> String?  {
 })
 }
 
-open func podcastBridgeCall(endpoint: String, requestJson: String?) -> String?  {
+open func nowPlayingToolResult() -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_bridge_call(self.uniffiClonePointer(),
-        FfiConverterString.lower(endpoint),
-        FfiConverterOptionString.lower(requestJson),$0
+    uniffi_nmp_app_podcast_fn_method_podcastapp_now_playing_tool_result(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func openrouterWhisperTranscribe(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_openrouter_whisper_transcribe(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func perplexitySearch(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_perplexity_search(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func playbackToolResult(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_playback_tool_result(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
     )
 })
 }
@@ -841,6 +1682,37 @@ open func podcastSnapshotRev() -> UInt64  {
 })
 }
 
+open func providerComplete(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_provider_complete(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func providerEmbed(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_provider_embed(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func providerModelCatalog() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_provider_model_catalog(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func recordEpisodeEvent(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_record_episode_event(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
 open func releaseRef(namespace: PodcastRefNamespace, key: String, consumerId: String)  {try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_release_ref(self.uniffiClonePointer(),
         FfiConverterTypePodcastRefNamespace_lower(namespace),
@@ -855,6 +1727,14 @@ open func removeAccount(identityId: String)  {try! rustCall() {
         FfiConverterString.lower(identityId),$0
     )
 }
+}
+
+open func rerank(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_rerank(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
 }
 
 open func reset()  {try! rustCall() {
@@ -884,6 +1764,13 @@ open func setAgentAskSink(sink: PodcastAgentAskSink?)  {try! rustCall() {
 open func setCapabilityCallback(sink: PodcastCapabilitySink?)  {try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_set_capability_callback(self.uniffiClonePointer(),
         FfiConverterOptionCallbackInterfacePodcastCapabilitySink.lower(sink),$0
+    )
+}
+}
+
+open func setLocalLlmSink(sink: PodcastLocalLlmSink?)  {try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_set_local_llm_sink(self.uniffiClonePointer(),
+        FfiConverterOptionCallbackInterfacePodcastLocalLlmSink.lower(sink),$0
     )
 }
 }
@@ -953,6 +1840,13 @@ open func signinNsec(secret: String, makeActive: Bool)  {try! rustCall() {
 }
 }
 
+open func speechModelCatalog() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_speech_model_catalog(self.uniffiClonePointer(),$0
+    )
+})
+}
+
 open func start(visibleLimit: UInt32, emitHz: UInt32)  {try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_start(self.uniffiClonePointer(),
         FfiConverterUInt32.lower(visibleLimit),
@@ -965,6 +1859,83 @@ open func stop()  {try! rustCall() {
     uniffi_nmp_app_podcast_fn_method_podcastapp_stop(self.uniffiClonePointer(),$0
     )
 }
+}
+
+open func storageBreakdown(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_storage_breakdown(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func threadingActiveTopics(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_threading_active_topics(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func threadingProjection() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_threading_projection(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func transcriptAutoIngestCandidates(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_auto_ingest_candidates(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func transcriptIngestPlan(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_ingest_plan(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func transcriptReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func transcriptToolResult(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_tool_result(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+
+open func validateElevenlabsKey() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_validate_elevenlabs_key(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func validateOpenrouterKey() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_validate_openrouter_key(self.uniffiClonePointer(),$0
+    )
+})
+}
+
+open func voiceReport(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_method_podcastapp_voice_report(self.uniffiClonePointer(),
+        FfiConverterString.lower(requestJson),$0
+    )
+})
 }
 
 
@@ -1691,6 +2662,122 @@ public func FfiConverterCallbackInterfacePodcastCapabilitySink_lower(_ v: Podcas
 
 
 
+public protocol PodcastLocalLlmSink: AnyObject, Sendable {
+
+    func infer(promptJson: String)  -> String
+
+}
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfacePodcastLocalLlmSink {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    //
+    // This creates 1-element array, since this seems to be the only way to construct a const
+    // pointer that we can pass to the Rust code.
+    static let vtable: [UniffiVTableCallbackInterfacePodcastLocalLlmSink] = [UniffiVTableCallbackInterfacePodcastLocalLlmSink(
+        infer: { (
+            uniffiHandle: UInt64,
+            promptJson: RustBuffer,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> String in
+                guard let uniffiObj = try? FfiConverterCallbackInterfacePodcastLocalLlmSink.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.infer(
+                     promptJson: try FfiConverterString.lift(promptJson)
+                )
+            }
+
+
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterString.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterCallbackInterfacePodcastLocalLlmSink.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface PodcastLocalLlmSink: handle missing in uniffiFree")
+            }
+        }
+    )]
+}
+
+private func uniffiCallbackInitPodcastLocalLlmSink() {
+    uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastlocalllmsink(UniffiCallbackInterfacePodcastLocalLlmSink.vtable)
+}
+
+// FfiConverter protocol for callback interfaces
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterCallbackInterfacePodcastLocalLlmSink {
+    fileprivate static let handleMap = UniffiHandleMap<PodcastLocalLlmSink>()
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+extension FfiConverterCallbackInterfacePodcastLocalLlmSink : FfiConverter {
+    typealias SwiftType = PodcastLocalLlmSink
+    typealias FfiType = UInt64
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lift(_ handle: UInt64) throws -> SwiftType {
+        try handleMap.get(handle: handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lower(_ v: SwiftType) -> UInt64 {
+        return handleMap.insert(obj: v)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(v))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterCallbackInterfacePodcastLocalLlmSink_lift(_ handle: UInt64) throws -> PodcastLocalLlmSink {
+    return try FfiConverterCallbackInterfacePodcastLocalLlmSink.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterCallbackInterfacePodcastLocalLlmSink_lower(_ v: PodcastLocalLlmSink) -> UInt64 {
+    return FfiConverterCallbackInterfacePodcastLocalLlmSink.lower(v)
+}
+
+
+
+
 public protocol PodcastUpdateSink: AnyObject, Sendable {
 
     func onUpdate(frame: Data)
@@ -1879,6 +2966,30 @@ fileprivate struct FfiConverterOptionCallbackInterfacePodcastCapabilitySink: Ffi
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionCallbackInterfacePodcastLocalLlmSink: FfiConverterRustBuffer {
+    typealias SwiftType = PodcastLocalLlmSink?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterCallbackInterfacePodcastLocalLlmSink.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterCallbackInterfacePodcastLocalLlmSink.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionCallbackInterfacePodcastUpdateSink: FfiConverterRustBuffer {
     typealias SwiftType = PodcastUpdateSink?
 
@@ -1899,10 +3010,37 @@ fileprivate struct FfiConverterOptionCallbackInterfacePodcastUpdateSink: FfiConv
         }
     }
 }
-public func podcastBridgeGlobalCall(endpoint: String, requestJson: String) -> String?  {
+public func agentActionPolicy(requestJson: String) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
-    uniffi_nmp_app_podcast_fn_func_podcast_bridge_global_call(
-        FfiConverterString.lower(endpoint),
+    uniffi_nmp_app_podcast_fn_func_agent_action_policy(
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+public func byokAuthorization(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_func_byok_authorization(
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+public func normalizeFeedUrl(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_func_normalize_feed_url(
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+public func npubFromHex(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_func_npub_from_hex(
+        FfiConverterString.lower(requestJson),$0
+    )
+})
+}
+public func parsePubkey(requestJson: String) -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_nmp_app_podcast_fn_func_parse_pubkey(
         FfiConverterString.lower(requestJson),$0
     )
 })
@@ -1923,10 +3061,133 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_nmp_app_podcast_checksum_func_podcast_bridge_global_call() != 52926) {
+    if (uniffi_nmp_app_podcast_checksum_func_agent_action_policy() != 24010) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_func_byok_authorization() != 34071) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_func_normalize_feed_url() != 33886) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_func_npub_from_hex() != 15897) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_func_parse_pubkey() != 5752) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_action_tool() != 7972) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_enqueue() != 9116) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_settle() != 1243) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_category_list() != 617) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_parse() != 36153) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_prompt() != 27040) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_conversation_history() != 34123) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_plan() != 61074) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_results() != 526) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_empty_state() != 56853) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_error() != 52265) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_plan() != 25834) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_results() != 28165) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_generated_podcast_descriptor() != 30110) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory() != 51816) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory_list() != 693) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_nostr_peer_prompt() != 31166) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_owned_podcast_tool() != 49101) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_search_tool() != 54638) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_system_prompt() != 46410) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_default_voice() != 43307) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_episode_plan() != 42208) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_plan() != 27737) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_result() != 12739) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_plan() != 22123) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_result() != 30268) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_list() != 10059) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_plan() != 2017) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_results() != 51150) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_assemblyai_transcribe() != 43533) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_audio_report() != 3971) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_byok_exchange() != 16382) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_cancel_bunker_handshake() != 641) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_downloads() != 2701) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_listen_now() != 23821) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_show_episodes() != 3780) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_shows() != 60330) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_chat_complete() != 51148) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_classify_input_intent() != 22761) {
@@ -1962,7 +3223,121 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action() != 5545) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report() != 36126) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_scribe_transcribe() != 42648) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_tts_synthesize() != 3324) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_voice_catalog() != 8420) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_events() != 5370) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_mutation_tool_result() != 28064) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_external_play_plan() != 16542) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_generate_image() != 46294) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_home_category_cards() != 51130) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_home_continue_listening() != 48018) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_home_subscription_list() != 24561) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_home_triage_rollup() != 21575) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_http_report() != 13181) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_is_alive() != 46134) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_directory_search() != 39658) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_lookup_feed_url() != 14235) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_top_podcasts() != 33671) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_chunk() != 32943) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_home_related() != 58504) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_query() != 19218) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_resolve_scope() != 24635) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_similar_episode() != 23379) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_episodes() != 6070) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_podcasts() != 4770) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categories() != 2781) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_parse() != 49068) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_prompt() != 11561) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_category_change() != 42097) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_download_rows() != 29868) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_for_audio_url() != 47169) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_lookup() != 59682) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_followed_podcasts() != 36265) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_owned_podcasts() != 8035) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_for_owner_pubkey() != 63925) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_stats() != 6413) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_show_episodes() != 51400) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_starred_episodes() != 40720) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_subscription_status() != 2184) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_library_summary() != 51167) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_background() != 59774) {
@@ -1971,10 +3346,31 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_foreground() != 44456) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_local_model_catalog() != 16124) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_local_search() != 25692) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_memory_remember_text() != 17074) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_network_report() != 23777) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_nostrconnect_uri() != 64833) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_bridge_call() != 54916) {
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_now_playing_tool_result() != 30966) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_openrouter_whisper_transcribe() != 37914) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_perplexity_search() != 48322) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_playback_tool_result() != 62142) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 9309) {
@@ -1986,10 +3382,25 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot_rev() != 37686) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_complete() != 4163) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_embed() != 23290) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_model_catalog() != 48839) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_record_episode_event() != 8607) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_release_ref() != 65391) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_remove_account() != 29909) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_rerank() != 12840) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_reset() != 65280) {
@@ -2002,6 +3413,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_set_capability_callback() != 42066) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_set_local_llm_sink() != 34721) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_set_podcast_data_dir() != 50106) {
@@ -2031,10 +3445,43 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_signin_nsec() != 29789) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_speech_model_catalog() != 58316) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_start() != 5787) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_method_podcastapp_stop() != 61874) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_storage_breakdown() != 46581) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_active_topics() != 48388) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_projection() != 17863) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_auto_ingest_candidates() != 29534) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_ingest_plan() != 62923) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_report() != 55517) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_tool_result() != 59887) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_elevenlabs_key() != 8250) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_openrouter_key() != 38472) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastapp_voice_report() != 52447) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nmp_app_podcast_checksum_constructor_podcastapp_new() != 33241) {
@@ -2046,12 +3493,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nmp_app_podcast_checksum_method_podcastcapabilitysink_on_capability_request() != 55021) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nmp_app_podcast_checksum_method_podcastlocalllmsink_infer() != 24315) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nmp_app_podcast_checksum_method_podcastupdatesink_on_update() != 19397) {
         return InitializationResult.apiChecksumMismatch
     }
 
     uniffiCallbackInitPodcastAgentAskSink()
     uniffiCallbackInitPodcastCapabilitySink()
+    uniffiCallbackInitPodcastLocalLlmSink()
     uniffiCallbackInitPodcastUpdateSink()
     return InitializationResult.ok
 }()

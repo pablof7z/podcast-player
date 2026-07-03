@@ -15,8 +15,7 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 use crate::harness::{dispatch, wait_for};
 use crate::mock_feed;
@@ -50,7 +49,7 @@ fn probe_loopback() -> bool {
     TcpStream::connect_timeout(&addr, Duration::from_secs(1)).is_ok()
 }
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // Gate on loopback availability before starting the mock server.
     // On ubuntu-latest GitHub Actions runners loopback always works; this
     // guard exists for sandboxed environments where bind succeeds but
@@ -77,7 +76,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     }
 
     // Wait for the library to contain at least one podcast with episodes.
-    let update = match wait_for(handle, 10_000, |u| {
+    let update = match wait_for(app, 10_000, |u| {
         !u.library.is_empty() && !u.library[0].episodes.is_empty()
     }) {
         Ok(u) => u,

@@ -10,10 +10,10 @@ enum FeedURLNormalizer {
 
     static func normalizedFeedURL(from input: String) -> URL? {
         let envelope = input.withCString { ptr -> String? in
-            guard let result = nmp_app_podcast_normalize_feed_url(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .normalizeFeedUrl, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
         guard let envelope,

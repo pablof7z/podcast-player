@@ -9,29 +9,29 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_inventory(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentInventory, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
 
     func agentEmptyStateEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_agent_empty_state(handle) else {
+        guard let result = podcastAppCString(handle, endpoint: .agentEmptyState) else {
             return nil
         }
-        defer { nmp_free_string(result) }
+        defer { freePodcastCString(result) }
         return String(cString: result)
     }
 
     func libraryCategorizationPromptEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_categorization_prompt(handle) else {
+        guard let result = podcastAppCString(handle, endpoint: .libraryCategorizationPrompt) else {
             return nil
         }
-        defer { nmp_free_string(result) }
+        defer { freePodcastCString(result) }
         return String(cString: result)
     }
 
@@ -44,10 +44,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_categorization_parse(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .libraryCategorizationParse, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -61,10 +61,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_chat_title_prompt(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentChatTitlePrompt, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -78,10 +78,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_chat_title_parse(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentChatTitleParse, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -103,10 +103,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_nostr_peer_prompt(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentNostrPeerPrompt, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -117,10 +117,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_system_prompt(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentSystemPrompt, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -131,10 +131,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_conversation_history(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentConversationHistory, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -145,10 +145,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_category_change(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .libraryCategoryChange, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -162,10 +162,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_storage_breakdown(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .storageBreakdown, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -179,10 +179,10 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_home_category_cards(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .homeCategoryCards, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
@@ -193,29 +193,29 @@ extension PodcastHandle {
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
         return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_tts_episode_plan(handle, ptr) else {
+            guard let result = podcastAppCString(handle, endpoint: .agentTtsEpisodePlan, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result)
         }
     }
 
     func agentTTSDefaultVoiceEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_agent_tts_default_voice(handle) else {
+        guard let result = podcastAppCString(handle, endpoint: .agentTtsDefaultVoice) else {
             return nil
         }
-        defer { nmp_free_string(result) }
+        defer { freePodcastCString(result) }
         return String(cString: result)
     }
 
     func agentGeneratedPodcastDescriptorEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_agent_generated_podcast_descriptor(handle) else {
+        guard let result = podcastAppCString(handle, endpoint: .agentGeneratedPodcastDescriptor) else {
             return nil
         }
-        defer { nmp_free_string(result) }
+        defer { freePodcastCString(result) }
         return String(cString: result)
     }
 }

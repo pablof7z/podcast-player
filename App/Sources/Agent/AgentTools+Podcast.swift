@@ -502,10 +502,10 @@ extension AgentTools {
                 return nil
             }
             return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_search_tool(handle, ptr) else {
+                guard let result = podcastAppCString(handle, endpoint: .agentSearchTool, request: ptr) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value

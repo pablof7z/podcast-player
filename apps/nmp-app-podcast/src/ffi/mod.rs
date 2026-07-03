@@ -77,7 +77,6 @@ mod knowledge_scope;
 mod library_categorization;
 mod library_category_change;
 mod library_projection;
-mod local_llm;
 mod local_model_catalog;
 mod local_search;
 mod memory_remember_text;
@@ -128,8 +127,14 @@ mod threading_projection;
 mod transcript_plan;
 mod transcript_report;
 mod transcript_tool_result;
-mod uniffi_bridge_calls;
 pub mod uniffi_facade;
+mod uniffi_facade_agent_methods;
+mod uniffi_facade_global_methods;
+mod uniffi_facade_legacy_support;
+mod uniffi_facade_library_methods;
+mod uniffi_facade_provider_methods;
+#[cfg(test)]
+mod uniffi_facade_tests;
 mod voice_report;
 
 pub use actions::{
@@ -160,9 +165,7 @@ pub use actions::{
 pub use agent_action_tool::{
     nmp_app_podcast_agent_action_policy, nmp_app_podcast_agent_action_tool,
 };
-pub use agent_ask::{
-    nmp_app_podcast_agent_ask_enqueue, nmp_app_podcast_agent_ask_settle,
-};
+pub use agent_ask::{nmp_app_podcast_agent_ask_enqueue, nmp_app_podcast_agent_ask_settle};
 pub use agent_category_list::nmp_app_podcast_agent_category_list;
 pub use agent_chat_title::{
     nmp_app_podcast_agent_chat_title_parse, nmp_app_podcast_agent_chat_title_prompt,
@@ -243,7 +246,6 @@ pub use library_projection::{
     nmp_app_podcast_library_starred_episodes, nmp_app_podcast_library_subscription_status,
     nmp_app_podcast_library_summary,
 };
-pub use local_llm::{nmp_app_clear_local_llm, nmp_app_register_local_llm};
 pub use local_model_catalog::nmp_app_podcast_local_model_catalog;
 pub use local_search::nmp_app_podcast_local_search;
 pub use memory_remember_text::nmp_app_podcast_memory_remember_text;
@@ -288,7 +290,7 @@ pub use transcript_report::nmp_app_podcast_transcript_report;
 pub use transcript_tool_result::nmp_app_podcast_transcript_tool_result;
 pub use uniffi_facade::{
     PodcastAgentAskSink, PodcastApp, PodcastCapabilitySink, PodcastDispatchOutcome,
-    PodcastEventShape, PodcastProfileShape, PodcastRefLiveness, PodcastRefNamespace,
-    PodcastRefShape, PodcastUpdateSink,
+    PodcastEventShape, PodcastLocalLlmSink, PodcastProfileShape, PodcastRefLiveness,
+    PodcastRefNamespace, PodcastRefShape, PodcastUpdateSink,
 };
 pub use voice_report::nmp_app_podcast_voice_report;

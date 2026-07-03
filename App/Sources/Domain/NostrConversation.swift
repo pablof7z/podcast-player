@@ -100,8 +100,8 @@ enum NostrConversationRoot {
 enum NostrNpub {
     static func pubkeyHex(from input: String) -> String? {
         input.withCString { ptr in
-            guard let result = nmp_app_podcast_parse_pubkey(ptr) else { return nil }
-            defer { nmp_free_string(result) }
+            guard let result = podcastAppGlobalCString(endpoint: .parsePubkey, request: ptr) else { return nil }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(PubkeyResponse.self, from: data),
@@ -116,8 +116,8 @@ enum NostrNpub {
     /// raw hex on failure so callers always have something to render.
     static func encode(fromHex hex: String) -> String {
         hex.withCString { ptr in
-            guard let result = nmp_app_podcast_npub_from_hex(ptr) else { return hex }
-            defer { nmp_free_string(result) }
+            guard let result = podcastAppGlobalCString(endpoint: .npubFromHex, request: ptr) else { return hex }
+            defer { freePodcastCString(result) }
             let envelope = String(cString: result)
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(NpubResponse.self, from: data),

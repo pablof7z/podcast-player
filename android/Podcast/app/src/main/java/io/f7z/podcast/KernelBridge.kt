@@ -12,7 +12,7 @@ import uniffi.nmp_app_podcast.PodcastRefLiveness
 import uniffi.nmp_app_podcast.PodcastRefNamespace
 import uniffi.nmp_app_podcast.PodcastRefShape
 import uniffi.nmp_app_podcast.PodcastUpdateSink
-import uniffi.nmp_app_podcast.podcastBridgeGlobalCall
+import uniffi.nmp_app_podcast.byokAuthorization as uniffiByokAuthorization
 
 /**
  * Android bridge around the app-owned generated UniFFI [UniFfiPodcastApp].
@@ -88,20 +88,19 @@ class KernelBridge : KernelDispatcher {
     }
 
     fun capabilityReport(namespace: String, reportJson: String): String? {
-        val endpoint = when (namespace) {
-            "audio" -> "nmp_app_podcast_audio_report"
-            "download" -> "nmp_app_podcast_download_report"
+        return when (namespace) {
+            "audio" -> if (isOpen()) app.audioReport(reportJson) else null
+            "download" -> if (isOpen()) app.downloadReport(reportJson) else null
             else -> return null
         }
-        return if (isOpen()) app.podcastBridgeCall(endpoint, reportJson) else null
     }
 
     fun downloadReport(reportJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_download_report", reportJson) else null
+        return if (isOpen()) app.downloadReport(reportJson) else null
     }
 
     fun httpReport(reportJson: String) {
-        if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_http_report", reportJson)
+        if (isOpen()) app.httpReport(reportJson)
     }
 
     fun signinNsec(nsec: String) {
@@ -166,74 +165,74 @@ class KernelBridge : KernelDispatcher {
     }
 
     fun chatComplete(messagesJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_chat_complete", messagesJson) else null
+        return if (isOpen()) app.chatComplete(messagesJson) else null
     }
 
     fun providerComplete(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_complete", intentJson) else null
+        return if (isOpen()) app.providerComplete(intentJson) else null
     }
 
     fun providerEmbed(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_embed", intentJson) else null
+        return if (isOpen()) app.providerEmbed(intentJson) else null
     }
 
     fun perplexitySearch(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_perplexity_search", intentJson) else null
+        return if (isOpen()) app.perplexitySearch(intentJson) else null
     }
 
     fun providerModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_model_catalog", null) else null
+        return if (isOpen()) app.providerModelCatalog() else null
     }
 
     fun speechModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_speech_model_catalog", null) else null
+        return if (isOpen()) app.speechModelCatalog() else null
     }
 
     fun localModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_local_model_catalog", null) else null
+        return if (isOpen()) app.localModelCatalog() else null
     }
 
     fun byokAuthorization(intentJson: String): String? =
-        podcastBridgeGlobalCall("nmp_app_podcast_byok_authorization", intentJson)
+        uniffiByokAuthorization(intentJson)
 
     fun byokExchange(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_byok_exchange", intentJson) else null
+        return if (isOpen()) app.byokExchange(intentJson) else null
     }
 
     fun validateOpenRouterKey(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_validate_openrouter_key", null) else null
+        return if (isOpen()) app.validateOpenrouterKey() else null
     }
 
     fun validateElevenLabsKey(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_validate_elevenlabs_key", null) else null
+        return if (isOpen()) app.validateElevenlabsKey() else null
     }
 
     fun elevenLabsVoiceCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_voice_catalog", null) else null
+        return if (isOpen()) app.elevenlabsVoiceCatalog() else null
     }
 
     fun elevenLabsTextToSpeech(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_tts_synthesize", intentJson) else null
+        return if (isOpen()) app.elevenlabsTtsSynthesize(intentJson) else null
     }
 
     fun openRouterWhisperTranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_openrouter_whisper_transcribe", intentJson) else null
+        return if (isOpen()) app.openrouterWhisperTranscribe(intentJson) else null
     }
 
     fun elevenLabsScribeTranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_scribe_transcribe", intentJson) else null
+        return if (isOpen()) app.elevenlabsScribeTranscribe(intentJson) else null
     }
 
     fun assemblyAITranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_assemblyai_transcribe", intentJson) else null
+        return if (isOpen()) app.assemblyaiTranscribe(intentJson) else null
     }
 
     fun generateImage(requestJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_generate_image", requestJson) else null
+        return if (isOpen()) app.generateImage(requestJson) else null
     }
 
     fun rerank(requestJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_rerank", requestJson) else null
+        return if (isOpen()) app.rerank(requestJson) else null
     }
 
     fun free() {

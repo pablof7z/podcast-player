@@ -1,60 +1,28 @@
-//! Local on-device LLM backend implementation via callback socket.
+//! Local on-device LLM backend implementation via host callback sink.
 //!
 //! This backend delegates to a local LiteRT-LM or similar on-device model
-//! registered from the iOS side. The Swift side registers a callback (context pointer
-//! + callback function) globally; Rust calls it with a JSON prompt and receives
-//! a JSON response back.
+//! registered from the iOS side through the app-owned UniFFI facade. Rust calls
+//! the sink with a JSON prompt and receives a JSON response back.
 
 use async_trait::async_trait;
-use std::ffi::{c_char, c_void, CStr, CString};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use super::backend::{LlmBackend, LlmError, LlmRequest};
 
-/// Release a heap-allocated C string returned by `reg.callback`.
-///
-/// The callback trampoline allocates its response via `CString::into_raw`
-/// (matching the C-ABI convention this module documents at the type alias
-/// above), so the memory belongs to the Rust allocator and must come back
-/// through it — not the host's `free(3)`. This used to be the shared
-/// shared FFI free symbol; that crate is deleted, and this
-/// callback is podcast's own local bridging concern (not an NMP FFI
-/// surface), so the free path is inlined here rather than reaching for a
-/// framework helper. Passing `NULL` is a no-op.
-unsafe fn free_local_llm_response(ptr: *mut c_char) {
-    if ptr.is_null() {
-        return;
-    }
-    drop(CString::from_raw(ptr));
+pub trait LocalLlmSink: Send + Sync {
+    fn infer_local_llm(&self, prompt_json: String) -> String;
 }
-
-/// FFI callback function type: takes context pointer and JSON prompt (C string),
-/// returns JSON response (malloc-compatible C string that Rust must free).
-pub type NmpLocalLlmFn =
-    extern "C" fn(*mut c_void, *const std::ffi::c_char) -> *mut std::ffi::c_char;
-
-/// Global registration for the local LLM callback.
-/// The context is a usize-encoded Unmanaged<LocalLLMService> pointer owned by Swift
-/// for the app lifetime (D6: SAFETY is caller's responsibility).
-pub(crate) struct LocalLlmRegistration {
-    pub context: usize,
-    pub callback: NmpLocalLlmFn,
-}
-
-// SAFETY: context is a usize-encoded Unmanaged pointer, owned by Swift for the app lifetime.
-// Only called from Rust when explicitly registered; no data races.
-unsafe impl Send for LocalLlmRegistration {}
 
 /// Global callback socket (OnceLock for init-once semantics).
-static LOCAL_LLM: OnceLock<Mutex<Option<LocalLlmRegistration>>> = OnceLock::new();
+static LOCAL_LLM: OnceLock<Mutex<Option<Arc<dyn LocalLlmSink>>>> = OnceLock::new();
 
 /// Return the global local LLM registration slot.
-pub(crate) fn slot() -> &'static Mutex<Option<LocalLlmRegistration>> {
+pub(crate) fn slot() -> &'static Mutex<Option<Arc<dyn LocalLlmSink>>> {
     LOCAL_LLM.get_or_init(|| Mutex::new(None))
 }
 
-/// Register or clear the global local LLM callback.
-pub(crate) fn set_registration(reg: Option<LocalLlmRegistration>) {
+/// Register or clear the global local LLM sink.
+pub(crate) fn set_registration(reg: Option<Arc<dyn LocalLlmSink>>) {
     if let Ok(mut slot_guard) = slot().lock() {
         *slot_guard = reg;
     }
@@ -83,14 +51,10 @@ impl LlmBackend for LocalModelBackend {
         });
 
         let prompt_json_str = prompt_json.to_string();
-        let prompt_cstring = match CString::new(prompt_json_str) {
-            Ok(s) => s,
-            Err(_) => return Err(LlmError::Unavailable("Failed to encode prompt JSON".into())),
-        };
-
-        // Lock the slot and check if a callback is registered.
-        let slot_guard = match slot().lock() {
-            Ok(guard) => guard,
+        // Lock the slot only long enough to clone the sink. The sink may call
+        // back into Swift and block while local inference runs.
+        let sink = match slot().lock() {
+            Ok(guard) => guard.clone(),
             Err(_) => {
                 return Err(LlmError::Unavailable(
                     "Failed to acquire callback slot lock".into(),
@@ -98,38 +62,15 @@ impl LlmBackend for LocalModelBackend {
             }
         };
 
-        let reg = match &*slot_guard {
+        let sink = match sink {
             Some(r) => r,
             None => return Err(LlmError::Unavailable("Local model not loaded".into())),
         };
 
-        // Call the FFI callback: (context as *mut c_void, prompt.as_ptr())
-        let response_ptr = (reg.callback)(reg.context as *mut c_void, prompt_cstring.as_ptr());
-
-        // Check for null response (error case).
-        if response_ptr.is_null() {
-            return Err(LlmError::Unavailable(
-                "Local model call returned null".into(),
-            ));
-        }
-
-        // Convert the returned C string to Rust String.
-        let response_cstr = match unsafe { CStr::from_ptr(response_ptr) }.to_str() {
-            Ok(s) => s.to_owned(),
-            Err(_) => {
-                // Free the pointer before returning error.
-                unsafe { free_local_llm_response(response_ptr) };
-                return Err(LlmError::Unavailable(
-                    "Local model response not valid UTF-8".into(),
-                ));
-            }
-        };
-
-        // Free the returned C string via the Rust helper.
-        unsafe { free_local_llm_response(response_ptr) };
+        let response_json = sink.infer_local_llm(prompt_json_str);
 
         // Parse the response JSON: {"text":..} or {"error":..}
-        match serde_json::from_str::<serde_json::Value>(&response_cstr) {
+        match serde_json::from_str::<serde_json::Value>(&response_json) {
             Ok(json) => {
                 if let Some(text) = json.get("text").and_then(|v| v.as_str()) {
                     Ok(text.to_string())

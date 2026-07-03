@@ -161,10 +161,10 @@ extension AppStateStore {
               let json = String(data: data, encoding: .utf8)
         else { return nil }
         return json.withCString { ptr -> Data? in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+            guard let result = podcastAppGlobalCString(endpoint: .agentActionPolicy, request: ptr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
+            defer { freePodcastCString(result) }
             return String(cString: result).data(using: .utf8)
         }
     }

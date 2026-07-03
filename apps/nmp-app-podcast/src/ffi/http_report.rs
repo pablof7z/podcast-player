@@ -53,16 +53,18 @@ pub extern "C" fn nmp_app_podcast_http_report(
             Err(_) => return std::ptr::null_mut(),
         };
 
-        let report: HttpReport = match serde_json::from_str(report_str) {
-            Ok(r) => r,
-            Err(_) => return std::ptr::null_mut(),
-        };
-
         // Runs on the platform transport thread — `apply_report` touches only the
         // shared store / signal Arcs, never `*mut NmpApp`.
         let handle_ref = unsafe { &*handle };
-        // Step 16: feed_fetch is now in state.feed_fetch.
-        handle_ref.state.feed_fetch.apply_report(report);
+        apply_http_report_json(handle_ref, report_str);
         std::ptr::null_mut()
     })
+}
+
+pub(crate) fn apply_http_report_json(handle: &PodcastHandle, report_json: &str) {
+    let Ok(report) = serde_json::from_str::<HttpReport>(report_json) else {
+        return;
+    };
+    // Step 16: feed_fetch is now in state.feed_fetch.
+    handle.state.feed_fetch.apply_report(report);
 }

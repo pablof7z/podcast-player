@@ -100,10 +100,10 @@ enum KernelKnowledgeClient {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = nmp_app_podcast_knowledge_query(handle, reqPtr) else {
-                    return #"{"error":"null response from nmp_app_podcast_knowledge_query"}"#
+                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeQuery, request: reqPtr) else {
+                    return #"{"error":"null response from knowledgeQuery"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value
@@ -132,10 +132,10 @@ enum KernelKnowledgeClient {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = nmp_app_podcast_knowledge_similar_episode(handle, reqPtr) else {
-                    return #"{"error":"null response from nmp_app_podcast_knowledge_similar_episode"}"#
+                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeSimilarEpisode, request: reqPtr) else {
+                    return #"{"error":"null response from knowledgeSimilarEpisode"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value
@@ -166,10 +166,10 @@ enum KernelKnowledgeClient {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = nmp_app_podcast_knowledge_home_related(handle, reqPtr) else {
-                    return #"{"error":"null response from nmp_app_podcast_knowledge_home_related"}"#
+                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeHomeRelated, request: reqPtr) else {
+                    return #"{"error":"null response from knowledgeHomeRelated"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value
@@ -200,10 +200,10 @@ enum KernelKnowledgeClient {
                 return #"{"error":"kernel handle unavailable"}"#
             }
             return requestJSON.withCString { reqPtr -> String in
-                guard let ptr = nmp_app_podcast_knowledge_resolve_scope(handle, reqPtr) else {
-                    return #"{"error":"null response from nmp_app_podcast_knowledge_resolve_scope"}"#
+                guard let ptr = podcastAppCString(handle, endpoint: .knowledgeResolveScope, request: reqPtr) else {
+                    return #"{"error":"null response from knowledgeResolveScope"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value

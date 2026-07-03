@@ -24,8 +24,8 @@
 //! mpv position sample (≤4 Hz, matching the D8 ceiling).  Pause / Stop
 //! transitions enqueue `AudioReport::Paused` / `AudioReport::Stopped`
 //! immediately. The runtime drains these via [`AudioHost::drain_reports`] and
-//! forwards them through `nmp_app_podcast_audio_report` — the same FFI seam
-//! iOS and Android use — so the kernel projection reflects live TUI progress.
+//! forwards them through the app-owned Rust facade so the kernel projection
+//! reflects live TUI progress.
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
@@ -46,7 +46,7 @@ pub struct AudioHost {
     mpv_available: bool,
     /// D4/D7 report queue. Enqueued by playback state transitions and
     /// position-sample ticks; drained by the runtime into
-    /// `nmp_app_podcast_audio_report`.
+    /// the app-owned Rust facade.
     pending_reports: Vec<AudioReport>,
 }
 
@@ -77,8 +77,8 @@ impl AudioHost {
 
     /// Drain all pending [`AudioReport`]s accumulated since the last call.
     ///
-    /// The runtime passes each one to `nmp_app_podcast_audio_report` so the
-    /// kernel projection stays in sync with live mpv playback (D4/D7).
+    /// The runtime passes each one to the app-owned Rust facade so the kernel
+    /// projection stays in sync with live mpv playback (D4/D7).
     pub fn drain_reports(&mut self) -> Vec<AudioReport> {
         std::mem::take(&mut self.pending_reports)
     }

@@ -43,10 +43,10 @@ struct OpenRouterKeyValidationService: Sendable {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
-            guard let ptr = nmp_app_podcast_validate_openrouter_key(handle) else {
+            guard let ptr = podcastAppCString(handle, endpoint: .validateOpenrouterKey) else {
                 return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
             }
-            defer { nmp_free_string(ptr) }
+            defer { freePodcastCString(ptr) }
             return String(cString: ptr)
         }.value
 

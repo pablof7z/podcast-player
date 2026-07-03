@@ -280,10 +280,10 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
                 return #"{"error":"App state is unavailable."}"#
             }
             return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_owned_podcast_tool(handle, ptr) else {
+                guard let result = podcastAppCString(handle, endpoint: .agentOwnedPodcastTool, request: ptr) else {
                     return #"{"error":"App state is unavailable."}"#
                 }
-                defer { nmp_free_string(result) }
+                defer { freePodcastCString(result) }
                 return String(cString: result)
             }
         }.value

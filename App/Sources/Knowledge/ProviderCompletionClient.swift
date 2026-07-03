@@ -104,10 +104,10 @@ struct ProviderCompletionClient: Sendable {
                 return #"{"error":"Kernel handle unavailable"}"#
             }
             return intentString.withCString { intentPtr in
-                guard let ptr = nmp_app_podcast_provider_complete(handle, intentPtr) else {
+                guard let ptr = podcastAppCString(handle, endpoint: .providerComplete, request: intentPtr) else {
                     return #"{"error":"null response from Rust"}"#
                 }
-                defer { nmp_free_string(ptr) }
+                defer { freePodcastCString(ptr) }
                 return String(cString: ptr)
             }
         }.value
