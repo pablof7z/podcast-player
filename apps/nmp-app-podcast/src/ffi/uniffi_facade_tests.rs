@@ -25,3 +25,29 @@ fn dispatch_empty_envelope_returns_error_outcome() {
     assert!(out.correlation_id.is_none());
     assert!(out.error.is_some());
 }
+
+#[test]
+fn static_catalog_methods_return_data() {
+    let app = PodcastApp::new();
+
+    let speech_catalog = app
+        .speech_model_catalog()
+        .expect("speech catalog should be available through the facade");
+    assert_catalog_array_non_empty(&speech_catalog, "eleven_labs_stt");
+    assert_catalog_array_non_empty(&speech_catalog, "open_router_whisper");
+
+    let local_catalog = app
+        .local_model_catalog()
+        .expect("local catalog should be available through the facade");
+    assert_catalog_array_non_empty(&local_catalog, "models");
+}
+
+fn assert_catalog_array_non_empty(envelope: &str, key: &str) {
+    let value: serde_json::Value = serde_json::from_str(envelope).expect("catalog JSON envelope");
+    let entries = value
+        .get("result")
+        .and_then(|result| result.get(key))
+        .and_then(serde_json::Value::as_array)
+        .unwrap_or_else(|| panic!("catalog envelope should contain result.{key}"));
+    assert!(!entries.is_empty(), "catalog {key} should not be empty");
+}
