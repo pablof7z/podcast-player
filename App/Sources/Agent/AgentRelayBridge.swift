@@ -305,13 +305,7 @@ final class AgentRelayBridge {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return "" }
-        let envelope = {
-            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json) else {
-                return nil
-            }
-            return result
-        }()
-        guard let envelope,
+        guard let envelope = podcastAppGlobalString(endpoint: .agentActionPolicy, request: json),
               let responseData = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(PeerLabelEnvelope.self, from: responseData),
               response.error == nil,

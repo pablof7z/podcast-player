@@ -128,13 +128,7 @@ final class LiveYouTubeIngestionAdapter: YouTubeIngestionProtocol, @unchecked Se
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        let envelope = {
-            guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
-                return nil
-            }
-            return result
-        }()
-        guard let envelope,
+        guard let envelope = podcastAppString(handle, endpoint: .agentActionTool, request: json),
               let responseData = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(TranscriptResultStatusResponse.self, from: responseData),
               response.error == nil
