@@ -58,8 +58,7 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::harness::{dispatch, snapshot, wait_for};
@@ -85,7 +84,7 @@ fn probe_loopback() -> bool {
     TcpStream::connect_timeout(&addr, Duration::from_secs(1)).is_ok()
 }
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Prerequisite: loopback TCP ────────────────────────────────────────────
     //
     // We need loopback to serve the mock RSS feed so the store has a real
@@ -113,7 +112,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         return Fail(format!("subscribe dispatch rejected: {err}"));
     }
 
-    let seeded = match wait_for(handle, 10_000, |u| {
+    let seeded = match wait_for(app, 10_000, |u| {
         !u.library.is_empty() && !u.library[0].episodes.is_empty()
     }) {
         Ok(u) => u,
@@ -150,15 +149,17 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         return Fail(format!("download dispatch rejected: {err}"));
     }
 
-    let after_dl = match wait_for(handle, 5_000, |u| {
+    let after_dl = match wait_for(app, 5_000, |u| {
         u.downloads
             .as_ref()
             .is_some_and(|dq| dq.active.iter().any(|item| item.episode_id == episode_id))
     }) {
         Ok(u) => u,
-        Err(msg) => return Fail(format!(
-            "download row never materialized in projection: {msg}"
-        )),
+        Err(msg) => {
+            return Fail(format!(
+                "download row never materialized in projection: {msg}"
+            ))
+        }
     };
 
     let dq = after_dl.downloads.as_ref().unwrap();
@@ -177,10 +178,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         ));
     }
     if row.progress < 0.0 || row.progress > 1.0 {
-        return Fail(format!(
-            "progress out of range 0.0..=1.0: {}",
-            row.progress
-        ));
+        return Fail(format!("progress out of range 0.0..=1.0: {}", row.progress));
     }
 
     // ── Step 3: dup-key guard (#442) ──────────────────────────────────────────
@@ -196,15 +194,13 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     );
     // Must not carry a synchronous error (the action itself is valid).
     if let Some(err) = dup_res.get("error").and_then(|v| v.as_str()) {
-        return Fail(format!(
-            "duplicate download dispatch returned error: {err}"
-        ));
+        return Fail(format!("duplicate download dispatch returned error: {err}"));
     }
 
     // Give the kernel one tick to process the second dispatch.
     std::thread::sleep(Duration::from_millis(200));
 
-    let after_dup = match snapshot(handle) {
+    let after_dup = match snapshot(app) {
         Some(u) => u,
         None => return Fail("snapshot returned None after dup dispatch".into()),
     };
@@ -252,7 +248,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Small sleep to let the actor thread process the command.
     std::thread::sleep(Duration::from_millis(200));
 
-    let after_pause = match snapshot(handle) {
+    let after_pause = match snapshot(app) {
         Some(u) => u,
         None => return Fail("snapshot returned None after pause_download".into()),
     };
@@ -283,7 +279,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     std::thread::sleep(Duration::from_millis(200));
 
-    let after_resume = match snapshot(handle) {
+    let after_resume = match snapshot(app) {
         Some(u) => u,
         None => return Fail("snapshot returned None after resume_download".into()),
     };
@@ -335,11 +331,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Dispatch CancelAllDownloads. Accepted without error.
     // Queued items are cancelled synchronously; active items get the
     // stub executor CancelAll command. No panic = #442 regression clear.
-    let cancel_all_res = dispatch(
-        app,
-        PLAYER_NS,
-        json!({"op": "cancel_all_downloads"}),
-    );
+    let cancel_all_res = dispatch(app, PLAYER_NS, json!({"op": "cancel_all_downloads"}));
     if let Some(err) = cancel_all_res.get("error").and_then(|v| v.as_str()) {
         return Fail(format!("cancel_all_downloads dispatch rejected: {err}"));
     }
@@ -385,10 +377,8 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // Regression outcome (what #463 looked like): the row is absent even
     // though a download was enqueued — the projection filtered it out.
     // `wait_for` detects this as a timeout → Fail.
-    match wait_for(handle, 3_000, |u| {
-        u.downloads
-            .as_ref()
-            .is_some_and(|dq| !dq.active.is_empty())
+    match wait_for(app, 3_000, |u| {
+        u.downloads.as_ref().is_some_and(|dq| !dq.active.is_empty())
     }) {
         Ok(_) => {}
         Err(_) => {
@@ -396,7 +386,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             // non-terminal item AND the re-enqueue was a no-op AND somehow
             // the snapshot was emitted before the domain bump landed. Read
             // the current state directly for a final check.
-            let current = snapshot(handle);
+            let current = snapshot(app);
             let still_empty = current
                 .as_ref()
                 .and_then(|u| u.downloads.as_ref())

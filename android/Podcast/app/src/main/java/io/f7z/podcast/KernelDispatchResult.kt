@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
 // is silently lost.
 
 /**
- * Synchronous outcome of `PodcastApp.dispatchPodcastAction`
+ * Synchronous outcome of `PodcastApp.dispatchAction(envelope)`
  * (via [KernelBridge.dispatchAction]).
  *
  * The two variants mirror Swift's `DispatchResult.accepted` / `.failure`.
@@ -43,7 +43,7 @@ sealed class DispatchResult {
         private val json = Json
 
         /**
-         * Parse the JSON envelope returned by `PodcastApp.dispatchPodcastAction`.
+         * Parse the JSON envelope returned by [KernelBridge.dispatchAction].
          *
          * Mirrors Swift's `DispatchResult.parse(envelope:)` exactly:
          *  - Non-empty `"correlation_id"` string → [Accepted]

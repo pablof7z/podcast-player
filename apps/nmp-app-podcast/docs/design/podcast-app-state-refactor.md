@@ -441,7 +441,7 @@ The 31-arg constructor and the double-clone vanish. `register.rs` builds **one**
 `Arc<PodcastAppState>` and hands clones to both seams.
 
 ```rust
-pub extern "C" fn nmp_app_podcast_register(app: *mut NmpApp) -> *mut PodcastHandle {
+pub fn register_podcast_app(app: *mut NmpApp) -> *mut PodcastHandle {
     // ... null check, register_defaults, register_action::<…>() (UNCHANGED) ...
 
     let app_ref = unsafe { &*app };
@@ -676,10 +676,10 @@ half-migrated state at a step boundary — satisfying the "each step must be PRO
 
 ## 9. Upstream (`nmp-core`) vs app-local
 
-**Everything here is app-local.** No `nmp-core` change is required: the FFI wire contract
-(`nmp_app_podcast_snapshot`, the `podcast.snapshot` projection, the report FFIs) is untouched; the
-host-op `HostOpHandler` trait impl is unchanged in signature. `Slot`/`Durability`/`PodcastAppState`
-live entirely under `src/state/`.
+**Everything here is app-local.** No `nmp-core` change is required: the app-owned
+facade contract, the `podcast.snapshot` projection, and the report endpoints are
+untouched; the host-op `HostOpHandler` trait impl is unchanged in signature.
+`Slot`/`Durability`/`PodcastAppState` live entirely under `src/state/`.
 
 *Optional future* upstream improvement (explicitly **not** part of this refactor): nmp-core could
 offer a generic `ComposedAppState` + `Slot` primitive so other NMP apps share the durability-tagged

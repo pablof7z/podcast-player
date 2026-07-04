@@ -56,7 +56,7 @@ final class KernelDomainMergeTests: XCTestCase {
             ] as [String: Any]
         ])
         let seedFrames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: seedData),
+            DomainFrameFixtures.decode(from: seedData),
             "seed library frame must decode")
         var composite = PodcastUpdate()
         var tracker = KernelModel.DomainRevTracker()
@@ -74,7 +74,7 @@ final class KernelDomainMergeTests: XCTestCase {
             ] as [String: Any]
         ])
         let tombstoneFrames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: tombstoneData),
+            DomainFrameFixtures.decode(from: tombstoneData),
             "library tombstone frame must decode")
         let libFrame = try XCTUnwrap(tombstoneFrames.library,
                                      "library domain must be non-nil in tombstone frame")
@@ -110,7 +110,7 @@ final class KernelDomainMergeTests: XCTestCase {
             ] as [String: Any]
         ])
         let seedFrames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: seedData),
+            DomainFrameFixtures.decode(from: seedData),
             "seed downloads frame must decode")
         var composite = PodcastUpdate()
         var tracker = KernelModel.DomainRevTracker()
@@ -128,7 +128,7 @@ final class KernelDomainMergeTests: XCTestCase {
             ] as [String: Any]
         ])
         let tombstoneFrames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: tombstoneData),
+            DomainFrameFixtures.decode(from: tombstoneData),
             "downloads tombstone must decode")
         let dlFrame = try XCTUnwrap(tombstoneFrames.downloads,
                                     "downloads domain must be non-nil in tombstone frame")
@@ -160,7 +160,7 @@ final class KernelDomainMergeTests: XCTestCase {
             ] as [String: Any]
         ])
         let tombstoneFrames = try XCTUnwrap(
-            PodcastDomainFrames.decode(from: tombstoneData),
+            DomainFrameFixtures.decode(from: tombstoneData),
             "widget tombstone must decode")
         let widFrame = try XCTUnwrap(tombstoneFrames.widget,
                                      "widget domain must be non-nil in tombstone frame")
@@ -188,13 +188,20 @@ final class KernelDomainMergeTests: XCTestCase {
             "the first full pull must re-seed even if a push frame already consumed the same rev")
     }
 
-    func testSteadyStatePullRequiresNewerRevAfterHydration() {
+    func testSteadyStatePullRequiresNewerRevAfterHydrationUnlessExplicitlyAllowed() {
         XCTAssertFalse(
             KernelModel.shouldPullPodcastSnapshot(
                 currentRev: 7,
                 lastProcessedRev: 7,
                 hasHydratedPodcastSnapshot: true),
             "after the first full pull, duplicate revs must be dropped")
+        XCTAssertTrue(
+            KernelModel.shouldPullPodcastSnapshot(
+                currentRev: 7,
+                lastProcessedRev: 7,
+                hasHydratedPodcastSnapshot: true,
+                allowEqualRev: true),
+            "durable report-triggered full pulls must be allowed to replace same-rev partial pushes")
         XCTAssertTrue(
             KernelModel.shouldPullPodcastSnapshot(
                 currentRev: 8,

@@ -83,9 +83,8 @@ fn encode_value(value: Value) -> *mut c_char {
     }
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_directory_search_plan(
+pub fn nmp_app_podcast_agent_directory_search_plan(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -109,9 +108,8 @@ pub extern "C" fn nmp_app_podcast_agent_directory_search_plan(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_directory_search_results(
+pub fn nmp_app_podcast_agent_directory_search_results(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

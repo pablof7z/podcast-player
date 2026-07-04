@@ -28,14 +28,7 @@ extension TranscriptIngestService {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        let envelope = json.withCString { ptr -> String? in
-            guard let result = nmp_app_podcast_agent_action_tool(handle, ptr) else {
-                return nil
-            }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
-        guard let envelope,
+        guard let envelope = podcastAppString(handle, endpoint: .agentActionTool, request: json),
               let responseData = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(TranscriptSourceLabelResponse.self, from: responseData),
               response.error == nil
@@ -57,14 +50,7 @@ extension TranscriptIngestService {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        let envelope = json.withCString { ptr -> String? in
-            guard let result = nmp_app_podcast_agent_action_tool(handle, ptr) else {
-                return nil
-            }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
-        guard let envelope,
+        guard let envelope = podcastAppString(handle, endpoint: .agentActionTool, request: json),
               let responseData = envelope.data(using: .utf8),
               let response = try? JSONDecoder().decode(TranscriptSourceLabelResponse.self, from: responseData),
               response.error == nil

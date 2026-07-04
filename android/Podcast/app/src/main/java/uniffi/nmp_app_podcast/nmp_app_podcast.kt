@@ -660,6 +660,9 @@ internal interface UniffiCallbackInterfacePodcastAgentAskSinkMethod0 : com.sun.j
 internal interface UniffiCallbackInterfacePodcastCapabilitySinkMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`requestJson`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,)
 }
+internal interface UniffiCallbackInterfacePodcastLocalLlmSinkMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`promptJson`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfacePodcastUpdateSinkMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`frame`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -691,6 +694,22 @@ internal open class UniffiVTableCallbackInterfacePodcastCapabilitySink(
 
    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePodcastCapabilitySink) {
         `onCapabilityRequest` = other.`onCapabilityRequest`
+        `uniffiFree` = other.`uniffiFree`
+    }
+
+}
+@Structure.FieldOrder("infer", "uniffiFree")
+internal open class UniffiVTableCallbackInterfacePodcastLocalLlmSink(
+    @JvmField internal var `infer`: UniffiCallbackInterfacePodcastLocalLlmSinkMethod0? = null,
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+) : Structure() {
+    class UniffiByValue(
+        `infer`: UniffiCallbackInterfacePodcastLocalLlmSinkMethod0? = null,
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    ): UniffiVTableCallbackInterfacePodcastLocalLlmSink(`infer`,`uniffiFree`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePodcastLocalLlmSink) {
+        `infer` = other.`infer`
         `uniffiFree` = other.`uniffiFree`
     }
 
@@ -855,6 +874,214 @@ internal open class UniffiVTableCallbackInterfacePodcastUpdateSink(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is
 // rather `InterfaceTooLargeException`, caused by too many methods
@@ -870,9 +1097,91 @@ internal open class UniffiVTableCallbackInterfacePodcastUpdateSink(
 // when the library is loaded.
 internal interface IntegrityCheckingUniffiLib : Library {
     // Integrity check functions only
-    fun uniffi_nmp_app_podcast_checksum_func_podcast_bridge_global_call(
+    fun uniffi_nmp_app_podcast_checksum_func_agent_action_policy(
+): Short
+fun uniffi_nmp_app_podcast_checksum_func_byok_authorization(
+): Short
+fun uniffi_nmp_app_podcast_checksum_func_normalize_feed_url(
+): Short
+fun uniffi_nmp_app_podcast_checksum_func_npub_from_hex(
+): Short
+fun uniffi_nmp_app_podcast_checksum_func_parse_pubkey(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_action_tool(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_enqueue(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_settle(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_category_list(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_parse(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_prompt(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_conversation_history(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_results(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_empty_state(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_error(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_results(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_generated_podcast_descriptor(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory_list(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_nostr_peer_prompt(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_owned_podcast_tool(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_search_tool(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_system_prompt(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_default_voice(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_episode_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_result(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_result(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_list(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_results(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_assemblyai_transcribe(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_audio_report(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_byok_exchange(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_cancel_bunker_handshake(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_downloads(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_listen_now(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_show_episodes(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_shows(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_chat_complete(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_classify_input_intent(
 ): Short
@@ -884,6 +1193,8 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_create_new_account(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_nip21_uri(
 ): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_typed_projection_frame(
+): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_update_frame(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_deliver_external_signer_response(
@@ -894,17 +1205,105 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_capability_json(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_input_intent(
 ): Short
-fun uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action(
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_scribe_transcribe(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_tts_synthesize(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_voice_catalog(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_events(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_mutation_tool_result(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_external_play_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_generate_image(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_home_category_cards(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_home_continue_listening(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_home_subscription_list(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_home_triage_rollup(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_http_report(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_is_alive(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_directory_search(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_lookup_feed_url(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_top_podcasts(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_chunk(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_home_related(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_query(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_resolve_scope(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_similar_episode(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_episodes(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_podcasts(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categories(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_parse(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_prompt(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_category_change(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_download_rows(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_for_audio_url(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_lookup(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_followed_podcasts(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_owned_podcasts(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_for_owner_pubkey(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_stats(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_show_episodes(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_starred_episodes(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_subscription_status(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_library_summary(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_background(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_foreground(
 ): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_local_model_catalog(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_local_search(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_memory_remember_text(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_network_report(
+): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_nostrconnect_uri(
 ): Short
-fun uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_bridge_call(
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_now_playing_tool_result(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_openrouter_whisper_transcribe(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_perplexity_search(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_playback_tool_result(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle(
 ): Short
@@ -912,9 +1311,19 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot_rev(
 ): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_complete(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_embed(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_model_catalog(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_record_episode_event(
+): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_release_ref(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_remove_account(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_rerank(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_reset(
 ): Short
@@ -923,6 +1332,8 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_resolve_ref(
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_set_agent_ask_sink(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_set_capability_callback(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_set_local_llm_sink(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_set_podcast_data_dir(
 ): Short
@@ -942,15 +1353,39 @@ fun uniffi_nmp_app_podcast_checksum_method_podcastapp_signin_nip55(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_signin_nsec(
 ): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_speech_model_catalog(
+): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_start(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastapp_stop(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_storage_breakdown(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_active_topics(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_projection(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_auto_ingest_candidates(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_ingest_plan(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_report(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_tool_result(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_elevenlabs_key(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_openrouter_key(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastapp_voice_report(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_constructor_podcastapp_new(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastagentasksink_on_agent_ask_event(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastcapabilitysink_on_capability_request(
+): Short
+fun uniffi_nmp_app_podcast_checksum_method_podcastlocalllmsink_infer(
 ): Short
 fun uniffi_nmp_app_podcast_checksum_method_podcastupdatesink_on_update(
 ): Short
@@ -994,6 +1429,7 @@ internal interface UniffiLib : Library {
             // we already did that with `IntegrityCheckingUniffiLib` above.
             uniffiCallbackInterfacePodcastAgentAskSink.register(lib)
             uniffiCallbackInterfacePodcastCapabilitySink.register(lib)
+            uniffiCallbackInterfacePodcastLocalLlmSink.register(lib)
             uniffiCallbackInterfacePodcastUpdateSink.register(lib)
             // Loading of library with integrity check done.
             lib
@@ -1012,8 +1448,82 @@ fun uniffi_nmp_app_podcast_fn_free_podcastapp(`ptr`: Pointer,uniffi_out_err: Uni
 ): Unit
 fun uniffi_nmp_app_podcast_fn_constructor_podcastapp_new(uniffi_out_err: UniffiRustCallStatus,
 ): Pointer
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_action_tool(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_enqueue(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_settle(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_category_list(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_parse(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_prompt(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_conversation_history(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_results(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_empty_state(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_error(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_results(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_generated_podcast_descriptor(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory_list(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_nostr_peer_prompt(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_owned_podcast_tool(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_search_tool(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_system_prompt(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_default_voice(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_episode_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_result(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_result(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_list(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_results(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_assemblyai_transcribe(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_audio_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_byok_exchange(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_cancel_bunker_handshake(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_downloads(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_listen_now(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_show_episodes(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_shows(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_chat_complete(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_classify_input_intent(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_configure(`ptr`: Pointer,`visibleLimit`: Int,`emitHz`: Int,uniffi_out_err: UniffiRustCallStatus,
@@ -1023,6 +1533,8 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_consume_all_builtin_projections(
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_create_new_account(`ptr`: Pointer,`profileJson`: RustBuffer.ByValue,`relaysJson`: RustBuffer.ByValue,`mls`: Byte,`makeActive`: Byte,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_nip21_uri(`ptr`: Pointer,`input`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_typed_projection_frame(`ptr`: Pointer,`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_decode_update_frame(`ptr`: Pointer,`frame`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
@@ -1034,17 +1546,105 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_capability_json(`ptr`: 
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_input_intent(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,`sessionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
-fun uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_podcast_action(`ptr`: Pointer,`namespace`: RustBuffer.ByValue,`actionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_download_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_scribe_transcribe(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_tts_synthesize(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_voice_catalog(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_episode_events(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_episode_mutation_tool_result(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_external_play_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_generate_image(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_home_category_cards(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_home_continue_listening(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_home_subscription_list(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_home_triage_rollup(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_http_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_is_alive(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Byte
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_directory_search(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_lookup_feed_url(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_top_podcasts(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_chunk(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_home_related(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_query(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_resolve_scope(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_similar_episode(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_episodes(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_podcasts(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_categories(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_parse(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_prompt(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_category_change(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_download_rows(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_for_audio_url(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_lookup(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_followed_podcasts(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_owned_podcasts(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_for_owner_pubkey(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_stats(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_show_episodes(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_starred_episodes(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_subscription_status(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_library_summary(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_lifecycle_background(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_lifecycle_foreground(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_local_model_catalog(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_local_search(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_memory_remember_text(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_network_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_nostrconnect_uri(`ptr`: Pointer,`callbackScheme`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
-fun uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_bridge_call(`ptr`: Pointer,`endpoint`: RustBuffer.ByValue,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_now_playing_tool_result(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_openrouter_whisper_transcribe(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_perplexity_search(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_playback_tool_result(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_handle(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Long
@@ -1052,10 +1652,20 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_snapshot(`ptr`: Pointer,
 ): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_snapshot_rev(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Long
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_provider_complete(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_provider_embed(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_provider_model_catalog(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_record_episode_event(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_release_ref(`ptr`: Pointer,`namespace`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`consumerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_remove_account(`ptr`: Pointer,`identityId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_rerank(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_reset(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_resolve_ref(`ptr`: Pointer,`namespace`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,`consumerId`: RustBuffer.ByValue,`shape`: RustBuffer.ByValue,`liveness`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -1063,6 +1673,8 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_resolve_ref(`ptr`: Pointer,`name
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_set_agent_ask_sink(`ptr`: Pointer,`sink`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_set_capability_callback(`ptr`: Pointer,`sink`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_set_local_llm_sink(`ptr`: Pointer,`sink`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_set_podcast_data_dir(`ptr`: Pointer,`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
@@ -1082,17 +1694,49 @@ fun uniffi_nmp_app_podcast_fn_method_podcastapp_signin_nip55(`ptr`: Pointer,`sig
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_signin_nsec(`ptr`: Pointer,`secret`: RustBuffer.ByValue,`makeActive`: Byte,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_speech_model_catalog(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_start(`ptr`: Pointer,`visibleLimit`: Int,`emitHz`: Int,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_method_podcastapp_stop(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_storage_breakdown(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_threading_active_topics(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_threading_projection(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_auto_ingest_candidates(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_ingest_plan(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_tool_result(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_validate_elevenlabs_key(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_validate_openrouter_key(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_method_podcastapp_voice_report(`ptr`: Pointer,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 fun uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastagentasksink(`vtable`: UniffiVTableCallbackInterfacePodcastAgentAskSink,
 ): Unit
 fun uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastcapabilitysink(`vtable`: UniffiVTableCallbackInterfacePodcastCapabilitySink,
 ): Unit
+fun uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastlocalllmsink(`vtable`: UniffiVTableCallbackInterfacePodcastLocalLlmSink,
+): Unit
 fun uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastupdatesink(`vtable`: UniffiVTableCallbackInterfacePodcastUpdateSink,
 ): Unit
-fun uniffi_nmp_app_podcast_fn_func_podcast_bridge_global_call(`endpoint`: RustBuffer.ByValue,`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+fun uniffi_nmp_app_podcast_fn_func_agent_action_policy(`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_func_byok_authorization(`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_func_normalize_feed_url(`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_func_npub_from_hex(`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
+fun uniffi_nmp_app_podcast_fn_func_parse_pubkey(`requestJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 fun ffi_nmp_app_podcast_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
@@ -1220,10 +1864,133 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_nmp_app_podcast_checksum_func_podcast_bridge_global_call() != 52926.toShort()) {
+    if (lib.uniffi_nmp_app_podcast_checksum_func_agent_action_policy() != 24010.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_func_byok_authorization() != 34071.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_func_normalize_feed_url() != 33886.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_func_npub_from_hex() != 15897.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_func_parse_pubkey() != 5752.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_action_tool() != 7972.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_enqueue() != 9116.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_ask_settle() != 1243.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_category_list() != 617.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_parse() != 36153.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_chat_title_prompt() != 27040.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_conversation_history() != 34123.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_plan() != 61074.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_directory_search_results() != 526.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_empty_state() != 56853.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_error() != 52265.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_plan() != 25834.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_episode_list_results() != 28165.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_generated_podcast_descriptor() != 30110.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory() != 51816.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_inventory_list() != 693.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_nostr_peer_prompt() != 31166.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_owned_podcast_tool() != 49101.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_search_tool() != 54638.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_system_prompt() != 46410.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_default_voice() != 43307.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_episode_plan() != 42208.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_plan() != 27737.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_tts_tool_result() != 12739.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_plan() != 22123.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_configure_result() != 30268.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_voice_list() != 10059.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_plan() != 2017.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_agent_youtube_search_results() != 51150.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_assemblyai_transcribe() != 43533.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_audio_report() != 3971.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_byok_exchange() != 16382.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_cancel_bunker_handshake() != 641.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_downloads() != 2701.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_listen_now() != 23821.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_show_episodes() != 3780.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_carplay_shows() != 60330.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_chat_complete() != 51148.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_classify_input_intent() != 22761.toShort()) {
@@ -1241,6 +2008,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_nip21_uri() != 30743.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_typed_projection_frame() != 21660.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_decode_update_frame() != 33239.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1256,10 +2026,121 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_input_intent() != 24629.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_dispatch_podcast_action() != 5545.toShort()) {
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_download_report() != 36126.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_scribe_transcribe() != 42648.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_tts_synthesize() != 3324.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_elevenlabs_voice_catalog() != 8420.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_events() != 5370.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_episode_mutation_tool_result() != 28064.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_external_play_plan() != 16542.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_generate_image() != 46294.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_home_category_cards() != 51130.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_home_continue_listening() != 48018.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_home_subscription_list() != 24561.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_home_triage_rollup() != 21575.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_http_report() != 13181.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_is_alive() != 46134.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_directory_search() != 39658.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_lookup_feed_url() != 14235.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_itunes_top_podcasts() != 33671.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_chunk() != 32943.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_home_related() != 58504.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_query() != 19218.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_resolve_scope() != 24635.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_knowledge_similar_episode() != 23379.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_episodes() != 6070.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_all_podcasts() != 4770.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categories() != 2781.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_parse() != 49068.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_categorization_prompt() != 11561.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_category_change() != 42097.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_download_rows() != 29868.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_for_audio_url() != 47169.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_episode_lookup() != 59682.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_followed_podcasts() != 36265.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_owned_podcasts() != 8035.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_for_owner_pubkey() != 63925.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_podcast_stats() != 6413.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_show_episodes() != 51400.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_starred_episodes() != 40720.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_subscription_status() != 2184.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_library_summary() != 51167.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_background() != 59774.toShort()) {
@@ -1268,13 +2149,34 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_lifecycle_foreground() != 44456.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_local_model_catalog() != 16124.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_local_search() != 25692.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_memory_remember_text() != 17074.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_network_report() != 23777.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_nostrconnect_uri() != 64833.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_bridge_call() != 54916.toShort()) {
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_now_playing_tool_result() != 30966.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 9309.toShort()) {
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_openrouter_whisper_transcribe() != 37914.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_perplexity_search() != 48322.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_playback_tool_result() != 62142.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_handle() != 8495.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot() != 121.toShort()) {
@@ -1283,10 +2185,25 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_podcast_snapshot_rev() != 37686.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_complete() != 4163.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_embed() != 23290.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_provider_model_catalog() != 48839.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_record_episode_event() != 8607.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_release_ref() != 65391.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_remove_account() != 29909.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_rerank() != 12840.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_reset() != 65280.toShort()) {
@@ -1299,6 +2216,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_set_capability_callback() != 42066.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_set_local_llm_sink() != 34721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_set_podcast_data_dir() != 50106.toShort()) {
@@ -1328,10 +2248,43 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_signin_nsec() != 29789.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_speech_model_catalog() != 58316.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_start() != 5787.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_stop() != 61874.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_storage_breakdown() != 46581.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_active_topics() != 48388.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_threading_projection() != 17863.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_auto_ingest_candidates() != 29534.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_ingest_plan() != 62923.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_report() != 55517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_transcript_tool_result() != 59887.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_elevenlabs_key() != 8250.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_validate_openrouter_key() != 38472.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastapp_voice_report() != 52447.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_constructor_podcastapp_new() != 33241.toShort()) {
@@ -1341,6 +2294,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastcapabilitysink_on_capability_request() != 55021.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nmp_app_podcast_checksum_method_podcastlocalllmsink_infer() != 24315.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nmp_app_podcast_checksum_method_podcastupdatesink_on_update() != 19397.toShort()) {
@@ -1770,7 +2726,81 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  */
 public interface PodcastAppInterface {
 
+    fun `agentActionTool`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentAskEnqueue`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentAskSettle`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentCategoryList`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentChatTitleParse`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentChatTitlePrompt`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentConversationHistory`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentDirectorySearchPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentDirectorySearchResults`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentEmptyState`(): kotlin.String?
+
+    fun `agentEpisodeListError`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentEpisodeListPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentEpisodeListResults`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentGeneratedPodcastDescriptor`(): kotlin.String?
+
+    fun `agentInventory`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentInventoryList`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentNostrPeerPrompt`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentOwnedPodcastTool`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentSearchTool`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentSystemPrompt`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentTtsDefaultVoice`(): kotlin.String?
+
+    fun `agentTtsEpisodePlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentTtsToolPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentTtsToolResult`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentVoiceConfigurePlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentVoiceConfigureResult`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentVoiceList`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentYoutubeSearchPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `agentYoutubeSearchResults`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `assemblyaiTranscribe`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `audioReport`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `byokExchange`(`requestJson`: kotlin.String): kotlin.String?
+
     fun `cancelBunkerHandshake`()
+
+    fun `carplayDownloads`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `carplayListenNow`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `carplayShowEpisodes`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `carplayShows`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `chatComplete`(`requestJson`: kotlin.String): kotlin.String?
 
     fun `classifyInputIntent`(`requestJson`: kotlin.String): kotlin.String
 
@@ -1789,6 +2819,8 @@ public interface PodcastAppInterface {
 
     fun `decodeNip21Uri`(`input`: kotlin.String): kotlin.String
 
+    fun `decodeTypedProjectionFrame`(`frame`: kotlin.ByteArray): PodcastTypedProjectionFrame?
+
     fun `decodeUpdateFrame`(`frame`: kotlin.ByteArray): kotlin.String?
 
     fun `deliverExternalSignerResponse`(`responseJson`: kotlin.String)
@@ -1799,20 +2831,109 @@ public interface PodcastAppInterface {
 
     fun `dispatchInputIntent`(`requestJson`: kotlin.String, `sessionId`: kotlin.String?): kotlin.String
 
-    fun `dispatchPodcastAction`(`namespace`: kotlin.String, `actionJson`: kotlin.String): kotlin.String?
+    fun `downloadReport`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `elevenlabsScribeTranscribe`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `elevenlabsTtsSynthesize`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `elevenlabsVoiceCatalog`(): kotlin.String?
+
+    fun `episodeEvents`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `episodeMutationToolResult`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `externalPlayPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `generateImage`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `homeCategoryCards`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `homeContinueListening`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `homeSubscriptionList`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `homeTriageRollup`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `httpReport`(`requestJson`: kotlin.String): kotlin.String?
 
     fun `isAlive`(): kotlin.Boolean
+
+    fun `itunesDirectorySearch`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `itunesLookupFeedUrl`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `itunesTopPodcasts`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `knowledgeChunk`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `knowledgeHomeRelated`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `knowledgeQuery`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `knowledgeResolveScope`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `knowledgeSimilarEpisode`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryAllEpisodes`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryAllPodcasts`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryCategories`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryCategorizationParse`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryCategorizationPrompt`(): kotlin.String?
+
+    fun `libraryCategoryChange`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryDownloadRows`(): kotlin.String?
+
+    fun `libraryEpisodeForAudioUrl`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryEpisodeLookup`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryFollowedPodcasts`(): kotlin.String?
+
+    fun `libraryOwnedPodcasts`(): kotlin.String?
+
+    fun `libraryPodcastForOwnerPubkey`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryPodcastStats`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryShowEpisodes`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `libraryStarredEpisodes`(): kotlin.String?
+
+    fun `librarySubscriptionStatus`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `librarySummary`(): kotlin.String?
 
     fun `lifecycleBackground`()
 
     fun `lifecycleForeground`()
 
+    fun `localModelCatalog`(): kotlin.String?
+
+    fun `localSearch`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `memoryRememberText`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `networkReport`(`requestJson`: kotlin.String): kotlin.String?
+
     fun `nostrconnectUri`(`callbackScheme`: kotlin.String?): kotlin.String?
 
-    fun `podcastBridgeCall`(`endpoint`: kotlin.String, `requestJson`: kotlin.String?): kotlin.String?
+    fun `nowPlayingToolResult`(): kotlin.String?
+
+    fun `openrouterWhisperTranscribe`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `perplexitySearch`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `playbackToolResult`(`requestJson`: kotlin.String): kotlin.String?
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */
@@ -1822,9 +2943,19 @@ public interface PodcastAppInterface {
 
     fun `podcastSnapshotRev`(): kotlin.ULong
 
+    fun `providerComplete`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `providerEmbed`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `providerModelCatalog`(): kotlin.String?
+
+    fun `recordEpisodeEvent`(`requestJson`: kotlin.String): kotlin.String?
+
     fun `releaseRef`(`namespace`: PodcastRefNamespace, `key`: kotlin.String, `consumerId`: kotlin.String)
 
     fun `removeAccount`(`identityId`: kotlin.String)
+
+    fun `rerank`(`requestJson`: kotlin.String): kotlin.String?
 
     fun `reset`()
 
@@ -1833,6 +2964,8 @@ public interface PodcastAppInterface {
     fun `setAgentAskSink`(`sink`: PodcastAgentAskSink?)
 
     fun `setCapabilityCallback`(`sink`: PodcastCapabilitySink?)
+
+    fun `setLocalLlmSink`(`sink`: PodcastLocalLlmSink?)
 
     fun `setPodcastDataDir`(`path`: kotlin.String)
 
@@ -1852,9 +2985,31 @@ public interface PodcastAppInterface {
 
     fun `signinNsec`(`secret`: kotlin.String, `makeActive`: kotlin.Boolean)
 
+    fun `speechModelCatalog`(): kotlin.String?
+
     fun `start`(`visibleLimit`: kotlin.UInt, `emitHz`: kotlin.UInt)
 
     fun `stop`()
+
+    fun `storageBreakdown`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `threadingActiveTopics`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `threadingProjection`(): kotlin.String?
+
+    fun `transcriptAutoIngestCandidates`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `transcriptIngestPlan`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `transcriptReport`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `transcriptToolResult`(`requestJson`: kotlin.String): kotlin.String?
+
+    fun `validateElevenlabsKey`(): kotlin.String?
+
+    fun `validateOpenrouterKey`(): kotlin.String?
+
+    fun `voiceReport`(`requestJson`: kotlin.String): kotlin.String?
 
     companion object
 }
@@ -1952,6 +3107,390 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
         }
     }
 
+    override fun `agentActionTool`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_action_tool(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentAskEnqueue`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_enqueue(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentAskSettle`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_ask_settle(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentCategoryList`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_category_list(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentChatTitleParse`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_parse(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentChatTitlePrompt`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_chat_title_prompt(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentConversationHistory`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_conversation_history(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentDirectorySearchPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentDirectorySearchResults`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_directory_search_results(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentEmptyState`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_empty_state(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentEpisodeListError`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_error(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentEpisodeListPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentEpisodeListResults`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_episode_list_results(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentGeneratedPodcastDescriptor`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_generated_podcast_descriptor(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentInventory`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentInventoryList`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_inventory_list(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentNostrPeerPrompt`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_nostr_peer_prompt(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentOwnedPodcastTool`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_owned_podcast_tool(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentSearchTool`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_search_tool(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentSystemPrompt`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_system_prompt(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentTtsDefaultVoice`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_default_voice(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentTtsEpisodePlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_episode_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentTtsToolPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentTtsToolResult`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_tts_tool_result(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentVoiceConfigurePlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentVoiceConfigureResult`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_configure_result(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentVoiceList`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_voice_list(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentYoutubeSearchPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `agentYoutubeSearchResults`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_agent_youtube_search_results(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `assemblyaiTranscribe`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_assemblyai_transcribe(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `audioReport`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_audio_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `byokExchange`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_byok_exchange(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
     override fun `cancelBunkerHandshake`()
         =
     callWithPointer {
@@ -1961,6 +3500,66 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 }
     }
 
+
+
+    override fun `carplayDownloads`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_downloads(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `carplayListenNow`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_listen_now(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `carplayShowEpisodes`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_show_episodes(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `carplayShows`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_carplay_shows(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `chatComplete`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_chat_complete(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
 
 
     override fun `classifyInputIntent`(`requestJson`: kotlin.String): kotlin.String {
@@ -2027,6 +3626,18 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     }
 
 
+    override fun `decodeTypedProjectionFrame`(`frame`: kotlin.ByteArray): PodcastTypedProjectionFrame? {
+            return FfiConverterOptionalTypePodcastTypedProjectionFrame.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_decode_typed_projection_frame(
+        it, FfiConverterByteArray.lower(`frame`),_status)
+}
+    }
+    )
+    }
+
+
     override fun `decodeUpdateFrame`(`frame`: kotlin.ByteArray): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithPointer {
@@ -2086,12 +3697,156 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     }
 
 
-    override fun `dispatchPodcastAction`(`namespace`: kotlin.String, `actionJson`: kotlin.String): kotlin.String? {
+    override fun `downloadReport`(`requestJson`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithPointer {
     uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_dispatch_podcast_action(
-        it, FfiConverterString.lower(`namespace`),FfiConverterString.lower(`actionJson`),_status)
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_download_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `elevenlabsScribeTranscribe`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_scribe_transcribe(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `elevenlabsTtsSynthesize`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_tts_synthesize(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `elevenlabsVoiceCatalog`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_elevenlabs_voice_catalog(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `episodeEvents`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_episode_events(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `episodeMutationToolResult`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_episode_mutation_tool_result(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `externalPlayPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_external_play_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `generateImage`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_generate_image(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `homeCategoryCards`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_home_category_cards(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `homeContinueListening`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_home_continue_listening(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `homeSubscriptionList`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_home_subscription_list(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `homeTriageRollup`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_home_triage_rollup(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `httpReport`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_http_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
 }
     }
     )
@@ -2103,6 +3858,306 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     callWithPointer {
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_is_alive(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `itunesDirectorySearch`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_directory_search(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `itunesLookupFeedUrl`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_lookup_feed_url(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `itunesTopPodcasts`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_itunes_top_podcasts(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `knowledgeChunk`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_chunk(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `knowledgeHomeRelated`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_home_related(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `knowledgeQuery`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_query(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `knowledgeResolveScope`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_resolve_scope(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `knowledgeSimilarEpisode`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_knowledge_similar_episode(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryAllEpisodes`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_episodes(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryAllPodcasts`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_all_podcasts(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryCategories`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_categories(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryCategorizationParse`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_parse(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryCategorizationPrompt`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_categorization_prompt(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryCategoryChange`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_category_change(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryDownloadRows`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_download_rows(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryEpisodeForAudioUrl`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_for_audio_url(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryEpisodeLookup`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_episode_lookup(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryFollowedPodcasts`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_followed_podcasts(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryOwnedPodcasts`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_owned_podcasts(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryPodcastForOwnerPubkey`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_for_owner_pubkey(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryPodcastStats`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_podcast_stats(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryShowEpisodes`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_show_episodes(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `libraryStarredEpisodes`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_starred_episodes(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `librarySubscriptionStatus`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_subscription_status(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `librarySummary`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_library_summary(
         it, _status)
 }
     }
@@ -2132,6 +4187,54 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 
 
 
+    override fun `localModelCatalog`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_local_model_catalog(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `localSearch`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_local_search(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `memoryRememberText`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_memory_remember_text(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `networkReport`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_network_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
     override fun `nostrconnectUri`(`callbackScheme`: kotlin.String?): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithPointer {
@@ -2144,12 +4247,48 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     }
 
 
-    override fun `podcastBridgeCall`(`endpoint`: kotlin.String, `requestJson`: kotlin.String?): kotlin.String? {
+    override fun `nowPlayingToolResult`(): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithPointer {
     uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_podcast_bridge_call(
-        it, FfiConverterString.lower(`endpoint`),FfiConverterOptionalString.lower(`requestJson`),_status)
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_now_playing_tool_result(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `openrouterWhisperTranscribe`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_openrouter_whisper_transcribe(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `perplexitySearch`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_perplexity_search(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `playbackToolResult`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_playback_tool_result(
+        it, FfiConverterString.lower(`requestJson`),_status)
 }
     }
     )
@@ -2158,7 +4297,8 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 
 
     /**
-     * Transitional escape hatch for the still-C-ABI app-domain tail.
+     * Transitional handle token for UniFFI methods whose Rust bodies still
+     * delegate through handle-scoped JSON helpers.
      * This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
      * Swift must not free it.
      */override fun `podcastHandle`(): kotlin.ULong {
@@ -2197,6 +4337,54 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     }
 
 
+    override fun `providerComplete`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_provider_complete(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `providerEmbed`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_provider_embed(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `providerModelCatalog`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_provider_model_catalog(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `recordEpisodeEvent`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_record_episode_event(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
     override fun `releaseRef`(`namespace`: PodcastRefNamespace, `key`: kotlin.String, `consumerId`: kotlin.String)
         =
     callWithPointer {
@@ -2217,6 +4405,18 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 }
     }
 
+
+
+    override fun `rerank`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_rerank(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
 
 
     override fun `reset`()
@@ -2258,6 +4458,17 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_set_capability_callback(
         it, FfiConverterOptionalTypePodcastCapabilitySink.lower(`sink`),_status)
+}
+    }
+
+
+
+    override fun `setLocalLlmSink`(`sink`: PodcastLocalLlmSink?)
+        =
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_set_local_llm_sink(
+        it, FfiConverterOptionalTypePodcastLocalLlmSink.lower(`sink`),_status)
 }
     }
 
@@ -2363,6 +4574,18 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 
 
 
+    override fun `speechModelCatalog`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_speech_model_catalog(
+        it, _status)
+}
+    }
+    )
+    }
+
+
     override fun `start`(`visibleLimit`: kotlin.UInt, `emitHz`: kotlin.UInt)
         =
     callWithPointer {
@@ -2383,6 +4606,126 @@ open class PodcastApp: Disposable, AutoCloseable, PodcastAppInterface
 }
     }
 
+
+
+    override fun `storageBreakdown`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_storage_breakdown(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `threadingActiveTopics`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_threading_active_topics(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `threadingProjection`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_threading_projection(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `transcriptAutoIngestCandidates`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_auto_ingest_candidates(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `transcriptIngestPlan`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_ingest_plan(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `transcriptReport`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `transcriptToolResult`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_transcript_tool_result(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
+
+
+    override fun `validateElevenlabsKey`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_validate_elevenlabs_key(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `validateOpenrouterKey`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_validate_openrouter_key(
+        it, _status)
+}
+    }
+    )
+    }
+
+
+    override fun `voiceReport`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_method_podcastapp_voice_report(
+        it, FfiConverterString.lower(`requestJson`),_status)
+}
+    }
+    )
+    }
 
 
 
@@ -2459,6 +4802,94 @@ public object FfiConverterTypePodcastDispatchOutcome: FfiConverterRustBuffer<Pod
 
 
 
+data class PodcastTypedProjectionEnvelope (
+    var `key`: kotlin.String,
+    var `schemaId`: kotlin.String,
+    var `schemaVersion`: kotlin.UInt,
+    var `fileIdentifier`: kotlin.String,
+    var `payload`: kotlin.ByteArray,
+    var `projectionRev`: kotlin.ULong,
+    var `state`: PodcastProjectionPresence
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer<PodcastTypedProjectionEnvelope> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionEnvelope {
+        return PodcastTypedProjectionEnvelope(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterTypePodcastProjectionPresence.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionEnvelope) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterString.allocationSize(value.`schemaId`) +
+            FfiConverterUInt.allocationSize(value.`schemaVersion`) +
+            FfiConverterString.allocationSize(value.`fileIdentifier`) +
+            FfiConverterByteArray.allocationSize(value.`payload`) +
+            FfiConverterULong.allocationSize(value.`projectionRev`) +
+            FfiConverterTypePodcastProjectionPresence.allocationSize(value.`state`)
+    )
+
+    override fun write(value: PodcastTypedProjectionEnvelope, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterString.write(value.`schemaId`, buf)
+            FfiConverterUInt.write(value.`schemaVersion`, buf)
+            FfiConverterString.write(value.`fileIdentifier`, buf)
+            FfiConverterByteArray.write(value.`payload`, buf)
+            FfiConverterULong.write(value.`projectionRev`, buf)
+            FfiConverterTypePodcastProjectionPresence.write(value.`state`, buf)
+    }
+}
+
+
+
+data class PodcastTypedProjectionFrame (
+    var `sessionId`: kotlin.ULong,
+    var `snapshotEpoch`: kotlin.ULong,
+    var `envelopes`: List<PodcastTypedProjectionEnvelope>
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastTypedProjectionFrame: FfiConverterRustBuffer<PodcastTypedProjectionFrame> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionFrame {
+        return PodcastTypedProjectionFrame(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionFrame) = (
+            FfiConverterULong.allocationSize(value.`sessionId`) +
+            FfiConverterULong.allocationSize(value.`snapshotEpoch`) +
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.allocationSize(value.`envelopes`)
+    )
+
+    override fun write(value: PodcastTypedProjectionFrame, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`sessionId`, buf)
+            FfiConverterULong.write(value.`snapshotEpoch`, buf)
+            FfiConverterSequenceTypePodcastTypedProjectionEnvelope.write(value.`envelopes`, buf)
+    }
+}
+
+
+
 
 enum class PodcastEventShape {
 
@@ -2511,6 +4942,36 @@ public object FfiConverterTypePodcastProfileShape: FfiConverterRustBuffer<Podcas
     override fun allocationSize(value: PodcastProfileShape) = 4UL
 
     override fun write(value: PodcastProfileShape, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+
+enum class PodcastProjectionPresence {
+
+    CHANGED,
+    CLEARED;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypePodcastProjectionPresence: FfiConverterRustBuffer<PodcastProjectionPresence> {
+    override fun read(buf: ByteBuffer) = try {
+        PodcastProjectionPresence.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: PodcastProjectionPresence) = 4UL
+
+    override fun write(value: PodcastProjectionPresence, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -2757,6 +5218,59 @@ public object FfiConverterTypePodcastCapabilitySink: FfiConverterCallbackInterfa
 
 
 
+public interface PodcastLocalLlmSink {
+
+    fun `infer`(`promptJson`: kotlin.String): kotlin.String
+
+    companion object
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfacePodcastLocalLlmSink {
+    internal object `infer`: UniffiCallbackInterfacePodcastLocalLlmSinkMethod0 {
+        override fun callback(`uniffiHandle`: Long,`promptJson`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypePodcastLocalLlmSink.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`infer`(
+                    FfiConverterString.lift(`promptJson`),
+                )
+            }
+            val writeReturn = { value: kotlin.String -> uniffiOutReturn.setValue(FfiConverterString.lower(value)) }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypePodcastLocalLlmSink.handleMap.remove(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfacePodcastLocalLlmSink.UniffiByValue(
+        `infer`,
+        uniffiFree,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_nmp_app_podcast_fn_init_callback_vtable_podcastlocalllmsink(vtable)
+    }
+}
+
+/**
+ * The ffiConverter which transforms the Callbacks in to handles to pass to Rust.
+ *
+ * @suppress
+ */
+public object FfiConverterTypePodcastLocalLlmSink: FfiConverterCallbackInterface<PodcastLocalLlmSink>()
+
+
+
+
+
 public interface PodcastUpdateSink {
 
     fun `onUpdate`(`frame`: kotlin.ByteArray)
@@ -2844,6 +5358,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypePodcastTypedProjectionFrame: FfiConverterRustBuffer<PodcastTypedProjectionFrame?> {
+    override fun read(buf: ByteBuffer): PodcastTypedProjectionFrame? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypePodcastTypedProjectionFrame.read(buf)
+    }
+
+    override fun allocationSize(value: PodcastTypedProjectionFrame?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypePodcastTypedProjectionFrame.allocationSize(value)
+        }
+    }
+
+    override fun write(value: PodcastTypedProjectionFrame?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypePodcastTypedProjectionFrame.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypePodcastAgentAskSink: FfiConverterRustBuffer<PodcastAgentAskSink?> {
     override fun read(buf: ByteBuffer): PodcastAgentAskSink? {
         if (buf.get().toInt() == 0) {
@@ -2908,6 +5454,38 @@ public object FfiConverterOptionalTypePodcastCapabilitySink: FfiConverterRustBuf
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypePodcastLocalLlmSink: FfiConverterRustBuffer<PodcastLocalLlmSink?> {
+    override fun read(buf: ByteBuffer): PodcastLocalLlmSink? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypePodcastLocalLlmSink.read(buf)
+    }
+
+    override fun allocationSize(value: PodcastLocalLlmSink?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypePodcastLocalLlmSink.allocationSize(value)
+        }
+    }
+
+    override fun write(value: PodcastLocalLlmSink?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypePodcastLocalLlmSink.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypePodcastUpdateSink: FfiConverterRustBuffer<PodcastUpdateSink?> {
     override fun read(buf: ByteBuffer): PodcastUpdateSink? {
         if (buf.get().toInt() == 0) {
@@ -2932,11 +5510,75 @@ public object FfiConverterOptionalTypePodcastUpdateSink: FfiConverterRustBuffer<
             FfiConverterTypePodcastUpdateSink.write(value, buf)
         }
     }
-} fun `podcastBridgeGlobalCall`(`endpoint`: kotlin.String, `requestJson`: kotlin.String): kotlin.String? {
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypePodcastTypedProjectionEnvelope: FfiConverterRustBuffer<List<PodcastTypedProjectionEnvelope>> {
+    override fun read(buf: ByteBuffer): List<PodcastTypedProjectionEnvelope> {
+        val len = buf.getInt()
+        return List<PodcastTypedProjectionEnvelope>(len) {
+            FfiConverterTypePodcastTypedProjectionEnvelope.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<PodcastTypedProjectionEnvelope>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypePodcastTypedProjectionEnvelope.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<PodcastTypedProjectionEnvelope>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypePodcastTypedProjectionEnvelope.write(it, buf)
+        }
+    }
+} fun `agentActionPolicy`(`requestJson`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_podcast_bridge_global_call(
-        FfiConverterString.lower(`endpoint`),FfiConverterString.lower(`requestJson`),_status)
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_agent_action_policy(
+        FfiConverterString.lower(`requestJson`),_status)
+}
+    )
+    }
+
+ fun `byokAuthorization`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_byok_authorization(
+        FfiConverterString.lower(`requestJson`),_status)
+}
+    )
+    }
+
+ fun `normalizeFeedUrl`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_normalize_feed_url(
+        FfiConverterString.lower(`requestJson`),_status)
+}
+    )
+    }
+
+ fun `npubFromHex`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_npub_from_hex(
+        FfiConverterString.lower(`requestJson`),_status)
+}
+    )
+    }
+
+ fun `parsePubkey`(`requestJson`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_nmp_app_podcast_fn_func_parse_pubkey(
+        FfiConverterString.lower(`requestJson`),_status)
 }
     )
     }

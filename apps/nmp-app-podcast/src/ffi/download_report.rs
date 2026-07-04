@@ -16,9 +16,9 @@
 //!   [`crate::capability::DownloadReport`].
 //! * **Response**: heap-allocated nul-terminated JSON of a
 //!   [`crate::capability::DownloadCommand`], or `NULL` when no follow-up is
-//!   needed. The caller MUST free the returned pointer via
-//!   `nmp_free_string`. This is how the Rust queue starts the next
-//!   waiting item after iOS reports `Completed`, `Failed`, or `Cancelled`.
+//!   needed. The internal facade adapter reclaims the returned raw string. This
+//!   is how the Rust queue starts the next waiting item after iOS reports
+//!   `Completed`, `Failed`, or `Cancelled`.
 //!
 //! ## Lock discipline
 //!
@@ -48,7 +48,7 @@
 //!   "downloads": <DownloadQueueSnapshot or omitted>,
 //!   "durable_changed": <bool> }
 //! ```
-//! The caller MUST free the pointer via `nmp_free_string`.
+//! The internal facade adapter reclaims the returned raw string.
 //!
 //! ## D6 — degrade silently
 //!
@@ -89,11 +89,10 @@ struct DownloadReportResponse {
 /// Deliver a JSON-encoded `DownloadReport` to the Rust `PodcastStore` and
 /// return the JSON-encoded [`DownloadReportResponse`].
 ///
-/// Returns a malloc-compatible string the caller MUST free via
-/// `nmp_free_string`, or `NULL` on any error (D6 degrade-silently).
-#[no_mangle]
+/// Returns a raw string reclaimed by the internal facade adapter, or `NULL` on
+/// any error (D6 degrade-silently).
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_download_report(
+pub fn nmp_app_podcast_download_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

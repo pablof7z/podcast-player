@@ -99,33 +99,31 @@ enum NostrConversationRoot {
 
 enum NostrNpub {
     static func pubkeyHex(from input: String) -> String? {
-        input.withCString { ptr in
-            guard let result = nmp_app_podcast_parse_pubkey(ptr) else { return nil }
-            defer { nmp_free_string(result) }
-            let envelope = String(cString: result)
+        {
+            guard let result = podcastAppGlobalString(endpoint: .parsePubkeyEndpoint, request: input) else { return nil }
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(PubkeyResponse.self, from: data),
                   let pubkeyHex = decoded.pubkeyHex,
                   !pubkeyHex.isEmpty
             else { return nil }
             return pubkeyHex
-        }
+        }()
     }
 
     /// Encodes a hex pubkey as a full `npub1…` bech32 string. Returns the
     /// raw hex on failure so callers always have something to render.
     static func encode(fromHex hex: String) -> String {
-        hex.withCString { ptr in
-            guard let result = nmp_app_podcast_npub_from_hex(ptr) else { return hex }
-            defer { nmp_free_string(result) }
-            let envelope = String(cString: result)
+        {
+            guard let result = podcastAppGlobalString(endpoint: .npubFromHexEndpoint, request: hex) else { return hex }
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(NpubResponse.self, from: data),
                   let npub = decoded.npub,
                   !npub.isEmpty
             else { return hex }
             return npub
-        }
+        }()
     }
 
     /// Shortened display form: `npub1abcdefghij…uvwxyz`. Used in

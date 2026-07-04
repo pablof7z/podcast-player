@@ -101,7 +101,7 @@ class ClipSummaryWireTest {
     @Test
     fun `ClipSummary decodes snake_case fields from misc frame`() {
         val raw = envelope("podcast.misc" to miscFrameWithClips)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("misc frame must decode", frames)
         val misc = frames!!.misc
         assertNotNull("misc domain must be present", misc)
@@ -126,7 +126,7 @@ class ClipSummaryWireTest {
     @Test
     fun `ClipSummary decodes null title when title absent from wire`() {
         val raw = envelope("podcast.misc" to miscFrameWithClips)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         val unnamed = frames!!.misc!!.clips!![1]
 
         assertEquals("clip-uuid-2",         unnamed.id)
@@ -140,12 +140,12 @@ class ClipSummaryWireTest {
         assertEquals(1717200100L, unnamed.createdAt)
     }
 
-    // ── 3. SnapshotCodec.decodeDomainFrames decodes misc clips list ───────────
+    // ── 3. DomainFrameFixtures.decodeDomainFrames decodes misc clips list ───────────
 
     @Test
     fun `decodeDomainFrames decodes misc clips list correctly`() {
         val raw = envelope("podcast.misc" to miscFrameWithClips)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("frames must not be null", frames)
         assertNotNull("misc domain must be non-null", frames!!.misc)
         assertEquals(20L, frames.misc!!.rev)
@@ -157,7 +157,7 @@ class ClipSummaryWireTest {
     @Test
     fun `mergeFrames populates PodcastSnapshot clips from misc frame`() {
         val raw = envelope("podcast.misc" to miscFrameWithClips)
-        val frames = SnapshotCodec.decodeDomainFrames(raw)
+        val frames = DomainFrameFixtures.decodeDomainFrames(raw)
         assertNotNull("frames must decode", frames)
 
         val tracker = DomainRevTracker()
@@ -184,7 +184,7 @@ class ClipSummaryWireTest {
     fun `misc frame without clips key does not clear snapshot clips (null = no change)`() {
         // Seed: apply a misc frame with 2 clips.
         val seedRaw = envelope("podcast.misc" to miscFrameWithClips)
-        val seedFrames = SnapshotCodec.decodeDomainFrames(seedRaw)!!
+        val seedFrames = DomainFrameFixtures.decodeDomainFrames(seedRaw)!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(seedFrames, PodcastSnapshot(), tracker)
         assertEquals("seeded snapshot must have 2 clips", 2, seeded.clips.size)
@@ -192,7 +192,7 @@ class ClipSummaryWireTest {
         // Apply a misc frame that does NOT carry a 'clips' key (rev=21).
         // Per delta-merge: null clips in frame → retain prior clips in snapshot.
         val noClipsRaw = envelope("podcast.misc" to miscFrameNoClips)
-        val noClipsFrames = SnapshotCodec.decodeDomainFrames(noClipsRaw)!!
+        val noClipsFrames = DomainFrameFixtures.decodeDomainFrames(noClipsRaw)!!
         assertNull(
             "misc frame without clips key must decode clips as null",
             noClipsFrames.misc!!.clips,
@@ -213,14 +213,14 @@ class ClipSummaryWireTest {
     fun `misc frame with empty clips list clears snapshot clips`() {
         // Seed: 2 clips.
         val seedRaw = envelope("podcast.misc" to miscFrameWithClips)
-        val seedFrames = SnapshotCodec.decodeDomainFrames(seedRaw)!!
+        val seedFrames = DomainFrameFixtures.decodeDomainFrames(seedRaw)!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(seedFrames, PodcastSnapshot(), tracker)
         assertEquals(2, seeded.clips.size)
 
         // Apply a misc frame with clips=[] (all clips deleted).
         val emptyClipsRaw = envelope("podcast.misc" to miscFrameEmptyClips)
-        val emptyClipsFrames = SnapshotCodec.decodeDomainFrames(emptyClipsRaw)!!
+        val emptyClipsFrames = DomainFrameFixtures.decodeDomainFrames(emptyClipsRaw)!!
         assertNotNull("clips must decode as empty list, not null", emptyClipsFrames.misc!!.clips)
         assertTrue("clips list must be empty", emptyClipsFrames.misc!!.clips!!.isEmpty())
 
@@ -238,7 +238,7 @@ class ClipSummaryWireTest {
     fun `drop-guard ignores stale misc rev and preserves snapshot clips`() {
         // Seed: rev=20 misc frame with 2 clips.
         val seedRaw = envelope("podcast.misc" to miscFrameWithClips)  // rev=20
-        val seedFrames = SnapshotCodec.decodeDomainFrames(seedRaw)!!
+        val seedFrames = DomainFrameFixtures.decodeDomainFrames(seedRaw)!!
         val tracker = DomainRevTracker()
         val (seeded, _) = SnapshotCodec.mergeFrames(seedFrames, PodcastSnapshot(), tracker)
         assertEquals(20L, tracker.misc)
@@ -246,7 +246,7 @@ class ClipSummaryWireTest {
 
         // Stale rev=5 frame with empty clips — must be dropped.
         val stale = """{"rev":5,"clips":[]}"""
-        val staleFrames = SnapshotCodec.decodeDomainFrames(envelope("podcast.misc" to stale))!!
+        val staleFrames = DomainFrameFixtures.decodeDomainFrames(envelope("podcast.misc" to stale))!!
         val (afterStale, accepted) = SnapshotCodec.mergeFrames(staleFrames, seeded, tracker)
         assertFalse("stale-rev misc frame must be rejected by drop-guard", accepted)
         assertEquals("clips must be unchanged after stale-rev drop", 2, afterStale.clips.size)

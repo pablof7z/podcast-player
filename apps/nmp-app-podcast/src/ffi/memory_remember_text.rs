@@ -51,9 +51,8 @@ fn parse_request(request_json: *const c_char) -> Option<RememberTextRequest> {
     serde_json::from_str(request_str).ok()
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_memory_remember_text(
+pub fn nmp_app_podcast_memory_remember_text(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

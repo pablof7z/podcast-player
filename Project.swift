@@ -32,6 +32,13 @@ var swiftPackages: [Package] = [
         url: "https://github.com/onevcat/Kingfisher",
         requirement: .revision("cf8be20d07654570554c8a8a4952bc8a5766a8b0")
     ),
+    // FlatBuffers Swift runtime. Used by NMP generated action builders for the
+    // UniFFI `dispatchAction(envelope:)` byte doorway. Pinned to the same
+    // v25.12.19 release family as the Rust `flatbuffers` crate in Cargo.lock.
+    .remote(
+        url: "https://github.com/google/flatbuffers",
+        requirement: .revision("7e163021e59cca4f8e1e35a7c828b5c6b7915953")
+    ),
 ]
 
 if enableLiteRTLMPackage {
@@ -49,6 +56,7 @@ if enableLiteRTLMPackage {
 
 var appDependencies: [TargetDependency] = [
     .package(product: "Kingfisher"),
+    .package(product: "FlatBuffers"),
 ]
 
 if enableLiteRTLMPackage {
@@ -172,14 +180,12 @@ let project = Project(
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "TARGETED_DEVICE_FAMILY": "1,2",
                     "PROVISIONING_PROFILE_SPECIFIER": "$(CI_APP_PROFILE_SPECIFIER)",
-                    // Rust FFI bridge
-                    "SWIFT_OBJC_BRIDGING_HEADER": "App/Sources/Bridge/NmpCore.h",
                     // Wave 1 of the UniFFI-facade migration (podcast-player#681
                     // follow-on): `PodcastApp`'s generated Swift binding
                     // (`App/Sources/Bridge/Generated/PodcastApp.uniffi.swift`)
                     // imports its FFI symbols as the separate Clang module
-                    // `nmp_app_podcastFFI`, NOT through `NmpCore.h` — merging it
-                    // into the bridging header would make every
+                    // `nmp_app_podcastFFI`; routing those symbols through a
+                    // bridging header would make every
                     // `uniffi_nmp_app_podcast_fn_*` symbol match
                     // `ci/check-ffi-header-drift.sh`'s `nmp_*` pattern and falsely
                     // flag as undeclared drift. Clang auto-discovers the

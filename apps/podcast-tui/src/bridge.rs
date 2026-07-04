@@ -1,6 +1,6 @@
 use std::sync::mpsc::{self, Receiver, Sender};
 
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::{PodcastApp, PodcastUpdateSink};
 
 /// Lightweight signal that the kernel has emitted a new snapshot.
 /// The actual payload is read on the main thread via
@@ -20,31 +20,23 @@ impl NmpUpdateBridge {
         (Box::new(Self { tx }), rx)
     }
 
-    /// Register `bridge` as `app`'s update listener.
-    ///
-    /// `nmp_native_runtime::NmpApp::set_update_listener` takes a plain Rust
-    /// closure (`Arc<dyn Fn(&[u8]) + Send + Sync>`) instead of the deleted
-    /// `nmp-ffi` C-ABI context-pointer + callback-fn pair — no `unsafe`
-    /// context juggling needed.
-    pub fn register(app: *mut NmpApp, bridge: &mut Box<Self>) {
-        if app.is_null() {
-            return;
-        }
+    /// Register `bridge` as the app-owned UniFFI facade's update listener.
+    pub fn register(app: &PodcastApp, bridge: &mut Box<Self>) {
         let tx = bridge.tx.clone();
-        // SAFETY: app is non-null (checked above) and owned by the host for
-        // the lifetime of this call.
-        let app_ref = unsafe { &*app };
-        app_ref.set_update_listener(Some(std::sync::Arc::new(move |_bytes: &[u8]| {
-            let _ = tx.send(NmpEvent);
-        })));
+        app.set_update_sink(Some(Box::new(TuiUpdateSink { tx })));
     }
 }
 
-pub fn unregister(app: *mut NmpApp) {
-    if app.is_null() {
-        return;
+struct TuiUpdateSink {
+    tx: Sender<NmpEvent>,
+}
+
+impl PodcastUpdateSink for TuiUpdateSink {
+    fn on_update(&self, _frame: Vec<u8>) {
+        let _ = self.tx.send(NmpEvent);
     }
-    // SAFETY: app is non-null (checked above).
-    let app_ref = unsafe { &*app };
-    app_ref.set_update_listener(None);
+}
+
+pub fn unregister(app: &PodcastApp) {
+    app.set_update_sink(None);
 }

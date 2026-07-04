@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Check that the remaining NmpCore.h C imports exist in Rust.
+# Check that any remaining NmpCore.h C imports exist in Rust.
 #
-# Scope: NmpCore.h is app-owned and intentionally narrow. App-domain
-# `nmp_app_podcast_*` calls should route through generated UniFFI (`PodcastApp`)
-# instead of being declared here.
+# Scope: NmpCore.h was the app-owned legacy C bridge header. It is absent once
+# the native shells use generated UniFFI (`PodcastApp`) for app-domain calls.
+# If a future branch reintroduces the header, every declaration in it must
+# still correspond to a local Rust symbol.
 #
 # NOTE: Uses only POSIX-compatible tools (grep -E, sed, awk) to support
 #       BSD grep on macOS as well as GNU grep on Linux.
@@ -15,8 +16,8 @@ HEADER_FILE="${REPO_ROOT}/App/Sources/Bridge/NmpCore.h"
 APP_SRC_DIR="${REPO_ROOT}/apps/nmp-app-podcast/src"
 
 if [[ ! -f "$HEADER_FILE" ]]; then
-    echo "Error: Header file not found: $HEADER_FILE"
-    exit 1
+    echo "NmpCore.h not present; legacy C bridge header is deleted. Nothing to check."
+    exit 0
 fi
 
 if [[ ! -d "$APP_SRC_DIR" ]]; then

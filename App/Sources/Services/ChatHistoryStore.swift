@@ -157,18 +157,17 @@ final class ChatHistoryStore {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr -> [ChatConversation]? in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            let envelope = String(cString: result)
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? Self.decoder.decode(RustChatHistoryResponse.self, from: data),
                   decoded.error == nil
             else { return nil }
             return decoded.conversations
-        }
+        }()
     }
 
     private func conversationsObject(_ conversations: [ChatConversation]) -> [[String: Any]] {

@@ -11,15 +11,13 @@
 //! ## Shutdown fence — CRITICAL
 //!
 //! `VoiceConversationManager` spawns Tokio tasks that dereference `*mut NmpApp`
-//! (the capability dispatch back to iOS TTS). `nmp_app_podcast_unregister`
-//! (in `ffi/snapshot.rs`) MUST call `shutdown()` on the manager before the
-//! handle drops, so every in-flight task is aborted/joined before the
-//! `NmpApp` allocation is freed.  After migration the unregister path calls
-//! `reclaimed.state.voice.shutdown()` — **same ordering, same fence**.
+//! (the capability dispatch back to iOS TTS). `PodcastApp.shutdown()` / `Drop`
+//! MUST call `shutdown()` on the manager before the runtime tears down, so every
+//! in-flight task is aborted/joined before the `NmpApp` allocation is freed.
 //!
 //! `shutdown()` on this substate delegates immediately to
 //! `VoiceConversationManager::shutdown()`.  The ordering invariant is
-//! preserved: unregister → shutdown → drop.
+//! preserved: facade shutdown/drop → sidecar shutdown → runtime teardown.
 //!
 //! ## Name clash avoidance
 //!
@@ -53,8 +51,8 @@ pub struct VoiceSubstate {
     ///
     /// ## Shutdown fence
     ///
-    /// Call `shutdown()` BEFORE the `PodcastHandle` is dropped (i.e. from
-    /// `nmp_app_podcast_unregister`).  This is the fence that prevents
+    /// Call `shutdown()` before the `PodcastHandle` is dropped. This is the
+    /// fence that prevents
     /// in-flight Tokio tasks from dereferencing the freed `NmpApp`.  See the
     /// module-level doc for the invariant description.
     pub(crate) voice_conversation: VoiceConversationManager,
@@ -98,7 +96,7 @@ impl VoiceSubstate {
     /// Fence in-flight voice turns before the owning `NmpApp` frees.
     ///
     /// Delegates to [`VoiceConversationManager::shutdown`].  MUST be called
-    /// from `nmp_app_podcast_unregister` BEFORE the handle drops — this is
+    /// from `PodcastApp.shutdown()` / `Drop` before the handle drops — this is
     /// the UAF prevention fence described in the type-level docs on
     /// `VoiceConversationManager`.
     pub fn shutdown(&self) {

@@ -1,4 +1,4 @@
-//! Reactive observer wiring for [`super::register::nmp_app_podcast_register`]
+//! Reactive observer wiring for [`super::register::register_podcast_app`]
 //! (pablof7z/podcast-player#690).
 //!
 //! The deleted blanket `NmpApp::register_event_observer` raw tap is replaced by

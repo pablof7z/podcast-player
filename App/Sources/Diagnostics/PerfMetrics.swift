@@ -14,10 +14,10 @@ import Foundation
 ///   • `mainProjection` — main actor. `AppStateStore.applyKernelState`: the
 ///     O(N) library→AppState projection (full path) or its snapshot-only fast
 ///     path.
-///   • `dispatchAction` — caller thread (usually main). A synchronous
-///     `nmp_app_dispatch_action` FFI round-trip plus its post-dispatch pull.
+    ///   • `dispatchAction` — caller thread (usually main). A synchronous
+    ///     UniFFI dispatch round-trip plus its post-dispatch pull.
 ///   • `snapshotPull` — caller thread (usually main). A full-library
-///     `nmp_app_podcast_snapshot` serialize + decode.
+    ///     Rust podcast snapshot serialize + decode.
 enum PerfOp: String, CaseIterable, Sendable {
     case pushFrameDecode
     case mainApply

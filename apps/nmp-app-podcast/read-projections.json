@@ -1,0 +1,238 @@
+{
+  "schema": "nmp.read-projections/1",
+  "snapshot_projections": [
+    {
+      "key": "podcast.library",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.library",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "library",
+        "domain_type": "LibraryDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "LibraryDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.playback",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.playback",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "playback",
+        "domain_type": "PlaybackDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "PlaybackDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.downloads",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.downloads",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "downloads",
+        "domain_type": "DownloadsDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "DownloadsDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.settings",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.settings",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "settings",
+        "domain_type": "SettingsDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "SettingsDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.identity",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.identity",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "identity",
+        "domain_type": "IdentityDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "IdentityDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.widget",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.widget",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "widget",
+        "domain_type": "WidgetDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "WidgetDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.social",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.social",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "social",
+        "domain_type": "SocialDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "SocialDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.voice",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.voice",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "voice",
+        "domain_type": "VoiceDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "VoiceDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    },
+    {
+      "key": "podcast.misc",
+      "schema": {
+        "schema_path": "schema/podcast_json_projection.fbs",
+        "root_type": "PodcastProjectionJsonFrame",
+        "file_identifier": "PJPR",
+        "schema_id": "podcast.misc",
+        "schema_version": 1
+      },
+      "swift": {
+        "field": "misc",
+        "domain_type": "MiscDomainFrame",
+        "reader_type": "podcastr_projection_PodcastProjectionJsonFrame",
+        "glue_type": "TypedProjectionGlue"
+      },
+      "kotlin": {
+        "domain_type": "MiscDomainFrame",
+        "reader_type": "PodcastProjectionJsonFrame"
+      },
+      "rust": {
+        "rust_crate": "nmp-app-podcast",
+        "module": "ffi::snapshot_domain_projections",
+        "producer": "register_domain_projections"
+      }
+    }
+  ],
+  "outputs": {
+    "swift_typed_decoders": "../../App/Sources/Bridge/Generated/TypedProjectionDecoders.generated.swift",
+    "swift_projection_cache": "../../App/Sources/Bridge/Generated/ProjectionCache.generated.swift",
+    "kotlin_projection_cache": "../../android/Podcast/app/src/main/java/org/nmp/android/ProjectionCache.kt"
+  },
+  "drift_checks": [
+    "cargo run -p nmp-codegen -- gen read-projections --registry apps/nmp-app-podcast/read-projections.json --check"
+  ]
+}

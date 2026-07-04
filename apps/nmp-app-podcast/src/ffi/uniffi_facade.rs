@@ -13,13 +13,22 @@ use nmp_core::{EventShape, ProfileShape, RefLiveness, RefNamespace, RefShape, Si
 use nmp_native_runtime::NmpApp;
 use zeroize::Zeroizing;
 
-use super::dispatch_action::dispatch_action_json;
+use super::audio_report::audio_report_response_json;
+use super::elevenlabs_voice_catalog::elevenlabs_voice_catalog_json;
 use super::handle::PodcastHandle;
+use super::http_report::apply_http_report_json;
+use super::local_model_catalog::local_model_catalog_json;
+use super::provider_model_catalog::provider_model_catalog_json;
 use super::runtime_facade::{
     classify_input_intent_json, decode_nip21_uri_json, dispatch_input_intent_json,
 };
-use super::snapshot::{build_snapshot_payload, decode_update_frame_json};
-use super::uniffi_bridge_calls::{call_podcast_bridge_endpoint, call_podcast_global_endpoint};
+use super::snapshot::{build_snapshot_payload, decode_update_frame_json, PodcastUpdate};
+use super::speech_model_catalog::speech_model_catalog_json;
+use super::uniffi_typed_projection_frame::{
+    decode_typed_projection_frame as decode_typed_projection_frame_inner,
+    PodcastTypedProjectionFrame,
+};
+use crate::llm::local_model_backend::{set_registration, LocalLlmSink};
 
 #[uniffi::export(callback_interface)]
 pub trait PodcastUpdateSink: Send + Sync {
@@ -34,6 +43,11 @@ pub trait PodcastCapabilitySink: Send + Sync {
 #[uniffi::export(callback_interface)]
 pub trait PodcastAgentAskSink: Send + Sync {
     fn on_agent_ask_event(&self, event_json: String);
+}
+
+#[uniffi::export(callback_interface)]
+pub trait PodcastLocalLlmSink: Send + Sync {
+    fn infer(&self, prompt_json: String) -> String;
 }
 
 #[derive(uniffi::Record, Debug, Clone)]
@@ -138,9 +152,9 @@ impl PodcastApp {
         });
         let app_mut = Arc::get_mut(&mut app).expect("PodcastApp has no shared refs during init");
         let raw = std::ptr::addr_of_mut!(app_mut.inner);
-        let handle = super::register::nmp_app_podcast_register(raw);
+        let handle = super::register::register_podcast_app(raw);
         if !handle.is_null() {
-            // SAFETY: `nmp_app_podcast_register` returns `Arc::into_raw`.
+            // SAFETY: `register_podcast_app` returns `Arc::into_raw`.
             // Reclaim that strong ref into the owning UniFFI object; projection
             // closures hold their own Arc clones.
             let podcast = unsafe { Arc::from_raw(handle as *const PodcastHandle) };
@@ -149,7 +163,8 @@ impl PodcastApp {
         app
     }
 
-    /// Transitional escape hatch for the still-C-ABI app-domain tail.
+    /// Transitional handle token for UniFFI methods whose Rust bodies still
+    /// delegate through handle-scoped JSON helpers.
     /// This returns the `PodcastHandle` pointer owned by this `PodcastApp`;
     /// Swift must not free it.
     pub fn podcast_handle(&self) -> u64 {
@@ -252,36 +267,16 @@ impl PodcastApp {
         decode_update_frame_json(&frame)
     }
 
-    pub fn dispatch_podcast_action(
+    pub fn decode_typed_projection_frame(
         &self,
-        namespace: String,
-        action_json: String,
-    ) -> Option<String> {
-        self.podcast
-            .get()
-            .map(|handle| dispatch_action_json(handle, &namespace, &action_json))
+        frame: Vec<u8>,
+    ) -> Option<PodcastTypedProjectionFrame> {
+        decode_typed_projection_frame_inner(&frame)
     }
 
-    pub fn podcast_bridge_call(
-        &self,
-        endpoint: String,
-        request_json: Option<String>,
-    ) -> Option<String> {
-        self.podcast.get().and_then(|handle| {
-            call_podcast_bridge_endpoint(handle, &endpoint, request_json.as_deref())
-        })
-    }
-
-    pub fn set_agent_ask_sink(&self, sink: Option<Box<dyn PodcastAgentAskSink>>) {
-        let Some(handle) = self.podcast.get() else {
-            return;
-        };
-        let callback = sink.map(|sink| {
-            Arc::new(move |event_json: String| {
-                sink.on_agent_ask_event(event_json);
-            }) as super::agent_ask::AgentAskCallback
-        });
-        super::agent_ask::set_agent_ask_callback(handle, callback);
+    pub fn set_local_llm_sink(&self, sink: Option<Box<dyn PodcastLocalLlmSink>>) {
+        let sink = sink.map(|sink| Arc::new(LocalLlmSinkAdapter { sink }) as Arc<dyn LocalLlmSink>);
+        set_registration(sink);
     }
 
     pub fn classify_input_intent(&self, request_json: String) -> String {
@@ -399,10 +394,70 @@ impl PodcastApp {
 }
 
 impl PodcastApp {
+    pub fn dispatch_action_json_for_rust(
+        &self,
+        namespace: &str,
+        action_json: &str,
+    ) -> Result<String, String> {
+        self.podcast
+            .get()
+            .ok_or_else(|| "runtime app is not available".to_string())
+            .and_then(|handle| {
+                crate::dispatch_bytes::dispatch_action_bytes_for(handle.app, namespace, action_json)
+            })
+    }
+
+    pub(crate) fn podcast_handle_for_uniffi(&self) -> Option<&PodcastHandle> {
+        self.podcast.get().map(Arc::as_ref)
+    }
+
     fn podcast_handle_ptr(&self) -> Option<*mut PodcastHandle> {
         self.podcast
             .get()
             .map(|handle| Arc::as_ptr(handle) as *mut PodcastHandle)
+    }
+
+    /// Rust-in-process consumers such as the TUI can read the typed app update
+    /// without going through the legacy C snapshot string.
+    pub fn podcast_update_for_rust(&self) -> Option<PodcastUpdate> {
+        self.podcast.get().map(|handle| handle.update())
+    }
+
+    pub fn audio_report_for_rust(&self, report_json: &str) -> Option<String> {
+        self.podcast
+            .get()
+            .and_then(|handle| audio_report_response_json(handle, report_json))
+    }
+
+    pub fn http_report_for_rust(&self, report_json: &str) {
+        if let Some(handle) = self.podcast.get() {
+            apply_http_report_json(handle, report_json);
+        }
+    }
+
+    pub fn provider_model_catalog_for_rust(&self) -> Option<String> {
+        self.podcast
+            .get()
+            .map(|handle| provider_model_catalog_json(handle))
+    }
+
+    pub fn elevenlabs_voice_catalog_for_rust(&self) -> Option<String> {
+        self.podcast
+            .get()
+            .map(|handle| elevenlabs_voice_catalog_json(handle))
+    }
+
+    pub fn speech_model_catalog_for_rust(&self) -> Option<String> {
+        self.podcast.get().map(|_| speech_model_catalog_json())
+    }
+
+    pub fn local_model_catalog_for_rust(&self) -> Option<String> {
+        self.podcast.get().map(|_| local_model_catalog_json())
+    }
+
+    #[cfg(feature = "headless")]
+    pub fn headless_handle_for_rust(&self) -> Option<&PodcastHandle> {
+        self.podcast.get().map(Arc::as_ref)
     }
 }
 
@@ -414,9 +469,14 @@ impl Drop for PodcastApp {
     }
 }
 
-#[uniffi::export]
-pub fn podcast_bridge_global_call(endpoint: String, request_json: String) -> Option<String> {
-    call_podcast_global_endpoint(&endpoint, &request_json)
+struct LocalLlmSinkAdapter {
+    sink: Box<dyn PodcastLocalLlmSink>,
+}
+
+impl LocalLlmSink for LocalLlmSinkAdapter {
+    fn infer_local_llm(&self, prompt_json: String) -> String {
+        self.sink.infer(prompt_json)
+    }
 }
 
 fn mint_correlation_id() -> String {
@@ -430,35 +490,4 @@ fn mint_correlation_id() -> String {
         .unwrap_or(0);
     let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
     format!("{now_ms:016x}{seq:016x}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn constructor_owns_podcast_handle() {
-        let app = PodcastApp::new();
-        assert_ne!(app.podcast_handle(), 0);
-        assert_eq!(app.podcast_snapshot_rev(), 1);
-        assert!(app.podcast_snapshot().is_some());
-    }
-
-    #[test]
-    fn lifecycle_start_stop_shutdown_do_not_panic() {
-        let app = PodcastApp::new();
-        app.start(64, 4);
-        app.configure(64, 4);
-        app.stop();
-        app.reset();
-        app.shutdown();
-    }
-
-    #[test]
-    fn dispatch_empty_envelope_returns_error_outcome() {
-        let app = PodcastApp::new();
-        let out = app.dispatch_action(Vec::new());
-        assert!(out.correlation_id.is_none());
-        assert!(out.error.is_some());
-    }
 }

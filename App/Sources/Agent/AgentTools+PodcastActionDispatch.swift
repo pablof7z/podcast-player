@@ -27,13 +27,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_action_tool(handle, ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentActionTool, request: json) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 }

@@ -1,5 +1,4 @@
-//! Opaque handle returned by `nmp_app_podcast_register` and consumed by
-//! `nmp_app_podcast_snapshot` / `nmp_app_podcast_unregister`.
+//! Opaque handle owned by the generated UniFFI `PodcastApp` facade.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -31,9 +30,9 @@ pub struct OwnedPublishState {
     pub episode_publish_failed: HashSet<String>,
 }
 
-/// Opaque handle returned by [`super::nmp_app_podcast_register`]. Boxed on the
-/// heap so the address is stable; the Swift consumer holds the raw pointer
-/// until it calls [`super::nmp_app_podcast_unregister`].
+/// Opaque handle returned by [`super::register::register_podcast_app`]. The generated
+/// UniFFI `PodcastApp` owns the handle and releases its sidecars during
+/// `shutdown` / `Drop`.
 pub struct PodcastHandle {
     pub(super) app: *mut NmpApp,
     /// Composed state root.  Inbox (Step 7), Knowledge (Step 1), Wiki (Step 2),
@@ -133,9 +132,9 @@ pub struct PodcastHandle {
 //      `join()`s the actor thread before the allocation is freed, fencing any
 //      in-flight callbacks.
 //
-// CALLER CONTRACT: native shells must unregister this handle before dropping
-// the owning `PodcastApp`. The in-process Rust-trait registration path gets
-// the callback fence from the actor join.
+// CALLER CONTRACT: native shells must let `PodcastApp.shutdown()` / `Drop`
+// fence sidecars before releasing the runtime. The in-process Rust-trait
+// registration path gets the callback fence from the actor join.
 unsafe impl Send for PodcastHandle {}
 unsafe impl Sync for PodcastHandle {}
 

@@ -238,24 +238,23 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                let result: UnsafeMutablePointer<CChar>?
+            return {
+                let result: String?
                 switch op {
                 case "plan":
-                    result = nmp_app_podcast_agent_tts_tool_plan(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentTtsToolPlan, request: json)
                 case "result":
-                    result = nmp_app_podcast_agent_tts_tool_result(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentTtsToolResult, request: json)
                 case "voice_plan":
-                    result = nmp_app_podcast_agent_voice_configure_plan(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentVoiceConfigurePlan, request: json)
                 case "voice_result":
-                    result = nmp_app_podcast_agent_voice_configure_result(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentVoiceConfigureResult, request: json)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 }

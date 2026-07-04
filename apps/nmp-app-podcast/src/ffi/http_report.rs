@@ -38,9 +38,8 @@ use super::handle::PodcastHandle;
 
 /// Deliver a JSON-encoded [`HttpReport`] to the kernel's feed-fetch
 /// coordinator. Always returns `NULL` (no follow-up); nothing to free.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_http_report(
+pub fn nmp_app_podcast_http_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {
@@ -53,16 +52,18 @@ pub extern "C" fn nmp_app_podcast_http_report(
             Err(_) => return std::ptr::null_mut(),
         };
 
-        let report: HttpReport = match serde_json::from_str(report_str) {
-            Ok(r) => r,
-            Err(_) => return std::ptr::null_mut(),
-        };
-
         // Runs on the platform transport thread — `apply_report` touches only the
         // shared store / signal Arcs, never `*mut NmpApp`.
         let handle_ref = unsafe { &*handle };
-        // Step 16: feed_fetch is now in state.feed_fetch.
-        handle_ref.state.feed_fetch.apply_report(report);
+        apply_http_report_json(handle_ref, report_str);
         std::ptr::null_mut()
     })
+}
+
+pub(crate) fn apply_http_report_json(handle: &PodcastHandle, report_json: &str) {
+    let Ok(report) = serde_json::from_str::<HttpReport>(report_json) else {
+        return;
+    };
+    // Step 16: feed_fetch is now in state.feed_fetch.
+    handle.state.feed_fetch.apply_report(report);
 }

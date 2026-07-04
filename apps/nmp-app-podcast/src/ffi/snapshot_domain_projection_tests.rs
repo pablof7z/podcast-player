@@ -27,6 +27,7 @@ use crate::ffi::snapshot_domain_projections::{
     decode_podcast_domain_sidecars, register_domain_projections, SCHEMA_DOWNLOADS, SCHEMA_LIBRARY,
     SCHEMA_MISC, SCHEMA_PLAYBACK, SCHEMA_SETTINGS,
 };
+use crate::projection_payload::PodcastProjectionJsonFrame;
 use crate::state::{Domain, DomainRevs, Infra, PodcastAppState};
 use crate::store::PodcastStore;
 
@@ -122,6 +123,20 @@ pub(super) fn make_frame_with_sidecars(sidecars: &[TypedProjectionData]) -> Vec<
         ..SnapshotEnvelope::default()
     };
     encode_snapshot_frame(&env, sidecars)
+}
+
+pub(super) fn projection_payload_bytes(value: &serde_json::Value) -> Vec<u8> {
+    PodcastProjectionJsonFrame {
+        schema_version: PodcastProjectionJsonFrame::SCHEMA_VERSION,
+        body_json: serde_json::to_string(value).unwrap(),
+    }
+    .encode()
+}
+
+pub(super) fn decode_projection_json(entry: &TypedProjectionData) -> serde_json::Value {
+    let frame = PodcastProjectionJsonFrame::decode(&entry.payload)
+        .expect("domain sidecar must carry a valid PJPR payload");
+    serde_json::from_str(&frame.body_json).expect("PJPR body_json must be valid JSON")
 }
 
 /// Run typed snapshot projections and retain only podcast-owned domain
@@ -245,12 +260,12 @@ fn decode_absent_sidecars_yields_none() {
 #[test]
 fn decode_podcast_playback_sidecar_is_extracted() {
     let payload = serde_json::json!({ "rev": 42u64, "now_playing": null, "queue": [] });
-    let payload_bytes = serde_json::to_vec(&payload).unwrap();
+    let payload_bytes = projection_payload_bytes(&payload);
     let sidecar = TypedProjectionData {
         key: SCHEMA_PLAYBACK.to_string(),
         schema_id: SCHEMA_PLAYBACK.to_string(),
         schema_version: 1,
-        file_identifier: String::new(),
+        file_identifier: PodcastProjectionJsonFrame::FILE_IDENTIFIER.to_string(),
         payload: payload_bytes,
         ..Default::default()
     };
@@ -295,7 +310,7 @@ fn decode_malformed_sidecar_payload_is_silently_skipped() {
         key: SCHEMA_LIBRARY.to_string(),
         schema_id: SCHEMA_LIBRARY.to_string(),
         schema_version: 1,
-        file_identifier: String::new(),
+        file_identifier: PodcastProjectionJsonFrame::FILE_IDENTIFIER.to_string(),
         payload: b"not json {{{".to_vec(),
         ..Default::default()
     };
@@ -397,8 +412,12 @@ fn domain_projections_emit_valid_json_with_rev_field() {
         .collect();
 
     for (key, entry) in &by_key {
-        let value: serde_json::Value = serde_json::from_slice(&entry.payload)
-            .unwrap_or_else(|e| panic!("domain {key} sidecar must be valid JSON: {e}"));
+        assert_eq!(
+            entry.file_identifier,
+            PodcastProjectionJsonFrame::FILE_IDENTIFIER,
+            "domain {key} sidecar must carry the PJPR file identifier"
+        );
+        let value = decode_projection_json(entry);
         assert!(
             value.get("rev").is_some(),
             "domain {key} payload must carry a 'rev' field"
@@ -450,7 +469,7 @@ fn library_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_LIBRARY)
         .expect("library tombstone must be emitted when store is empty");
-    let val: serde_json::Value = serde_json::from_slice(&lib.payload).unwrap();
+    let val = decode_projection_json(lib);
     assert_eq!(
         val["library"],
         serde_json::Value::Null,
@@ -490,7 +509,7 @@ fn downloads_empty_emits_tombstone_then_idles() {
         .iter()
         .find(|p| p.schema_id == SCHEMA_DOWNLOADS)
         .expect("downloads tombstone must be emitted");
-    let val: serde_json::Value = serde_json::from_slice(&dl.payload).unwrap();
+    let val = decode_projection_json(dl);
     assert_eq!(
         val["downloads"],
         serde_json::Value::Null,

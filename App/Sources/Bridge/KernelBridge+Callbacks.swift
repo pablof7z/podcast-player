@@ -98,12 +98,11 @@ extension PodcastHandle {
                 guard let self else { return }
                 reportQueue.async { [self] in
                     guard let handle = self.podcastHandle else { return }
-                    guard let result = nmp_app_podcast_audio_report(handle, reportJSON) else {
+                    guard let result = podcastAppString(handle, endpoint: .audioReport, request: reportJSON) else {
                         // Error / degrade path — nothing actionable, don't pull.
                         return
                     }
-                    defer { nmp_free_string(result) }
-                    let responseJSON = String(cString: result)
+                    let responseJSON = result
                     guard let data = responseJSON.data(using: .utf8) else { return }
                     let decoder = KernelDecoding.makeDecoder()
                     guard let response = try? decoder.decode(
@@ -151,12 +150,11 @@ extension PodcastHandle {
         PodcastCapabilities.shared.download.attach { [weak self] reportJSON in
             MainActor.assumeIsolated {
                 guard let self, let handle = self.podcastHandle else { return }
-                guard let result = nmp_app_podcast_download_report(handle, reportJSON) else {
+                guard let result = podcastAppString(handle, endpoint: .downloadReport, request: reportJSON) else {
                     // Error / degrade path — nothing actionable, don't pull.
                     return
                 }
-                defer { nmp_free_string(result) }
-                let responseJSON = String(cString: result)
+                let responseJSON = result
                 guard let data = responseJSON.data(using: .utf8) else { return }
                 let decoder = KernelDecoding.makeDecoder()
                 guard let response = try? decoder.decode(DownloadReportResponse.self, from: data) else {
@@ -193,9 +191,7 @@ extension PodcastHandle {
     func attachHttpReportChannel() {
         guard let handle = podcastHandle else { return }
         syncBridge?.attachHttpReport { reportJSON in
-            if let result = nmp_app_podcast_http_report(handle, reportJSON) {
-                nmp_free_string(result)
-            }
+            _ = podcastAppString(handle, endpoint: .httpReport, request: reportJSON)
         }
     }
 
@@ -233,12 +229,7 @@ extension PodcastHandle {
                 // A full snapshot pull is no longer needed here; the push frame
                 // produced by the domain-scoped bump in voice_handler::mutate_voice_state
                 // will surface voice state on the next emit.
-                if let result = nmp_app_podcast_voice_report(handle, reportJSON) {
-                    // Reserved: when Rust starts returning a follow-up
-                    // `VoiceCommand`, decode + execute it here. For the
-                    // capability scaffold the symbol always returns NULL.
-                    nmp_free_string(result)
-                }
+                _ = podcastAppString(handle, endpoint: .voiceReport, request: reportJSON)
             }
         }
     }

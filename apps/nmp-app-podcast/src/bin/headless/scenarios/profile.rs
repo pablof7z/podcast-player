@@ -19,7 +19,7 @@
 //!
 //! ## Dispatch acceptance vs. handler result
 //!
-//! `nmp_app_dispatch_action` (the underlying FFI) validates the action, mints a
+//! `PodcastApp::dispatch_action_json_for_rust` validates the action, mints a
 //! `correlation_id`, and enqueues an `ActorCommand::DispatchHostOp`. It returns
 //! `{"correlation_id":"..."}` immediately on acceptance, or `{"error":"..."}` on
 //! synchronous rejection (unknown namespace, serde decode failure, etc.). The
@@ -51,7 +51,7 @@
 //!   field) must NOT produce a `correlation_id` — it must be rejected at serde
 //!   decode with an `error` field. This makes the success path meaningful.
 //! * **Self-apply reflection**: after dispatch, `AccountSummary.display_name`
-//!   must equal the published value within 2 s — proves the self-apply→bump-rev
+//!   must equal the published value within 10 s — proves the self-apply→bump-rev
 //!   chain fires and the push frame re-emits. Without the self-apply this
 //!   assertion would FAIL (the old behavior left `display_name` as `None` forever).
 //!
@@ -67,8 +67,7 @@
 //! exact contract so a regression in the routing chain is caught before it
 //! reaches the device.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::{PodcastApp, PodcastUpdate};
 use serde_json::json;
 
 use crate::fixtures;
@@ -79,13 +78,23 @@ use crate::scenarios::ScenarioResult::{self, Fail, Pass};
 const TEST_DISPLAY_NAME: &str = "Headless Test User";
 /// Known picture URL used for the publish_profile dispatch.
 const TEST_PICTURE_URL: &str = "https://example.com/avatar.jpg";
+/// CI can have a cold actor queue after the preceding network-gated scenarios.
+const REFLECT_TIMEOUT_MS: u64 = 10_000;
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+fn has_published_display_name(update: &PodcastUpdate) -> bool {
+    update
+        .active_account
+        .as_ref()
+        .and_then(|a| a.display_name.as_deref())
+        == Some(TEST_DISPLAY_NAME)
+}
+
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Identity setup ────────────────────────────────────────────────────────
     //
     // Import the test nsec if no identity is loaded yet. If a prior scenario
     // already loaded the same key, take the fast path.
-    let already_has_identity = snapshot(handle)
+    let already_has_identity = snapshot(app)
         .as_ref()
         .and_then(|u| u.active_account.as_ref())
         .is_some();
@@ -100,14 +109,14 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
             return Fail(format!("ImportNsec dispatch rejected: {err}"));
         }
 
-        match wait_for(handle, 5_000, |u| u.active_account.is_some()) {
+        match wait_for(app, 5_000, |u| u.active_account.is_some()) {
             Ok(_) => {}
             Err(e) => return Fail(format!("active_account never appeared: {e}")),
         }
     }
 
     // Snapshot the account state before publishing.
-    let pre_account = match snapshot(handle).and_then(|u| u.active_account) {
+    let pre_account = match snapshot(app).and_then(|u| u.active_account) {
         Some(a) => a,
         None => return Fail("active_account missing after identity import".into()),
     };
@@ -180,7 +189,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // After the dispatch is accepted, `handle_publish_profile` mirrors
     // `display_name` and `picture` into the local `IdentityStore` (optimistic
     // self-apply), then `social_actions.rs` bumps `Domain::Identity` so the
-    // push frame re-emits with fresh `AccountSummary` values. We wait up to 2 s
+    // push frame re-emits with fresh `AccountSummary` values. We wait up to 10 s
     // for the snapshot rev to advance and the predicate to hold.
     //
     // Mutation-sanity note: WITHOUT the self-apply (the old behavior) the
@@ -188,39 +197,47 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // `AccountSummary.display_name` would remain `None` forever and this
     // `wait_for` would time out and return `Fail`. The assertion proves the
     // fix works and CI-gates it.
-    match wait_for(handle, 2_000, |u| {
-        u.active_account
-            .as_ref()
-            .and_then(|a| a.display_name.as_deref())
-            == Some(TEST_DISPLAY_NAME)
-    }) {
-        Ok(update) => {
-            let account = update.active_account.unwrap();
-            // Also verify pubkey integrity so we catch accidental identity replacement.
-            if account.pubkey_hex != pre_account.pubkey_hex {
-                return Fail(format!(
-                    "pubkey_hex changed after publish_profile: before={} after={}",
-                    pre_account.pubkey_hex, account.pubkey_hex
-                ));
-            }
-            if account.npub != fixtures::HEADLESS_TEST_NPUB {
-                return Fail(format!(
-                    "npub corrupted by publish_profile: {}",
-                    account.npub
-                ));
-            }
+    let update = match snapshot(app).filter(has_published_display_name) {
+        Some(update) => update,
+        None => match wait_for(app, REFLECT_TIMEOUT_MS, has_published_display_name) {
+            Ok(update) => update,
+            Err(timeout_msg) => match snapshot(app) {
+                Some(update) if has_published_display_name(&update) => update,
+                current => {
+                    let current_display_name = current
+                        .and_then(|u| u.active_account)
+                        .and_then(|a| a.display_name);
+                    return Fail(format!(
+                        "AccountSummary.display_name never reflected published value \
+                         (expected {:?}, got {:?}): {}",
+                        TEST_DISPLAY_NAME, current_display_name, timeout_msg
+                    ));
+                }
+            },
+        },
+    };
+
+    let account = match update.active_account {
+        Some(account) => account,
+        None => {
+            return Fail(
+                "active_account missing after publish_profile display_name appeared".into(),
+            );
         }
-        Err(timeout_msg) => {
-            // On timeout, read the current snapshot for a diagnostic.
-            let current_display_name = snapshot(handle)
-                .and_then(|u| u.active_account)
-                .and_then(|a| a.display_name);
-            return Fail(format!(
-                "AccountSummary.display_name never reflected published value \
-                 (expected {:?}, got {:?}): {}",
-                TEST_DISPLAY_NAME, current_display_name, timeout_msg
-            ));
-        }
+    };
+
+    // Also verify pubkey integrity so we catch accidental identity replacement.
+    if account.pubkey_hex != pre_account.pubkey_hex {
+        return Fail(format!(
+            "pubkey_hex changed after publish_profile: before={} after={}",
+            pre_account.pubkey_hex, account.pubkey_hex
+        ));
+    }
+    if account.npub != fixtures::HEADLESS_TEST_NPUB {
+        return Fail(format!(
+            "npub corrupted by publish_profile: {}",
+            account.npub
+        ));
     }
 
     Pass

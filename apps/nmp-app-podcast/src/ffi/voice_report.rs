@@ -36,9 +36,8 @@ use crate::voice_handler::{apply_report, barge_in_text};
 ///
 /// Fire-and-forget: every failure mode (null pointer, bad UTF-8, decode
 /// failure, lock poison) silently returns `NULL`.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_voice_report(
+pub fn nmp_app_podcast_voice_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

@@ -55,9 +55,8 @@ struct HomeSubscriptionListResponse {
     podcast_ids: Vec<String>,
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_home_continue_listening(
+pub fn nmp_app_podcast_home_continue_listening(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -125,9 +124,8 @@ pub extern "C" fn nmp_app_podcast_home_continue_listening(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_home_triage_rollup(
+pub fn nmp_app_podcast_home_triage_rollup(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -203,9 +201,8 @@ pub extern "C" fn nmp_app_podcast_home_triage_rollup(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_home_subscription_list(
+pub fn nmp_app_podcast_home_subscription_list(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

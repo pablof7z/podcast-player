@@ -1,7 +1,7 @@
 //! Per-domain typed projection builders and registration helpers.
 //!
 //! Each domain owns:
-//!  - A serializable payload type (JSON, wrapped in `TypedProjectionData`)
+//!  - A typed projection payload (PJPR FlatBuffers wrapper around the app JSON body)
 //!  - A `build_<domain>_domain_payload` helper that assembles the payload from the handle
 //!  - A `register_<domain>_projection` free function that wires the typed projection
 //!    closure into the app via `register_typed_snapshot_projection`
@@ -50,11 +50,13 @@
 //!
 //! ## Decoder contract
 //!
-//! The payload is a JSON-encoded byte vector wrapped in `TypedProjectionData`.
-//! `schema_id` is the projection key (e.g. `"podcast.library"`).
-//! `nmp_app_podcast_decode_update_frame` decodes all `podcast.*` sidecars and
-//! injects them under `v.projections[key]` in the bridge JSON, so iOS/Android shells
-//! can consume them without waiting for the pull path.
+//! The payload is a `PodcastProjectionJsonFrame` FlatBuffers buffer wrapped in
+//! `TypedProjectionData`; its body JSON is the app-owned domain frame.
+//! `schema_id` is the projection key (e.g. `"podcast.library"`), and
+//! `file_identifier` is `PJPR`.
+//! Shells consume `podcast.*` rows from the typed projection envelope. The
+//! legacy JSON bridge can still decode PJPR into `v.projections[key]` for
+//! compatibility while remaining consumers move off that path.
 //!
 //! ## CodingKeys contract (from MEMORY: FFI decode snake_case contract)
 //!
@@ -80,6 +82,7 @@ use super::snapshot_domain_builders::{
     build_playback_payload, build_settings_payload, build_social_payload, build_voice_payload,
     build_widget_payload,
 };
+use crate::projection_payload::PodcastProjectionJsonFrame;
 
 // ── Schema IDs ────────────────────────────────────────────────────────────────
 
@@ -135,12 +138,17 @@ fn voice_tombstone(rev: u64) -> serde_json::Value {
 // ── TypedProjectionData assembly ──────────────────────────────────────────────
 
 fn make_typed(schema_id: &str, payload: serde_json::Value) -> TypedProjectionData {
-    let bytes = serde_json::to_vec(&payload).unwrap_or_default();
+    let body_json = serde_json::to_string(&payload).unwrap_or_default();
+    let bytes = PodcastProjectionJsonFrame {
+        schema_version: PodcastProjectionJsonFrame::SCHEMA_VERSION,
+        body_json,
+    }
+    .encode();
     TypedProjectionData {
         key: schema_id.to_string(),
         schema_id: schema_id.to_string(),
-        schema_version: 1,
-        file_identifier: String::new(),
+        schema_version: PodcastProjectionJsonFrame::SCHEMA_VERSION,
+        file_identifier: PodcastProjectionJsonFrame::FILE_IDENTIFIER.to_string(),
         payload: bytes,
         ..Default::default()
     }
@@ -175,16 +183,17 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_LIBRARY)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_library_payload(&h)
-                .unwrap_or_else(|| library_tombstone(current));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_LIBRARY, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload =
+                    build_library_payload(&h).unwrap_or_else(|| library_tombstone(current));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_LIBRARY, payload))
+            },
+        );
     }
 
     // ── podcast.playback ──────────────────────────────────────────────────────
@@ -196,15 +205,16 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_PLAYBACK)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_playback_payload(&h);
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_PLAYBACK, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload = build_playback_payload(&h);
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_PLAYBACK, payload))
+            },
+        );
     }
 
     // ── podcast.downloads ─────────────────────────────────────────────────────
@@ -216,16 +226,17 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_DOWNLOADS)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_downloads_payload(&h)
-                .unwrap_or_else(|| downloads_tombstone(current));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_DOWNLOADS, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload =
+                    build_downloads_payload(&h).unwrap_or_else(|| downloads_tombstone(current));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_DOWNLOADS, payload))
+            },
+        );
     }
 
     // ── podcast.settings ──────────────────────────────────────────────────────
@@ -237,15 +248,16 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_SETTINGS)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_settings_payload(&h);
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_SETTINGS, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload = build_settings_payload(&h);
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_SETTINGS, payload))
+            },
+        );
     }
 
     // ── podcast.identity ──────────────────────────────────────────────────────
@@ -273,32 +285,33 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_IDENTITY)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            let kernel_hex = super::snapshot_identity::kernel_active_account_hex(&h);
-            let rev_changed = current != prev;
-            // Compare-and-record the kernel active-account hex under the lock so
-            // the "changed?" decision and the bookkeeping update are atomic. D6:
-            // a poisoned lock degrades to "rev gate only", never a panic across
-            // the FFI boundary.
-            let kernel_changed = match last_active_hex.lock() {
-                Ok(mut guard) => {
-                    let changed = *guard != kernel_hex;
-                    if changed {
-                        *guard = kernel_hex.clone();
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                let kernel_hex = super::snapshot_identity::kernel_active_account_hex(&h);
+                let rev_changed = current != prev;
+                // Compare-and-record the kernel active-account hex under the lock so
+                // the "changed?" decision and the bookkeeping update are atomic. D6:
+                // a poisoned lock degrades to "rev gate only", never a panic across
+                // the FFI boundary.
+                let kernel_changed = match last_active_hex.lock() {
+                    Ok(mut guard) => {
+                        let changed = *guard != kernel_hex;
+                        if changed {
+                            *guard = kernel_hex.clone();
+                        }
+                        changed
                     }
-                    changed
+                    Err(_) => false,
+                };
+                if !rev_changed && !kernel_changed {
+                    return None;
                 }
-                Err(_) => false,
-            };
-            if !rev_changed && !kernel_changed {
-                return None;
-            }
-            let payload = build_identity_payload(&h)
-                .unwrap_or_else(|| identity_tombstone(current));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_IDENTITY, payload))
-        });
+                let payload =
+                    build_identity_payload(&h).unwrap_or_else(|| identity_tombstone(current));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_IDENTITY, payload))
+            },
+        );
     }
 
     // ── podcast.widget ────────────────────────────────────────────────────────
@@ -310,16 +323,16 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_WIDGET)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_widget_payload(&h)
-                .unwrap_or_else(|| widget_tombstone(current));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_WIDGET, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload = build_widget_payload(&h).unwrap_or_else(|| widget_tombstone(current));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_WIDGET, payload))
+            },
+        );
     }
 
     // ── podcast.social ────────────────────────────────────────────────────────
@@ -331,16 +344,16 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_SOCIAL)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_social_payload(&h)
-                .unwrap_or_else(|| social_tombstone(current));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_SOCIAL, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload = build_social_payload(&h).unwrap_or_else(|| social_tombstone(current));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_SOCIAL, payload))
+            },
+        );
     }
 
     // ── podcast.voice ─────────────────────────────────────────────────────────
@@ -352,17 +365,18 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_VOICE)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let global_rev = h.state.infra.rev.load(Ordering::Relaxed);
-            let payload = build_voice_payload(&h)
-                .unwrap_or_else(|| voice_tombstone(global_rev));
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_VOICE, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let global_rev = h.state.infra.rev.load(Ordering::Relaxed);
+                let payload =
+                    build_voice_payload(&h).unwrap_or_else(|| voice_tombstone(global_rev));
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_VOICE, payload))
+            },
+        );
     }
 
     // ── podcast.misc ──────────────────────────────────────────────────────────
@@ -374,15 +388,16 @@ pub fn register_domain_projections(
             nmp_ownership::DynamicProjectionKey::app_owned(SCHEMA_MISC)
                 .expect("valid app-owned projection key"),
             move || {
-            let current = domain_rev.load(Ordering::Relaxed);
-            let prev = last_emitted.load(Ordering::Relaxed);
-            if current == prev {
-                return None;
-            }
-            let payload = build_misc_payload(&h);
-            last_emitted.store(current, Ordering::Relaxed);
-            Some(make_typed(SCHEMA_MISC, payload))
-        });
+                let current = domain_rev.load(Ordering::Relaxed);
+                let prev = last_emitted.load(Ordering::Relaxed);
+                if current == prev {
+                    return None;
+                }
+                let payload = build_misc_payload(&h);
+                last_emitted.store(current, Ordering::Relaxed);
+                Some(make_typed(SCHEMA_MISC, payload))
+            },
+        );
     }
 }
 
@@ -401,7 +416,10 @@ pub fn decode_podcast_domain_sidecars(
     let mut map = serde_json::Map::new();
     for entry in typed {
         if entry.schema_id.starts_with("podcast.") {
-            if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&entry.payload) {
+            let Ok(frame) = PodcastProjectionJsonFrame::decode(&entry.payload) else {
+                continue;
+            };
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&frame.body_json) {
                 map.insert(entry.schema_id, value);
             }
         }

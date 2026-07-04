@@ -249,13 +249,12 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_search_tool(handle, ptr) else {
-                    return #"{"error":"null response from nmp_app_podcast_agent_search_tool"}"#
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentSearchTool, request: json) else {
+                    return #"{"error":"null response from agentSearchTool"}"#
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
         guard let responseData = response.data(using: .utf8),
               let envelope = try? JSONDecoder().decode(EpisodeRollupEnvelope.self, from: responseData)
@@ -292,13 +291,12 @@ struct LivePodcastRAGAdapter: PodcastAgentRAGSearchProtocol {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"kernel handle unavailable"}"#
             }
-            return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_search_tool(handle, ptr) else {
-                    return #"{"error":"null response from nmp_app_podcast_agent_search_tool"}"#
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentSearchTool, request: json) else {
+                    return #"{"error":"null response from agentSearchTool"}"#
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
         guard let responseData = response.data(using: .utf8),
               let envelope = try? JSONDecoder().decode(TranscriptHitsEnvelope.self, from: responseData)

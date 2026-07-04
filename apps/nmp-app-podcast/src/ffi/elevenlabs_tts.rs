@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::elevenlabs_tts::{self, ElevenLabsTtsError, ElevenLabsTtsIntent};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_elevenlabs_tts_synthesize(
+pub fn nmp_app_podcast_elevenlabs_tts_synthesize(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

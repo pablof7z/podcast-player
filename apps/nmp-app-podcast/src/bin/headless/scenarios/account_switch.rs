@@ -54,16 +54,15 @@
 //! `PodcastHandle::headless_trigger_account_switch_clear`.  No relay, no LLM,
 //! fully offline.
 
-use nmp_app_podcast::ffi::{ContactSummary, SocialSnapshot};
-use nmp_app_podcast::{CachedAgentNote, PodcastHandle};
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::{ContactSummary, PodcastApp, SocialSnapshot};
+use nmp_app_podcast::CachedAgentNote;
 use serde_json::json;
 
 use crate::fixtures;
 use crate::harness::{dispatch, snapshot, wait_for};
 use crate::scenarios::ScenarioResult::{self, Fail, Pass};
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // ── Step 1: Import account A ──────────────────────────────────────────────
     //
     // Fast-path: if identity_import ran before us and A's key is already
@@ -71,7 +70,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // dispatches within its TTL window, so re-importing the same nsec may be
     // silently dropped — making wait_for time out on a rev change that never
     // comes).
-    let has_account_a = snapshot(handle)
+    let has_account_a = snapshot(app)
         .as_ref()
         .and_then(|u| u.active_account.as_ref())
         .map(|a| a.pubkey_hex == fixtures::HEADLESS_TEST_PUBKEY_HEX)
@@ -86,7 +85,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
         if let Some(err) = res.get("error").and_then(|v| v.as_str()) {
             return Fail(format!("ImportNsec (account A) rejected: {err}"));
         }
-        match wait_for(handle, 5_000, |u| {
+        match wait_for(app, 5_000, |u| {
             u.active_account
                 .as_ref()
                 .is_some_and(|a| a.pubkey_hex == fixtures::HEADLESS_TEST_PUBKEY_HEX)
@@ -103,9 +102,9 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
     // populate the same slots that `FollowListObserver` and `AgentNotesObserver`
     // would write in a live relay session — without needing a relay connection.
     //
-    // SAFETY: `handle` is a valid non-null pointer from `nmp_app_podcast_register`
-    // and is not freed until after `run_all` returns.
-    let h = unsafe { &*handle };
+    let Some(h) = app.headless_handle_for_rust() else {
+        return Fail("headless handle unavailable".into());
+    };
 
     h.headless_inject_social_snapshot(SocialSnapshot {
         following: vec![ContactSummary {
@@ -122,10 +121,8 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     h.headless_inject_agent_note(CachedAgentNote {
         id: "account-a-note-synthetic-1".to_string(),
-        author_hex: "32e1827635450ebb3c5a7d12c1f8e7b2b514439ac10a67eef3d9fd9c5c68e245"
-            .to_string(),
-        author_npub: "npub1xtscya34g58tk0z605fvr788k263gsu6cy9x0mhnm87echrgufzsevkk5s"
-            .to_string(),
+        author_hex: "32e1827635450ebb3c5a7d12c1f8e7b2b514439ac10a67eef3d9fd9c5c68e245".to_string(),
+        author_npub: "npub1xtscya34g58tk0z605fvr788k263gsu6cy9x0mhnm87echrgufzsevkk5s".to_string(),
         content: "account A synthetic agent note".to_string(),
         created_at: 1_700_000_000,
         root_event_id: None,
@@ -133,14 +130,10 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     // ── Step 3: Pre-switch sanity check ──────────────────────────────────────
     if h.headless_social_snapshot().is_none() {
-        return Fail(
-            "pre-switch sanity: social_slot must be Some after injection".into(),
-        );
+        return Fail("pre-switch sanity: social_slot must be Some after injection".into());
     }
     if h.headless_agent_notes_len() == 0 {
-        return Fail(
-            "pre-switch sanity: agent_notes must be non-empty after injection".into(),
-        );
+        return Fail("pre-switch sanity: agent_notes must be non-empty after injection".into());
     }
 
     // ── Step 4: Drive clear_for_account_switch ────────────────────────────────

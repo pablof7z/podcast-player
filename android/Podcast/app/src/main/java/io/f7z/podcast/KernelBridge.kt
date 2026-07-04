@@ -1,18 +1,27 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package io.f7z.podcast
 
 import io.f7z.podcast.capabilities.AndroidCapabilityRouter
 import io.f7z.podcast.capabilities.CapabilityRequest
 import io.f7z.podcast.capabilities.CapabilityWire
+import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import org.nmp.android.ProjectionMergeCache
+import org.nmp.android.TypedProjectionEnvelope
 import uniffi.nmp_app_podcast.PodcastApp as UniFfiPodcastApp
 import uniffi.nmp_app_podcast.PodcastCapabilitySink
+import uniffi.nmp_app_podcast.PodcastDispatchOutcome
+import uniffi.nmp_app_podcast.PodcastProjectionPresence
 import uniffi.nmp_app_podcast.PodcastProfileShape
 import uniffi.nmp_app_podcast.PodcastRefLiveness
 import uniffi.nmp_app_podcast.PodcastRefNamespace
 import uniffi.nmp_app_podcast.PodcastRefShape
 import uniffi.nmp_app_podcast.PodcastUpdateSink
-import uniffi.nmp_app_podcast.podcastBridgeGlobalCall
+import uniffi.nmp_app_podcast.byokAuthorization as uniffiByokAuthorization
 
 /**
  * Android bridge around the app-owned generated UniFFI [UniFfiPodcastApp].
@@ -25,6 +34,7 @@ class KernelBridge : KernelDispatcher {
     private val closed = AtomicBoolean(false)
     private val updateQueue = LinkedBlockingQueue<UpdateQueueItem>(MAX_QUEUED_UPDATES)
     private val signerQueue = LinkedBlockingQueue<SignerQueueItem>(MAX_QUEUED_SIGNER_REQUESTS)
+    private val projectionCache = ProjectionMergeCache()
 
     @Volatile
     private var capabilityRouter: AndroidCapabilityRouter? = null
@@ -32,8 +42,10 @@ class KernelBridge : KernelDispatcher {
     private val updateSink = object : PodcastUpdateSink {
         override fun onUpdate(frame: ByteArray) {
             if (closed.get()) return
-            app.decodeUpdateFrame(frame)?.let { decoded ->
-                putUpdate(UpdateQueueItem.Frame(decoded))
+            val decoded = app.decodeUpdateFrame(frame)
+            val domainFrames = decodeTypedDomainFrames(frame)
+            if (decoded != null || domainFrames != null) {
+                putUpdate(UpdateQueueItem.Frame(KernelUpdateFrame(decoded, domainFrames)))
             }
         }
     }
@@ -73,7 +85,11 @@ class KernelBridge : KernelDispatcher {
     }
 
     override fun dispatchAction(namespace: String, payloadJson: String): String? {
-        return if (isOpen()) app.dispatchPodcastAction(namespace, payloadJson) else null
+        if (!isOpen()) return null
+        val correlationId = mintDispatchCorrelationId()
+        val envelope = KernelDispatchEnvelope.podcast(namespace, payloadJson, correlationId)
+            ?: return dispatchErrorEnvelope("no generated action builder for namespace $namespace")
+        return app.dispatchAction(envelope).toEnvelopeJson()
     }
 
     fun registerCapabilityRouter(router: AndroidCapabilityRouter) {
@@ -88,29 +104,28 @@ class KernelBridge : KernelDispatcher {
     }
 
     fun capabilityReport(namespace: String, reportJson: String): String? {
-        val endpoint = when (namespace) {
-            "audio" -> "nmp_app_podcast_audio_report"
-            "download" -> "nmp_app_podcast_download_report"
+        return when (namespace) {
+            "audio" -> if (isOpen()) app.audioReport(reportJson) else null
+            "download" -> if (isOpen()) app.downloadReport(reportJson) else null
             else -> return null
         }
-        return if (isOpen()) app.podcastBridgeCall(endpoint, reportJson) else null
     }
 
     fun downloadReport(reportJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_download_report", reportJson) else null
+        return if (isOpen()) app.downloadReport(reportJson) else null
     }
 
     fun httpReport(reportJson: String) {
-        if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_http_report", reportJson)
+        if (isOpen()) app.httpReport(reportJson)
     }
 
     fun signinNsec(nsec: String) {
         if (isOpen()) app.signinNsec(nsec, makeActive = true)
     }
 
-    fun nextUpdate(): String? =
+    fun nextUpdate(): KernelUpdateFrame? =
         when (val item = updateQueue.take()) {
-            is UpdateQueueItem.Frame -> item.json
+            is UpdateQueueItem.Frame -> item.update
             UpdateQueueItem.Shutdown -> null
         }
 
@@ -166,74 +181,74 @@ class KernelBridge : KernelDispatcher {
     }
 
     fun chatComplete(messagesJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_chat_complete", messagesJson) else null
+        return if (isOpen()) app.chatComplete(messagesJson) else null
     }
 
     fun providerComplete(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_complete", intentJson) else null
+        return if (isOpen()) app.providerComplete(intentJson) else null
     }
 
     fun providerEmbed(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_embed", intentJson) else null
+        return if (isOpen()) app.providerEmbed(intentJson) else null
     }
 
     fun perplexitySearch(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_perplexity_search", intentJson) else null
+        return if (isOpen()) app.perplexitySearch(intentJson) else null
     }
 
     fun providerModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_provider_model_catalog", null) else null
+        return if (isOpen()) app.providerModelCatalog() else null
     }
 
     fun speechModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_speech_model_catalog", null) else null
+        return if (isOpen()) app.speechModelCatalog() else null
     }
 
     fun localModelCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_local_model_catalog", null) else null
+        return if (isOpen()) app.localModelCatalog() else null
     }
 
     fun byokAuthorization(intentJson: String): String? =
-        podcastBridgeGlobalCall("nmp_app_podcast_byok_authorization", intentJson)
+        uniffiByokAuthorization(intentJson)
 
     fun byokExchange(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_byok_exchange", intentJson) else null
+        return if (isOpen()) app.byokExchange(intentJson) else null
     }
 
     fun validateOpenRouterKey(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_validate_openrouter_key", null) else null
+        return if (isOpen()) app.validateOpenrouterKey() else null
     }
 
     fun validateElevenLabsKey(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_validate_elevenlabs_key", null) else null
+        return if (isOpen()) app.validateElevenlabsKey() else null
     }
 
     fun elevenLabsVoiceCatalog(): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_voice_catalog", null) else null
+        return if (isOpen()) app.elevenlabsVoiceCatalog() else null
     }
 
     fun elevenLabsTextToSpeech(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_tts_synthesize", intentJson) else null
+        return if (isOpen()) app.elevenlabsTtsSynthesize(intentJson) else null
     }
 
     fun openRouterWhisperTranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_openrouter_whisper_transcribe", intentJson) else null
+        return if (isOpen()) app.openrouterWhisperTranscribe(intentJson) else null
     }
 
     fun elevenLabsScribeTranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_elevenlabs_scribe_transcribe", intentJson) else null
+        return if (isOpen()) app.elevenlabsScribeTranscribe(intentJson) else null
     }
 
     fun assemblyAITranscribe(intentJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_assemblyai_transcribe", intentJson) else null
+        return if (isOpen()) app.assemblyaiTranscribe(intentJson) else null
     }
 
     fun generateImage(requestJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_generate_image", requestJson) else null
+        return if (isOpen()) app.generateImage(requestJson) else null
     }
 
     fun rerank(requestJson: String): String? {
-        return if (isOpen()) app.podcastBridgeCall("nmp_app_podcast_rerank", requestJson) else null
+        return if (isOpen()) app.rerank(requestJson) else null
     }
 
     fun free() {
@@ -272,6 +287,30 @@ class KernelBridge : KernelDispatcher {
 
     private fun isOpen(): Boolean = !closed.get()
 
+    private fun decodeTypedDomainFrames(frame: ByteArray): PodcastDomainFrames? {
+        val typedFrame = app.decodeTypedProjectionFrame(frame) ?: return null
+        val envelopes = typedFrame.envelopes.map { envelope ->
+            TypedProjectionEnvelope(
+                key = envelope.key,
+                schemaId = envelope.schemaId,
+                schemaVersion = envelope.schemaVersion,
+                fileIdentifier = envelope.fileIdentifier,
+                payload = envelope.payload,
+                projectionRev = envelope.projectionRev,
+                state = when (envelope.state) {
+                    PodcastProjectionPresence.CHANGED -> 0u.toUByte()
+                    PodcastProjectionPresence.CLEARED -> 1u.toUByte()
+                },
+            )
+        }
+        val result = projectionCache.merge(
+            envelopes = envelopes,
+            sessionId = typedFrame.sessionId,
+            snapshotEpoch = typedFrame.snapshotEpoch,
+        )
+        return TypedProjectionDomainCodec.decodeDomainFrames(result.mergedEnvelopes)
+    }
+
     private fun putUpdate(item: UpdateQueueItem) {
         runCatching { updateQueue.put(item) }
             .onFailure { Thread.currentThread().interrupt() }
@@ -282,8 +321,25 @@ class KernelBridge : KernelDispatcher {
             .onFailure { Thread.currentThread().interrupt() }
     }
 
+    private fun mintDispatchCorrelationId(): String =
+        "podcast-android-${UUID.randomUUID().toString().lowercase().replace("-", "")}"
+
+    private fun dispatchErrorEnvelope(message: String): String =
+        JsonObject(mapOf("error" to JsonPrimitive(message))).toString()
+
+    private fun PodcastDispatchOutcome.toEnvelopeJson(): String {
+        val acceptedCorrelationId = correlationId?.takeIf { it.isNotEmpty() }
+        if (acceptedCorrelationId != null && error.isNullOrEmpty()) {
+            return JsonObject(mapOf("correlation_id" to JsonPrimitive(acceptedCorrelationId))).toString()
+        }
+        val message = error?.takeIf { it.isNotEmpty() }
+            ?: code?.takeIf { it.isNotEmpty() }
+            ?: "Dispatch failed."
+        return dispatchErrorEnvelope(message)
+    }
+
     private sealed interface UpdateQueueItem {
-        data class Frame(val json: String) : UpdateQueueItem
+        data class Frame(val update: KernelUpdateFrame) : UpdateQueueItem
         object Shutdown : UpdateQueueItem
     }
 
@@ -303,3 +359,8 @@ class KernelBridge : KernelDispatcher {
         }
     }
 }
+
+data class KernelUpdateFrame(
+    val json: String?,
+    val domainFrames: PodcastDomainFrames?,
+)

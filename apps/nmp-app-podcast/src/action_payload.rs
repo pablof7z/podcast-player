@@ -1,11 +1,26 @@
 //! Podcast-specific action payloads (FlatBuffers ADR-0064 contract).
 //!
-//! This module implements the `ActionPayload` trait for podcast namespace
-//! actions, enabling typed dispatch through `nmp_app_dispatch_action_bytes`.
-//! The payload schema is a simple FlatBuffers table carrying JSON that the
-//! registry decodes before feeding to action modules.
+//! The current app-owned action modules still deserialize JSON bodies, but the
+//! native boundary no longer passes raw JSON. Hosts build a generated
+//! `DispatchEnvelope` whose payload is this FlatBuffers table; Rust verifies the
+//! file identifier + schema version before handing the JSON string to the
+//! app-owned action module.
+
+#[allow(
+    clippy::all,
+    dead_code,
+    deprecated,
+    missing_docs,
+    non_camel_case_types,
+    non_snake_case,
+    unsafe_code,
+    unused_imports
+)]
+#[path = "wire/generated/podcast_json_action_generated.rs"]
+mod podcast_json_action_generated;
 
 use nmp_core::substrate::{ActionPayload, ActionPayloadDecodeError};
+use podcast_json_action_generated::podcastr::action as podcast_json_fb;
 
 /// A generic FlatBuffers-backed payload for podcast actions.
 /// Carries a schema version and opaque JSON body.
@@ -20,25 +35,14 @@ impl ActionPayload for PodcastJsonPayload {
     const SCHEMA_VERSION: u32 = 1;
 
     fn decode(bytes: &[u8]) -> Result<Self, ActionPayloadDecodeError> {
-        // For now, use a simple passthrough that wraps raw JSON.
-        // In the future, this could use generated FlatBuffers readers.
-
-        // Verify minimal FlatBuffers structure
-        if bytes.is_empty() {
-            return Err(ActionPayloadDecodeError::Malformed {
-                reason: "empty payload".to_string(),
-            });
+        if bytes.len() < 8 || !podcast_json_fb::podcast_json_payload_buffer_has_identifier(bytes) {
+            return Err(malformed("missing PJSN file identifier"));
         }
 
-        // Extract schema version (byte 0) and JSON body (remaining bytes)
-        // This is a simplified implementation; a real FlatBuffers decode
-        // would use generated reader code.
-        let schema_version = if bytes.len() >= 4 {
-            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-        } else {
-            1u32
-        };
+        let root = podcast_json_fb::root_as_podcast_json_payload(bytes)
+            .map_err(|e| malformed(format!("not a valid PodcastJsonPayload buffer: {e}")))?;
 
+        let schema_version = root.schema_version();
         if schema_version != Self::SCHEMA_VERSION {
             return Err(ActionPayloadDecodeError::SchemaVersionMismatch {
                 found: schema_version,
@@ -46,26 +50,30 @@ impl ActionPayload for PodcastJsonPayload {
             });
         }
 
-        // The JSON body follows the version bytes
-        let body_start = if bytes.len() > 4 { 4 } else { 0 };
-        let body_json = String::from_utf8(bytes[body_start..].to_vec()).map_err(|e| {
-            ActionPayloadDecodeError::Malformed {
-                reason: format!("invalid UTF-8 in payload body: {}", e),
-            }
-        })?;
-
         Ok(PodcastJsonPayload {
             schema_version,
-            body_json,
+            body_json: root.json().to_string(),
         })
     }
 
     fn encode(&self) -> Vec<u8> {
-        // Encode schema version as 4 bytes, followed by JSON
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.schema_version.to_le_bytes());
-        bytes.extend_from_slice(self.body_json.as_bytes());
-        bytes
+        let mut fbb = flatbuffers::FlatBufferBuilder::new();
+        let json = fbb.create_string(&self.body_json);
+        let payload = podcast_json_fb::PodcastJsonPayload::create(
+            &mut fbb,
+            &podcast_json_fb::PodcastJsonPayloadArgs {
+                schema_version: self.schema_version,
+                json: Some(json),
+            },
+        );
+        podcast_json_fb::finish_podcast_json_payload_buffer(&mut fbb, payload);
+        fbb.finished_data().to_vec()
+    }
+}
+
+fn malformed(reason: impl Into<String>) -> ActionPayloadDecodeError {
+    ActionPayloadDecodeError::Malformed {
+        reason: reason.into(),
     }
 }
 
@@ -120,4 +128,39 @@ macro_rules! impl_podcast_action_payload {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn podcast_json_payload_round_trips_as_flatbuffers_payload() {
+        let payload = PodcastJsonPayload {
+            schema_version: PodcastJsonPayload::SCHEMA_VERSION,
+            body_json: r#"{"op":"pause"}"#.to_string(),
+        };
+
+        let bytes = payload.encode();
+        assert!(
+            podcast_json_fb::podcast_json_payload_buffer_has_identifier(&bytes),
+            "payload must carry the PJSN FlatBuffers identifier"
+        );
+
+        let decoded = PodcastJsonPayload::decode(&bytes).expect("PJSN payload decodes");
+        assert_eq!(decoded.schema_version, PodcastJsonPayload::SCHEMA_VERSION);
+        assert_eq!(decoded.body_json, r#"{"op":"pause"}"#);
+    }
+
+    #[test]
+    fn legacy_version_prefixed_json_payload_is_rejected() {
+        let mut legacy = PodcastJsonPayload::SCHEMA_VERSION.to_le_bytes().to_vec();
+        legacy.extend_from_slice(br#"{"op":"pause"}"#);
+
+        let err = PodcastJsonPayload::decode(&legacy).expect_err("legacy payload must reject");
+        assert!(
+            matches!(err, ActionPayloadDecodeError::Malformed { .. }),
+            "legacy raw JSON payload must fail the FlatBuffers identifier gate"
+        );
+    }
 }

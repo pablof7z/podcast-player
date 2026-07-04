@@ -8,9 +8,8 @@ use super::handle::PodcastHandle;
 use crate::llm::elevenlabs_key_validation::{self, ElevenLabsKeyValidationError};
 use crate::llm::openrouter_key_validation::{self, OpenRouterKeyValidationError};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_validate_openrouter_key(
+pub fn nmp_app_podcast_validate_openrouter_key(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -31,9 +30,8 @@ pub extern "C" fn nmp_app_podcast_validate_openrouter_key(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_validate_elevenlabs_key(
+pub fn nmp_app_podcast_validate_elevenlabs_key(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {

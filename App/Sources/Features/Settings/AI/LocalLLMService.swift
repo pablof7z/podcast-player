@@ -163,21 +163,16 @@ actor LocalLLMService {
     }
 
     func registerWithKernel(_ kernel: KernelModel) async {
-        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
-        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
-            os_log("Cannot register local LLM: no kernel handle", log: .default, type: .error)
-            return
+        await MainActor.run {
+            kernel.kernel.podcastApp.setLocalLlmSink(sink: KernelLocalLLMSink(service: self))
         }
-
-        let ctx = Unmanaged.passUnretained(self).toOpaque()
-        nmp_app_register_local_llm(handle, ctx, localLLMCallback)
         os_log("Local LLM service registered with kernel", log: .default, type: .debug)
     }
 
     func clearFromKernel(_ kernel: KernelModel) async {
-        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
-        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else { return }
-        nmp_app_clear_local_llm(handle)
+        await MainActor.run {
+            kernel.kernel.podcastApp.setLocalLlmSink(sink: nil)
+        }
         os_log("Local LLM service cleared from kernel", log: .default, type: .debug)
     }
 #else
@@ -202,62 +197,51 @@ actor LocalLLMService {
     }
 
     func registerWithKernel(_ kernel: KernelModel) async {
-        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
-        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
-            os_log("Cannot register local LLM: no kernel handle", log: .default, type: .error)
-            return
+        await MainActor.run {
+            kernel.kernel.podcastApp.setLocalLlmSink(sink: KernelLocalLLMSink(service: self))
         }
-
-        let ctx = Unmanaged.passUnretained(self).toOpaque()
-        nmp_app_register_local_llm(handle, ctx, localLLMCallback)
         os_log("Unavailable local LLM service registered with kernel", log: .default, type: .debug)
     }
 
     func clearFromKernel(_ kernel: KernelModel) async {
-        let handleBits = await MainActor.run { Int(bitPattern: kernel.podcastHandlePointer) }
-        guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else { return }
-        nmp_app_clear_local_llm(handle)
+        await MainActor.run {
+            kernel.kernel.podcastApp.setLocalLlmSink(sink: nil)
+        }
         os_log("Local LLM service cleared from kernel", log: .default, type: .debug)
     }
 #endif
 }
 
-// MARK: - C Callback Glue
+// MARK: - UniFFI Callback Glue
 
-private func localLLMCallback(
-    _ context: UnsafeMutableRawPointer?,
-    _ promptJSON: UnsafePointer<CChar>?
-) -> UnsafeMutablePointer<CChar>? {
-    guard let context = context else { return nil }
-    guard let promptJSON = promptJSON else { return nil }
+private final class KernelLocalLLMSink: PodcastLocalLlmSink, @unchecked Sendable {
+    private let service: LocalLLMService
 
-    let service = Unmanaged<LocalLLMService>.fromOpaque(context).takeUnretainedValue()
-    let promptString = String(cString: promptJSON)
+    init(service: LocalLLMService) {
+        self.service = service
+    }
 
     // The FFI call runs on a Rust background thread (not the cooperative pool),
     // so blocking with a semaphore here is safe. The semaphore guarantees the
     // Task's write to `box` happens-before the read after `wait()`, so the
     // @unchecked Sendable box carries the result across the boundary without a
     // real race (Swift 6 can't prove the ordering, hence the box).
-    final class ResultBox: @unchecked Sendable {
-        var value = #"{"error":"Inference failed"}"#
+    func infer(promptJson: String) -> String {
+        final class ResultBox: @unchecked Sendable {
+            var value = #"{"error":"Inference failed"}"#
+        }
+        let box = ResultBox()
+        let semaphore = DispatchSemaphore(value: 0)
+
+        let task = Task {
+            box.value = await service.infer(promptJSON: promptJson)
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        task.cancel()
+        return box.value
     }
-    let box = ResultBox()
-    let semaphore = DispatchSemaphore(value: 0)
-
-    let task = Task {
-        box.value = await service.infer(promptJSON: promptString)
-        semaphore.signal()
-    }
-
-    semaphore.wait()
-    task.cancel()
-
-    guard let resultCString = box.value.cString(using: .utf8) else {
-        return nil
-    }
-
-    return strdup(resultCString)
 }
 
 // MARK: - Error Types

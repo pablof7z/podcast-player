@@ -63,9 +63,8 @@ struct GeneratedTranscriptSegment {
     text: String,
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_tts_episode_plan(
+pub fn nmp_app_podcast_agent_tts_episode_plan(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -89,9 +88,8 @@ pub extern "C" fn nmp_app_podcast_agent_tts_episode_plan(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_tts_default_voice(
+pub fn nmp_app_podcast_agent_tts_default_voice(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -122,9 +120,8 @@ pub extern "C" fn nmp_app_podcast_agent_tts_default_voice(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_generated_podcast_descriptor(
+pub fn nmp_app_podcast_agent_generated_podcast_descriptor(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {

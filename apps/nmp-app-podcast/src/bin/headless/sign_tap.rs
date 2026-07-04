@@ -20,7 +20,7 @@
 //!
 //! The one in-process, network-free seam that exposes a signed event's
 //! `pubkey` + `sig` is the D13 **sign-and-return** path
-//! (`nmp_app_sign_event_for_return`): it signs an unsigned draft with a NAMED
+//! (`PodcastApp::sign_event_for_return`): it signs an unsigned draft with a NAMED
 //! (possibly non-active) account and parks the signed JSON in the
 //! `signed_events` push-frame projection, keyed by a correlation id — it NEVER
 //! publishes, so no relay is required.
@@ -39,31 +39,19 @@
 //! ## Mechanism
 //!
 //! `signed_events` is a Tier-2 typed FlatBuffer sidecar drained into the push
-//! frame on emit (not a re-runnable registered projection, so
-//! `nmp_app_read_projection_json` cannot see it). We install an update callback
-//! that captures each frame's bytes, decode them with
-//! `nmp_app_podcast_decode_update_frame`, and read
+//! frame on emit. It is not a re-runnable registered projection, so the harness
+//! installs an update callback that captures each frame's bytes, decodes them with
+//! `PodcastApp::decode_update_frame`, and read
 //! `v.projections.signed_events[correlation_id]`.
 //!
 //! The headless harness uses the native-runtime typed update listener and
-//! typed sign-and-return method. The only explicit FFI call left here is the
-//! podcast-owned update-frame decoder.
+//! typed sign-and-return method.
 
-use std::ffi::{c_char, CStr};
+use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use nmp_app_podcast::dispatch_bytes::mint_correlation_id;
-use nmp_native_runtime::NmpApp;
-
-// ── Externally-linked C-ABI symbols not re-exported from the crate roots ──────
-#[allow(improper_ctypes)]
-extern "C" {
-    /// Decode a raw update-frame byte slice into the
-    /// `{"t":"snapshot","v":{…,"projections":{"signed_events":…}}}` JSON shape.
-    /// Defined in the podcast crate's `ffi/snapshot.rs` (`#[no_mangle]`).
-    fn nmp_app_podcast_decode_update_frame(bytes: *const u8, len: usize) -> *mut c_char;
-}
+use nmp_app_podcast::ffi::{PodcastApp, PodcastUpdateSink};
 
 /// Captured `signed_events` rows, merged across every frame the callback has
 /// seen, keyed by `correlation_id` → `signed_json` (success) or an `Err`
@@ -79,23 +67,13 @@ fn captured() -> &'static Mutex<Vec<(String, Result<String, String>)>> {
 /// Decodes an update frame and merges any `signed_events`
 /// rows into `CAPTURED`. Best-effort: any decode/parse failure is a silent
 /// no-op (the poller times out, never panics — matches the kernel's D6 stance).
-fn capture_frame(frame: &[u8]) {
+fn capture_frame(app: &PodcastApp, frame: Vec<u8>) {
     if frame.is_empty() {
         return;
     }
-    let decoded = unsafe { nmp_app_podcast_decode_update_frame(frame.as_ptr(), frame.len()) };
-    if decoded.is_null() {
+    let Some(json) = app.decode_update_frame(frame) else {
         return;
-    }
-    // SAFETY: `decoded` is a heap-owned NUL-terminated C string we now own.
-    let json = unsafe { CStr::from_ptr(decoded) }
-        .to_str()
-        .map(str::to_owned);
-    // SAFETY: the decoder allocates with `CString::into_raw`.
-    unsafe {
-        let _ = std::ffi::CString::from_raw(decoded);
-    }
-    let Ok(json) = json else { return };
+    };
     let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) else {
         return;
     };
@@ -128,17 +106,22 @@ fn capture_frame(frame: &[u8]) {
 
 /// Install the signed-event capture callback. Call once after `app_new`,
 /// BEFORE `nmp_app_start` (mirrors the production shell ordering).
-pub fn install(app: *mut NmpApp) {
+pub fn install(app: Arc<PodcastApp>) {
     // Eagerly initialise the buffer so the callback never races the OnceLock.
     let _ = captured();
-    if app.is_null() {
-        return;
+    app.set_update_sink(Some(Box::new(SignedEventTap {
+        app: Arc::clone(&app),
+    })));
+}
+
+struct SignedEventTap {
+    app: Arc<PodcastApp>,
+}
+
+impl PodcastUpdateSink for SignedEventTap {
+    fn on_update(&self, frame: Vec<u8>) {
+        capture_frame(&self.app, frame);
     }
-    // SAFETY: the headless harness owns `app` for the binary lifetime.
-    let app_ref = unsafe { &*app };
-    nmp_uniffi_support::set_update_sink(app_ref, Some(Box::new(())), |_, frame| {
-        capture_frame(&frame);
-    });
 }
 
 /// Drive a sign-and-return for `unsigned_json` signed by `signer_pubkey_hex`,
@@ -149,26 +132,16 @@ pub fn install(app: *mut NmpApp) {
 /// content,sig}`) on success, or `Err(message)` on a sign-failure verdict /
 /// timeout / FFI error.
 pub fn sign_for_return_blocking(
-    app: *mut NmpApp,
+    app: &PodcastApp,
     signer_pubkey_hex: &str,
     unsigned_json: &serde_json::Value,
     timeout: Duration,
 ) -> Result<serde_json::Value, String> {
-    if app.is_null() {
-        return Err("sign_for_return received null app".into());
-    }
-    let correlation_id = mint_correlation_id();
+    let correlation_id =
+        app.sign_event_for_return(signer_pubkey_hex.to_owned(), unsigned_json.to_string());
     if correlation_id.is_empty() {
         return Err("sign_for_return minted an empty correlation id".into());
     }
-    // SAFETY: app is allocated by harness::app_new and remains live for the
-    // scenario run.
-    let app_ref = unsafe { &*app };
-    app_ref.sign_event_for_return(
-        signer_pubkey_hex.to_owned(),
-        unsigned_json.to_string(),
-        correlation_id.clone(),
-    );
 
     let deadline = Instant::now() + timeout;
     loop {
@@ -203,7 +176,7 @@ pub fn sign_for_return_blocking(
 /// key, via the same `sign_with_account_nonblocking` resolution `PublishRaw`
 /// uses.
 pub fn assert_kernel_signs_with(
-    app: *mut NmpApp,
+    app: &PodcastApp,
     signer_pubkey_hex: &str,
     active_pubkey_hex: &str,
     kind: u32,

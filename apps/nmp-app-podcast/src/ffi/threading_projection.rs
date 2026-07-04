@@ -90,9 +90,8 @@ struct CandidateMention {
     snippet: String,
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_threading_projection(
+pub fn nmp_app_podcast_threading_projection(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -123,9 +122,8 @@ pub extern "C" fn nmp_app_podcast_threading_projection(
     )
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_threading_active_topics(
+pub fn nmp_app_podcast_threading_active_topics(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

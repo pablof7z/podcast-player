@@ -5,8 +5,7 @@
 //! unreachable the scenario skips rather than fails so CI isn't blocked by
 //! missing infrastructure.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 use crate::harness::{dispatch, probe_tcp, wait_for};
 use crate::mock_feed;
@@ -20,7 +19,7 @@ const OLLAMA_PORT: u16 = 11434;
 /// Heuristic reason strings that the LLM result must NOT be.
 const HEURISTIC_REASONS: &[&str] = &["Just published", "Recent", "This week", "From your library"];
 
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // Skip if Ollama isn't reachable — avoids false failures in CI.
     if !probe_tcp(OLLAMA_HOST, OLLAMA_PORT) {
         return Skip("ollama offline".into());
@@ -58,7 +57,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     // Wait for the inbox to populate (subscribe produces inbox items
     // automatically from unlistened episodes).
-    match wait_for(handle, 15_000, |u| !u.inbox.is_empty()) {
+    match wait_for(app, 15_000, |u| !u.inbox.is_empty()) {
         Ok(_) => {}
         Err(e) => return Fail(format!("no inbox items after subscribe: {e}")),
     }
@@ -70,7 +69,7 @@ pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
 
     // Wait until at least one inbox item has non-empty ai_categories —
     // that signals the LLM triage has run and been projected.
-    match wait_for(handle, 300_000, |u| {
+    match wait_for(app, 300_000, |u| {
         u.inbox.iter().any(|i| !i.ai_categories.is_empty())
     }) {
         Ok(u) => {

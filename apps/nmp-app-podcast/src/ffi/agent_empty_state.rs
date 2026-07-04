@@ -33,9 +33,8 @@ fn is_archived(store: &crate::store::PodcastStore, episode: &podcast_core::Episo
         || stored_triage.map(|d| d.as_str()) == Some("archived")
 }
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_empty_state(
+pub fn nmp_app_podcast_agent_empty_state(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {

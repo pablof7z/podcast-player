@@ -113,18 +113,11 @@ settings and task-intent APIs:
   flows. `KernelBridge.dispatchAction(namespace, payloadJson)` already routes
   through the same Rust `ActionModule` registry that iOS uses.
 
-Direct shared-provider transport now uses generated UniFFI bridge calls:
-
-- `nmp_app_podcast_chat_complete(handle, messages_json) -> char*`
-- `nmp_app_podcast_provider_complete(handle, intent_json) -> char*`
-- `nmp_app_podcast_provider_embed(handle, intent_json) -> char*`
-- `nmp_app_podcast_provider_model_catalog(handle) -> char*`
-- `nmp_app_podcast_generate_image(handle, request_json) -> char*`
-- `nmp_app_podcast_rerank(handle, request_json) -> char*`
-
-`KernelBridge` exposes handle-scoped `chatComplete`, `providerComplete`,
-`providerEmbed`, `providerModelCatalog`, `generateImage`, and `rerank` methods
-that return Rust's JSON envelope through `PodcastApp.podcastBridgeCall`.
+Direct shared-provider transport now uses handle-scoped generated UniFFI
+methods on `PodcastApp` for chat, provider completion, embeddings, model
+catalogs, image generation, and rerank. Those methods return Rust's JSON
+envelope directly; the old `nmp_app_podcast_* -> char*` platform bridge is not
+the Android surface.
 Android model-role settings now load the shared Rust catalog, filter rows by
 role output modality, and dispatch the catalog's `selection_model_id` through
 `podcast.settings` so OpenRouter/Ollama routing is preserved. Android also

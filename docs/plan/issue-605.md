@@ -13,7 +13,7 @@ Route Nostr-facing text-entry/discovery surfaces through NMP's framework-level i
 ## Completed In Current Pass
 
 - Added Swift wire DTOs for `InputIntentRequest`, classification results, dispatch outcomes, and decoded NIP-21 refs.
-- Exposed the NMP C ABI in `NmpCore.h`:
+- Exposed the NMP input-intent operations through the app bridge:
   - `nmp_app_intent_classify`
   - `nmp_app_intent_dispatch`
   - `nmp_nip21_decode_uri`

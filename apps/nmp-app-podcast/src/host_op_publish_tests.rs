@@ -34,7 +34,7 @@ use url::Url;
 /// Construct a `PodcastHostOpHandler` with a NULL `app` pointer
 /// — the publish handlers never dispatch capabilities, so the
 /// pointer is never read. All other slots are initialized with the
-/// same defaults `ffi::register::nmp_app_podcast_register` uses, so
+/// same defaults `ffi::register::register_podcast_app` uses, so
 /// the handler is fully wired even though only the publish path is
 /// exercised here.
 fn handler_with_store(store: Arc<Mutex<PodcastStore>>) -> PodcastHostOpHandler {

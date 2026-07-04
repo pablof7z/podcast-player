@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::model_catalog;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_provider_model_catalog(
+pub fn nmp_app_podcast_provider_model_catalog(
     handle: *mut PodcastHandle,
 ) -> *mut c_char {
     if handle.is_null() {
@@ -20,19 +19,23 @@ pub extern "C" fn nmp_app_podcast_provider_model_catalog(
         || err_envelope("panic").into_raw(),
         || {
             let handle_ref = unsafe { &*handle };
-            let store = Arc::clone(&handle_ref.state.library.store);
-            let runtime = Arc::clone(&handle_ref.state.infra.runtime);
-            match runtime.block_on(model_catalog::fetch_model_catalog(store)) {
-                Ok(result) => json_envelope(&serde_json::json!({"result": result})).into_raw(),
-                Err(error) => err_envelope(&error.to_string()).into_raw(),
-            }
+            json_envelope(provider_model_catalog_json(handle_ref)).into_raw()
         },
     )
 }
 
-fn json_envelope(value: &serde_json::Value) -> CString {
-    CString::new(value.to_string())
-        .unwrap_or_else(|_| CString::new(r#"{"error":"encoding"}"#).unwrap())
+pub(crate) fn provider_model_catalog_json(handle: &PodcastHandle) -> String {
+    let store = Arc::clone(&handle.state.library.store);
+    let runtime = Arc::clone(&handle.state.infra.runtime);
+    let value = match runtime.block_on(model_catalog::fetch_model_catalog(store)) {
+        Ok(result) => serde_json::json!({"result": result}),
+        Err(error) => serde_json::json!({"error": error.to_string()}),
+    };
+    value.to_string()
+}
+
+fn json_envelope(value: String) -> CString {
+    CString::new(value).unwrap_or_else(|_| CString::new(r#"{"error":"encoding"}"#).unwrap())
 }
 
 fn err_envelope(reason: &str) -> CString {

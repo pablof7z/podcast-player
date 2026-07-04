@@ -6,9 +6,10 @@ extension KernelModel {
     nonisolated static func shouldPullPodcastSnapshot(
         currentRev: UInt64,
         lastProcessedRev: UInt64,
-        hasHydratedPodcastSnapshot: Bool
+        hasHydratedPodcastSnapshot: Bool,
+        allowEqualRev: Bool = false
     ) -> Bool {
-        if !hasHydratedPodcastSnapshot {
+        if !hasHydratedPodcastSnapshot || allowEqualRev {
             return currentRev >= lastProcessedRev
         }
         return currentRev > lastProcessedRev

@@ -19,8 +19,7 @@
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 use serde_json::json;
 
 use crate::fixtures;
@@ -42,7 +41,7 @@ fn probe_tcp(host: &str, port: u16) -> bool {
         .any(|addr| TcpStream::connect_timeout(&addr, Duration::from_secs(3)).is_ok())
 }
 
-pub fn run(app: *mut NmpApp, _handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // 1. Network gate — skip when relay is unreachable.
     if !probe_tcp(RELAY_HOST, RELAY_PORT) {
         return Skip(format!("{RELAY_HOST}:{RELAY_PORT} unreachable"));

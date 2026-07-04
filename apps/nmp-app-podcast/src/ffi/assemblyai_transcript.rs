@@ -9,9 +9,8 @@ use crate::llm::assemblyai_transcript::{
     self, AssemblyAITranscriptError, AssemblyAITranscriptIntent,
 };
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_assemblyai_transcribe(
+pub fn nmp_app_podcast_assemblyai_transcribe(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

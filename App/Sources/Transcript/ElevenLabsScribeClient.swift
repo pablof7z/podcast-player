@@ -121,13 +121,12 @@ actor ElevenLabsScribeClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":{"kind":"store_unavailable","message":"Kernel handle unavailable"}}"#
             }
-            return requestJSON.withCString { cRequest in
-                guard let ptr = nmp_app_podcast_elevenlabs_scribe_transcribe(handle, cRequest) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .elevenlabsScribeTranscribe, request: requestJSON) else {
                     return #"{"error":{"kind":"store_unavailable","message":"null response from Rust"}}"#
                 }
-                defer { nmp_free_string(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         guard let responseData = responseJSON.data(using: .utf8) else {

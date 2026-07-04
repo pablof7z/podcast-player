@@ -316,19 +316,18 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
         else {
             throw DirectoryError.parseError("Could not encode subscribe_podcast request.")
         }
-        return try json.withCString { ptr -> RustPodcastSubscribeSnapshot in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+        return try {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 throw DirectoryError.unavailable("subscribe_podcast policy")
             }
-            defer { nmp_free_string(result) }
-            let envelope = String(cString: result)
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustPodcastSubscribeSnapshot.self, from: data)
             else {
                 throw DirectoryError.parseError("Could not decode subscribe_podcast policy response.")
             }
             return decoded
-        }
+        }()
     }
 
     private func subscriptionStatus(feedURL: String, store: AppStateStore) async -> RustSubscriptionStatus? {
@@ -432,12 +431,11 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
         else {
             throw DirectoryError.parseError("Could not encode delete_podcast request.")
         }
-        return try json.withCString { ptr -> PodcastDeleteResult in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+        return try {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 throw DirectoryError.unavailable("delete_podcast policy")
             }
-            defer { nmp_free_string(result) }
-            let envelope = String(cString: result)
+            let envelope = result
             guard let data = envelope.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode(RustPodcastDeleteSnapshot.self, from: data)
             else {
@@ -450,7 +448,7 @@ final class LivePodcastSubscribeAdapter: PodcastSubscribeProtocol, @unchecked Se
                 throw DirectoryError.parseError("delete_podcast policy response was incomplete.")
             }
             return snapshot
-        }
+        }()
     }
 }
 

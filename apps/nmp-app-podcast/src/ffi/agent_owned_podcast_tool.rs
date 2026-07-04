@@ -12,9 +12,8 @@ use uuid::Uuid;
 use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_agent_owned_podcast_tool(
+pub fn nmp_app_podcast_agent_owned_podcast_tool(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

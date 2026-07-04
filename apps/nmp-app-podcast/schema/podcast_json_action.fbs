@@ -1,0 +1,9 @@
+namespace podcastr.action;
+
+table PodcastJsonPayload {
+  schema_version:uint;
+  json:string (required);
+}
+
+root_type PodcastJsonPayload;
+file_identifier "PJSN";

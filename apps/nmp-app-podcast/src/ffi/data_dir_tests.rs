@@ -3,7 +3,6 @@ use crate::ffi::handle::PodcastHandle;
 use crate::ffi::projections::AgentTaskSummary;
 use crate::store::identity::IdentityStore;
 use crate::store::PodcastStore;
-use std::ffi::CString;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 /// Build a `PodcastHandle` with a NULL `app` pointer — these tests only
@@ -64,8 +63,7 @@ impl Drop for TempDir {
 }
 #[test]
 fn null_handle_is_silent_noop() {
-    let path = CString::new("/tmp/whatever").unwrap();
-    nmp_app_podcast_set_data_dir(std::ptr::null_mut(), path.as_ptr());
+    set_data_dir(None, Some("/tmp/whatever"));
     // Did not crash — D6 satisfied.
 }
 #[test]
@@ -73,12 +71,9 @@ fn null_path_is_silent_noop() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let rev = Arc::new(AtomicU64::new(0));
     let handle = make_handle(store.clone(), rev.clone());
-    let ptr = Box::into_raw(handle);
-    nmp_app_podcast_set_data_dir(ptr, std::ptr::null());
+    set_data_dir(Some(handle.as_ref()), None);
     assert!(store.lock().unwrap().data_dir().is_none());
     assert_eq!(rev.load(Ordering::Relaxed), 0);
-    // SAFETY: we boxed it ourselves above.
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 #[test]
 fn binds_data_dir_and_does_not_bump_rev_when_empty() {
@@ -86,13 +81,10 @@ fn binds_data_dir_and_does_not_bump_rev_when_empty() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let rev = Arc::new(AtomicU64::new(0));
     let handle = make_handle(store.clone(), rev.clone());
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
     assert!(store.lock().unwrap().data_dir().is_some());
     // No file exists yet, so nothing was loaded — rev should stay put.
     assert_eq!(rev.load(Ordering::Relaxed), 0);
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 #[test]
 fn relay_sidecar_present_with_null_app_is_silent_noop() {
@@ -109,12 +101,9 @@ fn relay_sidecar_present_with_null_app_is_silent_noop() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let rev = Arc::new(AtomicU64::new(0));
     let handle = make_handle(store.clone(), rev.clone());
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
     // app is null in the test handle — must not deref it.
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
     assert!(store.lock().unwrap().data_dir().is_some());
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 
 #[test]
@@ -161,10 +150,8 @@ fn cold_load_restores_inbox_triage_cache_through_set_data_dir() {
     // Step 7: triage_cache is now owned by state.inbox (InboxState).
     let cache_arc = handle.state.inbox.triage_cache.share();
     assert!(cache_arc.lock().unwrap().is_empty(), "cache starts empty");
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
 
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
 
     // The FFI load block populated the handle's cache from disk...
     let restored = cache_arc.lock().unwrap();
@@ -178,8 +165,6 @@ fn cold_load_restores_inbox_triage_cache_through_set_data_dir() {
 
     // ...and the restore bumped rev so the first snapshot frame surfaces it.
     assert_eq!(rev.load(Ordering::Relaxed), 1);
-
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 
 #[test]
@@ -207,18 +192,14 @@ fn cold_load_restores_agent_tasks_through_set_data_dir() {
     let handle = make_handle(store.clone(), rev.clone());
     // Step 6: tasks slot is now owned by state.tasks (TasksState).
     let tasks_slot = handle.state.tasks.tasks.share();
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
 
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
 
     let restored = tasks_slot.lock().unwrap();
     assert_eq!(*restored, persisted);
     assert_eq!(restored[0].action_namespace, "podcast.memory");
     drop(restored);
     assert_eq!(rev.load(Ordering::Relaxed), 1);
-
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 
 #[test]
@@ -233,15 +214,11 @@ fn cold_load_empty_agent_tasks_overrides_seed() {
     let tasks_slot = handle.state.tasks.tasks.share();
     *tasks_slot.lock().unwrap() =
         crate::tasks_handler::default_seed(chrono::Utc::now().timestamp());
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
 
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
 
     assert!(tasks_slot.lock().unwrap().is_empty());
     assert_eq!(rev.load(Ordering::Relaxed), 1);
-
-    let _ = unsafe { Box::from_raw(ptr) };
 }
 
 #[test]
@@ -256,10 +233,7 @@ fn loading_existing_library_bumps_rev_so_ios_re_polls() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
     let rev = Arc::new(AtomicU64::new(0));
     let handle = make_handle(store.clone(), rev.clone());
-    let ptr = Box::into_raw(handle);
-    let cpath = CString::new(dir.path.to_str().unwrap()).unwrap();
-    nmp_app_podcast_set_data_dir(ptr, cpath.as_ptr());
+    set_data_dir(Some(handle.as_ref()), dir.path.to_str());
     assert_eq!(store.lock().unwrap().podcast_count(), 1);
     assert_eq!(rev.load(Ordering::Relaxed), 1);
-    let _ = unsafe { Box::from_raw(ptr) };
 }

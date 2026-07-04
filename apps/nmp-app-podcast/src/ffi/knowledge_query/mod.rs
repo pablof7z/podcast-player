@@ -64,33 +64,47 @@ use crate::ffi::handle::PodcastHandle;
 /// ```
 ///
 /// or `{"error":"…"}` on hard failure.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_knowledge_query(
+pub fn nmp_app_podcast_knowledge_query(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
-    if handle.is_null() || request_json.is_null() {
-        return err_json("null argument").into_raw();
-    }
+    let handle = if handle.is_null() {
+        None
+    } else {
+        // SAFETY: caller guarantees `handle` is a valid podcast handle.
+        Some(unsafe { &*handle })
+    };
+    let request_json = match unsafe { request_json.as_ref() } {
+        Some(_) => unsafe { CStr::from_ptr(request_json) }.to_str().ok(),
+        None => None,
+    };
+    into_raw_json(knowledge_query_json(handle, request_json))
+}
+
+pub(crate) fn knowledge_query_json(
+    handle: Option<&PodcastHandle>,
+    request_json: Option<&str>,
+) -> String {
+    let Some(handle) = handle else {
+        return error_json("null argument");
+    };
+    let Some(json_str) = request_json else {
+        return error_json("null argument");
+    };
     ffi_guard(
         "nmp_app_podcast_knowledge_query",
-        || err_json("panic").into_raw(),
+        || error_json("panic"),
         || {
-            let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
-                Ok(s) => s,
-                Err(_) => return err_json("invalid UTF-8").into_raw(),
-            };
             let req: KnowledgeQueryRequest = match serde_json::from_str(json_str) {
                 Ok(r) => r,
-                Err(e) => return err_json(&format!("JSON parse: {e}")).into_raw(),
+                Err(e) => return error_json(&format!("JSON parse: {e}")),
             };
-            let h = unsafe { &*handle };
-            let store_arc = Arc::clone(&h.state.library.store);
-            let index_arc = h.state.knowledge.index_arc();
-            let runtime = Arc::clone(&h.state.infra.runtime);
+            let store_arc = Arc::clone(&handle.state.library.store);
+            let index_arc = handle.state.knowledge.index_arc();
+            let runtime = Arc::clone(&handle.state.infra.runtime);
             let rows = runtime.block_on(run_knowledge_query_inner(req, store_arc, index_arc));
-            ok_json(&serde_json::json!({ "result": rows })).into_raw()
+            serde_json::json!({ "result": rows }).to_string()
         },
     )
 }
@@ -106,9 +120,8 @@ pub extern "C" fn nmp_app_podcast_knowledge_query(
 /// ```json
 /// {"episode_id":"…","limit":10}
 /// ```
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_knowledge_similar_episode(
+pub fn nmp_app_podcast_knowledge_similar_episode(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -142,9 +155,8 @@ pub extern "C" fn nmp_app_podcast_knowledge_similar_episode(
 /// Rust owns the product policy: seed-query construction, topic-vs-source
 /// lens limits, seed filtering, one-row-per-show collapse for the topic lens,
 /// and the category fallback when the transcript index is empty.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_knowledge_home_related(
+pub fn nmp_app_podcast_knowledge_home_related(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
@@ -192,34 +204,48 @@ pub extern "C" fn nmp_app_podcast_knowledge_home_related(
 /// # Threading
 ///
 /// Pure in-memory lookup (no network). Still call from a non-actor thread.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_knowledge_chunk(
+pub fn nmp_app_podcast_knowledge_chunk(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {
-    if handle.is_null() || request_json.is_null() {
-        return err_json("null argument").into_raw();
-    }
+    let handle = if handle.is_null() {
+        None
+    } else {
+        // SAFETY: caller guarantees `handle` is a valid podcast handle.
+        Some(unsafe { &*handle })
+    };
+    let request_json = match unsafe { request_json.as_ref() } {
+        Some(_) => unsafe { CStr::from_ptr(request_json) }.to_str().ok(),
+        None => None,
+    };
+    into_raw_json(knowledge_chunk_json(handle, request_json))
+}
+
+pub(crate) fn knowledge_chunk_json(
+    handle: Option<&PodcastHandle>,
+    request_json: Option<&str>,
+) -> String {
+    let Some(handle) = handle else {
+        return error_json("null argument");
+    };
+    let Some(json_str) = request_json else {
+        return error_json("null argument");
+    };
     ffi_guard(
         "nmp_app_podcast_knowledge_chunk",
-        || err_json("panic").into_raw(),
+        || error_json("panic"),
         || {
-            let json_str = match unsafe { CStr::from_ptr(request_json) }.to_str() {
-                Ok(s) => s,
-                Err(_) => return err_json("invalid UTF-8").into_raw(),
-            };
             let req: KnowledgeChunkRequest = match serde_json::from_str(json_str) {
                 Ok(r) => r,
-                Err(e) => return err_json(&format!("JSON parse: {e}")).into_raw(),
+                Err(e) => return error_json(&format!("JSON parse: {e}")),
             };
-            let h = unsafe { &*handle };
-            let store_arc = Arc::clone(&h.state.library.store);
-            let index_arc = h.state.knowledge.index_arc();
+            let store_arc = Arc::clone(&handle.state.library.store);
+            let index_arc = handle.state.knowledge.index_arc();
 
             let labels = match store_arc.lock() {
                 Ok(s) => build_rich_labels(&s),
-                Err(_) => return err_json("store poisoned").into_raw(),
+                Err(_) => return error_json("store poisoned"),
             };
 
             let row: Option<KnowledgeQueryRow> = match index_arc.lock() {
@@ -247,12 +273,22 @@ pub extern "C" fn nmp_app_podcast_knowledge_chunk(
                             relevance_score: 0.0,
                         }
                     }),
-                Err(_) => return err_json("knowledge_store poisoned").into_raw(),
+                Err(_) => return error_json("knowledge_store poisoned"),
             };
 
-            ok_json(&serde_json::json!({ "result": row })).into_raw()
+            serde_json::json!({ "result": row }).to_string()
         },
     )
+}
+
+fn error_json(reason: &str) -> String {
+    serde_json::json!({ "error": reason }).to_string()
+}
+
+fn into_raw_json(json: String) -> *mut c_char {
+    std::ffi::CString::new(json)
+        .unwrap_or_else(|_| err_json("encoding"))
+        .into_raw()
 }
 
 #[cfg(test)]

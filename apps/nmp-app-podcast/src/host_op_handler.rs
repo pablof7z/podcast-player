@@ -47,7 +47,7 @@ mod social_actions;
 /// to dispatch capability requests back into the iOS executor.
 ///
 /// Construction mirrors `PodcastHandle` field-for-field (see
-/// `ffi::register::nmp_app_podcast_register`), with one exception:
+/// `ffi::register::register_podcast_app`), with one exception:
 /// `agent_chat` is the already-constructed `AgentChatHandler`.
 pub struct PodcastHostOpHandler {
     pub(crate) app: *mut NmpApp,

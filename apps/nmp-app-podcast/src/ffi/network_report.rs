@@ -18,9 +18,8 @@ use crate::capability::NetworkReport;
 
 /// Deliver a JSON-encoded [`NetworkReport`] to the kernel. Returns `NULL` —
 /// there is no synchronous follow-up command for network-state changes.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_network_report(
+pub fn nmp_app_podcast_network_report(
     handle: *mut PodcastHandle,
     report_json: *const c_char,
 ) -> *mut c_char {

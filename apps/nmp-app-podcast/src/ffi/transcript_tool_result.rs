@@ -57,9 +57,8 @@ impl TranscriptToolResultResponse {
 }
 
 /// Summarize the current transcript status for agent-tool result envelopes.
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_transcript_tool_result(
+pub fn nmp_app_podcast_transcript_tool_result(
     handle: *mut PodcastHandle,
     request_json: *const c_char,
 ) -> *mut c_char {

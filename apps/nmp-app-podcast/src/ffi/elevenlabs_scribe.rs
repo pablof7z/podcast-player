@@ -7,9 +7,8 @@ use super::guard::ffi_guard;
 use super::handle::PodcastHandle;
 use crate::llm::elevenlabs_scribe::{self, ElevenLabsScribeError, ElevenLabsScribeIntent};
 
-#[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "C" fn nmp_app_podcast_elevenlabs_scribe_transcribe(
+pub fn nmp_app_podcast_elevenlabs_scribe_transcribe(
     handle: *mut PodcastHandle,
     intent_json: *const c_char,
 ) -> *mut c_char {

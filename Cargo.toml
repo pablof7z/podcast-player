@@ -16,11 +16,13 @@ resolver = "2"
 # each NMP crate (one `NmpApp` type, no duplicate-version fan-out). When
 # bumping NMP, bump every nmp-* rev entry below together.
 #
-# Current rev a701b1ca6e4bbd42bfc7c75c0f50855da23517f6 = NMP origin/master tip
-# as of 2026-07-03 (nmp-v0.8.4). No v1 release-train tag exists yet
-# (pablof7z/nostr-multi-platform#2690 is open); this is a provisional master
-# pin, re-pin to the v-next release tag once #2690 cuts it. See Epic A
-# (pablof7z/podcast-player#597) / A0 (#680).
+# Current rev 1fc3e6bea390224cef30e37d2ccaa90615197521 = NMP origin/master tip
+# as of 2026-07-04, re-synced from the earlier 2026-07-03 snapshot to land
+# PR #699. NMP cut its v1 release train during this window
+# (pablof7z/nostr-multi-platform#2690, tag nmp-v1.0.0-rc.1) — all nmp-*
+# crates are now version 1.0.0-rc.1. This pin is 118 commits past that tag;
+# upstream master may keep advancing, re-pin to a stable v1.0.0 tag once one
+# cuts. See Epic A (pablof7z/podcast-player#597) / A0 (#680).
 #
 # `nmp-ffi`, `nmp-signer-broker`, and `nmp-defaults` are DELETED at this rev
 # (the whole native FFI surface moved to UniFFI: `nmp-native-runtime` +
@@ -42,30 +44,30 @@ resolver = "2"
 # thread re-integration in podcast-player is deferred to a follow-up slice
 # once that lands.
 [workspace.dependencies]
-nmp-core = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-blossom = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip02 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip50 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-planner = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
+nmp-core = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-blossom = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip02 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip50 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-planner = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
 # A1 (#681): UniFFI-facade replacements for the deleted nmp-ffi/nmp-signer-broker/nmp-defaults.
 # Follows the validated apps/nmp-app-29er precedent (not just #681's issue-text crate list —
 # nmp-app-gallery and nmp-app-29er both build their OWN facade object directly on
 # nmp-native-runtime + nmp-uniffi-support + nmp-substrate + the third-party `uniffi` crate;
 # neither depends on the generic `nmp-uniffi` base-object crate).
-nmp-native-runtime = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-uniffi-support = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-substrate = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip17 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip18 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip25 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip51 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nip22 = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-router = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-wot = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-signer-iface = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
-nmp-nostr-id = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
+nmp-native-runtime = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-uniffi-support = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-substrate = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip17 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip18 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip25 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip51 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nip22 = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-router = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-wot = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-signer-iface = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
+nmp-nostr-id = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
 # Surface tokens (DeclaredActionNamespace, ProjectionRegistrationKey /
 # DynamicProjectionKey) that ActionModule/typed-snapshot-projection
 # registration now require in place of bare `&str` keys.
-nmp-ownership = { version = "0.8.4", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "a701b1ca6e4bbd42bfc7c75c0f50855da23517f6" }
+nmp-ownership = { version = "1.0.0-rc.1", git = "https://github.com/pablof7z/nostr-multi-platform.git", rev = "1fc3e6bea390224cef30e37d2ccaa90615197521" }
 uniffi = "0.29"

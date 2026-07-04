@@ -113,20 +113,19 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                let result: UnsafeMutablePointer<CChar>?
+            return {
+                let result: String?
                 switch op {
                 case "plan":
-                    result = nmp_app_podcast_agent_youtube_search_plan(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentYoutubeSearchPlan, request: json)
                 case "results":
-                    result = nmp_app_podcast_agent_youtube_search_results(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentYoutubeSearchResults, request: json)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 }

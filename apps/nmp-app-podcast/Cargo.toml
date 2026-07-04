@@ -7,10 +7,9 @@ description = "Per-app Podcast glue. Owns the kernel composition root and surfac
 
 [lib]
 name = "nmp_app_podcast"
-# Static lib so the iOS shell can link the app-owned UniFFI facade and the
-# remaining `nmp_app_podcast_*` C ABI in one archive. Doctrine D0 forbids
-# `nmp-core` from carrying podcast-domain nouns, so this crate remains the
-# composition root for podcast-domain bridge symbols.
+# Static lib so the iOS shell can link the app-owned UniFFI facade. Doctrine D0
+# forbids `nmp-core` from carrying podcast-domain nouns, so this crate remains
+# the composition root for podcast-domain bridge symbols.
 #
 # `cdylib` is added for M2.F: cargo-ndk packs the same crate as a
 # `libnmp_app_podcast.so` for Android. Same cargo binary, second platform.
@@ -62,6 +61,7 @@ tempfile = { version = "3", optional = true }
 tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
 futures-util = { version = "0.3" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+flatbuffers = "25.2"
 nmp-core = { workspace = true }
 # A1 (#681): `nmp-native-runtime` owns the `NmpApp` handle + lifecycle
 # (successor to the deleted `nmp-ffi`). This crate builds its OWN UniFFI

@@ -32,13 +32,12 @@ struct ImageGenerationService: ImageGenerating {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"null kernel handle"}"#
             }
-            return requestJSON.withCString { requestPtr in
-                guard let ptr = nmp_app_podcast_generate_image(handle, requestPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .generateImage, request: requestJSON) else {
                     return #"{"error":"null response from Rust"}"#
                 }
-                defer { nmp_free_string(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         try Task.checkCancellation()

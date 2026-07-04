@@ -80,13 +80,12 @@ enum AgentLLMClient {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"null kernel handle"}"#
             }
-            return messagesJSON.withCString { msgPtr in
-                guard let ptr = nmp_app_podcast_chat_complete(handle, msgPtr) else {
+            return {
+                guard let ptr = podcastAppString(handle, endpoint: .chatComplete, request: messagesJSON) else {
                     return #"{"error":"null response from Rust"}"#
                 }
-                defer { nmp_free_string(ptr) }
-                return String(cString: ptr)
-            }
+                return ptr
+            }()
         }.value
 
         try Task.checkCancellation()

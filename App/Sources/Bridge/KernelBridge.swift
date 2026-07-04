@@ -12,13 +12,17 @@ let KERNEL_SCHEMA_VERSION = 1
 
 /// Thin bridge around the generated `PodcastApp` UniFFI object.
 final class PodcastHandle: @unchecked Sendable {
+    private nonisolated(unsafe) static var current: PodcastHandle?
+
     /// `PodcastApp` owns the single `NmpApp` and the app-domain
-    /// `PodcastHandle`. `podcastHandle` below is a temporary borrowed pointer
-    /// for app-domain C ABI calls that have not moved onto generated UniFFI yet.
+    /// `PodcastHandle`. `podcastHandle` below is a temporary borrowed token
+    /// used only to map older Swift extension methods back to this generated
+    /// UniFFI `PodcastApp` instance.
     let podcastApp: PodcastApp
     private var updateSink: KernelUpdateSink?
     /// Borrowed opaque handle owned by `PodcastApp`.
     var podcastHandle: UnsafeMutableRawPointer?
+    private let projectionCache = ProjectionMergeCache()
     /// Retained generated UniFFI capability sink.
     var syncBridge: SyncCapabilityBridge?
     /// Retained generated UniFFI agent-ask timeout sink.
@@ -71,7 +75,7 @@ final class PodcastHandle: @unchecked Sendable {
     init() {
         let podcastApp = PodcastApp()
         self.podcastApp = podcastApp
-        PodcastBridgeCompat.install(self)
+        Self.current = self
         podcastApp.signerBrokerInit()
         Self.configureStoragePath(for: podcastApp)
         // ADR-0053 / NMP v0.8: make the full built-in projection consumption
@@ -102,7 +106,14 @@ final class PodcastHandle: @unchecked Sendable {
         podcastApp.setCapabilityCallback(sink: nil)
         podcastApp.setAgentAskSink(sink: nil)
         podcastApp.shutdown()
-        PodcastBridgeCompat.uninstall(self)
+        if Self.current === self {
+            Self.current = nil
+        }
+    }
+
+    static func app(for handle: UnsafeMutableRawPointer?) -> PodcastApp? {
+        guard let current, let handle, handle == current.podcastHandle else { return nil }
+        return current.podcastApp
     }
 
     /// Wire the Rust update callback. `handler` runs on every snapshot frame;
@@ -118,6 +129,9 @@ final class PodcastHandle: @unchecked Sendable {
             actionResults: actionResultsRegistry,
             decodeFrame: { [weak self] frame in
                 self?.podcastApp.decodeUpdateFrame(frame: frame)
+            },
+            decodeDomainFrames: { [weak self] frame in
+                self?.decodeDomainFrames(frame: frame)
             })
         updateSink = sink
         podcastApp.setUpdateSink(sink: sink)
@@ -167,9 +181,10 @@ final class PodcastHandle: @unchecked Sendable {
     /// Dispatch a namespace-keyed action. Returns the synchronous dispatch
     /// result. D6: returns .failure for a null podcast handle.
     ///
-    /// ADR-0064: calls `PodcastApp.dispatchPodcastAction` (typed byte doorway)
-    /// instead of the nmp-ffi ≤ v0.7.2 `nmp_app_dispatch_action` JSON doorway
-    /// which was deleted in NMP v0.8.0.
+    /// ADR-0064: routes through `PodcastApp.dispatchAction(envelope:)` with
+    /// generated NMP action-builder bytes. Swift still serializes some
+    /// app-owned JSON action bodies, but it no longer calls the UniFFI
+    /// namespace/action JSON compatibility method.
     @discardableResult
     func dispatchAction(namespace: String, body: [String: Any]) -> DispatchResult {
         // Perf: dispatch is a synchronous FFI round-trip on the caller thread
@@ -186,14 +201,41 @@ final class PodcastHandle: @unchecked Sendable {
         else {
             return .failure("failed to serialize action body")
         }
-        let envelope = podcastApp.dispatchPodcastAction(namespace: namespace, actionJson: jsonStr)
-        guard let envelope else {
-            return .failure("dispatch returned a null envelope")
+        let correlationId = Self.mintDispatchCorrelationId()
+        let envelope: [UInt8]?
+        if namespace == "nmp.blossom.upload" {
+            envelope = KernelDispatchEnvelope.blossomUpload(body: body, correlationId: correlationId)
+        } else {
+            envelope = KernelDispatchEnvelope.podcast(
+                namespace: namespace,
+                json: jsonStr,
+                correlationId: correlationId
+            )
         }
-        return DispatchResult.parse(envelope: envelope)
+        guard let envelope else {
+            return .failure("no generated action builder for namespace \(namespace)")
+        }
+        return DispatchResult.from(outcome: podcastApp.dispatchAction(envelope: Data(envelope)))
     }
 
-    fileprivate static func decode(payload: String) -> KernelUpdateResult? {
+    private static func mintDispatchCorrelationId() -> String {
+        "podcast-swift-\(UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: ""))"
+    }
+
+    private func decodeDomainFrames(frame: Data) -> PodcastDomainFrames? {
+        guard let typedFrame = podcastApp.decodeTypedProjectionFrame(frame: frame) else {
+            return nil
+        }
+        let envelopes = typedFrame.envelopes.map(TypedProjectionEnvelope.init)
+        let result = projectionCache.merge(
+            envelopes: envelopes,
+            sessionId: typedFrame.sessionId,
+            snapshotEpoch: typedFrame.snapshotEpoch
+        )
+        return PodcastDomainFrames.decode(from: result.mergedEnvelopes)
+    }
+
+    fileprivate static func decode(payload: String, domainFrames typedDomainFrames: PodcastDomainFrames) -> KernelUpdateResult? {
         let start = ContinuousClock.now
         let data = Data(payload.utf8)
         let decoder = KernelDecoding.makeDecoder()
@@ -203,12 +245,8 @@ final class PodcastHandle: @unchecked Sendable {
                 kbLog.error("unknown envelope tag=\(envelope.t) bytes=\(data.count)")
                 return nil
             }
-            // NMP v0.5.0 per-domain push path: extract whichever
-            // `podcast.*` domain sidecars are present in this frame.
-            // `PodcastApp.decodeUpdateFrame` injects typed sidecars
-            // under `v.projections[schema_id]`; absent domains carry no sidecar
-            // (delta suppression) and MUST NOT overwrite prior state.
-            let domainFrames = PodcastDomainFrames.decode(from: data) ?? PodcastDomainFrames()
+            var domainFrames = typedDomainFrames
+            domainFrames.resolvedProfiles = PodcastDomainFrames.decodeResolvedProfiles(from: data)
             let nostrSearchSessions = NostrSearchProjection.decodeSessions(from: data)
             guard domainFrames.hasAnyDomain || !nostrSearchSessions.isEmpty else {
                 kbLog.error(
@@ -256,19 +294,22 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
     let signedEvents: SignedEventsRegistry
     let actionResults: ActionResultsRegistry
     let decodeFrame: (Data) -> String?
+    let decodeDomainFrames: (Data) -> PodcastDomainFrames?
 
     init(
         handler: @escaping (KernelUpdateResult) -> Void,
         onPanic: @escaping () -> Void,
         signedEvents: SignedEventsRegistry,
         actionResults: ActionResultsRegistry,
-        decodeFrame: @escaping (Data) -> String?
+        decodeFrame: @escaping (Data) -> String?,
+        decodeDomainFrames: @escaping (Data) -> PodcastDomainFrames?
     ) {
         self.handler = handler
         self.onPanic = onPanic
         self.signedEvents = signedEvents
         self.actionResults = actionResults
         self.decodeFrame = decodeFrame
+        self.decodeDomainFrames = decodeDomainFrames
     }
 
     func onUpdate(frame: Data) {
@@ -283,7 +324,8 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
             onPanic()
             return
         }
-        guard let result = PodcastHandle.decode(payload: payload) else { return }
+        let domainFrames = decodeDomainFrames(frame) ?? PodcastDomainFrames()
+        guard let result = PodcastHandle.decode(payload: payload, domainFrames: domainFrames) else { return }
         PerfMetrics.shared.record(
             .pushFrameDecode,
             micros: Int((DispatchTime.now().uptimeNanoseconds &- frameStart) / 1_000),

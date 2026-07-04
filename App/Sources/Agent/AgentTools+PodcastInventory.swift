@@ -287,13 +287,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_category_list(handle, ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentCategoryList, request: json) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 
@@ -344,13 +343,12 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                guard let result = nmp_app_podcast_agent_inventory_list(handle, ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentInventoryList, request: json) else {
                     return nil
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 
@@ -447,22 +445,21 @@ extension AgentTools {
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return nil
             }
-            return json.withCString { ptr in
-                let result: UnsafeMutablePointer<CChar>?
+            return {
+                let result: String?
                 switch op {
                 case "plan":
-                    result = nmp_app_podcast_agent_episode_list_plan(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListPlan, request: json)
                 case "results":
-                    result = nmp_app_podcast_agent_episode_list_results(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListResults, request: json)
                 case "error":
-                    result = nmp_app_podcast_agent_episode_list_error(handle, ptr)
+                    result = podcastAppString(handle, endpoint: .agentEpisodeListError, request: json)
                 default:
                     result = nil
                 }
                 guard let result else { return nil }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
     }
 

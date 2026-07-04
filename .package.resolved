@@ -1,12 +1,28 @@
 {
-  "originHash" : "ad75ae2d3b8d8b80d99635f65213a3c1092464aa54a86354f850b8317b6fa240",
+  "originHash" : "5f6a6d97117be5dbe08a718dcb39a1b92f2130c9232c8f4c47c2b5bc404da663",
   "pins" : [
+    {
+      "identity" : "flatbuffers",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/google/flatbuffers",
+      "state" : {
+        "revision" : "7e163021e59cca4f8e1e35a7c828b5c6b7915953"
+      }
+    },
     {
       "identity" : "kingfisher",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher",
       "state" : {
         "revision" : "cf8be20d07654570554c8a8a4952bc8a5766a8b0"
+      }
+    },
+    {
+      "identity" : "litert-lm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/google-ai-edge/LiteRT-LM",
+      "state" : {
+        "revision" : "bbc5181df03c6962d7786ce4ad72c8565232d2b2"
       }
     }
   ],

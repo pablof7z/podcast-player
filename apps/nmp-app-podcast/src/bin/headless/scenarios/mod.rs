@@ -1,7 +1,6 @@
 //! Scenario runner types and top-level `run_all`.
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 mod account_switch;
 mod agent_chat;
@@ -40,24 +39,21 @@ impl ScenarioResult {
 }
 
 /// Run all scenarios and return `(name, result)` pairs.
-pub fn run_all(
-    app: *mut NmpApp,
-    handle: *mut PodcastHandle,
-) -> Vec<(&'static str, ScenarioResult)> {
+pub fn run_all(app: &PodcastApp) -> Vec<(&'static str, ScenarioResult)> {
     vec![
-        ("rss_subscribe", rss_subscribe::run(app, handle)),
-        ("key_persistence", key_persistence::run(app, handle)),
-        ("identity_import", identity::run(app, handle)),
-        ("relay_smoke", relay_smoke::run(app, handle)),
-        ("inbox_triage", inbox_triage::run(app, handle)),
-        ("agent_chat", agent_chat::run(app, handle)),
-        ("nipf4_publish", nipf4_publish::run(app, handle)),
-        ("discover_nostr", discover_nostr::run(app, handle)),
-        ("comments", comments::run(app, handle)),
-        ("agent_notes", agent_notes::run(app, handle)),
-        ("social", social::run(app, handle)),
-        ("publish_profile", profile::run(app, handle)),
-        ("download_lifecycle", download::run(app, handle)),
-        ("account_switch", account_switch::run(app, handle)),
+        ("rss_subscribe", rss_subscribe::run(app)),
+        ("key_persistence", key_persistence::run(app)),
+        ("identity_import", identity::run(app)),
+        ("relay_smoke", relay_smoke::run(app)),
+        ("inbox_triage", inbox_triage::run(app)),
+        ("agent_chat", agent_chat::run(app)),
+        ("nipf4_publish", nipf4_publish::run(app)),
+        ("discover_nostr", discover_nostr::run(app)),
+        ("comments", comments::run(app)),
+        ("agent_notes", agent_notes::run(app)),
+        ("social", social::run(app)),
+        ("publish_profile", profile::run(app)),
+        ("download_lifecycle", download::run(app)),
+        ("account_switch", account_switch::run(app)),
     ]
 }

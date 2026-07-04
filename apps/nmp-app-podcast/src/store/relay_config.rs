@@ -7,7 +7,7 @@
 //! `nmp-defaults` builder persists it via its own
 //! `relay_config::{load,save}` inside `NmpAppBuilder::start`, but the podcast
 //! app is constructed over the raw C-ABI (`nmp_app_new` →
-//! `nmp_app_podcast_register` → `nmp_app_start`) and never runs through the
+//! `register_podcast_app` → `PodcastApp.start`) and never runs through the
 //! builder. So before this module, user relay edits via
 //! `podcast.settings.{add_relay,remove_relay,set_relay_role}` mutated the
 //! in-memory slot but were lost on restart.

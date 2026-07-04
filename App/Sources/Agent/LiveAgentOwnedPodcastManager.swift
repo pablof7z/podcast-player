@@ -279,13 +279,12 @@ final class LiveAgentOwnedPodcastManager: AgentOwnedPodcastManagerProtocol, @unc
             guard let handle = UnsafeMutableRawPointer(bitPattern: handleBits) else {
                 return #"{"error":"App state is unavailable."}"#
             }
-            return json.withCString { ptr -> String in
-                guard let result = nmp_app_podcast_agent_owned_podcast_tool(handle, ptr) else {
+            return {
+                guard let result = podcastAppString(handle, endpoint: .agentOwnedPodcastTool, request: json) else {
                     return #"{"error":"App state is unavailable."}"#
                 }
-                defer { nmp_free_string(result) }
-                return String(cString: result)
-            }
+                return result
+            }()
         }.value
         guard let responseData = envelope.data(using: .utf8),
               let decoded = try? JSONDecoder().decode(T.self, from: responseData)

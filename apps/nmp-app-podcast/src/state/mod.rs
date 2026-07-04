@@ -323,11 +323,10 @@ pub struct PodcastAppState {
     /// Voice substate (Step 12).  Owns `voice_state` projection + the
     /// `VoiceConversationManager` (LLM↔TTS loop).
     ///
-    /// **Shutdown fence**: `nmp_app_podcast_unregister` MUST call
-    /// `state.voice.shutdown()` before dropping the handle.  This fences
-    /// in-flight Tokio tasks that hold a `*mut NmpApp` deref from
-    /// completing after `nmp_app_free`.  The ordering is identical to the
-    /// previous `reclaimed.voice_conversation.shutdown()` call.
+    /// **Shutdown fence**: `PodcastApp.shutdown()` / `Drop` MUST call
+    /// `state.voice.shutdown()` before releasing the runtime.  This fences
+    /// in-flight Tokio tasks that hold a `*mut NmpApp` deref from completing
+    /// after the runtime starts teardown.
     pub voice: voice::VoiceSubstate,
 
     /// Publish substate (Step 13).  Owns the NIP-F4 per-podcast keypairs

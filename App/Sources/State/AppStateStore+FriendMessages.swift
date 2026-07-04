@@ -76,19 +76,18 @@ extension AppStateStore {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr -> PendingFriendMessagesResponse? in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            let response = String(cString: result)
+            let response = result
             guard let data = response.data(using: .utf8)
             else { return nil }
             return try? Self.pendingFriendMessageDecoder.decode(
                 PendingFriendMessagesResponse.self,
                 from: data
             )
-        }
+        }()
     }
 
     private func pendingFriendMessageObjects(_ messages: [PendingFriendMessage]) -> [[String: Any]] {

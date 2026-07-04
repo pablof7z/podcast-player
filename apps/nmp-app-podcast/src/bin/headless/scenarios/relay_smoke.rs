@@ -12,8 +12,7 @@
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-use nmp_app_podcast::PodcastHandle;
-use nmp_native_runtime::NmpApp;
+use nmp_app_podcast::ffi::PodcastApp;
 
 use crate::fixtures::{HEADLESS_TEST_PUBKEY_HEX, HEADLESS_TEST_SECRET_HEX};
 use crate::scenarios::ScenarioResult;
@@ -39,7 +38,7 @@ fn probe_tcp(host: &str, port: u16) -> bool {
 }
 
 #[allow(unused_variables)]
-pub fn run(app: *mut NmpApp, handle: *mut PodcastHandle) -> ScenarioResult {
+pub fn run(app: &PodcastApp) -> ScenarioResult {
     // 1. Network availability check.
     if !probe_tcp(RELAY_HOST, RELAY_PORT) {
         return Skip(format!("{RELAY_HOST}:{RELAY_PORT} unreachable"));

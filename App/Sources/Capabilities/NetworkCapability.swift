@@ -63,8 +63,7 @@ final class NetworkCapability {
         guard let json = try? JSONEncoder().encode(report),
               let jsonStr = String(data: json, encoding: .utf8)
         else { return }
-        let result = jsonStr.withCString { nmp_app_podcast_network_report(handle, $0) }
-        if let result { nmp_free_string(result) }
+        _ = podcastAppString(handle, endpoint: .networkReport, request: jsonStr)
     }
 }
 

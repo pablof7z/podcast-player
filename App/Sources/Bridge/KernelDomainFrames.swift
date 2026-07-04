@@ -2,8 +2,9 @@ import Foundation
 
 // ─── Per-domain push-frame envelope structs ───────────────────────────────
 //
-// Each domain sidecar injected by `nmp_app_podcast_decode_update_frame` under
-// `v.projections["podcast.<domain>"]` is decoded into one of these structs.
+// Each app-owned `podcast.*` typed projection is decoded through the generated
+// TypedProjectionDecoders + hand-written TypedProjectionGlue seam into one of
+// these structs.
 //
 // CONTRACT (from MEMORY: FFI decode snake_case contract, PR #371):
 //   - NO explicit CodingKeys enums on any type in this file.
@@ -19,7 +20,8 @@ import Foundation
 //     produces a nil field rather than a decode error — the consumer clears
 //     its slice when a field it relies on arrives nil.
 //
-// Source domains (from apps/nmp-app-podcast/src/ffi/snapshot_domain_projections.rs):
+// Source domains (from apps/nmp-app-podcast/read-projections.json and
+// apps/nmp-app-podcast/src/ffi/snapshot_domain_projections.rs):
 //   podcast.library   — library, categories, search_results, nostr_results,
 //                       owned_podcasts, inbox, inbox_triage_in_progress,
 //                       inbox_last_triaged_at
@@ -173,11 +175,12 @@ struct PodcastDomainFrames {
     /// CodingKeys so snake_case wire keys map cleanly to camelCase properties.
     var resolvedProfiles: [String: ResolvedProfile] = [:]
 
-    /// `true` when at least one domain sidecar was present in the frame.
+    /// `true` when at least one app domain or additive top-level projection was present.
     var hasAnyDomain: Bool {
         library != nil || playback != nil || downloads != nil ||
         settings != nil || identity != nil || widget != nil ||
-        social != nil || voice != nil || misc != nil
+        social != nil || voice != nil || misc != nil ||
+        !resolvedProfiles.isEmpty
     }
 }
 
@@ -201,48 +204,32 @@ extension PodcastDomainFrames {
     }
 }
 
-// ─── Decode helper ───────────────────────────────────────────────────────────
+// ─── Decode helpers ──────────────────────────────────────────────────────────
 
 extension PodcastDomainFrames {
-    /// Decode all `podcast.*` sidecars from the raw bridge JSON envelope.
-    ///
-    /// The envelope shape is:
-    /// ```json
-    /// { "t": "snapshot", "v": { "projections": { "podcast.playback": {...}, ... } } }
-    /// ```
-    ///
-    /// `nmp_app_podcast_decode_update_frame` injects each typed sidecar into
-    /// `v.projections[schema_id]` so this single JSON pass extracts all domains
-    /// without a second Rust round-trip.
-    ///
-    /// Returns `nil` only when the envelope is unparseable or carries no
-    /// `podcast.*` projections — D6 degrade, never panics.
-    static func decode(from data: Data) -> PodcastDomainFrames? {
+    static func decode(from projections: [TypedProjectionEnvelope]) -> PodcastDomainFrames? {
+        var frames = PodcastDomainFrames()
+
+        frames.library   = TypedLibraryDecoder.decode(from: projections)
+        frames.playback  = TypedPlaybackDecoder.decode(from: projections)
+        frames.downloads = TypedDownloadsDecoder.decode(from: projections)
+        frames.settings  = TypedSettingsDecoder.decode(from: projections)
+        frames.identity  = TypedIdentityDecoder.decode(from: projections)
+        frames.widget    = TypedWidgetDecoder.decode(from: projections)
+        frames.social    = TypedSocialDecoder.decode(from: projections)
+        frames.voice     = TypedVoiceDecoder.decode(from: projections)
+        frames.misc      = TypedMiscDecoder.decode(from: projections)
+
+        guard frames.hasAnyDomain else { return nil }
+        return frames
+    }
+
+    static func decodeResolvedProfiles(from data: Data) -> [String: ResolvedProfile] {
         guard
             let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let value = raw["v"] as? [String: Any],
             let projections = value["projections"] as? [String: Any]
-        else { return nil }
-
-        var frames = PodcastDomainFrames()
-        let decoder = KernelDecoding.makeDecoder()
-
-        func tryDecode<T: Decodable>(_ key: String) -> T? {
-            guard let obj = projections[key],
-                  let bytes = try? JSONSerialization.data(withJSONObject: obj)
-            else { return nil }
-            return try? decoder.decode(T.self, from: bytes)
-        }
-
-        frames.library   = tryDecode(DomainSchema.library)
-        frames.playback  = tryDecode(DomainSchema.playback)
-        frames.downloads = tryDecode(DomainSchema.downloads)
-        frames.settings  = tryDecode(DomainSchema.settings)
-        frames.identity  = tryDecode(DomainSchema.identity)
-        frames.widget    = tryDecode(DomainSchema.widget)
-        frames.social    = tryDecode(DomainSchema.social)
-        frames.voice     = tryDecode(DomainSchema.voice)
-        frames.misc      = tryDecode(DomainSchema.misc)
+        else { return [:] }
 
         // `resolved_profiles` is a TOP-LEVEL projections key (sibling of the
         // `podcast.*` domain sidecars, not nested inside one). Decode it with
@@ -252,11 +239,11 @@ extension PodcastDomainFrames {
         // D6: any decode failure yields an empty map, never a frame drop.
         if let profilesObj = projections["resolved_profiles"],
            let profilesData = try? JSONSerialization.data(withJSONObject: profilesObj),
-           let decoded = try? decoder.decode([String: ResolvedProfile].self, from: profilesData) {
-            frames.resolvedProfiles = decoded
+           let decoded = try? KernelDecoding.makeDecoder()
+            .decode([String: ResolvedProfile].self, from: profilesData) {
+            return decoded
         }
 
-        guard frames.hasAnyDomain else { return nil }
-        return frames
+        return [:]
     }
 }

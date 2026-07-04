@@ -23,7 +23,11 @@ extension KernelModel {
             downloadSnapshot = downloads
         }
         if durableChanged {
-            pullPodcastSnapshotIfChanged()
+            // A typed push frame can advance `lastProcessedRev` to the same rev
+            // before this durable report-triggered pull commits. Still allow the
+            // full pull through: it carries the library/local-path state needed
+            // to clear a just-deleted download from episode rows.
+            pullPodcastSnapshotIfChanged(allowEqualRev: true)
         }
     }
 

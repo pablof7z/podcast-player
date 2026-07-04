@@ -13,13 +13,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_itunes_directory_search(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .itunesDirectorySearch, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func itunesLookupFeedEnvelope(collectionID: String) -> String? {
@@ -28,13 +27,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_itunes_lookup_feed_url(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .itunesLookupFeedUrl, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func itunesTopPodcastsEnvelope(limit: Int, storefront: String) -> String? {
@@ -46,22 +44,20 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_itunes_top_podcasts(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .itunesTopPodcasts, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func threadingProjectionEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_threading_projection(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .threadingProjection) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func threadingActiveTopicsEnvelope(limit: Int, podcastIDs: [UUID]) -> String? {
@@ -73,13 +69,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_threading_active_topics(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .threadingActiveTopics, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func localSearchEnvelope(query: String, limit: Int) -> String? {
@@ -91,13 +86,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_local_search(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .localSearch, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func homeContinueListeningEnvelope(limit: Int, podcastIDs: [UUID]) -> String? {
@@ -109,13 +103,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_home_continue_listening(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .homeContinueListening, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func homeTriageRollupEnvelope(podcastIDs: [UUID]) -> String? {
@@ -126,13 +119,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_home_triage_rollup(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .homeTriageRollup, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func homeSubscriptionListEnvelope(filter: String, podcastIDs: [UUID]) -> String? {
@@ -144,13 +136,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_home_subscription_list(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .homeSubscriptionList, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func carplayListenNowEnvelope(limit: Int) -> String? {
@@ -161,13 +152,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_carplay_listen_now(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .carplayListenNow, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func carplayShowsEnvelope(limit: Int) -> String? {
@@ -178,13 +168,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_carplay_shows(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .carplayShows, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func carplayShowEpisodesEnvelope(podcastID: UUID, limit: Int) -> String? {
@@ -196,13 +185,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_carplay_show_episodes(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .carplayShowEpisodes, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func carplayDownloadsEnvelope(limit: Int) -> String? {
@@ -213,13 +201,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_carplay_downloads(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .carplayDownloads, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryShowEpisodesEnvelope(podcastID: UUID, limit: Int) -> String? {
@@ -231,13 +218,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_show_episodes(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryShowEpisodes, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryPodcastStatsEnvelope(podcastIDs: [UUID]) -> String? {
@@ -248,13 +234,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_podcast_stats(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryPodcastStats, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryEpisodeForAudioURLEnvelope(audioURL: String, podcastID: UUID) -> String? {
@@ -266,22 +251,20 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_episode_for_audio_url(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryEpisodeForAudioUrl, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func librarySummaryEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_summary(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .librarySummary) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryAllEpisodesEnvelope(filter: String, query: String, limit: Int) -> String? {
@@ -294,13 +277,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_all_episodes(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryAllEpisodes, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryAllPodcastsEnvelope(query: String) -> String? {
@@ -311,31 +293,28 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_all_podcasts(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryAllPodcasts, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryFollowedPodcastsEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_followed_podcasts(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .libraryFollowedPodcasts) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryOwnedPodcastsEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_owned_podcasts(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .libraryOwnedPodcasts) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryCategoriesEnvelope(categories: [[String: Any]]) -> String? {
@@ -346,31 +325,28 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_categories(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryCategories, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryDownloadRowsEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_download_rows(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .libraryDownloadRows) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryStarredEpisodesEnvelope() -> String? {
         guard let handle = podcastHandle else { return nil }
-        guard let result = nmp_app_podcast_library_starred_episodes(handle) else {
+        guard let result = podcastAppString(handle, endpoint: .libraryStarredEpisodes) else {
             return nil
         }
-        defer { nmp_free_string(result) }
-        return String(cString: result)
+        return result
     }
 
     func libraryEpisodeLookupEnvelope(reference: String) -> String? {
@@ -381,13 +357,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_episode_lookup(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryEpisodeLookup, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func librarySubscriptionStatusEnvelope(feedURL: String?, ownerPubkey: String?, podcastID: String? = nil) -> String? {
@@ -399,13 +374,12 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_subscription_status(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .librarySubscriptionStatus, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 
     func libraryPodcastForOwnerPubkeyEnvelope(ownerPubkey: String) -> String? {
@@ -416,12 +390,11 @@ extension PodcastHandle {
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let jsonStr = String(data: data, encoding: .utf8)
         else { return nil }
-        return jsonStr.withCString { ptr in
-            guard let result = nmp_app_podcast_library_podcast_for_owner_pubkey(handle, ptr) else {
+        return {
+            guard let result = podcastAppString(handle, endpoint: .libraryPodcastForOwnerPubkey, request: jsonStr) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 }

@@ -213,12 +213,11 @@ enum AgentTools {
         guard let data = try? JSONSerialization.data(withJSONObject: request),
               let json = String(data: data, encoding: .utf8)
         else { return nil }
-        return json.withCString { ptr in
-            guard let result = nmp_app_podcast_agent_action_policy(ptr) else {
+        return {
+            guard let result = podcastAppGlobalString(endpoint: .agentActionPolicyEndpoint, request: json) else {
                 return nil
             }
-            defer { nmp_free_string(result) }
-            return String(cString: result)
-        }
+            return result
+        }()
     }
 }
