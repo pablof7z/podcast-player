@@ -326,25 +326,39 @@ def validate_output(records: list[dict[str, Any]], out: Path) -> None:
     if len(data_files) != len(records):
         raise ValueError(f"Expected {len(records)} data files, found {len(data_files)}")
     for record in records:
+        observed = has_observed_data(record)
         if set(record["sections"]) != section_keys:
             raise ValueError(f"{record['scenario']['id']} section key mismatch")
         if set(record["dimension_scores"]) != dimension_keys:
             raise ValueError(f"{record['scenario']['id']} dimension key mismatch")
-        if record["verdict"]["overall"] != "incomplete":
+        if not observed and record["verdict"]["overall"] != "incomplete":
             raise ValueError(f"{record['scenario']['id']} scaffold must be incomplete")
         if not record["flow_steps"] or not record["execution"]["attempts"]:
             raise ValueError(f"{record['scenario']['id']} missing structured flow or attempt records")
-        if record["coherence"]["group_judgment"]["status"] != "incomplete":
+        if not observed and record["coherence"]["group_judgment"]["status"] != "incomplete":
             raise ValueError(f"{record['scenario']['id']} scaffold group coherence must be incomplete")
         if set(record["quality_review"]) != {"ui", "ux", "performance", "accessibility", "reliability", "privacy_security", "content_localization", "controls_gestures", "offline_resume", "observability"}:
             raise ValueError(f"{record['scenario']['id']} quality review key mismatch")
-        if not record["instrumentation_gaps"]:
+        if not observed and not record["instrumentation_gaps"]:
             raise ValueError(f"{record['scenario']['id']} must expose instrumentation gaps")
         for artifact in record["evidence"]["artifacts"]:
             if not (out / artifact["path"]).exists():
                 raise ValueError(f"{record['scenario']['id']} missing artifact path {artifact['path']}")
     if json.loads((out / "data" / "rollups.json").read_text())["scenario_count"] != len(records):
         raise ValueError("Rollup scenario count disagrees with records")
+
+
+def has_observed_data(record: dict[str, Any]) -> bool:
+    evidence = record.get("evidence", {})
+    execution = record.get("execution", {})
+    verdict = record.get("verdict", {})
+    return bool(
+        record.get("metrics")
+        or record.get("issues")
+        or len(evidence.get("artifacts", [])) > 2
+        or execution.get("status") not in {None, "not_run"}
+        or verdict.get("overall") not in {None, "incomplete"}
+    )
 
 
 def validate_schema_contract(records: list[dict[str, Any]], schema_path: Path) -> None:

@@ -14,16 +14,39 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
-from records import build_report, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
+from records import build_report, has_observed_data, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, stylesheet, write_rollup_pages, write_tag_pages  # noqa: E402
 
+PRESERVED_RECORD_FIELDS = [
+    "run",
+    "execution",
+    "verdict",
+    "sections",
+    "dimension_scores",
+    "group_scores",
+    "quality_review",
+    "coherence",
+    "readiness",
+    "evidence",
+    "metrics",
+    "instrumentation_gaps",
+    "risks",
+    "issues",
+    "next_actions",
+]
 
-def write_site(records: list[dict[str, Any]], out: Path, catalog: Path) -> None:
+
+def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None) -> None:
+    issues = read_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
+    previous_records = read_previous_records(out)
+    records = [merge_previous_record(record, previous_records.get(record["scenario"]["slug"])) for record in records]
     clean_output(out)
     copy_sources(catalog, out)
+    if repo is not None:
+        copy_repo_assets(repo, out)
     write_text(out / "styles.css", stylesheet())
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
-    write_data_files(records, out)
+    write_data_files(records, out, issues)
     write_text(out / "index.html", render_home(records, 0))
     write_text(out / "scenarios" / "index.html", render_scenario_index(records, 1, "All Scenarios"))
     for slug, grouped in group_by_category(records).items():
@@ -41,9 +64,20 @@ def clean_output(out: Path) -> None:
     resolved = out.resolve()
     if resolved in {Path("/").resolve(), Path.home().resolve(), Path.cwd().resolve()}:
         raise ValueError(f"Refusing to clear dangerous output path: {resolved}")
+    preserve = out.with_name(f".{out.name}-preserve")
+    if preserve.exists():
+        shutil.rmtree(preserve)
     if out.exists():
+        assets = out / "assets"
+        if assets.exists():
+            preserve.mkdir(parents=True)
+            shutil.move(str(assets), preserve / "assets")
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    if (preserve / "assets").exists():
+        shutil.move(str(preserve / "assets"), out / "assets")
+    if preserve.exists():
+        shutil.rmtree(preserve)
 
 
 def copy_sources(catalog: Path, out: Path) -> None:
@@ -53,12 +87,66 @@ def copy_sources(catalog: Path, out: Path) -> None:
         shutil.copy2(path, target / path.name)
 
 
-def write_data_files(records: list[dict[str, Any]], out: Path) -> None:
+def copy_repo_assets(repo: Path, out: Path) -> None:
+    product = repo / "docs" / "images"
+    if product.exists():
+        copy_tree_contents(product, out / "assets" / "product")
+    scenarios = repo / "docs" / "testing" / "scenarios"
+    for image in scenarios.glob("*.jpg"):
+        copy_file(image, out / "assets" / "scenario-screenshots" / image.name)
+    screenshots = scenarios / "screenshots"
+    if screenshots.exists():
+        copy_tree_contents(screenshots, out / "assets" / "scenario-screenshots")
+
+
+def copy_tree_contents(source: Path, target: Path) -> None:
+    for path in source.rglob("*"):
+        if path.is_file():
+            copy_file(path, target / path.relative_to(source))
+
+
+def copy_file(source: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+
+
+def write_data_files(records: list[dict[str, Any]], out: Path, issues: dict[str, Any]) -> None:
     write_json(out / "data" / "scenarios.json", [summary_for(record) for record in records])
     write_json(out / "data" / "rollups.json", rollups_for(records))
     write_json(out / "data" / "tags.json", tags_for_records(records))
-    write_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
+    write_json(out / "data" / "issues.json", issues)
     write_json(out / "data" / "schema-version.json", {"schema_version": SCHEMA_VERSION, "generator_version": GENERATOR_VERSION})
+
+
+def read_previous_records(out: Path) -> dict[str, dict[str, Any]]:
+    previous: dict[str, dict[str, Any]] = {}
+    for path in (out / "scenarios").glob("*/data.json"):
+        record = read_json(path, {})
+        slug = record.get("scenario", {}).get("slug")
+        if isinstance(slug, str):
+            previous[slug] = record
+    return previous
+
+
+def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
+    if not previous or set(previous) != set(current) or previous.get("schema_version") != current["schema_version"]:
+        return current
+    if not has_observed_data(previous):
+        return current
+    merged = dict(current)
+    for field in PRESERVED_RECORD_FIELDS:
+        merged[field] = previous[field]
+    merged["evidence"] = merge_evidence(current["evidence"], previous["evidence"])
+    return merged
+
+
+def merge_evidence(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(previous)
+    artifacts = {item["id"]: item for item in current.get("artifacts", [])}
+    for artifact in previous.get("artifacts", []):
+        artifacts.setdefault(artifact["id"], artifact)
+    merged["artifacts"] = list(artifacts.values())
+    return merged
 
 
 def group_by_category(records: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -70,6 +158,15 @@ def group_by_category(records: list[dict[str, Any]]) -> dict[str, list[dict[str,
 
 def write_json(path: Path, data: Any) -> None:
     write_text(path, json.dumps(data, indent=2, sort_keys=True) + "\n")
+
+
+def read_json(path: Path, fallback: dict[str, Any]) -> dict[str, Any]:
+    if not path.exists():
+        return fallback
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return fallback
 
 
 def write_text(path: Path, content: str) -> None:
@@ -88,7 +185,7 @@ def main(argv: list[str]) -> int:
     scenarios = parse_catalog(args.catalog)
     records = [build_report(scenario, scenarios, Path.cwd(), generated_at, args.site_base) for scenario in scenarios]
     validate_schema_contract(records, args.schema)
-    write_site(records, args.out, args.catalog)
+    write_site(records, args.out, args.catalog, Path.cwd())
     digest = hashlib.sha256(json.dumps([summary_for(record) for record in records], sort_keys=True).encode()).hexdigest()[:12]
     print(f"Generated {len(records)} scenario pages at {args.out} ({digest})")
     return 0
