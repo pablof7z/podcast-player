@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import sys
 import tempfile
@@ -80,7 +81,7 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             (out / "data" / "issues.json").write_text(json.dumps(old_issues))
 
             records = build_records(catalog, root)
-            old_record = dict(records[0])
+            old_record = copy.deepcopy(records[0])
             old_record["execution"] = {**old_record["execution"], "status": "pass"}
             old_record["verdict"] = {
                 **old_record["verdict"],
@@ -93,6 +94,21 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                     **old_record["coherence"]["group_judgment"],
                     "status": "pass_with_issues",
                 },
+            }
+            old_record["review_grounding"] = {
+                **old_record["review_grounding"],
+                "selected_skills": [
+                    {
+                        "selected": True,
+                        "name": "obsolete/old-skill@legacy",
+                        "search_terms": "old terms",
+                        "coverage": "Old grounding should not survive regeneration.",
+                    }
+                ],
+            }
+            old_record["sections"]["review_skill_grounding"] = {
+                **old_record["sections"]["review_skill_grounding"],
+                "notes": ["Selected skills: obsolete/old-skill@legacy."],
             }
             old_record["metrics"] = [
                 {
@@ -134,6 +150,11 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(merged["coherence"]["group_judgment"]["status"], "pass_with_issues")
             self.assertEqual(merged["metrics"][0]["id"], "metric-screen-settle")
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
+            self.assertEqual(
+                [skill["name"] for skill in merged["review_grounding"]["selected_skills"]],
+                ["vabole/apple-skills@ios-liquid-glass", "phazurlabs/ux-ui-mastery@Mobile UX Design"],
+            )
+            self.assertNotIn("obsolete/old-skill", json.dumps(merged["sections"]["review_skill_grounding"]))
 
 
 def write_catalog(catalog: Path) -> Path:
