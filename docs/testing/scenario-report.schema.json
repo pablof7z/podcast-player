@@ -427,6 +427,8 @@
         "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "alt": { "type": "string" },
         "caption": { "type": "string" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
         "required": { "type": "boolean" },
         "redaction": {
           "type": "object",
@@ -438,7 +440,7 @@
           }
         }
       },
-      "allOf": [{ "if": { "properties": { "type": { "const": "screenshot" } }, "required": ["type"] }, "then": { "required": ["alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256", "required"] } }]
+      "allOf": [{ "if": { "properties": { "type": { "const": "screenshot" } }, "required": ["type"] }, "then": { "required": ["alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256", "width", "height", "required"] } }]
     },
     "metric": {
       "type": "object",

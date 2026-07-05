@@ -18,6 +18,8 @@ def load_evidence_overlays(evidence_root: Path) -> dict[str, dict[str, Any]]:
             raise ValueError(f"{path} is missing scenario_id")
         if scenario_id in overlays:
             raise ValueError(f"Duplicate evidence overlay for {scenario_id}")
+        for artifact in data.get("artifacts", []):
+            enrich_screenshot_dimensions(artifact, evidence_root)
         overlays[scenario_id] = data
     return overlays
 
@@ -179,6 +181,45 @@ def copy_evidence_assets(evidence_root: Path, out: Path) -> None:
     if target.exists():
         shutil.rmtree(target)
     shutil.copytree(source, target)
+
+
+def enrich_screenshot_dimensions(artifact: dict[str, Any], evidence_root: Path) -> None:
+    if artifact.get("type") != "screenshot" or {"width", "height"}.issubset(artifact):
+        return
+    path = evidence_root / artifact.get("path", "")
+    if not path.exists():
+        return
+    size = image_dimensions(path)
+    if size is not None:
+        artifact["width"], artifact["height"] = size
+
+
+def image_dimensions(path: Path) -> tuple[int, int] | None:
+    data = path.read_bytes()
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
+        return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    if not data.startswith(b"\xff\xd8"):
+        return None
+    index = 2
+    while index + 9 < len(data):
+        if data[index] != 0xFF:
+            index += 1
+            continue
+        marker = data[index + 1]
+        index += 2
+        if marker in {0xD8, 0xD9}:
+            continue
+        if index + 2 > len(data):
+            return None
+        length = int.from_bytes(data[index : index + 2], "big")
+        if length < 2 or index + length > len(data):
+            return None
+        if marker in {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}:
+            height = int.from_bytes(data[index + 3 : index + 5], "big")
+            width = int.from_bytes(data[index + 5 : index + 7], "big")
+            return width, height
+        index += length
+    return None
 
 
 def deep_merge(target: dict[str, Any], patch: dict[str, Any]) -> None:
