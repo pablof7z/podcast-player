@@ -210,9 +210,7 @@ struct StorageSettingsView: View {
     private func refresh() async {
         isComputing = true
         defer { isComputing = false }
-        let computed = await Task.detached(priority: .userInitiated) {
-            await Self.compute(store: store)
-        }.value
+        let computed = await Self.compute(store: store)
         await MainActor.run {
             withAnimation(.easeInOut(duration: 0.18)) {
                 self.snapshot = computed
@@ -252,9 +250,11 @@ struct StorageSettingsView: View {
 
     /// Enumerates local files as an OS capability and asks Rust to produce the
     /// semantic storage snapshot.
+    @MainActor
     static func compute(store: AppStateStore) async -> Snapshot {
-        let files = EpisodeDownloadStore.shared.enumerateOnDisk()
-        guard !files.isEmpty else { return .empty }
+        let files = await Task.detached(priority: .userInitiated) {
+            EpisodeDownloadStore.shared.enumerateOnDisk()
+        }.value
         return store.rustStorageBreakdown(files: files)
     }
 
