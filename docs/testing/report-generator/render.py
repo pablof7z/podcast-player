@@ -58,14 +58,14 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         section("Performance Metrics And Interaction Latency", metrics_block(record)),
         section("Navigation, Orientation, And Information Architecture", navigation_orientation_block(record)),
         section("Animation, Transition, And Haptics Quality", motion_block(record)),
-        section("Product Coherence And Cluster Judgment", coherence_block(record["coherence"])),
+        section("Product Flow Cohesiveness And Group Coherent-Product Judgment", coherence_block(record["coherence"])),
         section("Product-Level Assessment", product_assessment_block(record)),
         section("Readiness Gates", readiness_block(record["readiness"])),
         section("Instrumentation Gaps And Missing Evidence", gap_table(record["instrumentation_gaps"])),
         section("Risk Severity And Validation Confidence", risk_confidence_block(record)),
         section("Risks, Defects, Issue Links, And Follow-Up", risk_table(record["risks"]) + issue_table(record["issues"]) + action_list(record["next_actions"])),
-        section("Grouped Scores", score_table(record["group_scores"])),
-        section("Dimension Scores", score_table(record["dimension_scores"])),
+        section("Grouped Scores And Coherent Product Judgment", score_table(record["group_scores"])),
+        section("Individual Dimension Judgments", score_table(record["dimension_scores"])),
         section("Required Detailed Sections", "\n".join(render_required_section(key, value) for key, value in record["sections"].items())),
     ]
     return page(f"{scenario['id']} - {scenario['title']}", depth, "\n".join(body))

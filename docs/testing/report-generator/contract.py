@@ -1,5 +1,5 @@
 SCHEMA_VERSION = "1.0.0"
-GENERATOR_VERSION = "scenario-report-generator/0.3.0"
+GENERATOR_VERSION = "scenario-report-generator/0.3.1"
 SITE_BASE = "https://pablof7z.github.io/podcast-player/"
 SKILL_SEARCH_QUERY = "liquid glass iOS primitives mobile frontend design UI polish UX"
 
@@ -157,33 +157,27 @@ SKILL_GROUNDING = [
     },
     {
         "selected": True,
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
         "search_terms": "mobile frontend design UI polish UX",
-        "coverage": "Mobile-first product validation, iOS platform conventions, touch ergonomics, interruption recovery, navigation clarity, performance-as-UX budgets, and state/resilience checks.",
-    },
-    {
-        "selected": False,
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
-        "search_terms": "liquid glass iOS UI polish",
-        "coverage": "Search result considered for future glass-specific visual review; current selected Liquid Glass skill covers the material rules used by this template.",
-    },
-    {
-        "selected": False,
-        "name": "charleswiltgen/axiom@axiom-ios-ui",
-        "search_terms": "iOS primitives mobile UI",
-        "coverage": "Search result considered for future iOS implementation review; current selected skills cover mobile flow, platform fit, and material critique.",
-    },
-    {
-        "selected": False,
-        "name": "code-yeongyu/oh-my-opencode@frontend",
-        "search_terms": "frontend UI polish",
-        "coverage": "Search result considered for future web/front-end implementation review; current work focuses on the iOS scenario report rubric.",
+        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
     },
     {
         "selected": False,
         "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
         "search_terms": "liquid glass design",
         "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
+    },
+    {
+        "selected": False,
+        "name": "ravnhq/ai-toolkit@liquid-glass-ios",
+        "search_terms": "liquid glass iOS",
+        "coverage": "Search result considered for additional glass-specific implementation review; selected skills already cover iOS material restraint and mobile interface gates.",
+    },
+    {
+        "selected": False,
+        "name": "simota/agent-skills@native",
+        "search_terms": "native mobile interface",
+        "coverage": "Search result considered for future native implementation review; selected skills already cover the iOS interface and Liquid Glass dimensions for this template.",
     },
     {
         "selected": False,

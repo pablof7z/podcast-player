@@ -135,6 +135,7 @@ def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | No
     merged = dict(current)
     for field in PRESERVED_RECORD_FIELDS:
         merged[field] = previous[field]
+    merged["sections"]["review_skill_grounding"] = current["sections"]["review_skill_grounding"]
     merged["evidence"] = merge_evidence(current["evidence"], previous["evidence"])
     return merged
 

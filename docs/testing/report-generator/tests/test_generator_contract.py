@@ -26,8 +26,10 @@ REQUIRED_SCENARIO_SECTIONS = [
     "UI Polish Report",
     "UX Polish Report",
     "Performance Metrics And Interaction Latency",
-    "Product Coherence And Cluster Judgment",
+    "Product Flow Cohesiveness And Group Coherent-Product Judgment",
     "Product-Level Assessment",
+    "Grouped Scores And Coherent Product Judgment",
+    "Individual Dimension Judgments",
     "Data And Control-Plane Setup",
     "Navigation, Orientation, And Information Architecture",
     "Animation, Transition, And Haptics Quality",
@@ -64,7 +66,7 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "liquid glass iOS primitives mobile frontend design UI polish UX"')
             self.assertEqual(
                 [skill["name"] for skill in SKILL_GROUNDING if skill["selected"]],
-                ["vabole/apple-skills@ios-liquid-glass", "phazurlabs/ux-ui-mastery@Mobile UX Design"],
+                ["vabole/apple-skills@ios-liquid-glass", "qodex-ai/ai-agent-skills@mobile-app-interface"],
             )
 
     def test_preserves_existing_pages_assets_and_issue_index(self) -> None:
@@ -94,6 +96,34 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                     "status": "pass_with_issues",
                 },
             }
+            old_record["dimension_scores"] = {
+                **old_record["dimension_scores"],
+                "actual_result": {
+                    **old_record["dimension_scores"]["actual_result"],
+                    "score": 3,
+                    "status": "pass_with_issues",
+                    "evidence_refs": ["artifact:old-shot"],
+                },
+                "ui_polish": {
+                    **old_record["dimension_scores"]["ui_polish"],
+                    "score": 2,
+                    "status": "pass_with_issues",
+                    "evidence_refs": ["artifact:old-shot"],
+                },
+            }
+            old_record["group_scores"] = {
+                **old_record["group_scores"],
+                "functional_correctness": {
+                    **old_record["group_scores"]["functional_correctness"],
+                    "score": 3,
+                    "status": "pass_with_issues",
+                },
+                "product_experience": {
+                    **old_record["group_scores"]["product_experience"],
+                    "score": 2,
+                    "status": "pass_with_issues",
+                },
+            }
             old_record["metrics"] = [
                 {
                     "id": "metric-screen-settle",
@@ -115,10 +145,35 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                         "type": "screenshot",
                         "path": "assets/scenarios/smoke-001/old-shot.jpg",
                         "description": "Previous validated screenshot.",
+                        "step_id": "step-02-action",
+                        "captured_at": GENERATED_AT,
+                        "device": "iPhone 16 Pro",
+                        "os_version": "iOS 26.0",
+                        "sha256": "a" * 64,
+                        "alt": "Smoke scenario screenshot",
+                        "caption": "Previous validated screenshot.",
                         "required": True,
                         "redaction": {"status": "not_needed"},
                     },
                 ],
+            }
+            old_record["issues"] = [
+                {
+                    "id": "ISSUE-1",
+                    "url": "https://example.test/issues/1",
+                    "severity": "major",
+                    "title": "Previous issue",
+                    "affected_dimensions": ["ui_polish"],
+                    "status": "open",
+                }
+            ]
+            old_record["sections"] = {
+                **old_record["sections"],
+                "review_skill_grounding": {
+                    **old_record["sections"]["review_skill_grounding"],
+                    "summary": "Old skill grounding used phazurlabs/ux-ui-mastery@Mobile UX Design.",
+                    "notes": ["Selected skills: phazurlabs/ux-ui-mastery@Mobile UX Design."],
+                },
             }
             previous_record_path = out / "scenarios" / "smoke-001" / "data.json"
             previous_record_path.parent.mkdir(parents=True)
@@ -134,6 +189,37 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(merged["coherence"]["group_judgment"]["status"], "pass_with_issues")
             self.assertEqual(merged["metrics"][0]["id"], "metric-screen-settle")
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
+            self.assertIn("qodex-ai/ai-agent-skills@mobile-app-interface", merged["sections"]["review_skill_grounding"]["notes"][0])
+            self.assertNotIn("phazurlabs", merged["sections"]["review_skill_grounding"]["summary"])
+            rollups = json.loads((out / "data" / "rollups.json").read_text())
+            self.assertEqual(rollups["average_dimension_scores"]["actual_result"], 1.5)
+            self.assertEqual(rollups["average_dimension_scores"]["ui_polish"], 1)
+            self.assertEqual(rollups["average_group_scores"]["functional_correctness"], 1.5)
+            self.assertEqual(rollups["issues_by_severity"], {"major": 1})
+            self.assertEqual(rollups["open_issues_by_severity"], {"major": 1})
+
+    def test_schema_requires_quality_coherence_and_screenshot_evidence(self) -> None:
+        schema = json.loads((DOCS_TESTING_DIR / "scenario-report.schema.json").read_text())
+        quality = schema["properties"]["quality_review"]
+        self.assertFalse(quality["additionalProperties"])
+        self.assertEqual(
+            set(quality["required"]),
+            {
+                "ui",
+                "ux",
+                "performance",
+                "accessibility",
+                "reliability",
+                "privacy_security",
+                "content_localization",
+                "controls_gestures",
+                "offline_resume",
+                "observability",
+            },
+        )
+        self.assertEqual(schema["$defs"]["coherence"]["properties"]["cluster"]["$ref"], "#/$defs/coherence_cluster")
+        screenshot_rule = schema["$defs"]["artifact"]["allOf"][0]["then"]["required"]
+        self.assertTrue({"alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256"}.issubset(screenshot_rule))
 
 
 def write_catalog(catalog: Path) -> Path:

@@ -51,7 +51,7 @@ This pass used:
 ```sh
 npx skills search "liquid glass iOS primitives mobile frontend design UI polish UX"
 npx skills use vabole/apple-skills@ios-liquid-glass
-npx skills use phazurlabs/ux-ui-mastery --skill "Mobile UX Design"
+npx skills use qodex-ai/ai-agent-skills@mobile-app-interface
 ```
 
 `data/skill-grounding.json` records these selected skills and the template
@@ -60,9 +60,9 @@ impact:
 - iOS Liquid Glass: hierarchy, harmony, consistency, control-layer glass use,
   GlassEffect composition, semantic foreground styles, and Reduce
   Motion/Transparency behavior.
-- Mobile UX Design: mobile-first task focus, iOS navigation conventions, touch
-  ergonomics, interruption recovery, state resilience, and performance-as-UX
-  budgets.
+- Mobile App Interface: safe areas, SF typography, Dynamic Type, semantic color,
+  44 pt touch targets, native navigation, accessibility roles, state resilience,
+  and performance-as-UX budgets.
 
 UI, UX, accessibility, performance, and product-coherence scores must stay at
 `2` or below until the relevant evidence and grounded critique are attached.
