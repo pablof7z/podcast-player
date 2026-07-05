@@ -33,6 +33,17 @@ Recommended generated layout:
     tags.json
     issues.json
     schema-version.json
+  tags/
+    index.html
+    cassette-required/
+      index.html
+  issues/
+    index.html
+  rollups/
+    verdict/incomplete/index.html
+    provider/blocked/index.html
+    nmp/d7/index.html
+    performance/index.html
   assets/
     scenarios/
       d1-play-pause-resume/
@@ -57,6 +68,10 @@ Recommended generated layout:
 - Rollups: `/data/rollups.json`
 - Tags and filters: `/data/tags.json`
 - Issue/PR summary: `/data/issues.json`
+- Tag rollup pages: `/tags/<tag-slug>/`
+- Defect rollup page: `/issues/`
+- Provider, verdict, NMP-rule, and performance rollups:
+  `/rollups/<rollup-kind>/<value>/`
 
 Scenario slugs must be stable and derived from the canonical scenario ID and
 title, for example `d1-play-pause-resume`. If a title changes, keep the existing
@@ -123,6 +138,7 @@ scenario_setup
 expected_behavior
 actual_result
 artifacts
+review_skill_grounding
 ui_polish
 ux_polish
 performance

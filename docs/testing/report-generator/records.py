@@ -1,0 +1,299 @@
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+from pathlib import Path
+from typing import Any
+
+from catalog import Scenario
+from contract import (
+    GENERATOR_VERSION,
+    GROUPS,
+    SCHEMA_VERSION,
+    SECTION_LABELS,
+    SECTION_TO_DIMENSION,
+    SKILL_GROUNDING,
+)
+
+
+def run_git(args: list[str], cwd: Path, fallback: str) -> str:
+    try:
+        return subprocess.check_output(["git", *args], cwd=cwd, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return fallback
+
+
+def build_report(scenario: Scenario, scenarios: list[Scenario], repo: Path, generated_at: str, site_base: str) -> dict[str, Any]:
+    commit = run_git(["rev-parse", "HEAD"], repo, "0" * 40)
+    branch = run_git(["branch", "--show-current"], repo, "unknown")
+    source_ref = f"catalog:{scenario.scenario_id.lower()}"
+    skill_ref = "rubric:review-skill-grounding"
+    previous = scenarios[scenario.order - 2] if scenario.order > 1 else None
+    next_scenario = scenarios[scenario.order] if scenario.order < len(scenarios) else None
+    sections = section_text(scenario)
+    dimensions = {
+        dimension: {
+            "score": 0,
+            "status": "incomplete",
+            "rationale": f"{SECTION_LABELS[section_id]} has not been validated with current run evidence.",
+            "evidence_refs": sections[section_id]["evidence_refs"],
+        }
+        for section_id, dimension in SECTION_TO_DIMENSION.items()
+    }
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "scenario": scenario_identity(scenario, scenarios),
+        "run": run_record(scenario, generated_at, commit, branch),
+        "page": page_record(scenario, generated_at, previous, next_scenario, site_base),
+        "verdict": {
+            "overall": "incomplete",
+            "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing.",
+            "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
+        },
+        "sections": sections,
+        "dimension_scores": dimensions,
+        "group_scores": group_scores(),
+        "evidence": {"artifacts": artifacts_for(scenario, source_ref, skill_ref)},
+        "metrics": [],
+        "issues": [],
+        "next_actions": next_actions_for(scenario),
+    }
+
+
+def scenario_identity(scenario: Scenario, scenarios: list[Scenario]) -> dict[str, Any]:
+    return {
+        "id": scenario.scenario_id,
+        "slug": scenario.slug,
+        "title": scenario.title,
+        "category": scenario.category,
+        "source_path": scenario.source_path,
+        "bdd": scenario.bdd,
+        "tags": scenario.tags,
+        "related_scenarios": related_for(scenario, scenarios),
+        "dependencies": scenario.dependencies,
+    }
+
+
+def run_record(scenario: Scenario, generated_at: str, commit: str, branch: str) -> dict[str, Any]:
+    return {
+        "run_id": f"catalog-scaffold-{generated_at.replace(':', '').replace('-', '')}-{scenario.slug}",
+        "source_commit": commit,
+        "branch": branch,
+        "app_build": "not-built-catalog-scaffold",
+        "started_at": generated_at,
+        "completed_at": generated_at,
+        "executor": "static catalog generator",
+        "generator_version": GENERATOR_VERSION,
+        "provider_mode": scenario.provider_mode,
+        "device_matrix": [{"name": "not-run", "os_version": "not-run", "form_factor": "other"}],
+        "environment": {"locale": "unspecified", "appearance": "unspecified", "network_condition": "not-run", "launch_arguments": []},
+        "fixtures": scenario.dependencies,
+        "cassettes": [{"id": cassette, "provider": provider_from(cassette), "mode": "blocked", "redaction_hash": "pending-redaction-hash"} for cassette in scenario.cassettes],
+        "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    }
+
+
+def page_record(scenario: Scenario, generated_at: str, previous: Scenario | None, next_scenario: Scenario | None, site_base: str) -> dict[str, Any]:
+    return {
+        "canonical_url": f"{site_base.rstrip('/')}/scenarios/{scenario.slug}/",
+        "generated_at": generated_at,
+        "assets_base": f"assets/scenarios/{scenario.slug}/",
+        "navigation": {
+            "scenario_index_url": "../",
+            "category_url": f"../{scenario.category_slug}/",
+            "previous_url": f"../{previous.slug}/" if previous else "",
+            "next_url": f"../{next_scenario.slug}/" if next_scenario else "",
+            "rollup_url": "../../data/rollups.json",
+        },
+    }
+
+
+def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
+    source_ref = f"catalog:{scenario.scenario_id.lower()}"
+    skill_ref = "rubric:review-skill-grounding"
+    deps = scenario.evidence.get("deps", "none")
+    perf = scenario.evidence.get("perf", "none")
+    screenshots = scenario.evidence.get("ss", "none")
+    boundary = scenario.evidence.get("boundary", "none")
+    missing = "No run evidence has been attached yet; this generated page is intentionally incomplete."
+    return {
+        "flow": s(f"Catalog flow for {scenario.category}: Given {scenario.bdd['given'][0]}, when {scenario.bdd['when'][0]}, then {scenario.bdd['then'][0]}.", [source_ref]),
+        "attempted_test": s(f"{missing} A simulator, manual, or automation run must execute scenario {scenario.scenario_id}.", [source_ref]),
+        "scenario_setup": s(f"Declared setup dependencies: {deps}. Provider mode is {scenario.provider_mode} until validation attaches fixtures or cassettes.", [source_ref]),
+        "expected_behavior": s(f"Expected behavior from BDD: {scenario.bdd['then'][0]}. NMP/RMP boundary declared by the catalog: {boundary}.", [source_ref]),
+        "actual_result": s(missing, [source_ref], ["Attach step-by-step observed behavior before changing this verdict."]),
+        "artifacts": s(f"Required visual/raw evidence from the catalog: {screenshots}. Only the source catalog and rubric metadata exist right now.", [source_ref, skill_ref]),
+        "review_skill_grounding": s("Review must be grounded in loaded skills, not generic taste. Required grounding covers Liquid Glass/iOS primitives, Apple HIG, mobile UX design, and NMP architecture.", [skill_ref], [f"Search terms to run with npx skills search: {', '.join(item['search_terms'] for item in SKILL_GROUNDING)}."]),
+        "ui_polish_report": s("Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish.", [skill_ref]),
+        "ux_polish_report": s("Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load.", [skill_ref]),
+        "performance_metrics": s(f"Not measured. Required performance evidence: {perf}.", [source_ref]),
+        "accessibility_dynamic_type": s("Not assessed. Requires VoiceOver/UI tree labels, Dynamic Type, contrast, Reduce Motion/Transparency, and touch target evidence.", [skill_ref]),
+        "liquid_glass_ios_primitives": s("Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional chrome, with accessibility fallbacks.", [skill_ref]),
+        "error_recovery_behavior": s("Not assessed. Error, offline, retry, cancellation, and recovery paths must be captured where the scenario can fail.", [source_ref]),
+        "privacy_security": s("Not assessed. Validation must scan screenshots, logs, cassettes, relays, and exports for leaked keys, tokens, private audio, or private Nostr material.", [source_ref]),
+        "nmp_architecture_cohesiveness": s(f"Not assessed. Declared NMP/RMP boundary: {boundary}. Review must check Rust-owned state/policy, thin native renderers, bounded FFI, replay clocks, and privacy fail-closed behavior.", [source_ref, skill_ref]),
+        "product_coherence_in_context": s("Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state.", [source_ref]),
+        "regression_risk": s("Not assessed. Validation must list adjacent scenarios and modules to rerun after any fix.", [source_ref]),
+        "defects_issues_filed": s("No defects have been observed yet because the scenario has not run. Any actionable defect found later must link a GitHub issue before the page can leave incomplete.", [source_ref]),
+        "verdict": s("Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing.", [source_ref, skill_ref]),
+        "next_actions": s("Run the scenario, attach evidence, score every dimension, file defects, and republish this page from validated JSON.", [source_ref]),
+        "cross_screen_continuity": s("Not assessed. Capture before/after navigation state for adjacent surfaces and ensure mini-player, queue, transcript, agent, and settings remain coherent.", [source_ref]),
+        "states_resilience": s("Not assessed. Capture empty, loading, denied, unavailable, offline, retry, and recovery states reached by this scenario.", [source_ref]),
+        "touch_ergonomics": s("Not assessed. Audit primary controls for reachability, 44x44 pt targets, spacing, and gesture alternatives.", [skill_ref]),
+        "motion_haptics": s("Not assessed. Record transition, haptic, and Reduce Motion behavior when motion is part of the flow.", [skill_ref]),
+        "information_architecture": s("Not assessed. Confirm the user knows location, current mode, and next action from titles, tabs, bars, breadcrumbs, and hierarchy.", [skill_ref]),
+        "content_hierarchy": s("Not assessed. Verify podcast/show/episode/transcript/agent content outranks chrome and does not truncate critical meaning.", [skill_ref]),
+        "observability": s("Not assessed. Attach structured logs, metric IDs, provider/request IDs, relay IDs, and redacted traces needed to diagnose failures.", [source_ref]),
+        "analytics_privacy_boundaries": s("Not assessed. Confirm useful event boundaries without PII, private keys, raw transcripts/audio, or provider secrets.", [source_ref]),
+        "replayability_cassette_provenance": s(f"Not assessed. Declared dependencies: {deps}. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence.", [source_ref]),
+        "evidence_confidence": s("Evidence confidence is zero until a current build, device/OS, rerun count, freshness, and flake notes are attached.", [source_ref]),
+        "device_os_matrix": s("No device/OS matrix has run. The first validation should record simulator/device, OS, locale, appearance, Dynamic Type, and network state.", [source_ref]),
+        "sister_app_nmp_chirp_comparison": s("Not assessed. Review must compare applicable NMP doctrine and known Chirp/sister-app fixes before marking this flow cohesive.", [skill_ref]),
+    }
+
+
+def s(summary: str, refs: list[str], notes: list[str] | None = None) -> dict[str, Any]:
+    return {"summary": summary, "evidence_refs": sorted(set(refs)), "notes": notes or []}
+
+
+def related_for(scenario: Scenario, scenarios: list[Scenario]) -> list[str]:
+    same = [item.scenario_id for item in scenarios if item.category_slug == scenario.category_slug and item.scenario_id != scenario.scenario_id]
+    return same[:4]
+
+
+def provider_from(cassette: str) -> str:
+    for provider in ["openrouter", "ollama", "elevenlabs", "assemblyai", "perplexity"]:
+        if provider in cassette.lower():
+            return provider
+    return "provider"
+
+
+def artifacts_for(scenario: Scenario, source_ref: str, skill_ref: str) -> list[dict[str, Any]]:
+    return [
+        {"id": source_ref, "type": "source_doc", "path": f"sources/catalog/{scenario.source_file}", "description": f"Catalog source row for {scenario.scenario_id} at line {scenario.source_line}.", "required": True, "redaction": {"status": "not_needed"}},
+        {"id": skill_ref, "type": "source_doc", "path": "data/skill-grounding.json", "description": "Required review skills and skill-search terms for scenario critique.", "required": True, "redaction": {"status": "not_needed"}},
+    ]
+
+
+def group_scores() -> dict[str, dict[str, Any]]:
+    return {group: {"score": 0, "status": "incomplete", "rationale": "The group contains unassessed dimensions without current run evidence.", "dimension_refs": dimensions} for group, dimensions in GROUPS.items()}
+
+
+def next_actions_for(scenario: Scenario) -> list[dict[str, str]]:
+    actions = [
+        {"id": "run-scenario", "title": f"Execute {scenario.scenario_id} on the target simulator/device.", "status": "open", "owner": "validation-agent"},
+        {"id": "attach-evidence", "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata.", "status": "open", "owner": "validation-agent"},
+        {"id": "score-dimensions", "title": "Score every individual and grouped dimension from evidence.", "status": "open", "owner": "review-agent"},
+        {"id": "file-defects", "title": "File GitHub issues for every actionable defect before leaving incomplete.", "status": "open", "owner": "review-agent"},
+    ]
+    if scenario.cassettes or scenario.provider_mode == "blocked":
+        actions.append({"id": "attach-cassettes", "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes.", "status": "open", "owner": "validation-agent"})
+    return actions
+
+
+def summary_for(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": record["scenario"]["id"],
+        "slug": record["scenario"]["slug"],
+        "title": record["scenario"]["title"],
+        "category": record["scenario"]["category"],
+        "verdict": record["verdict"]["overall"],
+        "provider_mode": record["run"]["provider_mode"],
+        "tags": record["scenario"]["tags"],
+        "missing_evidence": missing_evidence_for(record),
+        "url": f"scenarios/{record['scenario']['slug']}/",
+        "data_url": f"scenarios/{record['scenario']['slug']}/data.json",
+    }
+
+
+def rollups_for(records: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "scenario_count": len(records),
+        "by_verdict": count_by(records, lambda r: r["verdict"]["overall"]),
+        "by_category": count_by(records, lambda r: r["scenario"]["category"]),
+        "by_provider_mode": count_by(records, lambda r: r["run"]["provider_mode"]),
+        "by_tag": count_tags(records),
+        "by_nmp_boundary": count_boundaries(records),
+        "performance_required": sum(1 for r in records if "performance-required" in r["scenario"]["tags"]),
+        "missing_evidence": {"screenshots": len(records), "metrics": sum(1 for r in records if "performance-required" in r["scenario"]["tags"]), "accessibility": len(records), "cassettes": sum(1 for r in records if "cassette-required" in r["scenario"]["tags"]), "skill_grounding_review": len(records)},
+        "average_dimension_scores": {dimension: 0 for dimension in SECTION_TO_DIMENSION.values()},
+        "average_group_scores": {group: 0 for group in GROUPS},
+        "sources": [f"scenarios/{r['scenario']['slug']}/data.json" for r in records],
+    }
+
+
+def tags_for_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{"tag": tag, "count": count} for tag, count in sorted(count_tags(records).items())]
+
+
+def count_by(records: list[dict[str, Any]], key_fn: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        key = key_fn(record)
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def count_tags(records: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        for tag in record["scenario"]["tags"]:
+            counts[tag] = counts.get(tag, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def count_boundaries(records: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        for tag in record["scenario"]["tags"]:
+            if re.fullmatch(r"d\d+", tag) or tag == "native-render":
+                counts[tag] = counts.get(tag, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def missing_evidence_for(record: dict[str, Any]) -> list[str]:
+    missing = ["screenshots", "ui_tree", "accessibility", "reviewed_skill_grounding"]
+    if "performance-required" in record["scenario"]["tags"]:
+        missing.append("metrics")
+    if "cassette-required" in record["scenario"]["tags"]:
+        missing.append("cassettes")
+    return missing
+
+
+def validate_output(records: list[dict[str, Any]], out: Path) -> None:
+    section_keys = set(SECTION_TO_DIMENSION.keys())
+    dimension_keys = set(SECTION_TO_DIMENSION.values())
+    data_files = list((out / "scenarios").glob("*/data.json"))
+    if len(data_files) != len(records):
+        raise ValueError(f"Expected {len(records)} data files, found {len(data_files)}")
+    for record in records:
+        if set(record["sections"]) != section_keys:
+            raise ValueError(f"{record['scenario']['id']} section key mismatch")
+        if set(record["dimension_scores"]) != dimension_keys:
+            raise ValueError(f"{record['scenario']['id']} dimension key mismatch")
+        if record["verdict"]["overall"] != "incomplete":
+            raise ValueError(f"{record['scenario']['id']} scaffold must be incomplete")
+        for artifact in record["evidence"]["artifacts"]:
+            if not (out / artifact["path"]).exists():
+                raise ValueError(f"{record['scenario']['id']} missing artifact path {artifact['path']}")
+    if json.loads((out / "data" / "rollups.json").read_text())["scenario_count"] != len(records):
+        raise ValueError("Rollup scenario count disagrees with records")
+
+
+def validate_schema_contract(records: list[dict[str, Any]], schema_path: Path) -> None:
+    schema = json.loads(schema_path.read_text())
+    required_top = set(schema["required"])
+    required_sections = set(schema["properties"]["sections"]["required"])
+    required_dimensions = set(schema["$defs"]["dimension_scores"]["required"])
+    if required_sections != set(SECTION_TO_DIMENSION.keys()):
+        raise ValueError("Generator section contract disagrees with JSON Schema")
+    if required_dimensions != set(SECTION_TO_DIMENSION.values()):
+        raise ValueError("Generator dimension contract disagrees with JSON Schema")
+    for record in records:
+        if set(record) != required_top:
+            raise ValueError(f"{record['scenario']['id']} top-level schema keys mismatch")
+        if set(record["sections"]) != required_sections:
+            raise ValueError(f"{record['scenario']['id']} schema section keys mismatch")
+        if set(record["dimension_scores"]) != required_dimensions:
+            raise ValueError(f"{record['scenario']['id']} schema dimension keys mismatch")
