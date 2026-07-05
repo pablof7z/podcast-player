@@ -458,6 +458,7 @@
         "captured_at": "2026-07-05T19:35:20Z",
         "description": "Episode detail before playback with Play and downloaded state.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "d1-screenshot-episode-detail",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/d1-play-pause-resume/20260705T193520Z-episode-detail.jpg",
@@ -467,7 +468,8 @@
         "required": true,
         "sha256": "9462029a00431093d729004150e6b00199cd897fc85d6da55109d773bb73a332",
         "step_id": "step-01-preconditions",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Mini-player showing current episode, Introduction, elapsed time, Pause, and skip-forward.",
@@ -475,6 +477,7 @@
         "captured_at": "2026-07-05T19:36:00Z",
         "description": "Mini-player after Play with title, elapsed time, Pause, and skip-forward controls.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "d1-screenshot-mini-player-playing",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/d1-play-pause-resume/20260705T193600Z-mini-player-playing.jpg",
@@ -484,7 +487,8 @@
         "required": true,
         "sha256": "7e3f4392420a79144db2899beb20744e3d9980e508fad6d7de7908ef07f9e167",
         "step_id": "step-02-action",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Full player showing 1:00 and -0:00 with Play controls.",
@@ -492,6 +496,7 @@
         "captured_at": "2026-07-05T19:37:00Z",
         "description": "Expanded player at apparent one-minute end state with Play controls.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "d1-screenshot-full-player-paused",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/d1-play-pause-resume/20260705T193700Z-full-player-paused.jpg",
@@ -501,7 +506,8 @@
         "required": true,
         "sha256": "ff5c5b91d475b3d78593d65dac35f62c62816e7466425c9fb5d85a81a2735099",
         "step_id": "step-03-result",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "captured_at": "2026-07-05T19:37:00Z",
@@ -818,7 +824,7 @@
   "page": {
     "assets_base": "assets/scenarios/play-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/play-001/",
-    "generated_at": "2026-07-05T21:36:53Z",
+    "generated_at": "2026-07-05T22:07:51Z",
     "navigation": {
       "category_url": "../playback/",
       "next_url": "../play-002/",

@@ -441,6 +441,7 @@
         "captured_at": "2026-07-05T19:39:00Z",
         "description": "Playback settings baseline with speed, skip, gesture, and toggle controls.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i3-screenshot-baseline",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i3-playback-settings/20260705T193900Z-player-settings-baseline.jpg",
@@ -450,7 +451,8 @@
         "required": true,
         "sha256": "19f2f9390d8cc842eb0240bac5e55e174f340d67e3907a702ecd76a39a62918e",
         "step_id": "step-02-action",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Playback settings with Auto-mark played at end switch off.",
@@ -458,6 +460,7 @@
         "captured_at": "2026-07-05T19:39:30Z",
         "description": "Auto-mark played at end toggled off.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i3-screenshot-auto-mark-off",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i3-playback-settings/20260705T193930Z-auto-mark-off.jpg",
@@ -467,7 +470,8 @@
         "required": true,
         "sha256": "738d3f398782d4d49b96374825e060bb5e4d8f95f31356a2ad2c831fc2cfb204",
         "step_id": "step-03-result",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Playback settings re-opened with Auto-mark played at end still off.",
@@ -475,6 +479,7 @@
         "captured_at": "2026-07-05T19:40:00Z",
         "description": "Playback settings after leaving and re-entering, with Auto-mark still off.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i3-screenshot-persisted-after-navigation",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i3-playback-settings/20260705T194000Z-persisted-after-navigation.jpg",
@@ -484,7 +489,8 @@
         "required": true,
         "sha256": "ab5112d81cf9e16c9b98d042bf11cd21e689d07bc9076d4efe17b45a8531156b",
         "step_id": "step-04-exit",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "captured_at": "2026-07-05T19:40:00Z",
@@ -804,7 +810,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-05T21:36:53Z",
+    "generated_at": "2026-07-05T22:07:51Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",

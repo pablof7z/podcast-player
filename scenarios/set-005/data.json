@@ -460,6 +460,7 @@
         "captured_at": "2026-07-05T19:40:50Z",
         "description": "Downloads manager showing one saved downloaded episode at 240 KB.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i4-screenshot-downloads-list",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194050Z-downloads-list.jpg",
@@ -469,7 +470,8 @@
         "required": true,
         "sha256": "008aa94859ac120f0da9ee48c01bafd61b7458f9abc5bca098d939d99ad6731c",
         "step_id": "step-01-preconditions",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Settings list showing Data & Storage, 4 records.",
@@ -477,6 +479,7 @@
         "captured_at": "2026-07-05T19:41:00Z",
         "description": "Settings lower section with Data & Storage row showing 4 records.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i4-screenshot-settings-system-row",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194100Z-settings-system-row.jpg",
@@ -486,7 +489,8 @@
         "required": true,
         "sha256": "c456fac064b73871ae8ed2730a78002e7e390754403533b885e5865a8ec38d15",
         "step_id": "step-02-action",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Data & Storage screen with Export Data, Downloads & Disk, and Clear All Data controls.",
@@ -494,6 +498,7 @@
         "captured_at": "2026-07-05T19:41:10Z",
         "description": "Data & Storage main screen with Export Data, Downloads & Disk, and Clear All Data.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i4-screenshot-data-storage-main",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194110Z-data-storage-main.jpg",
@@ -503,7 +508,8 @@
         "required": true,
         "sha256": "60cf770c575bda104dc0b4ee415aca2fe0f473add710738646e87f3ffc6bd103",
         "step_id": "step-02-action",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Storage detail showing Zero KB and Nothing on disk.",
@@ -511,6 +517,7 @@
         "captured_at": "2026-07-05T19:41:20Z",
         "description": "Downloads & Disk detail incorrectly showing Zero KB and Nothing on disk.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i4-screenshot-storage-detail-zero-kb",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194120Z-storage-detail-zero-kb.jpg",
@@ -520,7 +527,8 @@
         "required": true,
         "sha256": "33d1e243ed134cba0a4de3683d005001ec7655aa4aaefc2b715dc2c5adc4485e",
         "step_id": "step-03-result",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "alt": "Export Data screen with record breakdown and Export & Share button.",
@@ -528,6 +536,7 @@
         "captured_at": "2026-07-05T19:41:30Z",
         "description": "Export Data detail showing 4 records and JSON schema v1.",
         "device": "iPhone 17",
+        "height": 800,
         "id": "i4-screenshot-export-data",
         "os_version": "iOS 26.2",
         "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194130Z-export-data.jpg",
@@ -537,7 +546,8 @@
         "required": true,
         "sha256": "8e05d1c746f68b7296b7a39b7b939441cb14b103e6335ffbfa894cf86897c414",
         "step_id": "step-04-exit",
-        "type": "screenshot"
+        "type": "screenshot",
+        "width": 368
       },
       {
         "captured_at": "2026-07-05T19:41:30Z",
@@ -891,7 +901,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-005/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-005/",
-    "generated_at": "2026-07-05T21:36:53Z",
+    "generated_at": "2026-07-05T22:07:51Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-006/",
