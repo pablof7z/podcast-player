@@ -804,7 +804,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-05T20:55:04Z",
+    "generated_at": "2026-07-05T21:04:59Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",
@@ -1518,9 +1518,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: alirezarezvani/claude-skills@apple-hig-expert, vabole/apple-skills@ios-liquid-glass, web-design-guidelines."
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, phazurlabs/ux-ui-mastery@Mobile UX Design."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Apple HIG, Liquid Glass/iOS primitives, report-page accessibility/performance, and NMP architecture criteria."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile UX, touch, navigation, interruption, and performance-as-UX criteria."
     },
     "risks_follow_up": {
       "evidence_refs": [
