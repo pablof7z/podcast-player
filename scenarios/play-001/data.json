@@ -818,7 +818,7 @@
   "page": {
     "assets_base": "assets/scenarios/play-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/play-001/",
-    "generated_at": "2026-07-05T20:02:31Z",
+    "generated_at": "2026-07-05T20:09:09Z",
     "navigation": {
       "category_url": "../playback/",
       "next_url": "../play-002/",
@@ -1234,7 +1234,7 @@
     "live_dependency_rationale": "No paid provider or live LLM dependency is used by the seeded playback path.",
     "provider_mode": "none",
     "run_id": "pod0-local-20260705T193520Z-play-001",
-    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "source_commit": "a852ef228f2b24c47814c42e6498e7fa6e76a487",
     "started_at": "2026-07-05T19:35:20Z"
   },
   "scenario": {

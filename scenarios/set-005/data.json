@@ -891,7 +891,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-005/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-005/",
-    "generated_at": "2026-07-05T20:02:31Z",
+    "generated_at": "2026-07-05T20:09:09Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-006/",
@@ -1321,7 +1321,7 @@
     "live_dependency_rationale": "No paid provider or live LLM dependency is used by storage/download settings.",
     "provider_mode": "none",
     "run_id": "pod0-local-20260705T194050Z-set-005",
-    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "source_commit": "a852ef228f2b24c47814c42e6498e7fa6e76a487",
     "started_at": "2026-07-05T19:40:50Z"
   },
   "scenario": {
