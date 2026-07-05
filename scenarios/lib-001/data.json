@@ -743,7 +743,7 @@
   "page": {
     "assets_base": "assets/scenarios/lib-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/lib-001/",
-    "generated_at": "2026-07-05T21:31:08Z",
+    "generated_at": "2026-07-05T21:36:53Z",
     "navigation": {
       "category_url": "../library-and-episode-management/",
       "next_url": "../lib-002/",
@@ -1440,12 +1440,13 @@
     },
     "review_skill_grounding": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "c1-ui-tree"
       ],
       "notes": [
         "Selected skills: vabole/apple-skills@ios-liquid-glass, qodex-ai/ai-agent-skills@mobile-app-interface."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile interface, safe-area, Dynamic Type, touch, navigation, accessibility, and performance-as-UX criteria."
+      "summary": "Critique uses npx-selected ui-ux-specialist criteria: clear hierarchy, target size, predictable navigation, visible state, and evidence-backed accessibility/performance notes."
     },
     "risks_follow_up": {
       "evidence_refs": [
