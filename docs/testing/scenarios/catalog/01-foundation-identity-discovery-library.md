@@ -83,4 +83,3 @@
 | LIB-014 | Given a user-defined podcast category is edited, when saved, then category membership survives relaunch and Android/TUI projections can decode it. | SS: category screen; Perf: none; Deps: category fixture; Boundary: D4,D5. |
 | LIB-015 | Given a very long show description includes HTML, when show detail renders, then sanitized text and links render without script execution. | SS: show notes; Perf: layout under 1 sec; Deps: HTML RSS cassette; Boundary: D7. |
 | LIB-016 | Given a library snapshot decode failure occurs for one domain sidecar, when the app receives the frame, then prior good data remains and resync state is visible. | SS: stale data plus resync indicator; Perf: no main-thread crash; Deps: malformed projection replay; Boundary: D5,D6,D8. |
-

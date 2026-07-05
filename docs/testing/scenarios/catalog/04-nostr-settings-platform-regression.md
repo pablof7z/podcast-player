@@ -83,4 +83,3 @@
 | XPLAT-014 | Given native renders an OS share sheet, when share completes or cancels, then Rust receives raw completion result only if needed. | SS: share sheet; Perf: none; Deps: share capability mock; Boundary: D7. |
 | XPLAT-015 | Given concurrent agents have docs-only worktrees, when this catalog branch changes files, then no app code or WIP entries are staged. | SS: git diff summary; Perf: none; Deps: git status; Boundary: process. |
 | XPLAT-016 | Given the architecture scanner reports existing app findings, when scenario coverage is reviewed, then D4/D5/D6/D7/D8/D9/D10 risks map to catalog rows. | SS: scanner summary and catalog links; Perf: none; Deps: scanner output; Boundary: all doctrine. |
-

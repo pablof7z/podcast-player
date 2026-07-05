@@ -91,4 +91,3 @@
 | VOICE-016 | Given Siri intent starts voice mode with a phrase, when app receives intent, then phrase is routed as user intent through Rust. | SS: intent result and chat; Perf: intent-to-run latency; Deps: App Intent fixture; Boundary: D7. |
 | VOICE-017 | Given voice mode is stopped repeatedly, when start/stop is called three times, then capability lifecycle is idempotent. | SS: stable stopped state; Perf: no leaked tasks; Deps: voice capability mock; Boundary: D7,D8. |
 | VOICE-018 | Given voice response includes citations, when spoken answer finishes, then visible transcript answer includes tap-to-play citations. | SS: answer with citations; Perf: TTS total duration; Deps: voice QA cassette; Boundary: D5,D7. |
-
