@@ -147,13 +147,30 @@ def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | No
     merged = dict(current)
     for field in PRESERVED_RECORD_FIELDS:
         merged[field] = previous[field]
+    merged["sections"] = merge_keyed_dict(current["sections"], previous["sections"])
     merged["sections"]["review_skill_grounding"] = current["sections"]["review_skill_grounding"]
+    merged["dimension_scores"] = merge_keyed_dict(current["dimension_scores"], previous["dimension_scores"])
+    merged["group_scores"] = merge_group_scores(current["group_scores"], previous["group_scores"])
     merged["evidence"] = merge_evidence(current["evidence"], previous["evidence"])
     merged["review_grounding"] = current["review_grounding"]
-    merged["sections"] = {
-        **merged["sections"],
-        "review_skill_grounding": current["sections"]["review_skill_grounding"],
-    }
+    merged["next_actions"] = merge_actions(current["next_actions"], previous["next_actions"])
+    return merged
+
+
+def merge_keyed_dict(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
+    return {key: previous.get(key, value) for key, value in current.items()}
+
+
+def merge_group_scores(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for group, value in current.items():
+        previous_value = previous.get(group)
+        if isinstance(previous_value, dict):
+            item = {**value, **previous_value}
+            item["dimension_refs"] = value["dimension_refs"]
+            merged[group] = item
+        else:
+            merged[group] = value
     return merged
 
 
@@ -163,6 +180,18 @@ def merge_evidence(current: dict[str, Any], previous: dict[str, Any]) -> dict[st
     for artifact in previous.get("artifacts", []):
         artifacts.setdefault(artifact["id"], artifact)
     merged["artifacts"] = list(artifacts.values())
+    return merged
+
+
+def merge_actions(current: list[dict[str, Any]], previous: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    previous_by_id = {item["id"]: item for item in previous if isinstance(item.get("id"), str)}
+    merged = []
+    seen = set()
+    for item in current:
+        action_id = item["id"]
+        merged.append({**item, **previous_by_id.get(action_id, {})})
+        seen.add(action_id)
+    merged.extend(item for item in previous if item.get("id") not in seen)
     return merged
 
 

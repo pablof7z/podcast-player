@@ -36,6 +36,10 @@ REQUIRED_SCENARIO_SECTIONS = [
     "Navigation, Orientation, And Information Architecture",
     "Animation, Transition, And Haptics Quality",
     "Risk Severity And Validation Confidence",
+    "Evidence Provenance",
+    "Before/After Deltas",
+    "Revalidation Status",
+    "Owner And Status",
 ]
 
 
@@ -65,10 +69,10 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
 
             data = json.loads((out / "scenarios" / "smoke-001" / "data.json").read_text())
             self.assertEqual(data["page"]["canonical_url"], "https://example.test/podcast-player/scenarios/smoke-001/")
-            self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "liquid glass iOS primitives mobile frontend design UI polish UX"')
+            self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "liquid glass iOS mobile frontend design UI polish"')
             self.assertEqual(
                 [skill["name"] for skill in SKILL_GROUNDING if skill["selected"]],
-                ["vabole/apple-skills@ios-liquid-glass", "qodex-ai/ai-agent-skills@mobile-app-interface"],
+                ["vabole/apple-skills@ios-liquid-glass", "local web-design-guidelines", "local playwright-cli"],
             )
 
     def test_preserves_existing_pages_assets_and_issue_index(self) -> None:
@@ -197,6 +201,30 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                     "notes": ["Selected skills: phazurlabs/ux-ui-mastery@Mobile UX Design."],
                 },
             }
+            stale_contract_keys = {
+                "evidence_provenance": "evidence_provenance",
+                "before_after_deltas": "before_after_deltas",
+                "revalidation_status": "revalidation_status",
+                "owner_status": "owner_status",
+            }
+            for section_key, dimension_key in stale_contract_keys.items():
+                old_record["sections"].pop(section_key)
+                old_record["dimension_scores"].pop(dimension_key)
+            stale_group_refs = {
+                "evidence_reproducibility": "evidence_provenance",
+                "product_experience": "before_after_deltas",
+                "follow_through": "revalidation_status",
+            }
+            for group_key, dimension_key in stale_group_refs.items():
+                old_record["group_scores"][group_key]["dimension_refs"] = [
+                    item for item in old_record["group_scores"][group_key]["dimension_refs"] if item != dimension_key
+                ]
+            old_record["group_scores"]["follow_through"]["dimension_refs"] = [
+                item for item in old_record["group_scores"]["follow_through"]["dimension_refs"] if item != "owner_status"
+            ]
+            old_record["next_actions"] = [
+                item for item in old_record["next_actions"] if item["id"] not in {"revalidate-defects", "assign-owners"}
+            ]
             previous_record_path = out / "scenarios" / "smoke-001" / "data.json"
             previous_record_path.parent.mkdir(parents=True)
             previous_record_path.write_text(json.dumps(old_record))
@@ -220,11 +248,19 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
             self.assertEqual(
                 [skill["name"] for skill in merged["review_grounding"]["selected_skills"]],
-                ["vabole/apple-skills@ios-liquid-glass", "qodex-ai/ai-agent-skills@mobile-app-interface"],
+                ["vabole/apple-skills@ios-liquid-glass", "local web-design-guidelines", "local playwright-cli"],
             )
             self.assertNotIn("obsolete/old-skill", json.dumps(merged["sections"]["review_skill_grounding"]))
-            self.assertIn("qodex-ai/ai-agent-skills@mobile-app-interface", merged["sections"]["review_skill_grounding"]["notes"][0])
+            self.assertIn("local web-design-guidelines", merged["sections"]["review_skill_grounding"]["notes"][0])
             self.assertNotIn("phazurlabs", merged["sections"]["review_skill_grounding"]["summary"])
+            for section_key, dimension_key in stale_contract_keys.items():
+                self.assertIn(section_key, merged["sections"])
+                self.assertIn(dimension_key, merged["dimension_scores"])
+            self.assertIn("evidence_provenance", merged["group_scores"]["evidence_reproducibility"]["dimension_refs"])
+            self.assertIn("before_after_deltas", merged["group_scores"]["product_experience"]["dimension_refs"])
+            self.assertIn("revalidation_status", merged["group_scores"]["follow_through"]["dimension_refs"])
+            self.assertIn("owner_status", merged["group_scores"]["follow_through"]["dimension_refs"])
+            self.assertTrue({"revalidate-defects", "assign-owners"}.issubset({item["id"] for item in merged["next_actions"]}))
             rollups = json.loads((out / "data" / "rollups.json").read_text())
             self.assertEqual(rollups["average_dimension_scores"]["actual_result"], 1.5)
             self.assertEqual(rollups["average_dimension_scores"]["ui_polish"], 1)

@@ -138,6 +138,9 @@ def normalize_readiness(record: dict[str, Any]) -> None:
 
 def normalize_observed_sections(record: dict[str, Any]) -> None:
     refs = observed_evidence_refs(record)
+    artifact_count = len([artifact for artifact in record["evidence"]["artifacts"] if not artifact["id"].startswith("catalog:")])
+    fixed_issues = [issue for issue in record["issues"] if issue["status"] == "fixed"]
+    open_issues = [issue for issue in record["issues"] if issue["status"] == "open"]
     record["sections"]["product_coherence_in_context"] = section(
         record["coherence"]["individual_judgment"]["summary"],
         refs,
@@ -150,6 +153,26 @@ def normalize_observed_sections(record: dict[str, Any]) -> None:
     )
     record["sections"]["readiness_gates"] = section(
         f"Ship gate is {record['readiness']['ship_gate']}; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up.",
+        refs,
+        record["readiness"]["blocking_reasons"],
+    )
+    record["sections"]["evidence_provenance"] = section(
+        f"{artifact_count} non-catalog artifact(s) are attached with their published IDs, paths, redaction metadata, and run context.",
+        refs,
+        missing_evidence_labels(record),
+    )
+    record["sections"]["before_after_deltas"] = section(
+        "Current evidence must be read as before/action/after deltas across the flow steps; any missing pair remains listed in instrumentation gaps.",
+        refs,
+        missing_evidence_labels(record),
+    )
+    record["sections"]["revalidation_status"] = section(
+        f"{len(fixed_issues)} fixed issue(s) and {len(open_issues)} open issue(s) are linked; fixed issues require revalidation run IDs before closure is considered proven.",
+        refs,
+        [issue["id"] for issue in record["issues"] if not issue.get("revalidation_run_id")],
+    )
+    record["sections"]["owner_status"] = section(
+        "Readiness gates, instrumentation gaps, risks, issues, and next actions carry owner/status fields for follow-through.",
         refs,
         record["readiness"]["blocking_reasons"],
     )
