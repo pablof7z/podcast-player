@@ -112,6 +112,14 @@
       "score": 3,
       "status": "pass_with_issues"
     },
+    "before_after_deltas": {
+      "evidence_refs": [
+        "catalog:set-001"
+      ],
+      "rationale": "Before/After Deltas has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "content_hierarchy": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
@@ -167,6 +175,15 @@
       "rationale": "Evidence is current and local, but incomplete for all branches.",
       "score": 3,
       "status": "pass_with_issues"
+    },
+    "evidence_provenance": {
+      "evidence_refs": [
+        "catalog:set-001",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Evidence Provenance has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
     },
     "execution_attempts": {
       "evidence_refs": [
@@ -266,6 +283,14 @@
       "score": 0,
       "status": "incomplete"
     },
+    "owner_status": {
+      "evidence_refs": [
+        "catalog:set-001"
+      ],
+      "rationale": "Owner And Status has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "performance": {
       "evidence_refs": [
         "i3-ui-tree"
@@ -337,6 +362,14 @@
         "catalog:set-001"
       ],
       "rationale": "Replayability And Cassette Provenance has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "revalidation_status": {
+      "evidence_refs": [
+        "catalog:set-001"
+      ],
+      "rationale": "Revalidation Status has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -810,7 +843,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-05T22:07:51Z",
+    "generated_at": "2026-07-05T22:11:33Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",
@@ -1105,14 +1138,26 @@
       {
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS primitives",
+        "search_terms": "liquid glass iOS mobile frontend design UI polish",
         "selected": true
       },
       {
-        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "mobile frontend design UI polish UX",
+        "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
+        "name": "local web-design-guidelines",
+        "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
         "selected": true
+      },
+      {
+        "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
+        "name": "local playwright-cli",
+        "search_terms": "local browser validation skill",
+        "selected": true
+      },
+      {
+        "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",
+        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "search_terms": "liquid glass iOS mobile frontend design UI polish",
+        "selected": false
       },
       {
         "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
@@ -1139,24 +1184,31 @@
         "selected": false
       }
     ],
-    "search_command": "npx skills search \"liquid glass iOS primitives mobile frontend design UI polish UX\"",
+    "search_command": "npx skills search \"liquid glass iOS mobile frontend design UI polish\"",
     "selected_skills": [
       {
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS primitives",
+        "search_terms": "liquid glass iOS mobile frontend design UI polish",
         "selected": true
       },
       {
-        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "mobile frontend design UI polish UX",
+        "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
+        "name": "local web-design-guidelines",
+        "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
+        "selected": true
+      },
+      {
+        "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
+        "name": "local playwright-cli",
+        "search_terms": "local browser validation skill",
         "selected": true
       }
     ],
     "template_impact": [
       "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
-      "Mobile App Interface drives safe-area, SF typography, Dynamic Type, semantic color, native navigation, accessibility, 44 pt touch-target, state-resilience, and performance-as-UX checks.",
+      "Web Interface Guidelines drive generated-site accessibility, semantic HTML, focus, image metadata, safe-area, touch, reduced-motion, content-overflow, localization, and frontend performance checks.",
+      "Playwright CLI is the expected local verification path for generated GitHub Pages screenshots, snapshots, responsive viewports, and interaction smoke tests.",
       "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow."
     ]
   },
@@ -1291,6 +1343,22 @@
       "notes": [],
       "summary": "Executed SET-001 locally through Settings -> Player. Captured baseline controls, Auto-mark toggle off, and persistence after navigation away/back."
     },
+    "before_after_deltas": {
+      "evidence_refs": [
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [
+        "picker-change-coverage",
+        "relaunch-persistence",
+        "accessibility_audit"
+      ],
+      "summary": "Current evidence must be read as before/action/after deltas across the flow steps; any missing pair remains listed in instrumentation gaps."
+    },
     "content_hierarchy": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
@@ -1339,6 +1407,22 @@
       ],
       "notes": [],
       "summary": "Evidence confidence is zero until a current build, device/OS, rerun count, freshness, and flake notes are attached."
+    },
+    "evidence_provenance": {
+      "evidence_refs": [
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [
+        "picker-change-coverage",
+        "relaunch-persistence",
+        "accessibility_audit"
+      ],
+      "summary": "6 non-catalog artifact(s) are attached with their published IDs, paths, redaction metadata, and run context."
     },
     "execution_attempts": {
       "evidence_refs": [
@@ -1425,6 +1509,21 @@
       ],
       "notes": [],
       "summary": "Not assessed. Offline, interruption, relaunch, background playback, cancellation, retry, and resume behavior must be captured where applicable."
+    },
+    "owner_status": {
+      "evidence_refs": [
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [
+        "Remaining missing evidence: picker-change-coverage, relaunch-persistence, accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Readiness gates, instrumentation gaps, risks, issues, and next actions carry owner/status fields for follow-through."
     },
     "performance_metrics": {
       "evidence_refs": [
@@ -1513,14 +1612,26 @@
       "notes": [],
       "summary": "Not assessed. Declared dependencies: settings seed. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
+    "revalidation_status": {
+      "evidence_refs": [
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "0 fixed issue(s) and 0 open issue(s) are linked; fixed issues require revalidation run IDs before closure is considered proven."
+    },
     "review_skill_grounding": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: vabole/apple-skills@ios-liquid-glass, qodex-ai/ai-agent-skills@mobile-app-interface."
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, local web-design-guidelines, local playwright-cli."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile interface, safe-area, Dynamic Type, touch, navigation, accessibility, and performance-as-UX criteria."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives, generated-site accessibility and interaction guidelines, and Playwright-based page verification."
     },
     "risks_follow_up": {
       "evidence_refs": [

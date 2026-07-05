@@ -1,17 +1,29 @@
 {
-  "generated_by": "scenario-report-generator/0.3.1",
+  "generated_by": "scenario-report-generator/0.3.2",
   "skills": [
     {
       "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
       "name": "vabole/apple-skills@ios-liquid-glass",
-      "search_terms": "liquid glass iOS primitives",
+      "search_terms": "liquid glass iOS mobile frontend design UI polish",
       "selected": true
     },
     {
-      "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
-      "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-      "search_terms": "mobile frontend design UI polish UX",
+      "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
+      "name": "local web-design-guidelines",
+      "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
       "selected": true
+    },
+    {
+      "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
+      "name": "local playwright-cli",
+      "search_terms": "local browser validation skill",
+      "selected": true
+    },
+    {
+      "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",
+      "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+      "search_terms": "liquid glass iOS mobile frontend design UI polish",
+      "selected": false
     },
     {
       "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
