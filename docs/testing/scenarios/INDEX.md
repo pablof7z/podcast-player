@@ -3,6 +3,11 @@
 All scenarios for the Podcastr iOS simulator test suite. See
 [`../README.md`](../README.md) for setup, simulator config, and how to record results.
 
+For the broader scenario-only BDD inventory, including evidence requirements,
+LLM cassette/replay dependencies, and NMP/RMP boundary coverage, see
+[`catalog/INDEX.md`](catalog/INDEX.md). The catalog currently tracks 264
+planning-level scenarios grouped into four cluster files.
+
 ## A — Onboarding & Identity
 - **A1** [`a1-onboarding-fresh-install.md`](a1-onboarding-fresh-install.md) — Fresh install: generate new Nostr keypair, walk the 5-page onboarding, enter the app.
 - **A2** [`a2-import-nsec.md`](a2-import-nsec.md) — Import an existing `nsec` private key via Advanced → Use my own key.
