@@ -164,7 +164,7 @@ not a unit-test dashboard.
 - Every meaningful user-visible step needs a screenshot. Host-only checks need
   command output or raw JSON instead.
 - Every screenshot must have a stable asset path, short caption, step ID, capture
-  timestamp, device/OS, and alt text.
+  timestamp, device/OS, alt text, and intrinsic width/height.
 - Every video must name the interaction it proves and link the related still
   screenshot.
 - Every provider, relay, STT, TTS, LLM, search, or network dependency needs a

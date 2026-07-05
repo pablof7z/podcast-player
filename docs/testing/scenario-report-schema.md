@@ -199,7 +199,7 @@ Screenshots:
 - Name with UTC timestamp, step ID, and short purpose:
   `20260705T181200Z-step-03-error-banner.png`.
 - Include `alt`, `caption`, `step_id`, `device`, `os_version`,
-  `captured_at`, and `sha256`.
+  `captured_at`, `sha256`, `width`, and `height`.
 - Do not reuse temp paths from simulator captures in published JSON.
 - Regeneration over an existing Pages checkout preserves `assets/` before
   replacing generated HTML/JSON so old screenshots and evidence links do not
@@ -248,7 +248,7 @@ Schema enforcement:
 - `coherence.cluster` must carry stable cluster identity and related scenario
   IDs.
 - Screenshot artifacts must include alt text, caption, step ID, capture time,
-  device, OS version, SHA-256, and required/elective status.
+  device, OS version, SHA-256, width/height, and required/elective status.
 
 ## Summary Rollups
 

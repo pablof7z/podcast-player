@@ -172,6 +172,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                         "sha256": "a" * 64,
                         "alt": "Smoke scenario screenshot",
                         "caption": "Previous validated screenshot.",
+                        "width": 368,
+                        "height": 800,
                         "required": True,
                         "redaction": {"status": "not_needed"},
                     },
@@ -233,6 +235,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             home = (out / "index.html").read_text()
             self.assertIn("Screenshot Evidence", scenario_page)
             self.assertIn("<img", scenario_page)
+            self.assertIn('width="368" height="800"', scenario_page)
+            self.assertIn('width="368" height="800"', home)
             self.assertIn("Evidence-Backed Scenarios", home)
             self.assertIn("old-shot.jpg", home)
 
@@ -257,7 +261,7 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
         )
         self.assertEqual(schema["$defs"]["coherence"]["properties"]["cluster"]["$ref"], "#/$defs/coherence_cluster")
         screenshot_rule = schema["$defs"]["artifact"]["allOf"][0]["then"]["required"]
-        self.assertTrue({"alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256"}.issubset(screenshot_rule))
+        self.assertTrue({"alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256", "width", "height"}.issubset(screenshot_rule))
 
 
 def write_catalog(catalog: Path) -> Path:

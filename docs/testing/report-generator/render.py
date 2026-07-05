@@ -372,7 +372,7 @@ def evidence_backed_summary(records: list[dict[str, Any]], depth: int) -> str:
         items.append(
             "<article class=\"evidence-card\">"
             f"<a href=\"{rel('scenarios/' + scenario['slug'] + '/', depth)}\">"
-            f"<img src=\"{rel(first['path'], depth)}\" alt=\"{e(first.get('alt', first['description']))}\" loading=\"eager\" decoding=\"async\">"
+            f"<img src=\"{rel(first['path'], depth)}\" alt=\"{e(first.get('alt', first['description']))}\"{media_size_attrs(first)} loading=\"eager\" decoding=\"async\">"
             f"<strong>{e(scenario['id'])}</strong>"
             f"<span>{e(record['verdict']['overall'])} · {len(shots)} screenshot{'s' if len(shots) != 1 else ''}</span>"
             "</a>"
@@ -408,7 +408,7 @@ def screenshot_gallery(artifacts: list[dict[str, Any]], depth: int) -> str:
             caption_bits.append(" · ".join(part for part in [item.get("device", ""), item.get("os_version", "")] if part))
         figures.append(
             "<figure>"
-            f"<a href=\"{rel(item['path'], depth)}\"><img src=\"{rel(item['path'], depth)}\" alt=\"{e(item.get('alt', item['description']))}\" loading=\"eager\" decoding=\"async\"></a>"
+            f"<a href=\"{rel(item['path'], depth)}\"><img src=\"{rel(item['path'], depth)}\" alt=\"{e(item.get('alt', item['description']))}\"{media_size_attrs(item)} loading=\"eager\" decoding=\"async\"></a>"
             f"<figcaption>{e(' | '.join(caption_bits))}</figcaption>"
             "</figure>"
         )
@@ -417,6 +417,10 @@ def screenshot_gallery(artifacts: list[dict[str, Any]], depth: int) -> str:
 
 def screenshot_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [item for item in artifacts if item.get("type") == "screenshot"]
+
+
+def media_size_attrs(item: dict[str, Any]) -> str:
+    return f" width=\"{e(item.get('width', 368))}\" height=\"{e(item.get('height', 800))}\""
 
 
 def action_list(actions: list[dict[str, str]]) -> str:
