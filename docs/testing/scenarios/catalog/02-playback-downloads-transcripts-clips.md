@@ -83,4 +83,3 @@
 | CLIP-014 | Given a clip deep link is opened cold, when app launches, then clip detail opens and can jump to source episode. | SS: cold deep link; Perf: route under 2 sec after snapshot; Deps: deep-link fixture; Boundary: D4,D5. |
 | CLIP-015 | Given an orphan clip references a missing episode, when Clippings opens, then it shows recoverable orphan state without crashing. | SS: orphan row; Perf: none; Deps: UITestSeedOrphanClip; Boundary: D6. |
 | CLIP-016 | Given a user edits clip caption, when saved and relaunches, then updated caption persists and publish metadata updates only through kernel action. | SS: edit and relaunch; Perf: none; Deps: clip seed; Boundary: D4,D7. |
-

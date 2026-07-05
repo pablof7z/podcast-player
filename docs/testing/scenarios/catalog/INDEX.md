@@ -39,4 +39,3 @@ Do not store provider API keys, private keys, or raw user secrets.
   `apps/podcast-tui`.
 - Sister repo patterns from `../chirp`: fixture relay, signed-event validation,
   projection cache replay, and typed projection parity patterns.
-
